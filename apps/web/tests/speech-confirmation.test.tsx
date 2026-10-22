@@ -25,8 +25,10 @@ describe('speech cost confirmation', () => {
                 onCancel={cancel}
             />,
         );
-        expect(screen.getByText('11 credits')).toBeVisible();
-        expect(screen.getByText('Available credits: 100')).toBeVisible();
+        expect(
+            screen.getByText('11 credits', { selector: 'strong' }),
+        ).toBeVisible();
+        expect(screen.getAllByText('Available credits: 100')[0]).toBeVisible();
         expect(screen.getByText('Provisional price')).toBeVisible();
         expect(
             screen.getByText(/charged only if audio is saved successfully/),
@@ -83,9 +85,54 @@ describe('speech cost confirmation', () => {
                 onCancel={vi.fn()}
             />,
         );
-        expect(screen.getByText('Available credits: Unlimited')).toBeVisible();
+        expect(
+            screen.getAllByText('Available credits: Unlimited')[0],
+        ).toBeVisible();
         expect(
             screen.getByRole('button', { name: 'Generate', exact: true }),
         ).toBeEnabled();
+    });
+});
+
+describe('decimal speech credit quotes', () => {
+    it('rounds only presentation and rejects a balance short by one milli-credit', () => {
+        render(
+            <SpeechConfirmation
+                quote={{
+                    ...quote,
+                    credits: '0.125',
+                    availableCredits: '0.124',
+                }}
+                onConfirm={vi.fn()}
+                onCancel={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('0.13 credits')).toBeVisible();
+        expect(screen.getByText('Available credits: 0.12')).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Generate', exact: true }),
+        ).toBeDisabled();
+        fireEvent.click(screen.getByText('Exact values'));
+        expect(screen.getByText('0.125 credits')).toBeVisible();
+        expect(screen.getByText('Available credits: 0.124')).toBeVisible();
+    });
+    it('never presents a nonzero tiny price as free and permits an equal exact balance', () => {
+        render(
+            <SpeechConfirmation
+                quote={{
+                    ...quote,
+                    credits: '0.001',
+                    availableCredits: '0.001',
+                }}
+                onConfirm={vi.fn()}
+                onCancel={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('<0.01 credits')).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Generate', exact: true }),
+        ).toBeEnabled();
+        fireEvent.click(screen.getByText('Exact values'));
+        expect(screen.getByText('0.001 credits')).toBeVisible();
     });
 });

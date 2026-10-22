@@ -49,7 +49,8 @@ export function SentencePreparationNotice({
         void controller.refresh();
     }
     function resume() {
-        void controller.resume();
+        if (run?.requiresNewBudget) void controller.continueWithBudget?.();
+        else void controller.resume();
     }
     const retry = (
         <Button size='compact' onClick={refresh} disabled={retryBlocked}>
@@ -58,7 +59,7 @@ export function SentencePreparationNotice({
     );
     const resumeButton = (
         <Button size='compact' onClick={resume} disabled={retryBlocked}>
-            {P('resume')}
+            {run?.requiresNewBudget ? P('continueBudget') : P('resume')}
         </Button>
     );
     const admissionRecovery = (
@@ -181,14 +182,16 @@ export function SentencePreparationNotice({
         );
     if (run.state === 'paused' || run.state === 'failed') {
         const keys = {
+            budget: ['budget', 'budgetBody'],
             credits: ['credits', 'creditsBody'],
             capacity: ['capacity', 'capacityBody'],
             model: ['model', 'modelBody'],
             provider: ['provider', 'providerBody'],
             user: ['paused', 'pausedBody'],
         } as const;
-        const [title, body] =
-            keys[run.pauseReason as keyof typeof keys] ?? keys.provider;
+        const [title, body] = run.requiresNewBudget
+            ? keys.budget
+            : (keys[run.pauseReason as keyof typeof keys] ?? keys.provider);
         return (
             <InlineAlert
                 tone={

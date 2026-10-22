@@ -22,7 +22,10 @@ export function exposeTextsJob(job: TextsJobRow) {
             job.executionState === 'completed' && job.cancellationRequestedAt
                 ? 'cancelled'
                 : job.executionState,
-        failureCode: job.failureCategory,
+        failureCode:
+            job.failureCategory === 'explicit_stop'
+                ? null
+                : job.failureCategory,
         result: job.resultPayload,
         createdAt: job.createdAt.toISOString(),
         completedAt: job.completedAt?.toISOString() ?? null,

@@ -1,3 +1,4 @@
+import { RedisGenerationBurstLimiter } from '../../src/modules/text-ai/infrastructure/generation-burst-limiter';
 import { randomUUID } from 'node:crypto';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
@@ -157,6 +158,7 @@ async function start() {
         loadProposal: loadTextTranslationProposal,
     });
     ai = createTextsAiComposition({
+        burstLimiter: new RedisGenerationBurstLimiter(d.rateLimiter),
         database: d.database,
         enabled: true,
         fingerprintSecret: secret,
@@ -335,17 +337,16 @@ async function start() {
     // This Texts-only fixture starts no interview worker or external model client.
     const learnerPortraits = createLearnerPortraitModule({
         database: d.database,
-        creditsBypass: true,
         selectionPolicy,
     });
     app = createApp({
         learnerPortraits: createLearnerPortraitRoutes({
             portraits: learnerPortraits.portraits,
             interviews: learnerPortraits.interviews,
+            readChargingPolicy: learnerPortraits.readChargingPolicy,
             authenticate,
             rateLimiter: d.rateLimiter,
             policy: authentication.options.policy,
-            creditsBypass: true,
         }),
         learning: createLearningComposition({
             ...d,

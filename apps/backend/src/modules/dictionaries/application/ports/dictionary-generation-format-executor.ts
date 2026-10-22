@@ -13,7 +13,12 @@ export type DictionaryGenerationExecutionStage =
 
 export interface DictionaryGenerationFormatExecutionResult {
     proposal: DictionaryBatchGenerationProposalPayload;
-    providerUsage?: { inputTokens: number; outputTokens: number };
+    providerUsage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    };
 }
 
 export interface DictionaryGenerationFormatExecutor<TFormat extends string> {

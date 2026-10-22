@@ -6,6 +6,7 @@
 
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM :"dictionary_worker_role";
 REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM :"dictionary_worker_role";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM :"dictionary_worker_role";
 REVOKE CREATE ON SCHEMA public FROM :"dictionary_worker_role";
 GRANT USAGE ON SCHEMA public TO :"dictionary_worker_role";
 
@@ -40,7 +41,7 @@ GRANT SELECT, INSERT, UPDATE ON TABLE
     dictionary_ai_worker_observations
 TO :"dictionary_worker_role";
 
-GRANT SELECT (user_id, mode, unlimited_until) ON TABLE
+GRANT SELECT (user_id, mode, unlimited_until, management_version) ON TABLE
     ai_credit_accounts TO :"dictionary_worker_role";
 
 GRANT SELECT (id, owner_id, amount, created_at, expires_at) ON TABLE
@@ -52,21 +53,7 @@ GRANT SELECT (id, owner_id) ON TABLE
 GRANT SELECT (removal_id, grant_id, allocated_credits) ON TABLE
     ai_credit_admin_removal_allocations TO :"dictionary_worker_role";
 
-GRANT SELECT, INSERT ON TABLE
-    ai_credit_reservations,
-    ai_credit_reservation_allocations
-TO :"dictionary_worker_role";
-
-GRANT UPDATE (charged_credits, dispatched_at, measured_credits, measurement, settled_at, state) ON TABLE
-    ai_credit_reservations
-TO :"dictionary_worker_role";
-
-GRANT UPDATE (settled_credits) ON TABLE
-    ai_credit_reservation_allocations
-TO :"dictionary_worker_role";
-
-GRANT INSERT ON TABLE
-    ai_credit_history
+GRANT SELECT ON TABLE ai_credit_reservations, ai_credit_reservation_allocations
 TO :"dictionary_worker_role";
 
 GRANT SELECT (id, dictionary_id, source, sort_key, translation, example, example_translation, lifecycle, version, example_enabled_override, example_translation_enabled_override, example_language_role_override) ON TABLE
@@ -101,19 +88,22 @@ TO :"dictionary_worker_role";
 -- reads visibility but cannot change personal/global archives or admin receipts.
 GRANT SELECT ON TABLE sentence_personal_visibility, sentence_global_visibility
 TO :"dictionary_worker_role";
-GRANT SELECT, UPDATE ON TABLE sentence_preparations, sentence_preparation_batches
+GRANT SELECT ON TABLE sentence_preparations, sentence_preparation_batches,
+    sentence_preparation_actions TO :"dictionary_worker_role";
+GRANT UPDATE (state, pause_reason, active_job_id, updated_at) ON TABLE sentence_preparations
 TO :"dictionary_worker_role";
-GRANT SELECT, INSERT ON TABLE sentence_preparation_children
+GRANT UPDATE (manifest, scan_cursor, reviewed) ON TABLE sentence_preparation_batches
 TO :"dictionary_worker_role";
-GRANT INSERT ON TABLE sentence_ai_jobs, sentence_job_entries
+GRANT UPDATE (terminal_outcome) ON TABLE sentence_preparation_actions TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE sentence_preparation_children
 TO :"dictionary_worker_role";
+
 GRANT SELECT ON TABLE user_text_ai_preferences
 TO :"dictionary_worker_role";
 
 -- Row-lock permission for lifecycle fencing, without account/status/text writes.
 GRANT UPDATE (updated_at) ON TABLE users TO :"dictionary_worker_role";
--- Preparation admission reserves credits; it cannot issue grants or change policy.
-GRANT INSERT ON TABLE ai_credit_reservations TO :"dictionary_worker_role";
+
 
 -- Expired inactive manifests are pruned under learner/preparation locks.
 GRANT DELETE ON TABLE sentence_preparation_batches TO :"dictionary_worker_role";
@@ -160,3 +150,35 @@ GRANT UPDATE (updated_at) ON TABLE knowledge_notes TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE dictionary_cards TO :"dictionary_worker_role";
 
 GRANT SELECT ON TABLE conversation_settings TO :"dictionary_worker_role";
+
+-- Action accounting reads immutable policy/prices and compact projections.
+-- Customer grants, policy publication and manual payment entry remain denied.
+GRANT SELECT ON TABLE ai_credit_grant_balances, ai_credit_wallet_totals,
+    ai_capability_policy_revisions, ai_accounting_settings_revisions,
+    ai_provider_price_revisions,
+    text_ai_capacity_jobs, text_ai_capacity_queue_totals,
+    text_ai_capacity_provider_usage, text_ai_capacity_active_totals,
+    text_ai_capacity_settled_buckets TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE ai_action_charging_policies,
+    ai_credit_actions, ai_credit_action_allocations, ai_credit_action_attempts,
+    ai_provider_expense_records, ai_operator_action_budgets,
+    ai_operator_attempt_costs, ai_operator_daily_budgets
+TO :"dictionary_worker_role";
+-- Immutable-column locking grants allow fenced reads, never financial mutations.
+GRANT UPDATE (id) ON TABLE ai_credit_actions, ai_credit_action_attempts
+    TO :"dictionary_worker_role";
+GRANT UPDATE (grant_id) ON TABLE ai_credit_grant_balances TO :"dictionary_worker_role";
+GRANT UPDATE (action_id) ON TABLE ai_operator_action_budgets TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION languon_admit_text_provider_attempt(uuid,uuid,text,integer,integer,uuid,text,text,bigint,timestamptz),
+    languon_settle_credit_action(uuid,text,timestamptz),
+    languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz),
+    languon_record_text_provider_expense(uuid,jsonb),
+    languon_admit_speech_provider_attempt(uuid,uuid),
+    languon_record_speech_provider_expense(uuid,text),
+    languon_settle_speech_customer(uuid,text),
+    languon_admit_sentence_preparation_child(uuid,uuid,bigint,timestamptz),
+    languon_cleanup_speech_admission_counters(integer)
+TO :"dictionary_worker_role";
+
+-- Checked speech dispatch owns the immutable provider timestamp and operator attempt.
+GRANT SELECT ON TABLE speech_daily_admission_counters TO :"dictionary_worker_role";

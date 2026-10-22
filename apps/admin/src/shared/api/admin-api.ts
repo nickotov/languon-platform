@@ -4,6 +4,18 @@ import {
     isAuthenticationRequiredError,
 } from '@languon/browser-auth';
 import {
+    ProviderPricesResponseSchema,
+    ProviderPriceSchema,
+    ProviderPricePublishRequestSchema,
+    AiAccountingSettingsSchema,
+    AiAccountingSettingsPublishSchema,
+    AccountingRefundContextSchema,
+    AccountingRecordRequestSchema,
+    AccountingRecordSchema,
+    AccountingReportQuerySchema,
+    AccountingReportSchema,
+    CapabilityPolicySchema,
+    CapabilityPolicyPublishSchema,
     AdminSpeechListQuerySchema,
     AdminSpeechListResponseSchema,
     AdminSpeechDeleteRequestSchema,
@@ -369,6 +381,107 @@ export const adminApi = {
             ModelPriceSchema,
             signal,
         ),
+    providerPrices: (signal?: AbortSignal) =>
+        authorized(
+            '/admin/ai/accounting/provider-prices',
+            ProviderPricesResponseSchema,
+            signal,
+        ),
+    publishProviderPrice: (
+        body: (typeof ProviderPricePublishRequestSchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorizedSingleRequest(
+            '/admin/ai/accounting/provider-prices',
+            ProviderPricePublishRequestSchema.parse(body),
+            ProviderPricePublishRequestSchema,
+            ProviderPriceSchema,
+            signal,
+        ),
+    accountingSettings: (signal?: AbortSignal) =>
+        authorized(
+            '/admin/ai/accounting-settings',
+            AiAccountingSettingsSchema,
+            signal,
+        ),
+    publishAccountingSettings: (
+        body: (typeof AiAccountingSettingsPublishSchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorizedSingleRequest(
+            '/admin/ai/accounting-settings',
+            AiAccountingSettingsPublishSchema.parse(body),
+            AiAccountingSettingsPublishSchema,
+            AiAccountingSettingsSchema,
+            signal,
+            'PATCH',
+        ),
+    accountingReport: (
+        query: (typeof AccountingReportQuerySchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorized(
+            `/admin/ai/accounting/report?${queryString(AccountingReportQuerySchema.parse(query))}`,
+            AccountingReportSchema,
+            signal,
+        ),
+    accountingRefundContext: (paymentId: string, signal?: AbortSignal) =>
+        authorized(
+            `/admin/ai/accounting/records/${encodeURIComponent(paymentId)}/refund-context`,
+            AccountingRefundContextSchema,
+            signal,
+        ),
+    accountingRecords: (signal?: AbortSignal) =>
+        authorized(
+            '/admin/ai/accounting/records?limit=100',
+            {
+                parse: (value: unknown) => {
+                    const records = (value as { records?: unknown } | null)
+                        ?.records;
+                    return {
+                        records: AccountingRecordSchema.array().parse(records),
+                    };
+                },
+            },
+            signal,
+        ),
+    recordAccounting: (
+        body: (typeof AccountingRecordRequestSchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorizedSingleRequest(
+            '/admin/ai/accounting/records',
+            AccountingRecordRequestSchema.parse(body),
+            AccountingRecordRequestSchema,
+            AccountingRecordSchema,
+            signal,
+        ),
+    capabilityPolicies: (signal?: AbortSignal) =>
+        authorized(
+            '/admin/ai/capability-policies',
+            {
+                parse: (value: unknown) => {
+                    const policies = (value as { policies?: unknown } | null)
+                        ?.policies;
+                    return {
+                        policies:
+                            CapabilityPolicySchema.array().parse(policies),
+                    };
+                },
+            },
+            signal,
+        ),
+    publishCapabilityPolicy: (
+        body: (typeof CapabilityPolicyPublishSchema)['_input'],
+        signal?: AbortSignal,
+    ) =>
+        authorizedSingleRequest(
+            '/admin/ai/capability-policies',
+            CapabilityPolicyPublishSchema.parse(body),
+            CapabilityPolicyPublishSchema,
+            CapabilityPolicySchema,
+            signal,
+        ),
     apiUrl,
 };
 
@@ -446,6 +559,7 @@ async function authorizedSingleRequest<TBody, TResponse>(
     bodySchema: { parse(value: unknown): TBody },
     responseSchema: { parse(value: unknown): TResponse },
     signal?: AbortSignal,
+    method: 'POST' | 'PATCH' = 'POST',
 ) {
     const accessToken =
         accessTokenStore.get() ?? (await refreshAccessToken(signal));
@@ -453,7 +567,7 @@ async function authorizedSingleRequest<TBody, TResponse>(
         accessToken,
         body,
         bodySchema,
-        method: 'POST',
+        method,
         responseSchema,
         signal,
     });

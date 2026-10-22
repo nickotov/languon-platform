@@ -35,6 +35,7 @@ export const aiCreditMeasurementEnum = pgEnum('ai_credit_measurement', [
     'unmetered',
     'speech_success',
     'speech_no_charge',
+    'technical_failure',
 ]);
 export const aiCreditHistoryKindEnum = pgEnum('ai_credit_history_kind', [
     'grant',
@@ -105,7 +106,7 @@ export const aiCreditGrantsTable = pgTable(
         ),
         check(
             'ai_credit_admin_grants_amount_bounded',
-            sql`${table.source} <> 'admin' or ${table.amount} <= 1000000000000`,
+            sql`${table.source} <> 'admin' or ${table.amount} <= 1000000000000000`,
         ),
         check(
             'ai_credit_grants_source_reference_bounded',
@@ -127,6 +128,70 @@ export const aiCreditGrantsTable = pgTable(
             table.ownerId,
             table.expiresAt,
             table.createdAt,
+        ),
+    ],
+);
+
+// Mutable projections are maintained by database triggers in the same transaction
+// as the immutable ledger. Never rebuild them on the admission path.
+export const aiCreditGrantBalancesTable = pgTable(
+    'ai_credit_grant_balances',
+    {
+        grantId: uuid('grant_id')
+            .primaryKey()
+            .references(() => aiCreditGrantsTable.id, { onDelete: 'cascade' }),
+        ownerId: uuid('owner_id')
+            .notNull()
+            .references(() => usersTable.id, { onDelete: 'cascade' }),
+        createdAt: timestamp('created_at', {
+            mode: 'date',
+            withTimezone: true,
+        }).notNull(),
+        expiresAt: timestamp('expires_at', {
+            mode: 'date',
+            withTimezone: true,
+        }),
+        remainingCredits: bigint('remaining_credits', {
+            mode: 'bigint',
+        }).notNull(),
+        reservedCredits: bigint('reserved_credits', { mode: 'bigint' })
+            .default(sql`0`)
+            .notNull(),
+        consumedCredits: bigint('consumed_credits', { mode: 'bigint' })
+            .default(sql`0`)
+            .notNull(),
+        removedCredits: bigint('removed_credits', { mode: 'bigint' })
+            .default(sql`0`)
+            .notNull(),
+    },
+    (table) => [
+        check(
+            'ai_credit_grant_balances_nonnegative',
+            sql`${table.remainingCredits} >= 0 and ${table.reservedCredits} >= 0 and ${table.consumedCredits} >= 0 and ${table.removedCredits} >= 0`,
+        ),
+        index('ai_credit_grant_balances_spendable_idx')
+            .on(table.ownerId, table.expiresAt, table.createdAt, table.grantId)
+            .where(sql`${table.remainingCredits} > 0`),
+    ],
+);
+
+export const aiCreditWalletTotalsTable = pgTable(
+    'ai_credit_wallet_totals',
+    {
+        ownerId: uuid('owner_id')
+            .primaryKey()
+            .references(() => usersTable.id, { onDelete: 'cascade' }),
+        reservedCredits: bigint('reserved_credits', { mode: 'bigint' })
+            .default(sql`0`)
+            .notNull(),
+        consumedCredits: bigint('consumed_credits', { mode: 'bigint' })
+            .default(sql`0`)
+            .notNull(),
+    },
+    (table) => [
+        check(
+            'ai_credit_wallet_totals_nonnegative',
+            sql`${table.reservedCredits} >= 0 and ${table.consumedCredits} >= 0`,
         ),
     ],
 );
@@ -194,7 +259,7 @@ export const aiCreditReservationsTable = pgTable(
         ),
         check(
             'ai_credit_reservations_terminal_state',
-            sql`(${table.state} = 'active' and ${table.settledAt} is null and ${table.measurement} is null and ${table.chargedCredits} is null and ${table.measuredCredits} is null) or (${table.state} = 'released' and ${table.settledAt} is not null and ${table.measurement} is null and ${table.chargedCredits} = 0 and ${table.measuredCredits} is null) or (${table.state} = 'settled' and ${table.settledAt} is not null and ${table.measurement} is not null and ${table.chargedCredits} between 0 and 9007199254740991 and ((${table.measurement} = 'provider_reported' and ${table.measuredCredits} between 0 and 9007199254740991) or (${table.measurement} in ('estimated', 'unmetered', 'speech_success', 'speech_no_charge') and ${table.measuredCredits} is null)))`,
+            sql`(${table.state} = 'active' and ${table.settledAt} is null and ${table.measurement} is null and ${table.chargedCredits} is null and ${table.measuredCredits} is null) or (${table.state} = 'released' and ${table.settledAt} is not null and ${table.measurement} is null and ${table.chargedCredits} = 0 and ${table.measuredCredits} is null) or (${table.state} = 'settled' and ${table.settledAt} is not null and ${table.measurement} is not null and ${table.chargedCredits} between 0 and 9007199254740991 and ((${table.measurement} = 'provider_reported' and ${table.measuredCredits} between 0 and 9007199254740991) or (${table.measurement} in ('estimated', 'unmetered', 'speech_success', 'speech_no_charge') and ${table.measuredCredits} is null) or (${table.measurement} = 'technical_failure' and ${table.measuredCredits} is null and ${table.chargedCredits} = 0)))`,
         ),
         uniqueIndex('ai_credit_reservations_job_attempt_unique').on(
             table.jobId,
@@ -252,7 +317,7 @@ export const aiCreditAdminRemovalsTable = pgTable(
     (table) => [
         check(
             'ai_credit_admin_removals_amount_bounded',
-            sql`${table.amount} between 1 and 1000000000000`,
+            sql`${table.amount} between 1 and 1000000000000000`,
         ),
         check(
             'ai_credit_admin_removals_reason_bounded',
@@ -287,7 +352,7 @@ export const aiCreditAdminRemovalAllocationsTable = pgTable(
         primaryKey({ columns: [table.removalId, table.grantId] }),
         check(
             'ai_credit_admin_removal_allocations_positive',
-            sql`${table.allocatedCredits} between 1 and 1000000000000`,
+            sql`${table.allocatedCredits} between 1 and 1000000000000000`,
         ),
         index('ai_credit_admin_removal_allocations_grant_idx').on(
             table.grantId,

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { TextDocument, TextSelectionSource } from '@languon/contracts';
 import { useAuth } from '@/fsd/features/auth';
 import { useSessionStore } from '@/fsd/entities/session';
+import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
 import { TextReading } from '@/fsd/features/text-reading';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -183,6 +184,13 @@ export function SharedTextsPage({
                 />
                 <div className={styles.reader} id='shared-text-reading'>
                     <TextReading
+                        collectionBudgetContent={
+                            signedIn ? (
+                                <ActionBudgetSummary
+                                    request={requestWithSession}
+                                />
+                            ) : undefined
+                        }
                         collectionActorKey={actor}
                         document={text}
                         source={source}

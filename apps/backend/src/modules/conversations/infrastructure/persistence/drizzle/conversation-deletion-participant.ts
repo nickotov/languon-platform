@@ -56,6 +56,7 @@ export async function conversationDeletionBusy(
     const rows =
         await tx.execute(sql`select 1 from conversation_chats c join conversation_turns t on t.conversation_id=c.id
         where (${scopePredicate(scope)}) and (t.status in ('queued','running') or t.lease_until>${now.toISOString()}::timestamptz
+            or exists(select 1 from ai_credit_actions a where a.id=t.id and a.state='active')
             or exists(select 1 from ai_credit_reservations r where r.job_id=t.id and r.job_kind='conversation-turn' and r.state='active')
             or exists(select 1 from conversation_provider_calls p where p.turn_id=t.id and
                 (p.state<>'settled' or exists(select 1 from ai_credit_reservations r where r.id=p.reservation_id and r.state='active')))) limit 1`);

@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
-    "reviewedThrough": "0051_magenta_stryfe",
-    "reviewedMigrationsSha256": "e7f4247d871c8ecf90e4fe29599e626e2b933e94643975671439082c999f899b",
-    "compatibility": "expand",
-    "rationale": "Additive sentence practice tables, nullable worker capability fields and closed credit/archive job-kind markers. Existing job/reservation uniqueness and legacy columns remain. Typed credit/allocation guards, immutable selected learning execution and combined-capacity compatibility guards fail closed; old workers may drain completed work and resume increasing capacity only after sentence active/recent usage ages out. Receipt FK changes preserve invalidated content-free replay protection after source erasure. Sentence admission remains feature-flag disabled until capable workers and credits are configured. No existing business data is rewritten or deleted. Migration0050 adds required FK indexes and permits cleared configuration in invalidated replay tombstones without retaining private content. Migration0051 adds private manual reviews and immutable reference-assistance metadata; ordinary exercise/job responses never expose the stored reference."
+    "reviewedThrough": "0106_accounting_scheduled_speech_cancellation",
+    "reviewedMigrationsSha256": "d97395b6d040c505e3c39c46c9a4fa0ea0f20ce35124eb1bb99a90affba65c83",
+    "compatibility": "contract",
+    "rationale": "Feature052 is a development-only fresh-database credit-unit and charging-policy cutover. Stop all old APIs/workers and preserve the old database. Migration0089 rejects nonempty ledgers and active legacy work; no in-place conversion or blue/green production rollout is authorized. See docs/operations/ai-accounting.md and ADR-0045. Fresh forward migration and old-ledger rejection are verified on isolated databases."
 }

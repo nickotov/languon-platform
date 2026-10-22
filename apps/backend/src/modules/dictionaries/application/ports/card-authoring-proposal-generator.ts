@@ -15,7 +15,12 @@ export interface CardAuthoringProposalGeneratorRequest {
 
 export interface CardAuthoringProposalGeneratorResult {
     delta: DictionaryCardAuthoringProviderDelta;
-    usage?: { inputTokens: number; outputTokens: number };
+    usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    };
 }
 
 export type CardAuthoringProposalGeneratorResponse =
@@ -29,6 +34,12 @@ export interface CardAuthoringProposalGenerator {
 }
 
 export class CardAuthoringProposalGeneratorError extends Error {
+    public usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    };
     public constructor(
         public readonly category:
             | 'invalid_model_output'

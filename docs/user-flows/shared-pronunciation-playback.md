@@ -115,7 +115,11 @@ confirmation. Never point these checks at staging/production wallets or storage.
    provider submission or credit debit. Case/accent/punctuation/language changes
    must remain different identities.
 5. Save a source phrase exceeding 10 language-aware words or 100 Unicode code points.
-   Play and confirm that the dialog gives an exact price and says payment occurs
+   Play and confirm that the dialog gives a compact credit price and an expandable
+   Exact values disclosure for the price and available balance. Decimal transport
+   retains 0.001-credit precision; integer milli-credits decide affordability.
+   Display rounding never changes admission, and a nonzero price below 0.01
+   appears as <0.01 rather than zero. The dialog says payment occurs
    only after successful storage, with generation continuing after departure.
    Cancel once (no reservation), then confirm. Successful publication charges once;
    repeat playback is free. Insufficient balance starts no provider task.

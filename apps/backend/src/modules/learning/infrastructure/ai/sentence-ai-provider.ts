@@ -1,3 +1,4 @@
+import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { SENTENCE_LIMITS } from '@languon/contracts';
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
@@ -305,22 +306,9 @@ function validateUsage(
     limits: { maxInputTokens: number; maxOutputTokens: number },
 ): SentenceTokenUsage | undefined {
     if (reported === undefined || reported === null) return undefined;
-    if (
-        typeof reported !== 'object' ||
-        !('inputTokens' in reported) ||
-        !('outputTokens' in reported) ||
-        typeof reported.inputTokens !== 'number' ||
-        typeof reported.outputTokens !== 'number' ||
-        !Number.isSafeInteger(reported.inputTokens) ||
-        !Number.isSafeInteger(reported.outputTokens) ||
-        reported.inputTokens < 0 ||
-        reported.outputTokens < 0 ||
-        reported.inputTokens > limits.maxInputTokens ||
-        reported.outputTokens > limits.maxOutputTokens
-    )
+    try {
+        return readProviderTokenUsage(reported, limits);
+    } catch {
         throw new SentenceProviderInvalidModelOutputError('usage_invalid');
-    return {
-        inputTokens: reported.inputTokens,
-        outputTokens: reported.outputTokens,
-    };
+    }
 }

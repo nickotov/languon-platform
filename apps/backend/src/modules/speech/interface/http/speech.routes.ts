@@ -213,6 +213,7 @@ export function createSpeechRoutes(options: {
             const result = await options.service.prepare(
                 await actor(c.req.header('Authorization')),
                 c.req.valid('json'),
+                c.req.raw.signal,
             );
             return c.json(
                 result,
@@ -242,6 +243,7 @@ export function createSpeechRoutes(options: {
             const result = await options.service.confirm(
                 await actor(c.req.header('Authorization')),
                 c.req.valid('json'),
+                c.req.raw.signal,
             );
             return c.json(
                 result,

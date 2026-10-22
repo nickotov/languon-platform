@@ -38,6 +38,7 @@ import { DrizzleConversationStore } from '../../../../src/modules/conversations/
 import { ConversationSourceResolver } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-source';
 import { dictionaryGenerationProviderUsageArchiveTable } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { textAiProviderUsageCostMicros } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
+import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -50,6 +51,14 @@ const model = textAiModelCatalog.find(
 )!;
 const snapshot: TextAiExecutionSnapshot = {
     ...model,
+    // The accounting tests pin a deliberately affordable, historical tariff
+    // fixture. Live admission tests seed the same rates in model_price_revisions.
+    creditPricing: {
+        ...model.creditPricing,
+        inputCreditsPerMillionTokens: 1000,
+        outputCreditsPerMillionTokens: 3000,
+        revision: 1,
+    },
     modelId: model.id,
     enabledModelIds: textAiModelCatalog.map((value) => value.id),
     supportedFormats: ['conversation:v1'],
@@ -86,11 +95,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client?.end();
         });
         beforeEach(async () => {
-            await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, dictionary_ai_worker_observations, users cascade`;
+            await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, dictionary_ai_worker_observations, text_ai_capacity_jobs, text_ai_capacity_queue_totals, text_ai_capacity_provider_usage, text_ai_capacity_active_totals, text_ai_capacity_settled_buckets, users cascade`;
             ownerId = randomUUID();
             turnId = randomUUID();
             chatId = randomUUID();
             await client`insert into users(id,status) values (${ownerId},'active')`;
+            await seedLegacyActionFixture(db, '1000');
             await client`insert into conversation_chats(id,owner_id,source_kind,source_id,source,preferences,created_at,updated_at) values (${chatId},${ownerId},'dictionary',${randomUUID()},'{}','{}',now(),now())`;
             await db.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
@@ -537,6 +547,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ownerId,
                     turnId,
                     conversationId: chatId,
+                    inputTokenBound: 200,
                 }),
             );
             expect((admitted.snapshot as TextAiExecutionSnapshot).modelId).toBe(
@@ -549,6 +560,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ownerId,
                         turnId,
                         conversationId: chatId,
+                        inputTokenBound: 200,
                     }),
                 ),
             ).rejects.toMatchObject({
@@ -565,6 +577,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ownerId,
                         turnId,
                         conversationId: chatId,
+                        inputTokenBound: 200,
                     }),
                 ),
             ).rejects.toMatchObject({ code: 'model_unavailable' });
@@ -575,6 +588,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ownerId,
                         turnId,
                         conversationId: chatId,
+                        inputTokenBound: 200,
                     }),
                 ),
             ).rejects.toMatchObject({ code: 'model_unavailable' });
@@ -590,6 +604,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ownerId,
                         turnId,
                         conversationId: chatId,
+                        inputTokenBound: 200,
                     }),
                 ),
             ).rejects.toMatchObject({ code: 'model_unavailable' });
@@ -605,6 +620,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ownerId,
                         turnId,
                         conversationId: chatId,
+                        inputTokenBound: 200,
                     }),
                 ),
             ).rejects.toMatchObject({ code: 'credits_exhausted' });
@@ -637,6 +653,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ownerId,
                         turnId,
                         conversationId: chatId,
+                        inputTokenBound: 200,
                     }),
                 ),
             ).rejects.toMatchObject({
@@ -677,11 +694,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(admitted.status).toBe('queued');
             turnId = admitted.id;
             chatId = chat.id;
+            const [queuedTurn] = await db
+                .select({ execution: turns.execution })
+                .from(turns)
+                .where(eq(turns.id, admitted.id));
+            const pinnedBudget = (
+                queuedTurn!.execution as unknown as TextAiAdmissionExecution
+            ).budget;
             // Another job's completed work exhausts the rolling owner provider
             // budget after admission but before this turn reaches dispatch.
             const used = {
-                inputTokens: execution.budget.maxInputTokensPerAttempt,
-                outputTokens: execution.budget.maxOutputTokensPerAttempt,
+                inputTokens: pinnedBudget.maxInputTokensPerAttempt,
+                outputTokens: pinnedBudget.maxOutputTokensPerAttempt,
             };
             await db
                 .insert(dictionaryGenerationProviderUsageArchiveTable)
@@ -694,10 +718,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         actualInputTokens: used.inputTokens,
                         actualOutputTokens: used.outputTokens,
                         actualCostMicros: textAiProviderUsageCostMicros(
-                            execution.budget,
+                            pinnedBudget,
                             used,
                         ),
-                        ...execution.budget,
+                        ...pinnedBudget,
                     })),
                 );
             const worker = new ConversationWorkerService({
@@ -708,6 +732,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             database: db,
                             ownerId,
                             turnId,
+                            leaseToken: claimed.leaseToken,
                             execution:
                                 claimed.execution as unknown as TextAiAdmissionExecution,
                             withOperation: (work) =>

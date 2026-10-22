@@ -1,3 +1,8 @@
+import {
+    usesLegacyAction,
+    admitLegacyAttempt,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import { readProviderTokenUsage } from '../../../../text-ai/infrastructure/ai/provider-token-usage';
 import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
@@ -186,13 +191,28 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
         failure: SentenceJobFailure | null,
         usage?: Usage,
     ) {
-        await settleSentenceAttempt(tx, job, now, usage);
+        await settleSentenceAttempt(
+            tx,
+            job,
+            now,
+            usage,
+            failure || job.failureCategory === 'access_revoked'
+                ? 'failure'
+                : 'stopped',
+        );
         await tx
             .update(jobs)
             .set({
                 ...clearLease,
                 executionState: failure ? 'failed' : 'cancelled',
-                failureCategory: failure,
+                failureCategory:
+                    failure ??
+                    (job.failureCategory === 'access_revoked'
+                        ? 'access_revoked'
+                        : 'explicit_stop'),
+                cancellationRequestedAt: failure
+                    ? job.cancellationRequestedAt
+                    : (job.cancellationRequestedAt ?? now),
                 completedAt: now,
                 updatedAt: now,
             })
@@ -283,7 +303,27 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                     await this.terminal(tx, job, context.now, invalid);
                     continue;
                 }
-                await settleSentenceAttempt(tx, job, context.now);
+                if (
+                    usesLegacyAction(job.selectedExecutionSnapshot) &&
+                    (job.aiCreditProviderDispatchedAt ||
+                        job.attemptCount >= job.maxAttempts)
+                ) {
+                    await this.terminal(
+                        tx,
+                        job,
+                        context.now,
+                        'provider_timeout',
+                    );
+                    continue;
+                }
+                await settleSentenceAttempt(
+                    tx,
+                    job,
+                    context.now,
+                    undefined,
+                    'failure',
+                    false,
+                );
                 if (job.aiCreditProviderDispatchedAt)
                     await recordTextAiCircuitFailure(tx, {
                         ...circuitScope(job, context.now),
@@ -432,6 +472,32 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                         updatedAt: context.now,
                     })
                     .where(eq(jobs.id, job.id));
+                const actionBudget = usesLegacyAction(
+                    job.selectedExecutionSnapshot,
+                )
+                    ? await admitLegacyAttempt(tx, {
+                          id: job.id,
+                          actionId:
+                              job.selectedExecutionSnapshot.actionParentId ??
+                              job.id,
+                          ownerId: job.learnerId,
+                          workerId: input.workerId,
+                          fencingToken: String(fencingToken),
+                          attempt: job.attemptCount + 1,
+                          budget,
+                          inputPayload: job.inputPayload,
+                          at: context.now,
+                      })
+                    : budget;
+                if (!actionBudget) {
+                    await this.terminal(
+                        tx,
+                        job,
+                        context.now,
+                        'ai_credits_exhausted',
+                    );
+                    continue;
+                }
                 context.signal.throwIfAborted();
                 return {
                     lease: {
@@ -441,8 +507,13 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                         attempt: job.attemptCount + 1,
                     },
                     leaseDeadline,
-                    execution: job.selectedExecutionSnapshot,
-                    budget,
+                    execution: usesLegacyAction(job.selectedExecutionSnapshot)
+                        ? {
+                              ...job.selectedExecutionSnapshot,
+                              aggregateBudget: actionBudget,
+                          }
+                        : job.selectedExecutionSnapshot,
+                    budget: actionBudget,
                     providerIdempotencyKey: `sentence:${job.id}:${job.attemptCount + 1}`,
                     ...(job.jobKind === 'sentence-generation'
                         ? {
@@ -547,7 +618,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                     'Sentence publication requires dispatched provider attempt',
                 );
             await write(tx, job);
-            await settleSentenceAttempt(tx, job, context.now, usage);
+            await settleSentenceAttempt(tx, job, context.now, usage, 'success');
             await recordTextAiCircuitSuccess(
                 tx,
                 circuitScope(job, context.now),
@@ -708,20 +779,46 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
                 );
                 return 'terminalized';
             }
-            await settleSentenceAttempt(tx, job, context.now, failure.usage);
+            let completedInvalidWithUsage = false;
+            if (failure.code === 'invalid_model_output' && failure.usage) {
+                try {
+                    readProviderTokenUsage(failure.usage, {
+                        maxInputTokens: job.providerMaxInputTokensPerAttempt,
+                        maxOutputTokens: job.providerMaxOutputTokensPerAttempt,
+                    });
+                    completedInvalidWithUsage = true;
+                } catch {
+                    // Uncertain/invalid measurement cannot establish a safe repeat.
+                }
+            }
+            const safeRetry =
+                failure.retryAt &&
+                job.attemptCount < job.maxAttempts &&
+                (!usesLegacyAction(job.selectedExecutionSnapshot) ||
+                    !job.aiCreditProviderDispatchedAt ||
+                    failure.code === 'provider_rate_limited' ||
+                    completedInvalidWithUsage);
+            await settleSentenceAttempt(
+                tx,
+                job,
+                context.now,
+                failure.usage,
+                'failure',
+                !safeRetry,
+            );
             const category = circuitFailureCategory(failure.code);
             if (category && job.aiCreditProviderDispatchedAt)
                 await recordTextAiCircuitFailure(tx, {
                     ...circuitScope(job, context.now),
                     category,
                 });
-            if (failure.retryAt && job.attemptCount < job.maxAttempts) {
+            if (safeRetry) {
                 await tx
                     .update(jobs)
                     .set({
                         ...clearLease,
                         executionState: 'queued',
-                        nextAttemptAt: failure.retryAt,
+                        nextAttemptAt: failure.retryAt!,
                         updatedAt: context.now,
                         aiCreditReservationId: null,
                         aiCreditProviderDispatchedAt: null,

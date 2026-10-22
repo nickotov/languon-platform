@@ -86,6 +86,7 @@ export default defineConfig({
                 LEARNING_SENTENCE_GENERATION_FORMAT: 'sentence-generation:v2',
                 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
                 DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
+                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'true',
                 DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED: 'true',
                 DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: generationFormats,
                 DICTIONARY_JOB_API_CANCELLABLE_FORMATS: generationFormats,

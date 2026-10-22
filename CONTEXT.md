@@ -5,6 +5,56 @@ describe intended behavior; they do not imply that the capabilities exist yet.
 
 ## Language
 
+### AI usage and credits
+
+**Customer credit tariff**:
+The published credit rates for a model or capability, maintained independently
+from the provider's monetary prices.
+
+**Credit reservation**:
+Credits temporarily held for admitted AI work and unavailable to other work;
+the reservation is distinct from the final customer charge.
+
+**Provider expense**:
+The monetary cost attributable to upstream processing, including work that is
+free to the learner or produces no usable result. Calculated or estimated costs
+are distinguished from amounts reconciled against provider billing.
+
+**Customer credit charge**:
+Credits consumed under the applicable customer tariff and outcome policy,
+independent of whether Languon incurred provider expense.
+
+**Document preparation budget**:
+The learner-approved spending limit for preparing their uploaded material for
+retrieval, separate from spending on subsequent questions about that material.
+
+**Learner action budget**:
+The maximum authorized customer-credit spend for one learner action, covering
+its necessary processing rather than granting each supporting call a new budget.
+
+**Minimum admission balance**:
+The credits needed to cover the bounded work required to start an action.
+Meeting this requirement permits starting work; it is not a minimum charge.
+
+**Capability charging policy**:
+The rule determining whether a capability's usage is paid with learner credits
+or funded by Languon, subject to applicable exemptions.
+
+**Recorded payment**:
+An actual externally received payment recorded with its monetary amount,
+currency and reference, linked to the purchase credits it funds. Issuing a
+credit grant alone does not establish that a payment occurred.
+
+**Provider deposit**:
+Funds prepaid to a provider account, distinct from the expense incurred when
+Languon uses that provider.
+
+**Provider balance snapshot**:
+A provider account balance reported at a particular time; it may reflect use
+outside Languon and is distinct from a balance estimated from Languon's records.
+
+### Learning content
+
 **Contextual language assistant**:
 A conversational assistant opened from a dictionary, text, or knowledge note
 that explains language, usage, and relevant cultural context, including learning

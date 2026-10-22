@@ -18,8 +18,12 @@ import {
     DrizzleAiCreditTransactionParticipant,
     type AiCreditTransaction,
 } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { capabilityPolicyRevisionsTable } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+import { aiAccountingReportSnapshotsTable } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
 import {
     aiCreditGrantsTable,
+    aiCreditGrantBalancesTable,
+    aiCreditWalletTotalsTable,
     aiCreditHistoryTable,
     aiCreditReservationAllocationsTable,
     aiCreditReservationsTable,
@@ -29,6 +33,8 @@ import {
     dictionaryGenerationJobsTable,
 } from '../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { usersTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/schema';
+import { accountDeletionRequestsTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
+import { DrizzleAccountPurgeStore } from '../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -86,6 +92,51 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 new DrizzleAiCreditTransactionParticipant(transaction),
                 transaction,
             ),
+        );
+    }
+
+    async function purgeOwnerForDeletion(targetOwnerId = ownerId) {
+        await withCredits(async (credits, transaction) => {
+            const active = await transaction
+                .select({ id: aiCreditReservationsTable.id })
+                .from(aiCreditReservationsTable)
+                .where(
+                    and(
+                        eq(aiCreditReservationsTable.ownerId, targetOwnerId),
+                        eq(aiCreditReservationsTable.state, 'active'),
+                    ),
+                );
+            for (const reservation of active)
+                await credits.settleFailedAttempt({
+                    ownerId: targetOwnerId,
+                    reservationId: reservation.id,
+                    settledAt: new Date(),
+                });
+        });
+        const now = new Date();
+        const workerId = 'ai-credit-participant-purge-fixture';
+        await database
+            .update(usersTable)
+            .set({ status: 'deletion_pending', updatedAt: now })
+            .where(eq(usersTable.id, targetOwnerId));
+        await database.insert(accountDeletionRequestsTable).values({
+            userId: targetOwnerId,
+            scheduledAt: new Date(now.getTime() - 120_000),
+            purgeAt: new Date(now.getTime() - 60_000),
+            nextAttemptAt: new Date(now.getTime() - 60_000),
+            updatedAt: now,
+        });
+        const claim = await new DrizzleAccountPurgeStore(database).claimDue({
+            now,
+            workerId,
+        });
+        if (!claim || claim.userId !== targetOwnerId)
+            throw new Error('Expected an actively leased deletion claim.');
+        await withCredits((credits) =>
+            credits.purgeOwner(targetOwnerId, {
+                workerId,
+                fencingToken: claim.fencingToken,
+            }),
         );
     }
 
@@ -960,6 +1011,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             await client.unsafe(
                 `grant update (settled_credits) on ai_credit_reservation_allocations to ${role}`,
             );
+            await client.unsafe(
+                `grant select on ai_credit_grant_balances, ai_capability_policy_revisions to ${role}`,
+            );
+            await client.unsafe(
+                `grant select, insert on ai_action_charging_policies to ${role}`,
+            );
             await client.unsafe(`grant insert on ai_credit_history to ${role}`);
             await database.transaction(async (transaction) => {
                 await transaction.execute(sql.raw(`set local role ${role}`));
@@ -1057,6 +1114,492 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             await client.unsafe(`drop owned by ${role}`);
             await client.unsafe(`drop role ${role}`);
         }
+    });
+
+    it('marks reports dirty only for terminal consumed and removal deltas, never holds or releases', async () => {
+        await database.insert(aiAccountingReportSnapshotsTable).values({
+            key: 'wallet-dirty-test',
+            from: instant(),
+            to: new Date(instant().getTime() + 86_400_000),
+            requestedAt: instant(),
+        });
+        const version = async () =>
+            (await database.select().from(aiAccountingReportSnapshotsTable))[0]!
+                .changeVersion;
+        await grant({ amount: 100n });
+        const releaseJob = await creditJob(60n);
+        const releaseId = randomUUID();
+        await withCredits(async (credits) => {
+            await credits.reserveAttempt({
+                ownerId,
+                jobId: releaseJob,
+                reservationId: releaseId,
+                attempt: 1,
+                at: instant(1),
+                maximumCredits: 60n,
+            });
+            await credits.releaseUndispatchedAttempt({
+                ownerId,
+                reservationId: releaseId,
+                releasedAt: instant(2),
+            });
+        });
+        expect(await version()).toBe(0n);
+        const chargedJob = await creditJob(60n);
+        const chargedId = randomUUID();
+        await withCredits(async (credits) => {
+            await credits.reserveAttempt({
+                ownerId,
+                jobId: chargedJob,
+                reservationId: chargedId,
+                attempt: 1,
+                at: instant(3),
+                maximumCredits: 60n,
+            });
+            await credits.markProviderDispatched({
+                ownerId,
+                reservationId: chargedId,
+                dispatchedAt: instant(4),
+            });
+            await credits.settleAttempt({
+                ownerId,
+                reservationId: chargedId,
+                settledAt: instant(5),
+                measurement: 'provider_reported',
+                measuredCredits: 20n,
+            });
+        });
+        expect(await version()).toBe(1n);
+        await withCredits((credits) =>
+            credits.adjustByAdmin({
+                ownerId,
+                amount: -10n,
+                at: instant(6),
+                expiresAt: null,
+                expectedManagementVersion: 0,
+                sourceReference: 'report-dirty-removal',
+                reason: 'Remove unused value',
+            }),
+        );
+        expect(await version()).toBe(2n);
+    });
+
+    it.each([false, true])(
+        'releases technical failure without fabricated provider usage (dispatched=%s)',
+        async (dispatched) => {
+            await grant({ amount: 100n });
+            const jobId = await creditJob(60n);
+            const reservationId = randomUUID();
+            await withCredits(async (credits) => {
+                await credits.reserveAttempt({
+                    ownerId,
+                    jobId,
+                    reservationId,
+                    at: instant(1),
+                    attempt: 1,
+                    maximumCredits: 60n,
+                });
+                if (dispatched)
+                    await credits.markProviderDispatched({
+                        ownerId,
+                        reservationId,
+                        dispatchedAt: instant(2),
+                    });
+                expect(
+                    await credits.settleFailedAttempt({
+                        ownerId,
+                        reservationId,
+                        settledAt: instant(3),
+                    }),
+                ).toEqual({
+                    chargedCredits: 0n,
+                    releasedCredits: 60n,
+                    measuredCredits: null,
+                    measurement: 'technical_failure',
+                });
+                expect(
+                    await credits.settleFailedAttempt({
+                        ownerId,
+                        reservationId,
+                        settledAt: instant(4),
+                    }),
+                ).toMatchObject({
+                    chargedCredits: 0n,
+                    releasedCredits: 60n,
+                    measurement: 'technical_failure',
+                });
+                expect(
+                    await credits.accountSummary(ownerId, instant(5)),
+                ).toMatchObject({
+                    availableCredits: 100n,
+                    consumedCredits: 0n,
+                    reservedCredits: 0n,
+                });
+            });
+            const [record] = await database
+                .select()
+                .from(aiCreditReservationsTable)
+                .where(eq(aiCreditReservationsTable.id, reservationId));
+            expect(record).toMatchObject({
+                state: 'settled',
+                chargedCredits: 0n,
+                measuredCredits: null,
+                measurement: 'technical_failure',
+            });
+        },
+    );
+
+    it('pins operator funding across retries without charging a limited job or rereading new policy', async () => {
+        await database.insert(capabilityPolicyRevisionsTable).values({
+            id: randomUUID(),
+            capability: 'dictionary-generation',
+            version: 1,
+            funding: 'operator',
+            createdAt: instant(),
+            createdBy: ownerId,
+            reason: 'Operator-funded generation test',
+        });
+        const jobId = await creditJob(20n);
+        const reservationId = randomUUID();
+        await withCredits(async (credits) => {
+            expect(
+                await credits.reserveAttempt({
+                    ownerId,
+                    jobId,
+                    reservationId,
+                    attempt: 1,
+                    at: instant(1),
+                    maximumCredits: 20n,
+                }),
+            ).toMatchObject({
+                policy: { mode: 'unlimited' },
+                reservedCredits: 0n,
+            });
+            await credits.releaseUndispatchedAttempt({
+                ownerId,
+                reservationId,
+                releasedAt: instant(2),
+            });
+        });
+        await database.insert(capabilityPolicyRevisionsTable).values({
+            id: randomUUID(),
+            capability: 'dictionary-generation',
+            version: 2,
+            funding: 'customer',
+            createdAt: instant(3),
+            createdBy: ownerId,
+            reason: 'Charge new generation actions only',
+        });
+        await database.transaction(async (transaction) => {
+            await transaction.execute(
+                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+            );
+            await transaction
+                .update(dictionaryGenerationJobsTable)
+                .set({ attemptCount: 2 })
+                .where(eq(dictionaryGenerationJobsTable.id, jobId));
+        });
+        await withCredits(async (credits) => {
+            expect(
+                await credits.reserveAttempt({
+                    ownerId,
+                    jobId,
+                    reservationId: randomUUID(),
+                    attempt: 2,
+                    at: instant(4),
+                    maximumCredits: 20n,
+                }),
+            ).toMatchObject({
+                policy: { mode: 'unlimited' },
+                reservedCredits: 0n,
+            });
+        });
+        const newJobId = await creditJob(20n);
+        await expect(
+            withCredits((credits) =>
+                credits.reserveAttempt({
+                    ownerId,
+                    jobId: newJobId,
+                    reservationId: randomUUID(),
+                    attempt: 1,
+                    at: instant(5),
+                    maximumCredits: 20n,
+                }),
+            ),
+        ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+    });
+
+    it('maintains grant projections through partial settlement, expiry, removal, replay and rollback', async () => {
+        const expiring = await grant({ amount: 60n, expiresAt: instant(100) });
+        const permanent = await grant({ amount: 100n });
+        const jobId = await creditJob(80n);
+        const reservationId = randomUUID();
+        const reserve = {
+            at: instant(1),
+            attempt: 1,
+            jobId,
+            maximumCredits: 80n,
+            ownerId,
+            reservationId,
+        };
+        await withCredits(async (credits) => {
+            await credits.reserveAttempt(reserve);
+            await credits.reserveAttempt(reserve);
+            await credits.markProviderDispatched({
+                ownerId,
+                reservationId,
+                dispatchedAt: instant(2),
+            });
+            await credits.settleAttempt({
+                ownerId,
+                reservationId,
+                measuredCredits: 30n,
+                measurement: 'provider_reported',
+                settledAt: instant(101),
+            });
+            await credits.settleAttempt({
+                ownerId,
+                reservationId,
+                measuredCredits: 30n,
+                measurement: 'provider_reported',
+                settledAt: instant(102),
+            });
+        });
+        const balances = await database
+            .select()
+            .from(aiCreditGrantBalancesTable);
+        expect(
+            balances.find((row) => row.grantId === expiring.grantId),
+        ).toMatchObject({
+            remainingCredits: 30n,
+            reservedCredits: 0n,
+            consumedCredits: 30n,
+            removedCredits: 0n,
+        });
+        expect(
+            balances.find((row) => row.grantId === permanent.grantId),
+        ).toMatchObject({
+            remainingCredits: 100n,
+            reservedCredits: 0n,
+            consumedCredits: 0n,
+        });
+        await withCredits(async (credits) => {
+            expect(
+                await credits.accountSummary(ownerId, instant(103)),
+            ).toMatchObject({
+                availableCredits: 100n,
+                consumedCredits: 30n,
+                reservedCredits: 0n,
+                nextExpirationAt: null,
+            });
+            await credits.adjustByAdmin({
+                ownerId,
+                amount: -10n,
+                at: instant(104),
+                expectedManagementVersion: 0,
+                expiresAt: null,
+                reason: 'Projection removal',
+                sourceReference: 'projection-removal',
+            });
+        });
+        const rollbackJob = await creditJob(20n);
+        await expect(
+            withCredits(async (credits) => {
+                await credits.reserveAttempt({
+                    ...reserve,
+                    jobId: rollbackJob,
+                    reservationId: randomUUID(),
+                    at: instant(105),
+                    maximumCredits: 20n,
+                });
+                throw new Error('projection rollback');
+            }),
+        ).rejects.toThrow('projection rollback');
+        expect(
+            await database.select().from(aiCreditWalletTotalsTable),
+        ).toMatchObject([
+            {
+                ownerId,
+                reservedCredits: 0n,
+                consumedCredits: 30n,
+            },
+        ]);
+        expect(
+            await withCredits((credits) =>
+                credits.accountSummary(ownerId, instant(106)),
+            ),
+        ).toMatchObject({
+            availableCredits: 90n,
+            consumedCredits: 30n,
+            reservedCredits: 0n,
+        });
+    });
+
+    it('revokes only unused purchase-lot value and rejects conflicting refund replay', async () => {
+        await grant({ amount: 500n, expiresAt: instant(1_000) });
+        const purchase = await withCredits((credits) =>
+            credits.issueGrant({
+                amount: 100n,
+                createdAt: instant(),
+                expiresAt: null,
+                ownerId,
+                source: 'purchase',
+                sourceReference: 'projection-purchase',
+            }),
+        );
+        const revoke = {
+            ownerId,
+            grantId: purchase.grantId,
+            amount: 60n,
+            sourceReference: 'projection-refund',
+            reason: 'Purchase refund',
+            at: instant(1),
+        };
+        expect(
+            await withCredits((credits) =>
+                credits.revokePurchaseGrantAvailable(revoke),
+            ),
+        ).toEqual({ created: true, revokedCredits: 60n });
+        expect(
+            await withCredits((credits) =>
+                credits.revokePurchaseGrantAvailable(revoke),
+            ),
+        ).toEqual({ created: false, revokedCredits: 60n });
+        await expect(
+            withCredits((credits) =>
+                credits.revokePurchaseGrantAvailable({
+                    ...revoke,
+                    amount: 61n,
+                }),
+            ),
+        ).rejects.toThrow();
+        await expect(
+            withCredits((credits) =>
+                credits.revokePurchaseGrantAvailable({
+                    ...revoke,
+                    sourceReference: 'too-large-refund',
+                    amount: 41n,
+                }),
+            ),
+        ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+        const [remaining] = await database
+            .select()
+            .from(aiCreditGrantBalancesTable)
+            .where(eq(aiCreditGrantBalancesTable.grantId, purchase.grantId));
+        expect(remaining).toMatchObject({
+            remainingCredits: 40n,
+            removedCredits: 60n,
+            consumedCredits: 0n,
+            reservedCredits: 0n,
+        });
+        expect(
+            await withCredits((credits) =>
+                credits.accountSummary(ownerId, instant(2)),
+            ),
+        ).toMatchObject({ availableCredits: 540n });
+        const jobId = await creditJob(520n);
+        const reservationId = randomUUID();
+        await withCredits((credits) =>
+            credits.reserveAttempt({
+                ownerId,
+                jobId,
+                reservationId,
+                attempt: 1,
+                at: instant(3),
+                maximumCredits: 520n,
+            }),
+        );
+        await expect(
+            withCredits((credits) =>
+                credits.revokePurchaseGrantAvailable({
+                    ...revoke,
+                    sourceReference: 'held-refund',
+                    amount: 21n,
+                }),
+            ),
+        ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+        await withCredits(async (credits) => {
+            await credits.markProviderDispatched({
+                ownerId,
+                reservationId,
+                dispatchedAt: instant(4),
+            });
+            await credits.settleAttempt({
+                ownerId,
+                reservationId,
+                settledAt: instant(5),
+                measurement: 'provider_reported',
+                measuredCredits: 510n,
+            });
+        });
+        await expect(
+            withCredits((credits) =>
+                credits.revokePurchaseGrantAvailable({
+                    ...revoke,
+                    sourceReference: 'consumed-refund',
+                    amount: 31n,
+                }),
+            ),
+        ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+        expect(
+            await database
+                .select()
+                .from(aiCreditGrantBalancesTable)
+                .where(
+                    eq(aiCreditGrantBalancesTable.grantId, purchase.grantId),
+                ),
+        ).toMatchObject([
+            {
+                remainingCredits: 30n,
+                consumedCredits: 10n,
+                reservedCredits: 0n,
+                removedCredits: 60n,
+            },
+        ]);
+    });
+
+    it('guards direct projection edits and ledger deletion, and purges projections with the ledger', async () => {
+        const issued = await grant({ amount: 100n });
+        const jobId = await creditJob(20n);
+        const reservationId = randomUUID();
+        await withCredits((credits) =>
+            credits.reserveAttempt({
+                ownerId,
+                jobId,
+                reservationId,
+                attempt: 1,
+                at: instant(1),
+                maximumCredits: 20n,
+            }),
+        );
+        await expect(
+            database
+                .update(aiCreditGrantBalancesTable)
+                .set({ remainingCredits: 90n })
+                .where(eq(aiCreditGrantBalancesTable.grantId, issued.grantId)),
+        ).rejects.toThrow();
+        await expect(
+            database
+                .delete(aiCreditReservationsTable)
+                .where(eq(aiCreditReservationsTable.id, reservationId)),
+        ).rejects.toThrow();
+        await expect(
+            database
+                .delete(aiCreditReservationAllocationsTable)
+                .where(
+                    eq(
+                        aiCreditReservationAllocationsTable.reservationId,
+                        reservationId,
+                    ),
+                ),
+        ).rejects.toThrow();
+        await purgeOwnerForDeletion();
+        expect(
+            await database.select().from(aiCreditGrantBalancesTable),
+        ).toEqual([]);
+        expect(await database.select().from(aiCreditWalletTotalsTable)).toEqual(
+            [],
+        );
     });
 
     it('is idempotent for grant and attempt identities, and records reported, estimated, and unlimited settlement', async () => {
@@ -1334,7 +1877,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             }),
         ).rejects.toThrow();
 
-        await withCredits((credits) => credits.purgeOwner(ownerId));
+        await purgeOwnerForDeletion();
         await expect(
             database
                 .select()

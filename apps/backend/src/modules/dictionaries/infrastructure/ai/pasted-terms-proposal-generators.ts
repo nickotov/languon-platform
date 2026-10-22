@@ -1,3 +1,4 @@
+import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { Buffer } from 'node:buffer';
 
 import { getLocalPrompt } from '@languon/prompts';
@@ -218,21 +219,14 @@ function validatedUsage(
         | undefined,
     budget: DictionaryGenerationProviderBudgetPolicy,
 ) {
-    if (
-        !usage ||
-        !Number.isSafeInteger(usage.inputTokens) ||
-        !Number.isSafeInteger(usage.outputTokens) ||
-        usage.inputTokens! < 0 ||
-        usage.outputTokens! < 0 ||
-        usage.inputTokens! > budget.maxInputTokensPerAttempt ||
-        usage.outputTokens! > budget.maxOutputTokensPerAttempt
-    ) {
+    try {
+        return readProviderTokenUsage(usage, {
+            maxInputTokens: budget.maxInputTokensPerAttempt,
+            maxOutputTokens: budget.maxOutputTokensPerAttempt,
+        });
+    } catch {
         throw new PastedTermsProposalGeneratorExecutionError('invalid_output');
     }
-    return {
-        inputTokens: usage.inputTokens!,
-        outputTokens: usage.outputTokens!,
-    };
 }
 
 export function createMastraPastedTermsProposalGenerator(options: {
@@ -243,6 +237,20 @@ export function createMastraPastedTermsProposalGenerator(options: {
 }): PastedTermsProposalGenerator {
     return {
         async generate(request) {
+            let meteredUsage:
+                ReturnType<typeof readProviderTokenUsage> | undefined;
+            const failure = (
+                reason: ConstructorParameters<
+                    typeof PastedTermsProposalGeneratorExecutionError
+                >[0],
+            ) => {
+                const result = new PastedTermsProposalGeneratorExecutionError(
+                    reason,
+                );
+                if (meteredUsage) result.usage = meteredUsage;
+                return result;
+            };
+
             request.signal.throwIfAborted();
             const input = validatedChunkInput(request);
             const message = JSON.stringify(input);
@@ -262,9 +270,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                     dictionaryPastedTermsGenerationFixedInputBytes >
                     requestLimits.maxInputTokens
             ) {
-                throw new PastedTermsProposalGeneratorExecutionError(
-                    'invalid_input',
-                );
+                throw failure('invalid_input');
             }
 
             try {
@@ -282,10 +288,18 @@ export function createMastraPastedTermsProposalGenerator(options: {
                     tracingOptions: { hideInput: true, hideOutput: true },
                 });
                 request.signal.throwIfAborted();
+                if (result.usage) {
+                    try {
+                        meteredUsage = readProviderTokenUsage(
+                            result.usage,
+                            requestLimits,
+                        );
+                    } catch {
+                        throw failure('invalid_output');
+                    }
+                }
                 if (result.error || result.tripwire) {
-                    throw new PastedTermsProposalGeneratorExecutionError(
-                        'provider_failure',
-                    );
+                    throw failure('provider_failure');
                 }
                 return {
                     proposal: validatedChunkOutput(result.object, request),
@@ -297,6 +311,23 @@ export function createMastraPastedTermsProposalGenerator(options: {
                     }),
                 };
             } catch (error) {
+                if (
+                    error instanceof Error &&
+                    error.name === 'AI_NoObjectGeneratedError' &&
+                    'usage' in error
+                ) {
+                    try {
+                        meteredUsage = readProviderTokenUsage(
+                            error.usage,
+                            requestLimits,
+                        );
+                    } catch {
+                        /* Invalid/missing provider meters remain unknown. */
+                    }
+                }
+                if (error instanceof CardProposalGeneratorError && meteredUsage)
+                    error.usage = meteredUsage;
+
                 if (request.signal.aborted) {
                     throw (
                         request.signal.reason ??
@@ -309,13 +340,9 @@ export function createMastraPastedTermsProposalGenerator(options: {
                     throw error;
                 }
                 if (error instanceof Error && error.name === 'ZodError') {
-                    throw new PastedTermsProposalGeneratorExecutionError(
-                        'invalid_output',
-                    );
+                    throw failure('invalid_output');
                 }
-                throw new PastedTermsProposalGeneratorExecutionError(
-                    'provider_failure',
-                );
+                throw failure('provider_failure');
             }
         },
         readiness(signal) {

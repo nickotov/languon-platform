@@ -1,5 +1,6 @@
 'use client';
 import type { SpeechSource, FlashcardItem } from '@languon/contracts';
+import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
 import { SpeechControl } from '@/fsd/features/speech-playback';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
@@ -576,6 +577,9 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 ) : null}
             </div>
             <SentenceSetup
+                budgetContent={
+                    <ActionBudgetSummary request={props.requestWithSession} />
+                }
                 controller={setup}
                 open={setupOpen}
                 onClose={() => {
@@ -595,6 +599,9 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 onOpenLibrary={openLibrary}
             />
             <SentencePreparationSheet
+                budgetContent={
+                    <ActionBudgetSummary request={props.requestWithSession} />
+                }
                 controller={preparation}
                 open={preparationOpen}
                 onClose={() => setPreparationOpen(false)}
@@ -617,6 +624,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
             />
             {running && (
                 <SentencePracticeSession
+                    budgetContent={
+                        <ActionBudgetSummary
+                            request={props.requestWithSession}
+                        />
+                    }
                     controller={session}
                     renderAudio={renderSentenceAudio}
                     open={running}

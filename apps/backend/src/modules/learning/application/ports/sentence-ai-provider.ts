@@ -15,6 +15,8 @@ import {
 export interface SentenceTokenUsage {
     inputTokens: number;
     outputTokens: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
 }
 /** Usage accompanying rejection has already passed the dispatched call's bounds. */
 export class SentenceProviderInvalidModelOutputError extends SentenceInvalidModelOutputError {

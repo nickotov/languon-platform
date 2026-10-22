@@ -1,3 +1,13 @@
+import {
+    authorizeSpeechAccounting,
+    reserveSpeechAdmissionQuota,
+    reserveSpeechProviderAttempt,
+    settleSpeechProviderExpense,
+    lockSpeechWalletOwner,
+} from './speech-accounting';
+import { formatCreditMilli } from '../../ai-credits/domain/exact-credit-amount';
+import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
+import type { CapabilityPolicy } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { usersTable } from '../../users/infrastructure/persistence/drizzle/schema';
 import { isDeepStrictEqual } from 'node:util';
@@ -117,11 +127,19 @@ export class DrizzleSpeechStore implements SpeechStore {
     }
     private workerTransaction<T>(
         callback: (transaction: AiCreditTransaction, now: Date) => Promise<T>,
+        jobId?: string,
     ): Promise<T> {
         return this.options.database.transaction(async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.speech_worker_version','1',true)`,
             );
+            if (jobId) {
+                const [job] = await tx
+                    .select({ ownerId: jobs.payerId })
+                    .from(jobs)
+                    .where(eq(jobs.id, jobId));
+                await lockSpeechWalletOwner(tx, job?.ownerId ?? null);
+            }
             return callback(tx, await this.databaseNow(tx));
         });
     }
@@ -310,7 +328,10 @@ export class DrizzleSpeechStore implements SpeechStore {
             );
             if (!profile || !this.options.generationEnabled)
                 return emptyResponse();
-            if (identity.free)
+            const chargingPolicy = await new DrizzleCapabilityPolicyParticipant(
+                tx,
+            ).current('speech');
+            if (identity.free || chargingPolicy.funding === 'operator')
                 return this.admit(
                     tx,
                     admittedInput,
@@ -319,6 +340,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                     profile,
                     null,
                     0n,
+                    chargingPolicy,
                 );
             const price = await new DrizzleModelPriceParticipant(tx).current({
                 providerId: profile.provider,
@@ -381,8 +403,10 @@ export class DrizzleSpeechStore implements SpeechStore {
                 fixture: profile.provider === 'fixture',
                 quote: {
                     id: quote.id,
-                    credits: quote.credits.toString(),
-                    availableCredits: wallet.availableCredits.toString(),
+                    credits: formatCreditMilli(quote.credits),
+                    availableCredits: formatCreditMilli(
+                        wallet.availableCredits,
+                    ),
                     unlimited: wallet.policy.effectiveMode === 'unlimited',
                     characterCount: quote.characterCount,
                     wordCount: quote.wordCount,
@@ -622,6 +646,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         profile: SpeechProfile,
         rateRevisionId: string | null,
         credits: bigint,
+        chargingPolicy?: CapabilityPolicy,
     ) {
         // Recheck all configured identities after the cross-key budget lock:
         // another admitted request may have filled the cache while we waited.
@@ -637,6 +662,18 @@ export class DrizzleSpeechStore implements SpeechStore {
                 active.recordingId,
                 active.id,
             );
+        input = { ...input, now: await this.databaseNow(tx) };
+        const jobId = randomUUID();
+        const actionPolicy = await new DrizzleCapabilityPolicyParticipant(
+            tx,
+        ).pinAction({
+            jobId,
+            jobKind: 'speech-generation',
+            ownerId: input.actorId,
+            at: input.now,
+            ...(chargingPolicy ? { policy: chargingPolicy } : {}),
+        });
+        if (actionPolicy.funding === 'operator') credits = 0n;
         const [queued] = await tx
             .select({ value: count() })
             .from(jobs)
@@ -648,70 +685,28 @@ export class DrizzleSpeechStore implements SpeechStore {
             );
         if ((queued?.value ?? 0) >= (this.options.ownerQueuedLimit ?? 10))
             throw new SpeechError('speech_queue_limit', 429);
-        if (identity.free) {
-            const start = new Date(input.now);
-            start.setUTCHours(0, 0, 0, 0);
-            const [used] = await tx
-                .select({ value: count() })
-                .from(jobs)
-                .where(
-                    and(
-                        eq(jobs.payerId, input.actorId),
-                        eq(jobs.credits, 0n),
-                        gte(jobs.createdAt, start),
-                    ),
-                );
-            if ((used?.value ?? 0) >= (this.options.freeDailyLimit ?? 500))
-                throw new SpeechError('speech_free_daily_limit', 429);
-        }
         const estimatedCost = Math.ceil(
             identity.characterCount * profile.estimatedCostUnitsPerCharacter,
         );
         if (estimatedCost > (this.options.maxCostUnitsPerClip ?? 10000))
             throw new SpeechError('speech_provider_budget', 429);
-        const totalCost = sql<number>`coalesce(sum(${jobs.estimatedCostUnits}),0)::integer`;
-        const [allCost] = await tx
-            .select({ value: totalCost })
-            .from(jobs)
-            .innerJoin(recordings, eq(jobs.recordingId, recordings.id))
-            .where(
-                and(
-                    gte(
-                        jobs.createdAt,
-                        new Date(input.now.getTime() - 86_400_000),
-                    ),
-                    or(
-                        ne(jobs.state, 'failed'),
-                        sql`${jobs.taskId} is not null`,
-                    ),
-                ),
-            );
-        const [ownerCost] = await tx
-            .select({ value: totalCost })
-            .from(jobs)
-            .innerJoin(recordings, eq(jobs.recordingId, recordings.id))
-            .where(
-                and(
-                    eq(jobs.payerId, input.actorId),
-                    gte(
-                        jobs.createdAt,
-                        new Date(input.now.getTime() - 86_400_000),
-                    ),
-                    or(
-                        ne(jobs.state, 'failed'),
-                        sql`${jobs.taskId} is not null`,
-                    ),
-                ),
-            );
-        if (
-            estimatedCost + (allCost?.value ?? 0) >
-                (this.options.globalBudgetUnits ?? 100000) ||
-            estimatedCost + (ownerCost?.value ?? 0) >
-                (this.options.ownerBudgetUnits ?? 10000)
-        )
-            throw new SpeechError('speech_provider_budget', 429);
+        await reserveSpeechAdmissionQuota(tx, {
+            ownerId: input.actorId,
+            at: input.now,
+            free: credits === 0n,
+            units: estimatedCost,
+            freeLimit: this.options.freeDailyLimit ?? 500,
+            ownerUnitLimit: this.options.ownerBudgetUnits ?? 10000,
+            globalUnitLimit: this.options.globalBudgetUnits ?? 100000,
+        });
+        const providerPriceSnapshot = await authorizeSpeechAccounting(tx, {
+            jobId,
+            ownerId: input.actorId,
+            profile,
+            characters: identity.characterCount,
+            at: input.now,
+        });
         const recordingId = randomUUID(),
-            jobId = randomUUID(),
             reservationId = credits > 0n ? randomUUID() : null;
         await tx.insert(recordings).values({
             id: recordingId,
@@ -738,6 +733,9 @@ export class DrizzleSpeechStore implements SpeechStore {
             rateRevisionId,
             credits,
             estimatedCostUnits: estimatedCost,
+            accountingVersion: 1,
+            providerPriceSnapshot,
+            providerCharacterCount: identity.characterCount,
             billingState: reservationId ? 'reserved' : 'free',
             state: 'queued',
             nextPollAt: input.now,
@@ -908,109 +906,78 @@ export class DrizzleSpeechStore implements SpeechStore {
         };
     }
     public async claim(_now: Date): Promise<SpeechJob | null> {
-        return this.workerTransaction(async (tx, now) => {
-            await this.lock(tx, 'worker-capacity');
-            const [active] = await tx
-                .select({ value: count() })
-                .from(jobs)
-                .where(
-                    and(
-                        inArray(jobs.state, [
-                            'submitting',
-                            'processing',
-                            'storing',
-                        ]),
-                        gte(jobs.leaseExpiresAt, now),
-                    ),
+        const eligible = sql`${jobs.state} in ('queued','processing','storing') and ${jobs.nextPollAt}<=clock_timestamp() and ${jobs.recoveryDeadline}>=clock_timestamp() and (${jobs.state}<>'queued' or ${jobs.queueDeadline}>clock_timestamp()) and (${jobs.leaseExpiresAt} is null or ${jobs.leaseExpiresAt}<=clock_timestamp())`;
+        const candidates = await this.options.database
+            .select({ id: jobs.id })
+            .from(jobs)
+            .where(eligible)
+            .orderBy(asc(jobs.nextPollAt))
+            .limit(20);
+        for (const candidate of candidates) {
+            const result = await this.workerTransaction(async (tx, now) => {
+                await this.lock(tx, 'worker-capacity');
+                const [row] = await tx
+                    .select()
+                    .from(jobs)
+                    .where(and(eq(jobs.id, candidate.id), eligible))
+                    .for('update', { skipLocked: true });
+                if (!row) return null;
+                const leased = and(
+                    inArray(jobs.state, [
+                        'submitting',
+                        'processing',
+                        'storing',
+                    ]),
+                    gte(jobs.leaseExpiresAt, now),
                 );
-            if ((active?.value ?? 0) >= (this.options.globalActiveLimit ?? 4))
-                return null;
-            const candidates = await tx
-                .select()
-                .from(jobs)
-                .where(
-                    and(
-                        inArray(jobs.state, [
-                            'queued',
-                            'processing',
-                            'storing',
-                        ]),
-                        lte(jobs.nextPollAt, now),
-                        gte(jobs.recoveryDeadline, now),
-                        or(
-                            ne(jobs.state, 'queued'),
-                            gt(jobs.queueDeadline, now),
-                        ),
-                        or(
-                            sql`${jobs.leaseExpiresAt} is null`,
-                            lte(jobs.leaseExpiresAt, now),
-                        ),
-                    ),
+                const [active] = await tx
+                    .select({ value: count() })
+                    .from(jobs)
+                    .where(leased);
+                if (
+                    (active?.value ?? 0) >=
+                    (this.options.globalActiveLimit ?? 4)
                 )
-                .orderBy(asc(jobs.nextPollAt))
-                .limit(20)
-                .for('update', { skipLocked: true });
-            for (const candidate of candidates) {
-                if (candidate.payerId) {
+                    return null;
+                if (row.payerId) {
                     const [owned] = await tx
                         .select({ value: count() })
                         .from(jobs)
-                        .where(
-                            and(
-                                eq(jobs.payerId, candidate.payerId),
-                                inArray(jobs.state, [
-                                    'submitting',
-                                    'processing',
-                                    'storing',
-                                ]),
-                                gte(jobs.leaseExpiresAt, now),
-                            ),
-                        );
+                        .where(and(leased, eq(jobs.payerId, row.payerId)));
                     if (
                         (owned?.value ?? 0) >=
                         (this.options.ownerActiveLimit ?? 2)
                     )
-                        continue;
+                        return null;
                 }
-                const leaseToken = randomUUID();
-                const state =
-                    candidate.state === 'queued'
-                        ? 'submitting'
-                        : candidate.state;
-                const [row] = await tx
+                const [claimed] = await tx
                     .update(jobs)
                     .set({
-                        state,
-                        leaseToken,
+                        state:
+                            row.state === 'queued' ? 'submitting' : row.state,
+                        leaseToken: randomUUID(),
                         leaseExpiresAt: new Date(now.getTime() + 60_000),
                     })
-                    .where(eq(jobs.id, candidate.id))
+                    .where(eq(jobs.id, row.id))
                     .returning();
-                if (
-                    candidate.state === 'queued' &&
-                    candidate.reservationId &&
-                    candidate.payerId &&
-                    candidate.billingState === 'reserved'
-                )
-                    await new DrizzleAiCreditTransactionParticipant(
-                        tx,
-                    ).markProviderDispatched({
-                        ownerId: candidate.payerId,
-                        reservationId: candidate.reservationId,
-                        dispatchedAt: now,
-                    });
-                const recording = (
-                    await tx
-                        .select()
-                        .from(recordings)
-                        .where(eq(recordings.id, candidate.recordingId))
-                        .limit(1)
-                )[0];
-                if (!row || !recording) continue;
-                return this.asJob(row, recording);
-            }
-            return null;
-        });
+                if (!claimed) return null;
+                if (row.state === 'queued')
+                    await reserveSpeechProviderAttempt(tx, claimed, now);
+                const [acknowledged] = await tx
+                    .select()
+                    .from(jobs)
+                    .where(eq(jobs.id, row.id));
+                const [recording] = await tx
+                    .select()
+                    .from(recordings)
+                    .where(eq(recordings.id, row.recordingId));
+                return acknowledged && recording
+                    ? this.asJob(acknowledged, recording)
+                    : null;
+            }, candidate.id);
+            if (result) return result;
+        }
+        return null;
     }
     public async submitted(
         job: SpeechJob,
@@ -1039,7 +1006,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                         sql`${jobs.taskId} is null`,
                     ),
                 );
-        });
+        }, job.id);
     }
     public async pending(job: SpeechJob, retryAfterMs: number, _now: Date) {
         await this.workerTransaction(async (tx, now) => {
@@ -1056,7 +1023,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                         eq(jobs.leaseToken, job.leaseToken),
                     ),
                 );
-        });
+        }, job.id);
     }
     public async storing(job: SpeechJob, audio: AudioBytes, _now: Date) {
         return this.workerTransaction(async (tx, now) => {
@@ -1080,8 +1047,9 @@ export class DrizzleSpeechStore implements SpeechStore {
                     durationMs: audio.durationMs ?? null,
                 })
                 .where(eq(recordings.id, job.recordingId));
+            await settleSpeechProviderExpense(tx, row, 'ready', now);
             return true;
-        });
+        }, job.id);
     }
     public async complete(
         job: SpeechJob,
@@ -1105,6 +1073,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                     .for('update')
             )[0];
             if (!row || row.state !== 'storing') return;
+            await settleSpeechProviderExpense(tx, row, 'ready', now);
             const [recording] = await tx
                 .select()
                 .from(recordings)
@@ -1170,13 +1139,14 @@ export class DrizzleSpeechStore implements SpeechStore {
                     leaseExpiresAt: null,
                 })
                 .where(eq(jobs.id, row.id));
-        });
+        }, job.id);
     }
     public async fail(
         job: SpeechJob,
         outcome: 'failure' | 'unknown',
         _now: Date,
         reason?: 'speech_provider_unavailable',
+        notSubmitted = false,
     ) {
         await this.workerTransaction(async (tx, now) => {
             const [row] = await tx
@@ -1191,6 +1161,19 @@ export class DrizzleSpeechStore implements SpeechStore {
                 .limit(1)
                 .for('update');
             if (!row) return;
+            await settleSpeechProviderExpense(
+                tx,
+                row,
+                notSubmitted ? 'not_submitted' : 'unknown',
+                now,
+            );
+            await tx
+                .update(jobs)
+                .set({
+                    state:
+                        outcome === 'unknown' ? 'submission_unknown' : 'failed',
+                })
+                .where(eq(jobs.id, row.id));
             let billingState = row.billingState;
             if (
                 row.reservationId &&
@@ -1231,12 +1214,12 @@ export class DrizzleSpeechStore implements SpeechStore {
                         version: sql`${recordings.version}+1`,
                     })
                     .where(eq(recordings.id, row.recordingId));
-        });
+        }, job.id);
     }
     public async releaseDeadlines(_now: Date) {
-        await this.workerTransaction(async (tx, now) => {
-            const rows = await tx
-                .select()
+        const due = await this.workerTransaction(async (tx, now) =>
+            tx
+                .select({ id: jobs.id })
                 .from(jobs)
                 .where(
                     or(
@@ -1258,9 +1241,41 @@ export class DrizzleSpeechStore implements SpeechStore {
                         ),
                     ),
                 )
-                .limit(100)
-                .for('update', { skipLocked: true });
-            for (const row of rows) {
+                .limit(100),
+        );
+        for (const candidate of due) {
+            await this.workerTransaction(async (tx, now) => {
+                const [row] = await tx
+                    .select()
+                    .from(jobs)
+                    .where(
+                        and(
+                            eq(jobs.id, candidate.id),
+                            or(
+                                and(
+                                    eq(jobs.billingState, 'reserved'),
+                                    lte(jobs.billingDeadline, now),
+                                ),
+                                and(
+                                    eq(jobs.state, 'queued'),
+                                    lte(jobs.queueDeadline, now),
+                                ),
+                                and(
+                                    eq(jobs.state, 'submitting'),
+                                    lte(jobs.leaseExpiresAt, now),
+                                ),
+                                and(
+                                    inArray(jobs.state, [
+                                        'processing',
+                                        'storing',
+                                    ]),
+                                    lte(jobs.recoveryDeadline, now),
+                                ),
+                            ),
+                        ),
+                    )
+                    .for('update', { skipLocked: true });
+                if (!row) return;
                 let billingState = row.billingState;
                 if (
                     row.reservationId &&
@@ -1286,6 +1301,15 @@ export class DrizzleSpeechStore implements SpeechStore {
                           : row.recoveryDeadline <= now
                             ? 'submission_unknown'
                             : row.state;
+                if (state === 'failed' || state === 'submission_unknown')
+                    await settleSpeechProviderExpense(
+                        tx,
+                        row,
+                        state === 'failed' && !row.providerDispatchedAt
+                            ? 'not_submitted'
+                            : 'unknown',
+                        now,
+                    );
                 await tx
                     .update(jobs)
                     .set({
@@ -1312,7 +1336,13 @@ export class DrizzleSpeechStore implements SpeechStore {
                             version: sql`${recordings.version}+1`,
                         })
                         .where(eq(recordings.id, row.recordingId));
-            }
+            }, candidate.id);
+        }
+        await this.workerTransaction(async (tx, now) => {
+            // Compact request quotas retain only a short operational window; financial cost facts live separately.
+            await tx.execute(
+                sql`select languon_cleanup_speech_admission_counters(1000)`,
+            );
             await tx
                 .update(recordings)
                 .set({ text: '' })
@@ -1580,17 +1610,22 @@ export class DrizzleSpeechStore implements SpeechStore {
         this.deletionCursor = rows.length === 100 ? rows.at(-1)!.id : null;
         return rows;
     }
-    public async purgeActor(actorId: string, now: Date) {
+    public async purgeActor(
+        actorId: string,
+        now: Date,
+        authorization?: { workerId: string; fencingToken: number },
+    ) {
         await this.options.database.transaction((tx) =>
-            this.purgeActorInTransaction(tx, actorId, now),
+            this.purgeActorInTransaction(tx, actorId, now, authorization),
         );
     }
     public async purgeActorInTransaction(
         tx: AiCreditTransaction,
         actorId: string,
         now: Date,
+        authorization?: { workerId: string; fencingToken: number },
     ) {
-        await purgeSpeechActor(tx, actorId, now);
+        await purgeSpeechActor(tx, actorId, now, authorization);
     }
 }
 
@@ -1598,41 +1633,34 @@ export class DrizzleSpeechStore implements SpeechStore {
 export async function purgeSpeechActor(
     tx: AiCreditTransaction,
     actorId: string,
-    now: Date,
+    _now: Date,
+    authorization?: { workerId: string; fencingToken: number },
 ): Promise<void> {
+    if (!authorization)
+        throw new Error(
+            'Speech purge requires the expected deletion worker and fencing token.',
+        );
     await tx.execute(
         sql`select set_config('languon.speech_worker_version','1',true)`,
     );
     await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${actorId},76021941))`,
+    );
+    await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${'actor:' + actorId}, 1920424383))`,
     );
-    const owned = await tx
-        .select()
-        .from(jobs)
-        .where(eq(jobs.payerId, actorId))
-        .for('update');
-    for (const row of owned) {
-        if (row.reservationId && row.billingState === 'reserved')
-            await new DrizzleAiCreditTransactionParticipant(
-                tx,
-            ).settleSpeechAttempt({
-                ownerId: actorId,
-                reservationId: row.reservationId,
-                settledAt: now,
-                outcome: 'failure',
-            });
-        await tx
-            .update(jobs)
-            .set({
-                payerId: null,
-                reservationId: null,
-                billingState:
-                    row.billingState === 'reserved'
-                        ? 'released_no_charge'
-                        : row.billingState,
-            })
-            .where(eq(jobs.id, row.id));
-    }
-    await tx.delete(quotes).where(eq(quotes.actorId, actorId));
-    await tx.delete(bindings).where(eq(bindings.actorId, actorId));
+    await lockSpeechWalletOwner(tx, actorId);
+    await tx.execute(
+        sql`select languon_finalize_speech_accounting_for_purge(${actorId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer)`,
+    );
+}
+
+/** Authenticated account scheduling uses cancellation before a purge lease is due. */
+export async function cancelSpeechActorForScheduledDeletion(
+    tx: AiCreditTransaction,
+    actorId: string,
+): Promise<void> {
+    await tx.execute(
+        sql`select languon_cancel_speech_for_scheduled_deletion(${actorId}::uuid)`,
+    );
 }

@@ -113,7 +113,7 @@ export function AiCreditAdjustmentDialog({
                 <Form.Item
                     label={translate('aiCredits.amount')}
                     name='amount'
-                    rules={[{ min: 1, required: true, type: 'number' }]}
+                    rules={[{ min: 0.001, required: true, type: 'number' }]}
                 >
                     <InputNumber
                         max={
@@ -121,8 +121,9 @@ export function AiCreditAdjustmentDialog({
                                 ? account.availableCredits
                                 : 1_000_000_000_000
                         }
-                        min={1}
-                        precision={0}
+                        min={0.001}
+                        step={0.001}
+                        precision={3}
                         style={{ width: '100%' }}
                     />
                 </Form.Item>

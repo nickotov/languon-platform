@@ -16,7 +16,12 @@ export const defaultDictionaryGenerationProviderBudgetPolicy: DictionaryGenerati
 
 export function dictionaryGenerationProviderUsageCostMicros(
     policy: DictionaryGenerationProviderBudgetPolicy,
-    usage: { inputTokens: number; outputTokens: number },
+    usage: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    },
 ): number {
     return (
         Math.ceil(

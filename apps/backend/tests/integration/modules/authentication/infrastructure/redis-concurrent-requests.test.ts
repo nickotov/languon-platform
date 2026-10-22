@@ -126,6 +126,63 @@ describe.runIf(redisIntegrationEnabled)(
                 other!.release(),
             ]);
         });
+        it('bounds source preprocessing per learner and globally across service replicas', async () => {
+            const { left, right, namespace } = fixtures('submission-preflight');
+            const serviceLeft = new ConversationService(
+                {} as never,
+                async () => ({ userId: 'unused' }),
+                left,
+                left,
+            );
+            const serviceRight = new ConversationService(
+                {} as never,
+                async () => ({ userId: 'unused' }),
+                right,
+                right,
+            );
+            const signal = () => new AbortController().signal;
+            const leases = [
+                await serviceLeft.admitSubmission(
+                    { ownerId: 'preflight-user-0' },
+                    signal(),
+                ),
+            ];
+            await expect(
+                serviceRight.admitSubmission(
+                    { ownerId: 'preflight-user-0' },
+                    signal(),
+                ),
+            ).rejects.toMatchObject({ code: 'capacity_unavailable' });
+            for (let index = 1; index < 10; index++)
+                leases.push(
+                    await (index % 2 ? serviceLeft : serviceRight).admitSubmission(
+                        { ownerId: `preflight-user-${index}` },
+                        signal(),
+                    ),
+                );
+            await expect(
+                serviceRight.admitSubmission(
+                    { ownerId: 'preflight-user-10' },
+                    signal(),
+                ),
+            ).rejects.toMatchObject({ code: 'capacity_unavailable' });
+            const ownerKey = deriveOpaqueRedisKey(
+                namespace,
+                'concurrent-request',
+                'contextual-assistant-turn-submissions\0preflight-user-10',
+                secret,
+            );
+            expect(await first.zcard(ownerKey)).toBe(0);
+            await leases[0]!.release();
+            const replacement = await serviceRight.admitSubmission(
+                { ownerId: 'preflight-user-10' },
+                signal(),
+            );
+            await Promise.all([
+                ...leases.slice(1).map((lease) => lease!.release()),
+                replacement.release(),
+            ]);
+        });
         it('expires an abandoned lease and prevents its stale release from erasing a replacement', async () => {
             const { left, right, request, key } = fixtures('crash-ttl');
             const short = { ...request, limit: 1, ttlMs: 1000 };

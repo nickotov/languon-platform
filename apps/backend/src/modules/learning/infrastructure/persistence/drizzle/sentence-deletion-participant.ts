@@ -80,12 +80,43 @@ function jobScope(scope: SentenceDeletionScope): SQL {
     );
     return or(...clauses) ?? sql`false`;
 }
+/** Preparation ownership includes captured words and saved manifests, not only a running child. */
+function preparationScope(scope: SentenceDeletionScope): SQL {
+    const direct: SQL[] = [];
+    if (scope.learnerId)
+        direct.push(sql`p.learner_id=${scope.learnerId}::uuid`);
+    if (scope.dictionaryIds?.length)
+        direct.push(
+            sql`p.dictionary_id in (${sql.join(
+                scope.dictionaryIds.map((id) => sql`${id}::uuid`),
+                sql`,`,
+            )})`,
+        );
+    const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
+    direct.push(sql`exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (
+        exists(select 1 from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid in (${selected}))
+        ${
+            scope.entryIds?.length
+                ? sql`or exists(select 1 from jsonb_array_elements(b.entries) item where item->>'entryId' in (${sql.join(
+                      scope.entryIds.map((id) => sql`${id}`),
+                      sql`,`,
+                  )}))`
+                : sql``
+        }
+    ))`);
+    return or(...direct)!;
+}
 /** Caller already holds lifecycle/capacity locks. An active reservation is busy
  * even while queued; deletion must release/settle it before removing evidence. */
 export async function sentenceDeletionBusy(
     tx: SentenceTransaction,
     scope: SentenceDeletionScope,
 ): Promise<boolean> {
+    const [activeParent] =
+        await tx.execute(sql`select 1 from sentence_preparations p
+        join ai_credit_actions a on a.id=p.current_action_id
+        where a.state='active' and (${preparationScope(scope)}) limit 1`);
+    if (activeParent) return true;
     const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
     const deletedEntries = scope.entryIds?.length
         ? sql`item->>'entryId' in (${sql.join(
@@ -126,13 +157,23 @@ export async function requestSentenceCancellation(
     // learner/wallet locks here; capable workers settle flagged queued/running jobs.
     await tx
         .update(jobs)
-        .set({ cancellationRequestedAt: scope.now, updatedAt: scope.now })
+        .set({
+            cancellationRequestedAt: scope.now,
+            failureCategory: 'access_revoked',
+            updatedAt: scope.now,
+        })
         .where(
             and(
                 jobScope(scope),
                 inArray(jobs.executionState, ['queued', 'running']),
             ),
         );
+    // Do not acquire another learner's wallet while the lifecycle owner is locked.
+    // The coordinator closes the existing authorization after child fences settle.
+    await tx.execute(sql`update sentence_preparations p set
+        state=case when exists(select 1 from sentence_ai_jobs j where j.id=p.active_job_id and j.execution_state in ('queued','running')) then 'stopping' else 'queued' end,
+        pause_reason='access',updated_at=${scope.now.toISOString()}::timestamptz
+        where (${preparationScope(scope)}) and exists(select 1 from ai_credit_actions a where a.id=p.current_action_id and a.state='active')`);
 }
 /** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
  * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */

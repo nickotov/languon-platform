@@ -312,6 +312,7 @@ export const PreviewDictionaryImportRequestSchema =
 
 export const ImportDictionaryRequestSchema =
     DictionaryImportPayloadFieldsSchema.safeExtend({
+        confirmedQuoteId: z.uuid().optional(),
         enrichment: DictionaryImportEnrichmentSchema.default({ mode: 'none' }),
         target: DictionaryImportTargetSchema,
     }).strict();

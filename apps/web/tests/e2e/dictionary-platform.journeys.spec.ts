@@ -7,7 +7,7 @@ import {
 } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:bcb8fc99a5ebf90d
+// @user-flow-revision dictionary-platform sha256:e6a3d2ee25c55c2d
 
 const password = 'E2e!Dictionary-password-2026';
 const runId =
@@ -114,7 +114,10 @@ async function signUpAndVerifyOrSignInAfterRateLimit(
 }
 
 async function createDictionary(page: Page, name: string): Promise<void> {
-    await page.getByRole('button', { name: 'New dictionary' }).click();
+    await page
+        .getByRole('main')
+        .getByRole('button', { name: 'New dictionary', exact: true })
+        .click();
     await page.getByLabel('Name').fill(name);
     await page
         .getByLabel('Description')
@@ -235,7 +238,7 @@ async function chooseCardAction(
 ): Promise<void> {
     const card = page.getByRole('listitem').filter({ hasText: source });
     await card.getByRole('button', { name: /Card actions, card/ }).click();
-    await card.getByRole('menuitem', { name: action }).click();
+    await page.getByRole('menuitem', { name: action, exact: true }).click();
 }
 
 async function expectWordPairGeometry(
@@ -1164,6 +1167,81 @@ test.describe('dictionary platform journeys', () => {
         assertNoBrowserErrors();
     });
 
+    test('accounted batch desktop generation survives reload and accepts selected cards', async ({
+        page,
+    }, testInfo) => {
+        test.setTimeout(90_000);
+        const assertNoBrowserErrors = captureBrowserErrors(page);
+        await page.setViewportSize({ width: 1280, height: 900 });
+        await signUpAndVerify(
+            page,
+            syntheticEmail(testInfo, 'accounted-batch-desktop'),
+            '/dictionaries',
+        );
+        await createDictionary(page, `Accounted batch ${runId}`);
+        await chooseDictionarySecondaryAction(
+            page,
+            'Generate cards from pasted terms',
+        );
+        let batch = page.getByRole('dialog', {
+            name: 'Generate cards from pasted terms',
+        });
+        await batch.getByLabel('Terms or phrases').fill('canvas\nbank');
+        const admitted = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/batch-generations') &&
+                response.status() === 202,
+        );
+        await batch
+            .getByRole('button', { name: 'Generate cards', exact: true })
+            .click();
+        await admitted;
+        await expect(
+            batch.getByRole('heading', { name: 'Review generated cards' }),
+        ).toBeVisible({ timeout: 20_000 });
+        await expect(page).toHaveURL(/batchGenerationJob=[0-9a-f-]+/);
+        const reviewUrl = page.url();
+        await page.reload();
+        await expect(page).toHaveURL(reviewUrl);
+        batch = page.getByRole('dialog', {
+            name: 'Generate cards from pasted terms',
+        });
+        await expect(
+            batch.getByRole('heading', { name: 'Review generated cards' }),
+        ).toBeVisible({ timeout: 20_000 });
+        await batch
+            .getByLabel('Translation')
+            .first()
+            .fill('accounted desktop translation');
+        await batch
+            .getByRole('button', { name: 'Add 2 cards', exact: true })
+            .click();
+        await expect(
+            batch.getByText('The selected cards were added together.'),
+        ).toBeVisible();
+        await batch
+            .getByRole('button', {
+                name: 'Close batch generation',
+                exact: true,
+            })
+            .click();
+        await expect(batch).not.toBeVisible();
+        await expect(
+            page.getByText('accounted desktop translation', { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByText('canvas', { exact: true })).toBeVisible();
+        await expect(
+            page
+                .getByRole('listitem')
+                .filter({ has: page.getByText('bank', { exact: true }) }),
+        ).toHaveCount(1);
+        await page.reload();
+        await expect(
+            page.getByText('accounted desktop translation', { exact: true }),
+        ).toBeVisible();
+        assertNoBrowserErrors();
+    });
+
     // @user-flow dictionary-platform/batch-generation-review-commits-selected-cards
     test('pasted-term review survives reload, retries failures, and commits selected cards atomically', async ({
         context,
@@ -1228,13 +1306,26 @@ test.describe('dictionary platform journeys', () => {
         await page.keyboard.press('Tab');
         await page.keyboard.press('Shift+Tab');
         await expect(includeFirst).toBeFocused();
+        const narrowLayout = await page.evaluate(() => ({
+            width: document.documentElement.clientWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+            overflow: Array.from(document.querySelectorAll('body *'))
+                .filter(
+                    (element) =>
+                        element.getBoundingClientRect().right >
+                        document.documentElement.clientWidth + 1,
+                )
+                .slice(0, 8)
+                .map((element) => ({
+                    tag: element.tagName,
+                    className: element.getAttribute('class'),
+                    right: element.getBoundingClientRect().right,
+                })),
+        }));
         expect(
-            await page.evaluate(
-                () =>
-                    document.documentElement.scrollWidth <=
-                    document.documentElement.clientWidth + 1,
-            ),
-        ).toBe(true);
+            narrowLayout.scrollWidth,
+            JSON.stringify(narrowLayout),
+        ).toBeLessThanOrEqual(narrowLayout.width + 1);
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });

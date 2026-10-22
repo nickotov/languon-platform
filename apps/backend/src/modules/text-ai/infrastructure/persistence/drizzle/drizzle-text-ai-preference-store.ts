@@ -1,3 +1,4 @@
+import { ensureActionBudgetDefault } from './action-budget-default';
 import { eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -33,21 +34,25 @@ export class DrizzleTextAiPreferenceStore implements TextAiPreferenceStore {
                 throw new TextAiUserUnavailableError();
             return work({
                 read: async () => {
-                    const [preference] = await transaction
-                        .select({
-                            mode: textAiPreferencesTable.mode,
-                            modelId: textAiPreferencesTable.modelId,
-                            version: textAiPreferencesTable.version,
-                        })
-                        .from(textAiPreferencesTable)
-                        .where(eq(textAiPreferencesTable.userId, userId));
-                    return (
-                        preference ?? {
-                            mode: 'auto',
-                            modelId: null,
-                            version: 0,
-                        }
+                    const preference = await ensureActionBudgetDefault(
+                        transaction,
+                        userId,
+                        new Date(),
                     );
+                    return preference
+                        ? {
+                              mode: preference.mode,
+                              modelId: preference.modelId,
+                              version: preference.version,
+                              maxCreditsPerAction:
+                                  preference.maxCreditsPerAction,
+                          }
+                        : {
+                              mode: 'auto',
+                              modelId: null,
+                              version: 0,
+                              maxCreditsPerAction: null,
+                          };
                 },
                 catalog: (at, mode) =>
                     readTextAiCatalog(transaction, at, this.policy, mode),

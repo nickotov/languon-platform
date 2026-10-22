@@ -113,6 +113,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         let client: PostgresClient;
         let db: PostgresJsDatabase<typeof databaseSchema>;
         let store: DrizzleConversationStore;
+        let sources: ConversationSourceResolver;
         let portraitPolicy: { enabled: boolean; portrait: unknown | null };
         let owner: string,
             learner: string,
@@ -144,7 +145,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client?.end();
         }, 30_000);
         beforeEach(async () => {
-            await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, conversation_chats, dictionaries, text_folders, knowledge_notes, knowledge_operation_receipts, conversation_settings cascade`;
+            await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, conversation_chats, dictionaries, text_folders, knowledge_notes, knowledge_operation_receipts, conversation_settings, text_ai_capacity_jobs, text_ai_capacity_queue_totals, text_ai_capacity_provider_usage, text_ai_capacity_active_totals, text_ai_capacity_settled_buckets cascade`;
             owner = randomUUID();
             learner = randomUUID();
             dictionary = randomUUID();
@@ -158,22 +159,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client`insert into dictionaries(id,owner_id,name,source_language_tag,target_language_tag,created_at,updated_at) values (${dictionary},${owner},'Spanish verbs','es','en',${clock.toISOString()},${clock.toISOString()})`;
             await client`insert into dictionary_settings(dictionary_id,definition_enabled,transcription_enabled) values (${dictionary},true,false)`;
             await client`insert into dictionary_cards(id,dictionary_id,authorship,source,normalized_source,translation,definition,transcription,example,example_translation,translation_context,sort_key) values (${card},${dictionary},'human','ser','ser','to be','identity','PRIVATE HIDDEN','Soy médico.','I am a doctor.','PRIVATE AUTHORING',1)`;
+            sources = new ConversationSourceResolver({
+                verifyDictionaryShare: (key, digest) =>
+                    cryptography.verifyShare(key, digest),
+                verifyTextShare: (key, digest) =>
+                    cryptography.verifyShare(key, digest),
+                readNote: (tx, actor, id) =>
+                    new DrizzleKnowledgeTransactionParticipant(tx).getForSource(
+                        actor,
+                        id,
+                    ),
+            });
             store = new DrizzleConversationStore({
                 database: db,
                 readPortrait: async () => portraitPolicy,
                 now: () => clock,
                 admitTurn: admitted,
                 settleInterrupted: interrupted,
-                sources: new ConversationSourceResolver({
-                    verifyDictionaryShare: (key, digest) =>
-                        cryptography.verifyShare(key, digest),
-                    verifyTextShare: (key, digest) =>
-                        cryptography.verifyShare(key, digest),
-                    readNote: (tx, actor, id) =>
-                        new DrizzleKnowledgeTransactionParticipant(
-                            tx,
-                        ).getForSource(actor, id),
-                }),
+                sources,
                 nameUntitledNote: (tx, actor, noteId, title) =>
                     new DrizzleKnowledgeTransactionParticipant(
                         tx,
@@ -1532,6 +1535,163 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).toHaveLength(0);
             },
         );
+        it('persists text and renews its lease without entering unrelated capacity admission', async () => {
+            const chat = await create();
+            await store.submit(access(), chat.id, submit());
+            const turn = (await store.claim())!;
+            const acquired = latch(),
+                release = latch();
+            const holding = db.transaction(async (tx) => {
+                await lockTextAiCapacity(tx);
+                acquired.release();
+                await release.promise;
+            });
+            await acquired.promise;
+            try {
+                await completes(
+                    (async () => {
+                        await store.append(turn, 'Still streaming');
+                        await store.heartbeat(turn);
+                        expect(
+                            (await store.stop(access(), turn.conversationId, turn.id))
+                                .status,
+                        ).toBe('running');
+                    })(),
+                );
+            } finally {
+                release.release();
+                await holding;
+            }
+            const detail = await store.detail(access(), chat.id);
+            expect(detail.messages[1]?.content).toBe('Still streaming');
+            await expect(store.heartbeat(turn)).rejects.toMatchObject({
+                code: 'operation_interrupted',
+            });
+            await expect(store.append(turn, 'Late')).rejects.toMatchObject({
+                code: 'operation_interrupted',
+            });
+        });
+        it('keeps queued claim and Stop in actor-before-turn lock order', async () => {
+            const chat = await create();
+            await store.submit(access(), chat.id, submit());
+            const actorLocked = latch();
+            const releaseClaim = latch();
+            const original = sources.assertActiveActor.bind(sources);
+            let paused = false;
+            const actorFence = vi
+                .spyOn(sources, 'assertActiveActor')
+                .mockImplementation(async (tx, actor, lock) => {
+                    if (actor === owner && lock === 'update' && !paused) {
+                        paused = true;
+                        actorLocked.release();
+                        await releaseClaim.promise;
+                    }
+                    await original(tx, actor, lock);
+                });
+            try {
+                const claim = store.claim();
+                await actorLocked.promise;
+                const stopping = store.stop(access(), chat.id, (await client`
+                    select id from conversation_turns where conversation_id=${chat.id} and status='queued'
+                `)[0]!.id);
+                const stoppedBeforeClaimContinues = await completes(stopping);
+                releaseClaim.release();
+                const claimed = await completes(claim);
+                const stopped = stoppedBeforeClaimContinues;
+                const [finalTurn] = await client`
+                    select status, cancel_requested from conversation_turns
+                    where conversation_id=${chat.id}
+                `;
+                expect(claimed).toBeNull();
+                expect(stopped.status).toBe('cancelled');
+                expect(finalTurn?.status).toBe('cancelled');
+                expect(finalTurn?.cancel_requested).toBe(true);
+            } finally {
+                releaseClaim.release();
+                actorFence.mockRestore();
+            }
+        });
+        it('avoids crossed actor upgrades while streaming from shared sources', async () => {
+            const otherDictionary = randomUUID();
+            const firstLocator = randomUUID(),
+                secondLocator = randomUUID();
+            const digest = cryptography.shareDigest('crossed-key', 1);
+            await client`update dictionaries set visibility='unlisted',share_locator=${firstLocator},share_key_digest=${digest},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
+            await client`insert into dictionaries(id,owner_id,name,source_language_tag,target_language_tag,visibility,share_locator,share_key_digest,share_key_version,share_key_rotated_at,created_at,updated_at) values (${otherDictionary},${learner},'Other shared','es','en','unlisted',${secondLocator},${digest},1,${clock.toISOString()},${clock.toISOString()},${clock.toISOString()})`;
+            const firstChat = await store.create(
+                { ownerId: owner, shareKey: 'crossed-key' },
+                {
+                    source: {
+                        kind: 'dictionary',
+                        id: otherDictionary,
+                        shareLocator: secondLocator,
+                    },
+                },
+            );
+            const secondChat = await store.create(
+                { ownerId: learner, shareKey: 'crossed-key' },
+                {
+                    source: {
+                        kind: 'dictionary',
+                        id: dictionary,
+                        shareLocator: firstLocator,
+                    },
+                },
+            );
+            await store.submit(
+                { ownerId: owner, shareKey: 'crossed-key' },
+                firstChat.id,
+                submit(),
+            );
+            const firstTurn = (await store.claim())!;
+            await store.submit(
+                { ownerId: learner, shareKey: 'crossed-key' },
+                secondChat.id,
+                submit(),
+            );
+            const secondTurn = (await store.claim())!;
+            const acquired = latch(),
+                release = latch();
+            const original = sources.assertActiveActor.bind(sources);
+            const actorFence = vi
+                .spyOn(sources, 'assertActiveActor')
+                .mockImplementation(async (tx, actor, lock) => {
+                    await original(tx, actor, lock);
+                    if (actor === learner && lock === 'update') {
+                        acquired.release();
+                        await release.promise;
+                    }
+                });
+            const mutation = Promise.allSettled([
+                store.withOperation(secondTurn, async () => undefined),
+            ]);
+            await acquired.promise;
+            const progress = Promise.allSettled([
+                store.append(firstTurn, 'Crossed sources stay safe'),
+            ]);
+            try {
+                await completes(
+                    (async () => {
+                        while (true) {
+                            const [state] =
+                                await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%from "users"%' and query ilike '%for share%') as waiting`;
+                            if (state?.waiting) break;
+                            await new Promise((resolve) =>
+                                setTimeout(resolve, 10),
+                            );
+                        }
+                    })(),
+                );
+            } finally {
+                release.release();
+                actorFence.mockRestore();
+            }
+            const results = await completes(Promise.all([mutation, progress]));
+            for (const [result] of results) {
+                if (result?.status === 'rejected') throw result.reason;
+                expect(result?.status).toBe('fulfilled');
+            }
+        });
         it('runs common authorized reads without the global capacity lock or exclusive knowledge-source locks', async () => {
             const chat = await create();
             const note = await db.transaction((tx) =>

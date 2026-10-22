@@ -330,7 +330,9 @@ text may remain in retained derivatives. See
 
 The credit module owns immutable editable tariff revisions, independent of
 provider operational estimates and pricing-schema versions. New admissions pin
-effective rates; existing text jobs preserve their usage settlement semantics.
+effective rates. New text actions use bounded action holds and success-only
+customer settlement under [ADR-0045](adr/0045-action-accounting-and-provider-expenses.md);
+technical failures remain operator expense.
 Paid speech reserves an exact confirmed quote and settles only after successful
 publication, with permanent billing closure after release/deadline. Cached/joined
 playback is free. See
@@ -467,3 +469,21 @@ server-owned unfinished interview, never a new browser storage archive.
 See [ADR-0044](adr/0044-learner-portrait-approval-and-use-boundaries.md),
 [the verified journey](user-flows/learner-portrait.md), and
 [feature051 evidence](../.agent/features/051-learner-portrait/EVIDENCE.md).
+
+
+## Action accounting and provider expenses
+
+The ai-credits module joins typed feature transactions for exact milli-credit
+holds, attempt authorization and outcome-aware settlement. Customer tariffs,
+capability funding policies and provider USD rates are independent immutable
+revisions. Learner action limits and shared operator account/day and global/day
+budgets constrain new work, including free interviews and unlimited accounts.
+Transactional wallet/capacity projections keep historical scans off admission;
+bounded maintenance and report refresh use dedicated background connections.
+Admin-only financial records retain payments, refunds, provider deposits and
+reconciliation separately from learner credits. Financial reporting preserves
+unknown expense and distinguishes granted credits from purchase revenue.
+
+See [ADR-0045](adr/0045-action-accounting-and-provider-expenses.md) and the
+[approved design](ai-credit-accounting-design.md). Delivery and measured load
+capacity are tracked in [Feature052](../.agent/features/052-ai-accounting/FEATURE.md).

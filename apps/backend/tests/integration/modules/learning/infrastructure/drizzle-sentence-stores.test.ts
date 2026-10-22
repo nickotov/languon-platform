@@ -1,3 +1,16 @@
+import { aiAccountingSettingsRevisionsTable as accountingSettings } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+import {
+    ActionAllowanceConfirmationRequired,
+    withActionAllowanceConsent,
+} from '../../../../../src/modules/ai-credits/infrastructure/action-allowance-consent';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { DrizzleTextAiAdmissionParticipant } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
+import { seedLegacyActionFixture } from '../../../../support/legacy-action-fixture';
+import {
+    aiCreditActionsTable as actions,
+    aiCreditActionAttemptsTable as actionAttempts,
+    aiCreditActionQuotesTable as actionQuotes,
+} from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { randomUUID } from 'node:crypto';
 import { validateSentenceGeneration } from '../../../../../src/modules/learning/domain/sentence-content';
 import {
@@ -5,7 +18,7 @@ import {
     type PostgresClient,
     type PostgresJsDatabase,
 } from '@languon/database';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
 import { usersTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
@@ -29,7 +42,10 @@ import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
 } from '../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
-import { textAiCapacityObservationId } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import {
+    sentenceExecutionObservationId,
+    textAiCapacityObservationId,
+} from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { DrizzleDictionaryGenerationStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
 import { DrizzleSentencePracticeStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store';
 import { DrizzleSentenceWorkerStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store';
@@ -346,7 +362,8 @@ run('sentence persistence', () => {
         await client?.end();
     });
     beforeEach(async () => {
-        await client.unsafe('truncate users cascade');
+        await resetTestDatabase(client);
+        await migrateTestDatabase(client);
         await db.delete(circuits);
         await db.delete(dictionaryAiWorkerObservationsTable);
         executionOverride = null;
@@ -421,6 +438,7 @@ run('sentence persistence', () => {
             version: 1,
             catalogSnapshot: snapshot,
         });
+        await seedLegacyActionFixture(db);
         store = new DrizzleSentencePracticeStore(db, {
             resolveExecution: async (tx, _user, format, now) => {
                 const selected = executionOverride ?? snapshot;
@@ -440,6 +458,96 @@ run('sentence persistence', () => {
                 };
             },
         });
+    }, 120000);
+    it('Feature052 settles a bounded sentence action only after validated publication', async () => {
+        const result = await generated();
+        const [action] = await db
+            .select()
+            .from(actions)
+            .where(eq(actions.id, result.lease.jobId));
+        expect(action).toMatchObject({
+            state: 'settled',
+            outcome: 'success',
+            funding: 'unlimited',
+            chargedMilli: 0n,
+            outputLimit: 10000,
+        });
+        expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
+            0,
+        );
+    });
+    it('confirms a paid sentence Next quote without changing its allowance', async () => {
+        await db
+            .update(aiCreditAccountsTable)
+            .set({ mode: 'limited' })
+            .where(eq(aiCreditAccountsTable.userId, owner));
+        await db.transaction((tx) =>
+            new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
+                ownerId: owner,
+                amount: 20000n,
+                createdAt: new Date(),
+                expiresAt: null,
+                source: 'admin',
+                sourceReference: randomUUID(),
+            }),
+        );
+        await db.insert(dictionaryAiConfigurationTable).values({
+            id: 'global',
+            activeRevisionId: revisionId,
+            version: 1,
+            updatedAt: new Date(),
+        });
+        const model = textAiModelCatalog[0]!;
+        await db.insert(dictionaryAiWorkerObservationsTable).values({
+            id: sentenceExecutionObservationId(
+                'paid-sentence-fixture',
+                model.providerId,
+                model.id,
+            ),
+            workerId: 'paid-sentence-fixture',
+            message: 'Synthetic paid sentence readiness',
+            providerId: model.providerId,
+            modelId: model.id,
+            adapterRevision: model.adapterRevision,
+            checkedAt: new Date(),
+            expiresAt: new Date(Date.now() + 60000),
+            status: 'available',
+            textAiSelectionRevision: 1,
+            textAiCapacityRevision: 1,
+            learningExecutionRevision: 1,
+            creditSettlementRevision: 1,
+            textAiSupportedFormats: ['sentence-generation:v1'],
+        });
+        store = new DrizzleSentencePracticeStore(db, {
+            resolveExecution: (tx, userId, format, now) =>
+                new DrizzleTextAiAdmissionParticipant(tx, {
+                    routingEnabled: true,
+                    credentialConfigured: () => true,
+                }).resolve({
+                    userId,
+                    format,
+                    now,
+                    legacyBudget: textAiModelCatalog[0]!.aggregateBudget,
+                }),
+        });
+        const request = next();
+        let offer: ActionAllowanceConfirmationRequired | undefined;
+        try {
+            await store.next(access(), request, context());
+        } catch (error) {
+            offer = error as ActionAllowanceConfirmationRequired;
+        }
+        expect(offer).toBeInstanceOf(ActionAllowanceConfirmationRequired);
+        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
+        expect(await db.select().from(actions)).toHaveLength(0);
+        expect(await db.select().from(actionAttempts)).toHaveLength(0);
+        expect(await db.select().from(actionQuotes)).toHaveLength(1);
+        const admitted = await withActionAllowanceConsent(offer!.quote.id, () =>
+            store.next(access(), request, context()),
+        );
+        expect(admitted.kind).toBe('job');
+        const [action] = await db.select().from(actions);
+        expect(action?.outputLimit).toBe(offer!.quote.approximateOutputTokens);
     });
     it('persists and reuses contextual hints without adding helper entry coverage, and checks all43 disclosures', async () => {
         const third = randomUUID();
@@ -1190,7 +1298,7 @@ run('sentence persistence', () => {
             await worker.fail(
                 first.lease,
                 {
-                    code: 'provider_timeout',
+                    code: 'provider_rate_limited',
                     retryAt: new Date(),
                     usage: { inputTokens: 100, outputTokens: 20 },
                 },
@@ -1204,8 +1312,10 @@ run('sentence persistence', () => {
             'lost',
         );
         expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
-            2,
+            0,
         );
+        expect(await db.select().from(actions)).toHaveLength(1);
+        expect(await db.select().from(actionAttempts)).toHaveLength(2);
         await store.cancelJob(access(), second.lease.jobId, context());
         expect(await worker.markDispatched(second.lease, context())).toBe(
             'terminalized',
@@ -1901,7 +2011,22 @@ run('sentence persistence', () => {
             userQueueLimit: 2,
         });
     });
-    it('returns retryable capacity pressure for provider reservations without creating more jobs, credits, or operation receipts', async () => {
+    it('returns retryable capacity pressure from the shared operator allowance without creating jobs or receipts', async () => {
+        const [latestSettings] = await db
+            .select()
+            .from(accountingSettings)
+            .orderBy(desc(accountingSettings.version))
+            .limit(1);
+        await db.insert(accountingSettings).values({
+            id: randomUUID(),
+            version: latestSettings!.version + 1,
+            defaultMaxCreditsPerAction: '20',
+            maxProviderCostUsdPerAction: '1',
+            maxProviderCostUsdPerAccountDay: '1.2',
+            maxProviderCostUsdPerDay: '10000',
+            createdAt: new Date(),
+            reason: 'Synthetic finite operator account-day capacity boundary',
+        });
         for (let index = 0; index < 3; index++)
             await store.next(access(), next(), context());
         await expectCapacityRejection({

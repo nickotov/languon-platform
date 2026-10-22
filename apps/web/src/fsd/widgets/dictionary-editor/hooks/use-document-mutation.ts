@@ -16,6 +16,7 @@ import type { useEditorState } from './use-editor-state';
 import type { useDocumentJob } from './use-document-job';
 
 export function useDocumentMutation({
+    actionConsent,
     t,
     queryClient,
     setBatchGenerationOpen,
@@ -32,6 +33,7 @@ export function useDocumentMutation({
     documentGenerationJob,
 }: Pick<
     ReturnType<typeof useEditorState>,
+    | 'actionConsent'
     | 't'
     | 'queryClient'
     | 'setBatchGenerationOpen'
@@ -119,17 +121,23 @@ export function useDocumentMutation({
                     }),
                 );
                 documentRetryAttempt.current = attempt;
-                const response = await requestWithSession((token) =>
-                    dictionaryApi.retryDocumentTermsGeneration(
-                        token,
-                        documentGenerationJobId,
-                        {
-                            expectedDictionaryVersion:
-                                versions.dictionaryVersion,
-                            expectedSettingsVersion: versions.settingsVersion,
-                            rowIndexes,
-                        },
-                        attempt.key,
+                const response = await actionConsent.run((confirmedQuoteId) =>
+                    requestWithSession((token) =>
+                        dictionaryApi.retryDocumentTermsGeneration(
+                            token,
+                            documentGenerationJobId,
+                            {
+                                expectedDictionaryVersion:
+                                    versions.dictionaryVersion,
+                                expectedSettingsVersion:
+                                    versions.settingsVersion,
+                                rowIndexes,
+                                ...(confirmedQuoteId
+                                    ? { confirmedQuoteId }
+                                    : {}),
+                            },
+                            attempt.key,
+                        ),
                     ),
                 );
                 documentRetryAttempt.current = null;
@@ -162,19 +170,23 @@ export function useDocumentMutation({
                 fingerprint,
             );
             documentUploadAttempt.current = attempt;
-            const authorization = await requestWithSession((token) =>
-                dictionaryApi.createDocumentUpload(
-                    token,
-                    dictionaryId,
-                    {
-                        expectedDictionaryVersion: versions.dictionaryVersion,
-                        expectedSettingsVersion: versions.settingsVersion,
-                        instruction,
-                        mediaType,
-                        sha256,
-                        sizeBytes: action.file.size,
-                    },
-                    attempt.key,
+            const authorization = await actionConsent.run((confirmedQuoteId) =>
+                requestWithSession((token) =>
+                    dictionaryApi.createDocumentUpload(
+                        token,
+                        dictionaryId,
+                        {
+                            expectedDictionaryVersion:
+                                versions.dictionaryVersion,
+                            expectedSettingsVersion: versions.settingsVersion,
+                            instruction,
+                            mediaType,
+                            sha256,
+                            sizeBytes: action.file.size,
+                            ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                        },
+                        attempt.key,
+                    ),
                 ),
             );
             setDocumentGenerationJobId(authorization.job.id);

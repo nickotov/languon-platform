@@ -1,3 +1,5 @@
+import { ActionAllowanceQuoteSchema } from '../ai-action';
+import { ActionBillingSchema } from '../ai-action';
 import { SUPPORTED_LANGUAGE_TAGS } from '@languon/languages';
 import { z } from 'zod';
 
@@ -306,6 +308,7 @@ export const TextFolderIdParamsSchema = z
 export const TextJobIdParamsSchema = z.object({ jobId: TextIdSchema }).strict();
 export const EnqueueTextDetectionRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         folderId: TextIdSchema.nullable(),
         sourceText: TextSourceSchema,
         operationId: TextIdSchema,
@@ -313,6 +316,7 @@ export const EnqueueTextDetectionRequestSchema = z
     .strict();
 export const EnqueueTextTranslationRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         folderId: TextIdSchema.nullable(),
         ...ContentFields,
         operationId: TextIdSchema,
@@ -360,6 +364,7 @@ export const TextTranslationProposalSchema = z
     });
 export const TextAiJobSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id: TextIdSchema,
         kind: z.enum(['text-detection', 'text-translation']),
         state: z.enum([
@@ -493,6 +498,7 @@ export const TextSelectionSchema = z
     .refine((v) => v.endOffset > v.startOffset, 'Selection must be nonempty');
 export const EnqueueTextSelectionRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         operationId: TextIdSchema,
         source: TextSelectionSourceSchema,
         selection: TextSelectionSchema,
@@ -518,6 +524,7 @@ export const TextErrorCodeSchema = z.enum([
     'generation_proposal_expired',
     'generation_not_reviewable',
     'ai_credits_exhausted',
+    'action_confirmation_required',
     'rate_limited',
     'service_unavailable',
     'internal_error',
@@ -527,6 +534,10 @@ export const TextErrorResponseSchema = z
         error: z
             .object({
                 code: TextErrorCodeSchema,
+                details: z
+                    .object({ quote: ActionAllowanceQuoteSchema })
+                    .strict()
+                    .optional(),
                 message: z.string().min(1).max(300),
                 correlationId: z.string().min(1).max(128),
                 retryAfterSeconds: z
@@ -578,6 +589,7 @@ export type TextErrorCode = z.infer<typeof TextErrorCodeSchema>;
 
 export const TextSelectionJobSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id: TextIdSchema,
         state: z.enum([
             'queued',

@@ -36,7 +36,15 @@ export function ModelPriceDialog({
     const speech = price.meter === 'speech-characters';
     const initialValues = { ...price, reason: '' };
     const numberRules = [
-        { required: true, type: 'integer' as const, min: 0, max: 1000000000 },
+        { required: true, type: 'number' as const, min: 0, max: 1000000000 },
+    ];
+    const speechRateRules = [
+        {
+            required: true,
+            type: 'number' as const,
+            min: 0.001,
+            max: 1000000000,
+        },
     ];
     return (
         <Modal
@@ -83,12 +91,13 @@ export function ModelPriceDialog({
                         <Form.Item
                             name='creditsPer1000Characters'
                             label={t('pricing.characterRate')}
-                            rules={numberRules}
+                            rules={speechRateRules}
                         >
                             <InputNumber
-                                min={0}
+                                min={0.001}
                                 max={1000000000}
-                                precision={0}
+                                precision={3}
+                                step={0.001}
                             />
                         </Form.Item>
                         <Form.Item
@@ -99,7 +108,8 @@ export function ModelPriceDialog({
                             <InputNumber
                                 min={0}
                                 max={1000000000}
-                                precision={0}
+                                precision={3}
+                                step={0.001}
                             />
                         </Form.Item>
                     </>
@@ -113,7 +123,8 @@ export function ModelPriceDialog({
                             <InputNumber
                                 min={0}
                                 max={1000000000}
-                                precision={0}
+                                precision={3}
+                                step={0.001}
                             />
                         </Form.Item>
                         <Form.Item
@@ -124,7 +135,23 @@ export function ModelPriceDialog({
                             <InputNumber
                                 min={0}
                                 max={1000000000}
-                                precision={0}
+                                precision={3}
+                                step={0.001}
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name='cachedInputCreditsPerMillionTokens'
+                            label={t('pricing.cachedInputRate')}
+                            help={t('pricing.cachedInputHelp')}
+                            rules={[
+                                { type: 'number', min: 0, max: 1000000000 },
+                            ]}
+                        >
+                            <InputNumber
+                                min={0}
+                                max={1000000000}
+                                precision={3}
+                                step={0.001}
                             />
                         </Form.Item>
                     </>

@@ -7,6 +7,8 @@ import {
 import {
     useModelPreference,
     preferenceCopy,
+    budgetCopy,
+    compactCredits,
 } from '@/fsd/features/text-ai-preferences';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
@@ -33,6 +35,7 @@ export function ConversationModel({
     const { locale, href } = useI18n();
     const copy = conversationCopy(locale);
     const preference = preferenceCopy(locale);
+    const budget = budgetCopy(locale);
     const text = composerCopy(locale);
     const controller = useModelPreference(request);
     const { base, draft, catalog, pref, saveState } = controller;
@@ -119,6 +122,21 @@ export function ConversationModel({
                         {preference.useLatest}
                     </Button>
                 </>
+            )}
+            {base && base.maxCreditsPerAction == null && (
+                <p className={styles.hint}>{budget.unset}</p>
+            )}
+            {base?.maxCreditsPerAction != null && (
+                <details className={styles.hint}>
+                    <summary>
+                        {budget.maximum}:{' '}
+                        {compactCredits(base.maxCreditsPerAction)}
+                    </summary>
+                    <p>
+                        {budget.exact}: {base.maxCreditsPerAction}
+                    </p>
+                    <p>{budget.authorization}</p>
+                </details>
             )}
             <PopoverSeparator />
             <ButtonLink href={profileLink} size='compact' variant='quiet'>

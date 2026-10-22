@@ -427,6 +427,7 @@ export const ReadDictionaryGenerationCapabilitiesResponseSchema = z
 
 export const EnqueueDictionaryCardGenerationRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         expectedCardVersion: DictionaryVersionSchema,
@@ -474,6 +475,7 @@ const DictionaryPastedTermsTextSchema = z
 
 export const EnqueueDictionaryPastedTermsGenerationRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         text: DictionaryPastedTermsTextSchema,
@@ -487,6 +489,7 @@ export const EnqueueDictionaryPastedTermsGenerationResponseSchema = z
 
 export const RetryDictionaryPastedTermsGenerationRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         rowIndexes: z
@@ -510,6 +513,7 @@ export const RetryDictionaryPastedTermsGenerationResponseSchema = z
 
 export const RetryDictionaryImportPairsGenerationRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         rowIndexes: z
@@ -543,6 +547,7 @@ export const DictionaryDocumentUploadIdParamsSchema = z
 
 export const CreateDictionaryDocumentUploadRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         instruction:

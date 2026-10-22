@@ -282,7 +282,7 @@ export class SentencePreparationStore {
         });
         await this.execute(() => this.recover());
     };
-    private async command(action: 'stop' | 'resume') {
+    private async command(action: 'stop' | 'resume' | 'continue') {
         if (
             !this.stored.id ||
             !this.api.commandPreparation ||
@@ -307,6 +307,9 @@ export class SentencePreparationStore {
     };
     resume = async () => {
         await this.command('resume');
+    };
+    continueWithBudget = async () => {
+        await this.command('continue');
     };
     loadMore = async () => {
         const id = this.stored.id;

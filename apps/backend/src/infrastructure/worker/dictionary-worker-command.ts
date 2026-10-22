@@ -1,3 +1,4 @@
+import { UnavailableGenerationBurstLimiter } from '../../modules/text-ai/application/generation-burst-limiter';
 import { expireLearnerPortraitInterviews } from '../../modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-interview-store';
 import { createLearnerPortraitWorkerComposition } from '../../modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createConversationWorkerComposition } from '../../modules/conversations/infrastructure/conversation-worker-composition';
@@ -220,6 +221,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         database,
     });
     const sharedSpeech = createSpeechInfrastructure({
+        burstLimiter: new UnavailableGenerationBurstLimiter(),
         database,
         dictionaryHmacSecret:
             process.env.DICTIONARY_HMAC_SECRET ??

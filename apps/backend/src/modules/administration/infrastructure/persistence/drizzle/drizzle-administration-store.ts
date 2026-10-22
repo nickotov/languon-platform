@@ -1,4 +1,8 @@
 import {
+    adminCreditsToMilli,
+    milliToAdminCredits,
+} from './admin-credit-amount';
+import {
     dictionaryAiConfigurationRevisionsTable,
     dictionaryAiConfigurationTable,
     dictionaryAiWorkerObservationsTable,
@@ -846,7 +850,7 @@ export class DrizzleAdministrationStore implements AdministrationStore {
                     const adjustment =
                         input as AdminAiCreditAdjustmentMutationInput;
                     await credits.adjustByAdmin({
-                        amount: BigInt(adjustment.amountCredits),
+                        amount: adminCreditsToMilli(adjustment.amountCredits),
                         at: operationTime,
                         expectedManagementVersion: adjustment.expectedVersion,
                         expiresAt: adjustment.expiresAt
@@ -950,23 +954,25 @@ export class DrizzleAdministrationStore implements AdministrationStore {
         });
         return {
             account: {
-                availableCredits: Number(summary.availableCredits),
+                availableCredits: milliToAdminCredits(summary.availableCredits),
                 configuredMode: summary.policy.configuredMode,
                 effectiveMode: summary.policy.effectiveMode,
                 enforcementEnabled:
                     process.env.DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED ===
                     'true',
-                lifetimeConsumedCredits: Number(summary.consumedCredits),
+                lifetimeConsumedCredits: milliToAdminCredits(
+                    summary.consumedCredits,
+                ),
                 managementVersion: summary.managementVersion,
                 nextExpirationAt:
                     summary.nextExpirationAt?.toISOString() ?? null,
-                reservedCredits: Number(summary.reservedCredits),
+                reservedCredits: milliToAdminCredits(summary.reservedCredits),
                 unlimitedUntil:
                     summary.policy.unlimitedUntil?.toISOString() ?? null,
                 userId,
             },
             history: history.entries.map((entry) => ({
-                amountCredits: Number(entry.amount),
+                amountCredits: milliToAdminCredits(entry.amount),
                 expiresAt: entry.expiresAt?.toISOString() ?? null,
                 id: entry.id,
                 kind: entry.kind === 'admin_removal' ? 'removal' : entry.kind,

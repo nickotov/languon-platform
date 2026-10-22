@@ -1,3 +1,9 @@
+import {
+    actionAllowanceRequestMiddleware,
+    actionAllowanceErrorResponse,
+} from '../../../ai-credits/infrastructure/action-allowance-consent';
+import type { CapabilityPolicy } from '@languon/contracts';
+import { PortraitInterviewDailyQuotaError } from '../../application/ports/interview-store';
 import { InterviewAccountingError } from '../../infrastructure/interview-accounting';
 import { PortraitInterviewResourceLimitError } from '../../application/ports/interview-store';
 import { authenticationRequestMetadata } from '../../../authentication/interface/http/auth-http-request';
@@ -79,7 +85,7 @@ export function createLearnerPortraitRoutes(deps: {
     authenticate(token: string): Promise<{ userId: string }>;
     rateLimiter: RateLimiter;
     policy: AuthHttpPolicy;
-    creditsBypass: boolean;
+    readChargingPolicy(): Promise<CapabilityPolicy>;
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
@@ -138,7 +144,18 @@ export function createLearnerPortraitRoutes(deps: {
             return c.body(null, 204);
         });
     }
+    app.use('*', actionAllowanceRequestMiddleware);
     app.onError((cause, c) => {
+        const allowanceError = actionAllowanceErrorResponse(cause, c);
+        if (allowanceError) return allowanceError;
+        if (cause instanceof PortraitInterviewDailyQuotaError)
+            return c.json(
+                envelope(
+                    'resource_limit',
+                    'Daily interview limit reached. Try again tomorrow (UTC).',
+                ),
+                429,
+            );
         if (cause instanceof PortraitInterviewResourceLimitError)
             return c.json(
                 envelope(
@@ -283,7 +300,9 @@ export function createLearnerPortraitRoutes(deps: {
             c.json(
                 {
                     interview: await deps.interviews.status(await owner(c)),
-                    creditsBypass: deps.creditsBypass,
+                    creditsBypass:
+                        (await deps.readChargingPolicy()).funding ===
+                        'operator',
                 },
                 200,
             ),
@@ -386,7 +405,9 @@ export function createLearnerPortraitRoutes(deps: {
                         await owner(c),
                         StartPortraitInterviewSchema.parse(c.req.valid('json')),
                     )),
-                    creditsBypass: deps.creditsBypass,
+                    creditsBypass:
+                        (await deps.readChargingPolicy()).funding ===
+                        'operator',
                 },
                 200,
             ),

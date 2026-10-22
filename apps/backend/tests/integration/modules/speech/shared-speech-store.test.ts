@@ -1,3 +1,7 @@
+import { parseCreditMilli } from '../../../../src/modules/ai-credits/domain/exact-credit-amount';
+import { DrizzleProviderPriceStore } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
+import { aiAccountingSettingsRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+import { accountDeletionRequestsTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 import { randomUUID, createHmac, randomBytes } from 'node:crypto';
 import { DrizzleDictionaryStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
 import { HmacDictionaryCryptography } from '../../../../src/modules/dictionaries/infrastructure/crypto/dictionary-cryptography';
@@ -104,13 +108,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             for (const actor of actors)
                 await db.transaction((tx) =>
                     new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
-                        amount: 1000n,
+                        amount: 1_000_000n,
                         createdAt: now,
                         expiresAt: null,
                         ownerId: actor,
                         source: 'migration',
                         sourceReference: randomUUID(),
                     }),
+                );
+            await db.insert(aiAccountingSettingsRevisionsTable).values({
+                id: randomUUID(),
+                version: 1,
+                defaultMaxCreditsPerAction: '10',
+                maxProviderCostUsdPerAction: '1',
+                maxProviderCostUsdPerAccountDay: '10',
+                maxProviderCostUsdPerDay: '100',
+                createdAt: now,
+                reason: 'Synthetic disposable speech limits',
+            });
+            for (const providerId of ['fixture', 'kie'])
+                await new DrizzleProviderPriceStore(db).publish(
+                    {
+                        expectedVersion: 0,
+                        providerId,
+                        modelId: provider.supports('fr').model,
+                        meter: 'speech-characters',
+                        inputUsdPerMillionTokens: null,
+                        outputUsdPerMillionTokens: null,
+                        cacheReadUsdPerMillionTokens: null,
+                        cacheWriteUsdPerMillionTokens: null,
+                        usdPer1000Characters: '0.01',
+                        effectiveAt: '2020-01-01T00:00:00.000Z',
+                        sourceReference: 'Synthetic fixture',
+                        sourceUrl: null,
+                        reason: 'Synthetic disposable provider tariff',
+                    },
+                    actors[0]!,
+                    now,
                 );
             storage = new PostgresAudioObjectStorage(db);
             store = new DrizzleSpeechStore({
@@ -169,6 +203,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         afterAll(async () => {
             if (client) await client.end();
         });
+        const schedulePurge = async (actor: string) => {
+            const at = new Date();
+            await db
+                .update(usersTable)
+                .set({ status: 'deletion_pending' })
+                .where(eq(usersTable.id, actor));
+            await db.insert(accountDeletionRequestsTable).values({
+                userId: actor,
+                state: 'running',
+                scheduledAt: new Date(at.getTime() - 120000),
+                purgeAt: new Date(at.getTime() - 60000),
+                nextAttemptAt: new Date(at.getTime() - 60000),
+                leaseDeadline: new Date(at.getTime() + 120000),
+                leaseWorkerId: 'synthetic-speech-purge-test',
+                fencingToken: 1,
+                updatedAt: at,
+            });
+        };
         const prepare = (actor: string, operationId = randomUUID()) =>
             store.prepare({
                 actorId: actor,
@@ -369,7 +421,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )
                     ).response,
                 ).toMatchObject({ state: 'ready', billingState: 'free' });
-            await store.purgeActor(actors[0]!, now);
+            await schedulePurge(actors[0]!);
+            await store.purgeActor(actors[0]!, now, {
+                workerId: 'synthetic-speech-purge-test',
+                fencingToken: 1,
+            });
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('ready');
@@ -409,9 +465,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
             const availableBeforePurge = (await wallet(actors[0]!))
                 .availableCredits;
+            await schedulePurge(actors[0]!);
             let completion!: Promise<void>;
             await db.transaction(async (tx) => {
-                await purgeSpeechActor(tx, actors[0]!, new Date());
+                await purgeSpeechActor(tx, actors[0]!, new Date(), {
+                    workerId: 'synthetic-speech-purge-test',
+                    fencingToken: 1,
+                });
                 // Completion must wait for the deletion transaction's held job lock.
                 completion = store.complete(job!, reference, audio, now);
                 await tx.execute(sql`select pg_sleep(0.05)`);
@@ -433,7 +493,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(after.reservedCredits).toBe(0n);
             expect(after.consumedCredits).toBe(0n);
             expect(after.availableCredits).toBe(
-                availableBeforePurge + BigInt(prepared.quote!.credits),
+                availableBeforePurge +
+                    parseCreditMilli(prepared.quote!.credits),
             );
             const retained = await db.select().from(speechRecordingsTable);
             expect(retained).toHaveLength(2);
@@ -470,7 +531,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const [job] = await db.select().from(speechJobsTable);
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect((await wallet(job!.payerId!)).reservedCredits).toBe(
-                BigInt(prepared[0]!.quote!.credits),
+                parseCreditMilli(prepared[0]!.quote!.credits),
             );
             const joiner = actors.find((actor) => actor !== job!.payerId)!;
             expect((await wallet(joiner)).reservedCredits).toBe(0n);
@@ -519,7 +580,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await confirm(actors[0]!, retry);
             expect(await db.select().from(speechJobsTable)).toHaveLength(2);
             expect((await wallet(actors[0]!)).reservedCredits).toBe(
-                BigInt(retry.quote!.credits),
+                parseCreditMilli(retry.quote!.credits),
             );
         });
         it('uses a cache filled after quoting without charging the original quote requester', async () => {
@@ -551,7 +612,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(results[0]?.requestId).toBe(results[1]?.requestId);
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect((await wallet(actors[0]!)).reservedCredits).toBe(
-                BigInt(quote.quote!.credits),
+                parseCreditMilli(quote.quote!.credits),
             );
         });
         it('serializes text and speech reservations against one wallet without overspending', async () => {
@@ -576,7 +637,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 aiCreditAccounted: true,
                 aiCreditInputCreditsPerMillionTokens: 1_000_000,
                 aiCreditOutputCreditsPerMillionTokens: 3_000_000,
-                aiCreditMaxCreditsPerAttempt: 1000,
+                aiCreditMaxCreditsPerAttempt: 1_000_000,
                 aiCreditPricingRevision: 1,
                 aiCreditPolicyMode: 'limited',
                 attemptCount: 1,
@@ -603,7 +664,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         jobId,
                         jobKind: 'dictionary-generation',
                         attempt: 1,
-                        maximumCredits: 1000n,
+                        maximumCredits: 1_000_000n,
                         at: now,
                     }),
                 ),
@@ -612,7 +673,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 outcomes.filter((outcome) => outcome.status === 'fulfilled'),
             ).toHaveLength(1);
             const summary = await wallet(actors[0]!);
-            expect(summary.reservedCredits).toBeLessThanOrEqual(1000n);
+            expect(summary.reservedCredits).toBeLessThanOrEqual(1_000_000n);
             expect(summary.availableCredits).toBeGreaterThanOrEqual(0n);
         });
         it('invalidates a quote when voice settings change even if the tariff is unchanged', async () => {
@@ -951,7 +1012,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toBe('failed');
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect((await wallet(actors[0]!)).consumedCredits).toBe(
-                BigInt(prepared.quote!.credits),
+                parseCreditMilli(prepared.quote!.credits),
             );
             expect((await wallet(actors[0]!)).reservedCredits).toBe(0n);
             expect((await prepare(actors[0]!)).state).toBe(
@@ -1030,6 +1091,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     resolver.resolveInTransaction(actor, reference, tx),
             });
             const service = new SpeechService({
+                burstLimiter: { consume: async () => ({ allowed: true }) },
                 store: realStore,
                 resolver,
                 storage,

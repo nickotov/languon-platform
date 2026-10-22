@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ActionBillingSchema } from '../ai-action';
 import { DictionaryLanguageTagSchema } from '../dictionaries/primitives';
 import {
     SentenceDirectionSchema,
@@ -22,6 +23,7 @@ export const SentencePreparationStateSchema = z.enum([
 export const SentencePreparationPauseReasonSchema = z.enum([
     'user',
     'credits',
+    'budget',
     'capacity',
     'model',
     'provider',
@@ -35,6 +37,7 @@ export const SentencePreparationStartRequestSchema = z
         mode: SentenceModeSchema,
         initialRoundScope: SentenceScopeSchema,
         explanationLanguage: DictionaryLanguageTagSchema.optional(),
+        confirmedQuoteId: z.uuid().optional(),
     })
     .strict();
 export const SentencePreparationBatchSchema = z
@@ -72,6 +75,9 @@ export const SentencePreparationSchema = z
         initialBatch: SentencePreparationBatchSchema.nullable(),
         batchCount: count,
         activeJobId: z.uuid().nullable(),
+        billing: ActionBillingSchema.optional(),
+        remainingOutputTokens: z.number().int().min(0).max(10000).optional(),
+        requiresNewBudget: z.boolean().optional(),
         createdAt: z.iso.datetime(),
         updatedAt: z.iso.datetime(),
     })
@@ -90,7 +96,8 @@ export const SentencePreparationStartResponseSchema = z
 export const SentencePreparationCommandRequestSchema = z
     .object({
         operationId: z.uuid(),
-        action: z.enum(['stop', 'resume']),
+        action: z.enum(['stop', 'resume', 'continue']),
+        confirmedQuoteId: z.uuid().optional(),
     })
     .strict();
 export const SentencePreparationCommandResponseSchema =

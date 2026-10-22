@@ -1,0 +1,1827 @@
+{
+  "base": "d441863f55a8a53e9d712bf98f6805049a45ff4b",
+  "branch": "feature/ai-accounting",
+  "scope": "All tracked/untracked changed implementation, configuration, migrations, docs and feature records; mutable evidence files excluded, read latest evidence separately.",
+  "files": [
+    {
+      "path": ".agent/features/052-ai-accounting/EVIDENCE.md",
+      "sha256": "bc55a07a5ecdd91c12bb960683c4a6abbca647d49f63a2267734daff2c3f3ed3",
+      "bytes": 11610
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/EXEC_PLAN.md",
+      "sha256": "5dbf5ec4d1db8aabb66b744533840dabe18e35eedd683c78fc197dbead36f7bc",
+      "bytes": 19559
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/FEATURE.md",
+      "sha256": "77ff484976b1395d563f44afe6e359d9d9f9e73fa6de58ba3a3c7d288bf32a51",
+      "bytes": 3115
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/REVIEW.md",
+      "sha256": "0ad35b7d642d9b2d7ae1fdb5f673432578c5774c82deeb42c9d8bfa47316e0a8",
+      "bytes": 4744
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/WALLET_EVIDENCE.md",
+      "sha256": "6ea8dc3eadd59814df34df3bdb5b05a55e78c9170311b89f98432efb1bf814d5",
+      "bytes": 7582
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/action-authority-guards.sql",
+      "sha256": "4109429c7c88251ff26f6eb4acedd4ae5148d6132d4f163b957db51bbe250149",
+      "bytes": 19222
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/capability-policy-guards.sql",
+      "sha256": "ecc975cee0310e5c7fcc1010d6e31797c8acb06014a43f7753747e873056b5e4",
+      "bytes": 16472
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/capacity-projections.sql",
+      "sha256": "4fb742c54206d114392a8f6ca0a5d74a719d1081a53748f8fdf80be63a3632cc",
+      "bytes": 26360
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/capacity-remediation.sql",
+      "sha256": "0140f10e7051036eba7d34ccdbafb4a5f793133feeab1bab59ea92929bbcdf36",
+      "bytes": 15994
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/conversation-action-accounting.sql",
+      "sha256": "c793f96c0bd03c4c0baf7602f9ac1a68a38f67a56869a38b53717ff606c99e41",
+      "bytes": 8384
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/credit-milli-units.sql",
+      "sha256": "ea5b7219985b3a58e92071db9bb265b0e1beb1def74782e388b38a238b89450c",
+      "bytes": 8398
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/legacy-action-accounting.sql",
+      "sha256": "cbe58a52dd5be8be4f188b25adfd919dc483ec1556d356f6bc19cf4bf7a5217f",
+      "bytes": 8163
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/operator-budget-guards.sql",
+      "sha256": "0c0972f0ec015554e34514357536cd8c2c2c1654b82959a8dac50c35354fe425",
+      "bytes": 6809
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/technical-failure-guards.sql",
+      "sha256": "f001c32458ac82ded9626f122d627d1f652561f41d3ce3ae3fe4ee3013cc1306",
+      "bytes": 10188
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/wallet-projections.sql",
+      "sha256": "57e3bd74d5b75b2d9ea780fc53f3efcfee0cd1769075ae13ffe2c01a92f9c2c6",
+      "bytes": 10634
+    },
+    {
+      "path": ".agent/features/052-ai-accounting/wallet-report-dirty-hooks.sql",
+      "sha256": "11958a66ed5e5ff64c0d43d94c7e37d79b62861953c2628e45f34c8d76a49da9",
+      "bytes": 805
+    },
+    {
+      "path": ".env.example",
+      "sha256": "58d2c9394e92abb706eff19ea9417be2ed884d25f1e8c1ab021ad39d609bbab6",
+      "bytes": 12357
+    },
+    {
+      "path": "CONTEXT.md",
+      "sha256": "c5f23e8c82f9b5e73118e9f8d3c97a2e8daec91ef0988a01bd0a786c5778dc59",
+      "bytes": 11036
+    },
+    {
+      "path": "README.md",
+      "sha256": "ed8e2f0361d31122f2eacc3d39da41394e371731a3d3e7355d1028148a5862ba",
+      "bytes": 24179
+    },
+    {
+      "path": "apps/admin/playwright.config.ts",
+      "sha256": "8f49887733636dc47de66571f8d7cf35259765f2255c859b8e7437611914c5c2",
+      "bytes": 6086
+    },
+    {
+      "path": "apps/admin/src/app/admin-app.tsx",
+      "sha256": "9c6ba6311ef0efeff64b37fb996b7adcb95d328b04be65606f7ee77458772cbb",
+      "bytes": 5150
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/hooks/use-accounting.ts",
+      "sha256": "08abaedd5645794c1d93ee421553fb82b8f66e2e9c2d94d4724d0e1291781091",
+      "bytes": 2919
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/hooks/use-provider-prices.ts",
+      "sha256": "4f2c60d954e88c5ae5bcdbf384f547af571babe189cd6021dccd1b4021cf3554",
+      "bytes": 2523
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/index.ts",
+      "sha256": "8737b5205238072d81c01b6063df5fb8eb3bbcf3c78c1758aea6746df2c6dd3a",
+      "bytes": 71
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/lib/operator-budgets.ts",
+      "sha256": "a4cd171d1150624f3b06588a05ba60e67b06f0324a49453d48ca50aea05e0878",
+      "bytes": 1086
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/lib/report-when-ready.ts",
+      "sha256": "5f3fe3223fc9922f11c37d9102fade212b6637847d3bd10866cf0ae1700d6303",
+      "bytes": 1252
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-page/accounting-page.tsx",
+      "sha256": "0f8ac6afc843edaaf47acae0782dbbddd3e1df405593c432496340a44943e8d3",
+      "bytes": 5777
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-record-dialog/accounting-record-dialog.tsx",
+      "sha256": "6c081281632cbce6b569f249aed9f2021f2c152a5ba31f8e83bccac03368b998",
+      "bytes": 8649
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-record-dialog/payment-fields.tsx",
+      "sha256": "8e369816ff2e8d63521cd9bfb59833abcaeec41cee56bcbfe71b45424eddf7af",
+      "bytes": 1250
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-record-dialog/refund-context.tsx",
+      "sha256": "698f0dca5b42047b6bdd302868a87fb1aadae9a408c8afaca9703dc9816ecb8e",
+      "bytes": 3277
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-report/accounting-report.module.css",
+      "sha256": "24fd60b91576232d0bc83ca34c3cbb13f90c06f0a613a41bb9e880f738f8d596",
+      "bytes": 77
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-report/accounting-report.tsx",
+      "sha256": "234f04f579badebcdd345066b86847fbacee87533205ee53dbf1e2f3e6478329",
+      "bytes": 6411
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-settings/accounting-settings.tsx",
+      "sha256": "a983f4e526fd78c303323300b92f666d48f65e594ec4d3efb3297d8fbca3f806",
+      "bytes": 5173
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-settings/operator-budget-fields.tsx",
+      "sha256": "483306d5cff67b67e0ea2a27e04ccd20c79521fbf987246025ad1bdbb36a5d34",
+      "bytes": 1290
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/capability-policies/capability-policies.tsx",
+      "sha256": "4d661d5e0a6439898824ed0cdb908d5ba5b0d0e043a4fb9b40e509a4dbe2dddc",
+      "bytes": 5848
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-price-dialog.tsx",
+      "sha256": "4355360fb3578847cf9027a149325803b74c067e1083c77546e7d0da23d06427",
+      "bytes": 6953
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-prices.tsx",
+      "sha256": "371a9718caf0ff463e5397c188cf8924bcb8cb3765bdc34c15625f1c7257eb01",
+      "bytes": 3998
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/hooks/use-model-prices.ts",
+      "sha256": "2979eb0333a763b19ab244e832d883d14e2782d709cab52473d230b7f296fa89",
+      "bytes": 3788
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/model-prices/model-price-dialog.tsx",
+      "sha256": "c8fb2a88547fdeba5fa95f1f4e060ea52ecc856373c6d288bfbf97591bcbc8b8",
+      "bytes": 6241
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/model-prices/model-prices-panel.tsx",
+      "sha256": "ce4790df440c0ce29eafa8f96c5f44b3305b959a446a41f2828aa2c5058e5786",
+      "bytes": 4190
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/ai-credits-panel/ai-credit-adjustment-dialog.tsx",
+      "sha256": "3d5ddf1550f1310222caf6c0a82bc0d1ec1278a446db422f2efaedaed301eaf2",
+      "bytes": 5459
+    },
+    {
+      "path": "apps/admin/src/shared/access/admin-access-provider.ts",
+      "sha256": "b6fa64bd35c36b5c26b9cad820d9ac6923eece6f90341df8cd8767dd17947425",
+      "bytes": 628
+    },
+    {
+      "path": "apps/admin/src/shared/api/admin-api.ts",
+      "sha256": "dbdfde07d2600ae66e424f15c63ff04d0ae700429e46c5424c2237e45b5120dc",
+      "bytes": 20505
+    },
+    {
+      "path": "apps/admin/src/shared/i18n/admin-i18n-provider.ts",
+      "sha256": "a33b7a4f128352737bfbd3151c1e2d351d1f7e386fb1c5b016a5fa29470d82e0",
+      "bytes": 30604
+    },
+    {
+      "path": "apps/admin/src/widgets/admin-layout/admin-layout.tsx",
+      "sha256": "f876944d699acbc24c5cdd4cb955b49cb1bc62c42bcfd890471c706b3ae6b0b2",
+      "bytes": 6622
+    },
+    {
+      "path": "apps/admin/tests/accounting-refund.test.tsx",
+      "sha256": "441580f6582a332337f3f4ca82758cd19e55b7fcaba098a2e9fc8b92f4deb040",
+      "bytes": 3954
+    },
+    {
+      "path": "apps/admin/tests/accounting-settings.test.tsx",
+      "sha256": "ba2f82e97ec99bced7b9a3ad4d7e6ae438fc62a46fdd7f8b23cbaa612b635703",
+      "bytes": 5367
+    },
+    {
+      "path": "apps/admin/tests/accounting.test.tsx",
+      "sha256": "7b4e55cdd76561fc09e0721914d8e902c12b624a89563df46c5141ef8e61b740",
+      "bytes": 11732
+    },
+    {
+      "path": "apps/admin/tests/ai-credits.test.tsx",
+      "sha256": "d993a9d6ee7ca3ba4121954ebec085fdb728af88312de7185bceb3619d2f5f5f",
+      "bytes": 8112
+    },
+    {
+      "path": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+      "sha256": "3be61029edbaffa6f0a3a9121ff1e507ff8b5e4dd85bb30dfc8e7b1ac3f5df28",
+      "bytes": 75205
+    },
+    {
+      "path": "apps/admin/tests/speech-admin-api.test.ts",
+      "sha256": "709fe407cda52d8f015fe67fdb005781b88822d3f4a941b539ee03f28a76bbe3",
+      "bytes": 5655
+    },
+    {
+      "path": "apps/admin/tests/speech-administration.test.tsx",
+      "sha256": "ec76ca4dfbd8b32fc7888e1c461c6b4ba0fde4122e6c77cd02a2e7b302c97156",
+      "bytes": 11262
+    },
+    {
+      "path": "apps/backend/drizzle/0083_spicy_spacker_dave.sql",
+      "sha256": "ba76a94dafc086c50cdcc51d8aae17eb8b07335161d4059b74af2b3e4be188b9",
+      "bytes": 14424
+    },
+    {
+      "path": "apps/backend/drizzle/0084_accounting_wallet_projection_guards.sql",
+      "sha256": "57e3bd74d5b75b2d9ea780fc53f3efcfee0cd1769075ae13ffe2c01a92f9c2c6",
+      "bytes": 10634
+    },
+    {
+      "path": "apps/backend/drizzle/0085_accounting_capability_policy_guards.sql",
+      "sha256": "a59b932ecb02187eaff3a1ac915561505cc7281c0972de5c40dc4e58582a67dd",
+      "bytes": 16145
+    },
+    {
+      "path": "apps/backend/drizzle/0086_accounting_action_fields.sql",
+      "sha256": "3c2fea69fae4dab2077eda2e15fb7848740546dae8d284df410345cc2b466bef",
+      "bytes": 290
+    },
+    {
+      "path": "apps/backend/drizzle/0087_accounting_capacity_and_precision.sql",
+      "sha256": "3c1c797040693e66c30c45db7ec6558e2697730dadf25ad4cd982683d203dade",
+      "bytes": 8160
+    },
+    {
+      "path": "apps/backend/drizzle/0088_accounting_final_action_meter_fields.sql",
+      "sha256": "7d98ce208fbc5f0e5597d65f3b6b13732a8de154029ca9c0322ab2071ce701ee",
+      "bytes": 1195
+    },
+    {
+      "path": "apps/backend/drizzle/0089_accounting_execution_invariants.sql",
+      "sha256": "9533af3204823df2dc8a7d6c749feaf896129136aa4473d01f924e3d84a0075f",
+      "bytes": 48759
+    },
+    {
+      "path": "apps/backend/drizzle/0090_accounting_failure_measurement.sql",
+      "sha256": "60d31065d0824a238e9e84339ecc4eae4f971d264f2188d8d2c3118d1668ed7e",
+      "bytes": 325
+    },
+    {
+      "path": "apps/backend/drizzle/0091_accounting_failure_constraint.sql",
+      "sha256": "0d01b33d80565f0a5b783ea79f348135a39dd35eaa26f9c9eff3caa5c44e454e",
+      "bytes": 3582
+    },
+    {
+      "path": "apps/backend/drizzle/0092_accounting_financial_integrity.sql",
+      "sha256": "8044108f753b0a0684e9dc34859b9b0715b4574d918f2e42caa738ca8c123a04",
+      "bytes": 7516
+    },
+    {
+      "path": "apps/backend/drizzle/0093_accounting_integrity_guards.sql",
+      "sha256": "fd4f61bbcce49c1fa0dbf82a1688717205946443947586052195d8cbf6bc5ddf",
+      "bytes": 67567
+    },
+    {
+      "path": "apps/backend/drizzle/0094_accounting_operator_anonymization.sql",
+      "sha256": "ddb112219c8871e74544705febc051a1dbd834a08cc30c5cd2b033614d311074",
+      "bytes": 79
+    },
+    {
+      "path": "apps/backend/drizzle/0095_accounting_terminal_constraints.sql",
+      "sha256": "4c4d8d8f4dae2bea6dbaadc6b4ae19438219f0667b06cad946fa686258a97c88",
+      "bytes": 4820
+    },
+    {
+      "path": "apps/backend/drizzle/0096_accounting_authority_refinements.sql",
+      "sha256": "df8e97ed3fce8201291d3a35737c9db5150a94424898393db8801817ecc2bb9c",
+      "bytes": 20369
+    },
+    {
+      "path": "apps/backend/drizzle/0097_accounting_speech_provider_costs.sql",
+      "sha256": "695358b78fc7666b50d4e913fbca5bbaf1658d432eb7f1cf7b500199b036e772",
+      "bytes": 1556
+    },
+    {
+      "path": "apps/backend/drizzle/0098_accounting_speech_guards.sql",
+      "sha256": "40e3ef57bd9e8e40c35cca66c707c62216986890bd1ff24f48e5e8d217da0acc",
+      "bytes": 5867
+    },
+    {
+      "path": "apps/backend/drizzle/0099_accounting_speech_authority_privileges.sql",
+      "sha256": "882f7a59908a65308980d218bd103e201bb4ab227bdcd338aec774889f7b08cc",
+      "bytes": 250
+    },
+    {
+      "path": "apps/backend/drizzle/deployment.json",
+      "sha256": "e6d82ad3399cc819e6b87e5a43761bd0fcc74cf71939400e13c45602f0a87514",
+      "bytes": 666
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0083_snapshot.json",
+      "sha256": "a38878bfa3a6547c6b3940fb62672543fc78d91154e922823476f9e086822018",
+      "bytes": 516826
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0084_snapshot.json",
+      "sha256": "6680e95adbd5471f79408e40e977b5165542e1422d0f530e6b86a864dc857148",
+      "bytes": 516826
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0085_snapshot.json",
+      "sha256": "e978592a2b34d60186a62ba536e14347453adca0b7615817660a7bd814023aae",
+      "bytes": 516826
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0086_snapshot.json",
+      "sha256": "6a27d7364715bc97853e10b3c5292f9ffb22ea1ce2f95decf944ae85ac213962",
+      "bytes": 517390
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0087_snapshot.json",
+      "sha256": "5ad0bc2220b4bc1f8760a7e9c6e83fb69e316f56e6d62ae8dc47eee83f1c936d",
+      "bytes": 537430
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0088_snapshot.json",
+      "sha256": "b7674339fbef5d1ccdd35f357bf8a1d826febea40d93005faf15939736bededd",
+      "bytes": 537777
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0089_snapshot.json",
+      "sha256": "77df0b54f1ebbfe595a2c4363532967a3a153572e530553fd6f61c869e560a9f",
+      "bytes": 537777
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0090_snapshot.json",
+      "sha256": "e37eef3bafdcbdd1b2601c4b5e4db60eacfb350267433c265de2183412f89e1b",
+      "bytes": 538183
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0091_snapshot.json",
+      "sha256": "e984adcd6eac04d9737aa52cb528615ba7e5a39d0c04bbd5e53951a67cf6ceee",
+      "bytes": 539198
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0092_snapshot.json",
+      "sha256": "4aa525b6a0777040b1ffa9464c21d4eafeb507971b9810f31004cbcd2d083ff9",
+      "bytes": 556384
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0093_snapshot.json",
+      "sha256": "a3c0e4428b6a58d55b6824e7eb7d28e8e6f19a1932b054a303860178767de00c",
+      "bytes": 556384
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0094_snapshot.json",
+      "sha256": "c227cd10ed5774164753b38878ec460f22017356be7b1a3189e4de1d5f92b925",
+      "bytes": 556385
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0095_snapshot.json",
+      "sha256": "0b27ce855584549a40d4a5b0118743a8152391cc14c5e675ae64e79e2edfe824",
+      "bytes": 556881
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0096_snapshot.json",
+      "sha256": "e902a6694729dca76f9c9e7b2817013bcd077128f8651a827f9789afd36ceb0c",
+      "bytes": 556881
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0097_snapshot.json",
+      "sha256": "a7858727ffd5889b25be070a27b615685b483ba9f37f36e8a139014e6af7df67",
+      "bytes": 560776
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0098_snapshot.json",
+      "sha256": "7c1955f3155069bf89e147036c8d07f5ffca4d3c425469bc5444b22b71f17006",
+      "bytes": 560776
+    },
+    {
+      "path": "apps/backend/drizzle/meta/0099_snapshot.json",
+      "sha256": "3d27b2bda2f43944aec971b6d9517cc32ef8f378d6ddd2caf0400e39c0b1cfd1",
+      "bytes": 560776
+    },
+    {
+      "path": "apps/backend/drizzle/meta/_journal.json",
+      "sha256": "37b22f34391bba9aaee3a9305cf09d90caeada61e03ae70f3887e1ac65759857",
+      "bytes": 15033
+    },
+    {
+      "path": "apps/backend/src/config/environment.ts",
+      "sha256": "4c35f9b9f024fa580148fb9f77034687461997ed033800daad27328e58e17397",
+      "bytes": 25420
+    },
+    {
+      "path": "apps/backend/src/index.ts",
+      "sha256": "175ae1c78c37157da7306d3a429983a0450ea004afecc7a667e7e017dde0dbc4",
+      "bytes": 22723
+    },
+    {
+      "path": "apps/backend/src/infrastructure/database/schema.ts",
+      "sha256": "7b41677319bfafcd6669e7a577af3cbfbc21a7a826d695b705e84c75740af373",
+      "bytes": 12494
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts",
+      "sha256": "13f6c28989dc2b209e228af483596b3ce9c45ee679820ef75021e37f2223d80d",
+      "bytes": 1856
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/capacity-schema.ts",
+      "sha256": "5897866e4a019dd1fa79fff95f67e9b6ac94e7f32f91fe48e07e26c50b82f41d",
+      "bytes": 4213
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/text-ai-capacity.ts",
+      "sha256": "88341d8c3d861af0ec8efcda436d2e680526feadd2e11d6828975d2a96608ebe",
+      "bytes": 13575
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/admin-credit-amount.ts",
+      "sha256": "fdb5b4c02621f3e65b99f0821a437ffc20b3f2380323bc614e1d4ea53347f951",
+      "bytes": 615
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/drizzle-administration-store.ts",
+      "sha256": "4bf9497ed1835831b39eb4404b4576dbee59b97eaaff0ef53ff270fdce3f01e7",
+      "bytes": 54449
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/accounting-store.ts",
+      "sha256": "87981c0c5a0d6dcc4573b2b253e515310c45a97571ce76774322a904db607bf6",
+      "bytes": 1308
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/ai-credit-participant.ts",
+      "sha256": "7c33de48239b2970674ea9846ea4eaf19bc05f94cc4d2b3b3ff0f1b35c9b9254",
+      "bytes": 4334
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/provider-price-store.ts",
+      "sha256": "d4d3e5d12ec3047c7d014d4d020d6f07aaf665aece135515e63a554bd4134b7f",
+      "bytes": 304
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/accounting.ts",
+      "sha256": "a8fadf49b714d32a911bea95d2574b847c6f817ec7f3d67fa496b28046259571",
+      "bytes": 1923
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/action-pricing.test.ts",
+      "sha256": "167e803de2ce913844b2ad31ca77af4c2d4a3f2146e24969902a51850fd588a1",
+      "bytes": 3654
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/action-pricing.ts",
+      "sha256": "9044ba065060f2b35dbacdb3606e3d4ed451fe739dd7f4426ee3fd678a4ac3f8",
+      "bytes": 3128
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/ai-credit.ts",
+      "sha256": "d2c93d6a1b33a8bfa1f24deb3bd7d54cced821321f253423be890b9c155a9933",
+      "bytes": 7625
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/capability-policy.ts",
+      "sha256": "36beebc71284e4d997b8e3e0891ad1936bb574686d1df625dd36f6967ca792e9",
+      "bytes": 508
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/exact-credit-amount.ts",
+      "sha256": "8d29ddff725ca39c238807e9bf0c96bccfe7852e1d04d3e778eeb25d39b9d94e",
+      "bytes": 1225
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/model-price.ts",
+      "sha256": "03d458e6b229c7ccb58cd61643ae01efd36e299f6a4b498f90328464d54b39e4",
+      "bytes": 2431
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-cost-admission.test.ts",
+      "sha256": "97f46be80a72f587ecff2930caa2c5b01aa2ae07bce28b6bd28127c6986ff6f1",
+      "bytes": 3102
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-cost-admission.ts",
+      "sha256": "58aca7c51ae13dede95bdba0e2f2193b79511869377e12f7273be4915adcfbf7",
+      "bytes": 3961
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-expense.ts",
+      "sha256": "4062f53ac291f2d265efe0cf7ab8a9c4b298a797980d1fa3f9f3b97757548f3d",
+      "bytes": 2143
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts",
+      "sha256": "76bca05ee9be847b5bc66653084bffc35b68df542f51a4081887755a80d8bf59",
+      "bytes": 1416
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-owner-purge.sql",
+      "sha256": "a4b7da4731041fd64e2cefbf1b928075b8a337edbc83d00c330d62454f9c2c46",
+      "bytes": 4108
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql",
+      "sha256": "e996ac17fc603d7a3fe2b2beb416a3ccca8845d2ea2b61ba6b4c5e31602b4edc",
+      "bytes": 1235
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-report-dirty.sql",
+      "sha256": "3cc54d94eb9562c8392910c6c48bfbc16a501ca4648347432ee64f5ab7c0adc8",
+      "bytes": 654
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema.ts",
+      "sha256": "db12079a85aab63cf6fa810ed7b3c8d466e53395f659e2bb1d8e35a6273920db",
+      "bytes": 6988
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-maintenance.ts",
+      "sha256": "4047ce09338c549afc1262221bafc8221ce4c6aa44f5382a272a8d01f0dab3b3",
+      "bytes": 1500
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema.ts",
+      "sha256": "d98d14e1be5a566bf9b1cd2c831ddc55b39a116768f92a67911a15a818b75c40",
+      "bytes": 7293
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-authority-schema.ts",
+      "sha256": "fc5251d4e045d9db578b87bd48e04e57bb7b8ec85f2fd5fd47bec997dc00746c",
+      "bytes": 1051
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-immutability.sql",
+      "sha256": "199ff226f21e4464c2f2fc301d13dc452c86582fe95045b28d51d423fda0895d",
+      "bytes": 5542
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema.ts",
+      "sha256": "f621e6bc014ebe8637672945ebe1abdd79ce77bef6a843e38605966353f01700",
+      "bytes": 4321
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-accounting-store.ts",
+      "sha256": "d6dab66f78525e4cd68af4ceb5420a11f73706d8eeccc6572af09aa6c1b810c6",
+      "bytes": 34154
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts",
+      "sha256": "4499c0d95b33dda60d5dbed49360b909862495f68b7e6ef98a20e577d8d019b2",
+      "bytes": 18936
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant.ts",
+      "sha256": "88d0875c1af49b3b5d0f1fea5c65dc33406c36d964e476bd8d0edefa105fdde2",
+      "bytes": 40703
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant.ts",
+      "sha256": "651268bf53734b7c7bf3e2f94f687fe9df85c2b0dce27b501ddec212e789ecba",
+      "bytes": 10203
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant.ts",
+      "sha256": "aaf18c2cbd049880203b53a4b768453e2246bda848e0483d2c1b105a74ea74d7",
+      "bytes": 11632
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts",
+      "sha256": "173646392cf83ea815e72e199c5b6abe8cdc602ed14e1608252df87163d167d8",
+      "bytes": 8749
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices.ts",
+      "sha256": "28659e3f585dda4031943129fca0b7fabd4b19cbd5d2e7a8b37b2e595cdee4d6",
+      "bytes": 4462
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts",
+      "sha256": "ce8f280bf3b1a546f2d0b0aff397b4e4e5e138855194f51f70757677874c8b4e",
+      "bytes": 12603
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/model-price-schema.ts",
+      "sha256": "084b3ec425965729130f81eb26478e274023536a0816fac5f3f1397e9501c9d9",
+      "bytes": 1889
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/operator-budget-schema.ts",
+      "sha256": "05314413bf2097aa028baf637fdac12d892ed2c96a4e4011b3604bec9d0c0768",
+      "bytes": 3489
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema.ts",
+      "sha256": "7bad8eeb4ff4a880fc55c0040a59955c83d64a06060f82481c7f6f7c79d8135c",
+      "bytes": 1715
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "c3cb9affe5f9ec7ddafe0d3d2705c0259240b336f9b6e3026ee31dd57d289255",
+      "bytes": 14970
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/accounting.routes.ts",
+      "sha256": "aa5e61d12842751c3770f2cac3949345fa8f5338a57e1dff442ac403066cb9a3",
+      "bytes": 9585
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/capability-policies.routes.ts",
+      "sha256": "6a0d34ec1d5725e72d8c9252a38844c3d369c5bf8429ec90e0f25da6227e336a",
+      "bytes": 7705
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/provider-prices.routes.ts",
+      "sha256": "129a4fa5c9aa34fd38d465944fb4ac233e6be3d8bd9f4232ca609347ed018df5",
+      "bytes": 5658
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-worker-service.ts",
+      "sha256": "2dc4f89bce5dce770a1f38a52aaadca740f43f607cabb59a6349a8db107d38b6",
+      "bytes": 5650
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/ports/tutor-runner.ts",
+      "sha256": "3e677f9aef19bd4c8d2e5125002dadd6992cb5b9ed6e7aac1af116ae2531d3aa",
+      "bytes": 3437
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/turn-text-buffer.test.ts",
+      "sha256": "4022fecde7bcb9dc9756d513113037ce10a5689d043581754fa0f38a672f5ad8",
+      "bytes": 2160
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/turn-text-buffer.ts",
+      "sha256": "ea9df0a4663e38d72f9cfbcc60d9f90482476fe51f70731277e216d716752fee",
+      "bytes": 1741
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/tutor-context-budget.test.ts",
+      "sha256": "16d160ab069cd0786dc3b2c36bfb65c03720a80c700f2d924dcb13281886d14c",
+      "bytes": 1488
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/tutor-context-budget.ts",
+      "sha256": "4924964f4d59903386a1a84f75e1ea5d95beff6eba18bdfe9aaea966068ee278",
+      "bytes": 3787
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/domain/conversation.ts",
+      "sha256": "5810a2bd6b4026e2e5a82bafcebf4806eca13de0edfd086563bb48624fe2c804",
+      "bytes": 1246
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts",
+      "sha256": "61bffa521ea4ec333d4344080c8efd0c7f76ebd35098679b7c0328ae6f486385",
+      "bytes": 12608
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/accounted-tutor-model.ts",
+      "sha256": "715fd96497427c3f1f2a6b20cff1043f4d2545a44144bc95110034bbf710fb48",
+      "bytes": 16863
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts",
+      "sha256": "a4ff0599d6148340ff768a557b017b0b6f5480dbfeb51c815cdaf176fa8af5d5",
+      "bytes": 11513
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts",
+      "sha256": "c2262f75f41da67d76c39a248ca65872fea71918aaf5a10a467136cc827e48a8",
+      "bytes": 30868
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts",
+      "sha256": "ca2e7a89f04c04255b980c1a2c21e4775b526bb4cd1b9ae680b30342af6cde58",
+      "bytes": 10393
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts",
+      "sha256": "35766b0f0bf4d42ab1b73f1ed08be67eaba13b17e65a36e819c030d3c4f1ccb3",
+      "bytes": 4520
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-deletion-participant.ts",
+      "sha256": "d25c7d11766e7b46e69aa14938b63377d4dce29118a0db4abbc629f4d7b4a9a8",
+      "bytes": 5748
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store.ts",
+      "sha256": "c9f29ca9e7f46ed41c7ad5345864a53333bb2def1c8837820a9ec6b94265d545",
+      "bytes": 68638
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "26229a3877786ebc2f61f1a9d65b34d31ff82d170ec38822c8c39bf0a764abd8",
+      "bytes": 8243
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/interface/http/conversation.routes.ts",
+      "sha256": "85ceb75e73e99b71cddb8fc8d26d669d5129976e3d4a15a6814899b10c40d04c",
+      "bytes": 27789
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-document-generation-processor.ts",
+      "sha256": "5cc23c8b485cf7736ee8268ee1b5b78609a68426f7494bf98cc98ab2d85c9db4",
+      "bytes": 22647
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts",
+      "sha256": "e47a5dec9abb5dbe1fe73bc2928ae797c32f9d129ed8aff0929611e3e57673d5",
+      "bytes": 41892
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/card-authoring-proposal-generator.ts",
+      "sha256": "4c247f4a7d04a17ce7aa0a72e4fa81cc52bf65a077581a3a5fcda118c29b0438",
+      "bytes": 1847
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/card-proposal-generator.ts",
+      "sha256": "625878ae600bae7006c13ec41f99685a80d1bcec8c69ffd1ed3c772c5820acb2",
+      "bytes": 1764
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/dictionary-document-store.ts",
+      "sha256": "b476fe4c10b7c6c4fb17625f231048b7fae0ffc91c1e20430a1479e1a89e2930",
+      "bytes": 6144
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/dictionary-generation-format-executor.ts",
+      "sha256": "484a1a4431962220b39033dd0c09f6f89c8fe20d84f72437a5c0be733ec94799",
+      "bytes": 1652
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/dictionary-generation-provider-policy.ts",
+      "sha256": "34f3c3e86ee4635bdd7170a361e97958ab452e0bec0fe626a06601b2a0da6b2c",
+      "bytes": 1485
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/dictionary-generation-store.ts",
+      "sha256": "fc66ebe87e747a7645cbfb9b87687bfb47f024b74910158efcba7fe80665f669",
+      "bytes": 12729
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/import-pairs-proposal-generator.ts",
+      "sha256": "a6c5d95bfdb7fbba34b7cbd819607e228b7f14f0b321bf58fcf6980169e29f8b",
+      "bytes": 1383
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/pasted-terms-proposal-generator.ts",
+      "sha256": "8df892a4fa6d7db86f37f8d7b37c2dbb9aed9c39f302ab0d170bc12f42eac87e",
+      "bytes": 1603
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/ports/text-selection-store.ts",
+      "sha256": "ad18b2d7615907697eb628c6a569b697b8b221cf33ff2b45ef852c925be3434d",
+      "bytes": 2259
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators.ts",
+      "sha256": "b9f8db9f85396435c4c0a67e609ac3b234517f94be2d539cfbeef4b671d17527",
+      "bytes": 18134
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/card-proposal-generators.ts",
+      "sha256": "f392f8503df4e0f4da2a92432fcf252a0f7a13136980bdb72453d1e58578f6ef",
+      "bytes": 15528
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators.ts",
+      "sha256": "4dfa7ad4d5c1e91111d1eda73627a361061fc5e8ca3d1b09bbe55c54e5e6b6f9",
+      "bytes": 16735
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators.ts",
+      "sha256": "2d62cd002cd384818a22a3de6ac9f39f8004de6ad70c58e3f003c7812a5921fb",
+      "bytes": 20020
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts",
+      "sha256": "d9443eae07b0e0ad59e9be32220d9060d70bd3c091eab91b41150b505822dff4",
+      "bytes": 7505
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-document-store.ts",
+      "sha256": "1e4407e4db227cc9a3423e48e8cf1c1c55998893e0dc9275648bba6afe9b1289",
+      "bytes": 82631
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store.ts",
+      "sha256": "388ca62c0a92a84d14cbef731288c7705003873adee96beb032ed4ee8e775aa7",
+      "bytes": 266013
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts",
+      "sha256": "76dc0c88754d77c19b2c5ea91de65c66793a8e62335288b1abc7f50f631c34af",
+      "bytes": 32190
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/legacy-generation-input-limit.ts",
+      "sha256": "7a5c84b4afd5e10cd12d97a06ca46ff6129d4cbed862cc7691a6229df3536b4d",
+      "bytes": 597
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "2d4b3ef2ac59a5785f9ba319ceab21544b319a15651608d31c6b3aa35d5070dd",
+      "bytes": 70410
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema.ts",
+      "sha256": "cd6059995d67599248d35fa7abba16914ef1892caa68e2aee4ec75739f2ee7b5",
+      "bytes": 6742
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-accounting.ts",
+      "sha256": "e2ee62425712a6341f8acbd1901358370859c4ecb257779fa15c05a2a55a823e",
+      "bytes": 7403
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/ports/interview-store.ts",
+      "sha256": "750a23958a1cbe004b7692c27eecb3166561c5a555c60d46fd8b0ab534b55a7e",
+      "bytes": 4505
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.test.ts",
+      "sha256": "5ab2b4214108f2804e41913a51305acf4628a9118352b606eb542404fd9cb5ad",
+      "bytes": 4900
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts",
+      "sha256": "53fc289cc0d5caeca9e3063f83f7e5e4c83baed1a0b10676f42715f7dcc375d5",
+      "bytes": 6169
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.ts",
+      "sha256": "8ebbcf44b80f231a6bf57fea70a20487a57c5af697b8b222a679e506295017b6",
+      "bytes": 4823
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts",
+      "sha256": "51c3307f064f7c151155991738519353bb9d6a6938a0d42d23e15717ca21b3ee",
+      "bytes": 27988
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-action-accounting.ts",
+      "sha256": "c5b7496078bb52a505cab90230217dc973c10576fd22e73937c189a5b8db683d",
+      "bytes": 9208
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/learner-portrait-composition.ts",
+      "sha256": "05fbe85ac0da9ae6fdc69627e036b887ce904578090a3859a3e77d81ad03330d",
+      "bytes": 4532
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-interview-store.ts",
+      "sha256": "960eafc45be43e782f00981c31882ec34569e0d750ed6f8bb5e21f611a8a3e60",
+      "bytes": 35691
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/portrait-deletion-participant.ts",
+      "sha256": "80dc09089cd3cfd7c56464a90f063ba4c962a815b10c139103cd0f63ef944d83",
+      "bytes": 8390
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "bd53a475d1fd5339d4dd1c67fa794136dbe6129a1a8f29aa10ab7ae9bee5cd4f",
+      "bytes": 5535
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/interface/http/learner-portrait.routes.test.ts",
+      "sha256": "2a93f5f409e2869b4cd465e4727077727c014275679760c6a4824127f319ee46",
+      "bytes": 9737
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/interface/http/learner-portrait.routes.ts",
+      "sha256": "b9647b2efaf066772f4fbf9596a188b7ddfce53d6fe8859f72ecdbe1ed459cd9",
+      "bytes": 17494
+    },
+    {
+      "path": "apps/backend/src/modules/learning/application/ports/sentence-ai-provider.ts",
+      "sha256": "373b8421b5db39843815f997098b7a92697f8db8222c4bf4c85bfb34e1d97d80",
+      "bytes": 1489
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/ai/sentence-ai-provider.ts",
+      "sha256": "b2adf2983a9d8d9dfbdcbf8cb69e9cdc511a18a2444bb1e4aa84878978f99ad2",
+      "bytes": 13160
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store.ts",
+      "sha256": "868e72a84248298be3a792e6b933046e663d6ed90a84bab37c3974b92454393d",
+      "bytes": 57028
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store.ts",
+      "sha256": "82caacc032467104b78a1dbdb9daf6677a04c1ca4917dca0bc8bb9ffa5655487",
+      "bytes": 33385
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts",
+      "sha256": "7971ab076ca811365026143e40b90625beea5204048e2967d0849555ffefba64",
+      "bytes": 17029
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-job-accounting.ts",
+      "sha256": "411f23391e1f048bdee1d94ffd3a09183ce4dbfaa0b3618c21d043e7150d2dd6",
+      "bytes": 7736
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-schema.ts",
+      "sha256": "1a16857472b1b967fa1b8823d76d81d44a43ef54fd158819561cdb42fde3ca08",
+      "bytes": 17634
+    },
+    {
+      "path": "apps/backend/src/modules/speech/application/ports.ts",
+      "sha256": "fe8cd7c15ab91c71acafc04879729e4e392e7c8d6662056e238238bc80d177c5",
+      "bytes": 4390
+    },
+    {
+      "path": "apps/backend/src/modules/speech/application/speech-worker.ts",
+      "sha256": "c5a6224c190ec70d2bc89f48391b9a7eadffddd28315ac03fb30ecb9e44e1a92",
+      "bytes": 5747
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts",
+      "sha256": "ae12f631c6026bc926fb0f8ebcee33508567997d0c2409b926f25a6596976fe1",
+      "bytes": 64587
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/schema.ts",
+      "sha256": "f046a2874d9cd4ba961495c9931071f9644e4690b950033941fdacfaadccab34",
+      "bytes": 8892
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/speech-accounting-guards.sql",
+      "sha256": "30faecafde0f28609fa19dde53fae27cfe8c4bb727d790909440b5460be34224",
+      "bytes": 5884
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/speech-accounting.ts",
+      "sha256": "fd2a9cb6feedf81214060b139f32d8dae0cd33fad4da59e0b53ec2f351ed6d97",
+      "bytes": 7980
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-preference-service.ts",
+      "sha256": "31af3cb25a7fef8fda6e41e02c869e1fdf7113ab4507b84d54a6eb339de2df7f",
+      "bytes": 2761
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+      "sha256": "2feda9340b7771237e222b71a380931603124cc58f376d45fed3daebf0f35808",
+      "bytes": 7242
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/domain/text-ai-preference-store.ts",
+      "sha256": "c50e481564fe9363de98391f92aa930abc1758d3ed677bf8ac6f75c07c505267",
+      "bytes": 1146
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/provider-token-usage.ts",
+      "sha256": "0e8d845349e3b0ef19b5d0897bc606fba7ba80edbc7d6dc80f899ca65a316179",
+      "bytes": 2736
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-resolver.ts",
+      "sha256": "780e4f8fc1b5983168af57f957b285bc09cb861ba4b72e1c45c4b9231933b392",
+      "bytes": 4539
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-preference-store.ts",
+      "sha256": "b0beed77e85a1e9b7881c57c1d7d64983de4b096d05d1091027a348eb3291686",
+      "bytes": 4428
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/schema.ts",
+      "sha256": "e8ba48431b846dc5201bc489c9d70febd8694ac4f8866877dd72fafb7ea2b35e",
+      "bytes": 1683
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query.ts",
+      "sha256": "34320bb3e9e7b62100696e5e8b4b586ec0a3ada096909d547c34fa8d4a5b44e0",
+      "bytes": 6797
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/ports/texts-ai-provider.ts",
+      "sha256": "8e984e76064403e09e3eef4c1941f019f6d57db02178309b8fc2836fcad64df1",
+      "bytes": 1758
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts",
+      "sha256": "bad7a5bb56776737cd3ac7d715c0aa84bdc970dc7f8d45b8b1596e51ceaab135",
+      "bytes": 8089
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts",
+      "sha256": "6f46cb496a8d95f15af4a277167f2e2ad08a499befc5d3e04569489ca0d5b071",
+      "bytes": 32850
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-deletion-participant.ts",
+      "sha256": "318a8669fbc40f317b975edcc922124e3c6812e8dc8909ccb2ec3ba2f34d621b",
+      "bytes": 5157
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-accounting.ts",
+      "sha256": "e8252c6cbcdd4f1000faf7fa434fa1857b24262a6578793760e066ca81fa03e5",
+      "bytes": 7642
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-schema.ts",
+      "sha256": "825b4ecf7ef5b83eaaf6b7e42346692db8a5ac9bdb19152d4bc11f924456304f",
+      "bytes": 7737
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-support.ts",
+      "sha256": "fc213b789fcdda598b51cedcc301683e6f6284c0f564f58faed95e85beda341d",
+      "bytes": 5605
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store.ts",
+      "sha256": "1a9bbcb1488091c255e04bae4042a2bf3caeb80181579fa82f4f0471c95688fe",
+      "bytes": 22302
+    },
+    {
+      "path": "apps/backend/tests/integration/database/accounting-cutover.test.ts",
+      "sha256": "10833b51e4bca2a092450265fadc03d35b217f9911b0109037320c0e4627a867",
+      "bytes": 6782
+    },
+    {
+      "path": "apps/backend/tests/integration/database/action-authority.test.ts",
+      "sha256": "84f5ee0705e159db1c5dca15fc12d40091b53c4f460829fb32a44eba28d1c50b",
+      "bytes": 13849
+    },
+    {
+      "path": "apps/backend/tests/integration/database/ai-accounting.test.ts",
+      "sha256": "cb9d99cf19492d2ca59b82f7f053d59dddedf2a34b5d6e07e5a9d1f8f1fa7ff1",
+      "bytes": 37547
+    },
+    {
+      "path": "apps/backend/tests/integration/database/ai-credit-participant.test.ts",
+      "sha256": "1bdc18323bada8e2b3e5c7009543fb0d3fe0ccd2e54d5909459a2c8ea1cae806",
+      "bytes": 72445
+    },
+    {
+      "path": "apps/backend/tests/integration/database/dictionary-worker-accounting-role.test.ts",
+      "sha256": "0ed692c06d3c3ef10df49b1a1056816c89a5dd73437875bcda96875ec82bd796",
+      "bytes": 12413
+    },
+    {
+      "path": "apps/backend/tests/integration/database/model-price-participant.test.ts",
+      "sha256": "71ca7cf95502d1a31e507624f8401d08635a61071c777c85e19fc6183a0a3c90",
+      "bytes": 9163
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/ai-credits/capability-policy.test.ts",
+      "sha256": "bae3d28049930073b3c7f4129d594aaa37387cc67078ae14b069addb66e7dd9a",
+      "bytes": 7831
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts",
+      "sha256": "a4f5cd0c70e1387a76bbd04bd65b3272552a062e7b5ac29614d325936876b54d",
+      "bytes": 17822
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-action-accounting.test.ts",
+      "sha256": "27cccad2e998e3df3afce338ce50b7e7141f8bdea8f88cead32fa5cff74674c1",
+      "bytes": 24061
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-store.test.ts",
+      "sha256": "8cdc4768cb5c94def3b8ac1d6e128817742a2794d66301f3971afadf35dcb2b7",
+      "bytes": 94594
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/dictionary-composed-routes.test.ts",
+      "sha256": "7a9faee7d3b2f41059a5e63b5de184c9db4b17e6ae9c707242ff2bdaf8673b01",
+      "bytes": 26226
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts",
+      "sha256": "29cce73acd16255958e357996b1172db8bf87006f16366f1f0894ac538ee1bb8",
+      "bytes": 82163
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-document-store.test.ts",
+      "sha256": "22a25ba3db6ec9f2e3b915752da84a8aabc65cb256ede6d4171b586401ebb1bb",
+      "bytes": 31627
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts",
+      "sha256": "72fe7925b8253e06ede43954dbf3b71109432566935fa0cea8c8e76779d272bb",
+      "bytes": 57569
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learner-portraits/portrait-persistence.test.ts",
+      "sha256": "ff54cb18ec97e22119dcc6e63d380caa25248143774663a43c4c97b2ba99ce4c",
+      "bytes": 47499
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts",
+      "sha256": "ce4c6c2973552913116d04516c75614306132026933bec155b517cd8ee733f12",
+      "bytes": 77344
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/sentence-practice.journeys.test.ts",
+      "sha256": "ea45d5ec515c8e571ed9d5c09f3732bededdeebb8c0bf942ddc29aa4c9a073f3",
+      "bytes": 61722
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/shared-speech-store.test.ts",
+      "sha256": "69c9586236bd2aef71f5fb2851ef5bde3a8f3e0ac589faa84930b768236125cc",
+      "bytes": 70130
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/speech-accounting.test.ts",
+      "sha256": "aa0ff2689fa255a6d1524b6484e3867df6b4e2d83a5275dc0a9a156fe82feb8e",
+      "bytes": 14129
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/speech-worker-role.test.ts",
+      "sha256": "fcb0ccd05e08733757580cc6701e76a75545d2270830a52ab10f42fb004ed6e0",
+      "bytes": 12878
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-capacity.test.ts",
+      "sha256": "79bb89ae68f802f51cf872933e294f25c8fa29a0cad13fd73f36d67cbe718338",
+      "bytes": 43971
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/user-ai-model-preferences.journeys.test.ts",
+      "sha256": "1d8ac19376d7b036dcbb7f39a30980e949ea9b245a39c5d3e1674632ab23d7dc",
+      "bytes": 23754
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/text-selection.test.ts",
+      "sha256": "1d392d3899b8f289eb828c58b641906b8bf021223fe5e38f99e5f7c232192b14",
+      "bytes": 28923
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-job-store.test.ts",
+      "sha256": "997e66eac1ff992b2cd0ff3c59ad64e2b38f41ffb8f136d80f8fb601ab877588",
+      "bytes": 34905
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts.journeys.test.ts",
+      "sha256": "242a40697ee01c130ffc6eb9dcfcb5dbf874078304476ee6930d31c2391b855b",
+      "bytes": 31291
+    },
+    {
+      "path": "apps/backend/tests/integration/support/accounting-action-fixture.ts",
+      "sha256": "26a91cd0aecd35edf2ad3cd57ecd3518e86959834006cb42020905d50a004059",
+      "bytes": 9770
+    },
+    {
+      "path": "apps/backend/tests/performance/accounting-load-metrics.test.ts",
+      "sha256": "ec2870582e70448cfe2c5360f2baba3b1b41569ebab4ee823cf77a2c9c9655c7",
+      "bytes": 1906
+    },
+    {
+      "path": "apps/backend/tests/performance/accounting-load-metrics.ts",
+      "sha256": "042ca7327ca54713fd3befb12e030fa0f28445e5db446f9291074b8a0b58f625",
+      "bytes": 1566
+    },
+    {
+      "path": "apps/backend/tests/performance/accounting-load.test.ts",
+      "sha256": "8d90d573e949e2b6d68898ace7c39a56a7fe97f5efb2deb732f435ad00b7e3f4",
+      "bytes": 34722
+    },
+    {
+      "path": "apps/backend/tests/support/admin-legacy-accounting-fixture.ts",
+      "sha256": "f3a48b2b79b05eac6f30fa46d43985b03f7af658334012228c7026ed07f4ce84",
+      "bytes": 1211
+    },
+    {
+      "path": "apps/backend/tests/support/ai-accounting-fixture.ts",
+      "sha256": "a197e5a5eab8a532681a43b3d376142ab0d257e267842263479043b2f00ee3a9",
+      "bytes": 4958
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+      "sha256": "b72362087f73b212ee11c054a4a465c324da9b985e2241885c17d991412921a7",
+      "bytes": 26101
+    },
+    {
+      "path": "apps/backend/tests/support/dictionary-accounting-fixture.ts",
+      "sha256": "73b0d5b9e96976abbd5830b09c1f4fa55f51db688685ebe9a39b5fc73f969f1a",
+      "bytes": 3578
+    },
+    {
+      "path": "apps/backend/tests/support/dictionary-web-accounting-fixture.ts",
+      "sha256": "a706988297f159bb6104e94c306da7afde1c722142327b1c768421dce254e070",
+      "bytes": 1263
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-fixture.ts",
+      "sha256": "e2a83cac7430b09cd45b11b377183ce7d65480caf25cc9d88f3e1865b6432d17",
+      "bytes": 34879
+    },
+    {
+      "path": "apps/backend/tests/support/legacy-action-fixture.ts",
+      "sha256": "48021c4f7df5180cbfe2e3ba871212bbb40d94c66629d47695f8c3252ae1a0b6",
+      "bytes": 3494
+    },
+    {
+      "path": "apps/backend/tests/support/speech-credit-fixture.ts",
+      "sha256": "00e900860a6b7491d4802ace8536f1a111db9801d5abffb70e5c7a169b5c3ba8",
+      "bytes": 6661
+    },
+    {
+      "path": "apps/backend/tests/support/texts-web-server.ts",
+      "sha256": "076bf1f6ac1ff5c3caed6e1001fa84491b187da992871d8392f798d0f282d6bb",
+      "bytes": 25080
+    },
+    {
+      "path": "apps/backend/tests/unit/config/environment.test.ts",
+      "sha256": "8994adc213d48515cc98a2fb4a02df785efda468d76f41accd35301a146fedc8",
+      "bytes": 26443
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/text-ai/accounting-maintenance.test.ts",
+      "sha256": "a5236c84707aded1f7f5ee49bd965cc0a40ddfab30e675f01f447d6a613cf2c4",
+      "bytes": 1997
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/administration/infrastructure/admin-credit-amount.test.ts",
+      "sha256": "59def13d1ef93094c2c9204a13ab35f7b7050ab0a7d1ac9e4846a19b31c9c60d",
+      "bytes": 1146
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/accounting.test.ts",
+      "sha256": "50d94200b5fbca3bd4aff1afce95c802e9c91347d46c44e27e52716e0b85a3a2",
+      "bytes": 3479
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/ai-credit.test.ts",
+      "sha256": "44370573b8339bc90584a74567113333d6b7c5bc62c4843b7628ccd9bb8dea3d",
+      "bytes": 8650
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/capability-policy.test.ts",
+      "sha256": "49349af8f0bba9269364fe6b296679ca4ea21dc965f9dd5c00ebbcb24ddfe781",
+      "bytes": 2878
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/model-price.test.ts",
+      "sha256": "21ecfa646a136b363bcba004d6d9d6fc4365ebe05340c121433c01e6a614fcde",
+      "bytes": 2309
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/provider-expense.test.ts",
+      "sha256": "7f28edb472a6e25e94939289f04195daed3c7e0e5b66d833b97eedccd8b4d277",
+      "bytes": 4543
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/accounting-report-worker.test.ts",
+      "sha256": "b98ffaeb214ac39fc7f37d128cec03c3add04f99391ca7491bda762ec2cbb2bb",
+      "bytes": 2142
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/accounting.routes.test.ts",
+      "sha256": "3308e4df2afaca88cc3f1d6e242311327569e4f59bdbab60c2888db0bd31f9eb",
+      "bytes": 4687
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/provider-prices.routes.test.ts",
+      "sha256": "9f3c5cd0835d24b6b5e51afb660d6ad4fbd46b1dd7c1939bd28d5ea6af86f117",
+      "bytes": 3347
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-routes.test.ts",
+      "sha256": "48180395cfa048d69958b9f4011060b8b36ee43334788095596140fa4666d23f",
+      "bytes": 6057
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/card-proposal-generators.test.ts",
+      "sha256": "c47a536142c0888e6c393ca7277eb268bf144170097c8f2ce1ae94aa16e77237",
+      "bytes": 17483
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/dictionary-composition.test.ts",
+      "sha256": "de39a40778c91846230e8a5ee2ffa782b54e0ca9bc14741e9e76e1e039566d5a",
+      "bytes": 5256
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/speech/speech-policy.test.ts",
+      "sha256": "33da9c09c9d5d06096d7e966a8c6c021486e1f10218b43a9e72b5a7eb6a1c520",
+      "bytes": 4674
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/speech/speech-worker.test.ts",
+      "sha256": "b74d02efa7228311a4b089896a33ee927373918933bd02979425be313a74e442",
+      "bytes": 9384
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/provider-token-usage.test.ts",
+      "sha256": "d72144f28976e040aa715b654bfbae9ea460404104eb0974b1e5ca20462276f6",
+      "bytes": 2571
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-admission-participant.test.ts",
+      "sha256": "ca9b19bad3784f441edbba1c3267ac8fc6dc2cd7bcfb639b6d22ed26a2ec1222",
+      "bytes": 18541
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-execution-profile.test.ts",
+      "sha256": "d8989c9a267c841fefebdca71e4ed15ee9214bc7bb3ab3d71fa1f59eaab9375e",
+      "bytes": 3920
+    },
+    {
+      "path": "apps/web/playwright.config.ts",
+      "sha256": "27c08c01f58818f95af9b128beb709d8941c86315aa504a938668e9d9a7879b9",
+      "bytes": 11298
+    },
+    {
+      "path": "apps/web/src/fsd/entities/conversation/lib/copy.ts",
+      "sha256": "7fe8e5576d7160711eb80ad39008b0f2e672ec162580b3a4222a1abb8d80a933",
+      "bytes": 17323
+    },
+    {
+      "path": "apps/web/src/fsd/features/speech-playback/lib/copy.ts",
+      "sha256": "3e4366c29e648d73c69269f6474259bfcf4d24a2208d096d9647327e20fba80e",
+      "bytes": 5646
+    },
+    {
+      "path": "apps/web/src/fsd/features/speech-playback/ui/speech-confirmation/speech-confirmation.tsx",
+      "sha256": "d31aad0c8758205de760df07fc064be7e70897ee79db9c6d0129c18d816920a4",
+      "bytes": 2832
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/hooks/use-model-preference.ts",
+      "sha256": "ca10106b65b8e5915e6efad9bdff502146db0b9b59a86397ae05ce22836965b1",
+      "bytes": 8626
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/index.ts",
+      "sha256": "750d94723a142583d57d3bf3f93d58fb9b82a01ede1d326972e56545302229cf",
+      "bytes": 425
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/lib/action-budget.ts",
+      "sha256": "89977835712ad0387b490520de52e7bcf4697cb8647b2a13a741718e2ffd38e1",
+      "bytes": 3311
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/ui/action-budget-summary/action-budget-summary.module.css",
+      "sha256": "340b9d8db3ada89cbf505fd2bb759052967642920fa3f8c13561c95c761b495e",
+      "bytes": 183
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/ui/action-budget-summary/action-budget-summary.tsx",
+      "sha256": "85939d3eb611c754efc48cc74c147722ef7a79e44f4f25c6849885daf545ba74",
+      "bytes": 1468
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/ui/model-preference-section/action-budget-field.tsx",
+      "sha256": "08bcd3c3ca11245dd16aa8f1f560338f91bf0f559ce41b7d61f09884e75420a0",
+      "bytes": 1629
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/ui/model-preference-section/model-preference-section.tsx",
+      "sha256": "b906615487b0e806529dd0c11c7f73fcf115c3009cdebd59f23759bab4a177e5",
+      "bytes": 8896
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-ai-preferences/ui/model-preference-section/preference-alerts.tsx",
+      "sha256": "0ab36e06679ab36de44a95d4793bd2a8cc069fdf73c6282e3a62d945479448b4",
+      "bytes": 5588
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/lib/interview-copy.ts",
+      "sha256": "a672897343dfc64fa60c0136b4513ed8a6d66a7d246cca7d8dd287c1c412009a",
+      "bytes": 26458
+    },
+    {
+      "path": "apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer.tsx",
+      "sha256": "69221410f4bcb7fae62fa19aee7a8d0279b17fd14bfad2b7ab196b2b7736bd2a",
+      "bytes": 4400
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/credit-amount.ts",
+      "sha256": "491594da73fb476d2d9880ffb116c16435469f21f23e7d8e880f699d7c89ae45",
+      "bytes": 776
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-assistant-panel.ts",
+      "sha256": "d654aac628d895dfd2cbf9ec4ee8ebecebeb02e424d9b73354c5257dcde54a73",
+      "bytes": 18326
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-admission.ts",
+      "sha256": "72118a9cb321bb7680e36f8d3fab625eb6198722314548a62cc18b406c90afb8",
+      "bytes": 4838
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation.ts",
+      "sha256": "b52606942ef22debdae18588bffb11d4294846a22c211f4c035c5cc2b86c15c5",
+      "bytes": 8562
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/action-budget-confirmation.tsx",
+      "sha256": "c074fa4bf3ad4f470a8b950d8587fe3570b9a24166aed28500d412660e53ab4f",
+      "bytes": 3937
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx",
+      "sha256": "05b4c5a1df6111edd3abfed21e7f14794b205f3aa398664895868fbaf7319704",
+      "bytes": 14815
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-composer.tsx",
+      "sha256": "cd3988447d2e061928e02f5667f65e0d5185ca3959480d99035df2f0403f75d8",
+      "bytes": 9459
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.tsx",
+      "sha256": "dc4cd05a8aa47cc2ef55583e3e6d2e855f36d78f405bd358f805d03f39103e78",
+      "bytes": 8421
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-model.tsx",
+      "sha256": "9c21ebadc6b779cfb011972cdc8ff48b3d089961a681ca008325256b9eda9d97",
+      "bytes": 6482
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-actions.tsx",
+      "sha256": "19036d05f2951c42e7a1fb86f21ca5a51d0c1f74259996d903c367d2688ff586",
+      "bytes": 1912
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-limit-notice.tsx",
+      "sha256": "2da1b7c0b3f2218ee8291d2ef8c2458629e40b5e0ae5dd2e6286875e57ba0dc8",
+      "bytes": 1465
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/turn-usage.tsx",
+      "sha256": "583f3ac6def88c565251b3503f8e9daf7e88ec5cf7994a96bf4f5ef5f840f13a",
+      "bytes": 4632
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx",
+      "sha256": "4b4103517e02aa12c78cbf974ffc598a37794ba49c5ca9f4d72b8d64bbc46163",
+      "bytes": 9774
+    },
+    {
+      "path": "apps/web/tests/action-budget.test.ts",
+      "sha256": "4770d759f47c1497f2f131098d7ed7d3fb8fc4f912fb5a9c6246956651ed3dc0",
+      "bytes": 1198
+    },
+    {
+      "path": "apps/web/tests/e2e/ai-accounting.journeys.spec.ts",
+      "sha256": "0647c92475420a6ee125d23c1ba72efe7653d2e555a50fa5f8d0a76c2e8c2005",
+      "bytes": 8822
+    },
+    {
+      "path": "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts",
+      "sha256": "b3ad85b7e74826fdd27568b1e584fbfa0ebb6c22747ec82a8e0184c677c877af",
+      "bytes": 72731
+    },
+    {
+      "path": "apps/web/tests/e2e/dictionary-platform.journeys.spec.ts",
+      "sha256": "cef50e091f432c44f2ac9b921e63a259b1152e0da6a6d70c05c17f100a2d3200",
+      "bytes": 81366
+    },
+    {
+      "path": "apps/web/tests/e2e/flashcard-training.journeys.spec.ts",
+      "sha256": "ad1663cb6a562848911fa0a9aef369fe0d1c9a67cd18b3d9d185114beb117164",
+      "bytes": 27450
+    },
+    {
+      "path": "apps/web/tests/e2e/learner-portrait.journeys.spec.ts",
+      "sha256": "050c754665f142a1ca37b6071df4928f95e2bb51decf0e77d80f894a286c9925",
+      "bytes": 28116
+    },
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "sha256": "5e234fb2a64b286fadc2aee2de69d25a4b92c4c85145a3f0d699b8f3ba661338",
+      "bytes": 90914
+    },
+    {
+      "path": "apps/web/tests/e2e/shared-pronunciation.journeys.spec.ts",
+      "sha256": "05741bb7aa2f2ec73a345ed73b561a6d29a500909ba007320443b8f1ad9d5dca",
+      "bytes": 15669
+    },
+    {
+      "path": "apps/web/tests/e2e/support/contextual-assistant-playwright.config.ts",
+      "sha256": "96d755bdff9c2e6e814d0faa33da68edebb8af4c2cb08def3ae0e2ab5c3a8018",
+      "bytes": 1955
+    },
+    {
+      "path": "apps/web/tests/e2e/support/speech-credit-fixture.ts",
+      "sha256": "4fb74286470cb8a74c8205768d340ed400709a06eb656c26aeca3cda819e63d2",
+      "bytes": 1185
+    },
+    {
+      "path": "apps/web/tests/e2e/texts.journeys.spec.ts",
+      "sha256": "d9566d9ae2203aa5959fc6f6a1304affb765e04e52a85789fa41007907a0b0e2",
+      "bytes": 51736
+    },
+    {
+      "path": "apps/web/tests/speech-confirmation.test.tsx",
+      "sha256": "a9746d96abfba7d2dc9849f036553251e8d93361bbca88e2ba38d2ca342bdc49",
+      "bytes": 5175
+    },
+    {
+      "path": "apps/web/tests/text-ai-preferences-api.test.ts",
+      "sha256": "8e28248fde036165e8cf36e54d4e7df086a26c96bea8b5d8e1743a2fce26cb22",
+      "bytes": 3420
+    },
+    {
+      "path": "apps/web/tests/text-ai-preferences.test.tsx",
+      "sha256": "3f29f5e049eda86ffe7d10efd9ba6b5512953f327d3fba418aa0173648146d06",
+      "bytes": 11190
+    },
+    {
+      "path": "apps/web/tests/tutor-budget-confirmation.test.tsx",
+      "sha256": "13d28207d633ec5c7274a0c28b7ccad69851dedea93f772883c62ddf38ffa596",
+      "bytes": 6581
+    },
+    {
+      "path": "apps/web/tests/tutor-usage-popover.test.tsx",
+      "sha256": "c32b4cbdfa3691e45a30fc77fe7ae093f5375aebf2aec6fbb2b674a6217bd1b1",
+      "bytes": 5462
+    },
+    {
+      "path": "docs/adr/0022-ai-credit-ledger-and-generation-settlement.md",
+      "sha256": "e8ca3fee58e6edcee6b47234075c0ac420228adf3e392667b32daf7a6de3741c",
+      "bytes": 6331
+    },
+    {
+      "path": "docs/adr/0027-typed-sentence-work-and-shared-ai-accounting.md",
+      "sha256": "89351efd0f6aa868401895303cb9467492201378d6d857e29747e9981907268c",
+      "bytes": 6138
+    },
+    {
+      "path": "docs/adr/0032-model-price-revisions-and-speech-settlement.md",
+      "sha256": "69e62ccd01f92b2433fe1a0b0e497df330574b4d6d6c3d00e239487f61bc04ac",
+      "bytes": 5619
+    },
+    {
+      "path": "docs/adr/0044-learner-portrait-approval-and-use-boundaries.md",
+      "sha256": "89602d919b967af718806c88821903c318e9b4bc51103fdd035e9ff1e5f0fbed",
+      "bytes": 10188
+    },
+    {
+      "path": "docs/adr/0045-action-accounting-and-provider-expenses.md",
+      "sha256": "2d66674f9ea0fe14b72f47cb46dd8c1f2a89b9cbc979af8c55cf1ef4fba34914",
+      "bytes": 7832
+    },
+    {
+      "path": "docs/adr/README.md",
+      "sha256": "a126f42468d697bc575e8eba41d1a838ae63b31bc49a584f74719c07cc72d122",
+      "bytes": 9904
+    },
+    {
+      "path": "docs/ai-credit-accounting-design.md",
+      "sha256": "cd3b59f884abd7de34d7d0be706b84c543c858b514fc69ffa27dd41df423e4d8",
+      "bytes": 19515
+    },
+    {
+      "path": "docs/architecture.md",
+      "sha256": "c08929829e51126014e7e45ba45e5c19dd8ec85e61fac02b14d77fef885beed2",
+      "bytes": 28413
+    },
+    {
+      "path": "docs/diagrams/README.md",
+      "sha256": "46caf85c95276c11b5df4f6ebcf787dd25a340434514515389a692ffc068bc6c",
+      "bytes": 5332
+    },
+    {
+      "path": "docs/diagrams/ai-job-lifecycle.md",
+      "sha256": "14c9c29206d4d9d7c3c1c29946726dd2e5d63f6157b21c931f0f594dd0d6d08f",
+      "bytes": 11894
+    },
+    {
+      "path": "docs/diagrams/authentication.md",
+      "sha256": "923067932c7873ca328bfa66982b002133d1e90efa4bbaaf55e19f3078ee16ba",
+      "bytes": 4173
+    },
+    {
+      "path": "docs/diagrams/conversations-and-knowledge.md",
+      "sha256": "6187dfb2365b7887110aa081199d7aff843264ced3871a16f28a05cda75a9195",
+      "bytes": 15722
+    },
+    {
+      "path": "docs/diagrams/development-and-deployment.md",
+      "sha256": "8cd2f5185fc963254df8d21c2048cf87caf68cc29acae69cf9bc29cf6fc892b8",
+      "bytes": 7913
+    },
+    {
+      "path": "docs/diagrams/dictionaries-and-learning.md",
+      "sha256": "9c4d37d9db307b3a7462497c1d037f1217a996b63cac3ae1bac92685bc0c8a1b",
+      "bytes": 7443
+    },
+    {
+      "path": "docs/diagrams/module-boundaries.md",
+      "sha256": "9dd56b26e89c053af07d8f2ebe0457d50a6f6a3774e592b6120dd0d5b01b9c0e",
+      "bytes": 5597
+    },
+    {
+      "path": "docs/diagrams/speech-and-pricing.md",
+      "sha256": "52775cf7a0a34357efca99858e4cb450bfe88b570067dde2fac79f344b8c00a7",
+      "bytes": 9488
+    },
+    {
+      "path": "docs/diagrams/system-context.md",
+      "sha256": "05c796b3e37db4ddec63c3b35e74bd69002f0e50ee4e7ff24fae1c6fdb447d31",
+      "bytes": 5458
+    },
+    {
+      "path": "docs/diagrams/texts-and-vocabulary.md",
+      "sha256": "4f03c2ee6b7dc3f306155cf3b80e3ea3272c70557ed5c321d9701961698af2d7",
+      "bytes": 7402
+    },
+    {
+      "path": "docs/operations/README.md",
+      "sha256": "2b9846aea10031a0510492a3c2e2ee21d57ade13bdaf1d668d75184e64bae2ec",
+      "bytes": 5598
+    },
+    {
+      "path": "docs/operations/ai-accounting.md",
+      "sha256": "33d430274707956938b7135ab6031d27551a5ae55f84e2a3cd2dea9e7904a25a",
+      "bytes": 5222
+    },
+    {
+      "path": "docs/user-flows/README.md",
+      "sha256": "4b047ea37e38d60ff216b8ae10142d949d4cf9bf15943ea761e6130e7c6df659",
+      "bytes": 11953
+    },
+    {
+      "path": "docs/user-flows/ai-accounting.md",
+      "sha256": "0e0687e9c80e5fe0a49ca4d568b37cb6068fb85bc2695db537ce12d679c067b3",
+      "bytes": 12163
+    },
+    {
+      "path": "docs/user-flows/ai-credit-wallet.md",
+      "sha256": "69b0f3f596634236d7faaa579c469f72d0b82fd02be3d204f75af29a5ba73353",
+      "bytes": 9254
+    },
+    {
+      "path": "docs/user-flows/contextual-language-assistant-and-knowledge.md",
+      "sha256": "71282573da0ae74e70e1d069478c75c9bec54e942746894f36b7ecc8e40d60ac",
+      "bytes": 23821
+    },
+    {
+      "path": "docs/user-flows/dictionary-platform.md",
+      "sha256": "072da7e60f388306726f018502e219c9d899c3c710fc74efcac856be1d52b614",
+      "bytes": 42837
+    },
+    {
+      "path": "docs/user-flows/learner-portrait.md",
+      "sha256": "abf1de9f08039234dac5008a1631adab3eee045bb93faa77ba89762d66b4d02c",
+      "bytes": 17500
+    },
+    {
+      "path": "docs/user-flows/sentence-practice-backend.md",
+      "sha256": "5164d6f963379a46adbdca53f81984d6066439a4a8bba15b86fa181038a4e1ba",
+      "bytes": 24256
+    },
+    {
+      "path": "docs/user-flows/sentence-practice-web.md",
+      "sha256": "c0d96f14a460512b19f5bbedfadd89d8c78ca874b00f51e5ed82913df988a818",
+      "bytes": 23946
+    },
+    {
+      "path": "docs/user-flows/shared-pronunciation-playback.md",
+      "sha256": "5303926278f3728f65c728731f9ac87e00133588c500f8cf9c508db6052b6989",
+      "bytes": 16366
+    },
+    {
+      "path": "docs/user-flows/texts.md",
+      "sha256": "607c9bdcec617dcb826cc1da715c2ae948d7c134e221e7f394078350bbe93b74",
+      "bytes": 24117
+    },
+    {
+      "path": "docs/user-flows/user-ai-model-preferences-backend.md",
+      "sha256": "e85febdeba902bccb041b4930307ddb87635cf161e823f2fe728458a58ca3a94",
+      "bytes": 8032
+    },
+    {
+      "path": "infra/deploy/sql/account-purge-worker-role.sql",
+      "sha256": "2346421ba21c5eafacbc30aff207b6854e2585a4b7e795e8b283d7bac76619c0",
+      "bytes": 11631
+    },
+    {
+      "path": "infra/deploy/sql/dictionary-worker-role.sql",
+      "sha256": "a1f7d03cbe949629e0e84e4f84af355124bfb6e4744f1379926f4956c6b696be",
+      "bytes": 10824
+    },
+    {
+      "path": "packages/contracts/src/admin/contracts.ts",
+      "sha256": "6c466a131fa065660a16a44924c63d2d6ce24133795a90ba792a069eacd79c97",
+      "bytes": 12193
+    },
+    {
+      "path": "packages/contracts/src/admin/models.ts",
+      "sha256": "717bf167246548e074bb09508f51c6c269c06cbd1f4b58e41f1e2dd0a184ad4b",
+      "bytes": 4902
+    },
+    {
+      "path": "packages/contracts/src/admin/primitives.ts",
+      "sha256": "751a3b487d5831661c985c750a6a25f548d38ba69537fbd644f225a7f7e264d5",
+      "bytes": 2272
+    },
+    {
+      "path": "packages/contracts/src/ai-accounting.ts",
+      "sha256": "6802c390430ce60da77ed28f9476681031b8330f7feb4cbba33a30a4487392e3",
+      "bytes": 7059
+    },
+    {
+      "path": "packages/contracts/src/ai-capability-policy.ts",
+      "sha256": "c36fcf60ae86f511c422b03a6870f91880178b11332f9c8e78969d85931de7f8",
+      "bytes": 3455
+    },
+    {
+      "path": "packages/contracts/src/ai-credit-amount.ts",
+      "sha256": "91083f6d71eb4669079ed55d6fa3f31d823cf57507e4843dfbe927ffd761d13c",
+      "bytes": 1249
+    },
+    {
+      "path": "packages/contracts/src/ai-provider-prices.ts",
+      "sha256": "ee90360ccd5a7ec8008296f8e37118488a4db510098a9182837a1a983f6d8d3e",
+      "bytes": 2833
+    },
+    {
+      "path": "packages/contracts/src/contextual-assistant.ts",
+      "sha256": "3ce736303835198b1cc375141063f1413ab57796027ec639b2a8cca5ccd7fb28",
+      "bytes": 37546
+    },
+    {
+      "path": "packages/contracts/src/index.ts",
+      "sha256": "b6237fcc50c3d3bba32c3c3ce94314134b3bc3ad7a0e4c9ad0e5c9d47e1e528b",
+      "bytes": 612
+    },
+    {
+      "path": "packages/contracts/src/speech/index.ts",
+      "sha256": "f648ce8a1977f8c27f07350b35512e619ef3a7caca78fa43e1a861e11d46b289",
+      "bytes": 7753
+    },
+    {
+      "path": "packages/contracts/src/text-ai/index.ts",
+      "sha256": "599a1f7f9bf340560e3003e8512bec6e84ad727270152df85ed52bf6efee1dc8",
+      "bytes": 3383
+    },
+    {
+      "path": "packages/contracts/tests/admin-contracts.test.ts",
+      "sha256": "2b6e1c96ae82cc8b9d7580526daf874ee5afd654ac304beb67b765eb8199d73b",
+      "bytes": 6580
+    },
+    {
+      "path": "packages/contracts/tests/credit-amount.test.ts",
+      "sha256": "71bbc84fcc90fcafa44866179a0ec86887a4c2159c01861fece95115afb14cfb",
+      "bytes": 774
+    },
+    {
+      "path": "scripts/architecture-viewer/test/e2e/diagrams.spec.mjs",
+      "sha256": "18750d37472325625eafbb2e141181e8569826aeac15a65884cea49c216fb9a0",
+      "bytes": 9444
+    },
+    {
+      "path": "scripts/check-user-flow-guides.mjs",
+      "sha256": "2aa9362f567d6582d912165a34a8e4e601fa142ca7c5e06b9dc2c76326b69fbf",
+      "bytes": 25369
+    },
+    {
+      "path": "scripts/run-ai-accounting-e2e.mjs",
+      "sha256": "6d88149895e321f516b01fe5ada7ec4cf92b90d3c0900103afb36000423ff0e6",
+      "bytes": 2529
+    }
+  ]
+}

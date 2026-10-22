@@ -1,3 +1,23 @@
+import { withActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
+import {
+    findTextAiModel,
+    textAiExecutionLimits,
+} from '../../../../text-ai/application/text-ai-provider-catalog';
+import { dictionaryActionInputOverhead } from './legacy-generation-input-limit';
+import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import { ProviderCostAdmissionUnavailableError } from '../../../../ai-credits/domain/provider-cost-admission';
+import {
+    prepareLegacyAction,
+    usesLegacyAction,
+    reserveLegacyAction,
+    admitLegacyAttempt,
+    recordLegacyAttempt,
+    settleLegacyAction,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import {
+    actionChargeNumerator,
+    roundActionChargeMilli,
+} from '../../../../ai-credits/domain/action-pricing';
 import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import {
     textAiProviderBudgetAllows as dictionaryGenerationProviderBudgetAllows,
@@ -63,10 +83,7 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
-import {
-    AiCreditInsufficientBalanceError,
-    resolveAiCreditMeasurement,
-} from '../../../../ai-credits/domain/ai-credit';
+import { AiCreditInsufficientBalanceError } from '../../../../ai-credits/domain/ai-credit';
 import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../../text-ai/application/text-ai-provider-catalog';
 import {
     DictionaryCardNotFoundError,
@@ -191,27 +208,28 @@ type SettingsRow = typeof dictionarySettingsTable.$inferSelect;
 
 function creditUsage(
     job: JobRow,
-    usage: { inputTokens: number; outputTokens: number },
+    usage: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    },
 ): bigint {
     if (
         job.aiCreditInputCreditsPerMillionTokens === null ||
         job.aiCreditOutputCreditsPerMillionTokens === null
     )
         throw new Error('AI credit pricing is missing');
-    const perMillion = 1_000_000n;
-    const input =
-        (BigInt(usage.inputTokens) *
-            BigInt(job.aiCreditInputCreditsPerMillionTokens) +
-            perMillion -
-            1n) /
-        perMillion;
-    const output =
-        (BigInt(usage.outputTokens) *
-            BigInt(job.aiCreditOutputCreditsPerMillionTokens) +
-            perMillion -
-            1n) /
-        perMillion;
-    return input + output;
+    return roundActionChargeMilli(
+        actionChargeNumerator(usage, {
+            inputCreditsPerMillionTokens: String(
+                job.aiCreditInputCreditsPerMillionTokens,
+            ),
+            outputCreditsPerMillionTokens: String(
+                job.aiCreditOutputCreditsPerMillionTokens,
+            ),
+        }),
+    );
 }
 
 export const dictionaryGenerationAdmissionLock = textAiCapacityLock;
@@ -806,69 +824,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             )
                 throw new DictionaryVersionConflictError();
 
-            const providerExecution = await this.activeProviderExecution(
+            const providerExecution = await this.assertGenerationAdmission(
                 tx,
                 input.ownerId,
                 dictionaryGenerationFormat,
                 input.context.now,
             );
-            const [providerCircuit] = await tx
-                .select({
-                    openUntil:
-                        dictionaryGenerationProviderCircuitTable.openUntil,
-                })
-                .from(dictionaryGenerationProviderCircuitTable)
-                .where(
-                    eq(
-                        dictionaryGenerationProviderCircuitTable.id,
-                        this.providerCircuitKey(
-                            dictionaryGenerationFormat,
-                            providerExecution.snapshot,
-                        ),
-                    ),
-                )
-                .limit(1);
-            if (
-                providerCircuit?.openUntil &&
-                providerCircuit.openUntil > input.context.now
-            )
-                throw new DictionaryGenerationNotAvailableError();
-
-            const capacity = await readTextAiCapacity(tx, {
-                actorId: input.ownerId,
-                now: input.context.now,
-                budget: providerExecution.budget,
-            });
-            const counts = {
-                global: capacity.globalQueued + capacity.globalRunning,
-                owner: capacity.actorQueued + capacity.actorRunning,
-                oldestRunnableQueuedAt: capacity.oldestRunnableAt,
-            };
-            if (
-                Number(counts?.global ?? 0) >= generationLimits.globalQueued ||
-                Number(counts?.owner ?? 0) >= generationLimits.ownerQueued ||
-                (counts?.oldestRunnableQueuedAt !== null &&
-                    counts?.oldestRunnableQueuedAt !== undefined &&
-                    new Date(counts.oldestRunnableQueuedAt).getTime() <=
-                        input.context.now.getTime() -
-                            generationLimits.maxRunnableQueueAgeMs)
-            )
-                throw new DictionaryGenerationNotAvailableError();
-
-            const providerAdmission = await this.providerBudgetUsage(
-                tx,
-                input.ownerId,
-                input.context.now,
-                providerExecution.budget,
-            );
-            if (
-                !dictionaryGenerationProviderBudgetAllows(
-                    providerAdmission,
-                    true,
-                    providerExecution.budget,
-                )
-            )
-                throw new DictionaryGenerationNotAvailableError();
             abort(input.context);
 
             const effective = resolveCardSettings({
@@ -965,7 +926,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 job!,
                 input.context.now,
             );
-            return mapJob(job!, null);
+            return withActionBilling(
+                tx,
+                mapJob(job!, null),
+                job!.id,
+                job!.ownerId,
+            );
         });
     }
 
@@ -1338,7 +1304,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 job!,
                 input.context.now,
             );
-            return mapJob(job!, null);
+            return withActionBilling(
+                tx,
+                mapJob(job!, null),
+                job!.id,
+                job!.ownerId,
+            );
         });
     }
 
@@ -1557,7 +1528,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 job!,
                 input.context.now,
             );
-            return mapJob(job!, null);
+            return withActionBilling(
+                tx,
+                mapJob(job!, null),
+                job!.id,
+                job!.ownerId,
+            );
         });
     }
 
@@ -1928,7 +1904,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     Number(counts?.active ?? 0),
                     Number(counts?.retained ?? 0),
                 ),
-                job: mapJob(job, null),
+                job: await withActionBilling(
+                    tx,
+                    mapJob(job, null),
+                    job.id,
+                    job.ownerId,
+                ),
                 mode: 'ai',
             });
             const completed = await tx
@@ -2165,7 +2146,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 job,
                 input.context.now,
             );
-            return mapJob(job, null);
+            return withActionBilling(
+                tx,
+                mapJob(job, null),
+                job.id,
+                job.ownerId,
+            );
         });
     }
 
@@ -2244,6 +2230,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             if (queued)
                 await this.settleCurrentAiCreditAttempt(tx, job, {
                     at: input.context.now,
+                    outcome: 'stopped',
                 });
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
@@ -2254,6 +2241,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             : job.aiCreditReservationId,
                     awaitingUploadAt: queued ? null : job.awaitingUploadAt,
                     cancellationRequestedAt: input.context.now,
+                    failureCategory: 'explicit_stop',
                     completedAt: queued ? input.context.now : null,
                     executionState: queued ? 'cancelled' : 'running',
                     inputPayload: queued ? null : job.inputPayload,
@@ -3644,9 +3632,17 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 .for('update', { skipLocked: true });
             for (const job of stale) {
                 const cancelled = job.cancellationRequestedAt !== null;
-                const exhausted = job.attemptCount >= job.maxAttempts;
+                const exhausted =
+                    job.attemptCount >= job.maxAttempts ||
+                    (usesLegacyAction(job.selectedExecutionSnapshot) &&
+                        job.aiCreditProviderDispatchedAt !== null);
                 await this.settleCurrentAiCreditAttempt(tx, job, {
                     at: input.context.now,
+                    terminal: cancelled || exhausted,
+                    outcome:
+                        cancelled && job.failureCategory !== 'access_revoked'
+                            ? 'stopped'
+                            : 'failure',
                 });
                 await tx
                     .update(dictionaryGenerationJobsTable)
@@ -3661,7 +3657,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             : exhausted
                               ? 'failed'
                               : 'queued',
-                        failureCategory: exhausted ? 'retry_exhausted' : null,
+                        failureCategory: cancelled
+                            ? job.failureCategory === 'access_revoked'
+                                ? 'access_revoked'
+                                : 'explicit_stop'
+                            : exhausted
+                              ? 'retry_exhausted'
+                              : null,
                         fencingToken: job.fencingToken + 1n,
                         heartbeatAt: null,
                         inputPayload:
@@ -3750,6 +3752,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 const incurredProviderCost = job.attemptCount > 0;
                 await this.settleCurrentAiCreditAttempt(tx, job, {
                     at: input.context.now,
+                    outcome:
+                        job.failureCategory === 'access_revoked'
+                            ? 'failure'
+                            : 'stopped',
                 });
                 await tx
                     .update(dictionaryGenerationJobsTable)
@@ -3759,6 +3765,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             : job.aiCreditReservationId,
                         completedAt: input.context.now,
                         executionState: 'cancelled',
+                        failureCategory:
+                            job.failureCategory === 'access_revoked'
+                                ? 'access_revoked'
+                                : 'explicit_stop',
                         inputPayload: null,
                         progressPercent: 100,
                         progressStage: 'terminal',
@@ -3900,7 +3910,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 candidateCircuit.openUntil > input.context.now
             )
                 return null;
-            const candidateProviderBudget = persistedProviderBudget(candidate);
+            let candidateProviderBudget = persistedProviderBudget(candidate);
             const reservedAttempts =
                 candidate.providerReservedAttempts ||
                 Math.max(
@@ -3999,9 +4009,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     aiCreditPolicyMode:
                         aiCreditReservation?.mode ??
                         candidate.aiCreditPolicyMode,
-                    aiCreditProviderDispatchedAt: aiCreditReservation
-                        ? null
-                        : candidate.aiCreditProviderDispatchedAt,
+                    aiCreditProviderDispatchedAt:
+                        aiCreditReservation ||
+                        usesLegacyAction(candidate.selectedExecutionSnapshot)
+                            ? null
+                            : candidate.aiCreditProviderDispatchedAt,
                     aiCreditReservationId:
                         aiCreditReservation?.id ??
                         candidate.aiCreditReservationId,
@@ -4050,6 +4062,62 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 )
                 .returning();
             if (!claimed) return null;
+            if (usesLegacyAction(candidate.selectedExecutionSnapshot)) {
+                const admitted = await admitLegacyAttempt(tx, {
+                    id: candidate.id,
+                    ownerId: candidate.ownerId,
+                    workerId: input.workerId,
+                    fencingToken: String(fencingToken),
+                    attempt: candidate.attemptCount + 1,
+                    budget: candidateProviderBudget,
+                    inputPayload: candidate.inputPayload,
+                    inputOverheadTokens: dictionaryActionInputOverhead(
+                        candidate.inputPayload,
+                    ),
+                    at: input.context.now,
+                });
+                if (!admitted) {
+                    await this.settleCurrentAiCreditAttempt(tx, candidate, {
+                        at: input.context.now,
+                    });
+                    await tx
+                        .update(dictionaryGenerationJobsTable)
+                        .set({
+                            completedAt: input.context.now,
+                            executionState: 'failed',
+                            failureCategory: 'ai_credits_exhausted',
+                            heartbeatAt: null,
+                            inputPayload: null,
+                            leaseDeadline: null,
+                            nextAttemptAt: input.context.now,
+                            progressPercent: 100,
+                            progressStage: 'terminal',
+                            providerActualCostMicros:
+                                candidate.providerReservedCostMicros,
+                            providerActualInputTokens:
+                                candidate.providerReservedInputTokens,
+                            providerActualOutputTokens:
+                                candidate.providerReservedOutputTokens,
+                            providerReservationSettledAt: input.context.now,
+                            providerReservationState: 'settled',
+                            updatedAt: input.context.now,
+                            workerId: null,
+                        })
+                        .where(
+                            eq(dictionaryGenerationJobsTable.id, candidate.id),
+                        );
+                    if (candidate.kind === 'document-terms')
+                        await this.scheduleDocumentCleanup(
+                            tx,
+                            candidate.id,
+                            input.context.now,
+                            'failed',
+                        );
+                    return null;
+                }
+                candidateProviderBudget = admitted;
+            }
+
             const [revision] = claimed.executionRevisionId
                 ? await tx
                       .select({
@@ -4073,10 +4141,16 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 input: parsed,
                 leaseDeadline,
                 providerBudget: candidateProviderBudget,
-                providerExecution:
-                    claimed.selectedExecutionSnapshot ??
-                    revision?.snapshot ??
-                    null,
+                providerExecution: usesLegacyAction(
+                    claimed.selectedExecutionSnapshot,
+                )
+                    ? {
+                          ...claimed.selectedExecutionSnapshot,
+                          aggregateBudget: candidateProviderBudget,
+                      }
+                    : (claimed.selectedExecutionSnapshot ??
+                      revision?.snapshot ??
+                      null),
                 workerId: input.workerId,
             };
         });
@@ -4118,6 +4192,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 .where(this.workerCas(input))
                 .for('update');
             if (!job) return false;
+            if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+                await tx
+                    .update(dictionaryGenerationJobsTable)
+                    .set({ aiCreditProviderDispatchedAt: input.context.now })
+                    .where(this.workerCas(input));
+                return true;
+            }
             if (!job.aiCreditAccounted) return true;
             if (!job.aiCreditReservationId)
                 throw new Error('AI credit reservation is missing');
@@ -4477,6 +4558,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             });
             await this.settleCurrentAiCreditAttempt(tx, job, {
                 at: input.context.now,
+                outcome: 'success',
                 ...(input.providerUsage
                     ? { providerUsage: input.providerUsage }
                     : {}),
@@ -4529,7 +4611,12 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 await this.terminalizeCancelled(tx, job, input.context.now);
                 return true;
             }
-            const retry = input.retryAt && job.attemptCount < job.maxAttempts;
+            const retry =
+                input.retryAt &&
+                job.attemptCount < job.maxAttempts &&
+                (!usesLegacyAction(job.selectedExecutionSnapshot) ||
+                    !job.aiCreditProviderDispatchedAt ||
+                    input.failureCategory === 'provider_rate_limited');
             const jobProviderBudget = persistedProviderBudget(job);
             if (
                 input.providerUsage &&
@@ -4570,6 +4657,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 throw new Error('Provider usage exceeds reservation');
             await this.settleCurrentAiCreditAttempt(tx, job, {
                 at: input.context.now,
+                terminal: !retry,
                 ...(input.providerUsage
                     ? { providerUsage: input.providerUsage }
                     : {}),
@@ -4577,9 +4665,11 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
-                    aiCreditProviderDispatchedAt: job.aiCreditAccounted
-                        ? null
-                        : job.aiCreditProviderDispatchedAt,
+                    aiCreditProviderDispatchedAt:
+                        job.aiCreditAccounted ||
+                        usesLegacyAction(job.selectedExecutionSnapshot)
+                            ? null
+                            : job.aiCreditProviderDispatchedAt,
                     aiCreditReservationId: job.aiCreditAccounted
                         ? null
                         : job.aiCreditReservationId,
@@ -4653,8 +4743,17 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                 )
                 .for('update');
             for (const job of jobs) {
+                const terminal =
+                    !!job.cancellationRequestedAt ||
+                    (usesLegacyAction(job.selectedExecutionSnapshot) &&
+                        (job.aiCreditProviderDispatchedAt !== null ||
+                            job.attemptCount >= job.maxAttempts));
                 await this.settleCurrentAiCreditAttempt(tx, job, {
                     at: input.context.now,
+                    terminal,
+                    outcome: job.cancellationRequestedAt
+                        ? 'stopped'
+                        : 'failure',
                 });
                 await tx
                     .update(dictionaryGenerationJobsTable)
@@ -4662,37 +4761,39 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                         aiCreditReservationId: job.aiCreditAccounted
                             ? null
                             : job.aiCreditReservationId,
-                        completedAt: job.cancellationRequestedAt
-                            ? input.context.now
-                            : null,
+                        completedAt: terminal ? input.context.now : null,
                         executionState: job.cancellationRequestedAt
                             ? 'cancelled'
-                            : 'queued',
+                            : terminal
+                              ? 'failed'
+                              : 'queued',
+                        failureCategory: job.cancellationRequestedAt
+                            ? job.failureCategory === 'access_revoked'
+                                ? 'access_revoked'
+                                : 'explicit_stop'
+                            : terminal
+                              ? 'provider_timeout'
+                              : job.failureCategory,
                         fencingToken: job.fencingToken + 1n,
                         heartbeatAt: null,
-                        inputPayload: job.cancellationRequestedAt
-                            ? null
-                            : job.inputPayload,
+                        inputPayload: terminal ? null : job.inputPayload,
                         leaseDeadline: null,
                         nextAttemptAt: input.context.now,
-                        progressPercent: job.cancellationRequestedAt ? 100 : 0,
-                        progressStage: job.cancellationRequestedAt
-                            ? 'terminal'
-                            : 'queued',
-                        providerActualCostMicros: job.cancellationRequestedAt
+                        progressPercent: terminal ? 100 : 0,
+                        progressStage: terminal ? 'terminal' : 'queued',
+                        providerActualCostMicros: terminal
                             ? job.providerReservedCostMicros
                             : null,
-                        providerActualInputTokens: job.cancellationRequestedAt
+                        providerActualInputTokens: terminal
                             ? job.providerReservedInputTokens
                             : null,
-                        providerActualOutputTokens: job.cancellationRequestedAt
+                        providerActualOutputTokens: terminal
                             ? job.providerReservedOutputTokens
                             : null,
-                        providerReservationSettledAt:
-                            job.cancellationRequestedAt
-                                ? input.context.now
-                                : null,
-                        providerReservationState: job.cancellationRequestedAt
+                        providerReservationSettledAt: terminal
+                            ? input.context.now
+                            : null,
+                        providerReservationState: terminal
                             ? 'settled'
                             : 'active',
                         updatedAt: input.context.now,
@@ -4719,10 +4820,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                             ),
                         ),
                     );
-                if (
-                    job.kind === 'document-terms' &&
-                    job.cancellationRequestedAt
-                )
+                if (job.kind === 'document-terms' && terminal)
                     await this.scheduleDocumentCleanup(
                         tx,
                         job.id,
@@ -5233,6 +5331,40 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             format,
             now,
         );
+        if (this.aiCreditEnforcementEnabled && !providerExecution.snapshot)
+            throw new DictionaryGenerationNotAvailableError();
+        if (this.aiCreditEnforcementEnabled && providerExecution.snapshot) {
+            const model = findTextAiModel(
+                providerExecution.snapshot.providerId,
+                providerExecution.snapshot.modelId,
+            );
+            if (!model) throw new DictionaryGenerationNotAvailableError();
+            providerExecution.snapshot = {
+                ...providerExecution.snapshot,
+                ...textAiExecutionLimits(model, [format]),
+                supportedFormats: [format],
+            };
+
+            try {
+                providerExecution.snapshot = await prepareLegacyAction(
+                    tx,
+                    ownerId,
+                    'dictionary-generation',
+                    providerExecution.snapshot,
+                    now,
+                );
+            } catch (error) {
+                if (
+                    error instanceof OperatorBudgetUnavailableError ||
+                    error instanceof ProviderCostAdmissionUnavailableError
+                )
+                    throw new DictionaryGenerationNotAvailableError();
+                throw error;
+            }
+            providerExecution.budget =
+                providerExecution.snapshot.aggregateBudget;
+            providerExecution.selectionVersion = 1;
+        }
         const [providerCircuit] = await tx
             .select({
                 openUntil: dictionaryGenerationProviderCircuitTable.openUntil,
@@ -5289,6 +5421,7 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             )
         )
             throw new DictionaryGenerationNotAvailableError();
+
         return providerExecution;
     }
 
@@ -5298,7 +5431,8 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         if (!providerExecution.revisionId || !pricing)
             throw new DictionaryGenerationNotAvailableError();
         return {
-            aiCreditAccounted: true,
+            aiCreditAccounted: false,
+            maxAttempts: 2,
             aiCreditInputCreditsPerMillionTokens:
                 pricing.inputCreditsPerMillionTokens,
             aiCreditMaxCreditsPerAttempt: pricing.maxCreditsPerAttempt,
@@ -5313,6 +5447,31 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         job: JobRow,
         at: Date,
     ) {
+        if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+            try {
+                await reserveLegacyAction(tx, {
+                    id: job.id,
+                    requestKey: job.idempotencyKey,
+                    fingerprint: job.requestFingerprint,
+                    scope: `dictionary-generation:${job.kind}`,
+                    ownerId: job.ownerId,
+                    kind: 'dictionary-generation',
+                    snapshot: job.selectedExecutionSnapshot,
+                    inputPayload: job.inputPayload,
+                    inputOverheadTokens: dictionaryActionInputOverhead(
+                        job.inputPayload,
+                    ),
+                    at,
+                });
+            } catch (error) {
+                if (error instanceof OperatorBudgetUnavailableError)
+                    throw new DictionaryGenerationNotAvailableError();
+                if (error instanceof AiCreditInsufficientBalanceError)
+                    throw new DictionaryAiCreditsExhaustedError();
+                throw error;
+            }
+            return;
+        }
         if (!job.aiCreditAccounted) return;
         try {
             const reservation = await this.reserveAiCreditAttempt(
@@ -5362,9 +5521,37 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         job: JobRow,
         input: {
             at: Date;
-            providerUsage?: { inputTokens: number; outputTokens: number };
+            providerUsage?: {
+                inputTokens: number;
+                outputTokens: number;
+                cacheReadTokens?: number;
+                cacheWriteTokens?: number;
+            };
+            outcome?: 'success' | 'stopped' | 'failure';
+            terminal?: boolean;
         },
     ) {
+        if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+            await recordLegacyAttempt(tx, {
+                id: job.id,
+                ownerId: job.ownerId,
+                attempt: job.attemptCount,
+                snapshot: job.selectedExecutionSnapshot,
+                successful:
+                    input.outcome === 'success' || input.outcome === 'stopped',
+                dispatched: job.aiCreditProviderDispatchedAt !== null,
+                ...(input.providerUsage ? { usage: input.providerUsage } : {}),
+                at: input.at,
+            });
+            if (input.terminal !== false)
+                await settleLegacyAction(tx, {
+                    id: job.id,
+                    ownerId: job.ownerId,
+                    outcome: input.outcome ?? 'failure',
+                    at: input.at,
+                });
+            return;
+        }
         if (!job.aiCreditAccounted) return;
         if (!job.aiCreditReservationId) return;
         if (!job.aiCreditPolicyMode)
@@ -5378,19 +5565,31 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             });
             return;
         }
-        const measuredCredits = input.providerUsage
-            ? creditUsage(job, input.providerUsage)
-            : null;
-        await credits.settleAttempt({
-            measuredCredits,
-            measurement: resolveAiCreditMeasurement(
-                job.aiCreditPolicyMode,
-                input.providerUsage !== undefined,
-            ),
-            ownerId: job.ownerId,
-            reservationId: job.aiCreditReservationId,
-            settledAt: input.at,
-        });
+        const measuredCredits =
+            input.outcome !== undefined &&
+            input.outcome !== 'failure' &&
+            input.providerUsage
+                ? creditUsage(job, input.providerUsage)
+                : 0n;
+        if (
+            !input.outcome ||
+            input.outcome === 'failure' ||
+            !input.providerUsage
+        )
+            await credits.settleFailedAttempt({
+                ownerId: job.ownerId,
+                reservationId: job.aiCreditReservationId,
+                settledAt: input.at,
+            });
+        else {
+            await credits.settleAttempt({
+                measuredCredits,
+                measurement: 'provider_reported',
+                ownerId: job.ownerId,
+                reservationId: job.aiCreditReservationId,
+                settledAt: input.at,
+            });
+        }
     }
 
     private async activeProviderExecution(
@@ -5441,18 +5640,28 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
             proposal.expiresAt <= now
         ) {
             await this.expireProposal(tx, job.id, now);
-            return mapJob(
-                { ...job, inputPayload: null, updatedAt: now },
-                {
-                    ...proposal,
-                    payload: null,
-                    reviewState: 'expired',
-                    terminalAt: now,
-                    updatedAt: now,
-                },
+            return withActionBilling(
+                tx,
+                mapJob(
+                    { ...job, inputPayload: null, updatedAt: now },
+                    {
+                        ...proposal,
+                        payload: null,
+                        reviewState: 'expired',
+                        terminalAt: now,
+                        updatedAt: now,
+                    },
+                ),
+                job.id,
+                job.ownerId,
             );
         }
-        return mapJob(job, proposal ?? null);
+        return withActionBilling(
+            tx,
+            mapJob(job, proposal ?? null),
+            job.id,
+            job.ownerId,
+        );
     }
 
     private async expireProposal(tx: Transaction, jobId: string, now: Date) {
@@ -5593,7 +5802,13 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
         job: JobRow,
         now: Date,
     ) {
-        await this.settleCurrentAiCreditAttempt(tx, job, { at: now });
+        await this.settleCurrentAiCreditAttempt(tx, job, {
+            at: now,
+            outcome:
+                job.failureCategory === 'access_revoked'
+                    ? 'failure'
+                    : 'stopped',
+        });
         await tx
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -5602,6 +5817,10 @@ export class DrizzleDictionaryGenerationStore implements DictionaryGenerationSto
                     : job.aiCreditReservationId,
                 completedAt: now,
                 executionState: 'cancelled',
+                failureCategory:
+                    job.failureCategory === 'access_revoked'
+                        ? 'access_revoked'
+                        : 'explicit_stop',
                 heartbeatAt: null,
                 inputPayload: null,
                 leaseDeadline: null,

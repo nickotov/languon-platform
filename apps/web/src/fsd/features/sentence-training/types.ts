@@ -1,3 +1,4 @@
+import type { ActionConsent } from '@/fsd/entities/ai-action';
 import type { ReactNode } from 'react';
 import type {
     SentencePreparation,
@@ -54,6 +55,8 @@ export interface SentencePreparationApi {
     ): Promise<SentencePreparationBatchesResponse>;
 }
 export interface SentencePreparationController {
+    continueWithBudget?(): Promise<void>;
+    actionConsent?: ActionConsent;
     preparation: SentencePreparation | null;
     batches: SentencePreparationBatch[];
     busy: boolean;
@@ -126,6 +129,7 @@ export interface SessionCounts {
     ratings: SentenceProgressResponse['ratings'];
 }
 export interface SentenceSessionController {
+    actionConsent?: ActionConsent;
     phase: SessionPhase;
     configuration: Configuration | null;
     sessionId: string | null;

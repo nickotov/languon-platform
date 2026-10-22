@@ -214,6 +214,8 @@ export interface DictionaryGenerationStore {
             providerUsage?: {
                 inputTokens: number;
                 outputTokens: number;
+                cacheReadTokens?: number;
+                cacheWriteTokens?: number;
             };
             reviewExpiresAt: Date;
         },
@@ -324,6 +326,8 @@ export interface DictionaryGenerationStore {
             providerUsage?: {
                 inputTokens: number;
                 outputTokens: number;
+                cacheReadTokens?: number;
+                cacheWriteTokens?: number;
             };
             retryAt: Date | null;
         },

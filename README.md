@@ -101,8 +101,11 @@ credits for newly admitted managed-routing jobs. It is off by default. Before
 enabling it, apply the AI-credit migrations, save a new provider configuration
 so the active immutable revision contains credit pricing, and verify every
 active worker supports settlement revision `1`. Existing provider revisions and
-legacy jobs are never retroactively charged. Disable the flag to stop accounting
-new admissions; already accounted jobs must drain on current workers.
+legacy jobs are never retroactively charged. Disable the flag to stop new
+generation admissions; retained jobs remain readable, cancellable and acceptable,
+and already admitted jobs drain on current workers. Deterministic test fixtures
+also use managed snapshots, reviewed synthetic rates and bounded accounting;
+there is no new unaccounted API fallback.
 
 The six format settings above enable the complete local card-authoring lifecycle.
 If a setting already contains other formats, preserve them as comma-separated
@@ -223,6 +226,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm test:e2e:shared-pronunciation`          | Run guarded learner/admin pronunciation and pricing journeys                       |
 | `pnpm test:e2e:texts-backend`                 | Run guarded Texts API journeys against disposable PostgreSQL and Redis             |
 | `pnpm test:e2e:texts-web`                     | Run guarded Texts real-browser journeys                                            |
+| `node scripts/run-ai-accounting-e2e.mjs`    | Run guarded learner budget/quote and owner accounting browser journeys sequentially |
 | `pnpm test:e2e:contextual-assistant`          | Run guarded contextual chat and Knowledge journeys with deterministic models       |
 | `pnpm test:e2e:learner-portrait`              | Run guarded portrait API and real-browser journeys with deterministic models       |
 | `pnpm test:e2e:texts`                         | Run Texts backend and web journeys against exclusive disposable targets            |

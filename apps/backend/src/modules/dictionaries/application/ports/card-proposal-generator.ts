@@ -18,6 +18,8 @@ export interface CardProposalGeneratorResult {
     usage?: {
         inputTokens: number;
         outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
     };
 }
 
@@ -32,6 +34,12 @@ export interface CardProposalGenerator {
 }
 
 export class CardProposalGeneratorError extends Error {
+    public usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    };
     public constructor(
         public readonly category:
             | 'invalid_model_output'

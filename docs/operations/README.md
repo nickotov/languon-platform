@@ -37,6 +37,10 @@ Repository commands remain authoritative if prose and code diverge.
 
 ## Environment contract
 
+For the development-only fractional-credit cutover and administrative price/limit
+calibration, read [AI accounting operations](./ai-accounting.md). Its contract
+migration intentionally blocks the ordinary production release path.
+
 For pronunciation playback, use
 [Shared pronunciation operations](../shared-pronunciation-operations.md) for
 private MinIO/S3, immutable prices, retained text/audio, key rotation, guarded

@@ -1,0 +1,9 @@
+8ac7f34a9ccc24449d153dcc771d98da33df764ee6e002e2b0a16c31b336a323  apps/web/tests/e2e/ai-accounting.journeys.spec.ts
+5d2e1e66c56d9773117a986bcf692219ead878ea2ec806d02a83c7bb310e32c9  apps/admin/tests/e2e/admin-user-management.journeys.spec.ts
+b55a035ec006e5428ef07c27a326d4fe3a4b1550d277d849dced5884cc401bba  apps/backend/tests/support/contextual-assistant-fixture.ts
+48021c4f7df5180cbfe2e3ba871212bbb40d94c66629d47695f8c3252ae1a0b6  apps/backend/tests/support/legacy-action-fixture.ts
+5c8d77060f97249638e0190f569851cc91042b04640ed79c9ea856d528a6e32d  apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
+fe56d445178dfbfde59436811c1c599167b3d66c9283aca5a716bcbf82bb7178  apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-admission.ts
+583f3ac6def88c565251b3503f8e9daf7e88ec5cf7994a96bf4f5ef5f840f13a  apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/turn-usage.tsx
+83d1473918d51cca723fdaacceb803a6a2b7f4cac9f10b0ede5524d649ccad59  apps/admin/src/pages/accounting/ui/accounting-page/accounting-page.tsx
+3ce736303835198b1cc375141063f1413ab57796027ec639b2a8cca5ccd7fb28  packages/contracts/src/contextual-assistant.ts

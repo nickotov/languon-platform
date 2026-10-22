@@ -48,6 +48,10 @@ export class TextAiPreferenceService {
                 mode: input.mode,
                 modelId: input.mode === 'explicit' ? input.modelId : null,
                 version: current.version + 1,
+                maxCreditsPerAction:
+                    input.maxCreditsPerAction ??
+                    current.maxCreditsPerAction ??
+                    null,
             };
             await session.save(preference, at);
             return this.response(preference, catalog);
@@ -63,6 +67,7 @@ export class TextAiPreferenceService {
                 : preference.modelId;
         return {
             ...preference,
+            maxCreditsPerAction: preference.maxCreditsPerAction ?? null,
             selectedModel:
                 catalog.models.find((model) => model.id === selectedId) ?? null,
         };

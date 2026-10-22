@@ -4,6 +4,7 @@ import {
     uuid,
     text,
     integer,
+    numeric,
     bigint,
     boolean,
     jsonb,
@@ -86,14 +87,17 @@ export const textsAiJobsTable = pgTable(
         aiCreditProviderDispatchedAt: date('ai_credit_provider_dispatched_at'),
         aiCreditPolicyMode: text('ai_credit_policy_mode'),
         aiCreditPricingRevision: integer('ai_credit_pricing_revision'),
-        aiCreditMaxCreditsPerAttempt: integer(
+        aiCreditMaxCreditsPerAttempt: bigint(
             'ai_credit_max_credits_per_attempt',
+            { mode: 'number' },
         ),
-        aiCreditInputCreditsPerMillionTokens: integer(
+        aiCreditInputCreditsPerMillionTokens: numeric(
             'ai_credit_input_credits_per_million_tokens',
+            { precision: 18, scale: 3, mode: 'number' },
         ),
-        aiCreditOutputCreditsPerMillionTokens: integer(
+        aiCreditOutputCreditsPerMillionTokens: numeric(
             'ai_credit_output_credits_per_million_tokens',
+            { precision: 18, scale: 3, mode: 'number' },
         ),
         providerInputCostMicrosPerMillionTokens: integer(
             'provider_input_cost_micros_per_million_tokens',

@@ -1,5 +1,7 @@
-// @user-flow-revision learner-portrait sha256:19454040cf3cf4ca
+// @user-flow-revision ai-accounting sha256:e65c3d670d67fa18
+// @user-flow-revision learner-portrait sha256:27ccde52e3d3cddf
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { customerBalance } from './support/action-accounting-fixture';
 
 async function signup(page: Page, info: TestInfo, balance?: '100' | '15608') {
     await page.goto('/signup?returnTo=%2Fportrait');
@@ -12,11 +14,12 @@ async function signup(page: Page, info: TestInfo, balance?: '100' | '15608') {
         (response) => response.url().endsWith('/auth/email-verification/verify') && response.status() === 200,
     );
     await page.getByRole('button', { name: 'Verify email', exact: true }).click();
-    await verified;
+    const authenticated = await (await verified).json();
     // A concurrent dev rebuild can preserve the verified page instead of
     // following returnTo; the authenticated portrait route is the assertion.
     await page.goto('/portrait');
     await expect(page).toHaveURL(/\/portrait$/);
+    return authenticated.user.id as string;
 }
 
 function runtimeErrors(page: Page) {
@@ -194,10 +197,11 @@ test('manual portrait is approved separately from use, persists, and global off 
     assertNoRuntimeErrors();
 });
 
+// @user-flow ai-accounting/paid-interview-quote-and-billing
 // @user-flow learner-portrait/resumable-interview-proposal-and-explicit-approval
 test('interview resumes, uses a deterministic queued response, and keeps proposal approval explicit', async ({ page }, info) => {
     const assertNoRuntimeErrors = runtimeErrors(page);
-    await signup(page, info);
+    const actorId = await signup(page, info);
     await page.goto('/portrait/intro');
     const paid = process.env.LEARNER_PORTRAIT_TEST_PAID === 'true';
     await expect(page.getByText(paid
@@ -207,6 +211,13 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     await page.getByRole('button', { name: 'Start interview', exact: true }).click();
     await expect(page).toHaveURL(/\/portrait\/interview$/);
     await expect(page.getByRole('heading', { name: 'Learner portrait interview' })).toBeVisible();
+    if (!paid)
+        await expect(
+            page.getByText(
+                'Free · Up to 30 actions per account per UTC day, including failed actions. One action at a time.',
+                { exact: true },
+            ),
+        ).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main navigation' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Create new', exact: true })).toHaveCount(0);
 
@@ -223,6 +234,13 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     await capture(page, info, 'portrait-interview-preview-desktop');
     await page.getByRole('button', { name: 'Dismiss', exact: true }).click();
     await page.getByLabel('Ask a question or answer in your own words…').fill('Je voudrais des exemples courts, avec des explications en русском.');
+    const freeAdmission = !paid
+        ? page.waitForResponse(
+              (response) =>
+                  response.url().includes('/interview/responses') &&
+                  response.status() === 202,
+          )
+        : undefined;
     const billingNotice = paid ? page.waitForResponse((response) =>
         response.url().includes('/interview/responses') && response.status() === 409,
     ) : undefined;
@@ -232,14 +250,42 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
         const notice = page.getByRole('dialog', { name: 'Interviewer responses now use credits' });
         await expect(notice).toBeVisible();
         await capture(page, info, 'portrait-paid-credit-confirmation');
-        const admitted = page.waitForResponse((response) =>
+        const requests: Record<string, unknown>[] = [];
+        page.on('request', request => {
+            if (request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/interview/responses'))
+                requests.push(request.postDataJSON());
+        });
+        await notice.getByRole('button', { name: 'Continue with credits', exact: true }).click();
+        const allowance = page.getByRole('dialog', { name: 'Review this action’s budget' });
+        await expect(allowance).toContainText('Approximate output tokens:');
+        await expect(allowance.getByRole('link', { name: 'Top up' })).toHaveAttribute('target', '_blank');
+        expect(requests).toHaveLength(1);
+        await customerBalance(actorId, '19', 'portrait-interview');
+        const revisedOffer = page.waitForResponse(response =>
+            response.request().method() === 'POST' && response.url().endsWith('/interview/responses') && response.status() === 409,
+        );
+        await allowance.getByRole('button', { name: 'Send', exact: true }).click();
+        expect((await (await revisedOffer).json()).error.code).toBe('action_confirmation_required');
+        await expect(allowance).toBeVisible();
+        expect(requests).toHaveLength(2);
+        const firstQuote = requests[1]!.confirmedQuoteId;
+        expect(requests[1]).toEqual({ ...requests[0], confirmedQuoteId: expect.any(String) });
+        const admitted = page.waitForResponse(response =>
             response.url().includes('/interview/responses') && response.status() === 202,
         );
-        await notice.getByRole('button', { name: 'Continue with credits', exact: true }).click();
-        await admitted;
+        await allowance.getByRole('button', { name: 'Send', exact: true }).click();
+        expect((await admitted).status()).toBe(202);
+        expect(requests).toHaveLength(3);
+        expect(requests[2]).toEqual({ ...requests[0], confirmedQuoteId: expect.any(String) });
+        expect(requests[2]!.confirmedQuoteId).not.toBe(firstQuote);
+    } else {
+        expect((await freeAdmission!).status()).toBe(202);
     }
     await expect(page.getByText('Proposed for your draft · not saved yet')).toBeVisible();
     await expect(page.getByText('French travel examples with Russian clarification.')).toBeVisible();
+    await expect(page.getByText(paid ? 'Charged: 0.14' : 'Free', { exact: true })).toBeVisible();
+    await page.getByText('Exact amounts', { exact: true }).click();
+    await expect(page.getByText(paid ? 'Charged credits: 0.14' : 'Charged credits: 0', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Add to draft', exact: true }).click();
     await page.getByRole('button', { name: 'Review portrait', exact: true }).click();
     await expect(page).toHaveURL(/\/portrait\/review$/);

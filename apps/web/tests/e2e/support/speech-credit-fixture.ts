@@ -8,7 +8,7 @@ const repositoryRoot = resolve(__dirname, '../../../../..');
 /** Seed synthetic funds through the real ledger, isolated to the already guarded E2E database. */
 export async function speechCreditFixture(
     actorId: string,
-    action: 'grant' | 'summary',
+    action: 'setup' | 'grant' | 'summary',
 ) {
     const { stdout } = await execFileAsync(
         'pnpm',

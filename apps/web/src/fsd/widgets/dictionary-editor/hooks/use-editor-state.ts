@@ -1,3 +1,4 @@
+import { useActionConsent } from '@/fsd/entities/ai-action';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 import { type CardAuthoringIdempotencyAttempt } from '@/fsd/features/dictionary-card-authoring';
 import { type IdempotencyAttempt } from '@/fsd/features/dictionary-library';
@@ -23,6 +24,11 @@ export function useEditorState(
     requestWithSession: RequestWithSession,
 ) {
     const { href, locale, t } = useI18n();
+    const actionConsent = useActionConsent();
+    useEffect(
+        () => actionConsent.cancel(),
+        [dictionaryId, actionConsent.cancel],
+    );
 
     const queryClient = useQueryClient();
 
@@ -142,6 +148,7 @@ export function useEditorState(
     }, []);
 
     return {
+        actionConsent,
         href,
         locale,
         t,

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -13,6 +13,7 @@ import type {
 } from '../../../application/ai-credit-participant';
 import {
     AiCreditIdempotencyConflictError,
+    AiCreditInsufficientBalanceError,
     AiCreditInvalidAmountError,
     AiCreditManagementConflictError,
     AiCreditReservationStateError,
@@ -25,11 +26,14 @@ import {
     type AiCreditMeasurement,
     type AiCreditPolicyMode,
 } from '../../../domain/ai-credit';
+import { DrizzleCapabilityPolicyParticipant } from './drizzle-capability-policy-participant';
 import {
     aiCreditAccountsTable,
     aiCreditAdminRemovalAllocationsTable,
     aiCreditAdminRemovalsTable,
     aiCreditGrantsTable,
+    aiCreditGrantBalancesTable,
+    aiCreditWalletTotalsTable,
     aiCreditHistoryTable,
     aiCreditReservationAllocationsTable,
     aiCreditReservationsTable,
@@ -166,6 +170,105 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         return { created: false, grantId: existing.id };
     }
 
+    public async revokePurchaseGrantAvailable(input: {
+        ownerId: string;
+        grantId: string;
+        amount: bigint;
+        sourceReference: string;
+        reason: string;
+        at: Date;
+    }): Promise<{ created: boolean; revokedCredits: bigint }> {
+        validatePositiveCreditAmount(input.amount);
+        validateAdminCreditAdjustment(input.amount);
+        validateSourceReference(input.sourceReference);
+        validateReason(input.reason);
+        await this.lockOwner(input.ownerId);
+        const [existing] = await this.transaction
+            .select()
+            .from(aiCreditAdminRemovalsTable)
+            .where(
+                eq(
+                    aiCreditAdminRemovalsTable.sourceReference,
+                    input.sourceReference,
+                ),
+            )
+            .limit(1);
+        if (existing) {
+            const allocations = await this.transaction
+                .select()
+                .from(aiCreditAdminRemovalAllocationsTable)
+                .where(
+                    eq(
+                        aiCreditAdminRemovalAllocationsTable.removalId,
+                        existing.id,
+                    ),
+                );
+            if (
+                existing.ownerId !== input.ownerId ||
+                existing.amount !== input.amount ||
+                existing.reason !== input.reason ||
+                allocations.length !== 1 ||
+                allocations[0]?.grantId !== input.grantId ||
+                allocations[0]?.allocatedCredits !== input.amount
+            ) {
+                throw new AiCreditIdempotencyConflictError();
+            }
+            return { created: false, revokedCredits: input.amount };
+        }
+        const [lot] = await this.transaction
+            .select({
+                source: aiCreditGrantsTable.source,
+                remainingCredits: aiCreditGrantBalancesTable.remainingCredits,
+            })
+            .from(aiCreditGrantsTable)
+            .innerJoin(
+                aiCreditGrantBalancesTable,
+                eq(aiCreditGrantBalancesTable.grantId, aiCreditGrantsTable.id),
+            )
+            .where(
+                and(
+                    eq(aiCreditGrantsTable.id, input.grantId),
+                    eq(aiCreditGrantsTable.ownerId, input.ownerId),
+                ),
+            )
+            .limit(1);
+        if (!lot || lot.source !== 'purchase')
+            throw new AiCreditReservationStateError();
+        if (lot.remainingCredits < input.amount)
+            throw new AiCreditInsufficientBalanceError();
+        const removalId = randomUUID();
+        const inserted = await this.transaction
+            .insert(aiCreditAdminRemovalsTable)
+            .values({
+                id: removalId,
+                ownerId: input.ownerId,
+                amount: input.amount,
+                sourceReference: input.sourceReference,
+                reason: input.reason,
+                createdAt: input.at,
+            })
+            .onConflictDoNothing({
+                target: aiCreditAdminRemovalsTable.sourceReference,
+            })
+            .returning({ id: aiCreditAdminRemovalsTable.id });
+        if (inserted.length === 0) throw new AiCreditIdempotencyConflictError();
+        await this.transaction
+            .insert(aiCreditAdminRemovalAllocationsTable)
+            .values({
+                removalId,
+                grantId: input.grantId,
+                allocatedCredits: input.amount,
+            });
+        await this.recordHistory({
+            ownerId: input.ownerId,
+            amount: -input.amount,
+            at: input.at,
+            kind: 'admin_removal',
+            reason: input.reason,
+        });
+        return { created: true, revokedCredits: input.amount };
+    }
+
     public async adjustByAdmin(input: {
         amount: bigint;
         at: Date;
@@ -226,7 +329,7 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         } else {
             const removalAmount = -input.amount;
             const allocations = allocateAiCredits(
-                await this.loadLots(input.ownerId),
+                await this.loadLots(input.ownerId, input.at),
                 removalAmount,
                 input.at,
             );
@@ -378,17 +481,30 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
                 reservedCredits: existing.reservedCredits,
             };
         }
-        const policy = input.interviewCreditsBypass
-            ? { mode: 'unlimited' as const, unlimitedUntil: null }
-            : input.attempt === 1
-              ? await this.currentPolicy(input.ownerId, input.at)
-              : await this.admissionPolicy(input.ownerId, input.jobId, jobKind);
+        const chargingPolicy = await new DrizzleCapabilityPolicyParticipant(
+            this.transaction,
+        ).pinAction({
+            ownerId: input.ownerId,
+            jobId: input.jobId,
+            jobKind,
+            at: input.at,
+        });
+        const policy =
+            chargingPolicy.funding === 'operator'
+                ? { mode: 'unlimited' as const, unlimitedUntil: null }
+                : input.attempt === 1
+                  ? await this.currentPolicy(input.ownerId, input.at)
+                  : await this.admissionPolicy(
+                        input.ownerId,
+                        input.jobId,
+                        jobKind,
+                    );
         const reservedCredits =
             policy.mode === 'unlimited' ? 0n : input.maximumCredits;
         const allocations =
             policy.mode === 'limited'
                 ? allocateAiCredits(
-                      await this.loadLots(input.ownerId),
+                      await this.loadLots(input.ownerId, input.at),
                       input.maximumCredits,
                       input.at,
                   )
@@ -459,6 +575,18 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         return this.settleReservation(input);
     }
 
+    public async settleFailedAttempt(input: {
+        ownerId: string;
+        reservationId: string;
+        settledAt: Date;
+    }): Promise<AiCreditSettlementResult> {
+        return this.settleReservation({
+            ...input,
+            measuredCredits: null,
+            measurement: 'technical_failure',
+        });
+    }
+
     private async settleReservation(input: {
         measuredCredits: bigint | null;
         measurement: AiCreditMeasurement;
@@ -486,7 +614,8 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         }
         if (
             reservation.dispatchedAt === null &&
-            input.measurement !== 'speech_no_charge'
+            input.measurement !== 'speech_no_charge' &&
+            input.measurement !== 'technical_failure'
         ) {
             throw new AiCreditReservationStateError();
         }
@@ -583,17 +712,20 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         billingDeadline?: Date;
         outcome: 'success' | 'failure' | 'deadline';
     }): Promise<AiCreditSettlementResult> {
-        const success =
-            input.outcome === 'success' &&
-            (!input.billingDeadline || input.settledAt < input.billingDeadline);
-        return this.settleReservation({
-            ownerId: input.ownerId,
-            reservationId: input.reservationId,
-            settledAt: input.settledAt,
+        const rows = await this.transaction.execute(
+            sql`select languon_settle_speech_customer(${input.reservationId}::uuid,${input.outcome}) as result`,
+        );
+        const result = rows[0]?.result as {
+            chargedCredits: string;
+            releasedCredits: string;
+            measurement: 'speech_success' | 'speech_no_charge';
+        };
+        return {
+            chargedCredits: BigInt(result.chargedCredits),
+            releasedCredits: BigInt(result.releasedCredits),
             measuredCredits: null,
-            measurement: success ? 'speech_success' : 'speech_no_charge',
-            speechOutcome: true,
-        });
+            measurement: result.measurement,
+        };
     }
 
     public async releaseUndispatchedAttempt(input: {
@@ -630,26 +762,17 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         });
     }
 
-    public async purgeOwner(ownerId: string) {
-        await this.lockOwner(ownerId);
+    public async purgeOwner(
+        ownerId: string,
+        authorization?: { workerId: string; fencingToken: number },
+    ) {
+        if (!authorization)
+            throw new Error(
+                'Financial purge requires the expected deletion worker and fencing token.',
+            );
         await this.transaction.execute(
-            sql`select set_config('languon.ai_credit_purge_owner', ${ownerId}, true)`,
+            sql`select languon_purge_ai_credit_owner(${ownerId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer)`,
         );
-        await this.transaction
-            .delete(aiCreditHistoryTable)
-            .where(eq(aiCreditHistoryTable.ownerId, ownerId));
-        await this.transaction
-            .delete(aiCreditAdminRemovalsTable)
-            .where(eq(aiCreditAdminRemovalsTable.ownerId, ownerId));
-        await this.transaction
-            .delete(aiCreditReservationsTable)
-            .where(eq(aiCreditReservationsTable.ownerId, ownerId));
-        await this.transaction
-            .delete(aiCreditGrantsTable)
-            .where(eq(aiCreditGrantsTable.ownerId, ownerId));
-        await this.transaction
-            .delete(aiCreditAccountsTable)
-            .where(eq(aiCreditAccountsTable.userId, ownerId));
     }
 
     private async lockOwner(ownerId: string) {
@@ -726,40 +849,37 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
         ownerId: string,
         at: Date,
     ): Promise<AiCreditAccountSummary> {
-        const [[account], lots, [totals]] = await Promise.all([
+        const [[account], [balances], [totals]] = await Promise.all([
             this.transaction
-                .select()
+                .select({
+                    mode: aiCreditAccountsTable.mode,
+                    unlimitedUntil: aiCreditAccountsTable.unlimitedUntil,
+                    managementVersion: aiCreditAccountsTable.managementVersion,
+                })
                 .from(aiCreditAccountsTable)
                 .where(eq(aiCreditAccountsTable.userId, ownerId))
                 .limit(1),
-            this.loadLots(ownerId),
             this.transaction
                 .select({
-                    consumedCredits: sql<string>`coalesce(sum(${aiCreditReservationsTable.chargedCredits}), 0)::text`,
-                    reservedCredits: sql<string>`coalesce(sum(case when ${aiCreditReservationsTable.state} = 'active' then ${aiCreditReservationsTable.reservedCredits} else 0 end), 0)::text`,
+                    availableCredits: sql<string>`coalesce(sum(${aiCreditGrantBalancesTable.remainingCredits}), 0)::text`,
+                    nextExpirationAt:
+                        sql<Date | null>`min(${aiCreditGrantBalancesTable.expiresAt})`.mapWith(
+                            aiCreditGrantBalancesTable.expiresAt,
+                        ),
                 })
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.ownerId, ownerId)),
+                .from(aiCreditGrantBalancesTable)
+                .where(this.spendableLots(ownerId, at)),
+            this.transaction
+                .select()
+                .from(aiCreditWalletTotalsTable)
+                .where(eq(aiCreditWalletTotalsTable.ownerId, ownerId))
+                .limit(1),
         ]);
         return {
-            availableCredits: lots
-                .filter((lot) => lot.expiresAt === null || lot.expiresAt > at)
-                .reduce((total, lot) => total + lot.availableCredits, 0n),
-            consumedCredits: BigInt(totals?.consumedCredits ?? '0'),
+            availableCredits: BigInt(balances?.availableCredits ?? '0'),
+            consumedCredits: totals?.consumedCredits ?? 0n,
             managementVersion: account?.managementVersion ?? 0,
-            nextExpirationAt:
-                lots
-                    .filter(
-                        (lot) =>
-                            lot.availableCredits > 0n &&
-                            lot.expiresAt !== null &&
-                            lot.expiresAt > at,
-                    )
-                    .sort(
-                        (left, right) =>
-                            left.expiresAt!.getTime() -
-                            right.expiresAt!.getTime(),
-                    )[0]?.expiresAt ?? null,
+            nextExpirationAt: balances?.nextExpirationAt ?? null,
             policy: {
                 configuredMode: account?.mode ?? 'limited',
                 effectiveMode: effectiveAiCreditPolicy(account ?? null, at),
@@ -768,71 +888,31 @@ export class DrizzleAiCreditTransactionParticipant implements SpeechCreditTransa
                         ? account.unlimitedUntil
                         : null,
             },
-            reservedCredits: BigInt(totals?.reservedCredits ?? '0'),
+            reservedCredits: totals?.reservedCredits ?? 0n,
         };
     }
 
-    private async loadLots(ownerId: string): Promise<AiCreditLot[]> {
-        const [grants, removals, reservationAllocations] = await Promise.all([
-            this.transaction
-                .select({
-                    amount: aiCreditGrantsTable.amount,
-                    createdAt: aiCreditGrantsTable.createdAt,
-                    expiresAt: aiCreditGrantsTable.expiresAt,
-                    id: aiCreditGrantsTable.id,
-                })
-                .from(aiCreditGrantsTable)
-                .where(eq(aiCreditGrantsTable.ownerId, ownerId)),
-            this.transaction
-                .select({
-                    grantId: aiCreditAdminRemovalAllocationsTable.grantId,
-                    spentCredits: sql<string>`sum(${aiCreditAdminRemovalAllocationsTable.allocatedCredits})::text`,
-                })
-                .from(aiCreditAdminRemovalAllocationsTable)
-                .innerJoin(
-                    aiCreditAdminRemovalsTable,
-                    eq(
-                        aiCreditAdminRemovalsTable.id,
-                        aiCreditAdminRemovalAllocationsTable.removalId,
-                    ),
-                )
-                .where(eq(aiCreditAdminRemovalsTable.ownerId, ownerId))
-                .groupBy(aiCreditAdminRemovalAllocationsTable.grantId),
-            this.transaction
-                .select({
-                    grantId: aiCreditReservationAllocationsTable.grantId,
-                    spentCredits: sql<string>`sum(case when ${aiCreditReservationsTable.state} = 'active' then ${aiCreditReservationAllocationsTable.allocatedCredits} when ${aiCreditReservationsTable.state} = 'settled' then ${aiCreditReservationAllocationsTable.settledCredits} else 0 end)::text`,
-                })
-                .from(aiCreditReservationAllocationsTable)
-                .innerJoin(
-                    aiCreditReservationsTable,
-                    eq(
-                        aiCreditReservationsTable.id,
-                        aiCreditReservationAllocationsTable.reservationId,
-                    ),
-                )
-                .where(eq(aiCreditReservationsTable.ownerId, ownerId))
-                .groupBy(aiCreditReservationAllocationsTable.grantId),
-        ]);
-        const spent = new Map<string, bigint>();
-        for (const row of removals) {
-            spent.set(
-                row.grantId,
-                (spent.get(row.grantId) ?? 0n) + BigInt(row.spentCredits),
-            );
-        }
-        for (const row of reservationAllocations) {
-            spent.set(
-                row.grantId,
-                (spent.get(row.grantId) ?? 0n) + BigInt(row.spentCredits),
-            );
-        }
-        return grants.map((grant) => ({
-            availableCredits: grant.amount - (spent.get(grant.id) ?? 0n),
-            createdAt: grant.createdAt,
-            expiresAt: grant.expiresAt,
-            id: grant.id,
-        }));
+    private spendableLots(ownerId: string, at: Date) {
+        return and(
+            eq(aiCreditGrantBalancesTable.ownerId, ownerId),
+            gt(aiCreditGrantBalancesTable.remainingCredits, 0n),
+            or(
+                isNull(aiCreditGrantBalancesTable.expiresAt),
+                gt(aiCreditGrantBalancesTable.expiresAt, at),
+            ),
+        );
+    }
+
+    private async loadLots(ownerId: string, at: Date): Promise<AiCreditLot[]> {
+        return this.transaction
+            .select({
+                availableCredits: aiCreditGrantBalancesTable.remainingCredits,
+                createdAt: aiCreditGrantBalancesTable.createdAt,
+                expiresAt: aiCreditGrantBalancesTable.expiresAt,
+                id: aiCreditGrantBalancesTable.grantId,
+            })
+            .from(aiCreditGrantBalancesTable)
+            .where(this.spendableLots(ownerId, at));
     }
 
     private reservation(ownerId: string, reservationId: string) {

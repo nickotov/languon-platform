@@ -2,7 +2,7 @@
 feature: sentence-practice-backend
 title: Sentence practice backend
 status: current
-last_verified: 2026-10-06
+last_verified: 2026-10-22
 surfaces:
     - api
     - system
@@ -29,6 +29,7 @@ e2e_scenarios:
     - generate-check-reuse-private-and-shared
     - manage-saved-library-and-partial-preparation
 related_features:
+    - ai-accounting
     - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - flashcard-training-backend
@@ -137,7 +138,11 @@ providers, never paid models. Run `pnpm test:e2e:sentence-practice-backend`.
 
 9. Start optional whole-dictionary preparation with a separate operation ID and
    initial practice scope. Preparation persists bounded partitions and a saved
-   manifest while existing generation jobs use current credits and worker slots.
+   manifest. Generated preparation first reserves one total learner action budget,
+   pins its tariffs/model/provider limits, and shares at most 10,000 output tokens
+   and five calls across all child jobs, with at most one safe automatic retry.
+   Review-only preparation has no AI hold. An unfunded Start fails before creating
+   background work; replay never creates a second parent hold.
    Replaying the start returns the same preparation. A bounded batch-list query
    exposes every partition; its query rejects limits above 25. Background generation saves
    examples without recording exposure, completion or AI grades.
@@ -228,9 +233,39 @@ preview, selected personal archive/restore, another learner's unaffected shared
 library, prepared New examples practice without another generation, and denied
 library/preparation reads after share-key rotation. Real repository tests cover
 whole dictionaries larger than a practice round, bulk snapshots, concurrent
-mutations, resume and content/access invalidation. Admin composed service/routes
+mutations, one parent across multiple batches, total output exhaustion, idempotent
+Continue, stale coordinator fences, unfunded Start, and content/access invalidation. Admin composed service/routes
 and persistence tests cover administrative authority and permanent deletion; this
 sentence API journey does not claim admin UI verification.
+
+## AI action budgets and settlement
+
+New generation and AI-check actions pin exact 0.001-credit customer budgets,
+customer tariffs and provider cost revisions. Mandatory uncalibrated controls
+fail closed. Internal integer thousandths are not display credits. At most one
+safe automatic retry shares the action budget and 10,000-total-output-token
+allowance across attempts; transport retries of the same operation are separate
+from provider retries and cannot admit duplicate work.
+
+Validated usable generation/check results are charged from eligible measured
+usage. Technical/invalid/revoked-authority outcomes release the customer hold;
+provider expense remains independently recorded. Explicit learner cancellation
+is a stopped outcome, chargeable only from defensible usage within the hold.
+Unknown measurement is not a full-hold debit and never becomes a surprise later
+charge. Free saved-reference review and existing Free/unlimited exceptions
+remain available under their established authority. See [AI accounting](./ai-accounting.md).
+
+Whole-dictionary preparation is one learner authorization. Its background children
+share the same pinned parent hold, input/output execution limits and provider-cost
+allowance. A normal Resume preserves the active parent and its remaining budget.
+When exhausted, expired after 15 minutes, or settled after Stop, the preparation
+shows a budget pause and requires explicit Continue with a new budget. Continue
+creates a separately confirmed authorization; previous action records remain
+unchanged. An in-flight child is recovered through its lease before another child
+can start. Already usable completed batches remain eligible for payment; a
+technical failure contributes no customer usage. Review-only preparation never
+creates an accounting action. The API checks reduced-allowance confirmation again
+atomically, so another tab cannot silently consume a confirmed allowance.
 
 ## Expected failure and edge cases
 
@@ -259,11 +294,14 @@ sentence API journey does not claim admin UI verification.
   ineligible for practice. Already-admitted AI work may finish into history.
 - Closing a preparation view does not stop durable work. Stop prevents new
   admissions and requests cancellation of the current child job; partial results
-  remain saved. Insufficient credits or terminal provider/model failure pauses
-  preparation with a reason. Resume uses the same snapshot; stale entry versions
+  remain saved. Stop settles eligible measured usage under that authorization.
+  An exhausted/expired parent pauses with a budget reason; Continue requires a
+  new explicit budget. A capacity pause may Resume only the still-active pinned
+  authorization. Technical failures do not add customer usage. Stale entry versions
   require a refreshed preparation. Newly added words require a later preparation.
 - Pending, cancelled, timed-out, retried and stale-fenced jobs never publish late
-  results. Known provider usage is settled even when generated content is invalid.
+  results. Known provider expense is recorded even when generated content is invalid;
+  the technical failure releases customer holds.
   Invalid sentence-generation output retries within the existing attempt and
   accounting limits; invalid AI-check output remains a terminal failure.
 - Saved content must match the requested language tags and distinguishable

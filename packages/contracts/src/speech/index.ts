@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CreditAmountNumberSchema } from '../ai-credit-amount';
 
 const id = z.string().uuid();
 export const SpeechAccessSchema = z.discriminatedUnion('kind', [
@@ -71,8 +72,8 @@ export type SpeechSource = z.infer<typeof SpeechSourceSchema>;
 export const SpeechQuoteSchema = z
     .object({
         id,
-        credits: z.string().regex(/^\d+$/),
-        availableCredits: z.string().regex(/^\d+$/),
+        credits: z.string().regex(/^(0|[1-9]\d*)(\.\d{1,3})?$/),
+        availableCredits: z.string().regex(/^(0|[1-9]\d*)(\.\d{1,3})?$/),
         unlimited: z.boolean().default(false),
         characterCount: z.number().int().nonnegative(),
         wordCount: z.number().int().nonnegative(),
@@ -136,30 +137,19 @@ export const ModelPriceSchema = z
         meter: z.enum(['speech-characters', 'text-tokens']),
         version: z.number().int().nonnegative(),
         rateRevisionId: id.nullable(),
-        creditsPer1000Characters: z
-            .number()
-            .int()
-            .nonnegative()
+        creditsPer1000Characters: CreditAmountNumberSchema.positive()
             .max(1000000000)
             .nullable(),
-        minimumCredits: z
-            .number()
-            .int()
-            .nonnegative()
-            .max(1000000000)
-            .nullable(),
-        inputCreditsPerMillionTokens: z
-            .number()
-            .int()
-            .nonnegative()
-            .max(1000000000)
-            .nullable(),
-        outputCreditsPerMillionTokens: z
-            .number()
-            .int()
-            .nonnegative()
-            .max(1000000000)
-            .nullable(),
+        minimumCredits: CreditAmountNumberSchema.max(1000000000).nullable(),
+        inputCreditsPerMillionTokens:
+            CreditAmountNumberSchema.max(1000000000).nullable(),
+        outputCreditsPerMillionTokens:
+            CreditAmountNumberSchema.max(1000000000).nullable(),
+        cachedInputCreditsPerMillionTokens: CreditAmountNumberSchema.max(
+            1000000000,
+        )
+            .nullable()
+            .optional(),
         provisional: z.boolean(),
         updatedAt: z.string().datetime().nullable(),
     })

@@ -7,6 +7,7 @@ import type { TextAiModelSummary } from '@languon/contracts';
 import type { SessionRequest } from '../../api/preferences-api';
 import { useModelPreference } from '../../hooks/use-model-preference';
 import { preferenceCopy } from '../../lib/copy';
+import { ActionBudgetField } from './action-budget-field';
 import { modelLabel } from './model-option';
 import { PreferencePicker } from './preference-picker';
 import { PreferenceAlerts } from './preference-alerts';
@@ -156,6 +157,10 @@ function ScopedModelPreferenceSection({
                             group={group}
                             options={options}
                             autoContext={autoContext}
+                        />
+                        <ActionBudgetField
+                            controller={controller}
+                            locale={locale}
                         />
                         <div className={styles.creditNote}>
                             <p>{copy.creditHelp}</p>

@@ -1,10 +1,17 @@
+import {
+    usesLegacyAction,
+    reserveLegacyAction,
+    recordLegacyAttempt,
+    settleLegacyAction,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import {
+    actionChargeNumerator,
+    roundActionChargeMilli,
+} from '../../../../ai-credits/domain/action-pricing';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
-import {
-    AiCreditInsufficientBalanceError,
-    resolveAiCreditMeasurement,
-} from '../../../../ai-credits/domain/ai-credit';
+import { AiCreditInsufficientBalanceError } from '../../../../ai-credits/domain/ai-credit';
 import { AiCreditInsufficientBalanceError as SelectionCreditsError } from '../../../../ai-credits/domain/ai-credit';
 import { textAiProviderUsageCostMicros } from '../../../../text-ai/application/text-ai-provider-catalog';
 import { dictionaryTextSelectionJobsTable as jobs } from './selection-card-schema';
@@ -27,6 +34,22 @@ export async function reserveSelectionAttempt(
     attempt: number,
     now: Date,
 ) {
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        if (attempt === 1)
+            await reserveLegacyAction(tx, {
+                id: job.id,
+                requestKey: job.operationId,
+                fingerprint: job.requestHash,
+                scope: 'text-selection-card',
+                ownerId: job.ownerId,
+                kind: 'text-selection-card',
+                snapshot: job.selectedExecutionSnapshot,
+                inputPayload: job.inputPayload,
+                inputOverheadTokens: 32768,
+                at: now,
+            });
+        return;
+    }
     if (!job.aiCreditAccounted) return;
     const id = randomUUID();
     try {
@@ -59,8 +82,34 @@ export async function settleSelectionAttempt(
     tx: SentenceTransaction,
     job: SentenceJobRow,
     now: Date,
-    usage?: { inputTokens: number; outputTokens: number },
+    usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    },
+    outcome: 'success' | 'stopped' | 'failure' = 'failure',
+    terminal = true,
 ) {
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        await recordLegacyAttempt(tx, {
+            id: job.id,
+            ownerId: job.ownerId,
+            attempt: job.attemptCount,
+            snapshot: job.selectedExecutionSnapshot,
+            successful: outcome !== 'failure',
+            dispatched: job.aiCreditProviderDispatchedAt !== null,
+            ...(usage ? { usage } : {}),
+            at: now,
+        });
+        if (terminal)
+            await settleLegacyAction(tx, {
+                id: job.id,
+                ownerId: job.ownerId,
+                outcome,
+                at: now,
+            });
+    }
     if (job.providerReservationState !== 'active') return;
     if (
         usage &&
@@ -81,30 +130,35 @@ export async function settleSelectionAttempt(
                 reservationId: job.aiCreditReservationId,
             });
         else {
-            const measured = usage
-                ? BigInt(
-                      Math.ceil(
-                          (usage.inputTokens *
-                              job.aiCreditInputCreditsPerMillionTokens!) /
-                              1_000_000,
-                      ) +
-                          Math.ceil(
-                              (usage.outputTokens *
-                                  job.aiCreditOutputCreditsPerMillionTokens!) /
-                                  1_000_000,
-                          ),
-                  )
-                : null;
-            await credits.settleAttempt({
-                ownerId: job.ownerId,
-                reservationId: job.aiCreditReservationId,
-                settledAt: now,
-                measuredCredits: measured,
-                measurement: resolveAiCreditMeasurement(
-                    job.aiCreditPolicyMode!,
-                    usage !== undefined,
-                ),
-            });
+            // Customer eligibility is independent of incurred provider usage.
+            const measured =
+                outcome !== 'failure' && usage
+                    ? roundActionChargeMilli(
+                          actionChargeNumerator(usage, {
+                              inputCreditsPerMillionTokens: String(
+                                  job.aiCreditInputCreditsPerMillionTokens!,
+                              ),
+                              outputCreditsPerMillionTokens: String(
+                                  job.aiCreditOutputCreditsPerMillionTokens!,
+                              ),
+                          }),
+                      )
+                    : 0n;
+            if (outcome === 'failure' || !usage)
+                await credits.settleFailedAttempt({
+                    ownerId: job.ownerId,
+                    reservationId: job.aiCreditReservationId,
+                    settledAt: now,
+                });
+            else {
+                await credits.settleAttempt({
+                    ownerId: job.ownerId,
+                    reservationId: job.aiCreditReservationId,
+                    settledAt: now,
+                    measuredCredits: measured,
+                    measurement: 'provider_reported',
+                });
+            }
         }
     }
     const dispatched = job.aiCreditProviderDispatchedAt !== null;

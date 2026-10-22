@@ -1,3 +1,4 @@
+import { PortraitInterviewDailyQuotaError } from '../../application/ports/interview-store';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { PortraitService } from '../../application/portrait-service';
@@ -90,7 +91,13 @@ function fixture() {
             appEnvironment: 'test',
             refreshTokenTtlSeconds: 3600,
         }),
-        creditsBypass: true,
+        readChargingPolicy: async () => ({
+            capability: 'portrait-interview',
+            version: 0,
+            revisionId: null,
+            funding: 'operator',
+            updatedAt: null,
+        }),
     });
     return { app, ownerId, operationId, interviewId, interviewStore };
 }
@@ -157,6 +164,34 @@ describe('learner portrait HTTP boundary', () => {
             expect.objectContaining({ ownerId, paidAcknowledged: false }),
         );
         expect(interviewStore.claim).not.toHaveBeenCalled();
+    });
+    it('reports the durable daily quota as a retryable rate limit', async () => {
+        const { app, interviewId, interviewStore } = fixture();
+        vi.mocked(interviewStore.enqueue).mockRejectedValue(
+            new PortraitInterviewDailyQuotaError(),
+        );
+        const response = await app.request(
+            '/learner-portrait/interview/responses',
+            {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    interviewId,
+                    expectedVersion: 0,
+                    expectedGeneration: 0,
+                    idempotencyKey: randomUUID(),
+                    input: { kind: 'chat', topic: 'goals', text: 'Travel' },
+                }),
+            },
+        );
+        expect(response.status).toBe(429);
+        expect(await response.json()).toMatchObject({
+            error: {
+                code: 'resource_limit',
+                message:
+                    'Daily interview limit reached. Try again tomorrow (UTC).',
+            },
+        });
     });
     it('rejects answer overflow and user-selected identity before admission', async () => {
         const { app, interviewId, interviewStore } = fixture();

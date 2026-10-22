@@ -315,6 +315,27 @@ describe('dictionary card proposal generators', () => {
         expect(generate).toHaveBeenCalledOnce();
     });
 
+    it('retains reported cache usage when structured output is invalid without exposing that output', async () => {
+        const generator = createMastraCardProposalGenerator({
+            agent: {
+                generate: vi.fn().mockResolvedValue({
+                    error: undefined,
+                    object: { invalid: true },
+                    tripwire: undefined,
+                    usage: {
+                        inputTokens: 120,
+                        outputTokens: 48,
+                        cachedInputTokens: 30,
+                    },
+                }),
+            },
+        });
+        await expect(generator.generate(request())).rejects.toMatchObject({
+            category: 'invalid_model_output',
+            usage: { inputTokens: 120, outputTokens: 48, cacheReadTokens: 30 },
+        });
+    });
+
     it('rejects provider usage outside the reserved input or output ceiling', async () => {
         const generate = vi.fn().mockResolvedValue({
             error: undefined,

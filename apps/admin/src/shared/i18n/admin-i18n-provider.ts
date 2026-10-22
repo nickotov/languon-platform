@@ -271,6 +271,7 @@ export const adminMessages = {
     'aiCredits.measurement.unmetered': 'Unmetered',
     'aiCredits.measurement.speech_success': 'Pronunciation generated',
     'aiCredits.measurement.speech_no_charge': 'Pronunciation not charged',
+    'aiCredits.measurement.technical_failure': 'Technical failure — no charge',
     'aiCredits.job.speech-generation': 'Pronunciation generation',
     'aiCredits.policyTitle': 'Change AI credit policy',
     'aiCredits.policyMode': 'Credit policy',
@@ -394,6 +395,133 @@ export const adminMessages = {
     'speech.reviewRequired':
         'Reload the recordings and review their current links before submitting again. If your session needs recent authentication, sign in again first.',
     'speech.reviewAgain': 'Reload and review impact',
+    'resources.accounting.name': 'AI accounting',
+    'accounting.preparing': 'Preparing the accounting report…',
+    'accounting.operatorBudgetHelp':
+        'Provider expense limits apply to all paid and Free AI work. Values are USD and require economic calibration. Blank means uncalibrated; new work is unavailable until all mandatory limits are configured. Daily limits use UTC. Amounts support six decimal places.',
+    'accounting.operatorAction': 'Maximum provider expense per action (USD)',
+    'accounting.operatorAccountDay':
+        'Maximum provider expense per account per UTC day (USD)',
+    'accounting.operatorDay':
+        'Maximum provider expense per UTC day, all accounts (USD)',
+    'accounting.operatorBudgetInvalid':
+        'Enter a positive USD amount with at most nine whole and six decimal digits, or leave blank while uncalibrated.',
+    'accounting.operatorBudgetOrder':
+        'Provider expense limits must increase from per action to per account per day to all accounts per day.',
+    'accounting.settings': 'AI action and provider expense limits',
+    'accounting.budgetHelp':
+        'The default maximum credits per paid action requires economic calibration. Leave blank while uncalibrated; this does not mean unlimited. Admitted actions keep their original budget. Reload after a version conflict.',
+    'accounting.defaultBudget':
+        'Default maximum credits per action (blank = uncalibrated)',
+    'accounting.publishSettings': 'Publish action budget revision',
+    'accounting.providerPrices': 'Provider USD cost rates',
+    'accounting.providerPricesHelp':
+        'Provider costs are independent of customer credit tariffs. Publish rates from verified provider pricing; absent rates remain unknown. No rates are prefilled.',
+    'accounting.addProviderPrice': 'Add provider cost rate',
+    'accounting.publishProviderPrice': 'Publish provider cost revision',
+    'accounting.providerPriceFutureOnly':
+        'Record an immutable provider rate revision with its effective date and source evidence. Already admitted work keeps its original cost snapshot. Invoice reconciliation remains a separate record.',
+    'accounting.effectiveAt': 'Effective at (ISO 8601 UTC)',
+    'accounting.sourceReference': 'Price source reference',
+    'accounting.sourceUrl': 'Price source URL (optional HTTPS)',
+    'accounting.usdRates': 'USD cost rates',
+    'accounting.usdTokenRates':
+        '{input} input / {output} output USD per 1M tokens',
+    'accounting.usdCacheRates':
+        'Cache read {read} / write {write} USD per 1M tokens',
+    'accounting.usdCharacterRate': '{rate} USD per 1,000 characters',
+    'accounting.usdCharacterField': 'USD per 1,000 characters',
+    'accounting.usdInputField': 'USD per million input tokens',
+    'accounting.usdOutputField': 'USD per million output tokens',
+    'accounting.usdCacheReadField':
+        'USD per million cache read tokens (optional)',
+    'accounting.usdCacheWriteField':
+        'USD per million cache write tokens (optional)',
+    'accounting.tokenMeter': 'Text tokens',
+    'accounting.characterMeter': 'Speech characters',
+    'accounting.title': 'AI accounting',
+    'accounting.description':
+        'Manual cash records and usage economics in USD. Reports refresh every 30 seconds. Reporting periods use UTC; the end date is exclusive.',
+    'accounting.from': 'From (UTC)',
+    'accounting.to': 'To, exclusive (UTC)',
+    'accounting.apply': 'Apply period',
+    'accounting.periodError':
+        'Choose a positive report period of at most 366 days.',
+    'accounting.summary': 'Revenue and expense (USD)',
+    'accounting.payments': 'Payments (USD)',
+    'accounting.refunds': 'Refunds (USD)',
+    'accounting.fees': 'Payment fees (USD)',
+    'accounting.net': 'Net cash receipts (USD)',
+    'accounting.expense': 'Calculated usage expense (USD)',
+    'accounting.knownExpense': 'Known usage expense (USD, incomplete)',
+    'accounting.allocated': 'Consumed purchase value (USD)',
+    'accounting.unused': 'Unused purchase value (USD)',
+    'accounting.loss': 'Refunded consumed value / loss (USD)',
+    'accounting.adjustment': 'Unallocated reconciliation adjustment (USD)',
+    'accounting.margin': 'Operational margin (USD)',
+    'accounting.unknown': 'Unknown',
+    'accounting.fresh': 'Current report',
+    'accounting.stale': 'Stale report — refresh required',
+    'accounting.generated': 'Generated {time}',
+    'accounting.quality':
+        'Usage: {measured} measured · {estimated} estimated · {unknown} unknown',
+    'accounting.incomplete':
+        'Some usage has unknown cost. Known expense is incomplete; a full margin is unavailable.',
+    'accounting.providers': 'Provider funding and reconciliation',
+    'accounting.providerHelp':
+        'Deposits are funding, not generation expense. Remaining balances are estimates; external activity may change provider balances.',
+    'accounting.deposits': 'Deposited (USD)',
+    'accounting.latestBalance': 'Latest reported balance (USD)',
+    'accounting.observed': 'Balance observed (UTC)',
+    'accounting.estimatedRemaining': 'Estimated remaining (USD)',
+    'accounting.invoice': 'Invoice total (USD)',
+    'accounting.bills': '{provider} bill reconciliation',
+    'accounting.periodStart': 'Billing period start (ISO 8601 UTC)',
+    'accounting.periodEnd': 'Billing period end (ISO 8601 UTC)',
+    'accounting.records': 'Latest manual records',
+    'accounting.recordsHelp':
+        'The latest 100 manual records are shown. Credits granted without a purchase are not revenue.',
+    'accounting.id': 'Record ID',
+    'accounting.add': 'Record manual transaction',
+    'accounting.kind': 'Record type',
+    'accounting.kind.payment': 'Customer payment',
+    'accounting.kind.refund': 'External refund',
+    'accounting.kind.provider_deposit': 'Provider deposit',
+    'accounting.kind.provider_balance': 'Reported provider balance',
+    'accounting.kind.provider_bill': 'Provider bill reconciliation',
+    'accounting.amount': 'Amount (USD, up to 6 decimals)',
+    'accounting.reference': 'External reference',
+    'accounting.occurredAt': 'Occurred / observed at (ISO 8601 UTC)',
+    'accounting.manualHelp':
+        'Record an external transaction or observation. This action does not send money. Payment records grant the entered credits.',
+    'accounting.owner': 'Customer user ID',
+    'accounting.credits': 'Purchased credits (up to 3 decimals)',
+    'accounting.refundHelp':
+        'Review current credits before recording a refund. Only explicitly entered available credits are revoked; reserved and consumed credits are preserved.',
+    'accounting.payment': 'Original payment record ID',
+    'accounting.revoke': 'Available credits to revoke',
+    'accounting.removedCreditLot': 'Unavailable after account removal',
+    'accounting.available': 'Available credits',
+    'accounting.reserved': 'Reserved credits',
+    'accounting.consumed': 'Consumed credits',
+    'accounting.revoked': 'Previously revoked credits',
+    'accounting.save': 'Save manual record',
+    'accounting.saveError': 'The record could not be saved.',
+    'accounting.retryExact':
+        'A submitted operation is preserved for an exact retry. Close and reopen to enter a different record.',
+    'accounting.policies': 'Capability charging policies',
+    'accounting.capability': 'Capability',
+    'accounting.funding': 'Charging policy',
+    'accounting.funding.operator': 'Free (operator funded)',
+    'accounting.funding.customer': 'Paid (customer credits)',
+    'accounting.policyHelp':
+        'Publish a versioned policy for future admissions. Existing actions retain their policy. Interviews default to Free, 30 admitted actions per account per UTC day and one active action. Failures count toward admission quota. Operator spending limits apply independently.',
+    'accounting.policyFutureOnly':
+        'Publish a new policy revision for future admissions. Already admitted actions retain their original policy. Reload after a version conflict before editing again.',
+    'accounting.publishPolicy': 'Publish capability policy revision',
+    'accounting.reloadPolicies': 'Reload latest policies',
+    'accounting.originalCurrency': 'Original currency (optional, ISO code)',
+    'accounting.originalAmount': 'Original amount (optional)',
     'pricing.title': 'Model credit pricing',
     'pricing.description':
         'Publish credit rates for approved text and speech models. Provider credentials, models and voices remain managed in server configuration.',
@@ -408,6 +536,12 @@ export const adminMessages = {
         'This publishes a new price revision for future work. Admitted jobs keep their agreed price; unconfirmed speech quotes must be refreshed.',
     'pricing.characterRate': 'Credits per 1,000 characters',
     'pricing.minimum': 'Minimum credits per recording',
+    'pricing.cachedInputRate':
+        'Credits per million cached input tokens (optional)',
+    'pricing.cachedInputHelp':
+        'Leave blank to use the ordinary input rate. This customer tariff is independent of provider USD costs.',
+    'pricing.cachedInputFallback': 'Cached input uses ordinary input rate',
+    'pricing.cachedInputValue': '{rate} credits per 1M cached input tokens',
     'pricing.inputRate': 'Credits per million input tokens',
     'pricing.outputRate': 'Credits per million output tokens',
     'pricing.provisional': 'Provisional',

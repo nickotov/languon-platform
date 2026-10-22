@@ -103,41 +103,46 @@ describe('AI credits panel', () => {
         expect(screen.getByText('No credit activity yet.')).toBeInTheDocument();
     });
 
-    it('submits a removal with the latest management version and no expiry', async () => {
-        const fetchMock = vi
-            .fn()
-            .mockResolvedValueOnce(jsonResponse(creditsResponse()))
-            .mockResolvedValueOnce(jsonResponse(creditsResponse()));
-        vi.stubGlobal('fetch', fetchMock);
-        const user = userEvent.setup();
+    it.each([250, 0.125])(
+        'submits removal %s with the latest management version and no expiry',
+        async (amountCredits) => {
+            const fetchMock = vi
+                .fn()
+                .mockResolvedValueOnce(jsonResponse(creditsResponse()))
+                .mockResolvedValueOnce(jsonResponse(creditsResponse()));
+            vi.stubGlobal('fetch', fetchMock);
+            const user = userEvent.setup();
 
-        render(<AiCreditsPanel mutable userId={userId} />);
-        await screen.findByText('Limited');
-        await user.click(
-            screen.getByRole('button', { name: 'Adjust credits' }),
-        );
-        await user.click(screen.getByRole('radio', { name: 'Remove credits' }));
-        const amount = screen.getByRole('spinbutton', { name: 'Credits' });
-        await user.clear(amount);
-        await user.type(amount, '250');
-        await user.type(
-            screen.getByRole('textbox', { name: 'Reason' }),
-            'Correct duplicate support grant',
-        );
-        await user.click(
-            screen.getByRole('button', { name: 'Apply adjustment' }),
-        );
+            render(<AiCreditsPanel mutable userId={userId} />);
+            await screen.findByText('Limited');
+            await user.click(
+                screen.getByRole('button', { name: 'Adjust credits' }),
+            );
+            await user.click(
+                screen.getByRole('radio', { name: 'Remove credits' }),
+            );
+            const amount = screen.getByRole('spinbutton', { name: 'Credits' });
+            await user.clear(amount);
+            await user.type(amount, String(amountCredits));
+            await user.type(
+                screen.getByRole('textbox', { name: 'Reason' }),
+                'Correct duplicate support grant',
+            );
+            await user.click(
+                screen.getByRole('button', { name: 'Apply adjustment' }),
+            );
 
-        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-        const request = fetchMock.mock.calls[1]?.[1] as RequestInit;
-        expect(request.method).toBe('POST');
-        expect(JSON.parse(String(request.body))).toEqual({
-            amountCredits: -250,
-            expectedVersion: 3,
-            expiresAt: null,
-            reason: 'Correct duplicate support grant',
-        });
-    });
+            await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+            const request = fetchMock.mock.calls[1]?.[1] as RequestInit;
+            expect(request.method).toBe('POST');
+            expect(JSON.parse(String(request.body))).toEqual({
+                amountCredits: -amountCredits,
+                expectedVersion: 3,
+                expiresAt: null,
+                reason: 'Correct duplicate support grant',
+            });
+        },
+    );
 
     it('keeps history readable but disables mutations for an ineligible target', async () => {
         vi.stubGlobal(

@@ -15,6 +15,7 @@ import type { useAuthoringCleanup } from './use-authoring-cleanup';
 import { regenerateCardAuthoring } from '../api/regenerate-card-authoring';
 
 export function useAuthoringMutation({
+    actionConsent,
     t,
     queryClient,
     setEditing,
@@ -34,6 +35,7 @@ export function useAuthoringMutation({
     flushCardAuthoringCleanup,
 }: Pick<
     ReturnType<typeof useEditorState>,
+    | 'actionConsent'
     | 't'
     | 'queryClient'
     | 'setEditing'
@@ -138,41 +140,49 @@ export function useAuthoringMutation({
                 fingerprint,
             );
             authoringAttempt.current = attempt;
-            const response = await requestWithSession((token) => {
-                if (action.successor) {
-                    if (!authoringReviewJob)
-                        throw new Error('Card authoring proposal unavailable');
-                    return regenerateCardAuthoring(
-                        token,
-                        {
-                            jobId: authoringReviewJob.id,
-                            format: authoringReviewJob.format,
-                        },
-                        base,
-                        action,
-                        attempt.key,
-                    );
-                }
-                if (editing && editing !== 'new') {
-                    return dictionaryApi.enqueueCardAuthoringUpdateGeneration(
+            const response = await actionConsent.run((confirmedQuoteId) =>
+                requestWithSession((token) => {
+                    const quotedBase = {
+                        ...base,
+                        ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                    };
+                    if (action.successor) {
+                        if (!authoringReviewJob)
+                            throw new Error(
+                                'Card authoring proposal unavailable',
+                            );
+                        return regenerateCardAuthoring(
+                            token,
+                            {
+                                jobId: authoringReviewJob.id,
+                                format: authoringReviewJob.format,
+                            },
+                            quotedBase,
+                            action,
+                            attempt.key,
+                        );
+                    }
+                    if (editing && editing !== 'new') {
+                        return dictionaryApi.enqueueCardAuthoringUpdateGeneration(
+                            token,
+                            dictionaryId,
+                            editing.id,
+                            {
+                                ...quotedBase,
+                                expectedCardVersion: editing.version,
+                                scope: action.scope,
+                            },
+                            attempt.key,
+                        );
+                    }
+                    return dictionaryApi.enqueueCardAuthoringGeneration(
                         token,
                         dictionaryId,
-                        editing.id,
-                        {
-                            ...base,
-                            expectedCardVersion: editing.version,
-                            scope: action.scope,
-                        },
+                        { ...quotedBase, scope: action.scope },
                         attempt.key,
                     );
-                }
-                return dictionaryApi.enqueueCardAuthoringGeneration(
-                    token,
-                    dictionaryId,
-                    { ...base, scope: action.scope },
-                    attempt.key,
-                );
-            });
+                }),
+            );
             authoringAttempt.current = null;
             return response;
         },

@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
-import { describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import { describe, expect, it, vi } from 'vitest';
 import { AuthHttpPolicy } from '../../../../src/modules/authentication/interface/http/auth-http-policy';
+import { ConversationError } from '../../../../src/modules/conversations/domain/conversation';
 import { createConversationRoutes } from '../../../../src/modules/conversations/interface/http/conversation.routes';
 
 function composedRoutes() {
@@ -81,6 +83,7 @@ it('keeps live SSE private and prevents proxy compression from buffering small b
                 ownerId: '00000000-0000-4000-8000-000000000002',
             }),
             admitStream: async () => ({ release: async () => {} }),
+            admitSubmission: async () => ({ release: async () => {} }),
             store: {
                 detail: async () => ({ turns: [] }),
                 events: async () => [],
@@ -110,4 +113,190 @@ it('keeps live SSE private and prevents proxy compression from buffering small b
     } finally {
         await reader.cancel();
     }
+});
+
+it('backs off unchanged queued streams, then polls running output quickly with fresh authorization', async () => {
+    vi.useFakeTimers();
+    const turnId = '00000000-0000-4000-8000-000000000003';
+    const revalidate = vi.fn(async () => ({ ownerId: 'learner' }));
+    let eventCalls = 0;
+    const events = vi.fn(async () => {
+        const call = ++eventCalls;
+        if (call === 5 || call === 6)
+            return [
+                {
+                    id: call,
+                    type: 'turn',
+                    data: {
+                        id: turnId,
+                        status: call === 5 ? 'running' : 'succeeded',
+                    },
+                },
+            ];
+        return [];
+    });
+    const app = createConversationRoutes({
+        service: {
+            access: async () => ({ ownerId: 'learner' }),
+            revalidate,
+            admitStream: async () => ({ release: async () => {} }),
+            admitSubmission: async () => ({ release: async () => {} }),
+            store: {
+                detail: async () => ({
+                    turns: [{ id: turnId, status: 'queued' }],
+                }),
+                events,
+            },
+        } as never,
+        policy: new AuthHttpPolicy({
+            allowedOrigins: ['http://localhost:3333'],
+            appEnvironment: 'test',
+            refreshTokenTtlSeconds: 3600,
+        }),
+    });
+    const response = await app.request(
+        '/conversations/00000000-0000-4000-8000-000000000001/events',
+        { headers: { Authorization: 'Bearer synthetic.test.token' } },
+    );
+    const reader = response.body!.getReader();
+    const drain = (async () => {
+        while (!(await reader.read()).done) {
+            /* Drain SSE backpressure. */
+        }
+    })();
+    try {
+        await vi.advanceTimersByTimeAsync(375);
+        expect(events).toHaveBeenCalledTimes(4);
+        await vi.advanceTimersByTimeAsync(749);
+        expect(events).toHaveBeenCalledTimes(4);
+        await vi.advanceTimersByTimeAsync(251);
+        expect(events.mock.calls.length).toBeGreaterThanOrEqual(5);
+        expect(events.mock.calls.length).toBeLessThanOrEqual(6);
+        await vi.advanceTimersByTimeAsync(125);
+        expect(events).toHaveBeenCalledTimes(6);
+        await vi.advanceTimersByTimeAsync(500);
+        expect(events).toHaveBeenCalledTimes(6);
+        expect(revalidate).toHaveBeenCalledTimes(events.mock.calls.length);
+    } finally {
+        await reader.cancel();
+        await vi.advanceTimersByTimeAsync(1000);
+        await drain;
+        vi.useRealTimers();
+    }
+});
+
+it('returns a typed affordable-output offer for explicit confirmation without submitting work', async () => {
+    const { ConversationActionConfirmationRequired } =
+        await import('../../../../src/modules/conversations/domain/conversation');
+    const quote = {
+        id: '00000000-0000-4000-8000-000000000003',
+        maximumCredits: '0.001',
+        approximateOutputTokens: 1,
+        expiresAt: '2026-10-22T20:00:00.000Z',
+    };
+    const app = createConversationRoutes({
+        service: {
+            access: async () => ({
+                ownerId: '00000000-0000-4000-8000-000000000002',
+            }),
+            admitSubmission: async () => ({ release: async () => {} }),
+            store: {
+                submit: async () => {
+                    throw new ConversationActionConfirmationRequired(quote);
+                },
+            },
+        } as never,
+        policy: new AuthHttpPolicy({
+            allowedOrigins: ['http://localhost:3333'],
+            appEnvironment: 'test',
+            refreshTokenTtlSeconds: 3600,
+        }),
+    });
+    const response = await app.request(
+        '/conversations/00000000-0000-4000-8000-000000000001/turns',
+        {
+            method: 'POST',
+            headers: {
+                Authorization: 'Bearer synthetic.test.token',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                requestId: '00000000-0000-4000-8000-000000000004',
+                content: 'Explain.',
+            }),
+        },
+    );
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+        error: { code: 'action_confirmation_required', details: { quote } },
+    });
+});
+
+it('admits one source-preparation POST at a time and releases its lease on every exit', async () => {
+    let releasePreparation!: () => void;
+    let enteredPreparation!: () => void;
+    const preparationStarted = new Promise<void>((resolve) => {
+        enteredPreparation = resolve;
+    });
+    const preparationGate = new Promise<void>((resolve) => {
+        releasePreparation = resolve;
+    });
+    const releaseLease = vi.fn(async () => {});
+    const admitSubmission = vi
+        .fn()
+        .mockResolvedValueOnce({ release: releaseLease })
+        .mockRejectedValueOnce(
+            new ConversationError(
+                'capacity_unavailable',
+                'A message is already being prepared.',
+            ),
+        )
+        .mockResolvedValueOnce({ release: releaseLease });
+    const submit = vi
+        .fn()
+        .mockImplementationOnce(async () => {
+            enteredPreparation();
+            await preparationGate;
+            return { id: 'turn-1', status: 'queued' };
+        })
+        .mockRejectedValueOnce(new Error('synthetic submit failure'));
+    const app = createConversationRoutes({
+        service: {
+            access: async () => ({ ownerId: 'learner' }),
+            admitSubmission,
+            store: { submit },
+        } as never,
+        policy: new AuthHttpPolicy({
+            allowedOrigins: ['http://localhost:3333'],
+            appEnvironment: 'test',
+            refreshTokenTtlSeconds: 3600,
+        }),
+    });
+    const post = () =>
+        app.request(
+            '/conversations/00000000-0000-4000-8000-000000000001/turns',
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer synthetic.test.token',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    requestId: randomUUID(),
+                    content: 'Explain.',
+                }),
+            },
+        );
+    const first = post();
+    await preparationStarted;
+    const second = await post();
+    expect(second.status).not.toBe(200);
+    expect(submit).toHaveBeenCalledTimes(1);
+    releasePreparation();
+    expect((await first).status).toBe(200);
+    expect(releaseLease).toHaveBeenCalledTimes(1);
+
+    const failed = await post();
+    expect(failed.status).toBe(500);
+    expect(releaseLease).toHaveBeenCalledTimes(2);
 });

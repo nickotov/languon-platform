@@ -10,12 +10,14 @@ import {
     index,
     uniqueIndex,
     check,
+    primaryKey,
 } from 'drizzle-orm/pg-core';
 import type {
     AudioObjectReference,
     SpeechProfile,
     StoredSpeechSource,
 } from '../application/ports';
+import type { ProviderPrice } from '@languon/contracts';
 import {
     dictionariesTable,
     dictionaryCardsTable,
@@ -25,6 +27,17 @@ import {
     sentenceAttemptsTable,
 } from '../../learning/infrastructure/persistence/drizzle/sentence-schema';
 import { usersTable } from '../../users/infrastructure/persistence/drizzle/schema';
+
+export type SpeechProviderPriceSnapshot = Pick<
+    ProviderPrice,
+    | 'id'
+    | 'version'
+    | 'providerId'
+    | 'modelId'
+    | 'meter'
+    | 'usdPer1000Characters'
+    | 'effectiveAt'
+>;
 
 const date = (name: string) => timestamp(name, { withTimezone: true });
 
@@ -79,6 +92,15 @@ export const speechJobsTable = pgTable(
         estimatedCostUnits: integer('estimated_cost_units')
             .notNull()
             .default(0),
+        accountingVersion: integer('accounting_version').notNull().default(0),
+        providerPriceSnapshot: jsonb(
+            'provider_price_snapshot',
+        ).$type<SpeechProviderPriceSnapshot>(),
+        providerCharacterCount: integer('provider_character_count'),
+        providerDispatchedAt: date('provider_dispatched_at'),
+        providerOutcome: text('provider_outcome').$type<
+            'ready' | 'not_submitted' | 'unknown'
+        >(),
         billingState: text('billing_state').notNull(),
         state: text('state').notNull(),
         taskId: text('task_id'),
@@ -95,10 +117,28 @@ export const speechJobsTable = pgTable(
     },
     (table) => [
         check(
+            'speech_jobs_provider_outcome',
+            sql`${table.providerOutcome} is null or ${table.providerOutcome} in ('ready','not_submitted','unknown')`,
+        ),
+        check(
             'speech_jobs_estimated_cost_nonnegative',
             sql`${table.estimatedCostUnits} >= 0`,
         ),
         index('speech_jobs_claim_idx').on(table.state, table.nextPollAt),
+        index('speech_jobs_active_owner_idx')
+            .on(table.payerId, table.state)
+            .where(
+                sql`${table.state} in ('queued','submitting','processing','storing','submission_unknown')`,
+            ),
+        index('speech_jobs_active_lease_idx')
+            .on(table.state, table.leaseExpiresAt)
+            .where(
+                sql`${table.state} in ('submitting','processing','storing')`,
+            ),
+        check(
+            'speech_jobs_accounting_snapshot',
+            sql`${table.accountingVersion}=0 or (${table.accountingVersion}=1 and ${table.providerPriceSnapshot} is not null and ${table.providerCharacterCount}>0)`,
+        ),
         uniqueIndex('speech_jobs_single_flight_idx')
             .on(table.canonicalKey)
             .where(
@@ -111,6 +151,26 @@ export const speechJobsTable = pgTable(
         check(
             'speech_jobs_billing_check',
             sql`${table.billingState} in ('free','reserved','charged_success','released_no_charge')`,
+        ),
+    ],
+);
+
+/** Bounded UTC-day admission quotas. No request scans speech history. */
+export const speechDailyAdmissionCountersTable = pgTable(
+    'speech_daily_admission_counters',
+    {
+        day: text('day').notNull(),
+        scope: text('scope').notNull(),
+        freeCount: integer('free_count').notNull().default(0),
+        estimatedUnits: bigint('estimated_units', { mode: 'bigint' })
+            .notNull()
+            .default(sql`0`),
+    },
+    (t) => [
+        primaryKey({ columns: [t.day, t.scope] }),
+        check(
+            'speech_daily_admission_nonnegative',
+            sql`${t.freeCount}>=0 and ${t.estimatedUnits}>=0`,
         ),
     ],
 );

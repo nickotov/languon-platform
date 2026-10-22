@@ -196,6 +196,81 @@ describe('model price revisions', () => {
         ).toHaveValue('');
     });
 
+    it.each([0.125, null, undefined])(
+        'publishes optional cached input rate %s independently of ordinary input',
+        async (cachedRate) => {
+            const textPrice: ModelPrice = {
+                ...price,
+                meter: 'text-tokens',
+                creditsPer1000Characters: null,
+                minimumCredits: null,
+                inputCreditsPerMillionTokens: 1.125,
+                outputCreditsPerMillionTokens: 2,
+            };
+            vi.spyOn(adminApi, 'modelPrices').mockResolvedValue({
+                prices: [textPrice],
+            });
+            const publish = vi
+                .spyOn(adminApi, 'publishModelPrice')
+                .mockResolvedValue(textPrice);
+            const { result } = renderHook(() => useModelPrices());
+            await waitFor(() => expect(result.current.loading).toBe(false));
+            act(() => result.current.edit(textPrice));
+            await act(async () => {
+                await result.current.publish({
+                    inputCreditsPerMillionTokens: 1.125,
+                    outputCreditsPerMillionTokens: 2,
+                    cachedInputCreditsPerMillionTokens: cachedRate,
+                    provisional: false,
+                    reason: 'Publish cached customer tariff',
+                });
+            });
+            expect(publish.mock.calls[0]?.[0]).toMatchObject({
+                inputCreditsPerMillionTokens: 1.125,
+                outputCreditsPerMillionTokens: 2,
+                cachedInputCreditsPerMillionTokens: cachedRate ?? null,
+            });
+        },
+    );
+    it('accepts a fractional cached input rate in the price editor', async () => {
+        const submit = vi.fn().mockResolvedValue(undefined);
+        const textPrice: ModelPrice = {
+            ...price,
+            meter: 'text-tokens',
+            creditsPer1000Characters: null,
+            minimumCredits: null,
+            inputCreditsPerMillionTokens: 1.125,
+            outputCreditsPerMillionTokens: 2,
+            cachedInputCreditsPerMillionTokens: null,
+        };
+        render(
+            <ModelPriceDialog
+                price={textPrice}
+                pending={false}
+                blocked={false}
+                error={null}
+                onSubmit={submit}
+                onClose={vi.fn()}
+                onReload={vi.fn()}
+                onSignIn={vi.fn()}
+            />,
+        );
+        const cached = screen.getByRole('spinbutton', {
+            name: 'pricing.cachedInputRate',
+        });
+        fireEvent.change(cached, { target: { value: '0.125' } });
+        fireEvent.change(screen.getByRole('textbox', { name: 'user.reason' }), {
+            target: { value: 'Review cached customer credit tariff' },
+        });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'pricing.publish' }),
+        );
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+        expect(submit.mock.calls[0]?.[0]).toMatchObject({
+            inputCreditsPerMillionTokens: 1.125,
+            cachedInputCreditsPerMillionTokens: 0.125,
+        });
+    });
     it('pins the reviewed revision and requires reload after a conflict', async () => {
         vi.spyOn(adminApi, 'modelPrices').mockResolvedValue({
             prices: [price],

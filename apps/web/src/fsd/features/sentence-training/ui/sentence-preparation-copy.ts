@@ -3,6 +3,36 @@ import { useI18n } from '@/fsd/shared/i18n';
 type Plural = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
 type Row = [string | Plural, string | Plural, string | Plural, string | Plural];
 const PREPARATION = {
+    budget: [
+        'Another budget needs your approval',
+        'Otro presupuesto requiere tu aprobación',
+        'Un nouveau budget nécessite votre accord',
+        'Новый бюджет требует вашего согласия',
+    ],
+    budgetBody: [
+        'Saved examples are kept. Continue explicitly authorizes a new total budget; preparation does not restart automatically.',
+        'Se conservan los ejemplos. Continuar autoriza otro presupuesto total; la preparación no se reinicia automáticamente.',
+        'Les exemples sont conservés. Continuer autorise un nouveau budget total ; la préparation ne redémarre pas automatiquement.',
+        'Сохранённые примеры остаются. Продолжение явно разрешает новый общий бюджет; подготовка не возобновляется автоматически.',
+    ],
+    continueBudget: [
+        'Continue with a new budget',
+        'Continuar con un nuevo presupuesto',
+        'Continuer avec un nouveau budget',
+        'Продолжить с новым бюджетом',
+    ],
+    totalBudget: [
+        'Preparation uses one total budget. Continue authorizes a new budget explicitly.',
+        'La preparación usa un presupuesto total. Continuar autoriza otro presupuesto.',
+        'La préparation utilise un budget total. Continuer autorise un nouveau budget.',
+        'Подготовка использует один общий бюджет. Продолжение явно разрешает новый бюджет.',
+    ],
+    remainingOutput: [
+        'Remaining output tokens: {n}',
+        'Tokens de salida restantes: {n}',
+        'Tokens de sortie restants : {n}',
+        'Осталось токенов ответа: {n}',
+    ],
     switchLabel: [
         'Prepare sentences for the whole dictionary in advance',
         'Preparar frases para todo el diccionario con antelación',

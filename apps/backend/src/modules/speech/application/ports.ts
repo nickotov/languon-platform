@@ -121,6 +121,7 @@ export interface SpeechStore {
         outcome: 'failure' | 'unknown',
         now: Date,
         reason?: 'speech_provider_unavailable',
+        notSubmitted?: boolean,
     ): Promise<void>;
     releaseDeadlines(now: Date): Promise<void>;
     listRecordings(query: {

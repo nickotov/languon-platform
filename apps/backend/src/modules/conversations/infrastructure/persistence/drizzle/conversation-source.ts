@@ -54,13 +54,13 @@ export class ConversationSourceResolver {
     async assertActiveActor(
         tx: ConversationsTransaction,
         ownerId: string,
-        lock: 'share' | 'update' = 'share',
+        lock: 'share' | 'update' | 'none' = 'share',
     ) {
-        const [actor] = await tx
+        const query = tx
             .select({ status: usersTable.status })
             .from(usersTable)
-            .where(eq(usersTable.id, ownerId))
-            .for(lock);
+            .where(eq(usersTable.id, ownerId));
+        const [actor] = lock === 'none' ? await query : await query.for(lock);
         if (actor?.status !== 'active') throw conversationUnavailable();
     }
     async resolve(
@@ -70,11 +70,18 @@ export class ConversationSourceResolver {
         access: { key?: string; authority?: SourceAuthority },
         includeMaterial = true,
         query = '',
+        lockRows = true,
+        actorVerified = false,
     ): Promise<{
         snapshot: ConversationSourceSnapshot;
         authority: SourceAuthority;
     }> {
-        await this.assertActiveActor(tx, ownerId);
+        if (!actorVerified)
+            await this.assertActiveActor(
+                tx,
+                ownerId,
+                lockRows ? 'share' : 'none',
+            );
         if (source.kind === 'knowledge') {
             const note = await this.dependencies.readNote(
                 tx,
@@ -111,12 +118,14 @@ export class ConversationSourceResolver {
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, source.id));
             if (!candidate) throw conversationUnavailable();
-            await this.owner(tx, candidate.ownerId);
-            const [dictionary] = await tx
+            await this.owner(tx, candidate.ownerId, lockRows);
+            const dictionaryQuery = tx
                 .select()
                 .from(dictionariesTable)
-                .where(eq(dictionariesTable.id, source.id))
-                .for('share');
+                .where(eq(dictionariesTable.id, source.id));
+            const [dictionary] = lockRows
+                ? await dictionaryQuery.for('share')
+                : await dictionaryQuery;
             if (
                 !dictionary ||
                 dictionary.ownerId !== candidate.ownerId ||
@@ -147,10 +156,22 @@ export class ConversationSourceResolver {
                     version: dictionary.shareKeyVersion!,
                 };
             }
-            const [settings] = await tx
-                .select()
-                .from(dictionarySettingsTable)
-                .where(eq(dictionarySettingsTable.dictionaryId, dictionary.id));
+            const [settings] = includeMaterial
+                ? await tx
+                      .select()
+                      .from(dictionarySettingsTable)
+                      .where(
+                          eq(dictionarySettingsTable.dictionaryId, dictionary.id),
+                      )
+                : [];
+            const [settingsRevision] = includeMaterial
+                ? []
+                : await tx
+                      .select({ version: dictionarySettingsTable.version })
+                      .from(dictionarySettingsTable)
+                      .where(
+                          eq(dictionarySettingsTable.dictionaryId, dictionary.id),
+                      );
             const terms = query
                 .toLocaleLowerCase()
                 .split(/[^\p{L}\p{N}]+/u)
@@ -286,7 +307,7 @@ export class ConversationSourceResolver {
                     title: dictionary.name,
                     description: dictionary.description,
                     studiedLanguage: dictionary.sourceLanguageTag,
-                    version: `${dictionary.version}:${settings?.version ?? 0}:${revision}`,
+                    version: `${dictionary.version}:${settings?.version ?? settingsRevision?.version ?? 0}:${revision}`,
                     provenance: 'saved',
                     material,
                     scope: query ? 'selected-material' : 'complete',
@@ -298,20 +319,26 @@ export class ConversationSourceResolver {
             .from(textsTable)
             .where(eq(textsTable.id, source.id));
         if (!candidate) throw conversationUnavailable();
-        await this.owner(tx, candidate.ownerId);
-        const [folder] =
+        await this.owner(tx, candidate.ownerId, lockRows);
+        const folderQuery =
             candidate.folderId === null
-                ? []
-                : await tx
+                ? undefined
+                : tx
                       .select()
                       .from(textFoldersTable)
-                      .where(eq(textFoldersTable.id, candidate.folderId))
-                      .for('share');
-        const [document] = await tx
+                      .where(eq(textFoldersTable.id, candidate.folderId));
+        const [folder] = folderQuery
+            ? lockRows
+                ? await folderQuery.for('share')
+                : await folderQuery
+            : [];
+        const documentQuery = tx
             .select()
             .from(textsTable)
-            .where(eq(textsTable.id, source.id))
-            .for('share');
+            .where(eq(textsTable.id, source.id));
+        const [document] = lockRows
+            ? await documentQuery.for('share')
+            : await documentQuery;
         if (
             !document ||
             document.lifecycle !== 'active' ||
@@ -324,7 +351,7 @@ export class ConversationSourceResolver {
             throw conversationUnavailable();
         const authority: SourceAuthority = { sourceOwnerId: document.ownerId };
         if (document.ownerId !== ownerId) {
-            const [share] = await tx
+            const shareQuery = tx
                 .select()
                 .from(textSharesTable)
                 .where(
@@ -332,8 +359,10 @@ export class ConversationSourceResolver {
                         eq(textSharesTable.locator, source.shareLocator ?? ''),
                         eq(textSharesTable.kind, source.shareKind ?? 'text'),
                     ),
-                )
-                .for('share');
+                );
+            const [share] = lockRows
+                ? await shareQuery.for('share')
+                : await shareQuery;
             const known = access.authority?.share;
             if (
                 !share ||
@@ -381,12 +410,16 @@ export class ConversationSourceResolver {
             },
         };
     }
-    private async owner(tx: ConversationsTransaction, id: string) {
-        const [owner] = await tx
+    private async owner(
+        tx: ConversationsTransaction,
+        id: string,
+        lockRows = true,
+    ) {
+        const query = tx
             .select({ status: usersTable.status })
             .from(usersTable)
-            .where(eq(usersTable.id, id))
-            .for('share');
+            .where(eq(usersTable.id, id));
+        const [owner] = lockRows ? await query.for('share') : await query;
         if (owner?.status !== 'active') throw conversationUnavailable();
     }
 }

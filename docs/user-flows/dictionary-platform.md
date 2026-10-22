@@ -41,6 +41,7 @@ e2e_scenarios:
     - document-generation-cleans-original-and-commits-final-review
     - quizlet-import-and-export-round-trip
 related_features:
+    - ai-accounting
     - contextual-language-assistant-and-knowledge
     - flashcard-training-web
     - dictionary-permanent-deletion
@@ -113,8 +114,11 @@ deterministic provider and retained legacy plus context-aware formats:
 `card-authoring:v1`, `card-authoring:v2`, `card-authoring:v3`, `single-card:v1`,
 `single-card:v2`, `pasted-terms:v1`, and `pasted-terms:v2`. Optional AI pair
 enrichment uses `import-pairs:v1` and `import-pairs:v2`. The mapped Playwright configuration supplies
-those local-only settings and starts the third process automatically; it never
-calls a live model.
+those local-only settings and starts the third process automatically. Its guarded
+test startup calibrates a managed model snapshot, reviewed synthetic rates,
+operator funding and spending limits; explicit deterministic dispatch never
+calls a live model. Fixtures use the same required accounting admission as live
+requests.
 
 The document scenario additionally uses the guarded disposable services in
 `infra/test/document-services.compose.yaml`. Start its versioned private MinIO
@@ -567,6 +571,43 @@ Version-conflict matrices, typed persistence constraints, owner isolation,
 idempotency reuse, no-current-card-JSON assertions, and malicious text rendering
 remain at contract, repository integration, HTTP integration, and component
 test layers where their failure conditions are deterministic.
+
+## AI action budgets and billing
+
+New dictionary AI actions pin the learner maximum, customer tariff and provider
+cost revision at admission. Mandatory customer/provider/operator limits must be
+calibrated; absent configuration fails closed. Disabling
+`DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED` disables new generation and document
+upload authorization while retained jobs remain readable, cancellable and
+acceptable. Enabling it without a managed execution snapshot also fails closed;
+there is no unaccounted fallback for new API work. Credits are exact to 0.001, with
+integer thousandths used only inside accounting storage. Public credit amounts
+remain decimal strings; a stored milli-credit is not one displayed credit.
+
+Before each authoring, rewrite, pasted-term or document admission, the saved
+maximum is available in the action panel. A reduced affordable allowance opens
+**Review this action’s budget** with compact/exact maximum, approximate output
+and expiry. Only **Send** authorizes it. **Keep editing** preserves the draft;
+**Top up** opens credits in another tab. Confirmation retries preserve the
+original instruction, version and idempotency key; a further reduction requires
+another Send. Actual job projections show execution separately from held,
+charged, released or Free billing and reveal exact credit amounts. No billing
+state is invented when an older job has no projection.
+
+A whole action permits at most one safe automatic retry and 10,000 total output
+tokens across attempts. A failed or ambiguous dispatch cannot bypass that bound.
+Only usable validated results are customer-charge eligible. Technical/invalid or
+revoked-authority failures release the customer hold while retaining independent
+provider expense. An explicit learner cancellation is a stopped outcome and uses
+defensible usage capped by the hold; missing defensible usage is absorbed.
+
+A document proposal is not charge-eligible until original-byte cleanup succeeds
+and final review publication commits. Cleanup failure or lost authority cannot
+leave a customer charge for an unpublished unusable review. Already-admitted
+historical work retains its pinned policy. Exact arithmetic and settlement
+races are covered by focused real database tests; the existing mapped authoring
+and cleanup/publication journeys retain their observable outcomes. See
+[AI accounting](./ai-accounting.md) and ADR-0045 for the current shared policy.
 
 ## Expected failure and edge cases
 

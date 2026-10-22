@@ -5,6 +5,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { streamSSE } from 'hono/streaming';
 import {
     ChatPreferencesSchema,
+    ConversationActionQuoteSchema,
     ConversationSourceSchema,
     CreateConversationRequestSchema,
     UpdateConversationRequestSchema,
@@ -21,7 +22,10 @@ import {
     ConversationTextReferenceResponseSchema,
 } from '@languon/contracts';
 import type { ConversationService } from '../../application/conversation-service';
-import { ConversationError } from '../../domain/conversation';
+import {
+    ConversationActionConfirmationRequired,
+    ConversationError,
+} from '../../domain/conversation';
 import {
     type AuthHttpPolicy,
     InvalidBearerAuthorizationError,
@@ -44,6 +48,9 @@ const error = json(
             code: z.string(),
             message: z.string(),
             requestId: z.string(),
+            details: z
+                .object({ quote: ConversationActionQuoteSchema })
+                .optional(),
         }),
     }),
     'Request failed',
@@ -151,6 +158,7 @@ export function createConversationRoutes({
                 : code === 'rate_limited'
                   ? 429
                   : [
+                          'action_confirmation_required',
                           'response_active',
                           'version_conflict',
                           'idempotency_conflict',
@@ -177,7 +185,17 @@ export function createConversationRoutes({
             message = 'The request origin is not allowed.';
         }
         return c.json(
-            { error: { code, message, requestId: randomUUID() } },
+            {
+                error: {
+                    code,
+                    message,
+                    requestId: randomUUID(),
+                    ...(failure instanceof
+                    ConversationActionConfirmationRequired
+                        ? { details: { quote: failure.quote } }
+                        : {}),
+                },
+            },
             status,
         );
     });
@@ -336,19 +354,29 @@ export function createConversationRoutes({
                 ...errors,
             },
         }),
-        async (c) =>
-            c.json(
-                {
-                    turn: await service.store.submit(
-                        await access(c),
-                        c.req.valid('param').conversationId,
-                        SubmitConversationTurnRequestSchema.parse(
-                            c.req.valid('json'),
+        async (c) => {
+            const actor = await access(c);
+            const lease = await service.admitSubmission(
+                actor,
+                c.req.raw.signal,
+            );
+            try {
+                return c.json(
+                    {
+                        turn: await service.store.submit(
+                            actor,
+                            c.req.valid('param').conversationId,
+                            SubmitConversationTurnRequestSchema.parse(
+                                c.req.valid('json'),
+                            ),
                         ),
-                    ),
-                },
-                200,
-            ),
+                    },
+                    200,
+                );
+            } finally {
+                await lease.release();
+            }
+        },
     );
     app.openapi(
         createRoute({
@@ -624,6 +652,10 @@ export function createConversationRoutes({
             try {
                 c.req.raw.signal.throwIfAborted();
                 const conversationId = c.req.valid('param').conversationId;
+                // Spread queued subscribers without exceeding the existing
+                // one-second access revalidation bound.
+                const queuedPollMs =
+                    750 + (Number.parseInt(conversationId.slice(-8), 16) % 251);
                 let after = Math.max(
                     c.req.valid('query').after,
                     c.req.valid('header')['last-event-id'] ?? 0,
@@ -633,14 +665,14 @@ export function createConversationRoutes({
                     conversationId,
                 );
                 c.req.raw.signal.throwIfAborted();
-                const activeTurns = new Set(
+                const activeTurns = new Map(
                     initialDetail.turns
                         .filter(
                             (turn) =>
                                 turn.status === 'queued' ||
                                 turn.status === 'running',
                         )
-                        .map((turn) => turn.id),
+                        .map((turn) => [turn.id, turn.status]),
                 );
                 const response = streamSSE(c, async (stream) => {
                     stream.onAbort(releaseOnAbort);
@@ -650,6 +682,7 @@ export function createConversationRoutes({
                     );
                     try {
                         let lastZeroSnapshotData: string | undefined;
+                        let unchangedPolls = 0;
                         while (!stream.aborted && Date.now() < deadline) {
                             const currentActor = await revalidate(c);
                             if (stream.aborted || Date.now() >= deadline) break;
@@ -671,14 +704,20 @@ export function createConversationRoutes({
                                             turn.status === 'queued' ||
                                             turn.status === 'running'
                                         )
-                                            activeTurns.add(turn.id);
+                                            activeTurns.set(
+                                                turn.id,
+                                                turn.status,
+                                            );
                                     }
                                 } else if (event.type === 'turn') {
                                     if (
                                         event.data.status === 'queued' ||
                                         event.data.status === 'running'
                                     )
-                                        activeTurns.add(event.data.id);
+                                        activeTurns.set(
+                                            event.data.id,
+                                            event.data.status,
+                                        );
                                     else activeTurns.delete(event.data.id);
                                 }
                                 if (
@@ -707,10 +746,19 @@ export function createConversationRoutes({
                             // on cursor progress, and revalidate at the top of every page.
                             if (batch.length >= 100 && after > previousCursor)
                                 continue;
-                            // At most eight authorized reads/second while queued/running;
-                            // idle subscribers retain the one-second poll bound.
+                            unchangedPolls = emitted ? 0 : unchangedPolls + 1;
+                            // Keep startup and running output responsive. A queued
+                            // chat with four unchanged polls uses a spread-out
+                            // cadence; every poll still revalidates current access.
+                            const fastPoll =
+                                [...activeTurns.values()].includes('running') ||
+                                (activeTurns.size > 0 && unchangedPolls < 4);
                             await stream.sleep(
-                                activeTurns.size > 0 ? 125 : 1000,
+                                fastPoll
+                                    ? 125
+                                    : activeTurns.size > 0
+                                      ? queuedPollMs
+                                      : 1000,
                             );
                         }
                     } catch (failure) {

@@ -1,11 +1,22 @@
+import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import {
+    usesLegacyAction,
+    reserveLegacyAction,
+    recordLegacyAttempt,
+    settleLegacyAction,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import {
+    actionChargeNumerator,
+    roundActionChargeMilli,
+} from '../../../../ai-credits/domain/action-pricing';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { AiCreditInsufficientBalanceError } from '../../../../ai-credits/domain/ai-credit';
 import {
-    AiCreditInsufficientBalanceError,
-    resolveAiCreditMeasurement,
-} from '../../../../ai-credits/domain/ai-credit';
-import { TextsCreditsExhaustedError } from '../../../application/ports/texts-ai-provider';
+    TextsCreditsExhaustedError,
+    TextsAiError,
+} from '../../../application/ports/texts-ai-provider';
 import { textAiProviderUsageCostMicros } from '../../../../text-ai/application/text-ai-provider-catalog';
 import { textsAiJobsTable as jobs } from './texts-job-schema';
 import type { TextsJobRow, TextsTransaction } from './texts-job-support';
@@ -26,6 +37,29 @@ export async function reserveTextsAttempt(
     attempt: number,
     now: Date,
 ) {
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        try {
+            if (attempt === 1)
+                await reserveLegacyAction(tx, {
+                    id: job.id,
+                    requestKey: job.operationId,
+                    fingerprint: job.requestFingerprint,
+                    scope: job.jobKind,
+                    ownerId: job.ownerId,
+                    kind: job.jobKind,
+                    snapshot: job.selectedExecutionSnapshot,
+                    inputPayload: job.inputPayload,
+                    at: now,
+                });
+        } catch (error) {
+            if (error instanceof OperatorBudgetUnavailableError)
+                throw new TextsAiError('rate_limited');
+            if (error instanceof AiCreditInsufficientBalanceError)
+                throw new TextsCreditsExhaustedError();
+            throw error;
+        }
+        return;
+    }
     if (!job.aiCreditAccounted) return;
     const id = randomUUID();
     try {
@@ -58,8 +92,34 @@ export async function settleTextsAttempt(
     tx: TextsTransaction,
     job: TextsJobRow,
     now: Date,
-    usage?: { inputTokens: number; outputTokens: number },
+    usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    },
+    outcome: 'success' | 'stopped' | 'failure' = 'failure',
+    terminal = true,
 ) {
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        await recordLegacyAttempt(tx, {
+            id: job.id,
+            ownerId: job.ownerId,
+            attempt: job.attemptCount,
+            snapshot: job.selectedExecutionSnapshot,
+            successful: outcome !== 'failure',
+            dispatched: job.aiCreditProviderDispatchedAt !== null,
+            ...(usage ? { usage } : {}),
+            at: now,
+        });
+        if (terminal)
+            await settleLegacyAction(tx, {
+                id: job.id,
+                ownerId: job.ownerId,
+                outcome,
+                at: now,
+            });
+    }
     if (job.providerReservationState !== 'active') return;
     if (
         usage &&
@@ -80,30 +140,35 @@ export async function settleTextsAttempt(
                 reservationId: job.aiCreditReservationId,
             });
         else {
-            const measured = usage
-                ? BigInt(
-                      Math.ceil(
-                          (usage.inputTokens *
-                              job.aiCreditInputCreditsPerMillionTokens!) /
-                              1_000_000,
-                      ) +
-                          Math.ceil(
-                              (usage.outputTokens *
-                                  job.aiCreditOutputCreditsPerMillionTokens!) /
-                                  1_000_000,
-                          ),
-                  )
-                : null;
-            await credits.settleAttempt({
-                ownerId: job.ownerId,
-                reservationId: job.aiCreditReservationId,
-                settledAt: now,
-                measuredCredits: measured,
-                measurement: resolveAiCreditMeasurement(
-                    job.aiCreditPolicyMode!,
-                    usage !== undefined,
-                ),
-            });
+            // Customer eligibility is independent of incurred provider usage.
+            const measured =
+                outcome !== 'failure' && usage
+                    ? roundActionChargeMilli(
+                          actionChargeNumerator(usage, {
+                              inputCreditsPerMillionTokens: String(
+                                  job.aiCreditInputCreditsPerMillionTokens!,
+                              ),
+                              outputCreditsPerMillionTokens: String(
+                                  job.aiCreditOutputCreditsPerMillionTokens!,
+                              ),
+                          }),
+                      )
+                    : 0n;
+            if (outcome === 'failure' || !usage)
+                await credits.settleFailedAttempt({
+                    ownerId: job.ownerId,
+                    reservationId: job.aiCreditReservationId,
+                    settledAt: now,
+                });
+            else {
+                await credits.settleAttempt({
+                    ownerId: job.ownerId,
+                    reservationId: job.aiCreditReservationId,
+                    settledAt: now,
+                    measuredCredits: measured,
+                    measurement: 'provider_reported',
+                });
+            }
         }
     }
     const dispatched = job.aiCreditProviderDispatchedAt !== null;

@@ -92,15 +92,26 @@ function supports(
     observation: WorkerCapabilityObservation,
     format?: string,
 ): boolean {
+    // Preparation is executor evidence attached to a registered generation
+    // format, rather than a separately selectable provider/model format.
+    const preparationBase =
+        format === 'sentence-preparation:v1'
+            ? 'sentence-generation:v1'
+            : format === 'sentence-preparation:v2'
+              ? 'sentence-generation:v2'
+              : undefined;
     return (
         observation.textAiSelectionRevision === 1 &&
         Array.isArray(observation.textAiSupportedFormats) &&
+        (preparationBase === undefined ||
+            observation.textAiSupportedFormats.includes(format!)) &&
         observation.textAiSupportedFormats.some(
             (supported) =>
                 [...textAiTextFormats, ...textAiConversationFormats].some(
                     (registered) => registered === supported,
                 ) &&
-                (format === undefined || supported === format),
+                (format === undefined ||
+                    supported === (preparationBase ?? format)),
         )
     );
 }

@@ -1,7 +1,7 @@
 ---
 type: diagram
 title: AI job lifecycle and accounting
-summary: Managed admission pins model and price; dictionary fixture mode and bounded execution have explicit branches.
+summary: Atomic bounded action admission separates learner charges, provider expenses and operator limits.
 source_paths:
     - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts
     - apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts
@@ -19,82 +19,116 @@ source_paths:
     - docs/adr/0038-preproduction-text-model-retirement.md
     - apps/backend/src/infrastructure/worker/dictionary-worker-environment.ts
     - docs/adr/0040-preproduction-owner-scoped-audio-retirement.md
-source_fingerprint: sha256:bb8f6ec2dc3fce3ba15a733a4de15477d46961f5387c20f5851e08acb92f823b
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant.ts
+    - apps/backend/src/infrastructure/text-ai/text-ai-capacity.ts
+    - apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
+    - apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts
+    - apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts
+    - apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts
+    - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/action-budget-default.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql
+    - apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts
+source_fingerprint: sha256:fec8569689ca090296a62e3b56dae10daef04ebeaa976c7b1fb9f8d14e74b52e
+reviewed: 2026-10-22
 ---
 
 # AI job lifecycle and accounting
 
-Managed admission pins model and price; dictionary fixture mode and bounded execution have explicit branches.
+Atomic bounded action admission separates learner charges, provider expenses and operator limits.
 
 ```mermaid
 flowchart TB
-    Client["Learner command + operation key"] --> Auth["Validate input, authenticate, recheck live source access"]
+    Client["Learner command + operation key"] --> Auth["Authenticate, validate source access
+and Redis burst limit"]
     Auth --> Replay{"Same-key replay?"}
-    Replay -->|"Identical"| Existing["Return existing result/job"]
-    Replay -->|"Conflicting payload"| Reject["Reject admission"]
-    Replay -->|"New"| Mode{"Managed configuration or task
-requiring selected execution?"}
-    Mode -->|"Yes"| Select["Transaction: resolve preference and task capability
-Auto = platform default; conversation Auto = Flash"]
-    Mode -->|"No: dictionary only"| Unmanaged["Deterministic fixture or curated process model
-no selected snapshot or tariff"]
-    Unmanaged --> Queue
-    Select --> Gates{"Enabled model, credential, worker capability,
-capacity, circuit and credit checks pass?"}
-    Gates -->|"No; no silent fallback"| Reject
-    Gates -->|"Yes"| Pin["Pin model/provider/adapter/limits + immutable tariff
-reserve operational budget and applicable credits"]
-    Pin --> Queue[("PostgreSQL typed job tables")]
-    Queue --> Claim["Bounded root worker slot
-rotate dictionary/speech, conversation, sentence, texts, selection"]
-    Claim --> Fence["Claim supported format + lease
-heartbeat and fence all writes"]
-    Fence --> Supported{"Selected snapshot or process model
-still supported?"}
-    Supported -->|"Retired snapshot"| Retired["Reject execution without changing recorded model or price"]
-    Supported -->|"Supported"| Provider["Trusted task-specific provider adapter
-timeout / cancellation / bounded calls"]
-    Provider --> Validate{"Validate output and current fence"}
-    Validate -->|"Valid"| Result["Store domain result / proposal / permitted publication"]
-    Validate -->|"Failure"| Failure["Domain retry, terminal failure or cancellation
-conversation failures require learner retry"]
-    Result --> Settle["Settle usage and release remainder
-speech has success-only policy"]
-    Failure --> Settle
-    Settle --> Poll["Client polls/replays durable outcome"]
+    Replay -->|Identical| Existing["Return durable action; no new hold or dispatch"]
+    Replay -->|Conflict| Reject["Reject admission"]
+    Replay -->|New| Pin["Transaction pins model, customer tariff,
+capability policy and reviewed provider USD rate"]
+    Pin --> Gates["Compact wallet and capacity projections
+profile credit ceiling + operator USD limits"]
+    Gates -->|Cannot fund input and any output| Reject
+    Gates -->|Affordable reduced paid output| Quote["Expiring allowance quote; no hold
+learner confirms Send or tops up"] --> Gates
+    Gates -->|Admitted| Hold["Atomic bounded credit hold when customer funded
+operator action + account/day + global/day allowance"]
+    Hold --> Queue[("PostgreSQL typed jobs and accounting action")]
+    Queue --> Worker["Existing bounded worker slot
+claim supported job with lease and write fence"]
+    Worker --> Attempt["Authorize call before dispatch
+10,000 total action output tokens; bounded retries"]
+    Attempt --> Checked["Checked SQL authorization
+live typed lease + pinned execution + current limits"]
+    Checked --> Provider["Trusted task-specific adapter
+no blind retry of ambiguous upstream work"]
+    Provider --> Usage["Settle authoritative attempt observations
+derive immutable provider expense from pinned provenance"]
+    Usage --> Valid{"Usable validated outcome?"}
+    Valid -->|Success| Publish["Persist domain result / proposal / permitted publication"]
+    Valid -->|Technical or invalid result| Failure["Failed: release customer hold
+Languon retains provider expense"]
+    Stop["Explicit Stop"] --> Partial["Stopped: charge eligible partial usage"]
+    Publish --> Settle["Sum eligible customer usage; round upward once
+to 0.001 credit; release unused hold"]
+    Partial --> Settle
+    Failure --> Poll
+    Settle --> Poll["Durable outcome + billing state
+reconnect replays without another generation or charge"]
+    Hold -.-> Free["Free interviews: no customer hold
+30 admissions/account/UTC day; one active
+operator limits still apply"]
+    Usage -.-> Report["Background reports: provider USD expenses,
+purchase revenue, grants and unknown costs separately"]
 ```
 
-The queue is PostgreSQL, not Redis. Separate typed job stores preserve domain
-lifecycles while capacity and numerical usage are coordinated across domains.
-A root worker slot tries domains sequentially and rotates its starting domain;
-shared speech and dictionary generation alternate within coordinator turns. Extra domains do not create
-independent unbounded worker pools.
+Typed feature modules retain source authorization, job ownership and result publication.
+The queue is PostgreSQL; Redis handles admission burst controls, not financial authority.
+Accounting joins the same transaction rather than calling another service. The existing
+root worker rotates dictionary/shared speech, conversation, sentence, texts and selection
+work within bounded slots. No Kafka, billing microservice or AI gateway is implemented.
 
-The managed path shown pins execution and tariffs. When no managed configuration
-exists, non-explicit dictionary work can use the active deterministic-development
-or curated process-model route with a null selection snapshot; this is retained
-current behavior, not an obsolete arbitrary endpoint fallback. Conversation,
-sentence and texts admission require selection. Credit enforcement is an explicit
-configuration gate.
+New selected text work pins immutable customer tariffs independently from provider USD
+rates and capability funding policies. Credit amounts use integer milli-credits internally.
+Interview operator funding and unlimited accounts create no customer hold but cannot
+bypass reviewed prices, execution limits or shared operator dollar budgets. Admission
+reads compact wallet/grant and capacity projections rather than rebuilding ledger history.
+The application action default is copied atomically on first admission or profile read,
+without overwriting a learner-selected budget. A reduced paid-action allowance needs
+confirmation; concurrent balance changes require review
+again rather than silently shrinking a previously confirmed output allowance.
 
-Explicit selection fails if incompatible or unavailable. Managed admissions pin
-their execution; retries do not resolve today's mutable preference or tariff. Historical
-configuration is meaningful for supported admitted work. Translation v2 pins its
-larger reviewed Flash profile while preserving aggregate token/cost reservations.
-Format allowlists and worker observations are real gates, not proof a provider is
-currently reachable. ADR-0038 retires DeepSeek Chat and arbitrary legacy environment model routes.
-Retired snapshots fail closed without being rewritten as Flash; historical ledgers
-and terminal job identities remain truthful. Mutable defaults/preferences pointing
-at a retired model require an explicit supported selection. Other versioned job
-formats remain supported where admitted by current configuration.
+Restricted workers dispatch and settle through checked SQL entry points, rather than
+choosing arbitrary financial mutations. Dispatch requires the current typed job lease
+or worker fence; provider expense identity/rates derive from pinned execution and
+terminal observations. Report invalidation is internal to those checked operations.
 
-Text usage may consume an estimated reservation after ambiguous provider cost;
-provider-free failures release it. [Speech pricing](speech-and-pricing.md) settles
-only after usable publication. [Conversation execution](conversations-and-knowledge.md)
-accounts for answer and memory calls and avoids automatic ambiguous redispatch.
-ADR-0040 removes the former owner-scoped audio worker; it does not add another
-slot pool or remove current shared-speech accounting.
+Every attempt consumes operational allowance; failed attempts do not increase customer
+charges. Unknown expense remains unknown. Supporting conversation memory calls are
+operator-funded. Successful results remain chargeable; explicit Stop charges eligible
+partial usage. Technical failures release the learner hold even if partial text remains.
+[Speech](speech-and-pricing.md) has its own indivisible generation and billing deadline.
+[Conversations](conversations-and-knowledge.md) persist batched output independently of
+browser subscriptions. Sentence preparation uses one explicit parent authorization:
+children share its hold, pins, 10,000 output tokens and five-call allowance rather than
+receiving fresh budgets automatically. Exhaustion requires explicit Continue with new
+authorization. Reporting and bounded cleanup run in background connections.
+
+Disabling dictionary credit enforcement now disables new generation admission; it is
+not an unaccounted execution route. Read, Accept, cancellation and worker drain remain
+available. Deterministic fixtures also use accounted admission. Retained historical
+null-snapshot handling is not a current public admission path. Retired model snapshots
+fail closed rather than being rewritten. Earlier ADR failure-charge rules are superseded by ADR-0045 for
+new action accounting; the fresh-development-ledger cutover does not reinterpret old
+whole-credit rows in place. These relationships are source evidence, not a measured
+performance or production activation claim.
 
 ## Sources
 
@@ -114,3 +148,37 @@ slot pool or remove current shared-speech accounting.
 - [docs/adr/0038-preproduction-text-model-retirement.md](../../docs/adr/0038-preproduction-text-model-retirement.md)
 - [apps/backend/src/infrastructure/worker/dictionary-worker-environment.ts](../../apps/backend/src/infrastructure/worker/dictionary-worker-environment.ts)
 - [docs/adr/0040-preproduction-owner-scoped-audio-retirement.md](../../docs/adr/0040-preproduction-owner-scoped-audio-retirement.md)
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant.ts)
+
+- [apps/backend/src/infrastructure/text-ai/text-ai-capacity.ts](../../apps/backend/src/infrastructure/text-ai/text-ai-capacity.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts)
+
+- [apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts](../../apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts](../../apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts)
+
+- [apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts](../../apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts](../../apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts)
+
+- [apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/action-budget-default.ts](../../apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/action-budget-default.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql)
+
+- [apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts](../../apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts)

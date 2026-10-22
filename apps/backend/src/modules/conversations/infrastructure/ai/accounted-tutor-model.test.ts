@@ -113,7 +113,7 @@ describe('accounted tutor model', () => {
         expect(accounting.fail).not.toHaveBeenCalled();
     });
 
-    it('caps concurrent admissions at five calls before any provider dispatch', async () => {
+    it('caps concurrent admissions at the shared output allowance before dispatch', async () => {
         const accounting = tutorAccountingFixture();
         let release!: () => void;
         const barrier = new Promise<void>((resolve) => {
@@ -136,14 +136,81 @@ describe('accounted tutor model', () => {
         const calls = Array.from({ length: 6 }, () => model.doGenerate(input));
         release();
         const results = await Promise.allSettled(calls);
-        expect(accounting.admit).toHaveBeenCalledTimes(5);
+        expect(accounting.admit).toHaveBeenCalledTimes(3);
+        expect(
+            accounting.admit.mock.calls.map(([call]) => call.maxOutputTokens),
+        ).toEqual([4096, 4096, 1808]);
         expect(results.every((result) => result.status === 'rejected')).toBe(
             true,
         );
         expect(provider.requests).toHaveLength(0);
     });
 
-    it('retains unknown usage exactly once when the provider closes without totals', async () => {
+    it('preserves non-overlapping provider cache meters for expense accounting', async () => {
+        const provider = scriptedTutorModel(['cached']);
+        const original = provider.model.doGenerate;
+        provider.model.doGenerate = async (request) => {
+            const result = await original(request);
+            Object.defineProperty(result, 'usage', {
+                value: {
+                    inputTokens: { total: 50, cacheRead: 20, cacheWrite: 5 },
+                    outputTokens: { total: 12 },
+                },
+            });
+            return result;
+        };
+        const accounting = tutorAccountingFixture();
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        await gate.wrap(provider.model, 'answer').doGenerate(input);
+        expect(accounting.settle).toHaveBeenCalledWith(expect.anything(), {
+            inputTokens: 50,
+            outputTokens: 12,
+            cacheReadTokens: 20,
+            cacheWriteTokens: 5,
+        });
+    });
+
+    it('retains an actual provider output limit even without trustworthy usage', async () => {
+        const provider = scriptedTutorModel(['partial valid response']);
+        const original = provider.model.doGenerate;
+        provider.model.doGenerate = async (request) => {
+            const result = await original(request);
+            Object.defineProperty(result, 'usage', { value: {} });
+            Object.defineProperty(result, 'finishReason', { value: 'length' });
+            return result;
+        };
+        const accounting = tutorAccountingFixture();
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        await gate.wrap(provider.model, 'answer').doGenerate(input);
+        expect(accounting.fail.mock.calls[0]?.[0].outputLimitReached).toBe(
+            true,
+        );
+        expect(gate.signal.aborted).toBe(false);
+    });
+
+    it('dispatches only the affordable output allowance returned by accounting', async () => {
+        const provider = scriptedTutorModel(['tiny answer']);
+        const accounting = tutorAccountingFixture();
+        accounting.admit.mockResolvedValue({ maxOutputTokens: 12 });
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        await gate.wrap(provider.model, 'answer').doGenerate(input);
+        expect(provider.requests[0]?.maxOutputTokens).toBe(12);
+        expect(accounting.settle.mock.calls[0]?.[0].maxOutputTokens).toBe(12);
+    });
+
+    it('preserves a successful result with unknown usage without fabricating a charge', async () => {
         const provider = scriptedTutorModel(['unused']);
         provider.model.doGenerate = async () => ({
             content: [],
@@ -163,7 +230,9 @@ describe('accounted tutor model', () => {
         });
         await expect(
             gate.wrap(provider.model, 'answer').doGenerate(input),
-        ).rejects.toThrow('usage');
+        ).resolves.toHaveProperty('content');
+        expect(gate.signal.aborted).toBe(false);
+        expect(accounting.settle).not.toHaveBeenCalled();
         expect(accounting.fail).toHaveBeenCalledExactlyOnceWith(
             expect.anything(),
             'missing-usage',
@@ -214,6 +283,44 @@ describe('accounted tutor model', () => {
         expect(accounting.fail).toHaveBeenCalledExactlyOnceWith(
             expect.anything(),
             'aborted',
+        );
+        expect(accounting.settle).not.toHaveBeenCalled();
+    });
+    it('propagates validated measured partial usage from an aborted provider stream', async () => {
+        const accounting = tutorAccountingFixture();
+        const provider = scriptedTutorModel(['unused']);
+        const controller = new AbortController();
+        provider.model.doStream = async () => ({
+            stream: new ReadableStream({
+                start(stream) {
+                    stream.enqueue({
+                        type: 'text-delta',
+                        id: 'partial',
+                        delta: 'Partial answer',
+                    });
+                },
+            }),
+        });
+        const gate = createTutorModelGate({
+            accounting,
+            signal: controller.signal,
+            maxInputTokens: 64000,
+        });
+        const result = await gate
+            .wrap(provider.model, 'answer')
+            .doStream(input);
+        const reader = result.stream.getReader();
+        await reader.read();
+        const reading = reader.read();
+        const error = Object.assign(new Error('Learner stopped'), {
+            usage: { inputTokens: 100, outputTokens: 50 },
+        });
+        controller.abort(error);
+        await expect(reading).rejects.toThrow('Learner stopped');
+        expect(accounting.fail).toHaveBeenCalledExactlyOnceWith(
+            expect.anything(),
+            'aborted',
+            { inputTokens: 100, outputTokens: 50 },
         );
         expect(accounting.settle).not.toHaveBeenCalled();
     });

@@ -1,3 +1,4 @@
+import { ActionBillingSchema } from './ai-action';
 import { z } from 'zod';
 import {
     PortraitAnswerSchema,
@@ -46,6 +47,7 @@ export const PortraitInterviewSubmissionSchema = z.discriminatedUnion('kind', [
 ]);
 export const SubmitPortraitInterviewSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         interviewId: z.uuid(),
         expectedVersion: z.number().int().nonnegative(),
         expectedGeneration: z.number().int().nonnegative(),
@@ -59,6 +61,7 @@ export const PortraitOperationParamsSchema = z
     .strict();
 export const PortraitInterviewOperationResponseSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id: z.uuid(),
         interviewId: z.uuid(),
         state: z.enum([

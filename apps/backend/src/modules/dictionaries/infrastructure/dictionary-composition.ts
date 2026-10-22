@@ -81,6 +81,17 @@ export function createDictionaryComposition(
     const dictionaryRateLimiter = new BoundedDictionaryRateLimiter(
         dependencies.rateLimiter,
     );
+    // Disabling accounting is an admission rollback, not permission for live unaccounted work.
+    // Read, acceptance, cancellation and worker drain capabilities remain available.
+    const generation = dependencies.generation && {
+        ...dependencies.generation,
+        enqueuedFormats: dependencies.aiCreditEnforcementEnabled
+            ? dependencies.generation.enqueuedFormats
+            : [],
+        documentOcrAvailable:
+            !!dependencies.aiCreditEnforcementEnabled &&
+            (dependencies.generation.documentOcrAvailable ?? false),
+    };
     const generationStore = new DrizzleDictionaryGenerationStore(
         dependencies.database,
         dependencies.ids,
@@ -95,7 +106,7 @@ export function createDictionaryComposition(
         authentication,
         clock: dependencies.clock,
         cryptography,
-        ...(dependencies.generation?.enqueuedFormats.includes(
+        ...(generation?.enqueuedFormats.includes(
             dictionaryImportPairsGenerationFormat,
         )
             ? { generationStore }
@@ -105,7 +116,7 @@ export function createDictionaryComposition(
     });
     const generationService = new DictionaryGenerationService({
         authentication,
-        capabilities: dependencies.generation ?? {
+        capabilities: generation ?? {
             acceptableFormats: [],
             cancellableFormats: [],
             discardableFormats: [],
@@ -121,11 +132,11 @@ export function createDictionaryComposition(
         ? new DictionaryDocumentService({
               authentication,
               authorizationEnabled:
-                  dependencies.documentUploadAuthorizationEnabled ?? false,
+                  !!dependencies.aiCreditEnforcementEnabled &&
+                  (dependencies.documentUploadAuthorizationEnabled ?? false),
               clock: dependencies.clock,
               cryptography,
-              ocrAvailable:
-                  dependencies.generation?.documentOcrAvailable ?? false,
+              ocrAvailable: generation?.documentOcrAvailable ?? false,
               rateLimiter: dictionaryRateLimiter,
               storage: dependencies.documentUploadStorage,
               store: new DrizzleDictionaryDocumentStore(

@@ -18,7 +18,10 @@ import { and, eq, gt, inArray, lte, or, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
-import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import {
+    DrizzleAiCreditTransactionParticipant,
+    aiCreditOwnerLockNamespace,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import {
     adminAuditEventsTable,
     adminMembershipsTable,
@@ -107,8 +110,7 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 .select({ status: usersTable.status })
                 .from(usersTable)
                 .where(eq(usersTable.id, request.userId))
-                .limit(1)
-                .for('update');
+                .limit(1);
             if (user?.status !== 'deletion_pending') {
                 throw new Error(
                     'Due purge request does not belong to a deletion-pending account.',
@@ -128,14 +130,27 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 .where(eq(accountDeletionRequestsTable.userId, request.userId))
                 .returning({ userId: accountDeletionRequestsTable.userId });
             return claimed
-                ? { fencingToken: nextToken, userId: claimed.userId }
+                ? {
+                      fencingToken: nextToken,
+                      userId: claimed.userId,
+                  }
                 : null;
         });
     }
 
-    public async inspectOwner(input: ClaimedAccountPurge) {
+    public async inspectOwner(
+        input: ClaimedAccountPurge & { workerId: string },
+    ) {
+        if (!input.workerId)
+            throw new Error(
+                'Account inspection requires its expected worker identity.',
+            );
+        const authorization = {
+            workerId: input.workerId,
+            fencingToken: input.fencingToken,
+        };
         const portraitBusy = await this.database.transaction((tx) =>
-            portraitDeletionBusy(tx, input.userId),
+            portraitDeletionBusy(tx, input.userId, new Date(), authorization),
         );
         const conversationBusy = await this.database.transaction((tx) =>
             conversationDeletionBusy(tx, { ownerId: input.userId }),
@@ -245,12 +260,14 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 request.leaseDeadline <= input.now
             )
                 return false;
+            await tx.execute(
+                sql`select languon_assert_accounting_purge_claim(${input.userId}::uuid,${input.workerId},${input.fencingToken}::integer)`,
+            );
             const [user] = await tx
                 .select({ status: usersTable.status })
                 .from(usersTable)
                 .where(eq(usersTable.id, input.userId))
-                .limit(1)
-                .for('update');
+                .limit(1);
             if (user?.status !== 'deletion_pending') return false;
             const ownedDictionaries = await tx
                 .select({ id: dictionariesTable.id })
@@ -271,7 +288,12 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 )
             )
                 throw new Error('Conversation work is not quiescent');
-            if (await portraitDeletionBusy(tx, input.userId, input.now))
+            if (
+                await portraitDeletionBusy(tx, input.userId, input.now, {
+                    workerId: input.workerId,
+                    fencingToken: input.fencingToken,
+                })
+            )
                 throw new Error('Portrait work is not quiescent');
             if (await textsDeletionBusy(tx, input.userId))
                 throw new Error('Text work is not quiescent');
@@ -343,7 +365,10 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
             await tx
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, input.userId));
-            await eraseOwnerLearnerPortrait(tx, input.userId, input.now);
+            await eraseOwnerLearnerPortrait(tx, input.userId, input.now, {
+                workerId: input.workerId,
+                fencingToken: input.fencingToken,
+            });
             await eraseOwnerConversations(tx, input.userId, input.now);
             await eraseOwnerKnowledge(tx, input.userId);
             await eraseTextsOwnedContent(tx, input.userId, input.now);
@@ -352,9 +377,18 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                 ...sentenceScope,
                 now: input.now,
             });
-            await purgeSpeechActor(tx, input.userId, input.now);
+            await purgeSpeechActor(tx, input.userId, input.now, {
+                workerId: input.workerId,
+                fencingToken: input.fencingToken,
+            });
+            // Preserve anonymous financial attribution before deleting grants;
+            // wallet locks always precede report invalidation locks.
+            await tx.execute(
+                sql`select pg_advisory_xact_lock(hashtextextended(${input.userId}, ${aiCreditOwnerLockNamespace}))`,
+            );
             await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 input.userId,
+                { workerId: input.workerId, fencingToken: input.fencingToken },
             );
             await tx
                 .delete(textAiPreferencesTable)
@@ -436,25 +470,9 @@ export class DrizzleAccountPurgeStore implements AccountPurgeStore {
                         eq(adminMembershipsTable.revokedByUserId, input.userId),
                     ),
                 );
-            await tx
-                .update(usersTable)
-                .set({
-                    handle: null,
-                    status: 'purged',
-                    updatedAt: input.now,
-                    version: sql`${usersTable.version} + 1`,
-                })
-                .where(eq(usersTable.id, input.userId));
-            await tx
-                .update(accountDeletionRequestsTable)
-                .set({
-                    completedAt: input.now,
-                    leaseDeadline: null,
-                    leaseWorkerId: null,
-                    state: 'complete',
-                    updatedAt: input.now,
-                })
-                .where(eq(accountDeletionRequestsTable.userId, input.userId));
+            await tx.execute(
+                sql`select languon_complete_account_purge(${input.userId}::uuid,${input.workerId},${input.fencingToken}::integer)`,
+            );
             return true;
         });
     }

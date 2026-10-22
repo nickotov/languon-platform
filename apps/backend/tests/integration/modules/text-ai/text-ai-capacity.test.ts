@@ -7,13 +7,22 @@ import {
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
+import { learnerPortraitInterviewOperationsTable as portraitOperations } from '../../../../src/modules/learner-portraits/infrastructure/persistence/drizzle/schema';
+import {
+    reserveConversationActionFixture,
+    settleConversationActionFixture,
+} from '../../support/accounting-action-fixture';
+import { DrizzleActionAccountingParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import {
     textAiProviderBudgetAllows,
     lockTextAiCapacity,
     readTextAiCapacity,
+    cleanupTextAiCapacity,
     archiveSentenceProviderUsage,
     hasSentenceCapacityOverlap,
     hasTextsCapacityOverlap,
+    hasConversationCapacityOverlap,
 } from '../../../../src/infrastructure/text-ai/text-ai-capacity';
 import { DrizzleDictionaryGenerationStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
 import { DrizzleDictionaryStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
@@ -23,21 +32,24 @@ import {
 } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { sentenceAiJobsTable } from '../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
 import {
-    dictionaryAiConfigurationTable,
     dictionaryAiConfigurationRevisionsTable,
 } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
+import { accountDeletionRequestsTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
+import { DrizzleAccountPurgeStore } from '../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
 import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
 } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import { defaultDictionaryGenerationProviderBudgetPolicy as budget } from '../../../../src/modules/dictionaries/application/ports/dictionary-generation-provider-policy';
+import { createInterviewAdmission } from '../../../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
     migrateTestDatabase,
     resetTestDatabase,
 } from '../../support/test-database';
+import { seedPortraitAdmissionFixture } from '../../support/portrait-admission-fixture';
 const instant = (ms = 0) => new Date(Date.now() + ms);
 const context = (ms = 0) => ({
     now: instant(ms),
@@ -70,30 +82,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         });
         beforeEach(async () => {
-            await database.update(sentenceAiJobsTable).set({
-                executionState: 'cancelled',
-                completedAt: instant(),
-                workerId: null,
-                leaseDeadline: null,
-                heartbeatAt: null,
-                providerReservationState: 'released',
-                providerReservationSettledAt: instant(),
-                providerActualCostMicros: 0,
-                providerActualInputTokens: 0,
-                providerActualOutputTokens: 0,
-                providerReservedAttempts: 0,
-                providerReservedCostMicros: 0,
-                providerReservedInputTokens: 0,
-                providerReservedOutputTokens: 0,
-            });
-            await database.delete(sentenceAiJobsTable);
-            await database.delete(dictionaryGenerationJobsTable);
-            await database.delete(
-                dictionaryGenerationProviderUsageArchiveTable,
-            );
-            await database.delete(dictionaryAiConfigurationTable);
-            await database.delete(dictionaryAiConfigurationRevisionsTable);
-            await database.delete(usersTable);
+            // Isolate compact counters and immutable financial facts as well as feature rows.
+            await resetTestDatabase(client);
+            await migrateTestDatabase(client);
             ownerId = randomUUID();
             await database
                 .insert(usersTable)
@@ -165,6 +156,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 instruction: 'Improve articles',
                 ownerId: seeded.ownerId,
             });
+        }
+
+        async function purgeOwnerForDeletion(targetOwnerId: string) {
+            const now = new Date();
+            const workerId = 'text-ai-capacity-purge-fixture';
+            await database
+                .update(usersTable)
+                .set({ status: 'deletion_pending', updatedAt: now })
+                .where(eq(usersTable.id, targetOwnerId));
+            await database.insert(accountDeletionRequestsTable).values({
+                userId: targetOwnerId,
+                scheduledAt: new Date(now.getTime() - 120_000),
+                purgeAt: new Date(now.getTime() - 60_000),
+                nextAttemptAt: new Date(now.getTime() - 60_000),
+                updatedAt: now,
+            });
+            const claim = await new DrizzleAccountPurgeStore(database).claimDue(
+                { now, workerId },
+            );
+            if (!claim || claim.userId !== targetOwnerId)
+                throw new Error('Expected an actively leased deletion claim.');
+            await database.transaction((tx) =>
+                new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
+                    targetOwnerId,
+                    { workerId, fencingToken: claim.fencingToken },
+                ),
+            );
         }
 
         async function sentence(
@@ -247,6 +265,287 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 requestFingerprint: fingerprint('D'),
             };
         }
+        it('preserves exact rolling-window boundary, adjusts buckets on rollback, and cleans only expired usage', async () => {
+            const now = instant();
+            const threshold = new Date(now.getTime() - 86_400_000);
+            const boundary = new Date(
+                Math.floor(threshold.getTime() / 60_000) * 60_000 + 60_000,
+            );
+            const rows = [
+                { id: randomUUID(), at: threshold, cost: 17 },
+                {
+                    id: randomUUID(),
+                    at: new Date(threshold.getTime() + 1),
+                    cost: 23,
+                },
+                { id: randomUUID(), at: boundary, cost: 31 },
+            ];
+            for (const row of rows) {
+                await database
+                    .insert(dictionaryGenerationProviderUsageArchiveTable)
+                    .values({
+                        id: row.id,
+                        jobKind: 'text-translation',
+                        ownerId,
+                        actualCostMicros: row.cost,
+                        actualInputTokens: row.cost,
+                        actualOutputTokens: row.cost,
+                        inputCostMicrosPerMillionTokens:
+                            budget.inputCostMicrosPerMillionTokens,
+                        outputCostMicrosPerMillionTokens:
+                            budget.outputCostMicrosPerMillionTokens,
+                        maxCostMicrosPerAttempt: budget.maxCostMicrosPerAttempt,
+                        maxInputTokensPerAttempt:
+                            budget.maxInputTokensPerAttempt,
+                        maxOutputTokensPerAttempt:
+                            budget.maxOutputTokensPerAttempt,
+                        settledAt: row.at,
+                        archivedAt: now,
+                    });
+            }
+            const read = () =>
+                database.transaction((tx) =>
+                    readTextAiCapacity(tx, { actorId: ownerId, now, budget }),
+                );
+            expect((await read()).providerUsage).toMatchObject({
+                globalSettledCostMicros: 54,
+                ownerSettledCostMicros: 54,
+            });
+            await expect(
+                database.transaction(async (tx) => {
+                    await tx
+                        .update(dictionaryGenerationProviderUsageArchiveTable)
+                        .set({ actualCostMicros: 99 })
+                        .where(
+                            eq(
+                                dictionaryGenerationProviderUsageArchiveTable.id,
+                                rows[1]!.id,
+                            ),
+                        );
+                    throw new Error('capacity rollback');
+                }),
+            ).rejects.toThrow('capacity rollback');
+            expect((await read()).providerUsage.globalSettledCostMicros).toBe(
+                54,
+            );
+            await database
+                .update(dictionaryGenerationProviderUsageArchiveTable)
+                .set({ settledAt: threshold })
+                .where(
+                    eq(
+                        dictionaryGenerationProviderUsageArchiveTable.id,
+                        rows[1]!.id,
+                    ),
+                );
+            expect((await read()).providerUsage.globalSettledCostMicros).toBe(
+                31,
+            );
+            expect(
+                await database.transaction((tx) =>
+                    cleanupTextAiCapacity(tx, now),
+                ),
+            ).toBe(2);
+            expect((await read()).providerUsage.globalSettledCostMicros).toBe(
+                31,
+            );
+            const retainedArchive = await database
+                .select()
+                .from(dictionaryGenerationProviderUsageArchiveTable);
+            expect(retainedArchive).toHaveLength(3);
+            // Direct edits of retained settled state are rejected.
+            await expect(
+                database.execute(
+                    sql`update text_ai_capacity_provider_usage set cost=1`,
+                ),
+            ).rejects.toThrow();
+        });
+
+        it('removes multiple zero-valued provider records without relying on empty counter rows', async () => {
+            const now = instant();
+            const ids = [randomUUID(), randomUUID()];
+            await database
+                .insert(dictionaryGenerationProviderUsageArchiveTable)
+                .values(
+                    ids.map((id) => ({
+                        id,
+                        jobKind: 'text-translation' as const,
+                        ownerId,
+                        actualCostMicros: 0,
+                        actualInputTokens: 0,
+                        actualOutputTokens: 0,
+                        inputCostMicrosPerMillionTokens:
+                            budget.inputCostMicrosPerMillionTokens,
+                        outputCostMicrosPerMillionTokens:
+                            budget.outputCostMicrosPerMillionTokens,
+                        maxCostMicrosPerAttempt: budget.maxCostMicrosPerAttempt,
+                        maxInputTokensPerAttempt:
+                            budget.maxInputTokensPerAttempt,
+                        maxOutputTokensPerAttempt:
+                            budget.maxOutputTokensPerAttempt,
+                        settledAt: now,
+                        archivedAt: now,
+                    })),
+                );
+            for (const id of ids) {
+                await database
+                    .delete(dictionaryGenerationProviderUsageArchiveTable)
+                    .where(
+                        eq(
+                            dictionaryGenerationProviderUsageArchiveTable.id,
+                            id,
+                        ),
+                    );
+            }
+            const result = await database.transaction((tx) =>
+                readTextAiCapacity(tx, { actorId: ownerId, now, budget }),
+            );
+            expect(result.providerUsage.globalSettledCostMicros).toBe(0);
+        });
+
+        it('counts settled portrait action usage for compatibility without an active portrait job', async () => {
+            const now = instant();
+            let portraitBudget = budget;
+            const actionId = randomUUID();
+            const callId = randomUUID();
+            const interviewId = randomUUID();
+            await seedPortraitAdmissionFixture(database, now);
+            await database.transaction(async (tx) => {
+                await lockTextAiCapacity(tx);
+                const bootstrap = await reserveConversationActionFixture(tx, {
+                    ownerId,
+                    maximumMilli: 0n,
+                    funding: 'operator',
+                });
+                await settleConversationActionFixture(tx, {
+                    ownerId,
+                    actionId: bootstrap.id,
+                    outcome: 'failure',
+                });
+                await tx.insert(portraitOperations).values({
+                    id: actionId,
+                    ownerId,
+                    interviewId,
+                    generation: 0,
+                    version: 0,
+                    state: 'running',
+                    input: { kind: 'skip', topic: 'update' },
+                    context: {
+                        locale: 'en',
+                        approvedItems: null,
+                        draftItems: null,
+                        messages: [],
+                        completedTopics: [],
+                    },
+                    execution: {},
+                    idempotencyKey: randomUUID(),
+                    fingerprint: 'synthetic-portrait-capacity',
+                    createdAt: now,
+                    updatedAt: now,
+                    leaseToken: actionId,
+                    leaseUntil: new Date(now.getTime() + 60_000),
+                });
+                const execution = await createInterviewAdmission({
+                    selectionPolicy: {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        pricingAdmissionEnabled: true,
+                    },
+                })(
+                    tx,
+                    {
+                        id: actionId,
+                        ownerId,
+                        interviewId,
+                        generation: 0,
+                        version: 0,
+                        state: 'running',
+                        input: { kind: 'skip', topic: 'update' },
+                        context: {
+                            locale: 'en',
+                            approvedItems: null,
+                            draftItems: null,
+                            messages: [],
+                            completedTopics: [],
+                        },
+                        execution: {},
+                        result: null,
+                        errorCode: null,
+                    },
+                    true,
+                    now,
+                );
+                portraitBudget = execution.budget as typeof budget;
+                await tx
+                    .update(portraitOperations)
+                    .set({ execution })
+                    .where(eq(portraitOperations.id, actionId));
+                const actions = new DrizzleActionAccountingParticipant(tx);
+                await actions.admitAttempt({
+                    actionId,
+                    ownerId,
+                    callId,
+                    purpose: 'answer',
+                    inputTokens: 2,
+                    maxOutputTokens: 3,
+                    budget: execution.budget as typeof budget,
+                    executionWitness: {
+                        jobId: actionId,
+                        leaseToken: actionId,
+                    },
+                    at: now,
+                });
+                await actions.recordAttempt({
+                    actionId,
+                    ownerId,
+                    callId,
+                    successful: true,
+                    usage: { inputTokens: 2, outputTokens: 3 },
+                    operatorCostMicros: null,
+                    at: new Date(now.getTime() + 1),
+                });
+                // Derive expense from the immutable provider pin and settled meters.
+                await tx.execute(
+                    sql`select languon_record_text_provider_expense(${callId}::uuid)`,
+                );
+                await tx
+                    .update(portraitOperations)
+                    .set({
+                        state: 'succeeded',
+                        leaseToken: null,
+                        leaseUntil: null,
+                        updatedAt: new Date(now.getTime() + 2),
+                    })
+                    .where(eq(portraitOperations.id, actionId));
+                await actions.settle({
+                    actionId,
+                    ownerId,
+                    outcome: 'success',
+                    at: new Date(now.getTime() + 2),
+                });
+            });
+            await database.transaction(async (tx) => {
+                const overlap = await tx.execute(
+                    sql`select languon_text_ai_has_capacity_overlap(array['portrait-interview']::text[],${now.toISOString()}::timestamptz) as overlap`,
+                );
+                expect(overlap[0]?.overlap).toBe(true);
+                expect(await hasConversationCapacityOverlap(tx, now)).toBe(
+                    false,
+                );
+                const totals = await readTextAiCapacity(tx, {
+                    actorId: ownerId,
+                    now,
+                    budget: portraitBudget,
+                });
+                expect(totals.globalQueued).toBe(0);
+                expect(totals.providerUsage.globalSettledInputTokens).toBe(2);
+                expect(totals.providerUsage.globalSettledOutputTokens).toBe(3);
+            });
+            await purgeOwnerForDeletion(ownerId);
+            await database
+                .delete(portraitOperations)
+                .where(eq(portraitOperations.id, actionId));
+        });
+
         it('counts both typed queues and reservations once, and preserves usage after erasure', async () => {
             const seeded = await seedCard();
             await enqueue(seeded);

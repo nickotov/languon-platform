@@ -14,6 +14,7 @@ describe('text AI preference remote boundary', () => {
                     mode: 'auto',
                     modelId: null,
                     version: 2,
+                    maxCreditsPerAction: null,
                     selectedModel: null,
                 }),
                 { status: 200 },

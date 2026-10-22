@@ -1,4 +1,11 @@
-// @user-flow-revision learner-portrait sha256:19454040cf3cf4ca
+import { seedInterviewAccountingFixture } from '../../../support/ai-accounting-fixture';
+import {
+    aiCreditActionsTable,
+    aiCreditActionAttemptsTable,
+    aiCreditActionAllocationsTable,
+} from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import { capabilityPolicyRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+// @user-flow-revision learner-portrait sha256:27ccde52e3d3cddf
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
@@ -9,7 +16,7 @@ import {
     PortraitStateSchema,
     SignUpResponseSchema,
 } from '@languon/contracts';
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../../src/app';
@@ -22,7 +29,6 @@ import {
     aiCreditAccountsTable,
     aiCreditGrantsTable,
     aiCreditHistoryTable,
-    aiCreditReservationAllocationsTable,
     aiCreditReservationsTable,
 } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import type { TutorCallAdmission } from '../../../../src/modules/conversations/application/ports/tutor-runner';
@@ -138,23 +144,41 @@ run('real learner portrait HTTP and accounting journey', () => {
         await redis.quit();
     });
 
-    function composed(creditsBypass: boolean) {
+    async function composed(operatorFunded: boolean) {
+        const database = authentication.productDependencies.database;
+        await seedInterviewAccountingFixture(database);
+        const policies = await database
+            .select()
+            .from(capabilityPolicyRevisionsTable)
+            .where(
+                eq(
+                    capabilityPolicyRevisionsTable.capability,
+                    'portrait-interview',
+                ),
+            );
+        await database.insert(capabilityPolicyRevisionsTable).values({
+            id: randomUUID(),
+            capability: 'portrait-interview',
+            funding: operatorFunded ? 'operator' : 'customer',
+            version: Math.max(0, ...policies.map((p) => p.version)) + 1,
+            createdAt: new Date(),
+            reason: 'Deterministic interview journey policy',
+        });
         const module = createLearnerPortraitModule({
             database: authentication.productDependencies.database,
-            creditsBypass,
         });
         const app = createApp({
             authentication: authentication.options,
             learnerPortraits: createLearnerPortraitRoutes({
                 portraits: module.portraits,
                 interviews: module.interviews,
+                readChargingPolicy: module.readChargingPolicy,
                 authenticate: async (token) =>
                     authentication.productDependencies.accessTokens.verify(
                         token,
                     ),
                 rateLimiter: authentication.productDependencies.rateLimiter,
                 policy: authentication.options.policy,
-                creditsBypass,
             }),
         });
         return { app, module };
@@ -296,26 +320,49 @@ run('real learner portrait HTTP and accounting journey', () => {
         });
         expect(started.status).toBe(200);
         const interview = (await started.json()) as { interviewId: string };
-        const submitted = await request(
+        const requestBody = {
+            interviewId: interview.interviewId,
+            expectedVersion: initial.version,
+            expectedGeneration: initial.generation,
+            idempotencyKey: randomUUID(),
+            paidAcknowledged,
+            input: { kind: 'answer', topic: 'languages', text: 'Spanish' },
+        };
+        let submitted = await request(
             app,
             '/learner-portrait/interview/responses',
             {
                 method: 'POST',
                 token,
-                body: {
-                    interviewId: interview.interviewId,
-                    expectedVersion: initial.version,
-                    expectedGeneration: initial.generation,
-                    idempotencyKey: randomUUID(),
-                    paidAcknowledged,
-                    input: {
-                        kind: 'answer',
-                        topic: 'languages',
-                        text: 'Spanish',
-                    },
-                },
+                body: requestBody,
             },
         );
+        if (submitted.status === 409) {
+            const failure = (await submitted.clone().json()) as {
+                error: {
+                    code: string;
+                    details?: {
+                        quote: { id: string; approximateOutputTokens: number };
+                    };
+                };
+            };
+            expect(failure.error.code).toBe('action_confirmation_required');
+            expect(
+                failure.error.details?.quote.approximateOutputTokens,
+            ).toBeGreaterThan(0);
+            submitted = await request(
+                app,
+                '/learner-portrait/interview/responses',
+                {
+                    method: 'POST',
+                    token,
+                    body: {
+                        ...requestBody,
+                        confirmedQuoteId: failure.error.details!.quote.id,
+                    },
+                },
+            );
+        }
         expect(submitted.status, await submitted.clone().text()).toBe(202);
         return PortraitInterviewOperationResponseSchema.parse(
             await submitted.json(),
@@ -339,6 +386,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             withOperation: (work) => module.store.withOperation(claim!, work),
             ownerId,
             operationId: claim!.id,
+            leaseToken: claim!.leaseToken,
             execution: claim!.execution as never,
         });
         await accounting.admit(call);
@@ -374,6 +422,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             withOperation: (work) => module.store.withOperation(claim!, work),
             ownerId,
             operationId: claim!.id,
+            leaseToken: claim!.leaseToken,
             execution: claim!.execution as never,
         });
         await accounting.admit(call);
@@ -382,7 +431,7 @@ run('real learner portrait HTTP and accounting journey', () => {
 
     // @user-flow learner-portrait/approved-private-portrait-and-interview-accounting
     it('keeps portraits owner-private, requires explicit approval/use, and records paid and bypassed interview dispatches', async () => {
-        const paid = composed(false);
+        const paid = await composed(false);
         const owner = await signup(paid.app, 'portrait-owner');
         const stranger = await signup(paid.app, 'portrait-stranger');
         const unavailableState = PortraitStateSchema.parse(
@@ -490,13 +539,14 @@ run('real learner portrait HTTP and accounting journey', () => {
         const database = authentication.productDependencies.database;
         const [paidReservation] = await database
             .select()
-            .from(aiCreditReservationsTable)
-            .where(eq(aiCreditReservationsTable.jobId, operation.id));
-        expect(paidReservation?.jobKind).toBe('portrait-interview');
-        expect(paidReservation?.reservedCredits).toBeGreaterThan(0n);
+            .from(aiCreditActionsTable)
+            .where(eq(aiCreditActionsTable.id, operation.id));
+        expect(paidReservation?.capability).toBe('portrait-interview');
+        expect(paidReservation?.heldMilli).toBeGreaterThan(0n);
+        expect(paidReservation?.chargedMilli).toBeGreaterThan(0n);
         expect(paidReservation?.state).toBe('settled');
 
-        const bypass = composed(true);
+        const bypass = await composed(true);
         const freeLearner = await signup(bypass.app, 'portrait-bypass');
         const freeOperation = await startAndSubmit(
             bypass.app,
@@ -510,129 +560,98 @@ run('real learner portrait HTTP and accounting journey', () => {
             .where(eq(aiCreditReservationsTable.jobId, freeOperation.id));
         const [providerCall] = await database
             .select()
-            .from(portraitInterviewProviderCallsTable)
-            .where(
-                and(
-                    eq(
-                        portraitInterviewProviderCallsTable.operationId,
-                        freeOperation.id,
-                    ),
-                    eq(
-                        portraitInterviewProviderCallsTable.ownerId,
-                        freeLearner.userId,
-                    ),
-                ),
-            );
-        expect(freeReservation?.jobKind).toBe('portrait-interview');
-        expect(freeReservation?.reservedCredits).toBe(0n);
-        expect(freeReservation?.state).toBe('settled');
+            .from(aiCreditActionAttemptsTable)
+            .where(eq(aiCreditActionAttemptsTable.actionId, freeOperation.id));
+        expect(freeReservation).toBeUndefined();
+        const [freeAction] = await database
+            .select()
+            .from(aiCreditActionsTable)
+            .where(eq(aiCreditActionsTable.id, freeOperation.id));
+        expect(freeAction).toMatchObject({
+            funding: 'operator',
+            state: 'settled',
+            heldMilli: 0n,
+            chargedMilli: 0n,
+        });
         expect(providerCall?.state).toBe('settled');
-        expect(providerCall?.actualInputTokens).toBe(1);
-        expect(providerCall?.actualOutputTokens).toBe(1);
+        expect(providerCall?.inputTokens).toBe(1);
+        expect(providerCall?.outputTokens).toBe(1);
     }, 120_000);
 
-    it('admits a small paid interview with 20,000 credits, reserves atomically, and charges actual usage', async () => {
-        const paid = composed(false);
+    it('holds the paid action budget atomically, records measured usage before validation, and absorbs unknown usage', async () => {
+        const paid = await composed(false);
         const learner = await signup(paid.app, 'portrait-small-paid');
         await grantCredits(learner.userId, 20_000n);
         const operation = await startAndSubmit(paid.app, learner.token, true);
-        const claim = await paid.module.store.claim();
-        expect(claim?.id).toBe(operation.id);
+        const claim = (await paid.module.store.claim())!;
+        const database = authentication.productDependencies.database;
         const accounting = createInterviewAccounting({
-            database: authentication.productDependencies.database,
+            database,
             withOperation: (work) =>
-                paid.module.store.withOperation(claim!, work),
+                paid.module.store.withOperation(claim, work),
             ownerId: learner.userId,
             operationId: operation.id,
-            execution: claim!.execution as never,
+            leaseToken: claim.leaseToken,
+            execution: claim.execution as never,
         });
-        const makeCall = (): TutorCallAdmission => ({
+        const call = {
             callId: randomUUID(),
-            purpose: 'answer',
+            purpose: 'answer' as const,
             inputTokenEstimate: 3500,
-            maxOutputTokens: 4096,
-        });
-        const first = makeCall(),
-            second = makeCall();
-        const outcomes = await Promise.allSettled([
-            accounting.admit(first),
-            accounting.admit(second),
-        ]);
-        expect(
-            outcomes.filter((item) => item.status === 'fulfilled'),
-        ).toHaveLength(1);
-        const rejected = outcomes.find((item) => item.status === 'rejected');
-        expect(rejected?.status === 'rejected' && rejected.reason.code).toBe(
-            'credits_exhausted',
-        );
-        const database = authentication.productDependencies.database;
-        const [reservation] = await database
-            .select()
-            .from(aiCreditReservationsTable)
-            .where(eq(aiCreditReservationsTable.jobId, operation.id));
-        expect(reservation!.reservedCredits).toBeGreaterThan(10_000n);
-        expect(reservation!.reservedCredits).toBeLessThanOrEqual(20_000n);
-        const calls = await database
-            .select()
-            .from(portraitInterviewProviderCallsTable)
-            .where(
-                eq(
-                    portraitInterviewProviderCallsTable.operationId,
-                    operation.id,
+            maxOutputTokens: Math.min(
+                4096,
+                readInterviewOutputTokenLimit(
+                    claim.execution as unknown as InterviewExecution,
                 ),
-            );
-        expect(calls).toHaveLength(1);
-        expect(calls[0]!.reservedInputTokens).toBe(
-            claim!.execution.interviewInputTokenLimit,
+            ),
+        };
+        await accounting.admit(call);
+        await expect(accounting.admit(call)).rejects.toThrow('replayed');
+        await accounting.settle(call, { inputTokens: 50, outputTokens: 12 });
+        const [active] = await database
+            .select()
+            .from(aiCreditActionsTable)
+            .where(eq(aiCreditActionsTable.id, operation.id));
+        expect(active?.state).toBe('active');
+        expect(active?.heldMilli).toBe(20_000n);
+        expect(active?.chargedMilli).toBeNull();
+        const unknown = { ...call, callId: randomUUID(), maxOutputTokens: 32 };
+        await accounting.admit(unknown);
+        await accounting.fail(unknown, 'missing-usage');
+        const [unknownAttempt] = await database
+            .select()
+            .from(aiCreditActionAttemptsTable)
+            .where(eq(aiCreditActionAttemptsTable.id, unknown.callId));
+        expect(unknownAttempt?.inputTokens).toBeNull();
+        expect(unknownAttempt?.outputTokens).toBeNull();
+        await paid.module.store.complete(
+            claim,
+            {
+                message: 'What are your travel goals?',
+                topic: 'goals',
+                options: [],
+                multiSelect: false,
+            },
+            new Date(),
         );
-        expect(calls[0]!.reservedOutputTokens).toBe(4096);
-        const admitted = outcomes[0]!.status === 'fulfilled' ? first : second;
-        await accounting.settle(admitted, {
-            inputTokens: 50,
-            outputTokens: 12,
-        });
         const [settled] = await database
             .select()
-            .from(aiCreditReservationsTable)
-            .where(eq(aiCreditReservationsTable.id, reservation!.id));
-        expect(settled!.state).toBe('settled');
-        expect(settled!.chargedCredits).toBeGreaterThan(0n);
-        expect(settled!.chargedCredits).toBeLessThan(settled!.reservedCredits);
-        // The unused hold is released: another full-output-cap call now fits.
-        const next = makeCall();
-        await accounting.admit(next);
-        // Ambiguous dispatched usage must retain the entire pinned liability.
-        await accounting.fail(next, 'missing-usage');
-        const [unknownCall] = await database
-            .select()
-            .from(portraitInterviewProviderCallsTable)
-            .where(eq(portraitInterviewProviderCallsTable.id, next.callId));
-        const [estimated] = await database
-            .select()
-            .from(aiCreditReservationsTable)
-            .where(
-                eq(aiCreditReservationsTable.id, unknownCall!.reservationId),
-            );
-        expect(estimated!.state).toBe('settled');
-        expect(estimated!.measurement).toBe('estimated');
-        expect(estimated!.reservedCredits).toBe(reservation!.reservedCredits);
-        expect(estimated!.chargedCredits).toBe(estimated!.reservedCredits);
+            .from(aiCreditActionsTable)
+            .where(eq(aiCreditActionsTable.id, operation.id));
+        expect(settled?.state).toBe('settled');
+        expect(settled?.outcome).toBe('success');
+        expect(settled?.measurement).toBe('unknown');
+        expect(settled?.chargedMilli).toBe(86n);
         const allocations = await database
             .select()
-            .from(aiCreditReservationAllocationsTable)
-            .where(
-                eq(
-                    aiCreditReservationAllocationsTable.reservationId,
-                    estimated!.id,
-                ),
-            );
+            .from(aiCreditActionAllocationsTable)
+            .where(eq(aiCreditActionAllocationsTable.actionId, operation.id));
         expect(
             allocations.reduce(
-                (sum, item) => sum + (item.settledCredits ?? 0n),
+                (sum, row) => sum + (row.settledMilli ?? 0n),
                 0n,
             ),
-        ).toBe(estimated!.reservedCredits);
-        await paid.module.store.fail(claim!, 'test_complete', new Date());
+        ).toBe(86n);
     }, 120_000);
 
     it.each([
@@ -642,7 +661,7 @@ run('real learner portrait HTTP and accounting journey', () => {
     ] as const)(
         'executes one schema-inclusive paid %s response with %s credits and settles actual usage',
         async (kind, balance) => {
-            const paid = composed(false);
+            const paid = await composed(false);
             const learner = await signup(
                 paid.app,
                 `portrait-structured-${kind}`,
@@ -663,6 +682,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                             paid.module.store.withOperation(claim, work),
                         ownerId: learner.userId,
                         operationId: claim.id,
+                        leaseToken: claim.leaseToken,
                         execution: claim.execution as never,
                     });
                     const call = {
@@ -678,9 +698,14 @@ run('real learner portrait HTTP and accounting journey', () => {
                         inputTokens: charge - 900,
                         outputTokens: 300,
                     });
-                    await paid.module.store.fail(
+                    await paid.module.store.complete(
                         claim,
-                        'invalid_model_output',
+                        {
+                            message: 'What else matters?',
+                            topic: 'goals',
+                            options: [],
+                            multiSelect: false,
+                        },
                         new Date(),
                     );
                 }
@@ -730,6 +755,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                                 paid.module.store.withOperation(claim, work),
                             ownerId: learner.userId,
                             operationId: claim.id,
+                            leaseToken: claim.leaseToken,
                             execution: claim.execution as never,
                         }),
                         maxOutputTokens: readInterviewOutputTokenLimit(
@@ -758,23 +784,20 @@ run('real learner portrait HTTP and accounting journey', () => {
             const [reservation] =
                 await authentication.productDependencies.database
                     .select()
-                    .from(aiCreditReservationsTable)
-                    .where(eq(aiCreditReservationsTable.jobId, operation.id));
+                    .from(aiCreditActionsTable)
+                    .where(eq(aiCreditActionsTable.id, operation.id));
             expect(reservation?.state).toBe('settled');
-            expect(reservation?.reservedCredits).toBeLessThanOrEqual(balance);
-            expect(reservation?.chargedCredits).toBeGreaterThan(0n);
-            expect(reservation?.chargedCredits).toBeLessThan(
-                reservation!.reservedCredits,
+            expect(reservation?.heldMilli).toBeLessThanOrEqual(balance);
+            expect(reservation?.chargedMilli).toBe(
+                kind === 'invalid' ? 0n : 86n,
+            );
+            expect(reservation?.chargedMilli).toBeLessThan(
+                reservation!.heldMilli,
             );
             const calls = await authentication.productDependencies.database
                 .select()
-                .from(portraitInterviewProviderCallsTable)
-                .where(
-                    eq(
-                        portraitInterviewProviderCallsTable.operationId,
-                        operation.id,
-                    ),
-                );
+                .from(aiCreditActionAttemptsTable)
+                .where(eq(aiCreditActionAttemptsTable.actionId, operation.id));
             expect(calls).toHaveLength(1);
             const snapshot = finished!
                 .execution as unknown as InterviewExecution;
@@ -805,8 +828,8 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     ),
                 ).toBeGreaterThan(before.availableCredits);
-            expect(calls[0]?.actualInputTokens).toBe(50);
-            expect(calls[0]?.actualOutputTokens).toBe(12);
+            expect(calls[0]?.inputTokens).toBe(50);
+            expect(calls[0]?.outputTokens).toBe(12);
             if (kind === 'invalid') expect(finished?.result).toBeNull();
             if (kind === 'affordable') {
                 expect(
@@ -815,7 +838,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 expect(provider.requests[0]?.maxOutputTokens).toBeLessThan(
                     4096,
                 );
-                expect(calls[0]?.reservedOutputTokens).toBe(
+                expect(calls[0]?.outputLimit).toBe(
                     provider.requests[0]?.maxOutputTokens,
                 );
                 const state = PortraitStateSchema.parse(
@@ -875,6 +898,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                                     ),
                                 ownerId: learner.userId,
                                 operationId: claim.id,
+                                leaseToken: claim.leaseToken,
                                 execution: claim.execution as never,
                             }),
                             maxInputTokens: readInterviewInputTokenLimit(
@@ -907,6 +931,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         paid.module.store.withOperation(uncertainClaim, work),
                     ownerId: learner.userId,
                     operationId: uncertainClaim.id,
+                    leaseToken: uncertainClaim.leaseToken,
                     execution: uncertainClaim.execution as never,
                 });
                 const uncertainCall = {
@@ -922,12 +947,10 @@ run('real learner portrait HTTP and accounting journey', () => {
                 const [unknown] =
                     await authentication.productDependencies.database
                         .select()
-                        .from(aiCreditReservationsTable)
-                        .where(
-                            eq(aiCreditReservationsTable.jobId, uncertain.id),
-                        );
-                expect(unknown!.measurement).toBe('estimated');
-                expect(unknown!.chargedCredits).toBe(unknown!.reservedCredits);
+                        .from(aiCreditActionsTable)
+                        .where(eq(aiCreditActionsTable.id, uncertain.id));
+                expect(unknown!.state).toBe('active');
+                expect(unknown!.chargedMilli).toBeNull();
                 expect(uncertainCall.maxOutputTokens).toBeLessThan(4096);
                 await paid.module.store.fail(
                     uncertainClaim,
@@ -938,63 +961,48 @@ run('real learner portrait HTTP and accounting journey', () => {
         },
     );
 
-    it('retains its immutable budget but does not dispatch when funds disappear before the worker hold', async () => {
-        const paid = composed(false);
-        const learner = await signup(paid.app, 'portrait-deferred-funds');
+    it('protects the admitted paid hold from concurrent wallet removal and retains its execution budget', async () => {
+        const paid = await composed(false);
+        const learner = await signup(paid.app, 'portrait-protected-funds');
         await grantCredits(learner.userId, 15_608n);
         const operation = await startAndSubmit(paid.app, learner.token, true);
         const admitted = await paid.module.store.read(
             learner.userId,
             operation.id,
         );
-        await authentication.productDependencies.database.transaction(
-            async (tx) => {
-                const credits = new DrizzleAiCreditTransactionParticipant(tx);
-                const account = await credits.accountSummary(
-                    learner.userId,
-                    new Date(),
-                );
-                await credits.adjustByAdmin({
-                    ownerId: learner.userId,
-                    amount: -10_000n,
-                    at: new Date(),
-                    expectedManagementVersion: account.managementVersion,
-                    expiresAt: null,
-                    sourceReference: randomUUID(),
-                    reason: 'Synthetic concurrent wallet change',
-                });
-            },
-        );
-        const claim = (await paid.module.store.claim())!;
-        expect(claim.id).toBe(operation.id);
-        const provider = scriptedTutorModel(['{}']);
         await expect(
-            createLearnerInterviewerRunner({
-                model: provider.model,
-                maxInputTokens: readInterviewInputTokenLimit(
-                    claim.execution as unknown as InterviewExecution,
-                ),
-                maxOutputTokens: readInterviewOutputTokenLimit(
-                    claim.execution as unknown as InterviewExecution,
-                ),
-                accounting: createInterviewAccounting({
-                    database: authentication.productDependencies.database,
-                    withOperation: (work) =>
-                        paid.module.store.withOperation(claim, work),
-                    ownerId: learner.userId,
-                    operationId: claim.id,
-                    execution: claim.execution as never,
-                }),
-            }).run({ operation: claim, signal: new AbortController().signal }),
-        ).rejects.toMatchObject({ code: 'credits_exhausted' });
-        expect(provider.requests).toHaveLength(0);
+            authentication.productDependencies.database.transaction(
+                async (tx) => {
+                    const credits = new DrizzleAiCreditTransactionParticipant(
+                        tx,
+                    );
+                    const account = await credits.accountSummary(
+                        learner.userId,
+                        new Date(),
+                    );
+                    expect(account.reservedCredits).toBe(15_608n);
+                    expect(account.availableCredits).toBe(0n);
+                    await credits.adjustByAdmin({
+                        ownerId: learner.userId,
+                        amount: -10_000n,
+                        at: new Date(),
+                        expectedManagementVersion: account.managementVersion,
+                        expiresAt: null,
+                        sourceReference: randomUUID(),
+                        reason: 'Synthetic concurrent wallet change',
+                    });
+                },
+            ),
+        ).rejects.toThrow();
+        const claim = await dispatchAndSettle(paid.module, learner.userId);
+        expect(claim.id).toBe(operation.id);
         expect(claim.execution).toEqual(admitted!.execution);
-        const reservations = await authentication.productDependencies.database
+        const [action] = await authentication.productDependencies.database
             .select()
-            .from(aiCreditReservationsTable)
-            .where(eq(aiCreditReservationsTable.jobId, operation.id));
-        expect(reservations).toHaveLength(0);
-        await paid.module.store.fail(claim, 'test_complete', new Date());
+            .from(aiCreditActionsTable)
+            .where(eq(aiCreditActionsTable.id, operation.id));
+        expect(action?.heldMilli).toBe(15_608n);
+        expect(action?.chargedMilli).toBe(4n);
     });
 
     it.each([
@@ -1020,16 +1028,18 @@ run('real learner portrait HTTP and accounting journey', () => {
                         },
                         64000,
                     ),
-                    maxOutputTokensPerAttempt: 1024,
+                    maxOutputTokensPerAttempt: 1,
                 },
-                textAiModelCatalog.find((item) => item.id === 'deepseek-flash')!
-                    .creditPricing,
+                {
+                    inputCreditsPerMillionTokens: 1000,
+                    outputCreditsPerMillionTokens: 3000,
+                },
             ),
         ) - 1n,
     ])(
         'rejects genuinely insufficient paid balance %s before enqueue or dispatch',
         async (amount) => {
-            const paid = composed(false);
+            const paid = await composed(false);
             const learner = await signup(
                 paid.app,
                 `portrait-low-paid-${amount}`,
@@ -1109,17 +1119,9 @@ run('real learner portrait HTTP and accounting journey', () => {
                     ),
                 )
                 .limit(1);
-            const [callTemplate] = await database
-                .select()
-                .from(portraitInterviewProviderCallsTable)
-                .where(
-                    eq(
-                        portraitInterviewProviderCallsTable.operationId,
-                        template!.id,
-                    ),
-                )
-                .limit(1);
+            const callTemplate = legacyCallTemplate(template!);
             const execution = { ...template!.execution };
+            delete execution.actionAccountingVersion;
             if (pin === undefined) delete execution.interviewInputTokenLimit;
             else execution.interviewInputTokenLimit = pin;
             const rollback = new Error('rollback synthetic pin probe');
@@ -1191,17 +1193,9 @@ run('real learner portrait HTTP and accounting journey', () => {
                     ),
                 )
                 .limit(1);
-            const [callTemplate] = await database
-                .select()
-                .from(portraitInterviewProviderCallsTable)
-                .where(
-                    eq(
-                        portraitInterviewProviderCallsTable.operationId,
-                        template!.id,
-                    ),
-                )
-                .limit(1);
+            const callTemplate = legacyCallTemplate(template!);
             const execution = { ...template!.execution };
+            delete execution.actionAccountingVersion;
             if ('modelLimit' in model)
                 execution.snapshot = {
                     ...(execution.snapshot as Record<string, unknown>),
@@ -1253,7 +1247,7 @@ run('real learner portrait HTTP and accounting journey', () => {
     );
 
     it('settles an expired paid provider call and erases portrait content under the restricted purge role', async () => {
-        const paid = composed(false);
+        const paid = await composed(false);
         const learner = await signup(paid.app, 'portrait-purge-paid');
         await grantCredits(learner.userId);
         const operation = await startAndSubmit(paid.app, learner.token, true);
@@ -1269,6 +1263,10 @@ run('real learner portrait HTTP and accounting journey', () => {
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, learner.userId));
+
+        await database.execute(
+            sql`insert into account_deletion_requests(user_id,state,scheduled_at,purge_at,next_attempt_at,lease_deadline,lease_worker_id,fencing_token,updated_at) values(${learner.userId}::uuid,'running',clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '1 minute',clock_timestamp()-interval '1 minute',clock_timestamp()+interval '5 minutes','portrait-purge-scope',1,clock_timestamp())`,
+        );
 
         const role = `portrait_purge_paid_${randomUUID().replaceAll('-', '')}`;
         const grantScript = await readFile(
@@ -1307,30 +1305,39 @@ run('real learner portrait HTTP and accounting journey', () => {
                 databaseSchema,
             );
             await restrictedDatabase.transaction(async (tx) => {
-                await requestPortraitCancellation(tx, learner.userId);
-                expect(await portraitDeletionBusy(tx, learner.userId)).toBe(
-                    false,
+                await requestPortraitCancellation(tx, learner.userId, {
+                    workerId: 'portrait-purge-scope',
+                    fencingToken: 1,
+                });
+                expect(
+                    await portraitDeletionBusy(tx, learner.userId, new Date(), {
+                        workerId: 'portrait-purge-scope',
+                        fencingToken: 1,
+                    }),
+                ).toBe(false);
+                await eraseOwnerLearnerPortrait(
+                    tx,
+                    learner.userId,
+                    new Date(),
+                    { workerId: 'portrait-purge-scope', fencingToken: 1 },
                 );
-                await eraseOwnerLearnerPortrait(tx, learner.userId, new Date());
             });
 
-            const [reservation] = await database
+            const [action] = await database
                 .select()
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.jobId, operation.id));
+                .from(aiCreditActionsTable)
+                .where(eq(aiCreditActionsTable.id, operation.id));
             const [allocation] = await database
                 .select()
-                .from(aiCreditReservationAllocationsTable)
+                .from(aiCreditActionAllocationsTable)
                 .where(
-                    eq(
-                        aiCreditReservationAllocationsTable.reservationId,
-                        reservation!.id,
-                    ),
+                    eq(aiCreditActionAllocationsTable.actionId, operation.id),
                 );
-            expect(reservation?.state).toBe('settled');
-            expect(reservation?.measurement).toBe('estimated');
-            expect(reservation?.chargedCredits).toBeGreaterThan(0n);
-            expect(allocation?.settledCredits).toBeGreaterThan(0n);
+            expect(action?.state).toBe('settled');
+            expect(action?.measurement).toBe('unknown');
+            expect(action?.outcome).toBe('failure');
+            expect(action?.chargedMilli).toBe(0n);
+            expect(allocation?.settledMilli).toBe(0n);
             expect(
                 await database
                     .select()
@@ -1342,15 +1349,15 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     ),
             ).toHaveLength(0);
-            const archived = await database.execute(sql`
-                select job_kind, actual_input_tokens, actual_output_tokens
-                from dictionary_generation_provider_usage_archive
-                where id=${dispatched.call.callId}::uuid
-            `);
-            expect(archived).toHaveLength(1);
-            expect(archived[0]?.job_kind).toBe('portrait-interview');
-            expect(archived[0]?.actual_input_tokens).toBeGreaterThan(0);
-            expect(archived[0]?.actual_output_tokens).toBeGreaterThan(0);
+            const [attempt] = await database
+                .select()
+                .from(aiCreditActionAttemptsTable)
+                .where(
+                    eq(aiCreditActionAttemptsTable.id, dispatched.call.callId),
+                );
+            expect(attempt?.state).toBe('settled');
+            expect(attempt?.inputTokens).toBeNull();
+            expect(attempt?.outputTokens).toBeNull();
         } finally {
             await restricted.unsafe('reset role');
             await restricted.end();
@@ -1364,4 +1371,30 @@ run('real learner portrait HTTP and accounting journey', () => {
 function restoreEnvironment(name: string, value: string | undefined): void {
     if (value === undefined) delete process.env[name];
     else process.env[name] = value;
+}
+
+/** Legacy guards remain exercised with an explicit pre-action-accounting call shape. */
+function legacyCallTemplate(
+    operation: typeof learnerPortraitInterviewOperationsTable.$inferSelect,
+): typeof portraitInterviewProviderCallsTable.$inferInsert {
+    const budget = operation.execution.budget as InterviewExecution['budget'];
+    return {
+        id: randomUUID(),
+        operationId: operation.id,
+        ownerId: operation.ownerId,
+        ordinal: 1,
+        purpose: 'actor',
+        reservationId: randomUUID(),
+        state: 'dispatched',
+        reservedCostMicros: 0,
+        reservedInputTokens: 64000,
+        reservedOutputTokens: 4096,
+        actualCostMicros: 0,
+        actualInputTokens: 0,
+        actualOutputTokens: 0,
+        ...budget,
+        createdAt: new Date(),
+        dispatchedAt: new Date(),
+        settledAt: null,
+    };
 }

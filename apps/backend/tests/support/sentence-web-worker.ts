@@ -1,3 +1,4 @@
+import { UnavailableGenerationBurstLimiter } from '../../src/modules/text-ai/application/generation-burst-limiter';
 /** Test-only provider fixture. Uses production admission, persistence and worker
  * validation; never imports provider SDKs or loads development credentials. */
 import { randomUUID } from 'node:crypto';
@@ -15,7 +16,10 @@ import {
     dictionaryAiConfigurationTable,
     dictionaryAiWorkerObservationsTable,
 } from '../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
-import { sentenceExecutionObservationId } from '../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import {
+    conversationCapacityObservationId,
+    sentenceExecutionObservationId,
+} from '../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { loadDictionaryAudioEnvironment } from '../../src/modules/speech/infrastructure/audio/dictionary-audio-environment';
 import { createDictionaryAudioAdapters } from '../../src/modules/speech/infrastructure/audio/dictionary-audio-adapters';
 import { createSpeechInfrastructure } from '../../src/modules/speech/infrastructure/composition';
@@ -70,6 +74,7 @@ const audioAdapters = createDictionaryAudioAdapters({
     role: 'worker',
 });
 const speech = createSpeechInfrastructure({
+    burstLimiter: new UnavailableGenerationBurstLimiter(),
     database,
     dictionaryHmacSecret:
         process.env.DICTIONARY_HMAC_SECRET ??
@@ -184,7 +189,18 @@ const provider = {
     async generate(call: Parameters<typeof fixture.generate>[0]) {
         return {
             ...(await fixture.generate(call)),
-            usage: { inputTokens: 50, outputTokens: 50 },
+            usage: {
+                inputTokens: 50,
+                // Explicit synthetic marker, behind this file's disposable test guards.
+                outputTokens: call.input.candidates.some((entry) =>
+                    entry.sourceText.includes('[budget-output-limit]'),
+                )
+                    ? Math.min(
+                          call.budget.maxOutputTokensPerAttempt,
+                          call.execution.perCallMaxOutputTokens,
+                      )
+                    : 50,
+            },
         };
     },
     async check(call: Parameters<typeof fixture.check>[0]) {
@@ -305,21 +321,54 @@ async function prepareFixtures() {
         learningExecutionRevision: 1,
         creditSettlementRevision: 1,
     };
-    await database
-        .insert(dictionaryAiWorkerObservationsTable)
-        .values(observation)
-        .onConflictDoUpdate({
-            target: dictionaryAiWorkerObservationsTable.id,
-            set: observation,
-        });
+    // Browser journeys can leave other text-AI cohorts active. This worker
+    // uses their shared capacity admission, but does not execute their jobs.
+    const capacityObservation = {
+        ...observation,
+        id: conversationCapacityObservationId(
+            workerId,
+            model.providerId,
+            model.id,
+        ),
+        textsCapacityRevision: 1,
+        conversationCapacityRevision: 1,
+    };
+    for (const row of [observation, capacityObservation]) {
+        await database
+            .insert(dictionaryAiWorkerObservationsTable)
+            .values(row)
+            .onConflictDoUpdate({
+                target: dictionaryAiWorkerObservationsTable.id,
+                set: row,
+            });
+    }
 }
 console.log('Sentence browser fixture worker ready');
+let diagnosticLoops = 0;
+async function fixtureStage<T>(
+    name: string,
+    work: () => Promise<T>,
+): Promise<T> {
+    if (diagnosticLoops < 2)
+        process.stdout.write(`Sentence fixture phase ${name}: start\n`);
+    const result = await work();
+    if (diagnosticLoops < 2)
+        process.stdout.write(`Sentence fixture phase ${name}: done\n`);
+    return result;
+}
 try {
     while (!controller.signal.aborted) {
-        await prepareFixtures();
-        await preparation.tick({ now: new Date(), signal: controller.signal });
-        await worker.processNext(controller.signal);
-        await speech.worker.runOnce(controller.signal);
+        await fixtureStage('fixtures', prepareFixtures);
+        await fixtureStage('preparation', () =>
+            preparation.tick({ now: new Date(), signal: controller.signal }),
+        );
+        await fixtureStage('sentence', () =>
+            worker.processNext(controller.signal),
+        );
+        await fixtureStage('speech', () =>
+            speech.worker.runOnce(controller.signal),
+        );
+        diagnosticLoops++;
         await delay(50);
     }
 } finally {

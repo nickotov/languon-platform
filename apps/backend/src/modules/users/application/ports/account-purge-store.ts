@@ -13,7 +13,7 @@ export interface AccountPurgeStore {
         now: Date;
         workerId: string;
     }): Promise<ClaimedAccountPurge | null>;
-    inspectOwner(input: ClaimedAccountPurge): Promise<{
+    inspectOwner(input: ClaimedAccountPurge & { workerId: string }): Promise<{
         activeJobs: number;
         objects: OwnedDocumentObject[];
     }>;

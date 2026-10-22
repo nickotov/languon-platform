@@ -1,3 +1,11 @@
+import { withActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
+import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import { ProviderCostAdmissionUnavailableError } from '../../../../ai-credits/domain/provider-cost-admission';
+import {
+    prepareLegacyAction,
+    usesLegacyAction,
+    admitLegacyAttempt,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { createHash, randomUUID } from 'node:crypto';
 import { and, eq, lt, or, sql } from 'drizzle-orm';
 import type {
@@ -49,7 +57,7 @@ type Row = typeof jobs.$inferSelect;
 const view = (j: Row): TextSelectionJob => ({
     id: j.id,
     state: j.executionState,
-    failureCode: j.failureCode,
+    failureCode: j.failureCode === 'explicit_stop' ? null : j.failureCode,
     dictionaryId: j.dictionaryId,
     cardId: j.cardId,
     createdAt: j.createdAt.toISOString(),
@@ -127,7 +135,12 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
             if (existing) {
                 if (existing.requestHash !== hash)
                     throw new TextSelectionError('idempotency_conflict');
-                return view(existing);
+                return withActionBilling(
+                    tx,
+                    view(existing),
+                    existing.id,
+                    existing.ownerId,
+                );
             }
             if (this.options.admissionsEnabled === false)
                 throw new TextSelectionError('provider_unavailable');
@@ -179,6 +192,23 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
             });
             if (!selected.snapshot)
                 throw new TextSelectionError('provider_unavailable');
+            try {
+                selected.snapshot = await prepareLegacyAction(
+                    tx,
+                    ownerId,
+                    'text-selection-card',
+                    selected.snapshot!,
+                    now,
+                );
+            } catch (error) {
+                if (
+                    error instanceof OperatorBudgetUnavailableError ||
+                    error instanceof ProviderCostAdmissionUnavailableError
+                )
+                    throw new TextSelectionError('provider_unavailable');
+                throw error;
+            }
+            selected.budget = selected.snapshot.aggregateBudget;
             // UTF-8 bytes upper-bound tokens for the structured input; include fixed prompt/schema overhead.
             if (
                 Buffer.byteLength(JSON.stringify(input), 'utf8') + 4096 >
@@ -236,7 +266,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                         selected.budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
                         selected.budget.maxOutputTokensPerAttempt,
-                    aiCreditAccounted: true,
+                    aiCreditAccounted: false,
                     aiCreditPolicyMode: creditSummary.policy.effectiveMode,
                     aiCreditMaxCreditsPerAttempt: credit.maxCreditsPerAttempt,
                     aiCreditInputCreditsPerMillionTokens:
@@ -250,7 +280,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 })
                 .returning();
             await reserveSelectionAttempt(tx, job!, 1, now);
-            return view(job!);
+            return withActionBilling(tx, view(job!), job!.id, job!.ownerId);
         });
     }
     async read(ownerId: string, id: string) {
@@ -259,7 +289,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
             .from(jobs)
             .where(and(eq(jobs.id, id), eq(jobs.ownerId, ownerId)));
         if (!job) throw new TextSelectionError('not_found');
-        return view(job);
+        return withActionBilling(this.db, view(job), job.id, job.ownerId);
     }
     async cancel(ownerId: string, id: string) {
         return modelPricingTransaction(this.db, async (tx) => {
@@ -272,12 +302,19 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .for('update');
             if (!job) throw new TextSelectionError('not_found');
             if (job.executionState === 'queued') {
-                await this.terminal(tx, job, 'cancelled', null, this.now());
+                await this.terminal(
+                    tx,
+                    { ...job, cancellationRequestedAt: this.now() },
+                    'cancelled',
+                    null,
+                    this.now(),
+                );
             } else if (job.executionState === 'running') {
                 await tx
                     .update(jobs)
                     .set({
                         cancellationRequestedAt: this.now(),
+                        failureCode: 'explicit_stop',
                         updatedAt: this.now(),
                     })
                     .where(eq(jobs.id, id));
@@ -286,7 +323,12 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, id));
-            return view(result!);
+            return withActionBilling(
+                tx,
+                view(result!),
+                result!.id,
+                result!.ownerId,
+            );
         });
     }
     private owned(job: Row | undefined, lease: SelectionLease, now: Date) {
@@ -308,13 +350,31 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
         now: Date,
         usage?: { inputTokens: number; outputTokens: number },
     ) {
-        await settleSelectionAttempt(tx, job, now, usage);
+        await settleSelectionAttempt(
+            tx,
+            job,
+            now,
+            usage,
+            state === 'completed'
+                ? 'success'
+                : state === 'cancelled' &&
+                    job.cancellationRequestedAt &&
+                    job.failureCode !== 'access_revoked'
+                  ? 'stopped'
+                  : 'failure',
+        );
         await tx
             .update(jobs)
             .set({
                 ...terminalInput,
                 executionState: state,
-                failureCode,
+                failureCode:
+                    state === 'cancelled' &&
+                    job.cancellationRequestedAt &&
+                    job.failureCode !== 'access_revoked'
+                        ? 'explicit_stop'
+                        : failureCode,
+                cancellationRequestedAt: job.cancellationRequestedAt,
                 updatedAt: now,
             })
             .where(eq(jobs.id, job.id));
@@ -359,6 +419,19 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     job.leaseDeadline > now
                 )
                     continue;
+                if (
+                    usesLegacyAction(job.selectedExecutionSnapshot) &&
+                    job.executionState === 'running'
+                ) {
+                    await this.terminal(
+                        tx,
+                        job,
+                        'failed',
+                        'provider_timeout',
+                        now,
+                    );
+                    continue;
+                }
                 if (
                     !ownerActive ||
                     job.expiresAt <= now ||
@@ -446,7 +519,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     );
                     continue;
                 }
-                if (retry) {
+                if (retry && !usesLegacyAction(job.selectedExecutionSnapshot)) {
                     const credits = new DrizzleAiCreditTransactionParticipant(
                         tx,
                     );
@@ -455,11 +528,9 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                         now,
                     );
                     if (
-                        summary.policy.effectiveMode !==
-                            job.aiCreditPolicyMode ||
-                        (summary.policy.effectiveMode === 'limited' &&
-                            summary.availableCredits <
-                                BigInt(job.aiCreditMaxCreditsPerAttempt!))
+                        job.aiCreditPolicyMode === 'limited' &&
+                        summary.availableCredits <
+                            BigInt(job.aiCreditMaxCreditsPerAttempt!)
                     ) {
                         await this.terminal(
                             tx,
@@ -488,6 +559,31 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                         updatedAt: now,
                     })
                     .where(eq(jobs.id, job.id));
+                const actionBudget = usesLegacyAction(
+                    job.selectedExecutionSnapshot,
+                )
+                    ? await admitLegacyAttempt(tx, {
+                          id: job.id,
+                          ownerId: job.ownerId,
+                          workerId,
+                          fencingToken: String(token),
+                          attempt,
+                          budget,
+                          inputPayload: job.inputPayload,
+                          inputOverheadTokens: 32768,
+                          at: now,
+                      })
+                    : budget;
+                if (!actionBudget) {
+                    await this.terminal(
+                        tx,
+                        job,
+                        'failed',
+                        'ai_credits_exhausted',
+                        now,
+                    );
+                    continue;
+                }
                 if (retry) await reserveSelectionAttempt(tx, job, attempt, now);
                 return {
                     id: job.id,
@@ -496,8 +592,13 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     fencingToken: token,
                     attempt,
                     input: job.inputPayload!,
-                    budget,
-                    execution: job.selectedExecutionSnapshot,
+                    budget: actionBudget,
+                    execution: usesLegacyAction(job.selectedExecutionSnapshot)
+                        ? {
+                              ...job.selectedExecutionSnapshot,
+                              aggregateBudget: actionBudget,
+                          }
+                        : job.selectedExecutionSnapshot,
                 };
             }
             return null;
@@ -556,13 +657,14 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 lease.input.source,
                 job!.confirmDuplicate,
             );
-            await new DrizzleAiCreditTransactionParticipant(
-                tx,
-            ).markProviderDispatched({
-                dispatchedAt: now,
-                ownerId: job!.ownerId,
-                reservationId: job!.aiCreditReservationId!,
-            });
+            if (!usesLegacyAction(job!.selectedExecutionSnapshot))
+                await new DrizzleAiCreditTransactionParticipant(
+                    tx,
+                ).markProviderDispatched({
+                    dispatchedAt: now,
+                    ownerId: job!.ownerId,
+                    reservationId: job!.aiCreditReservationId!,
+                });
             await tx
                 .update(jobs)
                 .set({ aiCreditProviderDispatchedAt: now })
@@ -673,11 +775,14 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     job!,
                     now,
                     usage ?? { inputTokens: 0, outputTokens: 0 },
+                    'failure',
+                    false,
                 );
                 await tx
                     .update(jobs)
                     .set({
                         executionState: 'queued',
+                        aiCreditProviderDispatchedAt: null,
                         workerId: null,
                         leaseDeadline: null,
                         heartbeatAt: null,

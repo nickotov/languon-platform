@@ -35,6 +35,7 @@ e2e_scenarios:
     - saved-library-preview-archive-restore
     - background-preparation-ready-reconnect
 related_features:
+    - ai-accounting
     - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - sentence-practice-backend
@@ -229,6 +230,24 @@ Exhaustive race, replay, pricing, cancellation, malformed generation and live
 authorization matrices remain in backend and controller tests. Source inventory
 comparison and dark/RTL state checks complement these critical browser journeys.
 
+## AI budget and billing boundary
+
+The profile AI settings also persist an exact maximum credits per action; its
+save/reload/disclosure and paid tutor confirmation are covered by the
+[AI accounting guide](./ai-accounting.md). Generation/checking retain their
+existing explicit actions and reference review remains Free. Setup and practice
+show the saved maximum before paid generation/checking. A reduced allowance
+requires an explicit Send on the backend quote; the original operation is
+retained. Top up opens credits separately; Keep editing cancels consent without
+automatic retry. Actual job execution and billing appear separately, with exact
+held/charged values and estimated/unknown labels when provided. New paid actions
+share at most one safe provider retry and 10,000 total output tokens under their
+pinned maximum. Transport recovery below does not authorize another action.
+Technical/invalid/revoked-authority failure releases the customer hold while
+provider expense remains separate. Explicit cancellation is a stopped outcome
+with defensible usage settlement; closing a view only disconnects it. Internal
+milli-credit storage must not be presented as whole customer credits.
+
 ## Expected failure and edge cases
 
 Model unavailability and optimistic conflicts never silently replace the saved
@@ -333,7 +352,13 @@ dictionary, partitioned into rounds of at most 100 words with the chosen round
 first. Saved first reuses saved examples; New examples adds fresh generations;
 Review saved does not spend credits. Close progress to continue in the
 background, return through the preparation chip, stop after active work settles,
-or explicitly resume a paused run. Ready or partial rounds start using their
+or explicitly resume a paused run while its parent budget remains active.
+Start authorizes one total maximum and10,000 output tokens across automatic
+children. A settled or exhausted parent pauses instead of obtaining another
+budget. Progress shows remaining output and real parent billing; only
+**Continue with a new budget** authorizes another parent action. A zero-credit
+Start fails before background work. Review saved has no paid parent budget.
+Ready or partial rounds start using their
 prepared manifest without implicit regeneration. Reload reconnects to the saved
 preparation identity. Stale/access pauses require a new preparation.
 

@@ -3,6 +3,7 @@ import type {
     ConversationStore,
 } from './ports/conversation-store';
 import type { TutorRunner } from './ports/tutor-runner';
+import { createTurnTextBuffer } from './turn-text-buffer';
 import { ConversationError } from '../domain/conversation';
 import { projectConversationSource } from './conversation-source-context';
 
@@ -40,6 +41,10 @@ export class ConversationWorkerService {
             controller.signal,
             AbortSignal.timeout(this.dependencies.timeoutMs ?? 240_000),
         ]);
+        const buffer = createTurnTextBuffer(
+            (text) => this.dependencies.store.append(turn, text),
+            (error) => controller.abort(error),
+        );
         let heartbeatPending: Promise<void> | undefined;
         const timer = setInterval(() => {
             if (heartbeatPending) return;
@@ -72,10 +77,12 @@ export class ConversationWorkerService {
                 signal: combined,
                 onDelta: async ({ text }) => {
                     combined.throwIfAborted();
-                    await this.dependencies.store.append(turn, text);
+                    await buffer.append(text);
                 },
-                onTool: async (call) =>
-                    this.dependencies.store.recordTool(turn, call),
+                onTool: async (call) => {
+                    await buffer.flush();
+                    await this.dependencies.store.recordTool(turn, call);
+                },
                 onDraft: async (content) =>
                     this.dependencies.store.propose(
                         turn,
@@ -103,9 +110,12 @@ export class ConversationWorkerService {
                     return selected;
                 },
             });
+            await buffer.flush();
             combined.throwIfAborted();
             await this.dependencies.store.finish(turn, 'succeeded');
         } catch (error) {
+            // Save any partial text while the operation fence still permits it.
+            await buffer.flush().catch(() => undefined);
             // Never re-dispatch a provider request automatically after an ambiguous failure.
             const failure =
                 error instanceof ConversationError
@@ -124,6 +134,7 @@ export class ConversationWorkerService {
                     throw finishError; /* Expired/lost source is finalized by lease recovery without exposing content. */
             }
         } finally {
+            buffer.dispose();
             clearInterval(timer);
             await heartbeatPending;
         }

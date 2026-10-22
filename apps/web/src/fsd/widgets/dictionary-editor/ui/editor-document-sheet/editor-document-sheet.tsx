@@ -1,4 +1,9 @@
 import {
+    ActionBilling,
+    ActionConsentCancelledError,
+} from '@/fsd/entities/ai-action';
+import type { ReactNode } from 'react';
+import {
     DictionaryApiError,
     dictionaryErrorMessage,
 } from '@/fsd/entities/dictionary';
@@ -10,7 +15,9 @@ import { syncDocumentGenerationUrl } from '../../lib/generation-url';
 
 export function EditorDocumentSheet({
     model,
+    budget,
 }: {
+    budget?: ReactNode;
     model: Pick<
         EditorViewFields,
         | 't'
@@ -73,6 +80,11 @@ export function EditorDocumentSheet({
                     current.targetLanguage));
 
     function resolveErrorValue() {
+        if (
+            documentGenerationAction.error instanceof
+            ActionConsentCancelledError
+        )
+            return null;
         if (documentGenerationAction.error) {
             return dictionaryErrorMessage(documentGenerationAction.error, t);
         }
@@ -194,28 +206,37 @@ export function EditorDocumentSheet({
 
         if (documentGenerationOpen) {
             return (
-                <DictionaryDocumentGenerationPanel
-                    available={availableValue}
-                    conflict={conflictValue}
-                    dictionary={current}
-                    error={errorValue}
-                    {...(documentGenerationJob.data?.job
-                        ? {
-                              job: documentGenerationJob.data.job,
-                          }
-                        : {})}
-                    languages={catalog}
-                    nativeExtractionAvailable={nativeExtractionAvailableValue}
-                    ocrAvailable={ocrAvailableValue}
-                    onAccept={handleAccept}
-                    onCancel={handleCancel}
-                    onClose={handleClose2}
-                    onDiscard={handleDiscard}
-                    onReloadConflict={handleReloadConflict}
-                    onRetryFailures={handleRetryFailures}
-                    onStart={handleStart}
-                    pendingAction={documentGenerationAction.isPending}
-                />
+                <>
+                    {budget}
+                    <ActionBilling
+                        billing={documentGenerationJob.data?.job?.billing}
+                        execution={documentGenerationJob.data?.job?.state}
+                    />
+                    <DictionaryDocumentGenerationPanel
+                        available={availableValue}
+                        conflict={conflictValue}
+                        dictionary={current}
+                        error={errorValue}
+                        {...(documentGenerationJob.data?.job
+                            ? {
+                                  job: documentGenerationJob.data.job,
+                              }
+                            : {})}
+                        languages={catalog}
+                        nativeExtractionAvailable={
+                            nativeExtractionAvailableValue
+                        }
+                        ocrAvailable={ocrAvailableValue}
+                        onAccept={handleAccept}
+                        onCancel={handleCancel}
+                        onClose={handleClose2}
+                        onDiscard={handleDiscard}
+                        onReloadConflict={handleReloadConflict}
+                        onRetryFailures={handleRetryFailures}
+                        onStart={handleStart}
+                        pendingAction={documentGenerationAction.isPending}
+                    />
+                </>
             );
         }
 

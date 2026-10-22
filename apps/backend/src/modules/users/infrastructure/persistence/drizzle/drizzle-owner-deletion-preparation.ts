@@ -2,7 +2,7 @@ import { requestPortraitCancellation } from '../../../../learner-portraits/infra
 import { requestConversationCancellation } from '../../../../conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import { requestTextsCancellation } from '../../../../texts/infrastructure/persistence/drizzle/texts-deletion-participant';
-import { purgeSpeechActor } from '../../../../speech/infrastructure/drizzle-speech-store';
+import { cancelSpeechActorForScheduledDeletion } from '../../../../speech/infrastructure/drizzle-speech-store';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
@@ -22,7 +22,7 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
         // Preserve live leases until their bounded external writes have quiesced.
         await this.database.transaction(async (tx) => {
             await lockTextAiCapacity(tx);
-            await purgeSpeechActor(tx, userId, new Date());
+            await cancelSpeechActorForScheduledDeletion(tx, userId);
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 76021941))`,
             );

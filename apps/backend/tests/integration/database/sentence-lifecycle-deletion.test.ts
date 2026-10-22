@@ -536,6 +536,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 [foreignEntry],
                 true,
             );
+            await db
+                .update(usersTable)
+                .set({ status: 'deletion_pending' })
+                .where(eq(usersTable.id, owner));
+            await db.insert(accountDeletionRequestsTable).values({
+                userId: owner,
+                scheduledAt: new Date(now.getTime() - 30 * 24 * 60 * 60000),
+                purgeAt: now,
+                nextAttemptAt: now,
+                updatedAt: now,
+            });
             await new DrizzleOwnerDeletionPreparation(db).requestCancellation(
                 owner,
             );
@@ -551,25 +562,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toBe(true);
             const purge = new DrizzleAccountPurgeStore(db);
-            expect(
-                (await purge.inspectOwner({ userId: owner, fencingToken: 1 }))
-                    .activeJobs,
-            ).toBeGreaterThan(0);
-            await db
-                .update(usersTable)
-                .set({ status: 'deletion_pending' })
-                .where(eq(usersTable.id, owner));
-            await db.insert(accountDeletionRequestsTable).values({
-                userId: owner,
-                scheduledAt: new Date(now.getTime() - 30 * 24 * 60 * 60000),
-                purgeAt: now,
-                nextAttemptAt: now,
-                updatedAt: now,
-            });
             const claim = await purge.claimDue({
                 workerId: 'busy-sentence-purge',
                 now,
             });
+            expect(
+                (
+                    await purge.inspectOwner({
+                        ...claim!,
+                        workerId: 'busy-sentence-purge',
+                    })
+                ).activeJobs,
+            ).toBeGreaterThan(0);
             await expect(
                 purge.finish({
                     ...claim!,
@@ -658,7 +662,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now,
                 });
                 expect(claim?.userId).toBe(owner);
-                expect((await purge.inspectOwner(claim!)).activeJobs).toBe(0);
+                expect(
+                    (
+                        await purge.inspectOwner({
+                            ...claim!,
+                            workerId: 'restricted-sentence-purge',
+                        })
+                    ).activeJobs,
+                ).toBe(0);
                 await expect(
                     purge.finish({
                         ...claim!,

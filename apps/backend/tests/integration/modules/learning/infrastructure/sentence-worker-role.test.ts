@@ -1,3 +1,5 @@
+import { seedLegacyActionFixture } from '../../../../support/legacy-action-fixture';
+import { aiCreditActionsTable } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { DrizzleSentencePreparationStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store';
 import { sentenceExposuresTable } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
@@ -20,10 +22,7 @@ import {
     dictionarySettingsTable,
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { dictionaryAiConfigurationRevisionsTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
-import {
-    aiCreditAccountsTable,
-    aiCreditReservationsTable,
-} from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
+import { aiCreditAccountsTable } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
@@ -180,6 +179,7 @@ run('restricted sentence worker role', () => {
     });
     beforeEach(async () => {
         await client.unsafe('truncate users cascade');
+        await seedLegacyActionFixture(db, '100');
         owner = randomUUID();
         reader = randomUUID();
         dictionaryId = randomUUID();
@@ -233,7 +233,12 @@ run('restricted sentence worker role', () => {
             adapterRevision: model.adapterRevision,
             aggregateBudget: model.aggregateBudget,
             credentialReference: model.credentialReference,
-            creditPricing: model.creditPricing,
+            creditPricing: {
+                ...model.creditPricing!,
+                inputCreditsPerMillionTokens: 100,
+                outputCreditsPerMillionTokens: 300,
+                maxCreditsPerAttempt: 100000,
+            },
             enabledModelIds: [model.id],
             modelId: model.id,
             perCallMaxInputTokens: model.perCallMaxInputTokens,
@@ -332,6 +337,7 @@ run('restricted sentence worker role', () => {
                             improvedTranslation: 'hola adiós',
                             explanation: 'Correct.',
                         },
+                        usage: { inputTokens: 100, outputTokens: 20 },
                     },
                     context(),
                 ),
@@ -340,27 +346,33 @@ run('restricted sentence worker role', () => {
                 (await store.attempts(access(), { limit: 25 }, context()))
                     .attempts,
             ).toHaveLength(1);
-            const reservations = await db
+            const actions = await db
                 .select()
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.ownerId, owner));
-            expect(reservations).toHaveLength(2);
+                .from(aiCreditActionsTable)
+                .where(eq(aiCreditActionsTable.ownerId, owner));
+            expect(actions).toHaveLength(2);
             expect(
-                reservations.every(
-                    (row) =>
-                        row.policyMode === 'limited' &&
-                        row.state === 'settled' &&
-                        (row.chargedCredits ?? 0n) > 0n,
+                actions.every(
+                    (action) =>
+                        action.funding === 'customer' &&
+                        action.state === 'settled' &&
+                        (action.chargedMilli ?? 0n) > 0n,
                 ),
             ).toBe(true);
             const preparation = new DrizzleSentencePreparationStore(
                 restricted,
                 {
+                    authorizeAction: async () => {
+                        throw new Error(
+                            'Worker cannot authorize a parent action',
+                        );
+                    },
                     admitGeneration:
                         store.admitPreparationGeneration.bind(store),
                 },
             );
             const ownedPreparation = new DrizzleSentencePreparationStore(db, {
+                authorizeAction: store.preparePreparationAction.bind(store),
                 admitGeneration: store.admitPreparationGeneration.bind(store),
             });
             const prepared = await ownedPreparation.start(
@@ -524,13 +536,16 @@ run('restricted sentence worker role', () => {
                     tx.execute(sql`select handle from users where id=${owner}`),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
-            await expect(
-                restricted.transaction((tx) =>
+            // This is the combined dictionary/text worker role: existing text publication
+            // grants dictionary reads, including translation context. It still cannot
+            // read account handles or mutate learner/account/vocabulary fields above.
+            expect(
+                await restricted.transaction((tx) =>
                     tx.execute(
                         sql`select translation_context from dictionaries where id=${dictionaryId}`,
                     ),
                 ),
-            ).rejects.toMatchObject({ cause: { code: '42501' } });
+            ).toEqual([{ translation_context: null }]);
         } finally {
             await client.unsafe(`DROP OWNED BY "${role}"`);
             await client.unsafe(`DROP ROLE "${role}"`);

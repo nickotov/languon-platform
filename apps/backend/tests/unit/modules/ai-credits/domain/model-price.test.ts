@@ -5,11 +5,33 @@ import {
 } from '../../../../../src/modules/ai-credits/domain/model-price';
 import { AiCreditInvalidAmountError } from '../../../../../src/modules/ai-credits/domain/ai-credit';
 describe('immutable model tariff arithmetic', () => {
+    it.each([
+        [0.1, 1000],
+        [2.5, 2500],
+    ])(
+        'reserves the higher input tariff when cached input costs %s',
+        (cached, expected) => {
+            expect(
+                maximumTextPrice(
+                    {
+                        maxInputTokensPerAttempt: 1000000,
+                        maxOutputTokensPerAttempt: 0,
+                    },
+                    {
+                        inputCreditsPerMillionTokens: 1,
+                        outputCreditsPerMillionTokens: 1,
+                        cachedInputCreditsPerMillionTokens: cached,
+                    },
+                ),
+            ).toBe(expected);
+        },
+    );
     it('prices the entire Unicode character count with ceiling and minimum', () => {
-        expect(calculateSpeechPrice(101, 100, 1)).toBe(11n);
-        expect(calculateSpeechPrice(1000, 100, 1)).toBe(100n);
-        expect(calculateSpeechPrice(0, 0, 1)).toBe(1n);
-        expect(calculateSpeechPrice(1, 1, 1)).toBe(1n);
+        expect(calculateSpeechPrice(101, 100, 1)).toBe(10100n);
+        expect(calculateSpeechPrice(1000, 100, 1)).toBe(100000n);
+        expect(calculateSpeechPrice(0, 0, 1)).toBe(1000n);
+        expect(calculateSpeechPrice(1, 1, 1)).toBe(1000n);
+        expect(calculateSpeechPrice(1, 0.001, 0.001)).toBe(1n);
     });
     it('rejects invalid and unsafe credit arithmetic', () => {
         expect(() => calculateSpeechPrice(-1, 100, 1)).toThrow(
@@ -45,7 +67,7 @@ describe('immutable model tariff arithmetic', () => {
                     outputCreditsPerMillionTokens: 3000000,
                 },
             ),
-        ).toBe(385024);
+        ).toBe(385024000);
         expect(
             maximumTextPrice(
                 { maxInputTokensPerAttempt: 1, maxOutputTokensPerAttempt: 1 },
@@ -54,6 +76,6 @@ describe('immutable model tariff arithmetic', () => {
                     outputCreditsPerMillionTokens: 1,
                 },
             ),
-        ).toBe(2);
+        ).toBe(1);
     });
 });

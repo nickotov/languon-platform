@@ -74,17 +74,25 @@ export function createConversationWorkerComposition(input: {
                 withOperation: (work) => store.withOperation(turn, work),
                 ownerId: turn.ownerId,
                 turnId: turn.id,
+                leaseToken: turn.leaseToken,
                 execution,
             });
             return createContextualTutorRunner({
                 model: provider.model,
                 accounting,
-                maxInputTokens: execution.snapshot.perCallMaxInputTokens,
+                maxInputTokens:
+                    typeof turn.execution.admittedMaxInputTokens === 'number'
+                        ? Math.min(
+                              execution.snapshot.perCallMaxInputTokens,
+                              turn.execution.admittedMaxInputTokens,
+                          )
+                        : execution.snapshot.perCallMaxInputTokens,
             });
         },
     });
     return {
         processNext: (signal: AbortSignal) => worker.processNext(signal),
+        maintainAccounting: () => store.maintainAccounting(),
         // Active calls observe shutdown through processNext's signal and settle there.
         // An unresponsive process is conservatively finalized by the durable lease recovery.
         releaseWorkerLeases: async (_signal: AbortSignal) => undefined,

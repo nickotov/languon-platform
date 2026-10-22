@@ -1,3 +1,15 @@
+import {
+    ActionAllowanceConfirmationRequired,
+    withActionAllowanceConsent,
+} from '../../../../../src/modules/ai-credits/infrastructure/action-allowance-consent';
+import { seedLegacyActionFixture } from '../../../../support/legacy-action-fixture';
+import { aiCreditActionsTable as actions } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { textAiModelCatalog } from '../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
+import {
+    dictionaryAiConfigurationRevisionsTable as revisions,
+    dictionaryAiConfigurationTable as configuration,
+} from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { randomUUID } from 'node:crypto';
 
 import {
@@ -34,8 +46,8 @@ import {
 } from '../../../support/test-database';
 
 const run = describe.runIf(isDatabaseIntegrationEnabled());
-const instant = (offset = 0) =>
-    new Date(Date.parse('2026-08-26T12:00:00.000Z') + offset);
+let instantOrigin = Date.now();
+const instant = (offset = 0) => new Date(instantOrigin + offset);
 const operationContext = (offset = 0) => ({
     now: instant(offset),
     signal: new AbortController().signal,
@@ -87,6 +99,7 @@ run('dictionary document persistence', () => {
         database = createDrizzleDatabase(client, databaseSchema);
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
+        instantOrigin = Date.now();
         generationStore = new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         });
@@ -106,7 +119,9 @@ run('dictionary document persistence', () => {
         await database.delete(dictionaryDocumentObjectVersionsTable);
         await database.delete(dictionaryDocumentUploadsTable);
         await database.delete(dictionaryGenerationJobsTable);
-        await database.delete(usersTable);
+        await database.delete(configuration);
+        await database.delete(revisions);
+        // Each case gets a distinct owner; retain prior owners' immutable wallet facts.
         ownerId = randomUUID();
         await database.insert(usersTable).values({
             createdAt: instant(),
@@ -650,4 +665,194 @@ run('dictionary document persistence', () => {
             sharedContext: null,
         });
     });
+    it.each([false, true])(
+        'Feature052 records staged document usage and charges only after cleanup publishes the valid proposal (quoted=%s)',
+        async (quoted) => {
+            await seedLegacyActionFixture(database, '100');
+            await database.transaction((tx) =>
+                new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
+                    ownerId,
+                    amount: quoted ? 40000n : 1000000n,
+                    createdAt: instant(),
+                    expiresAt: null,
+                    source: 'admin',
+                    sourceReference: randomUUID(),
+                }),
+            );
+            const model = textAiModelCatalog[0]!;
+            const revisionId = randomUUID();
+            await database.insert(revisions).values({
+                id: revisionId,
+                version: 1000,
+                createdByUserId: ownerId,
+                createdAt: instant(),
+                catalogSnapshot: {
+                    ...model,
+                    modelId: model.id,
+                    enabledModelIds: [model.id],
+                    supportedFormats: [...model.supportedFormats],
+                },
+            });
+            await database
+                .insert(configuration)
+                .values({
+                    id: 'global',
+                    version: 1000,
+                    activeRevisionId: revisionId,
+                })
+                .onConflictDoUpdate({
+                    target: configuration.id,
+                    set: { version: 1000, activeRevisionId: revisionId },
+                });
+            const creditedGeneration = new DrizzleDictionaryGenerationStore(
+                database,
+                { generate: randomUUID },
+                undefined,
+                true,
+            );
+            const creditedDocuments = new DrizzleDictionaryDocumentStore(
+                database,
+                { generate: randomUUID },
+                creditedGeneration,
+                undefined,
+                true,
+            );
+            const dictionary = await createDictionary();
+            const authorizationInput = {
+                capabilityExpiresAt: instant(600000),
+                context: operationContext(1),
+                dictionaryId: dictionary.id,
+                expectedChecksumSha256: 'a'.repeat(64),
+                expectedContentType: 'text/plain' as const,
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                expectedSizeBytes: 12,
+                fingerprint: fingerprint('Z'),
+                idempotencyKey: 'document-accounting-new-action',
+                instruction: null,
+                ownerId,
+            };
+            let consentId: string | undefined;
+            if (quoted) {
+                let offer: ActionAllowanceConfirmationRequired | undefined;
+                try {
+                    await creditedDocuments.authorize(authorizationInput);
+                } catch (error) {
+                    offer = error as ActionAllowanceConfirmationRequired;
+                }
+                expect(offer).toBeInstanceOf(
+                    ActionAllowanceConfirmationRequired,
+                );
+                expect(
+                    await database.select().from(dictionaryGenerationJobsTable),
+                ).toHaveLength(0);
+                expect(
+                    await database
+                        .select()
+                        .from(actions)
+                        .where(eq(actions.ownerId, ownerId)),
+                ).toHaveLength(0);
+                consentId = offer!.quote.id;
+            }
+            const authorization = await withActionAllowanceConsent(
+                consentId,
+                () => creditedDocuments.authorize(authorizationInput),
+            );
+            await creditedDocuments.completeUpload({
+                context: operationContext(2),
+                detectedFormat: 'txt',
+                ownerId,
+                requestedVersionId: 'accounting-document-version',
+                uploadId: authorization.uploadId,
+                versions: [
+                    {
+                        checksumSha256: 'a'.repeat(64),
+                        contentType: 'text/plain',
+                        isCurrent: true,
+                        kind: 'data',
+                        sizeBytes: 12,
+                        versionId: 'accounting-document-version',
+                    },
+                ],
+            });
+            const claim = await creditedGeneration.claim({
+                context: operationContext(3),
+                globalConcurrency: 2,
+                leaseDurationMs: 1000,
+                ownerConcurrency: 1,
+                supportedFormats: [dictionaryDocumentGenerationFormat],
+                workerId: 'document-accounting-worker',
+                textAiSelectionRevision: 1,
+                creditSettlementRevision: 1,
+                managedRoutingRevision: 1,
+            });
+            expect(claim?.id).toBe(authorization.job.id);
+            await creditedGeneration.markProviderDispatch({
+                context: operationContext(4),
+                fencingToken: claim!.fencingToken,
+                jobId: claim!.id,
+                leaseDeadline: claim!.leaseDeadline,
+                workerId: claim!.workerId,
+            });
+            await creditedDocuments.stageDocumentProposal({
+                context: operationContext(5),
+                extractionFingerprint: fingerprint('D'),
+                failureUnitCount: 0,
+                fencingToken: claim!.fencingToken,
+                jobId: claim!.id,
+                observedUnitCount: 1,
+                proposal,
+                providerUsage: { inputTokens: 12, outputTokens: 8 },
+                reviewExpiresAt: instant(86400000),
+                scanAttestation: {
+                    completedAt: instant(5),
+                    engineVersion: 'scanner-1',
+                    signatureUpdatedAt: instant(),
+                    signatureVersion: 'signatures-1',
+                },
+                validUnitCount: 1,
+                workerId: claim!.workerId,
+            });
+            const [staged] = await database
+                .select()
+                .from(actions)
+                .where(eq(actions.id, claim!.id));
+            expect(staged).toMatchObject({
+                state: 'active',
+                chargedMilli: null,
+            });
+            expect(staged!.heldMilli).toBeGreaterThan(0n);
+            const cleanup = await creditedDocuments.claimCleanup({
+                context: operationContext(7),
+                leaseDurationMs: 1000,
+                workerId: 'document-accounting-cleanup',
+            });
+            expect(cleanup?.jobId).toBe(claim!.id);
+            await creditedDocuments.recordCleanupTombstone({
+                context: operationContext(8),
+                fencingToken: cleanup!.fencingToken,
+                storageVersionId: 'accounting-tombstone',
+                uploadId: cleanup!.uploadId,
+                workerId: cleanup!.workerId,
+            });
+            await creditedDocuments.recordDataVersionsDeleted({
+                context: operationContext(9),
+                deletedVersions: cleanup!.versions.filter(
+                    (version) => version.kind === 'data',
+                ),
+                fencingToken: cleanup!.fencingToken,
+                uploadId: cleanup!.uploadId,
+                workerId: cleanup!.workerId,
+            });
+            const [published] = await database
+                .select()
+                .from(actions)
+                .where(eq(actions.id, claim!.id));
+            expect(published).toMatchObject({
+                state: 'settled',
+                outcome: 'success',
+                chargedMilli: 36n,
+            });
+        },
+    );
 });

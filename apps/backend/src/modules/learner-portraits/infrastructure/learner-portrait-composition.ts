@@ -1,3 +1,4 @@
+import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
 import { eq } from 'drizzle-orm';
 import { learnerPortraitInterviewOperationsTable as operations } from './persistence/drizzle/schema';
 import type { PortraitTransaction } from './persistence/drizzle/drizzle-portrait-store';
@@ -37,13 +38,11 @@ async function recoverInterview(
 
 export function createLearnerPortraitModule(input: {
     database: PortraitDatabase;
-    creditsBypass: boolean;
     selectionPolicy?: TextAiAvailabilityPolicy;
 }) {
     const store = new DrizzleInterviewStore(
         input.database,
         createInterviewAdmission({
-            creditsBypass: input.creditsBypass,
             ...(input.selectionPolicy
                 ? { selectionPolicy: input.selectionPolicy }
                 : {}),
@@ -55,6 +54,12 @@ export function createLearnerPortraitModule(input: {
             new DrizzlePortraitStore(input.database),
         ),
         interviews: new InterviewService(store),
+        readChargingPolicy: () =>
+            input.database.transaction((tx) =>
+                new DrizzleCapabilityPolicyParticipant(tx).current(
+                    'portrait-interview',
+                ),
+            ),
         store,
     };
 }
@@ -90,6 +95,7 @@ export function createLearnerPortraitWorkerComposition(input: {
                         store.withOperation(operation, work),
                     ownerId: operation.ownerId,
                     operationId: operation.id,
+                    leaseToken: operation.leaseToken,
                     execution,
                 }),
                 maxInputTokens: readInterviewInputTokenLimit(execution),

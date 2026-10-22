@@ -1,4 +1,4 @@
-// @user-flow-revision texts sha256:911a4b49af2922ff
+// @user-flow-revision texts sha256:14f45057f0007c00
 import { randomUUID } from 'node:crypto';
 import {
     AuthenticationSuccessResponseSchema,
@@ -122,6 +122,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             loadProposal: loadTextTranslationProposal,
         });
         ai = createTextsAiComposition({
+            burstLimiter: { consume: async () => ({ allowed: true }) },
             database: d.database,
             enabled: true,
             fingerprintSecret: secret,

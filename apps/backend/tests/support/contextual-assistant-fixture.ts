@@ -1,3 +1,6 @@
+import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
+import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
+import { seedLegacyActionFixture } from './legacy-action-fixture';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { max } from 'drizzle-orm';
@@ -232,7 +235,11 @@ function deterministicModel(
                                 });
                                 controller.enqueue({
                                     type: 'finish',
-                                    finishReason: 'stop',
+                                    finishReason: question.includes(
+                                        'output limit fixture',
+                                    )
+                                        ? 'length'
+                                        : 'stop',
                                     usage: {
                                         inputTokens: 50,
                                         outputTokens: 30,
@@ -292,6 +299,7 @@ export async function createContextualAssistantFixture(
     }
     try {
         const d = authentication.productDependencies;
+        await seedLegacyActionFixture(d.database);
         const consumeRateLimit = d.rateLimiter.consume.bind(d.rateLimiter);
         // The one guarded browser server shares a loopback client address across
         // its six synthetic journeys (and the share recipient). Keep the real
@@ -335,6 +343,7 @@ export async function createContextualAssistantFixture(
                         database: d.database,
                         ownerId: turn.ownerId,
                         turnId: turn.id,
+                        leaseToken: turn.leaseToken,
                         execution,
                         withOperation: (work) =>
                             store.withOperation(turn, work),
@@ -373,7 +382,18 @@ export async function createContextualAssistantFixture(
                     ),
             },
         });
+        const learnerPortraits = createLearnerPortraitModule({
+            database: d.database,
+        });
         const app = createApp({
+            learnerPortraits: createLearnerPortraitRoutes({
+                portraits: learnerPortraits.portraits,
+                interviews: learnerPortraits.interviews,
+                readChargingPolicy: learnerPortraits.readChargingPolicy,
+                authenticate,
+                rateLimiter: d.rateLimiter,
+                policy: authentication.options.policy,
+            }),
             navigation: createNavigationRoutes({
                 service: createNavigationService({
                     database: d.database,

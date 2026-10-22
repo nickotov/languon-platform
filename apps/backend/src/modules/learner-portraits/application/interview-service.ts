@@ -13,6 +13,7 @@ import type {
 
 export function publicInterviewOperation(operation: InterviewOperation) {
     return {
+        ...(operation.billing ? { billing: operation.billing } : {}),
         id: operation.id,
         interviewId: operation.interviewId,
         state: operation.state,

@@ -1,6 +1,9 @@
+import { seedInterviewAccountingFixture } from './ai-accounting-fixture';
+import type { CapabilityPolicy } from '@languon/contracts';
+import { capabilityPolicyRevisionsTable } from '../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { max } from 'drizzle-orm';
+import { eq, max } from 'drizzle-orm';
 import {
     AuthenticationSuccessResponseSchema,
     SignUpResponseSchema,
@@ -99,18 +102,24 @@ function assertFixtureTarget() {
         );
     const database = new URL(getTestDatabaseUrl());
     const redis = new URL(process.env.AUTH_TEST_REDIS_URL ?? 'invalid:');
+    const namedTarget =
+        (database.port === '55481' &&
+            database.pathname === '/languon_auth_portrait_test' &&
+            redis.port === '56381') ||
+        (database.port === '55444' &&
+            database.pathname === '/languon_auth_assistant_web_test' &&
+            redis.port === '56444');
     if (
-        database.port !== '55481' ||
-        database.pathname !== '/languon_auth_portrait_test' ||
+        !namedTarget ||
         redis.protocol !== 'redis:' ||
         !['localhost', '127.0.0.1'].includes(redis.hostname) ||
-        redis.port !== '56381' ||
         redis.pathname !== '/1' ||
         process.env.ALLOW_DISPOSABLE_REDIS_TESTS !== 'true' ||
-        process.env.AUTH_TEST_REDIS_CONFIRM !== `${redis.hostname}:56381/1`
+        process.env.AUTH_TEST_REDIS_CONFIRM !==
+            `${redis.hostname}:${redis.port}/1`
     )
         throw new Error(
-            'Fixture requires its exclusive confirmed disposable PostgreSQL 55481 and Redis 56381/1.',
+            'Fixture requires the confirmed portrait55481/56381 or assistant55444/56444 named disposable target pair.',
         );
 }
 
@@ -278,7 +287,8 @@ function deterministicInterviewerModel(
             { id: 'conversation', label: 'Everyday conversation' },
         ],
         multiSelect: true,
-        answerSummary: 'Prefers French travel examples with Russian clarification.',
+        answerSummary:
+            'Prefers French travel examples with Russian clarification.',
         proposedItems: {
             languages: [
                 {
@@ -317,12 +327,12 @@ function deterministicInterviewerModel(
                     signal: options.abortSignal ?? undefined,
                 });
             return {
-                content: [{
-                    type: 'text' as const,
-                    text: mode === 'invalid'
-                        ? invalidResponse
-                        : response,
-                }],
+                content: [
+                    {
+                        type: 'text' as const,
+                        text: mode === 'invalid' ? invalidResponse : response,
+                    },
+                ],
                 finishReason: 'stop' as const,
                 usage: { inputTokens: 50, outputTokens: 30, totalTokens: 80 },
                 warnings: [],
@@ -336,7 +346,9 @@ function deterministicInterviewerModel(
 
 function admittedPortraitExecution(
     value: Record<string, unknown>,
-): TextAiAdmissionExecution & { interviewCreditsBypass: boolean } {
+): TextAiAdmissionExecution & {
+    chargingPolicy: CapabilityPolicy;
+} {
     const snapshot = value.snapshot;
     const budget = value.budget;
     if (
@@ -349,13 +361,13 @@ function admittedPortraitExecution(
             'number' ||
         !budget ||
         typeof budget !== 'object' ||
-        typeof value.interviewCreditsBypass !== 'boolean'
+        typeof value.chargingPolicy !== 'object'
     )
         throw new Error(
             'Portrait fixture operation lacks the admitted execution snapshot.',
         );
     return value as unknown as TextAiAdmissionExecution & {
-        interviewCreditsBypass: boolean;
+        chargingPolicy: CapabilityPolicy;
     };
 }
 
@@ -363,7 +375,7 @@ export async function createLearnerPortraitWebFixture(
     origin = 'http://localhost:3337',
 ) {
     assertFixtureTarget();
-    const creditsBypass = process.env.LEARNER_PORTRAIT_TEST_PAID !== 'true';
+    const operatorFunded = process.env.LEARNER_PORTRAIT_TEST_PAID !== 'true';
     const migration = createTestPostgresClient();
     // Never reset an existing schema; append project migrations to the exclusive target.
     try {
@@ -414,7 +426,7 @@ export async function createLearnerPortraitWebFixture(
                     ? { limit: Math.max(request.limit, 64) }
                     : request.scope === 'learner-portrait-address'
                       ? { limit: request.limit * 7 }
-                    : {}),
+                      : {}),
             });
         const authenticate = async (token: string) => {
             const claims = await d.accessTokens.verify(token);
@@ -448,6 +460,7 @@ export async function createLearnerPortraitWebFixture(
                         database: d.database,
                         ownerId: turn.ownerId,
                         turnId: turn.id,
+                        leaseToken: turn.leaseToken,
                         execution,
                         withOperation: (work) =>
                             store.withOperation(turn, work),
@@ -470,9 +483,26 @@ export async function createLearnerPortraitWebFixture(
                 };
             },
         });
+        await seedInterviewAccountingFixture(d.database);
+        const existingPolicies = await d.database
+            .select()
+            .from(capabilityPolicyRevisionsTable)
+            .where(
+                eq(
+                    capabilityPolicyRevisionsTable.capability,
+                    'portrait-interview',
+                ),
+            );
+        await d.database.insert(capabilityPolicyRevisionsTable).values({
+            id: randomUUID(),
+            capability: 'portrait-interview',
+            funding: operatorFunded ? 'operator' : 'customer',
+            version: Math.max(0, ...existingPolicies.map((p) => p.version)) + 1,
+            createdAt: new Date(),
+            reason: 'Deterministic interview browser fixture policy',
+        });
         const learnerPortraits = createLearnerPortraitModule({
             database: d.database,
-            creditsBypass,
             selectionPolicy: {
                 routingEnabled: true,
                 credentialConfigured: () => true,
@@ -482,10 +512,14 @@ export async function createLearnerPortraitWebFixture(
         const portraitWorker = new InterviewWorkerService({
             store: learnerPortraits.store,
             createRunner(operation) {
-                const execution = admittedPortraitExecution(operation.execution);
+                const execution = admittedPortraitExecution(
+                    operation.execution,
+                );
                 const snapshot = execution.snapshot;
                 if (!snapshot)
-                    throw new Error('Portrait fixture operation lacks a model snapshot.');
+                    throw new Error(
+                        'Portrait fixture operation lacks a model snapshot.',
+                    );
                 const submission = JSON.stringify(operation.input);
                 const mode = submission.includes('[portrait-invalid]')
                     ? 'invalid'
@@ -498,9 +532,13 @@ export async function createLearnerPortraitWebFixture(
                         database: d.database,
                         ownerId: operation.ownerId,
                         operationId: operation.id,
+                        leaseToken: operation.leaseToken,
                         execution,
                         withOperation: (work) =>
-                            learnerPortraits.store.withOperation(operation, work),
+                            learnerPortraits.store.withOperation(
+                                operation,
+                                work,
+                            ),
                     }),
                     maxInputTokens: readInterviewInputTokenLimit(execution),
                     maxOutputTokens: readInterviewOutputTokenLimit(execution),
@@ -536,10 +574,10 @@ export async function createLearnerPortraitWebFixture(
             learnerPortraits: createLearnerPortraitRoutes({
                 portraits: learnerPortraits.portraits,
                 interviews: learnerPortraits.interviews,
+                readChargingPolicy: learnerPortraits.readChargingPolicy,
                 authenticate,
                 rateLimiter: d.rateLimiter,
                 policy: authentication.options.policy,
-                creditsBypass,
             }),
             dictionaries: createDictionaryComposition({
                 ...d,
@@ -575,8 +613,10 @@ export async function createLearnerPortraitWebFixture(
             if (credited.has(userId)) return;
             // Only identities returned by real synthetic email verification can
             // select these bounded balances; ordinary fixture accounts keep20k.
-            const balance = /^portrait-balance-(100|15608)-\d+-\d+@example\.test$/u
-                .exec(verifiedEmail ?? '')?.[1];
+            const balance =
+                /^portrait-balance-(100|15608)-\d+-\d+@example\.test$/u.exec(
+                    verifiedEmail ?? '',
+                )?.[1];
             const amount = balance ? BigInt(balance) : 20_000n;
             await d.database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({

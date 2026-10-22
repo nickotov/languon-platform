@@ -8,6 +8,7 @@ import {
     foreignKey,
     index,
     integer,
+    numeric,
     jsonb,
     pgEnum,
     pgTable,
@@ -392,14 +393,17 @@ export const dictionaryGenerationJobsTable = pgTable(
         aiCreditAccounted: boolean('ai_credit_accounted')
             .default(false)
             .notNull(),
-        aiCreditInputCreditsPerMillionTokens: integer(
+        aiCreditInputCreditsPerMillionTokens: numeric(
             'ai_credit_input_credits_per_million_tokens',
+            { precision: 18, scale: 3, mode: 'number' },
         ),
-        aiCreditMaxCreditsPerAttempt: integer(
+        aiCreditMaxCreditsPerAttempt: bigint(
             'ai_credit_max_credits_per_attempt',
+            { mode: 'number' },
         ),
-        aiCreditOutputCreditsPerMillionTokens: integer(
+        aiCreditOutputCreditsPerMillionTokens: numeric(
             'ai_credit_output_credits_per_million_tokens',
+            { precision: 18, scale: 3, mode: 'number' },
         ),
         aiCreditPolicyMode: text('ai_credit_policy_mode'),
         aiCreditPricingRevision: integer('ai_credit_pricing_revision'),
@@ -580,7 +584,7 @@ export const dictionaryGenerationJobsTable = pgTable(
         ),
         check(
             'dictionary_generation_jobs_ai_credit_state',
-            sql`(${table.aiCreditAccounted} = false and ${table.aiCreditInputCreditsPerMillionTokens} is null and ${table.aiCreditMaxCreditsPerAttempt} is null and ${table.aiCreditOutputCreditsPerMillionTokens} is null and ${table.aiCreditPolicyMode} is null and ${table.aiCreditPricingRevision} is null and ${table.aiCreditProviderDispatchedAt} is null and ${table.aiCreditReservationId} is null) or (${table.aiCreditAccounted} = true and ${table.aiCreditInputCreditsPerMillionTokens} >= 0 and ${table.aiCreditMaxCreditsPerAttempt} > 0 and ${table.aiCreditOutputCreditsPerMillionTokens} >= 0 and ${table.aiCreditPricingRevision} = 1 and (${table.aiCreditPolicyMode} is null or ${table.aiCreditPolicyMode} in ('limited', 'unlimited')) and (${table.aiCreditProviderDispatchedAt} is null or ${table.aiCreditPolicyMode} is not null))`,
+            sql`(coalesce(${table.selectedExecutionSnapshot}->>'actionAccountingVersion', '') = '1' and ${table.aiCreditAccounted} = false and ${table.aiCreditReservationId} is null) or (${table.aiCreditAccounted} = false and ${table.aiCreditInputCreditsPerMillionTokens} is null and ${table.aiCreditMaxCreditsPerAttempt} is null and ${table.aiCreditOutputCreditsPerMillionTokens} is null and ${table.aiCreditPolicyMode} is null and ${table.aiCreditPricingRevision} is null and ${table.aiCreditProviderDispatchedAt} is null and ${table.aiCreditReservationId} is null) or (${table.aiCreditAccounted} = true and ${table.aiCreditInputCreditsPerMillionTokens} >= 0 and ${table.aiCreditMaxCreditsPerAttempt} > 0 and ${table.aiCreditOutputCreditsPerMillionTokens} >= 0 and ${table.aiCreditPricingRevision} = 1 and (${table.aiCreditPolicyMode} is null or ${table.aiCreditPolicyMode} in ('limited', 'unlimited')) and (${table.aiCreditProviderDispatchedAt} is null or ${table.aiCreditPolicyMode} is not null))`,
         ),
         check(
             'dictionary_generation_jobs_language_pair',

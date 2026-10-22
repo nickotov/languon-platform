@@ -43,6 +43,8 @@ import {
     dictionarySettingsTable,
 } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { usersTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
+import { accountDeletionRequestsTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
+import { DrizzleAccountPurgeStore } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
 import { DictionaryCardCapacityError } from '../../../../../src/modules/dictionaries/domain/ordering';
 import {
     createTestPostgresClient,
@@ -74,6 +76,7 @@ run('DrizzleDictionaryStore', () => {
     // A separate bounded setup budget prevents timeout callbacks from overlapping
     // the next test's fixtures; all behavioral assertions stay intact.
     beforeEach(async () => {
+        await database.delete(accountDeletionRequestsTable);
         await database.delete(dictionaryDocumentUploadsTable);
         await database.delete(dictionaryGenerationProposalsTable);
         await database.delete(dictionaryCardRevisionsTable);
@@ -98,6 +101,34 @@ run('DrizzleDictionaryStore', () => {
     }, 120_000);
 
     afterAll(async () => client.end(), 120_000);
+
+    async function purgeOwnerForDeletion(targetOwnerId: string) {
+        const at = new Date();
+        const workerId = 'dictionary-repository-purge-fixture';
+        await database
+            .update(usersTable)
+            .set({ status: 'deletion_pending', updatedAt: at })
+            .where(eq(usersTable.id, targetOwnerId));
+        await database.insert(accountDeletionRequestsTable).values({
+            userId: targetOwnerId,
+            scheduledAt: new Date(at.getTime() - 120_000),
+            purgeAt: new Date(at.getTime() - 60_000),
+            nextAttemptAt: new Date(at.getTime() - 60_000),
+            updatedAt: at,
+        });
+        const claim = await new DrizzleAccountPurgeStore(database).claimDue({
+            now: at,
+            workerId,
+        });
+        if (!claim || claim.userId !== targetOwnerId)
+            throw new Error('Expected an actively leased deletion claim.');
+        await database.transaction((tx) =>
+            new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
+                targetOwnerId,
+                { workerId, fencingToken: claim.fencingToken },
+            ),
+        );
+    }
 
     async function createDictionary(
         idempotencyKey = `dictionary-create-${randomUUID()}`,
@@ -942,9 +973,7 @@ run('DrizzleDictionaryStore', () => {
                 request,
             }),
         ).rejects.toBeInstanceOf(DictionaryIdempotencyConflictError);
-        await database.transaction((tx) =>
-            new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(ownerId),
-        );
+        await purgeOwnerForDeletion(ownerId);
     });
 
     it('waits for generation admission before row locks', async () => {

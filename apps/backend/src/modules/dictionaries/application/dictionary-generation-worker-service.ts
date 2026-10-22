@@ -127,10 +127,42 @@ function parseCardAuthoringGeneratorResponse(
     };
 }
 
+type MeteredUsage = {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+};
+function sumUsage(
+    previous: MeteredUsage | undefined,
+    next: MeteredUsage,
+): MeteredUsage {
+    if (!previous) return next;
+    return {
+        inputTokens: previous.inputTokens + next.inputTokens,
+        outputTokens: previous.outputTokens + next.outputTokens,
+        ...(previous.cacheReadTokens === undefined ||
+        next.cacheReadTokens === undefined
+            ? {}
+            : {
+                  cacheReadTokens:
+                      previous.cacheReadTokens + next.cacheReadTokens,
+              }),
+        ...(previous.cacheWriteTokens === undefined ||
+        next.cacheWriteTokens === undefined
+            ? {}
+            : {
+                  cacheWriteTokens:
+                      previous.cacheWriteTokens + next.cacheWriteTokens,
+              }),
+    };
+}
+
 async function generatePastedTermsProposal(input: {
     claim: Awaited<ReturnType<DictionaryGenerationStore['claim']>> & {};
     provider: PastedTermsProposalGenerator;
     signal: AbortSignal;
+    onUsage?(usage: MeteredUsage): void;
 }) {
     const claimedInput = input.claim.input;
     if (!hasFormat(claimedInput, dictionaryPastedTermsGenerationFormats)) {
@@ -153,6 +185,7 @@ async function generatePastedTermsProposal(input: {
     const failures: ReturnType<
         typeof parseDictionaryBatchGenerationProposal
     >['failures'] = [];
+    let totalUsage: MeteredUsage | undefined;
     let inputTokens = 0;
     let outputTokens = 0;
     let costMicros = 0;
@@ -165,24 +198,34 @@ async function generatePastedTermsProposal(input: {
             input.claim.providerBudget.maxOutputTokensPerAttempt - outputTokens;
         const remainingCostMicros =
             input.claim.providerBudget.maxCostMicrosPerAttempt - costMicros;
+        const providerBudget = {
+            ...input.claim.providerBudget,
+            maxCostMicrosPerAttempt: Math.floor(
+                remainingCostMicros / remainingChunks,
+            ),
+            maxInputTokensPerAttempt: Math.floor(
+                remainingInputTokens / remainingChunks,
+            ),
+            maxOutputTokensPerAttempt: Math.floor(
+                remainingOutputTokens / remainingChunks,
+            ),
+        };
         const response = await input.provider.generate({
             idempotencyKey: `${input.claim.id}/generate/chunk/${chunkIndex + 1}-of-${chunks.length}`,
             input: { ...claimedInput, rows },
-            providerBudget: {
-                ...input.claim.providerBudget,
-                maxCostMicrosPerAttempt: Math.floor(
-                    remainingCostMicros / remainingChunks,
-                ),
-                maxInputTokensPerAttempt: Math.floor(
-                    remainingInputTokens / remainingChunks,
-                ),
-                maxOutputTokensPerAttempt: Math.floor(
-                    remainingOutputTokens / remainingChunks,
-                ),
-            },
-            providerExecution: input.claim.providerExecution ?? null,
+            providerBudget,
+            providerExecution:
+                input.claim.providerExecution &&
+                'actionAccountingVersion' in input.claim.providerExecution
+                    ? {
+                          ...input.claim.providerExecution,
+                          aggregateBudget: providerBudget,
+                      }
+                    : (input.claim.providerExecution ?? null),
             signal: input.signal,
         });
+        totalUsage = sumUsage(totalUsage, response.usage);
+        input.onUsage?.(totalUsage);
         inputTokens += response.usage.inputTokens;
         outputTokens += response.usage.outputTokens;
         costMicros += dictionaryGenerationProviderUsageCostMicros(
@@ -211,7 +254,7 @@ async function generatePastedTermsProposal(input: {
             ),
             warnings: [],
         }),
-        usage: { inputTokens, outputTokens },
+        usage: totalUsage ?? { inputTokens, outputTokens },
     };
 }
 
@@ -219,6 +262,7 @@ async function generateImportPairsProposal(input: {
     claim: Awaited<ReturnType<DictionaryGenerationStore['claim']>> & {};
     provider: ImportPairsProposalGenerator;
     signal: AbortSignal;
+    onUsage?(usage: MeteredUsage): void;
 }) {
     const claimedInput = input.claim.input;
     if (!hasFormat(claimedInput, dictionaryImportPairsGenerationFormats))
@@ -253,35 +297,46 @@ async function generateImportPairsProposal(input: {
     const warnings: Awaited<
         ReturnType<ImportPairsProposalGenerator['generate']>
     >['proposal']['warnings'] = [];
+    let totalUsage: MeteredUsage | undefined;
     let inputTokens = 0;
     let outputTokens = 0;
     let costMicros = 0;
     for (const [chunkIndex, rows] of chunks.entries()) {
         const remainingChunks = chunks.length - chunkIndex;
+        const providerBudget = {
+            ...input.claim.providerBudget,
+            maxCostMicrosPerAttempt: Math.floor(
+                (input.claim.providerBudget.maxCostMicrosPerAttempt -
+                    costMicros) /
+                    remainingChunks,
+            ),
+            maxInputTokensPerAttempt: Math.floor(
+                (input.claim.providerBudget.maxInputTokensPerAttempt -
+                    inputTokens) /
+                    remainingChunks,
+            ),
+            maxOutputTokensPerAttempt: Math.floor(
+                (input.claim.providerBudget.maxOutputTokensPerAttempt -
+                    outputTokens) /
+                    remainingChunks,
+            ),
+        };
         const response = await input.provider.generate({
             idempotencyKey: `${input.claim.id}/generate/import-chunk/${chunkIndex + 1}-of-${chunks.length}`,
             input: { ...claimedInput, rows },
-            providerBudget: {
-                ...input.claim.providerBudget,
-                maxCostMicrosPerAttempt: Math.floor(
-                    (input.claim.providerBudget.maxCostMicrosPerAttempt -
-                        costMicros) /
-                        remainingChunks,
-                ),
-                maxInputTokensPerAttempt: Math.floor(
-                    (input.claim.providerBudget.maxInputTokensPerAttempt -
-                        inputTokens) /
-                        remainingChunks,
-                ),
-                maxOutputTokensPerAttempt: Math.floor(
-                    (input.claim.providerBudget.maxOutputTokensPerAttempt -
-                        outputTokens) /
-                        remainingChunks,
-                ),
-            },
-            providerExecution: input.claim.providerExecution ?? null,
+            providerBudget,
+            providerExecution:
+                input.claim.providerExecution &&
+                'actionAccountingVersion' in input.claim.providerExecution
+                    ? {
+                          ...input.claim.providerExecution,
+                          aggregateBudget: providerBudget,
+                      }
+                    : (input.claim.providerExecution ?? null),
             signal: input.signal,
         });
+        totalUsage = sumUsage(totalUsage, response.usage);
+        input.onUsage?.(totalUsage);
         inputTokens += response.usage.inputTokens;
         outputTokens += response.usage.outputTokens;
         costMicros += dictionaryGenerationProviderUsageCostMicros(
@@ -311,7 +366,7 @@ async function generateImportPairsProposal(input: {
                 (left, right) => left.rowIndex - right.rowIndex,
             ),
         }),
-        usage: { inputTokens, outputTokens },
+        usage: totalUsage ?? { inputTokens, outputTokens },
     };
 }
 
@@ -467,8 +522,7 @@ export class DictionaryGenerationWorkerService {
         let timeout: ReturnType<typeof setTimeout> | undefined;
         let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
         let resolveHeartbeatWait: (() => void) | undefined;
-        let returnedProviderUsage:
-            { inputTokens: number; outputTokens: number } | undefined;
+        let returnedProviderUsage: MeteredUsage | undefined;
         let currentProgress: {
             percent: number;
             stage:
@@ -616,6 +670,9 @@ export class DictionaryGenerationWorkerService {
                                 provider:
                                     this.dependencies.importPairsProvider!,
                                 signal: providerAbort.signal,
+                                onUsage: (usage) => {
+                                    returnedProviderUsage = usage;
+                                },
                             }),
                         )
                       : Promise.reject(
@@ -634,6 +691,9 @@ export class DictionaryGenerationWorkerService {
                                   provider:
                                       this.dependencies.pastedTermsProvider!,
                                   signal: providerAbort.signal,
+                                  onUsage: (usage) => {
+                                      returnedProviderUsage = usage;
+                                  },
                               }),
                           )
                         : Promise.reject(
@@ -843,6 +903,18 @@ export class DictionaryGenerationWorkerService {
             }
             const completionConflict =
                 error instanceof DictionaryGenerationCompletionConflictError;
+            if (
+                (error instanceof CardProposalGeneratorError ||
+                    error instanceof CardAuthoringProposalGeneratorError ||
+                    error instanceof DictionaryDocumentGenerationError) &&
+                error.usage
+            )
+                returnedProviderUsage = hasFormat(claim.input, [
+                    ...dictionaryPastedTermsGenerationFormats,
+                    ...dictionaryImportPairsGenerationFormats,
+                ])
+                    ? sumUsage(returnedProviderUsage, error.usage)
+                    : error.usage;
             const category = completionConflict
                 ? 'generation_conflict'
                 : error instanceof CardProposalGeneratorError

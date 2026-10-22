@@ -1,5 +1,10 @@
 'use client';
 
+import {
+    ActionConsentCancelledError,
+    useActionConsent,
+} from '@/fsd/entities/ai-action';
+import type { ActionBilling } from '@languon/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
     PortraitInterviewCompletedOperation,
@@ -36,6 +41,19 @@ export function usePortraitInterview() {
         ownerId: user?.id ?? null,
         requestWithSession,
     });
+    const actionConsent = useActionConsent();
+    const [billingProjection, setBillingProjection] = useState<{
+        billing: ActionBilling | undefined;
+        execution: string | undefined;
+    }>({ billing: undefined, execution: undefined });
+    const observeBilling = useCallback(
+        (operation: { billing?: ActionBilling | undefined; state: string }) =>
+            setBillingProjection({
+                billing: operation.billing,
+                execution: operation.state,
+            }),
+        [],
+    );
     const [session, setSession] =
         useState<StartPortraitInterviewResponse | null>(null);
     const [busy, setBusy] = useState(false);
@@ -60,12 +78,14 @@ export function usePortraitInterview() {
 
     useEffect(() => {
         pending.current = null;
+        actionConsent.cancel();
+        setBillingProjection({ billing: undefined, execution: undefined });
         paidAcknowledged.current = false;
         setNotice(false);
         setOperationId(null);
         setBusy(false);
         setProposal(null);
-    }, [user?.id]);
+    }, [user?.id, actionConsent.cancel]);
 
     const load = useCallback(async () => {
         const ownerId = user?.id ?? null;
@@ -100,6 +120,9 @@ export function usePortraitInterview() {
         setMissing(false);
         setSessionOwner(user?.id ?? null);
         setSession(next);
+        const projection =
+            next.activeOperation ?? next.latestCompletedOperation;
+        if (projection) observeBilling(projection);
         setProposal(next.latestCompletedOperation ?? null);
         const cancelling = next.activeOperation?.state === 'cancelled';
         setOperationId(cancelling ? null : (next.activeOperation?.id ?? null));
@@ -109,7 +132,7 @@ export function usePortraitInterview() {
                 ? 'Stopped. Cleanup is finishing. Reconnect before sending again.'
                 : null,
         );
-    }, [locale, queryClient, requestWithSession, user]);
+    }, [locale, queryClient, requestWithSession, user, observeBilling]);
 
     useEffect(() => {
         if (!user) return;
@@ -133,6 +156,7 @@ export function usePortraitInterview() {
         load,
         onOperation: setOperationId,
         onBusy: setBusy,
+        onProjection: observeBilling,
         onError: setError,
     });
 
@@ -159,17 +183,22 @@ export function usePortraitInterview() {
         setError(null);
         try {
             const current = await request((token) => portraitApi.read(token));
-            const operation = await request((token) =>
-                portraitApi.submitInterview(token, {
-                    interviewId: session.interviewId,
-                    expectedVersion: current.version,
-                    expectedGeneration: current.generation,
-                    idempotencyKey: staged.key,
-                    input: staged.input,
-                    paidAcknowledged: acknowledged || paidAcknowledged.current,
-                }),
+            const operation = await actionConsent.run((confirmedQuoteId) =>
+                request((token) =>
+                    portraitApi.submitInterview(token, {
+                        ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                        interviewId: session.interviewId,
+                        expectedVersion: current.version,
+                        expectedGeneration: current.generation,
+                        idempotencyKey: staged.key,
+                        input: staged.input,
+                        paidAcknowledged:
+                            acknowledged || paidAcknowledged.current,
+                    }),
+                ),
             );
             if (!alive.current || !isInterviewOwner(sessionOwner)) return false;
+            observeBilling(operation);
             if (acknowledged) paidAcknowledged.current = true;
             pending.current = null;
             setNotice(false);
@@ -178,6 +207,10 @@ export function usePortraitInterview() {
         } catch (cause) {
             if (!alive.current || !isInterviewOwner(sessionOwner)) return false;
             setBusy(false);
+            if (cause instanceof ActionConsentCancelledError) {
+                setError(null);
+                return false;
+            }
             const code = (cause as { code?: string }).code;
             if (code === 'billing_notice_required') {
                 setSession((previous) =>
@@ -250,6 +283,9 @@ export function usePortraitInterview() {
         setProposal(null);
     }
     return {
+        actionConsent,
+        billingProjection,
+        requestWithSession,
         session: sessionOwner === user?.id ? session : null,
         missing,
         state,

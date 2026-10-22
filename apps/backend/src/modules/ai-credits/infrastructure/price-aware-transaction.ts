@@ -1,3 +1,4 @@
+import { withActionQuotePersistence } from './action-allowance-consent';
 import { sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from '@languon/database';
 import type { databaseSchema } from '../../../infrastructure/database/schema';
@@ -10,10 +11,12 @@ export function modelPricingTransaction<T>(
     database: Database,
     operation: (transaction: Transaction) => Promise<T>,
 ) {
-    return database.transaction(async (transaction) => {
-        await transaction.execute(
-            sql`select set_config('languon.model_pricing_revision', '1', true)`,
-        );
-        return operation(transaction);
-    });
+    return withActionQuotePersistence(database, () =>
+        database.transaction(async (transaction) => {
+            await transaction.execute(
+                sql`select set_config('languon.model_pricing_revision', '1', true)`,
+            );
+            return operation(transaction);
+        }),
+    );
 }

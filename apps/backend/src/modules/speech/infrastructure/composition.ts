@@ -13,6 +13,7 @@ import { SpeechService } from '../application/speech-service';
 import { SpeechWorker } from '../application/speech-worker';
 import { DrizzleSpeechSourceResolver } from './source-resolver';
 import { DrizzleSpeechStore } from './drizzle-speech-store';
+import type { GenerationBurstLimiter } from '../../text-ai/application/generation-burst-limiter';
 
 export function createSpeechInfrastructure(input: {
     database: PostgresJsDatabase<typeof databaseSchema>;
@@ -23,6 +24,7 @@ export function createSpeechInfrastructure(input: {
     providers: ReadonlyMap<string, SpeechSynthesisProvider>;
     playbackEnabled: boolean;
     generationEnabled: boolean;
+    burstLimiter: GenerationBurstLimiter;
 }) {
     const resolver = new DrizzleSpeechSourceResolver(
         input.database,
@@ -55,7 +57,12 @@ export function createSpeechInfrastructure(input: {
     return {
         store,
         resolver,
-        service: new SpeechService({ store, resolver, storage: input.storage }),
+        service: new SpeechService({
+            store,
+            resolver,
+            storage: input.storage,
+            burstLimiter: input.burstLimiter,
+        }),
         worker: new SpeechWorker({
             store,
             providers: input.providers,

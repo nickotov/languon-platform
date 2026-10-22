@@ -5,6 +5,7 @@ title: 'Model price revisions and speech settlement'
 status: accepted
 date: 2026-10-13
 supersedes: 'ADR-0022 non-editable catalog tariff and cost-incurred settlement only for speech; ADR-0027 closed job-kind set extended with speech'
+superseded_in_part_by: 'ADR-0045 action accounting, exact fractional units, provider expenses and capability funding policies'
 ---
 
 # ADR-0032: Model price revisions and speech settlement

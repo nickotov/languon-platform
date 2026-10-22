@@ -187,6 +187,7 @@ export function useCollect(props: TextReadingProps) {
         pendingMarks: jobs.tasks
             .filter((task) => task.state === 'adding')
             .map((task) => task.selection),
+        actionConsent: jobs.actionConsent,
         tasks: jobs.tasks,
         dismissTask: jobs.dismiss,
         cancelTask: jobs.cancel,

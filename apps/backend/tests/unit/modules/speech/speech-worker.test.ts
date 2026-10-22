@@ -97,6 +97,20 @@ describe('shared speech worker recovery', () => {
         );
         expect(h.provider.submit).toHaveBeenCalledOnce();
     });
+    it('identifies a known unsubmitted provider operation for zero expense', async () => {
+        const h = harness();
+        vi.mocked(h.provider.submit).mockRejectedValue(
+            new SpeechSubmissionError('not_submitted', false),
+        );
+        await h.worker.runOnce();
+        expect(h.store.fail).toHaveBeenCalledExactlyOnceWith(
+            h.job,
+            'failure',
+            expect.any(Date),
+            undefined,
+            true,
+        );
+    });
     it('never republishes from a stale lease', async () => {
         const h = harness();
         vi.mocked(h.store.storing).mockResolvedValue(false);

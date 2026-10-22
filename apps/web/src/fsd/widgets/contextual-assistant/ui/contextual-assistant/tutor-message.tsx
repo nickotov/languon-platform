@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Check, Copy, NotebookPen, ChevronUp } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type {
     ConversationEditorTarget,
     ConversationTurn,
@@ -10,12 +9,10 @@ import {
     type ConversationUIMessage,
 } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import {
-    Button,
-    Popover,
-    PopoverTrigger,
-    PopoverContent,
-} from '@/fsd/shared/ui';
+import { Button } from '@/fsd/shared/ui';
+import { TurnUsage } from './turn-usage';
+import { ResponseLimitNotice } from './response-limit-notice';
+import { ResponseActions } from './response-actions';
 import { messagesCopy } from '../../lib/messages-copy';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { ChatMarkdown } from './chat-markdown';
@@ -39,6 +36,7 @@ export function TutorMessage({
     hasAssistant,
     question,
     onRetry,
+    onContinue,
     onPropose,
     onAcceptWorkspaceProposal,
     workspaceTargetId,
@@ -56,6 +54,7 @@ export function TutorMessage({
     hasAssistant: boolean;
     question: string;
     onRetry(turn: ConversationTurn): void;
+    onContinue?: (() => void) | undefined;
     onPropose(message?: ConversationUIMessage): void;
     workspaceTargetId?: string | undefined;
     workspaceAnchor?: ConversationEditorTarget | undefined;
@@ -80,8 +79,6 @@ export function TutorMessage({
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     const labels = messagesCopy(locale);
-    const [copied, setCopied] = useState(false);
-    const [copyError, setCopyError] = useState(false);
     const canonical = message.metadata;
     const streaming = Boolean(
         active &&
@@ -116,25 +113,19 @@ export function TutorMessage({
     const incomplete = !isUser && failed;
     const failedBeforeAnswer = isUser && failed && !hasAssistant;
     const showUsage = Boolean(
-        turn && (complete || incomplete || failedBeforeAnswer),
+        turn &&
+        (complete ||
+            incomplete ||
+            failedBeforeAnswer ||
+            (!isUser && turn.billing !== undefined)),
     );
     const failureLabel = `${copy.incomplete}: ${question}`;
-    async function copyAnswer() {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setCopyError(false);
-        } catch {
-            setCopyError(true);
-        }
-    }
     function propose() {
         onPropose(message);
     }
     function retry() {
         if (turn) onRetry(turn);
     }
-    const copyLabel = copied ? labels.copied : labels.copy;
     return (
         <article className={styles.message}>
             {changed && <div className={styles.divider}>{copy.changed}</div>}
@@ -220,6 +211,12 @@ export function TutorMessage({
                         )}
                     </section>
                 )}
+                {complete && turn?.outputLimitReached && onContinue && (
+                    <ResponseLimitNotice
+                        onContinue={onContinue}
+                        disabled={active}
+                    />
+                )}
                 {complete && onAcceptWorkspaceProposal && (
                     <WorkspaceProposal
                         content={text}
@@ -238,79 +235,15 @@ export function TutorMessage({
                 {(complete || showUsage) && (
                     <div className={styles.actions}>
                         {complete && (
-                            <>
-                                <button
-                                    type='button'
-                                    className={styles.quiet}
-                                    onClick={copyAnswer}
-                                >
-                                    {copied ? (
-                                        <Check size={14} aria-hidden='true' />
-                                    ) : (
-                                        <Copy size={14} aria-hidden='true' />
-                                    )}
-                                    {copyLabel}
-                                </button>
-                                {!onAcceptWorkspaceProposal && (
-                                    <button
-                                        type='button'
-                                        className={styles.quiet}
-                                        onClick={propose}
-                                        disabled={active}
-                                    >
-                                        <NotebookPen
-                                            size={14}
-                                            aria-hidden='true'
-                                        />
-                                        {copy.propose}
-                                    </button>
-                                )}
-                            </>
+                            <ResponseActions
+                                text={text}
+                                onPropose={propose}
+                                canPropose={!onAcceptWorkspaceProposal}
+                                disabled={active}
+                            />
                         )}
-                        {showUsage && turn && (
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <button
-                                        type='button'
-                                        className={styles.quiet}
-                                    >
-                                        <ChevronUp
-                                            size={14}
-                                            aria-hidden='true'
-                                        />
-                                        {copy.chargedCredits}:{' '}
-                                        {turn.usage.chargedCredits}
-                                    </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                    side='top'
-                                    align='end'
-                                    aria-label={copy.usage}
-                                    className={styles.usagePopover}
-                                >
-                                    <dl className={styles.usageDetails}>
-                                        <dt>{copy.model}</dt>
-                                        <dd>{turn.modelId}</dd>
-                                        <dt>{copy.inputTokens}</dt>
-                                        <dd>{turn.usage.inputTokens}</dd>
-                                        <dt>{copy.outputTokens}</dt>
-                                        <dd>{turn.usage.outputTokens}</dd>
-                                        <dt>{copy.usage}</dt>
-                                        <dd>
-                                            {turn.usage.estimated
-                                                ? copy.estimated
-                                                : copy.reported}
-                                        </dd>
-                                    </dl>
-                                </PopoverContent>
-                            </Popover>
-                        )}
+                        {showUsage && turn && <TurnUsage turn={turn} />}
                     </div>
-                )}
-                {copyError && (
-                    <p role='status' className={styles.notice}>
-                        {labels.copyFailed}
-                    </p>
                 )}
             </div>
         </article>

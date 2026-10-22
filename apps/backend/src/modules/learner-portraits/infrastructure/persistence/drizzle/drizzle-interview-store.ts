@@ -1,5 +1,11 @@
+import { withActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
+import { withActionQuotePersistence } from '../../../../ai-credits/infrastructure/action-allowance-consent';
+import { settleInterviewAction } from '../../interview-action-accounting';
 import { recoverExpiredPortraitOperations } from './portrait-deletion-participant';
-import { PortraitInterviewResourceLimitError } from '../../../application/ports/interview-store';
+import {
+    PortraitInterviewResourceLimitError,
+    PortraitInterviewDailyQuotaError,
+} from '../../../application/ports/interview-store';
 import {
     defaultTextAiProviderBudgetPolicy,
     type TextAiProviderBudgetPolicy,
@@ -25,6 +31,7 @@ import {
 import {
     learnerPortraitInterviewOperationsTable as operations,
     learnerPortraitInterviewsTable as interviews,
+    portraitInterviewDailyAdmissionsTable as dailyAdmissions,
 } from './schema';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import {
@@ -70,6 +77,7 @@ export type InterviewAdmission = (
     operation: InterviewOperation,
     paidAcknowledged: boolean,
     now: Date,
+    request?: { requestKey: string; fingerprint: string },
 ) => Promise<Record<string, unknown>>;
 export class DrizzleInterviewStore implements InterviewStore {
     constructor(
@@ -320,119 +328,154 @@ export class DrizzleInterviewStore implements InterviewStore {
         });
     }
     enqueue(input: Parameters<InterviewStore['enqueue']>[0]) {
-        return this.database.transaction(async (tx) => {
-            await lockTextAiCapacity(tx);
-            await lockPortraitOwner(tx, input.ownerId);
-            await expireOwner(tx, input.ownerId, input.now);
-            const fingerprint = createHash('sha256')
-                .update(
-                    JSON.stringify({
-                        interviewId: input.interviewId,
-                        input: input.input,
-                    }),
+        return withActionQuotePersistence(this.database, () =>
+            this.database.transaction(async (tx) => {
+                await lockTextAiCapacity(tx);
+                await lockPortraitOwner(tx, input.ownerId);
+                await expireOwner(tx, input.ownerId, input.now);
+                const fingerprint = createHash('sha256')
+                    .update(
+                        JSON.stringify({
+                            interviewId: input.interviewId,
+                            input: input.input,
+                        }),
+                    )
+                    .digest('hex');
+                const [replay] = await tx
+                    .select()
+                    .from(operations)
+                    .where(
+                        and(
+                            eq(operations.ownerId, input.ownerId),
+                            eq(operations.idempotencyKey, input.idempotencyKey),
+                        ),
+                    );
+                if (replay) {
+                    if (replay.fingerprint !== fingerprint)
+                        throw new PortraitConflictError();
+                    return withActionBilling(
+                        tx,
+                        operation(replay),
+                        replay.id,
+                        replay.ownerId,
+                    );
+                }
+                const state = await readPortraitState(tx, input.ownerId);
+                if (
+                    state.version !== input.expectedVersion ||
+                    state.generation !== input.expectedGeneration
                 )
-                .digest('hex');
-            const [replay] = await tx
-                .select()
-                .from(operations)
-                .where(
-                    and(
-                        eq(operations.ownerId, input.ownerId),
-                        eq(operations.idempotencyKey, input.idempotencyKey),
-                    ),
-                );
-            if (replay) {
-                if (replay.fingerprint !== fingerprint)
                     throw new PortraitConflictError();
-                return operation(replay);
-            }
-            const state = await readPortraitState(tx, input.ownerId);
-            if (
-                state.version !== input.expectedVersion ||
-                state.generation !== input.expectedGeneration
-            )
-                throw new PortraitConflictError();
-            const [interview] = await tx
-                .select()
-                .from(interviews)
-                .where(
-                    and(
-                        eq(interviews.ownerId, input.ownerId),
-                        eq(interviews.id, input.interviewId),
-                    ),
-                );
-            if (!interview) throw new PortraitDraftUnavailableError();
-            const [active] = await tx
-                .select({ id: operations.id })
-                .from(operations)
-                .where(
-                    and(
-                        eq(operations.ownerId, input.ownerId),
-                        inArray(operations.state, ['queued', 'running']),
-                    ),
-                );
-            if (active) throw new PortraitConflictError();
-            if (interview.context.messages.length >= 40)
-                throw new PortraitInterviewResourceLimitError(
-                    'Interview context limit reached; review the portrait or begin a new interview.',
-                );
-            const context = {
-                ...interview.context,
-                locale: input.input.requestedLocale ?? interview.context.locale,
-                approvedItems: state.approved?.items ?? null,
-                draftItems: state.draft?.items ?? null,
-            };
-            const initial: InterviewOperation = {
-                id: input.id,
-                interviewId: input.interviewId,
-                ownerId: input.ownerId,
-                generation: state.generation,
-                version: state.version,
-                state: 'queued',
-                input: input.input,
-                context,
-                execution: {},
-                result: null,
-                errorCode: null,
-            };
-            await tx.insert(operations).values({
-                ...initial,
-                idempotencyKey: input.idempotencyKey,
-                fingerprint,
-                createdAt: input.now,
-                updatedAt: input.now,
-            });
-            validateContext(context);
-            const execution = await this.admission(
-                tx,
-                initial,
-                input.paidAcknowledged,
-                input.now,
-            );
-            await tx
-                .update(operations)
-                .set({ execution })
-                .where(eq(operations.id, input.id));
-            const expiresAt = new Date(input.now.getTime() + ttl);
-            await tx
-                .update(interviews)
-                .set({ context, expiresAt, updatedAt: input.now })
-                .where(eq(interviews.id, interview.id));
-            if (state.draft)
-                await savePortraitState(
+                const [interview] = await tx
+                    .select()
+                    .from(interviews)
+                    .where(
+                        and(
+                            eq(interviews.ownerId, input.ownerId),
+                            eq(interviews.id, input.interviewId),
+                        ),
+                    );
+                if (!interview) throw new PortraitDraftUnavailableError();
+                const [active] = await tx
+                    .select({ id: operations.id })
+                    .from(operations)
+                    .where(
+                        and(
+                            eq(operations.ownerId, input.ownerId),
+                            inArray(operations.state, ['queued', 'running']),
+                        ),
+                    );
+                if (active) throw new PortraitConflictError();
+                if (interview.context.messages.length >= 40)
+                    throw new PortraitInterviewResourceLimitError(
+                        'Interview context limit reached; review the portrait or begin a new interview.',
+                    );
+                const context = {
+                    ...interview.context,
+                    locale:
+                        input.input.requestedLocale ?? interview.context.locale,
+                    approvedItems: state.approved?.items ?? null,
+                    draftItems: state.draft?.items ?? null,
+                };
+                const initial: InterviewOperation = {
+                    id: input.id,
+                    interviewId: input.interviewId,
+                    ownerId: input.ownerId,
+                    generation: state.generation,
+                    version: state.version,
+                    state: 'queued',
+                    input: input.input,
+                    context,
+                    execution: {},
+                    result: null,
+                    errorCode: null,
+                };
+                await tx.insert(operations).values({
+                    ...initial,
+                    idempotencyKey: input.idempotencyKey,
+                    fingerprint,
+                    createdAt: input.now,
+                    updatedAt: input.now,
+                });
+                validateContext(context);
+                const execution = await this.admission(
                     tx,
-                    input.ownerId,
-                    {
-                        ...state,
-                        draft: {
-                            ...state.draft,
-                            expiresAt: expiresAt.toISOString(),
-                        },
-                    },
+                    initial,
+                    input.paidAcknowledged,
                     input.now,
+                    { requestKey: input.idempotencyKey, fingerprint },
                 );
-            return { ...initial, execution };
-        });
+                await tx
+                    .update(operations)
+                    .set({ execution })
+                    .where(eq(operations.id, input.id));
+                // Same transaction as admission. Replay returns above; rollback does not consume quota.
+                const [quota] = await tx
+                    .insert(dailyAdmissions)
+                    .values({
+                        ownerId: input.ownerId,
+                        utcDay: input.now.toISOString().slice(0, 10),
+                        admitted: 1,
+                    })
+                    .onConflictDoUpdate({
+                        target: [
+                            dailyAdmissions.ownerId,
+                            dailyAdmissions.utcDay,
+                        ],
+                        set: { admitted: sql`${dailyAdmissions.admitted} + 1` },
+                        setWhere: sql`${dailyAdmissions.admitted} < 30`,
+                    })
+                    .returning({ admitted: dailyAdmissions.admitted });
+                if (!quota)
+                    throw new PortraitInterviewDailyQuotaError(
+                        'Daily interview limit reached. Try again tomorrow (UTC).',
+                    );
+                const expiresAt = new Date(input.now.getTime() + ttl);
+                await tx
+                    .update(interviews)
+                    .set({ context, expiresAt, updatedAt: input.now })
+                    .where(eq(interviews.id, interview.id));
+                if (state.draft)
+                    await savePortraitState(
+                        tx,
+                        input.ownerId,
+                        {
+                            ...state,
+                            draft: {
+                                ...state.draft,
+                                expiresAt: expiresAt.toISOString(),
+                            },
+                        },
+                        input.now,
+                    );
+                return withActionBilling(
+                    tx,
+                    { ...initial, execution },
+                    initial.id,
+                    initial.ownerId,
+                );
+            }),
+        );
     }
     async read(ownerId: string, id: string) {
         return this.database.transaction(async (tx) => {
@@ -454,9 +497,14 @@ export class DrizzleInterviewStore implements InterviewStore {
                     ),
                 );
             if (!row || !session) return null;
-            return row.cancelRequested
-                ? { ...operation(row), state: 'cancelled' as const }
-                : operation(row);
+            return withActionBilling(
+                tx,
+                row.cancelRequested
+                    ? { ...operation(row), state: 'cancelled' as const }
+                    : operation(row),
+                row.id,
+                row.ownerId,
+            );
         });
     }
     async stop(ownerId: string, id: string, now: Date) {
@@ -464,7 +512,11 @@ export class DrizzleInterviewStore implements InterviewStore {
             await lockPortraitOwner(tx, ownerId);
             await tx
                 .update(operations)
-                .set({ cancelRequested: true, updatedAt: now })
+                .set({
+                    cancelRequested: true,
+                    errorCode: 'explicit_stop',
+                    updatedAt: now,
+                })
                 .where(
                     and(
                         eq(operations.ownerId, ownerId),
@@ -482,6 +534,14 @@ export class DrizzleInterviewStore implements InterviewStore {
                         eq(operations.state, 'queued'),
                     ),
                 );
+            const [stopped] = await tx
+                .select()
+                .from(operations)
+                .where(
+                    and(eq(operations.id, id), eq(operations.ownerId, ownerId)),
+                );
+            if (stopped?.state === 'cancelled')
+                await settleInterviewAction(tx, stopped, 'stopped', now);
         });
     }
     claim(): Promise<ClaimedInterviewOperation | null> {
@@ -539,7 +599,11 @@ export class DrizzleInterviewStore implements InterviewStore {
                         state: candidate.cancelRequested
                             ? 'cancelled'
                             : 'failed',
-                        errorCode: 'interrupted',
+                        errorCode:
+                            candidate.cancelRequested &&
+                            candidate.errorCode === 'explicit_stop'
+                                ? 'explicit_stop'
+                                : 'interrupted',
                         context: emptyContext(),
                         leaseToken: null,
                         leaseUntil: null,
@@ -623,6 +687,16 @@ export class DrizzleInterviewStore implements InterviewStore {
         const result = PortraitInterviewerOutputSchema.parse(value);
         await this.withOperation(claim, async (tx) => {
             if (await isInvalid(tx, claim, now)) {
+                const [invalid] = await tx
+                    .select({
+                        cancelRequested: operations.cancelRequested,
+                        errorCode: operations.errorCode,
+                    })
+                    .from(operations)
+                    .where(eq(operations.id, claim.id));
+                const explicitlyStopped =
+                    invalid?.cancelRequested &&
+                    invalid.errorCode === 'explicit_stop';
                 await tx
                     .update(operations)
                     .set({
@@ -630,11 +704,19 @@ export class DrizzleInterviewStore implements InterviewStore {
                         context: emptyContext(),
                         input: { kind: 'skip', topic: 'update' },
                         result: null,
-                        errorCode: 'portrait_changed',
+                        errorCode: explicitlyStopped
+                            ? 'explicit_stop'
+                            : 'portrait_changed',
                         leaseUntil: null,
                         updatedAt: now,
                     })
                     .where(eq(operations.id, claim.id));
+                await settleInterviewAction(
+                    tx,
+                    claim,
+                    explicitlyStopped ? 'stopped' : 'failure',
+                    now,
+                );
                 return;
             }
             const [interview] = await tx
@@ -693,12 +775,16 @@ export class DrizzleInterviewStore implements InterviewStore {
                     updatedAt: now,
                 })
                 .where(eq(operations.id, claim.id));
+            await settleInterviewAction(tx, claim, 'success', now);
         });
     }
     async fail(claim: ClaimedInterviewOperation, code: string, now: Date) {
         await this.withOperation(claim, async (tx) => {
             const [row] = await tx
-                .select({ cancelRequested: operations.cancelRequested })
+                .select({
+                    cancelRequested: operations.cancelRequested,
+                    errorCode: operations.errorCode,
+                })
                 .from(operations)
                 .where(eq(operations.id, claim.id));
             await tx
@@ -708,12 +794,24 @@ export class DrizzleInterviewStore implements InterviewStore {
                         code === 'cancelled' || row?.cancelRequested
                             ? 'cancelled'
                             : 'failed',
-                    errorCode: code.slice(0, 80),
+                    errorCode:
+                        row?.cancelRequested &&
+                        row.errorCode === 'explicit_stop'
+                            ? 'explicit_stop'
+                            : code.slice(0, 80),
                     context: emptyContext(),
                     leaseUntil: null,
                     updatedAt: now,
                 })
                 .where(eq(operations.id, claim.id));
+            await settleInterviewAction(
+                tx,
+                claim,
+                row?.cancelRequested && row.errorCode === 'explicit_stop'
+                    ? 'stopped'
+                    : 'failure',
+                now,
+            );
         });
     }
 }

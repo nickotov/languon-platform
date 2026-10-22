@@ -1,3 +1,10 @@
+import { DrizzleActionAccountingParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
+import { DrizzleAiCreditTransactionParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { aiCreditActionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import { aiProviderExpenseRecordsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
+import { capabilityPolicyRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+import { defaultTextAiProviderBudgetPolicy } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
+import { createInterviewAdmission } from '../../../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import {
     PortraitInterviewCompletedOperationSchema,
     PortraitInterviewActiveOperationSchema,
@@ -41,6 +48,7 @@ import {
     migrateTestDatabase,
     resetTestDatabase,
 } from '../../support/test-database';
+import { seedPortraitAdmissionFixture } from '../../support/portrait-admission-fixture';
 
 const run = describe.runIf(isDatabaseIntegrationEnabled());
 run('learner portrait durable persistence', () => {
@@ -95,6 +103,225 @@ run('learner portrait durable persistence', () => {
             interviewCreditsBypass: true,
         }));
     });
+    it('counts admitted failures once, replays idempotently, and resets only at UTC day boundary', async () => {
+        const day = new Date('2026-10-22T23:59:00.000Z');
+        const session = await store.start({
+            ownerId,
+            locale: 'en',
+            expectedVersion: 0,
+            now: day,
+        });
+        const submit = (at: Date, idempotencyKey = randomUUID()) => ({
+            id: randomUUID(),
+            ownerId,
+            interviewId: session.interviewId,
+            expectedVersion: 0,
+            expectedGeneration: 0,
+            idempotencyKey,
+            input: {
+                kind: 'chat' as const,
+                topic: 'goals' as const,
+                text: 'Travel',
+            },
+            now: at,
+            paidAcknowledged: false,
+        });
+        const first = submit(day);
+        const admitted = await store.enqueue(first);
+        expect((await store.enqueue({ ...first, id: randomUUID() })).id).toBe(
+            admitted.id,
+        );
+        await database
+            .update(operations)
+            .set({ state: 'failed' })
+            .where(eq(operations.id, admitted.id));
+        for (let i = 1; i < 30; i++) {
+            const next = await store.enqueue(submit(day));
+            await database
+                .update(operations)
+                .set({ state: 'failed' })
+                .where(eq(operations.id, next.id));
+        }
+        await expect(store.enqueue(submit(day))).rejects.toThrow(
+            'Daily interview limit',
+        );
+        const nextDay = await store.enqueue(
+            submit(new Date('2026-10-23T00:00:00.000Z')),
+        );
+        expect(nextDay.state).toBe('queued');
+    });
+
+    it('atomically admits one concurrent action and consumes one daily allowance', async () => {
+        const day = new Date();
+        const session = await store.start({
+            ownerId,
+            locale: 'en',
+            expectedVersion: 0,
+            now: day,
+        });
+        const submit = () =>
+            store.enqueue({
+                id: randomUUID(),
+                ownerId,
+                interviewId: session.interviewId,
+                expectedVersion: 0,
+                expectedGeneration: 0,
+                idempotencyKey: randomUUID(),
+                input: { kind: 'chat', topic: 'goals', text: 'Travel' },
+                now: day,
+                paidAcknowledged: false,
+            });
+        const results = await Promise.allSettled([submit(), submit()]);
+        expect(
+            results.filter((result) => result.status === 'fulfilled'),
+        ).toHaveLength(1);
+        const rows = await database.execute(
+            sql`select admitted from portrait_interview_daily_admissions where owner_id=${ownerId}::uuid`,
+        );
+        expect(rows).toHaveLength(1);
+        expect(rows[0]?.admitted).toBe(1);
+    });
+
+    it.each(['success', 'failure', 'stopped'] as const)(
+        'settles a new paid interview action atomically for %s',
+        async (outcome) => {
+            await seedPortraitAdmissionFixture(database, now());
+            const policies = await database
+                .select({ version: capabilityPolicyRevisionsTable.version })
+                .from(capabilityPolicyRevisionsTable)
+                .where(
+                    eq(
+                        capabilityPolicyRevisionsTable.capability,
+                        'portrait-interview',
+                    ),
+                );
+            await database.insert(capabilityPolicyRevisionsTable).values({
+                id: randomUUID(),
+                capability: 'portrait-interview',
+                funding: 'customer',
+                version:
+                    Math.max(0, ...policies.map((policy) => policy.version)) +
+                    1,
+                createdAt: now(),
+                reason: 'Synthetic paid portrait persistence fixture policy',
+            });
+            await database.transaction((tx) =>
+                new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
+                    amount: 100_000n,
+                    createdAt: now(),
+                    expiresAt: null,
+                    ownerId,
+                    source: 'purchase',
+                    sourceReference: `interview-action-${randomUUID()}`,
+                }),
+            );
+            store = new DrizzleInterviewStore(
+                database,
+                createInterviewAdmission({
+                    selectionPolicy: {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        pricingAdmissionEnabled: true,
+                    },
+                }),
+            );
+            const queued = await enqueue(true);
+            const claim = await store.claim();
+            expect(claim?.id).toBe(queued.id);
+            if (!claim) throw new Error('Expected claimed action');
+            const callId = randomUUID();
+            await database.transaction(async (tx) => {
+                const accounting = new DrizzleActionAccountingParticipant(tx);
+                await accounting.admitAttempt({
+                    actionId: queued.id,
+                    ownerId,
+                    callId,
+                    purpose: 'answer',
+                    inputTokens: 10,
+                    maxOutputTokens: 10,
+                    budget: defaultTextAiProviderBudgetPolicy,
+                    executionWitness: {
+                        jobId: queued.id,
+                        leaseToken: claim.leaseToken,
+                    },
+                    at: now(),
+                });
+                await accounting.recordAttempt({
+                    actionId: queued.id,
+                    ownerId,
+                    callId,
+                    successful: true,
+                    usage: { inputTokens: 10, outputTokens: 10 },
+                    at: now(),
+                });
+            });
+            const [before] = await database
+                .select()
+                .from(aiCreditActionsTable)
+                .where(eq(aiCreditActionsTable.id, queued.id));
+            expect(before?.state).toBe('active');
+            expect(before?.chargedMilli).toBeNull();
+            if (outcome === 'success')
+                await store.complete(
+                    claim,
+                    {
+                        message: 'What would help with travel?',
+                        topic: 'goals',
+                        options: [],
+                        multiSelect: false,
+                    },
+                    now(),
+                );
+            else {
+                if (outcome === 'stopped')
+                    await store.stop(ownerId, queued.id, now());
+                await store.fail(
+                    claim,
+                    outcome === 'stopped'
+                        ? 'cancelled'
+                        : 'invalid_model_output',
+                    now(),
+                );
+            }
+            const [after] = await database
+                .select()
+                .from(aiCreditActionsTable)
+                .where(eq(aiCreditActionsTable.id, queued.id));
+            expect(after?.state).toBe('settled');
+            expect(after?.outcome).toBe(outcome);
+            expect(after?.chargedMilli).toBe(outcome === 'failure' ? 0n : 40n);
+            if (outcome !== 'failure') {
+                const expenses = await database
+                    .select()
+                    .from(aiProviderExpenseRecordsTable)
+                    .where(
+                        eq(aiProviderExpenseRecordsTable.actionId, queued.id),
+                    );
+                expect(expenses).toHaveLength(1);
+                await expireLearnerPortraitInterviews(
+                    database,
+                    new Date(Date.now() + 15 * 86400_000),
+                );
+                const [retained] = await database
+                    .select()
+                    .from(aiCreditActionsTable)
+                    .where(eq(aiCreditActionsTable.id, queued.id));
+                expect(retained).toEqual(after);
+                expect(
+                    await database
+                        .select()
+                        .from(aiProviderExpenseRecordsTable)
+                        .where(
+                            eq(
+                                aiProviderExpenseRecordsTable.actionId,
+                                queued.id,
+                            ),
+                        ),
+                ).toEqual(expenses);
+            }
+        },
+    );
+
     async function draft() {
         return service.saveDraft(ownerId, {
             expectedVersion: 0,
@@ -109,7 +336,7 @@ run('learner portrait durable persistence', () => {
             },
         });
     }
-    async function enqueue() {
+    async function enqueue(paidAcknowledged = false) {
         const state = await service.get(ownerId);
         const session = await store.start({
             ownerId,
@@ -130,7 +357,7 @@ run('learner portrait durable persistence', () => {
                 text: 'What does travel mean?',
             },
             now: now(),
-            paidAcknowledged: false,
+            paidAcknowledged,
         });
     }
     it('migrates typed tables, checks and indexes', async () => {
@@ -476,6 +703,10 @@ run('learner portrait durable persistence', () => {
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+        await database.execute(
+            sql`with observed as materialized (select clock_timestamp() as at) insert into account_deletion_requests(user_id,state,scheduled_at,purge_at,next_attempt_at,lease_deadline,lease_worker_id,fencing_token,updated_at) select ${ownerId}::uuid,'running',at-interval '2 minutes',at-interval '1 minute',at-interval '1 minute',at+interval '5 minutes','portrait-purge-scope',1,at from observed`,
+        );
+
         const role = `portrait_purge_test_${randomUUID().replaceAll('-', '')}`;
         const script = await readFile(
             new URL(
@@ -523,9 +754,20 @@ run('learner portrait durable persistence', () => {
                 databaseSchema,
             );
             await restrictedDatabase.transaction(async (tx) => {
-                await requestPortraitCancellation(tx, ownerId);
-                expect(await portraitDeletionBusy(tx, ownerId)).toBe(false);
-                await eraseOwnerLearnerPortrait(tx, ownerId, now());
+                await requestPortraitCancellation(tx, ownerId, {
+                    workerId: 'portrait-purge-scope',
+                    fencingToken: 1,
+                });
+                expect(
+                    await portraitDeletionBusy(tx, ownerId, new Date(), {
+                        workerId: 'portrait-purge-scope',
+                        fencingToken: 1,
+                    }),
+                ).toBe(false);
+                await eraseOwnerLearnerPortrait(tx, ownerId, now(), {
+                    workerId: 'portrait-purge-scope',
+                    fencingToken: 1,
+                });
             });
             expect(
                 await database

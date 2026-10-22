@@ -1,3 +1,4 @@
+import { RedisGenerationBurstLimiter } from './modules/text-ai/infrastructure/generation-burst-limiter';
 import { createLearnerPortraitModule } from './modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createLearnerPortraitRoutes } from './modules/learner-portraits/interface/http/learner-portrait.routes';
 import { readApprovedPortraitForConversation } from './modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-portrait-store';
@@ -44,6 +45,19 @@ import {
     createAdminSpeechRoutes,
 } from './modules/speech/interface/http/speech.routes';
 import { createModelPriceRoutes } from './modules/ai-credits/interface/http/model-prices.routes';
+import { createCapabilityPolicyRoutes } from './modules/ai-credits/interface/http/capability-policies.routes';
+import { createAccountingRoutes } from './modules/ai-credits/interface/http/accounting.routes';
+import { createProviderPriceRoutes } from './modules/ai-credits/interface/http/provider-prices.routes';
+import { DrizzleProviderPriceStore } from './modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
+import { startAccountingReportWorker } from './modules/ai-credits/infrastructure/accounting-report-worker';
+import {
+    maintainTextAiAccounting,
+    startAccountingMaintenance,
+} from './infrastructure/text-ai/accounting-maintenance';
+import { createPostgresClient, createDrizzleDatabase } from '@languon/database';
+import { databaseSchema } from './infrastructure/database/schema';
+import { DrizzleAccountingStore } from './modules/ai-credits/infrastructure/persistence/drizzle/drizzle-accounting-store';
+import { DrizzleAiCreditTransactionParticipant } from './modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { loadEnvironment } from './config/environment';
 import { createGracefulShutdown } from './infrastructure/server/graceful-shutdown';
 import { createAdministrationComposition } from './modules/administration/infrastructure/administration-composition';
@@ -99,6 +113,25 @@ const deletionJournal =
           })
         : new InMemoryAccountDeletionRecoveryJournal();
 const authentication = await createAuthenticationComposition(environment);
+const generationBurstLimiter = new RedisGenerationBurstLimiter(
+    authentication.productDependencies.rateLimiter,
+);
+const accountingReportingClient = createPostgresClient({
+    databaseUrl: environment.DATABASE_URL,
+    maxConnections: 1,
+});
+const accountingReportingStore = new DrizzleAccountingStore(
+    createDrizzleDatabase(accountingReportingClient, databaseSchema),
+    (tx) => new DrizzleAiCreditTransactionParticipant(tx),
+);
+const accountingMaintenanceClient = createPostgresClient({
+    databaseUrl: environment.DATABASE_URL,
+    maxConnections: 1,
+});
+const accountingMaintenanceDatabase = createDrizzleDatabase(
+    accountingMaintenanceClient,
+    databaseSchema,
+);
 const administration = createAdministrationComposition(
     environment,
     authentication,
@@ -144,6 +177,7 @@ const audioAdapters = createDictionaryAudioAdapters({
     database: authentication.productDependencies.database,
 });
 const speech = createSpeechInfrastructure({
+    burstLimiter: generationBurstLimiter,
     database: authentication.productDependencies.database,
     dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
     environment: audioEnvironment,
@@ -216,6 +250,7 @@ const texts = createTextsContentComposition({
     loadProposal: loadTextTranslationProposal,
 });
 const textsAi = createTextsAiComposition({
+    burstLimiter: generationBurstLimiter,
     database: authentication.productDependencies.database,
     enabled: textsEnabled,
     fingerprintSecret: environment.DICTIONARY_HMAC_SECRET,
@@ -264,7 +299,6 @@ const knowledge = createKnowledgeService({
 });
 const learnerPortraits = createLearnerPortraitModule({
     database: authentication.productDependencies.database,
-    creditsBypass: environment.AI_INTERVIEW_CREDITS_BYPASS,
     selectionPolicy: textsSelectionPolicy,
 });
 const conversations = createConversationsComposition({
@@ -283,10 +317,10 @@ const app = createApp({
     learnerPortraits: createLearnerPortraitRoutes({
         portraits: learnerPortraits.portraits,
         interviews: learnerPortraits.interviews,
+        readChargingPolicy: learnerPortraits.readChargingPolicy,
         authenticate: authenticateTextActor,
         rateLimiter: authentication.productDependencies.rateLimiter,
         policy: authentication.options.policy,
-        creditsBypass: environment.AI_INTERVIEW_CREDITS_BYPASS,
     }),
     navigation,
     conversations: conversations.routes,
@@ -352,7 +386,36 @@ const app = createApp({
             process.env.AI_MODEL_PRICE_API_ADMITTED_VERSIONS?.split(
                 ',',
             ).includes('1') === true,
-    }),
+    })
+        .route(
+            '/',
+            createCapabilityPolicyRoutes({
+                database: authentication.productDependencies.database,
+                administration: administration.administration,
+                policy: authentication.options.policy,
+            }),
+        )
+        .route(
+            '/',
+            createAccountingRoutes({
+                store: new DrizzleAccountingStore(
+                    authentication.productDependencies.database,
+                    (tx) => new DrizzleAiCreditTransactionParticipant(tx),
+                ),
+                administration: administration.administration,
+                policy: authentication.options.policy,
+            }),
+        )
+        .route(
+            '/',
+            createProviderPriceRoutes({
+                store: new DrizzleProviderPriceStore(
+                    authentication.productDependencies.database,
+                ),
+                administration: administration.administration,
+                policy: authentication.options.policy,
+            }),
+        ),
     authentication: authentication.options,
     userProfiles: {
         accessTokens: authentication.productDependencies.accessTokens,
@@ -394,9 +457,32 @@ const server = serve(
         );
     },
 );
+const accountingReportWorker = startAccountingReportWorker({
+    refreshNextReport: () => accountingReportingStore.refreshNextReport(),
+    // Never log driver exceptions: these can include monetary/personal records.
+    onError: () =>
+        console.error('Accounting report refresh failed; retry scheduled.'),
+});
+let lastAccountingMaintenanceWarning = 0;
+const accountingMaintenance = startAccountingMaintenance({
+    maintain: async () => {
+        await maintainTextAiAccounting(accountingMaintenanceDatabase);
+        await conversations.store.maintainAccounting();
+    },
+    onError: () => {
+        if (Date.now() - lastAccountingMaintenanceWarning > 60_000) {
+            lastAccountingMaintenanceWarning = Date.now();
+            console.error('Accounting maintenance deferred; retry scheduled.');
+        }
+    },
+});
 
 const performShutdown = createGracefulShutdown({
     closeResources: async () => {
+        await accountingReportWorker.stop();
+        await accountingMaintenance.stop();
+        await accountingMaintenanceClient.end();
+        await accountingReportingClient.end();
         audioAdapters.close();
         dictionaryDocumentS3Client?.destroy();
         deletionJournalClient?.destroy();

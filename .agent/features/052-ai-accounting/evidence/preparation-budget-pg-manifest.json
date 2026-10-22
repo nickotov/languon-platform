@@ -1,0 +1,22 @@
+{
+  "base": "d441863",
+  "evidence": "PG71232: preparation suite20/20, migrations through0103",
+  "files": {
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts": "63520042c34d234f8e4dd7b58d5ff923bf712fd5af0d9cb07babb36628ed7fd7",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store.ts": "cbf2d9c5d1d7287e94bf427c6701cf96edb71a31f37ae7b3393b7411b77f564d",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema.ts": "89acb576df514d6191d58779c93604d6b2baff2a13d9131b99ba8823ff8a3ef9",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-accounting.sql": "9b248da426079a55583ceaa8766a278e60ea49396b50be7e06ab8da01f2e892f",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-job-accounting.ts": "87413eafb79f1be9bb6a892827388ffd68088f872af61cfa695e130f8bd3e403",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store.ts": "213205fe58248ce1867de317771aa8a4532a812fe2debe247d42f0d8ddb21f0b",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts": "b2d04d8423afeebaed74f37f92b740bad879fb112dbec3b5c2dbe12dfa2cc331",
+    "apps/backend/src/modules/learning/infrastructure/sentence-composition.ts": "8bb9038dbbf24be4539f929341d625b14358c2721cba0da40a817a33ecdba6c5",
+    "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts": "d2f085c3cc2a3e27e9305f7ea3a08cacd80e51f37fb3866a01045df7cbdd1af5",
+    "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts": "0292afdfa920fbc8e59ada3c7bb9e77bc84c0f1979034583e0be09e6209c8cbb",
+    "apps/backend/tests/integration/modules/learning/sentence-library-preparation.integration.test.ts": "bfa6f4e3b87852527a6d4cad2f928cc9d7350a21a1879cc37024f0fd8ba5ec71",
+    "packages/contracts/src/learning/sentence-preparation.ts": "eb55d180e2dc9611c91cc3bd88f16add39f479a26649af591984ef8f08e99582",
+    "apps/backend/drizzle/0100_accounting_authority_remediation.sql": "6a2e5be0e269932f6429a78c1deb8d67207c285343ddea0a2989bb12ffce9c53",
+    "apps/backend/drizzle/0101_accounting_checked_financial_authority.sql": "31fff9a2d3f66a06333a5a8ff5832989a864f6b1af928139ec381037286f6ccd",
+    "apps/backend/drizzle/0102_accounting_dispatch_precision.sql": "72c8eba5b61d25539fc5147171225bcc1f098a8f7a703223391a18c78f50c521",
+    "apps/backend/drizzle/0103_accounting_speech_dispatch.sql": "e8f1105f4cf71018bd374b4f34868e1152f59eeffb3b4abfedd0cecadf744648"
+  }
+}

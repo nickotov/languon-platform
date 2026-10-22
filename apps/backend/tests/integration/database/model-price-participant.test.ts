@@ -1,3 +1,4 @@
+import { textAiModelCatalog } from '../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -121,6 +122,92 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     owner,
                     new Date(),
                 ),
+            );
+        });
+        it('persists positive milli-credit speech rates without inventing a minimum fee', async () => {
+            const current = await db.transaction((tx) =>
+                new DrizzleModelPriceParticipant(tx).current(model),
+            );
+            const published = await db.transaction((tx) =>
+                new DrizzleModelPriceParticipant(tx).publish(
+                    {
+                        ...model,
+                        expectedVersion: current.version,
+                        creditsPer1000Characters: 0.001,
+                        minimumCredits: 0,
+                        inputCreditsPerMillionTokens: null,
+                        outputCreditsPerMillionTokens: null,
+                        cachedInputCreditsPerMillionTokens: null,
+                        provisional: false,
+                        reason: 'Verify fractional speech publication',
+                    },
+                    owner,
+                    new Date(),
+                ),
+            );
+            expect(published.creditsPer1000Characters).toBe(0.001);
+            expect(published.minimumCredits).toBe(0);
+            const [row] = await db
+                .select()
+                .from(modelPriceRevisionsTable)
+                .where(
+                    eq(modelPriceRevisionsTable.id, published.rateRevisionId!),
+                );
+            expect(row?.rates.creditsPer1000Characters).toBe(0.001);
+            expect(row?.rates.minimumCredits).toBe(0);
+        });
+        it('keeps optional cached customer input rates in immutable JSON revisions', async () => {
+            const curated = textAiModelCatalog[0]!;
+            const textModel = {
+                providerId: curated.providerId,
+                modelId: curated.id,
+                meter: 'text-tokens' as const,
+            };
+            const current = await db.transaction((tx) =>
+                new DrizzleModelPriceParticipant(tx).current(textModel),
+            );
+            const command = {
+                ...textModel,
+                expectedVersion: current.version,
+                creditsPer1000Characters: null,
+                minimumCredits: null,
+                inputCreditsPerMillionTokens: 1.125,
+                outputCreditsPerMillionTokens: 2,
+                cachedInputCreditsPerMillionTokens: 0.125,
+                provisional: false,
+                reason: 'Verify cached customer rate publication',
+            };
+            const cached = await db.transaction((tx) =>
+                new DrizzleModelPriceParticipant(tx).publish(
+                    command,
+                    owner,
+                    new Date(),
+                ),
+            );
+            expect(cached.cachedInputCreditsPerMillionTokens).toBe(0.125);
+            expect(cached.inputCreditsPerMillionTokens).toBe(1.125);
+            const fallbackCommand = {
+                ...command,
+                cachedInputCreditsPerMillionTokens: undefined,
+            };
+            const fallback = await db.transaction((tx) =>
+                new DrizzleModelPriceParticipant(tx).publish(
+                    {
+                        ...fallbackCommand,
+                        expectedVersion: cached.version,
+                        reason: 'Restore ordinary input fallback',
+                    },
+                    owner,
+                    new Date(),
+                ),
+            );
+            expect(fallback.cachedInputCreditsPerMillionTokens).toBeNull();
+            const [historical] = await db
+                .select()
+                .from(modelPriceRevisionsTable)
+                .where(eq(modelPriceRevisionsTable.id, cached.rateRevisionId!));
+            expect(historical?.rates.cachedInputCreditsPerMillionTokens).toBe(
+                0.125,
             );
         });
     },

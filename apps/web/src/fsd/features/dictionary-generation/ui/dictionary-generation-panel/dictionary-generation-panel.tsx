@@ -1,4 +1,5 @@
 'use client';
+import { ActionBilling } from '@/fsd/entities/ai-action';
 
 import { useI18n } from '@/fsd/shared/i18n';
 import { BottomSheet, Textarea } from '@/fsd/shared/ui';
@@ -87,6 +88,8 @@ export function DictionaryGenerationPanel(props: GenerationReviewProps) {
             title={title}
         >
             <div className={styles.content}>
+                {props.budget}
+                <ActionBilling billing={job?.billing} execution={job?.state} />
                 <ReviewStatus
                     available={available}
                     conflict={conflict}

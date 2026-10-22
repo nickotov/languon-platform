@@ -47,6 +47,7 @@ export function useModelPrices() {
         minimumCredits?: number;
         inputCreditsPerMillionTokens?: number;
         outputCreditsPerMillionTokens?: number;
+        cachedInputCreditsPerMillionTokens?: number | null | undefined;
         provisional: boolean;
         reason: string;
     }) => {
@@ -71,6 +72,9 @@ export function useModelPrices() {
                 outputCreditsPerMillionTokens: speech
                     ? null
                     : (values.outputCreditsPerMillionTokens ?? null),
+                cachedInputCreditsPerMillionTokens: speech
+                    ? null
+                    : (values.cachedInputCreditsPerMillionTokens ?? null),
                 provisional: values.provisional,
                 reason: values.reason.trim(),
             });

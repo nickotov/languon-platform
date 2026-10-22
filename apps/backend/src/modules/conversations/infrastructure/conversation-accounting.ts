@@ -1,4 +1,29 @@
-import { randomUUID } from 'node:crypto';
+import {
+    reviewedTextProviderBudget,
+    ProviderCostAdmissionUnavailableError,
+    providerAffordableOutputTokens,
+} from '../../ai-credits/domain/provider-cost-admission';
+import { parseFixed } from '../../ai-credits/domain/accounting';
+import { OperatorBudgetUnavailableError } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import { DrizzleActionAccountingParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
+import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
+import { pinProviderPrice } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
+import {
+    maximumActionChargeNumerator,
+    roundActionChargeMilli,
+    affordableActionOutput,
+} from '../../ai-credits/domain/action-pricing';
+import { aiCreditActionQuotesTable as quotes } from '../../ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import {
+    formatCreditMilli,
+    parseCreditMilli,
+} from '../../ai-credits/domain/exact-credit-amount';
+import { textAiPreferencesTable } from '../../text-ai/infrastructure/persistence/drizzle/schema';
+import { createHash, randomUUID } from 'node:crypto';
+import {
+    createConversationActionAccounting,
+    usesActionAccounting,
+} from './conversation-action-accounting';
 import { and, eq, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../infrastructure/database/schema';
@@ -39,7 +64,15 @@ type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
     return async (
         tx: Transaction,
-        input: { ownerId: string; turnId: string; conversationId: string },
+        input: {
+            ownerId: string;
+            turnId: string;
+            conversationId: string;
+            requestId?: string;
+            fingerprint?: string;
+            confirmedQuoteId?: string;
+            inputTokenBound?: number;
+        },
     ): Promise<Record<string, unknown>> => {
         await lockTextAiCapacity(tx);
         const now = new Date();
@@ -72,25 +105,313 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         const account = await new DrizzleAiCreditTransactionParticipant(
             tx,
         ).accountSummary(input.ownerId, now);
-        const firstCallCredits = maximumTextPrice(
-            {
-                maxInputTokensPerAttempt:
-                    execution.snapshot.perCallMaxInputTokens,
-                maxOutputTokensPerAttempt: Math.min(
-                    4096,
-                    execution.snapshot.perCallMaxOutputTokens,
-                ),
-            },
-            execution.snapshot.creditPricing,
-        );
+        const capability = new DrizzleCapabilityPolicyParticipant(tx);
+        const charging = await capability.current('conversation');
+        const funding =
+            charging.funding === 'operator'
+                ? 'operator'
+                : account.policy.effectiveMode === 'unlimited'
+                  ? 'unlimited'
+                  : 'customer';
+        const [preference] = await tx
+            .select({
+                maxCreditsPerAction: textAiPreferencesTable.maxCreditsPerAction,
+            })
+            .from(textAiPreferencesTable)
+            .where(eq(textAiPreferencesTable.userId, input.ownerId));
+        const settings = await capability.settings();
+        const defaultBudget = settings.defaultMaxCreditsPerAction;
+        const budget = preference?.maxCreditsPerAction ?? defaultBudget;
+        const zeroCustomerTariff = [
+            execution.snapshot.creditPricing.inputCreditsPerMillionTokens,
+            execution.snapshot.creditPricing.outputCreditsPerMillionTokens,
+            execution.snapshot.creditPricing
+                .cachedInputCreditsPerMillionTokens ??
+                execution.snapshot.creditPricing.inputCreditsPerMillionTokens,
+        ].every((rate) => rate === 0);
+        if (funding === 'customer' && !budget && !zeroCustomerTariff)
+            throw new ConversationError(
+                'action_budget_unconfigured',
+                'An AI action budget must be configured before sending.',
+            );
+        const providerPrice = await pinProviderPrice(tx, {
+            providerId: execution.snapshot.providerId,
+            modelId: execution.snapshot.modelId,
+            meter: 'text-tokens',
+            at: now,
+        });
+        try {
+            execution.budget = reviewedTextProviderBudget(
+                providerPrice,
+                execution.budget,
+                { read: 'input-price-upper-bound', write: 'none' },
+            );
+            if (
+                !settings.maxProviderCostUsdPerAction ||
+                !settings.maxProviderCostUsdPerAccountDay ||
+                !settings.maxProviderCostUsdPerDay
+            )
+                throw new OperatorBudgetUnavailableError(
+                    'Operator spending limits must be configured.',
+                );
+            const operatorMaximum = parseFixed(
+                settings.maxProviderCostUsdPerAction,
+                6,
+            );
+            execution.budget.maxCostMicrosPerAttempt = Math.min(
+                execution.budget.maxCostMicrosPerAttempt,
+                Number(operatorMaximum),
+            );
+        } catch (error) {
+            if (
+                error instanceof ProviderCostAdmissionUnavailableError ||
+                error instanceof OperatorBudgetUnavailableError
+            )
+                throw new ConversationError(
+                    'model_unavailable',
+                    'Reviewed provider pricing and operator spending limits must be configured before generation is enabled.',
+                );
+            throw error;
+        }
         if (
-            account.policy.effectiveMode === 'limited' &&
-            account.availableCredits < BigInt(firstCallCredits)
+            !Number.isSafeInteger(input.inputTokenBound) ||
+            (input.inputTokenBound ?? 0) < 1
         )
             throw new ConversationError(
-                'credits_exhausted',
-                'You do not have enough AI credits for a response.',
+                'context_too_large',
+                'A bounded conversation context is required for admission.',
             );
+        const admittedMaxInputTokens = Math.min(
+            execution.snapshot.perCallMaxInputTokens,
+            input.inputTokenBound!,
+        );
+        const totalInputLimit = Math.min(
+            execution.budget.maxInputTokensPerAttempt,
+            admittedMaxInputTokens * 5,
+        );
+        execution.budget.maxCostMicrosPerAttempt = Math.min(
+            execution.budget.maxCostMicrosPerAttempt,
+            textAiProviderUsageCostMicros(execution.budget, {
+                inputTokens: totalInputLimit,
+                outputTokens: 10000,
+            }) +
+                (execution.budget.inputCostMicrosPerMillionTokens > 0 ? 4 : 0) +
+                (execution.budget.outputCostMicrosPerMillionTokens > 0 ? 4 : 0),
+        );
+        if (
+            providerAffordableOutputTokens({
+                inputTokens: admittedMaxInputTokens,
+                outputLimit: 10000,
+                budget: execution.budget,
+            }) < 1
+        )
+            throw new ConversationError(
+                'capacity_unavailable',
+                'The selected model exceeds the available execution allowance. Choose another model or try again later.',
+            );
+        const tariff = {
+            ...(execution.snapshot.creditPricing
+                .cachedInputCreditsPerMillionTokens != null
+                ? {
+                      cachedInputCreditsPerMillionTokens: String(
+                          execution.snapshot.creditPricing
+                              .cachedInputCreditsPerMillionTokens,
+                      ),
+                  }
+                : {}),
+            inputCreditsPerMillionTokens: String(
+                execution.snapshot.creditPricing.inputCreditsPerMillionTokens,
+            ),
+            outputCreditsPerMillionTokens: String(
+                execution.snapshot.creditPricing.outputCreditsPerMillionTokens,
+            ),
+        };
+        const plannedMaximumMilli = roundActionChargeMilli(
+            maximumActionChargeNumerator(
+                { inputTokens: totalInputLimit, outputTokens: 10000 },
+                tariff,
+            ),
+        );
+        const authorizedBudgetMilli = budget ? parseCreditMilli(budget) : 0n;
+        let acceptedBudgetMilli =
+            authorizedBudgetMilli < plannedMaximumMilli
+                ? authorizedBudgetMilli
+                : plannedMaximumMilli;
+        if (funding === 'customer' && !zeroCustomerTariff) {
+            const available = account.availableCredits;
+            const held =
+                acceptedBudgetMilli < available
+                    ? acceptedBudgetMilli
+                    : available;
+            const customerAllowance = affordableActionOutput({
+                budgetMilli: held,
+                inputTokens: admittedMaxInputTokens,
+                outputLimit: 10000,
+                tariff,
+            });
+            if (customerAllowance < 1)
+                throw new ConversationError(
+                    'credits_exhausted',
+                    'You do not have enough AI credits for input and any output.',
+                );
+            const allowance = providerAffordableOutputTokens({
+                inputTokens: admittedMaxInputTokens,
+                outputLimit: customerAllowance,
+                budget: execution.budget,
+            });
+            if (allowance < 1)
+                throw new ConversationError(
+                    'credits_exhausted',
+                    'You do not have enough AI credits for input and any output.',
+                );
+            const authorizationFingerprint = createHash('sha256')
+                .update(
+                    JSON.stringify({
+                        execution,
+                        charging,
+                        budget,
+                        providerPrice,
+                    }),
+                )
+                .digest('hex');
+            const [offered] = input.requestId
+                ? await tx
+                      .select()
+                      .from(quotes)
+                      .where(
+                          and(
+                              eq(quotes.ownerId, input.ownerId),
+                              eq(quotes.conversationId, input.conversationId),
+                              eq(quotes.requestId, input.requestId),
+                          ),
+                      )
+                      .for('update')
+                : [];
+            if (offered && offered.fingerprint !== input.fingerprint)
+                throw new ConversationError(
+                    'idempotency_conflict',
+                    'This request identifier has already been used for another message.',
+                );
+            if (
+                !input.confirmedQuoteId &&
+                offered &&
+                offered.authorizationFingerprint === authorizationFingerprint &&
+                offered.expiresAt > now &&
+                offered.heldMilli <= held &&
+                offered.outputAllowance <= allowance
+            )
+                return {
+                    confirmationRequired: true,
+                    quote: {
+                        id: offered.id,
+                        maximumCredits: formatCreditMilli(offered.heldMilli),
+                        approximateOutputTokens: offered.outputAllowance,
+                        expiresAt: offered.expiresAt.toISOString(),
+                    },
+                };
+            const [confirmed] = input.confirmedQuoteId
+                ? await tx
+                      .select()
+                      .from(quotes)
+                      .where(eq(quotes.id, input.confirmedQuoteId))
+                      .for('update')
+                : [];
+            const validQuote =
+                confirmed &&
+                confirmed.ownerId === input.ownerId &&
+                confirmed.conversationId === input.conversationId &&
+                confirmed.requestId === input.requestId &&
+                confirmed.fingerprint === input.fingerprint &&
+                confirmed.authorizationFingerprint ===
+                    authorizationFingerprint &&
+                confirmed.expiresAt > now &&
+                confirmed.heldMilli <= held &&
+                confirmed.outputAllowance <= allowance;
+            if (
+                (allowance < 10000 ||
+                    held < acceptedBudgetMilli ||
+                    input.confirmedQuoteId) &&
+                !validQuote
+            ) {
+                if (!input.requestId || !input.fingerprint)
+                    throw new ConversationError(
+                        'action_confirmation_required',
+                        'Confirm the available output allowance before sending.',
+                    );
+                const quote = {
+                    id: randomUUID(),
+                    ownerId: input.ownerId,
+                    conversationId: input.conversationId,
+                    requestId: input.requestId,
+                    fingerprint: input.fingerprint,
+                    authorizationFingerprint,
+                    heldMilli: held,
+                    outputAllowance: allowance,
+                    expiresAt: new Date(now.getTime() + 5 * 60_000),
+                };
+                await tx
+                    .insert(quotes)
+                    .values(quote)
+                    .onConflictDoUpdate({
+                        target: [
+                            quotes.ownerId,
+                            quotes.conversationId,
+                            quotes.requestId,
+                        ],
+                        set: quote,
+                    });
+                return {
+                    confirmationRequired: true,
+                    quote: {
+                        id: quote.id,
+                        maximumCredits: formatCreditMilli(held),
+                        approximateOutputTokens: allowance,
+                        expiresAt: quote.expiresAt.toISOString(),
+                    },
+                };
+            }
+            if (validQuote) acceptedBudgetMilli = confirmed.heldMilli;
+        }
+        const pinned = await capability.pinAction({
+            jobId: input.turnId,
+            jobKind: 'conversation-turn',
+            ownerId: input.ownerId,
+            at: now,
+            policy: charging,
+        });
+        if (
+            pinned.version !== charging.version ||
+            pinned.funding !== charging.funding
+        )
+            throw new ConversationError(
+                'model_unavailable',
+                'The charging policy changed. Review the refreshed allowance and try again.',
+            );
+        const action = await new DrizzleActionAccountingParticipant(tx)
+            .reserve({
+                id: input.turnId,
+                ownerId: input.ownerId,
+                capability: 'conversation',
+                funding,
+                policyVersion: charging.version,
+                tariff,
+                budgetMilli: authorizedBudgetMilli,
+                holdMaximumMilli: acceptedBudgetMilli,
+                operatorMaximumMicros: BigInt(
+                    execution.budget.maxCostMicrosPerAttempt,
+                ),
+                operatorSettings: settings,
+                at: now,
+                deadlineAt: new Date(now.getTime() + 15 * 60_000),
+            })
+            .catch((error: unknown) => {
+                if (error instanceof OperatorBudgetUnavailableError)
+                    throw new ConversationError(
+                        'capacity_unavailable',
+                        'The AI spending allowance is currently unavailable. Try again later.',
+                    );
+                throw error;
+            });
         const capacity = await readTextAiCapacity(tx, {
             actorId: input.ownerId,
             now,
@@ -109,7 +430,14 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 'capacity_unavailable',
                 'AI capacity is currently unavailable. Try again later.',
             );
-        return { ...execution };
+        return {
+            ...execution,
+            actionAccountingVersion: 1,
+            providerPrice,
+            admittedMaxInputTokens,
+            heldCreditsMilli: action.heldMilli.toString(),
+            funding: action.funding,
+        };
     };
 }
 
@@ -119,8 +447,15 @@ export function createConversationAccounting(input: {
     withOperation<T>(work: (tx: Transaction) => Promise<T>): Promise<T>;
     ownerId: string;
     turnId: string;
+    leaseToken?: string;
     execution: TextAiAdmissionExecution;
 }): TutorAccountingPort {
+    if (usesActionAccounting(input.execution))
+        return createConversationActionAccounting({
+            ...input,
+            execution: input.execution,
+            withTransaction: (work) => input.database.transaction(work),
+        });
     const snapshot = input.execution.snapshot;
     if (!snapshot?.creditPricing || snapshot.modelId !== 'deepseek-flash')
         throw new Error('Conversation execution is unavailable.');
@@ -377,6 +712,12 @@ export async function settleInterruptedConversationCalls(
     tx: Transaction,
     turn: typeof turns.$inferSelect,
 ) {
+    if (usesActionAccounting(turn.execution)) {
+        const { settleConversationAction } =
+            await import('./conversation-action-accounting');
+        await settleConversationAction(tx, turn);
+        return;
+    }
     const execution = turn.execution as unknown as TextAiAdmissionExecution;
     const rows = await tx
         .select()

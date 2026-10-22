@@ -8,6 +8,7 @@ import type { useEditorQueries } from './use-editor-queries';
 import type { useEditorState } from './use-editor-state';
 
 export function useBatchMutation({
+    actionConsent,
     t,
     queryClient,
     batchGenerationJobId,
@@ -20,6 +21,7 @@ export function useBatchMutation({
     batchGenerationJob,
 }: Pick<
     ReturnType<typeof useEditorState>,
+    | 'actionConsent'
     | 't'
     | 'queryClient'
     | 'batchGenerationJobId'
@@ -109,24 +111,28 @@ export function useBatchMutation({
                     expectedSettingsVersion: versions.settingsVersion,
                     rowIndexes,
                 };
-                const response =
-                    batchGenerationJob.data?.job?.kind === 'import-pairs'
-                        ? await requestWithSession((token) =>
-                              dictionaryApi.retryImportPairsGeneration(
+                const response = await actionConsent.run((confirmedQuoteId) =>
+                    requestWithSession(async (token) => {
+                        const quoted = {
+                            ...retryBody,
+                            ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                        };
+                        return batchGenerationJob.data?.job?.kind ===
+                            'import-pairs'
+                            ? dictionaryApi.retryImportPairsGeneration(
                                   token,
                                   batchGenerationJobId,
-                                  retryBody,
+                                  quoted,
                                   attempt.key,
-                              ),
-                          )
-                        : await requestWithSession((token) =>
-                              dictionaryApi.retryPastedTermsGeneration(
+                              )
+                            : dictionaryApi.retryPastedTermsGeneration(
                                   token,
                                   batchGenerationJobId,
-                                  retryBody,
+                                  quoted,
                                   attempt.key,
-                              ),
-                          );
+                              );
+                    }),
+                );
                 batchEnqueueAttempt.current = null;
                 return response;
             }
@@ -144,17 +150,21 @@ export function useBatchMutation({
                 }),
             );
             batchEnqueueAttempt.current = attempt;
-            const response = await requestWithSession((token) =>
-                dictionaryApi.enqueuePastedTermsGeneration(
-                    token,
-                    dictionaryId,
-                    {
-                        context,
-                        expectedDictionaryVersion: versions.dictionaryVersion,
-                        expectedSettingsVersion: versions.settingsVersion,
-                        text,
-                    },
-                    attempt.key,
+            const response = await actionConsent.run((confirmedQuoteId) =>
+                requestWithSession((token) =>
+                    dictionaryApi.enqueuePastedTermsGeneration(
+                        token,
+                        dictionaryId,
+                        {
+                            context,
+                            expectedDictionaryVersion:
+                                versions.dictionaryVersion,
+                            expectedSettingsVersion: versions.settingsVersion,
+                            text,
+                            ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                        },
+                        attempt.key,
+                    ),
                 ),
             );
             batchEnqueueAttempt.current = null;

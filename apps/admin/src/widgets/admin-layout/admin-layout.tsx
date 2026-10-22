@@ -1,5 +1,6 @@
 import {
     AuditOutlined,
+    DollarOutlined,
     CloudServerOutlined,
     SoundOutlined,
     DashboardOutlined,
@@ -35,19 +36,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     const translate = useTranslate();
     const theme = useAdminTheme();
     const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
-    const selected = useMemo(
-        () =>
-            location.pathname.startsWith('/speech-recordings')
-                ? '/speech-recordings'
-                : location.pathname.startsWith('/users')
-                  ? '/users'
-                  : location.pathname.startsWith('/audit')
-                    ? '/audit'
-                    : location.pathname.startsWith('/ai-settings')
-                      ? '/ai-settings'
-                      : '/',
-        [location.pathname],
-    );
+    const selected = useMemo(() => {
+        for (const path of [
+            '/speech-recordings',
+            '/users',
+            '/audit',
+            '/ai-settings',
+            '/accounting',
+        ]) {
+            if (location.pathname.startsWith(path)) return path;
+        }
+        return '/';
+    }, [location.pathname]);
     const navigationItems = [
         {
             icon: <DashboardOutlined />,
@@ -68,6 +68,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             icon: <CloudServerOutlined />,
             key: '/ai-settings',
             label: translate('shell.aiSettings'),
+        },
+        {
+            icon: <DollarOutlined />,
+            key: '/accounting',
+            label: translate('accounting.title'),
         },
         {
             icon: <SoundOutlined />,

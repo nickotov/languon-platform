@@ -1,3 +1,4 @@
+import { ActionConsentCancelledError } from '@/fsd/entities/ai-action';
 import { BrowserApiError } from '@languon/browser-auth';
 import type {
     SentenceErrorCode,
@@ -21,6 +22,12 @@ export class ApiError extends BrowserApiError<SentenceErrorResponse['error']> {
     }
 }
 export function toApiError(error: unknown): ApiError {
+    if (error instanceof ActionConsentCancelledError)
+        return new ApiError(409, {
+            code: 'action_confirmation_required',
+            correlationId: 'client-budget-cancelled',
+            message: error.message,
+        });
     if (error instanceof ApiError) return error;
     return new ApiError(error instanceof BrowserApiError ? error.status : 0, {
         code:

@@ -6,7 +6,9 @@ export type RequestWithTextSession = <T>(
     operation: (accessToken: string) => Promise<T>,
 ) => Promise<T>;
 const selectionErrorSchema = c.TextErrorResponseSchema.shape.error.extend({
-    code: c.TextAiJobSchema.shape.failureCode.unwrap(),
+    code: c.TextErrorResponseSchema.shape.error.shape.code.or(
+        c.TextAiJobSchema.shape.failureCode.unwrap(),
+    ),
     correlationId:
         c.TextErrorResponseSchema.shape.error.shape.correlationId.default(
             'selection-api-error',

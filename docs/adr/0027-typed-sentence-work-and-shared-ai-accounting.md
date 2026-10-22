@@ -4,7 +4,7 @@ id: ADR-0027
 title: Typed sentence work and shared AI accounting
 status: accepted
 date: 2026-10-04
-superseded_in_part_by: 'ADR-0031 retained successful speech derivatives; ADR-0032 closed credit kind extended with speech'
+superseded_in_part_by: 'ADR-0031 retained successful speech derivatives; ADR-0032 closed credit kind extended with speech; ADR-0045 action accounting, exact fractional units, provider expenses and capability funding policies'
 supersedes: 'None; extends ADR-0022 and ADR-0026 to authorized learning work'
 ---
 

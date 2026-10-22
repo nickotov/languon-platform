@@ -1,4 +1,9 @@
 import {
+    ActionBilling,
+    ActionConsentCancelledError,
+} from '@/fsd/entities/ai-action';
+import type { ReactNode } from 'react';
+import {
     DictionaryApiError,
     dictionaryErrorMessage,
 } from '@/fsd/entities/dictionary';
@@ -10,7 +15,9 @@ import { syncBatchGenerationUrl } from '../../lib/generation-url';
 
 export function EditorBatchSheet({
     model,
+    budget,
 }: {
+    budget?: ReactNode;
     model: Pick<
         EditorViewFields,
         | 't'
@@ -73,6 +80,8 @@ export function EditorBatchSheet({
                     current.targetLanguage));
 
     function resolveErrorValue() {
+        if (batchGenerationAction.error instanceof ActionConsentCancelledError)
+            return null;
         if (batchGenerationAction.error) {
             return dictionaryErrorMessage(batchGenerationAction.error, t);
         }
@@ -182,26 +191,33 @@ export function EditorBatchSheet({
 
         if (batchGenerationOpen) {
             return (
-                <DictionaryBatchGenerationPanel
-                    available={availableValue}
-                    conflict={conflictValue}
-                    dictionary={current}
-                    error={errorValue}
-                    {...(batchGenerationJob.data?.job
-                        ? {
-                              job: batchGenerationJob.data.job,
-                          }
-                        : {})}
-                    languages={catalog}
-                    onAccept={handleAccept}
-                    onCancel={handleCancel}
-                    onClose={handleClose2}
-                    onDiscard={handleDiscard}
-                    onReloadConflict={handleReloadConflict}
-                    onRetryFailures={handleRetryFailures}
-                    onStart={handleStart}
-                    pendingAction={batchGenerationAction.isPending}
-                />
+                <>
+                    {budget}
+                    <ActionBilling
+                        billing={batchGenerationJob.data?.job?.billing}
+                        execution={batchGenerationJob.data?.job?.state}
+                    />
+                    <DictionaryBatchGenerationPanel
+                        available={availableValue}
+                        conflict={conflictValue}
+                        dictionary={current}
+                        error={errorValue}
+                        {...(batchGenerationJob.data?.job
+                            ? {
+                                  job: batchGenerationJob.data.job,
+                              }
+                            : {})}
+                        languages={catalog}
+                        onAccept={handleAccept}
+                        onCancel={handleCancel}
+                        onClose={handleClose2}
+                        onDiscard={handleDiscard}
+                        onReloadConflict={handleReloadConflict}
+                        onRetryFailures={handleRetryFailures}
+                        onStart={handleStart}
+                        pendingAction={batchGenerationAction.isPending}
+                    />
+                </>
             );
         }
 

@@ -16,8 +16,12 @@ source_paths:
     - docs/adr/0036-task-specific-text-translation-capacity.md
     - apps/web/src/fsd/entities/texts/api/jobs.ts
     - apps/backend/tests/unit/modules/texts/texts-worker.test.ts
-source_fingerprint: sha256:80498baddefaf8d5e26480f043b072e53c31b31b77bf2b96e289c79a33b9c90f
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts
+    - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts
+source_fingerprint: sha256:cece3fd4b09ca3c02648b83c5569965549dc6e7be05ec92645f840be18a4d5f1
+reviewed: 2026-10-22
 ---
 
 # Texts and contextual vocabulary
@@ -66,6 +70,11 @@ already completed independent copies and cards survive under their own ownership
 that decision's implementation phase. Current route/page and workspace-hook code
 implements Texts UI. The diagram reflects that code without rewriting ADR history.
 
+New selected Texts and dictionary-selection jobs join shared action accounting with pinned
+customer/provider prices, bounded output and operator budgets. Invalid or technically failed
+results do not charge learners; provider expense remains separate. This changes financial
+settlement, not the explicit Save/Add publication edges. See [AI job lifecycle](ai-job-lifecycle.md).
+
 ## Sources
 
 - [apps/backend/src/modules/texts/infrastructure/texts-composition.ts](../../apps/backend/src/modules/texts/infrastructure/texts-composition.ts)
@@ -81,3 +90,11 @@ implements Texts UI. The diagram reflects that code without rewriting ADR histor
 - [docs/adr/0036-task-specific-text-translation-capacity.md](../../docs/adr/0036-task-specific-text-translation-capacity.md)
 - [apps/web/src/fsd/entities/texts/api/jobs.ts](../../apps/web/src/fsd/entities/texts/api/jobs.ts)
 - [apps/backend/tests/unit/modules/texts/texts-worker.test.ts](../../apps/backend/tests/unit/modules/texts/texts-worker.test.ts)
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts)
+
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts)
+
+- [apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts](../../apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts)

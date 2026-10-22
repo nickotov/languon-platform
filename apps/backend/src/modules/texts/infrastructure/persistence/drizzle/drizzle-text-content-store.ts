@@ -1,3 +1,4 @@
+import { withActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
 import {
     getTableColumns,
     and,
@@ -383,7 +384,7 @@ export class DrizzleTextContentStore implements TextContentStore {
                     desc(textsAiJobsTable.id),
                 )
                 .limit(1);
-            return job ? exposeTextsJob(job) : null;
+            return job ? withActionBilling(tx, exposeTextsJob(job), job.id, job.ownerId) : null;
         });
     }
     async moveText(ownerId: string, id: string, request: MoveTextRequest) {

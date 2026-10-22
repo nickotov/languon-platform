@@ -52,7 +52,8 @@ import {
 let client: PostgresClient;
 let database: PostgresJsDatabase<typeof databaseSchema>;
 let store: DrizzleAccountPurgeStore;
-const now = new Date('2026-09-15T00:00:00Z');
+// Checked deletion leases use PostgreSQL's real clock.
+const now = new Date();
 
 async function scheduledIdentity() {
     const userId = randomUUID();
@@ -122,7 +123,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 workerId: 'retention-proof',
             });
             expect(claim?.userId).toBe(userId);
-            expect(await store.inspectOwner(claim!)).toEqual({
+            expect(
+                await store.inspectOwner({
+                    ...claim!,
+                    workerId: 'retention-proof',
+                }),
+            ).toEqual({
                 activeJobs: 0,
                 objects: [],
             });
@@ -468,7 +474,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
                 expect(claim).toEqual({ userId, fencingToken: 1 });
                 expect(
-                    (await workerStore.inspectOwner(claim!)).activeJobs,
+                    (
+                        await workerStore.inspectOwner({
+                            ...claim!,
+                            workerId: 'narrow-purge-worker',
+                        })
+                    ).activeJobs,
                 ).toBe(0);
                 await expect(
                     workerStore.finish({

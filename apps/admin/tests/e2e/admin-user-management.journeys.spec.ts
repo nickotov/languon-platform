@@ -1,4 +1,5 @@
-// @user-flow-revision shared-pronunciation-playback sha256:78ad180c5e1dd88f
+// @user-flow-revision ai-accounting sha256:e65c3d670d67fa18
+// @user-flow-revision shared-pronunciation-playback sha256:c732fe57d13e6a88
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, resolve } from 'node:path';
@@ -16,7 +17,7 @@ import postgres from 'postgres';
 
 // @user-flow-revision admin-user-management sha256:4329a23dfacbe067
 // @user-flow-revision ai-provider-management sha256:9d0a0f62b235f0b2
-// @user-flow-revision ai-credit-wallet sha256:912c63845e283ad8
+// @user-flow-revision ai-credit-wallet sha256:99b7d70e3e3a8ddb
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(
@@ -368,6 +369,139 @@ test.describe.serial('admin user management journeys', () => {
             targetEmail,
             ownerPassword,
         );
+    });
+
+    // @user-flow ai-accounting/admin-budget-and-manual-payment
+    test('owner manages AI accounting budgets and records an external payment exactly once', async ({
+        page,
+    }, info) => {
+        test.setTimeout(120_000);
+        await passwordLogin(page);
+        const clean = captureBrowserErrors(page, {
+            '/api/admin/ai/accounting/report': 503,
+        });
+        await page.getByRole('menuitem', { name: /AI accounting$/ }).click();
+        await expect(
+            page.getByRole('heading', { name: 'AI accounting', exact: true }),
+        ).toBeVisible();
+        const settings = page.locator('.ant-card').filter({
+            has: page.getByText('AI action and provider expense limits', {
+                exact: true,
+            }),
+        });
+        await settings
+            .getByLabel(
+                'Default maximum credits per action (blank = uncalibrated)',
+            )
+            .fill('20.125');
+        await settings
+            .getByLabel('Maximum provider expense per action (USD)', {
+                exact: true,
+            })
+            .fill('1');
+        await settings
+            .getByLabel(
+                'Maximum provider expense per account per UTC day (USD)',
+                { exact: true },
+            )
+            .fill('10');
+        await settings
+            .getByLabel(
+                'Maximum provider expense per UTC day, all accounts (USD)',
+                { exact: true },
+            )
+            .fill('100');
+        await settings
+            .getByLabel('Reason for change')
+            .fill('Synthetic accounting browser calibration');
+        const published = page.waitForResponse(
+            (response) =>
+                response.request().method() === 'PATCH' &&
+                response.url().endsWith('/admin/ai/accounting-settings'),
+        );
+        await settings
+            .getByRole('button', { name: 'Publish action budget revision' })
+            .click();
+        expect((await published).ok()).toBe(true);
+        await page.reload();
+        await expect(
+            settings.getByLabel(
+                'Default maximum credits per action (blank = uncalibrated)',
+            ),
+        ).toHaveValue('20.125');
+        await page
+            .getByRole('button', {
+                name: 'Record manual transaction',
+                exact: true,
+            })
+            .click();
+        const dialog = page.getByRole('dialog', {
+            name: 'Record manual transaction',
+            exact: true,
+        });
+        const reference = `synthetic-accounting-payment-${runId}`;
+        await dialog
+            .getByLabel('External reference', { exact: true })
+            .fill(reference);
+        await dialog
+            .getByLabel('Amount (USD, up to 6 decimals)', { exact: true })
+            .fill('2.125');
+        await dialog
+            .getByLabel('Customer user ID', { exact: true })
+            .fill(targetId);
+        await dialog
+            .getByLabel('Purchased credits (up to 3 decimals)', { exact: true })
+            .fill('3.125');
+        await dialog
+            .getByLabel('Payment fees (USD)', { exact: true })
+            .fill('0.025');
+        await dialog
+            .getByLabel('Reason for change')
+            .fill('Synthetic external payment already received');
+        const recorded = page.waitForResponse(
+            (response) =>
+                response.request().method() === 'POST' &&
+                response.url().endsWith('/admin/ai/accounting/records'),
+        );
+        await dialog
+            .getByRole('button', { name: 'Save manual record', exact: true })
+            .click();
+        const response = await recorded;
+        expect(response.ok(), await response.text()).toBe(true);
+        expect(await response.json()).toMatchObject({
+            data: {
+                kind: 'payment',
+                ownerId: targetId,
+                credits: '3.125',
+                amountUsd: '2.125',
+                feeUsd: '0.025',
+            },
+        });
+        await expect(dialog).toHaveCount(0);
+        const row = page.getByRole('row').filter({ hasText: reference });
+        await expect(row).toHaveCount(1);
+        await expect(row).toContainText('2.125');
+        await page.reload();
+        await expect(row).toHaveCount(1);
+        await expect(row).toContainText('Customer payment');
+        await page.screenshot({
+            path: info.outputPath('accounting-record-wide.png'),
+            fullPage: true,
+        });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(
+            settings.getByLabel(
+                'Default maximum credits per action (blank = uncalibrated)',
+            ),
+        ).toHaveValue('20.125');
+        await page.screenshot({
+            path: info.outputPath('accounting-settings-narrow.png'),
+            fullPage: true,
+        });
+        await expect(
+            page.getByText('Current report', { exact: true }),
+        ).toBeVisible({ timeout: 60_000 });
+        clean();
     });
 
     // @user-flow shared-pronunciation-playback/admin-private-preview-and-impact-removal
@@ -1080,7 +1214,7 @@ test.describe.serial('admin user management journeys', () => {
     });
 
     // @user-flow ai-credit-wallet/admin-grants-and-generation-consumes-ai-credits
-    test('owner grants AI credits and a managed generation consumes them', async ({
+    test('owner grants AI credits and unknown generation usage releases its hold', async ({
         page,
         request,
     }) => {
@@ -1089,6 +1223,25 @@ test.describe.serial('admin user management journeys', () => {
             '/api/admin/auth/refresh': 401,
         });
         await passwordLogin(page);
+        await execFileAsync(
+            'pnpm',
+            [
+                '--filter',
+                '@languon/backend',
+                'exec',
+                'tsx',
+                'tests/support/admin-legacy-accounting-fixture.ts',
+            ],
+            {
+                cwd: repositoryRoot,
+                env: {
+                    ...process.env,
+                    APP_ENV: 'test',
+                    ADMIN_E2E_ACCOUNTING_FIXTURES: 'true',
+                    ADMIN_E2E_DATABASE_URL: databaseUrl,
+                },
+            },
+        );
 
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
         await expect(
@@ -1131,7 +1284,7 @@ test.describe.serial('admin user management journeys', () => {
         const amount = adjustmentDialog.getByRole('spinbutton', {
             name: 'Credits',
         });
-        await expect(amount).toHaveValue('1');
+        await expect(amount).toHaveValue('1.000');
         await amount.fill('50000000');
         await expect(amount).toHaveValue('50000000');
         await adjustmentDialog
@@ -1238,57 +1391,59 @@ test.describe.serial('admin user management journeys', () => {
             );
             const database = postgres(databaseUrl, { max: 1 });
             try {
-                const [reservation] = await database<
+                const [action] = await database<
                     Array<{
-                        chargedCredits: string;
-                        dispatchedAt: Date | null;
-                        measurement: string | null;
-                        reservedCredits: string;
-                        settledAt: Date | null;
                         state: string;
+                        outcome: string;
+                        measurement: string;
+                        chargedMilli: string;
+                        heldMilli: string;
                     }>
                 >`
-                    select
-                        charged_credits as "chargedCredits",
-                        dispatched_at as "dispatchedAt",
-                        measurement,
-                        reserved_credits as "reservedCredits",
-                        settled_at as "settledAt",
-                        state
-                    from ai_credit_reservations
-                    where job_id = ${jobId}
-                    order by attempt
+                    select state, outcome, measurement, charged_milli as "chargedMilli", held_milli as "heldMilli"
+                    from ai_credit_actions where id = ${jobId}
                 `;
-                expect(reservation).toMatchObject({
-                    dispatchedAt: expect.any(Date),
-                    measurement: 'estimated',
-                    reservedCredits: '400000',
-                    settledAt: expect.any(Date),
+                expect(action).toMatchObject({
                     state: 'settled',
+                    outcome: 'success',
+                    measurement: 'unknown',
+                    chargedMilli: '0',
                 });
-                expect(reservation!.chargedCredits).toBe('400000');
-                const history = await database<Array<{ kind: string }>>`
-                    select kind
-                    from ai_credit_history
-                    where owner_id = ${targetId}
-                    order by created_at, id
+                expect(BigInt(action!.heldMilli)).toBeGreaterThan(0n);
+                const [attempt] = await database<
+                    Array<{ state: string; inputTokens: number | null }>
+                >`
+                    select state, input_tokens as "inputTokens" from ai_credit_action_attempts where action_id = ${jobId}
                 `;
-                expect(history.map((entry) => entry.kind)).toEqual(
-                    expect.arrayContaining([
-                        'grant',
-                        'reservation',
-                        'settlement',
-                    ]),
-                );
+                expect(attempt).toMatchObject({
+                    state: 'settled',
+                    inputTokens: null,
+                });
+                const [expense] = await database<
+                    Array<{ measurement: string; amountMicros: string | null }>
+                >`
+                    select measurement, amount_usd_micros as "amountMicros" from ai_provider_expense_records where action_id = ${jobId}
+                `;
+                expect(expense).toMatchObject({
+                    measurement: 'unknown',
+                    amountMicros: null,
+                });
+                const oldReservations =
+                    await database`select id from ai_credit_reservations where job_id = ${jobId}`;
+                expect(oldReservations).toHaveLength(0);
             } finally {
                 await database.end();
             }
             await page.reload();
-            const settlementHistoryRow = page
-                .getByRole('row')
-                .filter({ hasText: 'Settlement' })
-                .filter({ hasText: 'Estimated maximum' });
-            await expect(settlementHistoryRow).toContainText('−400,000');
+            await expect(
+                page.getByText('Grant', { exact: true }).first(),
+            ).toBeVisible();
+            await expect(
+                page
+                    .getByRole('row')
+                    .filter({ hasText: 'Settlement' })
+                    .filter({ hasText: 'Estimated maximum' }),
+            ).toHaveCount(0);
             const accepted = await request.post(
                 `${backendOrigin}/dictionary-generation-jobs/${jobId}/accept`,
                 {
@@ -1388,7 +1543,7 @@ test.describe.serial('admin user management journeys', () => {
         const amount = adjustmentDialog.getByRole('spinbutton', {
             name: 'Credits',
         });
-        await expect(amount).toHaveValue('1');
+        await expect(amount).toHaveValue('1.000');
         await amount.fill('50000000');
         await expect(amount).toHaveValue('50000000');
         await adjustmentDialog

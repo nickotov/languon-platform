@@ -16,7 +16,12 @@ export interface ImportPairsProposalGeneratorRequest {
 
 export interface ImportPairsProposalGeneratorResult {
     proposal: DictionaryImportPairsGenerationProposalPayload;
-    usage: { inputTokens: number; outputTokens: number };
+    usage: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    };
 }
 
 export interface ImportPairsProposalGenerator {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision user-ai-model-preferences-backend sha256:0c068e37f21ea036
+// @user-flow-revision user-ai-model-preferences-backend sha256:843d32439e34d5ad
 import {
     AuthenticationSuccessResponseSchema,
     DictionaryCardResponseSchema,
@@ -344,6 +344,7 @@ run('real composed text-AI preference HTTP journey', () => {
                     expectedVersion: 0,
                     mode: 'explicit',
                     modelId: 'gemini-2.5-pro',
+                    maxCreditsPerAction: '20.125',
                 },
             });
             expect(saved.status).toBe(200);
@@ -354,6 +355,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 modelId: 'gemini-2.5-pro',
                 selectedModel: { id: 'gemini-2.5-pro' },
                 version: 1,
+                maxCreditsPerAction: '20.125',
             });
             const reloaded = await request('/users/me/ai-model-preference', {
                 token: learner.token,
@@ -364,6 +366,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 mode: 'explicit',
                 modelId: 'gemini-2.5-pro',
                 version: 1,
+                maxCreditsPerAction: '20.125',
             });
 
             const stale = await request('/users/me/ai-model-preference', {

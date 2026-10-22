@@ -19,6 +19,7 @@ e2e_tests:
 e2e_scenarios:
     - learner-preference-pins-dictionary-execution
 related_features:
+    - ai-accounting
     - ai-provider-management
     - ai-credit-wallet
     - dictionary-platform
@@ -32,8 +33,9 @@ related_features:
 
 This backend-only journey belongs to
 [feature 035](../../.agent/features/035-user-ai-model-preferences-backend/FEATURE.md).
-The [backend-first plan](../sentence-practice-implementation-plan.md) defers profile
-UI until the sentence backend and both detailed design prompts are ready.
+Profile budget presentation and affordable-action confirmation are covered in
+[AI accounting and action budgets](./ai-accounting.md). This guide owns the
+authenticated preference/version and pinned-execution backend boundary.
 
 ## Start the development environment
 
@@ -64,8 +66,11 @@ containers when no longer needed; never reuse shared PostgreSQL/Redis for this.
 
 1. A signed-in active learner requests the sanitized text model catalog and their
    preference. An absent stored preference returns Auto with version zero.
+   `maxCreditsPerAction` is an exact decimal string or null while no default is calibrated.
 2. They save a currently enabled, compatible explicit model with the expected
-   preference version. Reading again returns their selection and new version.
+   preference version and optional exact `maxCreditsPerAction` (`20.125` in the
+   synthetic journey). Reading again returns their selection, exact budget and
+   new version. Model choice never raises that saved budget.
 3. A stale update conflicts; it does not overwrite the newer preference. Another
    learner's preference remains independent. Foreign identities are not supplied
    through the preference request.
@@ -107,7 +112,8 @@ Immutable execution and accounting records are never rewritten as Flash.
 ## E2E coverage
 
 `learner-preference-pins-dictionary-execution` proves real authentication, catalog
-redaction, preference save/reload/conflict, explicit model job pinning, same-key
+redaction, exact action-budget and model preference save/reload/conflict,
+explicit model job pinning, same-key
 replay after a preference change, Auto affecting only a new admission, unavailable
 selection failing without enqueue and inactive-user denial through the composed
 API with real PostgreSQL/Redis. Exhaustive constraints, races, claim capability,

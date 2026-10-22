@@ -1,3 +1,4 @@
+import { ActionAllowanceQuoteSchema } from '../ai-action';
 import { z } from 'zod';
 
 export const DictionaryErrorCodeSchema = z.enum([
@@ -8,6 +9,7 @@ export const DictionaryErrorCodeSchema = z.enum([
     'generation_job_not_found',
     'generation_not_available',
     'ai_credits_exhausted',
+    'action_confirmation_required',
     'generation_not_reviewable',
     'generation_proposal_expired',
     'generation_candidate_conflict',
@@ -29,6 +31,10 @@ export const DictionaryErrorResponseSchema = z
         error: z
             .object({
                 code: DictionaryErrorCodeSchema,
+                details: z
+                    .object({ quote: ActionAllowanceQuoteSchema })
+                    .strict()
+                    .optional(),
                 message: z.string().min(1).max(300),
                 correlationId: z.string().min(1).max(128),
                 retryAfterSeconds: z

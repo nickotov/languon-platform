@@ -108,11 +108,12 @@ describe('shared pronunciation normalization and pricing', () => {
             inspectSpeechText('今日は学校で日本語を勉強します', 'ja').wordCount,
         ).toBeGreaterThan(1);
     });
-    it('prices the entire text with exact integer ceiling and minimum', () => {
-        expect(speechPrice(101, 100, 1)).toBe(11n);
-        expect(speechPrice(1000, 100, 1)).toBe(100n);
-        expect(speechPrice(1, 1, 5)).toBe(5n);
-        expect(speechPrice(2000, 1_000_000_000, 1)).toBe(2_000_000_000n);
-        expect(() => speechPrice(100, 0.1, 1)).toThrow();
+    it('prices the entire text in milli-credits with exact rounding and fractional rates', () => {
+        expect(speechPrice(101, 100, 1)).toBe(10_100n);
+        expect(speechPrice(1000, 100, 1)).toBe(100_000n);
+        expect(speechPrice(1, 1, 5)).toBe(5_000n);
+        expect(speechPrice(2000, 1_000_000_000, 1)).toBe(2_000_000_000_000n);
+        expect(speechPrice(100, 0.1, 0)).toBe(10n);
+        expect(() => speechPrice(100, -0.1, 1)).toThrow();
     });
 });

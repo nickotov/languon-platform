@@ -19,7 +19,11 @@ export async function requestTextsCancellation(
 ): Promise<void> {
     await tx
         .update(textsAiJobsTable)
-        .set({ cancellationRequestedAt: now, updatedAt: now })
+        .set({
+            cancellationRequestedAt: now,
+            failureCategory: 'access_revoked',
+            updatedAt: now,
+        })
         .where(
             and(
                 eq(textsAiJobsTable.ownerId, ownerId),
@@ -27,7 +31,7 @@ export async function requestTextsCancellation(
             ),
         );
     await tx.execute(
-        sql`update dictionary_text_selection_jobs set cancellation_requested_at=${now.toISOString()}::timestamptz,updated_at=${now.toISOString()}::timestamptz where (owner_id=${ownerId}::uuid or source_owner_id=${ownerId}::uuid) and execution_state in ('queued','running')`,
+        sql`update dictionary_text_selection_jobs set failure_code='access_revoked',cancellation_requested_at=${now.toISOString()}::timestamptz,updated_at=${now.toISOString()}::timestamptz where (owner_id=${ownerId}::uuid or source_owner_id=${ownerId}::uuid) and execution_state in ('queued','running')`,
     );
 }
 

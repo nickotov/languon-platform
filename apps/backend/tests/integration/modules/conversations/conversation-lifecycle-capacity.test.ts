@@ -29,7 +29,7 @@ import {
     resetTestDatabase,
 } from '../../support/test-database';
 
-const now = new Date('2026-10-19T12:00:00Z');
+const now = new Date();
 const budget = {
     inputCostMicrosPerMillionTokens: 100,
     outputCostMicrosPerMillionTokens: 200,
@@ -373,7 +373,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 workerId: 'feature044-test',
             });
             expect(claimed).not.toBeNull();
-            expect((await store.inspectOwner(claimed!)).activeJobs).toBe(0);
+            expect(
+                (
+                    await store.inspectOwner({
+                        ...claimed!,
+                        workerId: 'feature044-test',
+                    })
+                ).activeJobs,
+            ).toBe(0);
             expect(
                 await store.finish({
                     ...claimed!,

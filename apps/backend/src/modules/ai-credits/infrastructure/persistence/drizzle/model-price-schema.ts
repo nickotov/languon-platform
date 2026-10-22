@@ -28,6 +28,7 @@ export const modelPriceRevisionsTable = pgTable(
                     | 'minimumCredits'
                     | 'inputCreditsPerMillionTokens'
                     | 'outputCreditsPerMillionTokens'
+                    | 'cachedInputCreditsPerMillionTokens'
                     | 'provisional'
                 >
             >()

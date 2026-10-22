@@ -49,7 +49,8 @@ const en = {
     incomplete: 'Incomplete response',
     running: 'Preparing response…',
     failed: 'The response could not finish.',
-    reconnecting: 'Reconnecting to the current response…',
+    reconnecting:
+        'Reconnecting to the current response. Closing this view does not stop generation. Use Stop to stop it.',
     error: 'Could not load or update the conversation. Please try again.',
     language: 'Reply language',
     automatic: 'Automatic',
@@ -147,7 +148,8 @@ const ru: Copy = {
     incomplete: 'Незавершённый ответ',
     running: 'Подготовка ответа…',
     failed: 'Не удалось завершить ответ.',
-    reconnecting: 'Восстановление подключения…',
+    reconnecting:
+        'Восстановление подключения. Закрытие окна не останавливает генерацию. Для остановки нажмите «Остановить».',
     error: 'Не удалось загрузить или обновить беседу. Попробуйте снова.',
     language: 'Язык ответа',
     automatic: 'Автоматически',
@@ -244,7 +246,8 @@ const es: Copy = {
     incomplete: 'Respuesta incompleta',
     running: 'Preparando respuesta…',
     failed: 'No se pudo completar la respuesta.',
-    reconnecting: 'Reconectando…',
+    reconnecting:
+        'Reconectando. Cerrar esta vista no detiene la generación. Usa Detener para pararla.',
     error: 'No se pudo cargar o actualizar la conversación. Inténtalo de nuevo.',
     language: 'Idioma de respuesta',
     automatic: 'Automático',
@@ -342,7 +345,8 @@ const fr: Copy = {
     incomplete: 'Réponse incomplète',
     running: 'Préparation de la réponse…',
     failed: 'La réponse n’a pas pu être terminée.',
-    reconnecting: 'Reconnexion…',
+    reconnecting:
+        'Reconnexion. Fermer cette vue n’arrête pas la génération. Utilisez Arrêter pour l’interrompre.',
     error: 'Impossible de charger ou modifier la conversation. Réessayez.',
     language: 'Langue de réponse',
     automatic: 'Automatique',

@@ -22,8 +22,12 @@ source_paths:
     - apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-environment.ts
     - apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-adapters.ts
     - apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-budget.ts
-source_fingerprint: sha256:cc5b017849b79328460785aede73d9c3e172fb52496da779441c004dbc27404a
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+    - apps/backend/src/modules/speech/infrastructure/speech-accounting.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql
+source_fingerprint: sha256:4989eb6a1160490c30d0d6feecab5146c6605a99ff20615019fc89bfe930c9c1
+reviewed: 2026-10-22
 ---
 
 # Speech reuse, generation and pricing
@@ -41,15 +45,21 @@ private backend audio delivery"]
     Reuse -->|"In-flight"| Join["Join existing request for free"]
     Reuse -->|"Miss"| Short{"At most 10 words AND 100 code points?"}
     Short -->|"Yes, allowance available"| Admit["Atomic admission: recheck reuse, profile, source
-pin synthesis policy and price"]
+pin capability funding, synthesis policy,
+customer tariff and reviewed provider USD price"]
     Short -->|"No"| Quote["Exact expiring quote
 reserves nothing"] --> Confirm["Learner confirms charge"] --> Admit
     Admit --> Hold["Reserve exact charge for a new paid job
 no extra reservation for joined requests"]
-    Hold --> Job[("Durable speech job + private object inventory")]
+    Hold --> Operator["Reserve full clip operator USD cost
+shared action, account/day and global/day limits"]
+    Operator --> Job[("Durable speech job + private object inventory")]
     Job --> Worker["Existing bounded worker
+checked live-lease dispatch
 submit once / poll known task"]
-    Worker --> Audio["Validate complete bounded MP3/WAV
+    Worker --> Expense["Record provider expense separately
+character-based estimate or unknown"]
+    Expense --> Audio["Validate complete bounded MP3/WAV
 store private object"]
     Audio --> Success["Publish immutable recording
 settle only inside billing deadline"] --> Playback
@@ -67,6 +77,16 @@ allowance rejects a new admission rather than silently charging. Credits use the
 same ledger as text work, but speech only settles after validated audio publication.
 Quotes expire after five minutes; billing closes ten minutes after admission.
 Known task recovery and retained late output do not reopen billing.
+
+Capability policy can fund speech for the operator; existing conditional short-text
+exemptions and unlimited accounts remain. Every new clip still needs reviewed provider
+pricing and sufficient operator USD authorization, including free/unlimited work. Speech
+is indivisible: an operator allowance too small for the full clip rejects admission.
+Dispatch checks the current speech lease and billing/execution deadlines through the
+restricted financial entry point. Provider expense is separate from the customer character tariff and remains visible
+for failures or late output; character-derived cost is labelled estimated and ambiguous
+upstream usage is unknown. Existing daily admission counters provide an additional
+free-count and estimated-unit bound. Shared operator budgets span speech and text work.
 
 Source/account removal revokes bindings and associations. Successful normalized
 text/audio remains retained under ADR-0031, including text that may contain personal
@@ -109,3 +129,11 @@ No arbitrary-text synthesis API is represented.
 - [apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-environment.ts](../../apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-environment.ts)
 - [apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-adapters.ts](../../apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-adapters.ts)
 - [apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-budget.ts](../../apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-budget.ts)
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)
+
+- [apps/backend/src/modules/speech/infrastructure/speech-accounting.ts](../../apps/backend/src/modules/speech/infrastructure/speech-accounting.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql)

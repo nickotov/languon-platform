@@ -1,6 +1,7 @@
+import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision sentence-practice-backend sha256:afbbf2170d969bb0
+// @user-flow-revision sentence-practice-backend sha256:aa15c021cd619b4f
 
 import {
     AuthenticationSuccessResponseSchema,
@@ -175,6 +176,7 @@ run('real composed sentence practice HTTP and worker journey', () => {
         const revision = randomUUID();
         const now = new Date();
         const db = authentication.productDependencies.database;
+        await seedLegacyActionFixture(db, '100');
         await db.insert(dictionaryAiConfigurationRevisionsTable).values({
             id: revision,
             createdByUserId: ownerId,
@@ -183,7 +185,12 @@ run('real composed sentence practice HTTP and worker journey', () => {
                 adapterRevision: model.adapterRevision,
                 aggregateBudget: model.aggregateBudget,
                 credentialReference: model.credentialReference,
-                creditPricing: model.creditPricing,
+                creditPricing: {
+                    ...model.creditPricing!,
+                    inputCreditsPerMillionTokens: 100,
+                    outputCreditsPerMillionTokens: 300,
+                    maxCreditsPerAttempt: 100000,
+                },
                 enabledModelIds: [model.id],
                 modelId: model.id,
                 perCallMaxInputTokens: model.perCallMaxInputTokens,
@@ -356,7 +363,7 @@ run('real composed sentence practice HTTP and worker journey', () => {
                 visitedExerciseIds: [],
             },
         });
-        expect(next.status).toBe(202);
+        expect(next.status, await next.clone().text()).toBe(202);
         const admitted = SentenceNextResponseSchema.parse(await next.json());
         expect(admitted.kind).toBe('job');
         if (admitted.kind !== 'job') throw new Error('Expected generation job');
@@ -562,11 +569,12 @@ run('real composed sentence practice HTTP and worker journey', () => {
             const database = createTestPostgresClient();
             try {
                 const [row] = await database<
-                    [{ jobs: number; reservations: number }]
+                    [{ jobs: number; actions: number; attempts: number }]
                 >`
             select
                 (select count(*)::int from sentence_ai_jobs) as jobs,
-                (select count(*)::int from ai_credit_reservations) as reservations
+                (select count(*)::int from ai_credit_actions) as actions,
+                (select count(*)::int from ai_credit_action_attempts) as attempts
         `;
                 return row!;
             } finally {
@@ -872,7 +880,8 @@ run('real composed sentence practice HTTP and worker journey', () => {
                 completedRound = await finishGeneration(next.job.id);
                 expect(await counts()).toEqual({
                     jobs: retryCounts.jobs,
-                    reservations: retryCounts.reservations + 1,
+                    actions: retryCounts.actions,
+                    attempts: retryCounts.attempts + 1,
                 });
             }
             expect(completedRound.result?.kind).toBe('exercise');
@@ -1240,10 +1249,15 @@ run('real composed sentence practice HTTP and worker journey', () => {
             token: owner.token,
             body: startBody,
         });
-        expect(started.status).toBe(200);
-        const preparationId = SentencePreparationResponseSchema.parse(
+        expect(started.status, await started.clone().text()).toBe(200);
+        const admittedPreparation = SentencePreparationResponseSchema.parse(
             await started.json(),
-        ).preparation.id;
+        ).preparation;
+        expect(admittedPreparation.billing?.state).toBe('held');
+        expect(admittedPreparation.remainingOutputTokens).toBeLessThanOrEqual(
+            10000,
+        );
+        const preparationId = admittedPreparation.id;
         const replay = await request(`${base}/preparations`, {
             method: 'POST',
             token: owner.token,
@@ -1362,6 +1376,21 @@ run('real composed sentence practice HTTP and worker journey', () => {
             eligibleCount: 2,
         });
         expect(preparation.initialBatch?.state).toBe('partial');
+        expect(preparation.requiresNewBudget).toBe(true);
+        expect(preparation.billing?.state).toBe('charged');
+        expect(
+            (
+                await request(
+                    `${base}/preparations/${preparationId}/commands`,
+                    {
+                        method: 'POST',
+                        token: owner.token,
+                        body: { operationId: randomUUID(), action: 'resume' },
+                    },
+                )
+            ).status,
+        ).toBe(409);
+
         const progress = async () =>
             (await (
                 await request(`${base}/progress?direction=source-to-target`, {

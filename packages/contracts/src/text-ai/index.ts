@@ -1,6 +1,15 @@
 import { z } from 'zod';
+import { CreditAmountNumberSchema } from '../ai-credit-amount';
 
 export const TextAiModelIdSchema = z.string().min(1).max(160);
+/** Canonical credits, not milli-credit storage units. No exponent or float coercion. */
+export const AiActionCreditBudgetSchema = z
+    .string()
+    .regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,3})?$/)
+    .refine(
+        (value) => /[1-9]/.test(value),
+        'The action budget must be positive.',
+    );
 export const TextAiModelSummarySchema = z
     .object({
         id: TextAiModelIdSchema,
@@ -16,8 +25,10 @@ export const TextAiModelSummarySchema = z
         unavailableReason: z.string().max(300).nullable(),
         creditRates: z
             .object({
-                inputCreditsPerMillionTokens: z.number().int().nonnegative(),
-                outputCreditsPerMillionTokens: z.number().int().nonnegative(),
+                inputCreditsPerMillionTokens: CreditAmountNumberSchema,
+                outputCreditsPerMillionTokens: CreditAmountNumberSchema,
+                cachedInputCreditsPerMillionTokens:
+                    CreditAmountNumberSchema.nullable().optional(),
             })
             .strict(),
     })
@@ -34,6 +45,7 @@ export const TextAiPreferenceResponseSchema = z
         modelId: TextAiModelIdSchema.nullable(),
         version: z.number().int().nonnegative(),
         selectedModel: TextAiModelSummarySchema.nullable(),
+        maxCreditsPerAction: AiActionCreditBudgetSchema.nullable(),
     })
     .strict();
 export const UpdateTextAiPreferenceRequestSchema = z.discriminatedUnion(
@@ -43,6 +55,7 @@ export const UpdateTextAiPreferenceRequestSchema = z.discriminatedUnion(
             .object({
                 mode: z.literal('auto'),
                 expectedVersion: z.number().int().min(0).max(2_147_483_646),
+                maxCreditsPerAction: AiActionCreditBudgetSchema.optional(),
             })
             .strict(),
         z
@@ -50,6 +63,7 @@ export const UpdateTextAiPreferenceRequestSchema = z.discriminatedUnion(
                 mode: z.literal('explicit'),
                 modelId: TextAiModelIdSchema,
                 expectedVersion: z.number().int().min(0).max(2_147_483_646),
+                maxCreditsPerAction: AiActionCreditBudgetSchema.optional(),
             })
             .strict(),
     ],

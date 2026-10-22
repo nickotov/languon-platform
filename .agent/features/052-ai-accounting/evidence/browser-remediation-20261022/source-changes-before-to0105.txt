@@ -1,0 +1,10 @@
+apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts
+apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql
+apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/portrait-deletion-participant.ts
+apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts
+apps/backend/src/modules/speech/infrastructure/speech-accounting-guards.sql
+apps/backend/src/modules/speech/infrastructure/speech-accounting.ts
+apps/backend/src/modules/users/application/account-purge-service.ts
+apps/backend/src/modules/users/application/ports/account-purge-store.ts
+apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store.ts
+apps/backend/drizzle/meta/_journal.json

@@ -10,6 +10,7 @@ import {
     conversationApi,
     type ConversationSessionRequest,
 } from '@/fsd/entities/conversation';
+import { useConversationAdmission } from './use-conversation-admission';
 import { useConversationStream } from './use-conversation-stream';
 
 type ActionFailure =
@@ -126,55 +127,14 @@ export function useConversation(
             await refresh(conversation.id);
         },
     });
-    const submit = useMutation({
-        mutationFn: async ({
-            content,
-            draftContext,
-            editorContext,
-            copiedAttachments,
-            retryOf,
-        }: {
-            content: string;
-            draftContext?: string | undefined;
-            editorContext?: SubmitConversationTurnRequest['editorContext'];
-            copiedAttachments?: CopiedAttachment[];
-            retryOf?: string | undefined;
-        }) => {
-            if (!id) throw new Error('Conversation is unavailable.');
-            const candidate = {
-                content,
-                attachments: copiedAttachments ?? attachments,
-                draftContext: draftContext
-                    ? { content: draftContext }
-                    : undefined,
-                editorContext,
-                retryOf,
-            };
-            const signature = JSON.stringify(candidate);
-            const previous = pendingRequest.current;
-            if (
-                !previous ||
-                JSON.stringify({ ...previous, requestId: undefined }) !==
-                    signature
-            )
-                pendingRequest.current = {
-                    ...candidate,
-                    requestId: crypto.randomUUID(),
-                };
-            const response = await stream.submit(pendingRequest.current!);
-            pendingRequest.current = null;
-            return { ...response, sentAttachments: candidate.attachments };
-        },
-        onSuccess: async ({ turn, sentAttachments }, variables) => {
-            setQuestion((current) =>
-                current === variables.content ? '' : current,
-            );
-            const sentIds = new Set(sentAttachments.map((item) => item.id));
-            setAttachments((current) =>
-                current.filter((item) => !sentIds.has(item.id)),
-            );
-            await refresh(turn.conversationId);
-        },
+    const admission = useConversationAdmission({
+        id,
+        attachments,
+        pendingRequest,
+        submitTurn: stream.submit,
+        setQuestion,
+        setAttachments,
+        refresh,
     });
     function clearActionFailure(
         kind: ActionFailure['kind'],
@@ -285,7 +245,7 @@ export function useConversation(
         active,
         stream,
         create,
-        submit,
+        ...admission,
         question,
         setQuestion,
         attachments,

@@ -1,3 +1,7 @@
+import {
+    actionAllowanceRequestMiddleware,
+    actionAllowanceErrorResponse,
+} from '../../../ai-credits/infrastructure/action-allowance-consent';
 import type { MiddlewareHandler } from 'hono';
 import { TextsAiError } from '../../../texts/application/ports/texts-ai-provider';
 import { TextAiSelectionUnavailableError } from '../../../text-ai/application/text-ai-admission-participant';
@@ -135,7 +139,10 @@ export function createTextSelectionRoutes(dependencies: {
         }
         await next();
     });
+    app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
+        const allowanceError = actionAllowanceErrorResponse(error, context);
+        if (allowanceError) return allowanceError;
         if (error instanceof InvalidBearerAuthorizationError)
             return context.json(
                 {

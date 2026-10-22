@@ -1,3 +1,7 @@
+import {
+    ActionConsentCancelledError,
+    useActionConsent,
+} from '@/fsd/entities/ai-action';
 import type {
     TextAiJob,
     EnqueueTextTranslationRequest,
@@ -11,6 +15,7 @@ export function useTextWorkspaceJob(
     actorId?: string,
     cleanupRequest = request,
 ) {
+    const actionConsent = useActionConsent();
     const [job, setJob] = useState<TextAiJob | null>(null);
     const [error, setError] = useState<unknown>(null);
     const [pending, setPending] = useState(false);
@@ -78,13 +83,18 @@ export function useTextWorkspaceJob(
         setError(null);
         setJob(null);
         try {
-            const response = await request((token) =>
-                detect
-                    ? textsApi.detectLanguage(token, submission)
-                    : textsApi.translateText(
-                          token,
-                          submission as EnqueueTextTranslationRequest,
-                      ),
+            const response = await actionConsent.run((confirmedQuoteId) =>
+                request((token) =>
+                    detect
+                        ? textsApi.detectLanguage(token, {
+                              ...submission,
+                              ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                          })
+                        : textsApi.translateText(token, {
+                              ...submission,
+                              ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                          } as EnqueueTextTranslationRequest),
+                ),
             );
             if (generation.current === fence) {
                 retryOperation.current = null;
@@ -97,7 +107,10 @@ export function useTextWorkspaceJob(
                     textsApi.cancelAiJob(token, response.job.id),
                 );
         } catch (cause) {
-            if (generation.current === fence) setError(cause);
+            if (generation.current === fence)
+                setError(
+                    cause instanceof ActionConsentCancelledError ? null : cause,
+                );
         } finally {
             if (generation.current === fence) {
                 starting.current = false;
@@ -119,7 +132,10 @@ export function useTextWorkspaceJob(
             );
             if (generation.current === fence) setJob(response.job);
         } catch (cause) {
-            if (generation.current === fence) setError(cause);
+            if (generation.current === fence)
+                setError(
+                    cause instanceof ActionConsentCancelledError ? null : cause,
+                );
             throw cause;
         }
     }
@@ -135,6 +151,7 @@ export function useTextWorkspaceJob(
         return true;
     }
     function clear() {
+        actionConsent.cancel();
         generation.current += 1;
         starting.current = false;
         setPending(false);
@@ -143,6 +160,7 @@ export function useTextWorkspaceJob(
     }
 
     return {
+        actionConsent,
         job,
         error: error ?? poll.error,
         pending,

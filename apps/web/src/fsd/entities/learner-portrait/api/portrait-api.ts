@@ -1,5 +1,6 @@
 import { BrowserApiError } from '@languon/browser-auth';
 import {
+    ActionAllowanceQuoteSchema,
     ApprovePortraitRequestSchema,
     DeletePortraitRequestSchema,
     DiscardPortraitInterviewRequestSchema,
@@ -30,6 +31,7 @@ const ErrorCodeSchema = z.enum([
     'draft_unavailable',
     'resource_limit',
     'billing_notice_required',
+    'action_confirmation_required',
     'credits_exhausted',
     'model_unavailable',
     'capacity_unavailable',
@@ -44,6 +46,9 @@ const ErrorCodeSchema = z.enum([
 const ErrorResponseSchema = z.object({
     error: z.object({
         code: ErrorCodeSchema,
+        details: z
+            .object({ quote: ActionAllowanceQuoteSchema.optional() })
+            .optional(),
         message: z.string().max(2000),
         correlationId: z.string().max(200),
     }),

@@ -94,6 +94,8 @@ export interface DictionaryDocumentStore {
         providerUsage: {
             inputTokens: number;
             outputTokens: number;
+            cacheReadTokens?: number;
+            cacheWriteTokens?: number;
         };
         reviewExpiresAt: Date;
         scanAttestation: {

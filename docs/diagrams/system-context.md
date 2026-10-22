@@ -17,8 +17,9 @@ source_paths:
     - docs/architecture.md
     - docs/adr/0040-preproduction-owner-scoped-audio-retirement.md
     - apps/backend/src/modules/speech/infrastructure/composition.ts
-source_fingerprint: sha256:5593eca6f6617ea9d420146c9471561bb25df18fff4c7c515ddd08e91e56035b
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+source_fingerprint: sha256:da03b0aa733277bce28c341eb977f77d0e7dc8c85f6f3051ac1d2fc7aac41a37
+reviewed: 2026-10-22
 ---
 
 # System context
@@ -31,7 +32,7 @@ flowchart LR
 Dictionaries, Texts, Knowledge workspace, learning"]
     Reader["Unlisted Knowledge reader"] -->|"Read saved note; sign in to copy"| Web
     Operator["Operator browser"] --> Admin["Vite / Refine admin
-Users, AI settings, audit, recordings"]
+Users, AI settings, accounting, audit, recordings"]
     Web -->|"/api proxy: typed JSON and event replay"| API["Hono HTTP backend"]
     Admin -->|"/api proxy: admin-authorized requests"| API
     API -->|"Content, sessions, jobs, accounting"| PG[("PostgreSQL")]
@@ -65,6 +66,10 @@ Those adapters exist; activation and external-service health remain separate fac
 The mobile source renders a static home screen and does not implement the browser
 journeys shown here.
 
+The admin also exposes accounting: manual payment/refund and provider funding records,
+versioned prices/policies and USD reports. These use the same backend and PostgreSQL;
+Feature052 introduces no external billing service, checkout or message broker.
+
 ## Sources
 
 - [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
@@ -81,3 +86,5 @@ journeys shown here.
 - [docs/architecture.md](../../docs/architecture.md)
 - [docs/adr/0040-preproduction-owner-scoped-audio-retirement.md](../../docs/adr/0040-preproduction-owner-scoped-audio-retirement.md)
 - [apps/backend/src/modules/speech/infrastructure/composition.ts](../../apps/backend/src/modules/speech/infrastructure/composition.ts)
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)

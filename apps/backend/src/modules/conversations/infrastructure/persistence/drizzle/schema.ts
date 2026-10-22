@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import type {
     ChatPreferences,
+    ConversationBilling,
     ConversationSource,
     CopiedAttachment,
     KnowledgeNoteContent,
@@ -96,11 +97,13 @@ export const conversationTurnsTable = pgTable(
         providerDispatched: boolean('provider_dispatched')
             .notNull()
             .default(false),
+        billing: jsonb('billing').$type<ConversationBilling>(),
         usage: jsonb('usage').notNull().$type<{
             inputTokens: number;
             outputTokens: number;
             chargedCredits: string;
             estimated: boolean;
+            outputLimitReached?: boolean;
         }>(),
         createdAt: time('created_at'),
         updatedAt: time('updated_at'),

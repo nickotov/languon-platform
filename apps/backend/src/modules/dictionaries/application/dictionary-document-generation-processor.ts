@@ -1,3 +1,4 @@
+import { CardProposalGeneratorError } from './ports/card-proposal-generator';
 import {
     chunkDictionaryBatchGenerationRows,
     parseDictionaryBatchGenerationProposal,
@@ -37,6 +38,12 @@ export type DictionaryDocumentGenerationFailureCategory =
     | 'too_many_terms';
 
 export class DictionaryDocumentGenerationError extends Error {
+    public usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    };
     public constructor(
         public readonly category: DictionaryDocumentGenerationFailureCategory,
         public readonly retryable: boolean,
@@ -429,68 +436,123 @@ export class DictionaryDocumentGenerationProcessor {
         const failures: ReturnType<
             typeof parseDictionaryBatchGenerationProposal
         >['failures'] = [...terms.failures];
+        let totalUsage:
+            | {
+                  inputTokens: number;
+                  outputTokens: number;
+                  cacheReadTokens?: number;
+                  cacheWriteTokens?: number;
+              }
+            | undefined;
+        const addUsage = (usage: NonNullable<typeof totalUsage>) => {
+            totalUsage = totalUsage
+                ? {
+                      inputTokens: totalUsage.inputTokens + usage.inputTokens,
+                      outputTokens:
+                          totalUsage.outputTokens + usage.outputTokens,
+                      ...(totalUsage.cacheReadTokens === undefined ||
+                      usage.cacheReadTokens === undefined
+                          ? {}
+                          : {
+                                cacheReadTokens:
+                                    totalUsage.cacheReadTokens +
+                                    usage.cacheReadTokens,
+                            }),
+                      ...(totalUsage.cacheWriteTokens === undefined ||
+                      usage.cacheWriteTokens === undefined
+                          ? {}
+                          : {
+                                cacheWriteTokens:
+                                    totalUsage.cacheWriteTokens +
+                                    usage.cacheWriteTokens,
+                            }),
+                  }
+                : usage;
+        };
         let inputTokens = 0;
         let outputTokens = 0;
         let costMicros = 0;
         const chunks = chunkDictionaryBatchGenerationRows(terms.rows);
-        for (const [chunkIndex, rows] of chunks.entries()) {
-            const remainingChunks = chunks.length - chunkIndex;
-            const response = await this.dependencies.proposalGenerator.generate(
-                {
-                    idempotencyKey: `${request.idempotencyKey}/enrich/chunk/${chunkIndex + 1}-of-${chunks.length}`,
-                    input: {
-                        context: request.input.context,
-                        effectiveSettings: request.input.effectiveSettings,
-                        rows,
-                        sharedContext: request.input.instruction,
-                        ...(request.input.format === 'document-terms:v2'
-                            ? {
-                                  format: 'pasted-terms:v2' as const,
-                                  translationContext:
-                                      request.input.translationContext,
-                              }
-                            : { format: 'pasted-terms:v1' as const }),
-                    },
-                    providerBudget: {
-                        ...request.providerBudget,
-                        maxCostMicrosPerAttempt: Math.floor(
-                            (request.providerBudget.maxCostMicrosPerAttempt -
-                                costMicros) /
-                                remainingChunks,
-                        ),
-                        maxInputTokensPerAttempt: Math.floor(
-                            (request.providerBudget.maxInputTokensPerAttempt -
-                                inputTokens) /
-                                remainingChunks,
-                        ),
-                        maxOutputTokensPerAttempt: Math.floor(
-                            (request.providerBudget.maxOutputTokensPerAttempt -
-                                outputTokens) /
-                                remainingChunks,
-                        ),
-                    },
-                    providerExecution: request.providerExecution ?? null,
-                    signal: request.signal,
-                },
-            );
-            inputTokens += response.usage.inputTokens;
-            outputTokens += response.usage.outputTokens;
-            costMicros += dictionaryGenerationProviderUsageCostMicros(
-                request.providerBudget,
-                response.usage,
-            );
-            if (
-                inputTokens > request.providerBudget.maxInputTokensPerAttempt ||
-                outputTokens >
-                    request.providerBudget.maxOutputTokensPerAttempt ||
-                costMicros > request.providerBudget.maxCostMicrosPerAttempt
-            )
-                throw new DictionaryDocumentGenerationError(
-                    'provider_unavailable',
-                    false,
+        try {
+            for (const [chunkIndex, rows] of chunks.entries()) {
+                const remainingChunks = chunks.length - chunkIndex;
+                const providerBudget = {
+                    ...request.providerBudget,
+                    maxCostMicrosPerAttempt: Math.floor(
+                        (request.providerBudget.maxCostMicrosPerAttempt -
+                            costMicros) /
+                            remainingChunks,
+                    ),
+                    maxInputTokensPerAttempt: Math.floor(
+                        (request.providerBudget.maxInputTokensPerAttempt -
+                            inputTokens) /
+                            remainingChunks,
+                    ),
+                    maxOutputTokensPerAttempt: Math.floor(
+                        (request.providerBudget.maxOutputTokensPerAttempt -
+                            outputTokens) /
+                            remainingChunks,
+                    ),
+                };
+                const response =
+                    await this.dependencies.proposalGenerator.generate({
+                        idempotencyKey: `${request.idempotencyKey}/enrich/chunk/${chunkIndex + 1}-of-${chunks.length}`,
+                        input: {
+                            context: request.input.context,
+                            effectiveSettings: request.input.effectiveSettings,
+                            rows,
+                            sharedContext: request.input.instruction,
+                            ...(request.input.format === 'document-terms:v2'
+                                ? {
+                                      format: 'pasted-terms:v2' as const,
+                                      translationContext:
+                                          request.input.translationContext,
+                                  }
+                                : { format: 'pasted-terms:v1' as const }),
+                        },
+                        providerBudget,
+                        providerExecution:
+                            request.providerExecution &&
+                            'actionAccountingVersion' in
+                                request.providerExecution
+                                ? {
+                                      ...request.providerExecution,
+                                      aggregateBudget: providerBudget,
+                                  }
+                                : (request.providerExecution ?? null),
+                        signal: request.signal,
+                    });
+                addUsage(response.usage);
+                inputTokens += response.usage.inputTokens;
+                outputTokens += response.usage.outputTokens;
+                costMicros += dictionaryGenerationProviderUsageCostMicros(
+                    request.providerBudget,
+                    response.usage,
                 );
-            candidates.push(...response.proposal.candidates);
-            failures.push(...response.proposal.failures);
+                if (
+                    inputTokens >
+                        request.providerBudget.maxInputTokensPerAttempt ||
+                    outputTokens >
+                        request.providerBudget.maxOutputTokensPerAttempt ||
+                    costMicros > request.providerBudget.maxCostMicrosPerAttempt
+                )
+                    throw new DictionaryDocumentGenerationError(
+                        'provider_unavailable',
+                        false,
+                    );
+                candidates.push(...response.proposal.candidates);
+                failures.push(...response.proposal.failures);
+            }
+        } catch (error) {
+            if (error instanceof CardProposalGeneratorError && error.usage)
+                addUsage(error.usage);
+            if (
+                (error instanceof CardProposalGeneratorError ||
+                    error instanceof DictionaryDocumentGenerationError) &&
+                totalUsage
+            )
+                error.usage = totalUsage;
+            throw error;
         }
 
         await request.reportStage?.('validating', 90);
@@ -504,7 +566,7 @@ export class DictionaryDocumentGenerationProcessor {
                 ),
                 warnings: [],
             }),
-            providerUsage: { inputTokens, outputTokens },
+            providerUsage: totalUsage ?? { inputTokens, outputTokens },
             scanAttestation: cleanScanAttestation,
             extraction: {
                 failureUnitCount: terms.failures.length,

@@ -78,7 +78,7 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
     await page.getByLabel('Find a diagram').fill('knowledge');
     await expect(
         navigation.getByRole('link', {
-            name: 'Conversations and independent Knowledge',
+            name: 'Conversations and Knowledge workspace',
             exact: true,
         }),
     ).toBeVisible();

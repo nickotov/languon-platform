@@ -1,0 +1,2 @@
+ALTER TABLE "conversation_turns" ADD COLUMN "billing" jsonb;--> statement-breakpoint
+ALTER TABLE "ai_action_charging_policies" ADD CONSTRAINT "ai_action_charging_policies_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;

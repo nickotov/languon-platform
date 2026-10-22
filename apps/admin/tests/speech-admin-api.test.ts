@@ -102,8 +102,8 @@ describe('speech administration transport', () => {
                 modelId: 'voice',
                 meter: 'speech-characters',
                 expectedVersion: 4,
-                creditsPer1000Characters: 100,
-                minimumCredits: 1,
+                creditsPer1000Characters: 0.125,
+                minimumCredits: 0.001,
                 inputCreditsPerMillionTokens: null,
                 outputCreditsPerMillionTokens: null,
                 provisional: true,
@@ -113,7 +113,12 @@ describe('speech administration transport', () => {
         expect(fetcher).toHaveBeenCalledTimes(1);
         expect(
             JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body)),
-        ).toMatchObject({ expectedVersion: 4, meter: 'speech-characters' });
+        ).toMatchObject({
+            expectedVersion: 4,
+            meter: 'speech-characters',
+            creditsPer1000Characters: 0.125,
+            minimumCredits: 0.001,
+        });
     });
 
     it('fetches preview through protected backend bytes', async () => {

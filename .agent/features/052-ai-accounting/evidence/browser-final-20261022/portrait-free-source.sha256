@@ -1,0 +1,8 @@
+d0acfa6e14a9e0b015069eb740b2b2614e7eacf2b4c0b2d751df3d8ee7f4e9eb  apps/web/tests/e2e/learner-portrait.journeys.spec.ts
+2c22892e4557c7c4c8920e2c6a73459e1f5de05a3fd0df9b1f460f0aa5368b7b  apps/web/tests/e2e/support/learner-portrait-playwright.config.ts
+9ac9a47b2dd5c694de8e47155219906dd29cdcda4fd03f98cbd9f5d2fa252a7f  apps/backend/tests/support/learner-portrait-web-fixture.ts
+386dfd3ef2b1f0aeb8f84456aa909c98386811b7f3bbda2915a810a42fe70c9d  apps/backend/tests/support/learner-portrait-web-server.ts
+a197e5a5eab8a532681a43b3d376142ab0d257e267842263479043b2f00ee3a9  apps/backend/tests/support/ai-accounting-fixture.ts
+69221410f4bcb7fae62fa19aee7a8d0279b17fd14bfad2b7ab196b2b7736bd2a  apps/web/src/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer.tsx
+a672897343dfc64fa60c0136b4513ed8a6d66a7d246cca7d8dd287c1c412009a  apps/web/src/fsd/pages/learner-portrait/lib/interview-copy.ts
+abf1de9f08039234dac5008a1631adab3eee045bb93faa77ba89762d66b4d02c  docs/user-flows/learner-portrait.md

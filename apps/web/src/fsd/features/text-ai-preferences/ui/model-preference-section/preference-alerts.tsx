@@ -1,3 +1,5 @@
+import { useI18n } from '@/fsd/shared/i18n';
+import { budgetCopy } from '../../lib/action-budget';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { ModelPreferenceController } from '../../hooks/use-model-preference';
 import type { preferenceCopy } from '../../lib/copy';
@@ -12,6 +14,8 @@ export function PreferenceAlerts({
     copy: ReturnType<typeof preferenceCopy>;
     taskInProgress: boolean;
 }) {
+    const { locale } = useI18n();
+    const budget = budgetCopy(locale);
     const { saveState, latest, catalog, draft } = controller;
     const models = catalog.data?.models ?? [];
     const currentSaved =
@@ -86,11 +90,17 @@ export function PreferenceAlerts({
                                 <strong>{copy.latest}</strong>
                                 <br />
                                 {modelLabel(currentSaved, models, copy)}
+                                <br />
+                                {budget.maximum}:{' '}
+                                {latest.maxCreditsPerAction ?? budget.unset}
                             </p>
                             <p>
                                 <strong>{copy.draft}</strong>
                                 <br />
                                 {modelLabel(draft, models, copy)}
+                                <br />
+                                {budget.maximum}:{' '}
+                                {controller.budgetDraft || budget.unset}
                             </p>
                         </div>
                     ) : null}
@@ -107,6 +117,7 @@ export function PreferenceAlerts({
                             disabled={
                                 !latest ||
                                 !controller.online ||
+                                !controller.budgetValid ||
                                 (draft !== 'auto' &&
                                     !models.some(
                                         (model) =>

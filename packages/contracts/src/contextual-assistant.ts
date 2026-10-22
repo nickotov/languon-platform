@@ -590,7 +590,9 @@ export const ChatPreferencesSchema = z
             .default('auto'),
         detail: z.enum(['concise', 'detailed']).optional(),
         wording: z.enum(['simple', 'balanced', 'academic']).optional(),
-        approach: z.enum(['examples-first', 'theory-first', 'balanced']).optional(),
+        approach: z
+            .enum(['examples-first', 'theory-first', 'balanced'])
+            .optional(),
     })
     .strict();
 export const ChatPreferencesResponseSchema = z.object({
@@ -713,6 +715,17 @@ export const ConversationStreamUnavailableSchema = z
             .optional(),
     })
     .strict();
+export const ConversationActionQuoteSchema = z
+    .object({
+        id: z.uuid(),
+        maximumCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
+        approximateOutputTokens: z.number().int().min(1).max(10000),
+        expiresAt: z.iso.datetime(),
+    })
+    .strict();
+export type ConversationActionQuote = z.infer<
+    typeof ConversationActionQuoteSchema
+>;
 /** Bounded diagnostics are retained for support; product UI maps known codes only. */
 export const ConversationErrorResponseSchema = z.object({
     error: z.object({
@@ -723,6 +736,10 @@ export const ConversationErrorResponseSchema = z.object({
             .min(1)
             .max(200)
             .refine(validAssistantText)
+            .optional(),
+        details: z
+            .object({ quote: ConversationActionQuoteSchema })
+            .strict()
             .optional(),
         correlationId: z
             .string()
@@ -793,10 +810,22 @@ export const ConversationUsageSchema = z
     .object({
         inputTokens: z.number().int().nonnegative(),
         outputTokens: z.number().int().nonnegative(),
-        chargedCredits: z.string().regex(/^\d+$/u),
+        chargedCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
         estimated: z.boolean(),
     })
     .strict();
+export const ConversationBillingSchema = z
+    .object({
+        state: z.enum(['held', 'charged', 'released', 'free']),
+        heldCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
+        chargedCredits: z
+            .string()
+            .regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u)
+            .nullable(),
+        measurement: z.enum(['measured', 'estimated', 'unknown']).nullable(),
+    })
+    .strict();
+export type ConversationBilling = z.infer<typeof ConversationBillingSchema>;
 export const ConversationTurnSchema = z
     .object({
         modelId: z.string().min(1).max(200).nullable(),
@@ -811,6 +840,8 @@ export const ConversationTurnSchema = z
         ]),
         failureCode: z.string().max(100).nullable(),
         usage: ConversationUsageSchema,
+        billing: ConversationBillingSchema.optional(),
+        outputLimitReached: z.boolean().optional(),
         createdAt: z.iso.datetime(),
         updatedAt: z.iso.datetime(),
     })
@@ -868,6 +899,7 @@ export type UpdateConversationRequest = z.infer<
 export const SubmitConversationTurnRequestSchema = z
     .object({
         requestId: z.uuid(),
+        confirmedQuoteId: z.uuid().optional(),
         content: z
             .string()
             .trim()

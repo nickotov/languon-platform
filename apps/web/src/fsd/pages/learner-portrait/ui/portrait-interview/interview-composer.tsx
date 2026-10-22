@@ -123,6 +123,11 @@ export function InterviewComposer({
             >
                 {counter} · {cost}
             </p>
+            {free && (
+                <p className={styles.meta}>
+                    {interviewText(locale, 'freePolicy')}
+                </p>
+            )}
         </form>
     );
 }

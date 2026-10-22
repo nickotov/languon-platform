@@ -64,7 +64,13 @@ export class SpeechWorker {
             }
             if (!provider) {
                 if (job.state === 'submitting')
-                    await this.options.store.fail(job, 'failure', this.now());
+                    await this.options.store.fail(
+                        job,
+                        'failure',
+                        this.now(),
+                        undefined,
+                        true,
+                    );
                 else await this.options.store.pending(job, 30_000, this.now());
                 return true;
             }
@@ -132,6 +138,14 @@ export class SpeechWorker {
                         'failure',
                         this.now(),
                         'speech_provider_unavailable',
+                    );
+                else if (error instanceof SpeechSubmissionError)
+                    await this.options.store.fail(
+                        job,
+                        'failure',
+                        this.now(),
+                        undefined,
+                        true,
                     );
                 else await this.options.store.fail(job, 'failure', this.now());
             } else if (!submissionResolved)

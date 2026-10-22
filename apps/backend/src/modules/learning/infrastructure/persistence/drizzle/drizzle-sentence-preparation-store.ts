@@ -1,3 +1,10 @@
+import type { LegacyActionSnapshot } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import { settleLegacyAction } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import { formatCreditMilli } from '../../../../ai-credits/domain/exact-credit-amount';
+import {
+    aiCreditActionsTable as accountingActions,
+    aiCreditActionAttemptsTable as accountingAttempts,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
@@ -7,7 +14,6 @@ import {
     type SentencePreparationBatch,
     type SentencePreparationStartRequest,
     type SentencePreparationCommandRequest,
-    type SentenceDirection,
 } from '@languon/contracts';
 import type { SentencePreparationStore } from '../../../application/ports/sentence-preparation-store';
 import type { SentenceContext } from '../../../application/ports/sentence-practice-store';
@@ -37,6 +43,7 @@ import {
     sentencePreparationBatchesTable as batches,
     sentencePreparationChildrenTable as children,
     sentencePreparationCommandsTable as commands,
+    sentencePreparationActionsTable as parentActions,
 } from './sentence-preparation-schema';
 import {
     authorizeSentence,
@@ -51,12 +58,22 @@ import {
 type Preparation = typeof preparations.$inferSelect;
 type Batch = typeof batches.$inferSelect;
 export interface SentencePreparationAdmissionRequest {
-    direction: SentenceDirection;
-    scope: { type: 'manual'; entryIds: string[] };
-    operationId: string;
-    sessionId: string;
+    preparationId: string;
+    batchId: string;
+    coordinatorFence: bigint;
 }
 export interface SentencePreparationPersistencePolicy {
+    authorizeAction(
+        tx: SentenceTransaction,
+        access: LearningAccess,
+        request: {
+            actionId: string;
+            operationId: string;
+            fingerprint: string;
+            inputPayload: unknown;
+        },
+        context: SentenceContext,
+    ): Promise<{ snapshot: LegacyActionSnapshot; revisionId: string }>;
     admitGeneration(
         tx: SentenceTransaction,
         access: LearningAccess,
@@ -96,12 +113,141 @@ function presentBatch(batch: Batch): SentencePreparationBatch {
                   : 'pending',
     };
 }
-/** Durable orchestration only: child jobs still use the existing executor and accounting. */
+/** One explicit learner action owns the hold and every background child call. */
 export class DrizzleSentencePreparationStore implements SentencePreparationStore {
     constructor(
         private readonly database: SentenceDatabase,
         private readonly policy: SentencePreparationPersistencePolicy,
     ) {}
+    private async authorizeParent(
+        tx: SentenceTransaction,
+        row: Preparation,
+        operationId: string,
+        fingerprint: string,
+        partitions: Array<
+            {
+                entryId: string;
+                learningVersion: number;
+                sourceText: string;
+                targetText: string;
+            }[]
+        >,
+        context: SentenceContext,
+    ) {
+        const actionId = randomUUID();
+        const candidates = (partitions.find((batch) => batch.length > 0) ?? [])
+            .slice(0, 12)
+            .map(({ entryId, learningVersion, sourceText, targetText }) => ({
+                entryId,
+                learningVersion,
+                sourceText,
+                targetText,
+            }));
+        const admitted = await this.policy.authorizeAction(
+            tx,
+            accessFor(row),
+            {
+                actionId,
+                operationId,
+                fingerprint,
+                inputPayload: {
+                    schemaVersion: 1,
+                    generationPolicyVersion: 1,
+                    dictionaryId: row.dictionaryId,
+                    direction: row.direction,
+                    sourceLanguage: row.sourceLanguage,
+                    targetLanguage: row.targetLanguage,
+                    priorityEntryId: candidates[0]?.entryId,
+                    candidates,
+                },
+            },
+            context,
+        );
+        await tx.insert(parentActions).values({
+            actionId,
+            preparationId: row.id,
+            selectedExecutionSnapshot: admitted.snapshot,
+            executionRevisionId: admitted.revisionId,
+            createdAt: context.now,
+        });
+        await tx
+            .update(preparations)
+            .set({ currentActionId: actionId })
+            .where(eq(preparations.id, row.id));
+    }
+    private async settleParent(
+        tx: SentenceTransaction,
+        row: Preparation,
+        at: Date,
+        stopped = false,
+    ) {
+        if (!row.currentActionId) return;
+        const [parent] = await tx
+            .select()
+            .from(accountingActions)
+            .where(eq(accountingActions.id, row.currentActionId));
+        if (!parent || parent.state !== 'active') return;
+        const attempts = await tx
+            .select()
+            .from(accountingAttempts)
+            .where(eq(accountingAttempts.actionId, parent.id));
+        // A running/ambiguous child is recovered by its worker fence before the hold is closed.
+        if (attempts.some((call) => call.state === 'dispatched')) return;
+        const [usable] = await tx
+            .select({ id: jobs.id })
+            .from(jobs)
+            .innerJoin(children, eq(children.jobId, jobs.id))
+            .where(
+                and(
+                    eq(children.preparationId, row.id),
+                    attempts.length
+                        ? inArray(
+                              jobs.id,
+                              attempts.map((call) => call.executionJobId),
+                          )
+                        : sql`false`,
+                    eq(jobs.executionState, 'completed'),
+                    sql`${jobs.resultExerciseId} is not null`,
+                    sql`${jobs.selectedExecutionSnapshot}->>'actionParentId'=${parent.id}`,
+                ),
+            )
+            .limit(1);
+        const outcome = stopped ? 'stopped' : usable ? 'success' : 'failure';
+        await tx
+            .update(parentActions)
+            .set({ terminalOutcome: outcome })
+            .where(eq(parentActions.actionId, parent.id));
+        await settleLegacyAction(tx, {
+            id: parent.id,
+            ownerId: row.learnerId,
+            outcome,
+            at,
+        });
+    }
+    private async parentAvailable(
+        tx: SentenceTransaction,
+        row: Preparation,
+        now: Date,
+    ) {
+        if (!row.currentActionId) return false;
+        const [parent] = await tx
+            .select()
+            .from(accountingActions)
+            .where(eq(accountingActions.id, row.currentActionId));
+        if (!parent || parent.state !== 'active' || parent.deadlineAt <= now)
+            return false;
+        const attempts = await tx
+            .select()
+            .from(accountingAttempts)
+            .where(eq(accountingAttempts.actionId, parent.id));
+        return (
+            attempts.length < 5 &&
+            attempts.reduce(
+                (sum, call) => sum + (call.outputTokens ?? call.outputLimit),
+                0,
+            ) < parent.outputLimit
+        );
+    }
     private async rows(tx: SentenceTransaction, id: string) {
         return tx
             .select()
@@ -115,7 +261,57 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
         visiblePartitions?: Batch[],
     ): Promise<SentencePreparation> {
         const partitions = visiblePartitions ?? (await this.rows(tx, row.id));
+        const [parent] = row.currentActionId
+            ? await tx
+                  .select()
+                  .from(accountingActions)
+                  .where(eq(accountingActions.id, row.currentActionId))
+            : [];
+        const calls = parent
+            ? await tx
+                  .select()
+                  .from(accountingAttempts)
+                  .where(eq(accountingAttempts.actionId, parent.id))
+            : [];
+        const remainingOutputTokens = parent
+            ? Math.max(
+                  0,
+                  parent.outputLimit -
+                      calls.reduce(
+                          (sum, call) =>
+                              sum + (call.outputTokens ?? call.outputLimit),
+                          0,
+                      ),
+              )
+            : 0;
+
         return {
+            ...(parent
+                ? {
+                      billing: {
+                          state:
+                              parent.funding !== 'customer'
+                                  ? ('free' as const)
+                                  : parent.state === 'active'
+                                    ? ('held' as const)
+                                    : parent.chargedMilli
+                                      ? ('charged' as const)
+                                      : ('released' as const),
+                          heldCredits: formatCreditMilli(parent.heldMilli),
+                          chargedCredits:
+                              parent.chargedMilli === null
+                                  ? null
+                                  : formatCreditMilli(parent.chargedMilli),
+                          measurement: parent.measurement,
+                      },
+                      remainingOutputTokens,
+                      requiresNewBudget:
+                          parent.state !== 'active' ||
+                          parent.deadlineAt <= new Date() ||
+                          calls.length >= 5 ||
+                          remainingOutputTokens === 0,
+                  }
+                : {}),
             id: row.id,
             dictionaryId: row.dictionaryId,
             direction: row.direction,
@@ -393,6 +589,21 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                         manifest: [],
                     })),
                 );
+            if (all.length && input.mode !== 'review-only') {
+                await this.authorizeParent(
+                    tx,
+                    row!,
+                    input.operationId,
+                    fingerprint,
+                    partitions,
+                    context,
+                );
+                const [admitted] = await tx
+                    .select()
+                    .from(preparations)
+                    .where(eq(preparations.id, row!.id));
+                return this.present(tx, admitted!);
+            }
             context.signal.throwIfAborted();
             return this.present(tx, row!);
         });
@@ -466,7 +677,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                     throw new SentenceConflictError('operation_conflict');
                 return this.present(tx, row);
             }
-            if (input.action === 'resume') {
+            if (input.action === 'resume' || input.action === 'continue') {
                 if (
                     row.state !== 'paused' ||
                     row.pauseReason === 'access' ||
@@ -494,6 +705,42 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                     .limit(1);
                 if (otherActive)
                     throw new SentenceConflictError('operation_conflict');
+                const available =
+                    row.mode === 'review-only' ||
+                    (await this.parentAvailable(tx, row, context.now));
+                if (input.action === 'resume' && !available)
+                    throw new SentenceConflictError('operation_conflict');
+                if (input.action === 'continue') {
+                    if (available || row.mode === 'review-only')
+                        throw new SentenceConflictError('operation_conflict');
+                    await this.settleParent(tx, row, context.now);
+                    const [old] = row.currentActionId
+                        ? await tx
+                              .select()
+                              .from(accountingActions)
+                              .where(
+                                  eq(accountingActions.id, row.currentActionId),
+                              )
+                        : [];
+                    if (old?.state === 'active')
+                        throw new SentenceConflictError('operation_conflict');
+                    await this.authorizeParent(
+                        tx,
+                        row,
+                        input.operationId,
+                        hash({
+                            preparationId: row.id,
+                            operationId: input.operationId,
+                            action: 'continue',
+                        }),
+                        (await this.rows(tx, id)).map((batch) =>
+                            batch.entries.filter(
+                                (entry) => !covered(batch).has(entry.entryId),
+                            ),
+                        ),
+                        context,
+                    );
+                }
                 await tx
                     .update(preparations)
                     .set({
@@ -517,8 +764,28 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                 operationId: input.operationId,
                 preparationId: id,
                 action: input.action,
+                authorizationActionId: row.currentActionId,
                 createdAt: context.now,
             });
+            if (input.action === 'stop') {
+                if (row.activeJobId)
+                    await tx
+                        .update(jobs)
+                        .set({
+                            cancellationRequestedAt: context.now,
+                            updatedAt: context.now,
+                        })
+                        .where(
+                            and(
+                                eq(jobs.id, row.activeJobId),
+                                inArray(jobs.executionState, [
+                                    'queued',
+                                    'running',
+                                ]),
+                            ),
+                        );
+                else await this.settleParent(tx, row, context.now, true);
+            }
             const [updated] = await tx
                 .select()
                 .from(preparations)
@@ -686,14 +953,45 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                 await lockSentenceLearner(tx, expired.learnerId);
                 await this.pruneInactive(tx, expired.learnerId, context.now);
             });
-        const [candidate] = await this.database
-            .select()
-            .from(preparations)
-            .where(
-                inArray(preparations.state, ['queued', 'running', 'stopping']),
+        // Begin with the compact active/deadline index; never scan settled preparation history.
+        const [expiredParent] = await this.database
+            .select({ preparation: preparations })
+            .from(accountingActions)
+            .innerJoin(
+                parentActions,
+                eq(parentActions.actionId, accountingActions.id),
             )
-            .orderBy(asc(preparations.updatedAt), asc(preparations.id))
+            .innerJoin(
+                preparations,
+                eq(preparations.id, parentActions.preparationId),
+            )
+            .where(
+                and(
+                    eq(accountingActions.state, 'active'),
+                    sql`${accountingActions.deadlineAt}<=${context.now.toISOString()}::timestamptz`,
+                    eq(preparations.state, 'paused'),
+                    eq(preparations.currentActionId, accountingActions.id),
+                ),
+            )
+            .orderBy(
+                asc(accountingActions.deadlineAt),
+                asc(accountingActions.id),
+            )
             .limit(1);
+        const [candidate] = expiredParent
+            ? [expiredParent.preparation]
+            : await this.database
+                  .select()
+                  .from(preparations)
+                  .where(
+                      inArray(preparations.state, [
+                          'queued',
+                          'running',
+                          'stopping',
+                      ]),
+                  )
+                  .orderBy(asc(preparations.updatedAt), asc(preparations.id))
+                  .limit(1);
         if (!candidate) return !!expired;
         return modelPricingTransaction(this.database, async (tx) => {
             await lockTextAiCapacity(tx);
@@ -716,6 +1014,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                             'queued',
                             'running',
                             'stopping',
+                            'paused',
                         ]),
                     ),
                 )
@@ -822,6 +1121,13 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                     !job ||
                     job.executionState === 'failed' ||
                     job.executionState === 'cancelled';
+                if (stopping || failed)
+                    await this.settleParent(
+                        tx,
+                        row,
+                        context.now,
+                        stopping && current!.pauseReason === 'user',
+                    );
                 await tx
                     .update(preparations)
                     .set({
@@ -839,17 +1145,34 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                     .where(eq(preparations.id, row.id));
                 return true;
             }
+            if (row.currentActionId) {
+                const [parent] = await tx
+                    .select()
+                    .from(accountingActions)
+                    .where(eq(accountingActions.id, row.currentActionId));
+                if (
+                    parent?.state === 'active' &&
+                    parent.deadlineAt <= context.now
+                ) {
+                    await this.settleParent(tx, row, context.now);
+                    await pause('budget');
+                    return true;
+                }
+            }
+            const [currentPreparation] = await tx
+                .select()
+                .from(preparations)
+                .where(eq(preparations.id, row.id));
+            const lifecycleCancelled =
+                currentPreparation?.pauseReason === 'access' ||
+                currentPreparation?.pauseReason === 'stale';
             if (
                 !accessValid ||
-                ['stopping', 'paused'].includes(
-                    (
-                        await tx
-                            .select()
-                            .from(preparations)
-                            .where(eq(preparations.id, row.id))
-                    )[0]!.state,
-                )
+                lifecycleCancelled ||
+                ['stopping', 'paused'].includes(currentPreparation!.state)
             ) {
+                if (!accessValid || lifecycleCancelled)
+                    await this.settleParent(tx, row, context.now);
                 await tx
                     .update(preparations)
                     .set({ state: 'paused', updatedAt: context.now })
@@ -864,6 +1187,7 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                     !(row.mode === 'review-only' && batch.reviewed),
             );
             if (!pending) {
+                await this.settleParent(tx, row, context.now);
                 await tx
                     .update(preparations)
                     .set({
@@ -872,6 +1196,14 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                         updatedAt: context.now,
                     })
                     .where(eq(preparations.id, row.id));
+                return true;
+            }
+            if (
+                row.mode !== 'review-only' &&
+                !(await this.parentAvailable(tx, row, context.now))
+            ) {
+                await this.settleParent(tx, row, context.now);
+                await pause('budget');
                 return true;
             }
             if (row.mode !== 'new-only') {
@@ -1011,9 +1343,6 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                     return true;
                 }
             }
-            const remaining = pending.entries.filter(
-                (entry) => !covered(pending).has(entry.entryId),
-            );
             try {
                 // Savepoint rolls back partial reservation/admission writes before persisting pause.
                 await tx.transaction(async (childTx) => {
@@ -1021,37 +1350,19 @@ export class DrizzleSentencePreparationStore implements SentencePreparationStore
                         childTx,
                         accessFor(row),
                         {
-                            direction: row.direction,
-                            scope: {
-                                type: 'manual',
-                                entryIds: remaining.map(
-                                    (entry) => entry.entryId,
-                                ),
-                            },
-                            operationId: randomUUID(),
-                            sessionId: row.id,
+                            preparationId: row.id,
+                            batchId: pending.id,
+                            coordinatorFence: row.coordinatorFence,
                         },
                         context,
                     );
-                    await childTx.insert(children).values({
-                        jobId,
-                        preparationId: row.id,
-                        batchId: pending.id,
-                    });
-                    await childTx
-                        .update(preparations)
-                        .set({
-                            activeJobId: jobId,
-                            state: 'running',
-                            pauseReason: null,
-                            updatedAt: context.now,
-                        })
-                        .where(eq(preparations.id, row.id));
+                    if (!jobId) throw new SentenceCreditsExhaustedError();
                 });
             } catch (error) {
-                if (error instanceof SentenceCreditsExhaustedError)
-                    await pause('credits');
-                else if (error instanceof SentenceCapacityUnavailableError)
+                if (error instanceof SentenceCreditsExhaustedError) {
+                    await this.settleParent(tx, row, context.now);
+                    await pause('budget');
+                } else if (error instanceof SentenceCapacityUnavailableError)
                     await pause('capacity');
                 else if (error instanceof SentenceModelUnavailableError)
                     await pause('model');

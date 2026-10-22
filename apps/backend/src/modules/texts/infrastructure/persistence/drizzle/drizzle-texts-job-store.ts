@@ -1,3 +1,11 @@
+import { withActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
+import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import { ProviderCostAdmissionUnavailableError } from '../../../../ai-credits/domain/provider-cost-admission';
+import {
+    prepareLegacyAction,
+    usesLegacyAction,
+    admitLegacyAttempt,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { createHmac, randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, isNotNull, lte, or, sql } from 'drizzle-orm';
 import type {
@@ -153,7 +161,12 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     throw new TextsAiError('generation_proposal_expired');
                 if (previous.requestFingerprint !== fingerprint)
                     throw new TextsAiError('idempotency_conflict');
-                return exposeTextsJob(previous);
+                return withActionBilling(
+                    tx,
+                    exposeTextsJob(previous),
+                    previous.id,
+                    previous.ownerId,
+                );
             }
             const format =
                 kind === 'text-translation'
@@ -176,6 +189,23 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                 !execution.snapshot.creditPricing
             )
                 throw new TextsAiError('generation_not_available');
+            try {
+                execution.snapshot = await prepareLegacyAction(
+                    tx,
+                    ownerId,
+                    kind,
+                    execution.snapshot!,
+                    context.now,
+                );
+            } catch (error) {
+                if (
+                    error instanceof OperatorBudgetUnavailableError ||
+                    error instanceof ProviderCostAdmissionUnavailableError
+                )
+                    throw new TextsAiError('generation_not_available');
+                throw error;
+            }
+            execution.budget = execution.snapshot.aggregateBudget;
             preflightTextsRequest(input, execution.snapshot, execution.budget);
             const capacity = await readTextAiCapacity(tx, {
                 actorId: ownerId,
@@ -195,7 +225,7 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
             )
                 throw new TextsAiError('rate_limited');
             const budget = execution.budget,
-                pricing = execution.snapshot.creditPricing;
+                pricing = execution.snapshot.creditPricing!;
             const creditSummary =
                 await new DrizzleAiCreditTransactionParticipant(
                     tx,
@@ -222,7 +252,7 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     expiresAt: new Date(context.now.getTime() + 86_400_000),
                     selectedExecutionSnapshot: execution.snapshot,
                     executionRevisionId: execution.revisionId,
-                    maxAttempts: this.policy!.maxAttempts ?? 3,
+                    maxAttempts: Math.min(2, this.policy!.maxAttempts ?? 2),
                     createdAt: context.now,
                     updatedAt: context.now,
                     nextAttemptAt: context.now,
@@ -243,7 +273,7 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                         budget.maxInputTokensPerAttempt,
                     providerReservedOutputTokens:
                         budget.maxOutputTokensPerAttempt,
-                    aiCreditAccounted: true,
+                    aiCreditAccounted: false,
                     aiCreditPolicyMode: creditSummary.policy.effectiveMode,
                     aiCreditInputCreditsPerMillionTokens:
                         pricing.inputCreditsPerMillionTokens,
@@ -254,7 +284,12 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                 })
                 .returning();
             await reserveTextsAttempt(tx, job!, 1, context.now);
-            return exposeTextsJob(job!);
+            return withActionBilling(
+                tx,
+                exposeTextsJob(job!),
+                job!.id,
+                job!.ownerId,
+            );
         });
     }
     private async find(tx: TextsTransaction, ownerId: string, jobId: string) {
@@ -277,7 +312,12 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
             const job = await this.find(tx, ownerId, jobId);
             if (job.expiresAt <= context.now)
                 throw new TextsAiError('generation_proposal_expired');
-            return exposeTextsJob(job);
+            return withActionBilling(
+                tx,
+                exposeTextsJob(job),
+                job.id,
+                job.ownerId,
+            );
         });
     }
     async cancel(ownerId: string, jobId: string, context: TextJobContext) {
@@ -298,7 +338,12 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     .select()
                     .from(jobs)
                     .where(eq(jobs.id, job.id));
-                return exposeTextsJob(updated!);
+                return withActionBilling(
+                    tx,
+                    exposeTextsJob(updated!),
+                    updated!.id,
+                    updated!.ownerId,
+                );
             }
             if (
                 job.executionState === 'completed' &&
@@ -314,9 +359,19 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     })
                     .where(eq(jobs.id, job.id))
                     .returning();
-                return exposeTextsJob(discarded!);
+                return withActionBilling(
+                    tx,
+                    exposeTextsJob(discarded!),
+                    discarded!.id,
+                    discarded!.ownerId,
+                );
             }
-            return exposeTextsJob(job);
+            return withActionBilling(
+                tx,
+                exposeTextsJob(job),
+                job.id,
+                job.ownerId,
+            );
         });
     }
     private async valid(tx: TextsTransaction, job: TextsJobRow, now: Date) {
@@ -340,13 +395,28 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
         failure: string | null,
         usage?: TextsTokenUsage,
     ) {
-        await settleTextsAttempt(tx, job, now, usage);
+        await settleTextsAttempt(
+            tx,
+            job,
+            now,
+            usage,
+            failure || job.failureCategory === 'access_revoked'
+                ? 'failure'
+                : 'stopped',
+        );
         await tx
             .update(jobs)
             .set({
                 ...clearLease,
                 executionState: failure ? 'failed' : 'cancelled',
-                failureCategory: failure,
+                failureCategory:
+                    failure ??
+                    (job.failureCategory === 'access_revoked'
+                        ? 'access_revoked'
+                        : 'explicit_stop'),
+                cancellationRequestedAt: failure
+                    ? job.cancellationRequestedAt
+                    : (job.cancellationRequestedAt ?? now),
                 completedAt: now,
                 updatedAt: now,
                 inputPayload: null,
@@ -421,7 +491,12 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                 .limit(10);
             for (const job of expired) {
                 const invalid = await this.valid(tx, job, context.now);
-                if (invalid || job.attemptCount >= job.maxAttempts) {
+                if (
+                    invalid ||
+                    job.attemptCount >= job.maxAttempts ||
+                    (usesLegacyAction(job.selectedExecutionSnapshot) &&
+                        job.aiCreditProviderDispatchedAt)
+                ) {
                     await this.terminal(
                         tx,
                         job,
@@ -430,7 +505,14 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     );
                     continue;
                 }
-                await settleTextsAttempt(tx, job, context.now);
+                await settleTextsAttempt(
+                    tx,
+                    job,
+                    context.now,
+                    undefined,
+                    'failure',
+                    false,
+                );
                 await tx
                     .update(jobs)
                     .set({
@@ -531,6 +613,29 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                         providerReservationSettledAt: null,
                     })
                     .where(eq(jobs.id, job.id));
+                const actionBudget = usesLegacyAction(
+                    job.selectedExecutionSnapshot,
+                )
+                    ? await admitLegacyAttempt(tx, {
+                          id: job.id,
+                          ownerId: job.ownerId,
+                          workerId: input.workerId,
+                          fencingToken: String(fence),
+                          attempt: job.attemptCount + 1,
+                          budget,
+                          inputPayload: job.inputPayload,
+                          at: context.now,
+                      })
+                    : budget;
+                if (!actionBudget) {
+                    await this.terminal(
+                        tx,
+                        job,
+                        context.now,
+                        'ai_credits_exhausted',
+                    );
+                    continue;
+                }
                 return {
                     lease: {
                         jobId: job.id,
@@ -539,8 +644,13 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                         attempt,
                     },
                     input: job.inputPayload!,
-                    execution: job.selectedExecutionSnapshot,
-                    budget,
+                    execution: usesLegacyAction(job.selectedExecutionSnapshot)
+                        ? {
+                              ...job.selectedExecutionSnapshot,
+                              aggregateBudget: actionBudget,
+                          }
+                        : job.selectedExecutionSnapshot,
+                    budget: actionBudget,
                     providerIdempotencyKey: `texts:${job.id}:${attempt}`,
                 };
             }
@@ -589,6 +699,13 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                 return false;
             }
             const job = locked.job;
+            if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+                await tx
+                    .update(jobs)
+                    .set({ aiCreditProviderDispatchedAt: context.now })
+                    .where(eq(jobs.id, job.id));
+                return true;
+            }
             if (!job.aiCreditReservationId)
                 throw new TextsAiError('generation_not_available');
             await new DrizzleAiCreditTransactionParticipant(
@@ -648,7 +765,7 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                     proposal.alignment.translation,
                 );
             }
-            await settleTextsAttempt(tx, job, context.now, usage);
+            await settleTextsAttempt(tx, job, context.now, usage, 'success');
             await recordTextAiCircuitSuccess(tx, scope(job, context.now));
             await tx
                 .update(jobs)
@@ -676,7 +793,11 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
             const { job, invalid } = locked;
             const code = invalid ?? input.code;
             const retryAt =
-                !invalid && job.attemptCount < job.maxAttempts
+                !invalid &&
+                job.attemptCount < job.maxAttempts &&
+                (!usesLegacyAction(job.selectedExecutionSnapshot) ||
+                    !job.aiCreditProviderDispatchedAt ||
+                    code === 'provider_rate_limited')
                     ? input.retryAt
                     : null;
             if (
@@ -694,7 +815,14 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
                 await this.terminal(tx, job, context.now, code, input.usage);
                 return true;
             }
-            await settleTextsAttempt(tx, job, context.now, input.usage);
+            await settleTextsAttempt(
+                tx,
+                job,
+                context.now,
+                input.usage,
+                'failure',
+                false,
+            );
             await tx
                 .update(jobs)
                 .set({

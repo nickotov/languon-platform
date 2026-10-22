@@ -16,7 +16,7 @@ are active. Start with the system view and follow a narrower flow.
 | [System context](system-context.md)                                     | Applications, durable state and external services in the implemented development system.                                              |
 | [Module and layer boundaries](module-boundaries.md)                     | Composition roots connect typed business modules and app-local frontend layers.                                                       |
 | [Authentication and session refresh](authentication.md)                 | Password/passkey login creates a durable session and browser refresh rotates an opaque credential.                                    |
-| [AI job lifecycle and accounting](ai-job-lifecycle.md)                  | Managed admission pins model and price; dictionary fixture mode and bounded execution have explicit branches.                         |
+| [AI job lifecycle and accounting](ai-job-lifecycle.md)                  | Atomic bounded action admission separates learner charges, provider expenses and operator limits.                         |
 | [Dictionaries and learning](dictionaries-and-learning.md)               | Authored vocabulary, review-first AI generation and personal practice use distinct ownership and revision rules.                      |
 | [Texts and contextual vocabulary](texts-and-vocabulary.md)              | Translation becomes saved aligned text only on Save; selected-phrase Add authorizes atomic dictionary publication.                    |
 | [Conversations and Knowledge workspace](conversations-and-knowledge.md) | Source chat and note workspaces share durable tutor turns; working drafts, publication and unlisted sharing have separate boundaries. |

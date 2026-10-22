@@ -27,6 +27,7 @@ export interface TextReadingProps {
     tab?: Side;
     onTabChange?: (side: Side) => void;
     topSlot?: ReactNode;
+    collectionBudgetContent?: ReactNode;
     showEditedMarkers?: boolean;
     onRequireSignIn?: () => void;
     previewExpired?: boolean;

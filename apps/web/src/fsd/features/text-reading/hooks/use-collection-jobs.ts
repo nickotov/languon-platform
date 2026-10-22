@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { TextSelectionRequest } from '@languon/contracts';
+import { useActionConsent } from '@/fsd/entities/ai-action';
+import type { ActionBilling, TextSelectionRequest } from '@languon/contracts';
 import { textsApi, TextsApiError } from '@/fsd/entities/texts';
 import { waitForPoll } from '../lib/wait-for-poll';
 import type { ReadingSelection, TextReadingProps } from '../types';
 
 export interface CollectionTask {
+    billing?: ActionBilling;
     body: TextSelectionRequest;
     selection: ReadingSelection;
     state: 'adding' | 'success' | 'error' | 'duplicate';
@@ -19,6 +21,7 @@ export function useCollectionJobs(
     props: TextReadingProps,
     onResult: (task: CollectionTask) => void,
 ) {
+    const actionConsent = useActionConsent();
     const [tasks, setTasks] = useState<CollectionTask[]>([]);
     const controls = useRef(new Map<string, AbortController>());
     const results = useRef(new Map<string, CollectionTask>());
@@ -66,16 +69,29 @@ export function useCollectionJobs(
                           control.signal,
                       ),
                   )
-                : await props.requestWithSession((token) =>
-                      textsApi.enqueueSelection(
-                          token,
-                          body,
-                          props.shareKey,
-                          control.signal,
+                : await actionConsent.run((confirmedQuoteId) =>
+                      props.requestWithSession!((token) =>
+                          textsApi.enqueueSelection(
+                              token,
+                              {
+                                  ...body,
+                                  ...(confirmedQuoteId
+                                      ? { confirmedQuoteId }
+                                      : {}),
+                              },
+                              props.shareKey,
+                              control.signal,
+                          ),
                       ),
                   );
             if (control.signal.aborted) return;
-            task = { ...task, jobId: response.job.id };
+            task = {
+                ...task,
+                jobId: response.job.id,
+                ...(response.job.billing
+                    ? { billing: response.job.billing }
+                    : {}),
+            };
             update(task);
             while (
                 response.job.state === 'queued' ||
@@ -101,6 +117,9 @@ export function useCollectionJobs(
 
             task = {
                 ...task,
+                ...(response.job.billing
+                    ? { billing: response.job.billing }
+                    : {}),
                 state,
                 dictionaryId: response.job.dictionaryId,
                 failureCode: response.job.failureCode,
@@ -148,5 +167,5 @@ export function useCollectionJobs(
         }
     };
 
-    return { tasks, run, dismiss, cancel };
+    return { actionConsent, tasks, run, dismiss, cancel };
 }

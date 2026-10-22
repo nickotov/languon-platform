@@ -1,3 +1,4 @@
+import { ActionBillingSchema } from '../ai-action';
 import { z } from 'zod';
 
 import {
@@ -212,6 +213,7 @@ export const DictionaryGenerationAcceptedOutcomeSchema = z
 
 export const DictionarySingleCardGenerationJobSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id: DictionaryIdSchema,
         kind: z.literal('single-card'),
         format: DictionarySingleCardGenerationFormatSchema,
@@ -627,6 +629,7 @@ export const DictionaryPastedTermsGenerationAcceptedOutcomeSchema = z
 
 export const DictionaryPastedTermsGenerationJobSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id: DictionaryIdSchema,
         kind: z.literal('pasted-terms'),
         format: DictionaryPastedTermsGenerationFormatSchema,
@@ -793,6 +796,7 @@ export const DictionaryImportPairsGenerationJobSchema = z
 
 export const DictionaryDocumentTermsGenerationJobSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id: DictionaryIdSchema,
         kind: z.literal('document-terms'),
         format: DictionaryDocumentTermsGenerationFormatSchema,

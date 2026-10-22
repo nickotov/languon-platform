@@ -6,6 +6,11 @@ import type {
 } from './ports';
 import { SpeechError } from '../domain/speech-policy';
 import { assertAudioIntegrity } from '../domain/audio-integrity';
+import {
+    GenerationBurstUnavailableError,
+    type GenerationBurstLimiter,
+    type GenerationBurstCapability,
+} from '../../text-ai/application/generation-burst-limiter';
 
 export class SpeechService {
     private readonly now: () => Date;
@@ -14,10 +19,29 @@ export class SpeechService {
             store: SpeechStore;
             resolver: SpeechSourceResolver;
             storage: AudioObjectStorage;
+            burstLimiter: GenerationBurstLimiter;
             now?: () => Date;
         },
     ) {
         this.now = options.now ?? (() => new Date());
+    }
+    private async admit(
+        actorId: string,
+        capability: GenerationBurstCapability,
+        signal?: AbortSignal,
+    ) {
+        try {
+            const decision = await this.options.burstLimiter.consume({
+                actorId,
+                capability,
+                ...(signal ? { signal } : {}),
+            });
+            if (!decision.allowed) throw new SpeechError('rate_limited', 429);
+        } catch (error) {
+            if (error instanceof GenerationBurstUnavailableError)
+                throw new SpeechError('service_unavailable', 503);
+            throw error;
+        }
     }
     public async availability(actorId: string, sources: SpeechSource[]) {
         const availability = await Promise.all(
@@ -49,7 +73,9 @@ export class SpeechService {
     public async prepare(
         actorId: string,
         input: { source: SpeechSource; operationId: string },
+        signal?: AbortSignal,
     ): Promise<SpeechResponse> {
+        await this.admit(actorId, 'speech-prepare', signal);
         const resolved = await this.options.resolver.resolve(
             actorId,
             input.source,
@@ -61,10 +87,12 @@ export class SpeechService {
             now: this.now(),
         });
     }
-    public confirm(
+    public async confirm(
         actorId: string,
         input: { quoteId: string; operationId: string },
+        signal?: AbortSignal,
     ) {
+        await this.admit(actorId, 'speech-confirm', signal);
         return this.options.store.confirm({
             ...input,
             actorId,

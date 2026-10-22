@@ -21,8 +21,12 @@ source_paths:
     - infra/deploy/lib/shared-speech.mjs
     - docs/adr/0039-source-backed-local-diagram-atlas.md
     - docs/adr/0040-preproduction-owner-scoped-audio-retirement.md
-source_fingerprint: sha256:1a20c01d90cc2ff2cbc11da3d47c0f010c72917735d2edf7d8e30165fea79609
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+    - apps/backend/src/index.ts
+    - apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts
+source_fingerprint: sha256:c12dd6224dda562da927c9611a75cb8587986f80cd5d064ee6a02f622a7d1432
+reviewed: 2026-10-22
 ---
 
 # Development and deployment tooling
@@ -39,6 +43,9 @@ flowchart TB
         Separate["Explicit worker command"] --> Worker["Dictionary + learning + texts + chat + speech worker"]
         Separate --> Purge["Account purge worker command"]
         API --> PG[("PostgreSQL 17")]
+        API --> Accounting["In-process accounting timers
+report refresh + bounded maintenance"]
+        Accounting -->|"dedicated single-connection clients"| PG
         API --> Redis[("Redis 8")]
         Worker --> PG
         Purge --> PG
@@ -92,6 +99,12 @@ budgets and version gates. Current provider/storage environment names remain
 `DICTIONARY_AUDIO_*`. The dev command panel and diagram viewer have independent
 local authority; neither browsing nor a diagram authorizes deployment or mutation.
 
+The API process also schedules bounded accounting maintenance and report refresh. Each
+uses a dedicated single-connection database client; admission does not await either timer.
+Conversation maintenance follows the accounting maintenance callback. This does not add
+a worker image or service. The development-only accounting cutover requires drained work
+and a fresh empty ledger; it is not a deployable conversion of old credit units.
+
 ## Sources
 
 - [compose.yaml](../../compose.yaml)
@@ -112,3 +125,11 @@ local authority; neither browsing nor a diagram authorizes deployment or mutatio
 - [infra/deploy/lib/shared-speech.mjs](../../infra/deploy/lib/shared-speech.mjs)
 - [docs/adr/0039-source-backed-local-diagram-atlas.md](../../docs/adr/0039-source-backed-local-diagram-atlas.md)
 - [docs/adr/0040-preproduction-owner-scoped-audio-retirement.md](../../docs/adr/0040-preproduction-owner-scoped-audio-retirement.md)
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)
+
+- [apps/backend/src/index.ts](../../apps/backend/src/index.ts)
+
+- [apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts](../../apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts](../../apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts)

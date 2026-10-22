@@ -52,6 +52,7 @@ e2e_scenarios:
     - web-phone-reading-selection
     - web-independent-text-membership
 related_features:
+    - ai-accounting
     - sidebar-navigation
     - contextual-language-assistant-and-knowledge
     - dictionary-platform
@@ -156,13 +157,35 @@ translation becomes visible there, including a draft after future publication.
 Moving out removes inherited folder access. Archived resources require restoration;
 active AI work and stale versions reject a move without changing membership.
 
+## Budget confirmation and billing
+
+Translation, detection and contextual-card collection show the saved per-action
+maximum. If only a smaller output is affordable, a real backend quote requires
+explicit **Send**. The original source, selection and operation ID stay frozen
+through confirmation; a changed allowance needs another Send. **Keep editing**
+retains the draft, while **Top up** opens credits in another tab. Completed,
+failed or stopped execution remains distinct from actual held/charged/released/
+Free billing. Exact details disclose integer-thousandth precision; a nonzero
+charge smaller than0.01 displays `<0.01`, never zero. Missing measurement stays
+unknown. See the mapped paid translation case in [AI accounting](./ai-accounting.md).
+
 ## Expected failure and edge cases
 
-- Translation uses immutable task-specific limits. The reviewed DeepSeekFlash v2
-  profile permits128000input/32768output tokens; dictionary calls remain8192output.
-  No queued model/limit/pricing snapshot is rewritten. Overflow returns400
-  model_capacity_exceeded before dispatch; incomplete/length-stopped output never
-  publishes. Source limit remains20000Unicodecodepoints and is not a model-fit guarantee.
+- New detection, translation and contextual-selection actions pin customer and
+  provider rates, the learner maximum and charging policy. Mandatory uncalibrated
+  limits fail closed. The action permits 10,000 total output tokens across at
+  most two safe attempts (one automatic retry); model limits can be lower.
+  Historical admitted snapshots are not rewritten. Input limits and the
+  20,000-code-point source cap remain distinct from the output/action budget.
+  Overflow fails before dispatch; invalid/incomplete/length-stopped structured
+  output cannot publish and does not charge the customer.
+- Credits are exact to 0.001; accounting stores integer thousandths internally.
+  Technical/invalid/revoked-authority failure releases the customer hold, while
+  independent provider expense remains recorded. Explicit learner cancellation
+  is a stopped outcome with defensible usage settlement within its hold.
+  Missing measurement cannot charge the full hold or create a later surprise
+  debit. Independently usable successful stages keep their own admitted budgets.
+  See [AI accounting](./ai-accounting.md).
 
 - Missing/inactive authentication rejects private mutations and AI work.
 - Invalid languages, oversized input, unsupported selection and malformed mappings

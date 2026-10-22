@@ -1,3 +1,4 @@
+import type { CapabilityPolicy } from '@languon/contracts';
 import { PortraitInterviewerOutputSchema } from '@languon/contracts';
 import { z } from 'zod';
 import { maximumTextPrice } from '../../../ai-credits/domain/model-price';
@@ -74,8 +75,8 @@ export function interviewInputTokenLimit(
     );
 }
 
-export const INTERVIEW_MIN_OUTPUT_TOKENS = 1024;
-export const INTERVIEW_MAX_OUTPUT_TOKENS = 4096;
+export const INTERVIEW_MIN_OUTPUT_TOKENS = 1;
+export const INTERVIEW_MAX_OUTPUT_TOKENS = 10000;
 
 /** Largest useful response budget whose exact conservative hold is affordable. */
 export function chooseInterviewOutputTokenLimit(input: {
@@ -111,7 +112,9 @@ export function chooseInterviewOutputTokenLimit(input: {
 }
 
 export type InterviewExecution = TextAiAdmissionExecution & {
-    interviewCreditsBypass: boolean;
+    chargingPolicy: CapabilityPolicy;
+    actionAccountingVersion?: 1;
+    interviewCreditsBypass?: boolean;
     interviewInputTokenLimit?: number;
     interviewOutputTokenLimit?: number;
 };
@@ -140,7 +143,12 @@ export function readInterviewOutputTokenLimit(
     execution: InterviewExecution,
 ): number {
     const modelLimit = execution.snapshot?.perCallMaxOutputTokens;
-    const maximum = Math.min(INTERVIEW_MAX_OUTPUT_TOKENS, modelLimit ?? 0);
+    const maximum = Math.min(
+        execution.actionAccountingVersion === 1
+            ? INTERVIEW_MAX_OUTPUT_TOKENS
+            : 4096,
+        modelLimit ?? 0,
+    );
     const limit =
         execution.interviewOutputTokenLimit === undefined
             ? maximum

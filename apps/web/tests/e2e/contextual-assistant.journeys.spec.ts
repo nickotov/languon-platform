@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:cf08a97114c6b3f5
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:daf894d6a34e6f4d
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -283,7 +283,23 @@ async function source(page: Page, token: string, info: TestInfo) {
 }
 async function send(page: Page, content: string) {
     await page.getByLabel('Your question').fill(content);
+    const admission = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/.test(
+                new URL(response.url()).pathname,
+            ),
+    );
     await page.getByRole('button', { name: 'Send', exact: true }).click();
+    const result = await admission;
+    if (result.status() === 409) {
+        const body = await result.json();
+        if (body.error?.code === 'action_confirmation_required')
+            await page
+                .getByRole('dialog', { name: 'Review this action’s budget' })
+                .getByRole('button', { name: 'Send', exact: true })
+                .click();
+    }
 }
 async function noOverflow(page: Page) {
     await expect

@@ -1,3 +1,8 @@
+import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
+import {
+    aiCreditActionsTable as actions,
+    aiCreditActionAttemptsTable as actionAttempts,
+} from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import {
     textFoldersTable,
     textsTable,
@@ -81,7 +86,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
         // deferred credit guards, rather than deleting retained accounting ledgers.
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
-        now = new Date('2026-10-15T12:00:00Z');
+        now = new Date();
         sourceAvailable = true;
         owner = randomUUID();
         await db.insert(usersTable).values({ id: owner, status: 'active' });
@@ -132,6 +137,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 sourceReference: randomUUID(),
             }),
         );
+        await seedLegacyActionFixture(db, '100');
         options = {
             selectionPolicy: {
                 routingEnabled: true,
@@ -318,19 +324,15 @@ run('Dictionary vocabulary selection durable persistence', () => {
             state: 'failed',
             failureCode: 'duplicate_confirmation_required',
         });
-        const [reservation] = await db
+        const [action] = await db
             .select()
-            .from(aiCreditReservationsTable)
-            .where(eq(aiCreditReservationsTable.jobId, duplicate.id));
-        expect(reservation).toMatchObject({
+            .from(actions)
+            .where(eq(actions.id, duplicate.id));
+        expect(action).toMatchObject({
             state: 'settled',
-            measurement: 'provider_reported',
+            outcome: 'failure',
+            chargedMilli: 0n,
         });
-        expect(reservation!.chargedCredits).toBeGreaterThan(0n);
-        expect(reservation!.chargedCredits).toBe(reservation!.measuredCredits);
-        expect(reservation!.chargedCredits).toBeLessThan(
-            reservation!.reservedCredits,
-        );
         expect(await db.select().from(dictionaryCardsTable)).toHaveLength(1);
         await store.enqueue(owner, {
             ...input,
@@ -404,9 +406,51 @@ run('Dictionary vocabulary selection durable persistence', () => {
         expect(await store.complete(lease, delta)).toBe(false);
         await store.claim('replacement');
         expect((await store.read(owner, lease.id)).failureCode).toBe(
-            'worker_interrupted',
+            'provider_timeout',
         );
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
+    });
+    it('Feature052 keeps one bounded selection action and releases invalid model output', async () => {
+        const admitted = await store.enqueue(owner, request());
+        const first = await claim();
+        expect(first.budget.maxOutputTokensPerAttempt).toBeLessThanOrEqual(
+            10000,
+        );
+        await store.dispatch(first);
+        await store.fail(first, 'invalid_model_output', {
+            inputTokens: 100,
+            outputTokens: 40,
+        });
+        const [action] = await db
+            .select()
+            .from(actions)
+            .where(eq(actions.id, admitted.id));
+        expect(action).toMatchObject({
+            state: 'settled',
+            outcome: 'failure',
+            chargedMilli: 0n,
+        });
+        const [attempt] = await db
+            .select()
+            .from(actionAttempts)
+            .where(eq(actionAttempts.actionId, admitted.id));
+        expect(attempt).toMatchObject({
+            state: 'settled',
+            successful: 0,
+            inputTokens: 100,
+            outputTokens: 40,
+            actualCostMicros: 220,
+        });
+        const expenses = await db.execute(
+            sql`select measurement, amount_usd_micros from ai_provider_expense_records where action_id=${admitted.id}`,
+        );
+        expect(expenses[0]).toMatchObject({
+            measurement: 'measured',
+            amount_usd_micros: '220',
+        });
+        expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
+            0,
+        );
     });
     it('quiesces deletion-pending owners even after provider dispatch', async () => {
         await store.enqueue(owner, request());
@@ -423,7 +467,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
         ).not.toBe('active');
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
-    it('retries a known rate-limit rejection once with separate credit reservations and a fenced attempt', async () => {
+    it('retries a known rate-limit rejection once with one action hold and a fenced attempt', async () => {
         await store.enqueue(owner, request());
         const first = await claim();
         await store.dispatch(first);
@@ -440,8 +484,10 @@ run('Dictionary vocabulary selection durable persistence', () => {
         expect((await store.read(owner, first.id)).state).toBe('failed');
         expect(await store.claim('later')).toBeNull();
         expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
-            2,
+            0,
         );
+        expect(await db.select().from(actions)).toHaveLength(1);
+        expect(await db.select().from(actionAttempts)).toHaveLength(2);
     });
     it('rechecks the source before commit and leaves no dictionary after revocation', async () => {
         await store.enqueue(owner, request());

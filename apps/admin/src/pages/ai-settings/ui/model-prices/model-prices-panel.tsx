@@ -85,9 +85,21 @@ function PriceRates({ price }: { price: ModelPrice }) {
             rate: price.creditsPer1000Characters,
             minimum: price.minimumCredits,
         });
+    const cachedLabel =
+        price.cachedInputCreditsPerMillionTokens == null
+            ? t('pricing.cachedInputFallback')
+            : t('pricing.cachedInputValue', {
+                  rate: price.cachedInputCreditsPerMillionTokens,
+              });
+    const showCachedRate = price.meter === 'text-tokens';
     return (
         <Space wrap>
             <Typography.Text>{label}</Typography.Text>
+            {showCachedRate ? (
+                <Typography.Text type='secondary'>
+                    {cachedLabel}
+                </Typography.Text>
+            ) : null}
             {price.provisional ? <Tag>{t('pricing.provisional')}</Tag> : null}
         </Space>
     );

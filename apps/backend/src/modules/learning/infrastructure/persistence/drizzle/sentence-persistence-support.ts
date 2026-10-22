@@ -1,3 +1,5 @@
+import { readActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
+import { usesLegacyAction } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DictionaryLanguageTagSchema } from '@languon/contracts';
@@ -322,7 +324,12 @@ export async function presentSentenceJob(
         }
         if (!result) throw new SentenceUnavailableError();
     }
+    const actionId = usesLegacyAction(row.selectedExecutionSnapshot)
+        ? (row.selectedExecutionSnapshot.actionParentId ?? row.id)
+        : row.id;
+    const billing = await readActionBilling(tx, actionId, row.learnerId);
     return {
+        ...(billing ? { billing } : {}),
         id: row.id,
         kind: row.jobKind,
         state: row.executionState,

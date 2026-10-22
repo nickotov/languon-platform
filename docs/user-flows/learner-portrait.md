@@ -41,6 +41,7 @@ e2e_scenarios:
     - invalid-model-output-preserves-interview
     - affordable-response-and-visible-insufficiency
 related_features:
+    - ai-accounting
     - contextual-language-assistant-and-knowledge
     - ai-credit-wallet
     - profile-account-controls
@@ -53,19 +54,20 @@ related_features:
 An authenticated learner can save a bounded draft from confirmed portrait items,
 explicitly approve it, and separately decide whether future chats may use it.
 The guided interview is a standalone, resumable operation; it never reads other
-chats, publishes a portrait, or enables use. Interview admission selects only a
-ready portrait-interview execution capability and uses the frozen paid/free
-policy of that operation. New interview operations pin a conservative input bound
-for the serialized interview request, including system instructions, the exact
-injected structured-output schema and framing;
-the same bound controls affordability, provider dispatch and the database-backed
-hold. For finite balances, a new response pins the largest affordable output
-allowance from1,024tokens through the4,096-token/model ceiling, using exact
-tariff rounding. Sufficient balances, unlimited and free mode retain the full
-ceiling. A balance below the minimum useful response reservation is rejected.
-Existing admitted operations retain
-their original limits. The server-only free flag removes the learner charge
-without omitting provider-cost accounting or capacity limits.
+chats, publishes a portrait, or enables use. New interview actions use the admin
+capability policy: Free by default, with provider expense borne by Languon.
+Free actions create no customer hold or charge. The backend admits at most 30
+actions per account per UTC day and one queued/running action at a time;
+failures count, and replaying the same key does not count again. Provider-cost,
+execution and burst limits still apply. Already-admitted operations retain
+their pinned policy when administrators change settings.
+
+The serialized input/schema bound and a 10,000-total-output-token action limit
+bound execution. An explicitly configured paid interview policy additionally
+requires the saved customer budget and affordable input plus at least one output
+token; there is no configured minimum useful response fee or token floor.
+Exact credits are settled once per action. Technical/invalid failures release
+the customer hold; provider expense remains independently accounted.
 
 The web journey uses the actual authenticated application, portrait routes,
 conversation preferences, PostgreSQL and Redis. It runs against a dedicated
@@ -100,12 +102,12 @@ credentials.
    an idempotency key and the latest portrait version/generation. Custom answers
    are at most 200 user-visible characters; chat clarification is at most 1,000.
    `GET` and `POST .../stop` for an operation are owner-only.
-3. A normal paid admission requires the current credit notice acknowledgment,
-   the dedicated capability observation, capacity, and sufficient credits. Each
-   dispatched provider call retains a `portrait-interview` reservation and
-   settles once. With `AI_INTERVIEW_CREDITS_BYPASS=true`, the same operation
-   retains provider-call accounting and operational limits but creates a
-   zero-credit reservation. This setting never changes ordinary chat charging.
+3. Default Free admission requires the dedicated capability observation,
+   configured provider/operator limits and remaining 30/day, one-active quota.
+   It does not require a customer balance or paid notice. Tests may explicitly
+   publish a paid capability policy; those new admissions require the current
+   credit acknowledgment and exact affordable customer budget. Changing policy
+   never retroactively charges an already-admitted Free operation.
 4. A stale draft/interview version returns `409`; an expired inactive interview
    is removed after fourteen days while an approved portrait survives. Discard
    or confirmed deletion removes the working interview/draft and fences pending
@@ -143,17 +145,19 @@ checkbox on desktop and remain usable in a narrow browser. The journey submits a
 French/Russian clarification to a deterministic queued worker, reviews its
 proposal, adds it to the draft, and saves it through the same separate approval
 flow. The resulting portrait is still off until the learner explicitly enables
-it. The same deterministic browser journey also runs with the fixture's explicit
-test-only paid policy (`LEARNER_PORTRAIT_TEST_PAID=true`) and a20,000-credit grant;
-it accepts the actual first-paid-response notice and proves admission succeeds.
-This fixture flag cannot change normal application billing.
+it. The composer labels default operations Free and explains the 30/action UTC-day
+quota and one-active rule. An explicitly paid capability-policy fixture may
+exercise the credit-policy notice and then a separate allowance confirmation.
+A reduced output requires explicit Send, retaining the original answer/version/
+request identity; further reduction returns a new offer requiring another Send.
+Top up preserves the answer in another tab. Actual completed, failed or stopped
+operation billing appears independently, with exact held/charged amounts or
+Free; unknown measurement is not a zero cost. This does not represent the default policy or
+a production environment bypass flag.
 
-Paid regression learners also exercise a15,608-credit balance and complete two
-successive responses with affordable limits. A separate100-credit learner
-accepts the real billing notice and receives a visible, focused error: the
-notice closes, the retained answer remains editable, and credits/manual-edit
-actions remain available on desktop and mobile. The error explains the maximum
-credit hold instead of implying a positive balance is zero.
+The dedicated [AI accounting guide](./ai-accounting.md) covers paid conversation
+allowance confirmation, exact billing details and explicit new-budget Continue.
+Paid interview policy fixtures remain distinct from default Free interviews.
 
 While a response is running, the composer replaces Send with its sole Stop
 button. Stop works with an empty or oversized unsent message, does not submit
@@ -164,14 +168,14 @@ automatically retry or incur another provider call.
 
 ## E2E coverage
 
-| Scenario | Observable proof |
-| --- | --- |
+| Scenario                                             | Observable proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `approved-private-portrait-and-interview-accounting` | Real authentication, HTTP routes, PostgreSQL state and Redis rate limiting prove owner isolation, draft approval without automatic use, paid provider-accounting settlement, and a zero-charge bypass dispatch that still records provider usage. Additional funded-account regressions verify a bounded first response with20,000credits, genuine insufficiency and settlement/release. The same fixture uses the deployment account-purge role to settle an expired active paid call and allocation, archive only numerical provider usage, erase portrait content, and deny reads of private operation/session/portrait payload columns. |
-| `manual-approval-global-off-and-delete-warning` | Desktop and mobile browser evidence proves partial manual approval remains separately disabled after reload; a real two-tab version conflict preserves local edits until the learner chooses a latest or draft value and saves again; global off disables the per-chat control; and the delete confirmation retains the history warning. |
-| `resumable-interview-proposal-and-explicit-approval` | A real browser reload resumes an interview; default and expanded language choices, retained level/learning selections and responsive row alignment are verified; a deterministic provider-bound worker completes the queued French/Russian response, produces a reviewable proposal, and requires the learner to save it before any portrait exists. Free and paid fixture policies preserve the notice and separate activation choices. |
-| `composer-stop-cancels-active-interview` | Desktop Continue and mobile chat requests use the composer Stop control while the real queued operation runs. Empty and oversized unsent input cannot disable Stop; keyboard input cannot submit a second response. Cancellation retains unsent text and the resumable interview. |
-| `invalid-model-output-preserves-interview` | A deterministic invalid nested model response produces the specific recoverable failure through the real worker and HTTP polling. The submitted answer survives reload, with no automatic resubmission. Backend tests independently verify one provider call and retained accounting. |
-| `affordable-response-and-visible-insufficiency` | Paid browser learners with15,608credits complete successive real worker responses; a100-credit learner sees billing409→confirmation→credits400, with the modal closed, error focused and visible, answer retained and explicit credit/manual-edit actions. Real PostgreSQL tests independently prove cumulative prior charges, exact affordable maximality, immutable output limits, insufficient funds and settlement. |
+| `manual-approval-global-off-and-delete-warning`      | Desktop and mobile browser evidence proves partial manual approval remains separately disabled after reload; a real two-tab version conflict preserves local edits until the learner chooses a latest or draft value and saves again; global off disables the per-chat control; and the delete confirmation retains the history warning.                                                                                                                                                                                                                                                                                                    |
+| `resumable-interview-proposal-and-explicit-approval` | A real browser reload resumes an interview; default and expanded language choices, retained level/learning selections and responsive row alignment are verified; a deterministic provider-bound worker completes the queued French/Russian response, produces a reviewable proposal, and requires the learner to save it before any portrait exists. Free and paid fixture policies preserve the notice and separate activation choices.                                                                                                                                                                                                    |
+| `composer-stop-cancels-active-interview`             | Desktop Continue and mobile chat requests use the composer Stop control while the real queued operation runs. Empty and oversized unsent input cannot disable Stop; keyboard input cannot submit a second response. Cancellation retains unsent text and the resumable interview.                                                                                                                                                                                                                                                                                                                                                           |
+| `invalid-model-output-preserves-interview`           | A deterministic invalid nested model response produces the specific recoverable failure through the real worker and HTTP polling. The submitted answer survives reload, with no automatic resubmission. Backend tests independently verify one provider call and retained accounting.                                                                                                                                                                                                                                                                                                                                                       |
+| `affordable-response-and-visible-insufficiency`      | Paid browser learners with15,608credits complete successive real worker responses; a100-credit learner sees billing409→confirmation→credits400, with the modal closed, error focused and visible, answer retained and explicit credit/manual-edit actions. Real PostgreSQL tests independently prove cumulative prior charges, exact affordable maximality, immutable output limits, insufficient funds and settlement.                                                                                                                                                                                                                     |
 
 Repository, contract, and worker tests cover Unicode boundaries, diagnosis-label
 exclusion, conflict/expiry/delete races, recovery of interrupted calls, operation
@@ -187,9 +191,10 @@ traffic; it does not establish generated wording quality or browser behavior.
 - Approval and direct manual saving do not make a portrait active. Global off
   wins over a per-chat setting. Disabling use stops future injection only; older
   chat messages can still contain earlier information.
-- Free interview mode is server configured. It has no customer-facing bypass
-  control, no balance hold or charge, and does not waive rate/capacity/provider
-  budgets.
+- Default Free interview policy is administered through capability settings.
+  It has no learner bypass control or customer hold/charge. Thirty admitted
+  actions/account/UTC day includes failures; one active action is allowed.
+  Idempotent replay consumes neither another quota slot nor another charge.
 - Model failure preserves editable unfinished work until expiry. An unrelated
   interview request receives the bounded `/knowledge` redirect; it cannot become
   new portrait data without explicit review.
@@ -221,8 +226,8 @@ If the test is skipped, verify the disposable PostgreSQL and Redis gates rather
 than relaxing them. A `model_unavailable` response normally means the dedicated
 portrait-interview capability observation is absent, expired, or does not match
 the configured model. A paid `credits_exhausted` response needs a synthetic
-grant in the disposable fixture; setting bypass changes only a newly admitted
-interview operation. A `409` requires reloading the current portrait state and
+grant and explicit paid capability policy in the disposable fixture. Policy
+changes affect only newly admitted interview operations. A `409` requires reloading the current portrait state and
 reviewing changes; never replay with a different body under the same operation
 key.
 

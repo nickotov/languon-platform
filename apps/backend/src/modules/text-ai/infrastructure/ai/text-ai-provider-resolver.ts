@@ -1,3 +1,4 @@
+import { parseCreditMilli } from '../../../ai-credits/domain/exact-credit-amount';
 import {
     createTextAiMastraGeneratorOptions,
     findTextAiModel as findTextAiProviderModel,
@@ -35,13 +36,27 @@ export function resolveTextAiExecutionSnapshot(
                 ![
                     snapshot.creditPricing.inputCreditsPerMillionTokens,
                     snapshot.creditPricing.outputCreditsPerMillionTokens,
-                ].every(
-                    (value) => Number.isSafeInteger(value) && value >= 0,
-                ))) ||
+                    ...(snapshot.creditPricing
+                        .cachedInputCreditsPerMillionTokens == null
+                        ? []
+                        : [
+                              snapshot.creditPricing
+                                  .cachedInputCreditsPerMillionTokens,
+                          ]),
+                ].every((value) => validCustomerRate(value)))) ||
         !sameBudget(snapshot.aggregateBudget, budget)
     )
         throw new Error('Text AI provider execution snapshot is unsupported.');
     return model;
+}
+
+function validCustomerRate(value: number): boolean {
+    try {
+        parseCreditMilli(String(value));
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function sameBudget(

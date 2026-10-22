@@ -1,4 +1,8 @@
 import {
+    actionAllowanceRequestMiddleware,
+    actionAllowanceErrorResponse,
+} from '../../../ai-credits/infrastructure/action-allowance-consent';
+import {
     SentenceLibraryQuerySchema,
     SentenceLibraryListResponseSchema,
     SentenceLibraryDetailSchema,
@@ -161,7 +165,10 @@ export function createSentenceRoutes({
                 ),
         }),
     );
+    app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
+        const allowanceError = actionAllowanceErrorResponse(error, context);
+        if (allowanceError) return allowanceError;
         if (!service.capabilities().sentencesEnabled)
             return failure(
                 context,

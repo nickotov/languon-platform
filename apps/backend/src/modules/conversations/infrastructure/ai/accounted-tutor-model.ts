@@ -30,21 +30,46 @@ const tokenCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const usageSchema = z.object({
     // The pinned router exposes V7 usage totals while declaring its V2 facade.
     // Direct V2 provider fixtures expose scalar totals. Reject missing totals.
-    inputTokens: z.union([tokenCount, z.object({ total: tokenCount })]),
+    inputTokens: z.union([
+        tokenCount,
+        z.object({
+            total: tokenCount,
+            cacheRead: tokenCount.nullish(),
+            cacheWrite: tokenCount.nullish(),
+        }),
+    ]),
+    cachedInputTokens: tokenCount.nullish(),
     outputTokens: z.union([tokenCount, z.object({ total: tokenCount })]),
 });
 function readUsage(usage: unknown): TutorCallUsage | null {
     const parsed = usageSchema.safeParse(usage);
     if (!parsed.success) return null;
     const { inputTokens, outputTokens } = parsed.data;
+    const cacheReadTokens =
+        typeof inputTokens === 'number'
+            ? (parsed.data.cachedInputTokens ?? 0)
+            : (inputTokens.cacheRead ?? 0);
+    const cacheWriteTokens =
+        typeof inputTokens === 'number' ? 0 : (inputTokens.cacheWrite ?? 0);
+    const totalInputTokens =
+        typeof inputTokens === 'number' ? inputTokens : inputTokens.total;
+    if (cacheReadTokens + cacheWriteTokens > totalInputTokens) return null;
     return {
-        inputTokens:
-            typeof inputTokens === 'number' ? inputTokens : inputTokens.total,
+        inputTokens: totalInputTokens,
+        ...(cacheReadTokens ? { cacheReadTokens } : {}),
+        ...(cacheWriteTokens ? { cacheWriteTokens } : {}),
         outputTokens:
             typeof outputTokens === 'number'
                 ? outputTokens
                 : outputTokens.total,
     };
+}
+
+/** Some adapters attach their final measured partial usage to an abort/error object. */
+function readFailureUsage(error: unknown): TutorCallUsage | undefined {
+    if (typeof error !== 'object' || error === null || !('usage' in error))
+        return undefined;
+    return readUsage(error.usage) ?? undefined;
 }
 
 /** One shared gate for the actor, observer and reflector of a single admitted operation. */
@@ -66,6 +91,8 @@ export function createTutorModelGate(options: {
     ]);
     let calls = 0;
     let memoryCalls = 0;
+    // Reservations include concurrent calls and unknown failed usage.
+    let allocatedOutputTokens = 0;
     let contextExceeded = false;
     const maxCalls = options.maxCalls ?? 5;
     const maxMemoryCalls = options.maxMemoryCalls ?? 2;
@@ -97,6 +124,7 @@ export function createTutorModelGate(options: {
                 calls >= maxCalls ||
                 !Number.isSafeInteger(inputTokenEstimate) ||
                 inputTokenEstimate < 0 ||
+                allocatedOutputTokens >= 10_000 ||
                 (purpose !== 'answer' &&
                     (memoryCalls >= maxMemoryCalls || calls >= maxCalls - 1))
             ) {
@@ -107,7 +135,11 @@ export function createTutorModelGate(options: {
             const maxOutputTokens = Math.min(
                 input.maxOutputTokens ?? outputCap,
                 outputCap,
+                10_000 - allocatedOutputTokens,
             );
+            if (!Number.isSafeInteger(maxOutputTokens) || maxOutputTokens <= 0)
+                throw new TutorOperationLimitError();
+            allocatedOutputTokens += maxOutputTokens;
             const call: TutorCallAdmission = {
                 callId: randomUUID(),
                 purpose,
@@ -117,7 +149,18 @@ export function createTutorModelGate(options: {
             calls += 1;
             if (purpose !== 'answer') memoryCalls += 1;
             try {
-                await options.accounting.admit(call);
+                const admitted = await options.accounting.admit(call);
+                if (admitted) {
+                    if (
+                        !Number.isSafeInteger(admitted.maxOutputTokens) ||
+                        admitted.maxOutputTokens < 1 ||
+                        admitted.maxOutputTokens > call.maxOutputTokens
+                    )
+                        throw new TutorOperationLimitError();
+                    allocatedOutputTokens -=
+                        call.maxOutputTokens - admitted.maxOutputTokens;
+                    call.maxOutputTokens = admitted.maxOutputTokens;
+                }
             } catch (error) {
                 controller.abort(error);
                 throw error;
@@ -130,7 +173,7 @@ export function createTutorModelGate(options: {
                 call,
                 input: {
                     ...input,
-                    maxOutputTokens,
+                    maxOutputTokens: call.maxOutputTokens,
                     // DeepSeek native tools run with thinking disabled. Its compatible
                     // SDK forwards unknown provider fields into the actual JSON body.
                     ...(model.provider.startsWith('deepseek')
@@ -155,6 +198,7 @@ export function createTutorModelGate(options: {
         const fail = async (
             call: TutorCallAdmission,
             reason: 'provider-error' | 'missing-usage' | 'aborted',
+            usage?: TutorCallUsage,
         ) => {
             controller.abort(
                 new DOMException(
@@ -162,7 +206,8 @@ export function createTutorModelGate(options: {
                     'AbortError',
                 ),
             );
-            await options.accounting.fail(call, reason);
+            if (usage) await options.accounting.fail(call, reason, usage);
+            else await options.accounting.fail(call, reason);
         };
 
         return new Proxy(model, {
@@ -181,18 +226,20 @@ export function createTutorModelGate(options: {
                                     prepared.call,
                                     prepared.input.abortSignal,
                                 );
+                            if (result.finishReason === 'length')
+                                prepared.call.outputLimitReached = true;
                             const usage = readUsage(result.usage);
                             if (!usage) {
                                 settled = true;
-                                await fail(prepared.call, 'missing-usage');
-                                throw new Error(
-                                    'Provider usage was unavailable.',
+                                await options.accounting.fail(
+                                    prepared.call,
+                                    'missing-usage',
                                 );
+                                return result;
                             }
-                            await options.accounting.settle(
-                                prepared.call,
-                                usage,
-                            );
+                            if (result.finishReason === 'length')
+                                usage.outputLimitReached = true;
+                            await settleUsage(prepared.call, usage);
                             settled = true;
                             return result;
                         } catch (error) {
@@ -202,6 +249,7 @@ export function createTutorModelGate(options: {
                                     signal.aborted
                                         ? 'aborted'
                                         : 'provider-error',
+                                    readFailureUsage(error),
                                 );
                             throw error;
                         }
@@ -219,6 +267,7 @@ export function createTutorModelGate(options: {
                             await fail(
                                 prepared.call,
                                 signal.aborted ? 'aborted' : 'provider-error',
+                                readFailureUsage(error),
                             );
                             throw error;
                         }
@@ -228,18 +277,33 @@ export function createTutorModelGate(options: {
             },
         });
 
+        async function settleUsage(
+            call: TutorCallAdmission,
+            usage: TutorCallUsage,
+        ) {
+            if (
+                usage.outputTokens > call.maxOutputTokens ||
+                usage.inputTokens > options.maxInputTokens
+            )
+                throw new TutorOperationLimitError();
+            await options.accounting.settle(call, usage);
+            allocatedOutputTokens -= call.maxOutputTokens - usage.outputTokens;
+        }
+
         function trackStream(
             result: Awaited<ReturnType<TutorProviderModel['doStream']>>,
             call: TutorCallAdmission,
             abortSignal: AbortSignal,
         ) {
             let finalized = false;
+            let lastFailureUsage: TutorCallUsage | undefined;
             const failOnce = async (
                 reason: 'provider-error' | 'missing-usage' | 'aborted',
+                usage?: TutorCallUsage,
             ) => {
                 if (finalized) return;
                 finalized = true;
-                await fail(call, reason);
+                await fail(call, reason, usage);
             };
             const reader = result.stream.getReader();
             async function readNext() {
@@ -255,7 +319,13 @@ export function createTutorModelGate(options: {
                     });
                 });
                 try {
-                    return await Promise.race([reader.read(), cancelled]);
+                    const pendingRead = reader
+                        .read()
+                        .catch((error: unknown) => {
+                            lastFailureUsage = readFailureUsage(error);
+                            throw error;
+                        });
+                    return await Promise.race([pendingRead, cancelled]);
                 } finally {
                     abortSignal.removeEventListener('abort', onAbort);
                 }
@@ -273,21 +343,30 @@ export function createTutorModelGate(options: {
                                 return;
                             }
                             if (next.value.type === 'error') {
-                                await failOnce('provider-error');
+                                await failOnce(
+                                    'provider-error',
+                                    readFailureUsage(next.value.error),
+                                );
                                 throw new Error(
                                     'The language provider could not complete this response.',
                                 );
                             }
                             if (next.value.type === 'finish') {
+                                if (next.value.finishReason === 'length')
+                                    call.outputLimitReached = true;
                                 const usage = readUsage(next.value.usage);
                                 if (!usage) {
-                                    await failOnce('missing-usage');
-                                    throw new Error(
-                                        'Provider usage was unavailable.',
+                                    finalized = true;
+                                    await options.accounting.fail(
+                                        call,
+                                        'missing-usage',
                                     );
+                                } else {
+                                    if (next.value.finishReason === 'length')
+                                        usage.outputLimitReached = true;
+                                    await settleUsage(call, usage);
+                                    finalized = true;
                                 }
-                                await options.accounting.settle(call, usage);
-                                finalized = true;
                             }
                             streamController.enqueue(next.value);
                         } catch (error) {
@@ -295,6 +374,7 @@ export function createTutorModelGate(options: {
                                 abortSignal.aborted
                                     ? 'aborted'
                                     : 'provider-error',
+                                readFailureUsage(error) ?? lastFailureUsage,
                             );
                             void reader.cancel().catch(() => undefined);
                             streamController.error(error);

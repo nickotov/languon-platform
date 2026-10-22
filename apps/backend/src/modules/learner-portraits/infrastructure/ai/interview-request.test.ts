@@ -19,13 +19,15 @@ const choose = (
         inputTokenLimit,
         modelLimit: 8192,
         creditPricing,
-        ...(availableCredits === undefined ? {} : { availableCredits }),
+        ...(availableCredits === undefined
+            ? {}
+            : { availableCredits: availableCredits * 1000n }),
     });
 
 describe('immutable interview output budget', () => {
     it('keeps full allowance for funded, free and unlimited work', () => {
-        expect(choose()).toBe(4096);
-        expect(choose(20_000n)).toBe(4096);
+        expect(choose()).toBe(8192);
+        expect(choose(20_000n)).toBe(4725);
         expect(choose(18_112n)).toBe(4096);
     });
     it('uses the largest useful affordable cap with the remaining balance after earlier charged work', () => {
@@ -38,7 +40,7 @@ describe('immutable interview output budget', () => {
                 },
                 pricing,
             ),
-        ).toBeLessThanOrEqual(15608);
+        ).toBeLessThanOrEqual(15608000);
         expect(
             maximumTextPrice(
                 {
@@ -47,11 +49,13 @@ describe('immutable interview output budget', () => {
                 },
                 pricing,
             ),
-        ).toBeGreaterThan(15608);
+        ).toBeGreaterThan(15608000);
     });
-    it('preserves a useful floor and rejects one credit below it', () => {
+    it('permits one affordable output token and rejects an unfunded output', () => {
         expect(choose(8896n)).toBe(1024);
-        expect(choose(8895n)).toBeNull();
+        expect(choose(8895n)).toBe(1023);
+        expect(choose(5827n)).toBe(1);
+        expect(choose(5826n)).toBeNull();
         expect(choose(0n)).toBeNull();
     });
     it('uses exact independent ceiling arithmetic for fractional rates', () => {
@@ -69,7 +73,7 @@ describe('immutable interview output budget', () => {
                 },
                 rates,
             ),
-        ).toBeLessThanOrEqual(1500);
+        ).toBeLessThanOrEqual(1500000);
         expect(
             maximumTextPrice(
                 {
@@ -78,7 +82,7 @@ describe('immutable interview output budget', () => {
                 },
                 rates,
             ),
-        ).toBeGreaterThan(1500);
+        ).toBeGreaterThan(1500000);
     });
     it('handles a zero output tariff without dividing by its rate', () => {
         expect(
@@ -86,7 +90,7 @@ describe('immutable interview output budget', () => {
                 ...pricing,
                 outputCreditsPerMillionTokens: 0,
             }),
-        ).toBe(4096);
+        ).toBe(8192);
         expect(
             choose(5823n, 5824, {
                 ...pricing,
@@ -100,9 +104,9 @@ describe('immutable interview output budget', () => {
                 inputTokenLimit: 1000,
                 modelLimit: 512,
                 creditPricing: pricing,
-                availableCredits: 20_000n,
+                availableCredits: 20_000_000n,
             }),
-        ).toBeNull();
+        ).toBe(512);
     });
     it('retains a legacy model allowance below the new useful minimum', () => {
         expect(
@@ -122,7 +126,7 @@ describe('immutable interview output budget', () => {
                 interviewOutputTokenLimit: 3261,
             } as InterviewExecution),
         ).toBe(3261);
-        for (const pin of [null, '1024', 0, -1, 1023, 4097, 1.5, NaN])
+        for (const pin of [null, '1024', 0, -1, 4097, 1.5, NaN])
             expect(() =>
                 readInterviewOutputTokenLimit({
                     ...execution,

@@ -29,6 +29,7 @@ export function ConversationMessages({
     active,
     pending = false,
     onRetry,
+    onContinue,
     onPropose,
     onSuggest,
     children,
@@ -45,6 +46,7 @@ export function ConversationMessages({
     active: boolean;
     pending?: boolean;
     onRetry(turn: ConversationTurn): void;
+    onContinue?: (() => void) | undefined;
     onPropose(message?: ConversationUIMessage): void;
     onSuggest?: (text: string) => void;
     children?: ReactNode;
@@ -168,7 +170,7 @@ export function ConversationMessages({
                             message={message}
                             changed={changed}
                             turn={turn}
-                            active={active}
+                            active={active || pending}
                             hasAssistant={assistantTurns.has(
                                 message.metadata?.turnId,
                             )}
@@ -176,6 +178,7 @@ export function ConversationMessages({
                                 questions.get(message.metadata!.turnId) ?? ''
                             }
                             onRetry={onRetry}
+                            onContinue={onContinue}
                             onPropose={onPropose}
                             workspaceTargetId={
                                 message.metadata?.turnId

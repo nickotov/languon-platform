@@ -94,6 +94,7 @@ export function createSentencePreparationWorkerComposition(
         });
     const preparation: DrizzleSentencePreparationStore =
         new DrizzleSentencePreparationStore(dependencies.database, {
+            authorizeAction: store.preparePreparationAction.bind(store),
             admitGeneration: (tx, access, input, context) =>
                 store.admitPreparationGeneration(tx, access, input, context),
         });

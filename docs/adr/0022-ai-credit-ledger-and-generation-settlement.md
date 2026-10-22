@@ -4,7 +4,7 @@ id: ADR-0022
 title: 'AI credit ledger and generation settlement'
 status: accepted
 date: 2026-09-25
-superseded_in_part_by: 'ADR-0032 editable immutable tariffs and success-only speech settlement; text usage settlement unchanged'
+superseded_in_part_by: 'ADR-0032 editable immutable tariffs and success-only speech settlement; text usage settlement unchanged; ADR-0045 action accounting, exact fractional units, provider expenses and capability funding policies'
 supersedes: 'None'
 ---
 

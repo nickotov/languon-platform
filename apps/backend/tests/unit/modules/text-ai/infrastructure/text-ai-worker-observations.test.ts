@@ -11,6 +11,7 @@ import {
     textAiSelectionObservationId,
     portraitInterviewExecutionObservationId,
     conversationExecutionObservationId,
+    conversationCapacityObservationId,
 } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 type Observation = Parameters<
     typeof isSentenceExecutionCapableObservation
@@ -176,7 +177,7 @@ describe('shared worker capability publication', () => {
                             row,
                             'sentence-preparation:v2',
                         ),
-                    ).toBe(false);
+                    ).toBe(true);
                 }
                 expect(row.textAiSupportedFormats).toEqual(
                     enabled
@@ -186,6 +187,86 @@ describe('shared worker capability publication', () => {
             }
         }
     });
+    it.each([1, 2])(
+        'requires preparation v%i executor evidence across overlapping capacity checks',
+        (version) => {
+            const marker = `sentence-preparation:v${version}`;
+            const base = `sentence-generation:v${version}`;
+            const row = {
+                id: conversationCapacityObservationId(
+                    'worker',
+                    'provider',
+                    'model',
+                ),
+                workerId: 'worker',
+                providerId: 'provider',
+                modelId: 'model',
+                textAiSelectionRevision: 1,
+                textAiSupportedFormats: [base, marker],
+                textAiCapacityRevision: 1,
+                textsCapacityRevision: 1,
+                conversationCapacityRevision: 1,
+                learningExecutionRevision: 1,
+                creditSettlementRevision: 1,
+            };
+            for (const accepts of [
+                isSentenceExecutionCapableObservation,
+                isTextsCapacityCapableObservation,
+                isConversationCapacityCapableObservation,
+            ]) {
+                expect(accepts(row, marker)).toBe(true);
+                expect(
+                    accepts({ ...row, textAiSupportedFormats: [base] }, marker),
+                ).toBe(false);
+                expect(
+                    accepts(
+                        {
+                            ...row,
+                            textAiSupportedFormats: [marker, 'unknown:v1'],
+                        },
+                        marker,
+                    ),
+                ).toBe(false);
+                expect(
+                    accepts(
+                        {
+                            ...row,
+                            textAiSupportedFormats: [
+                                marker,
+                                `sentence-generation:v${version === 1 ? 2 : 1}`,
+                            ],
+                        },
+                        marker,
+                    ),
+                ).toBe(false);
+                expect(
+                    accepts({ ...row, textAiCapacityRevision: null }, marker),
+                ).toBe(false);
+            }
+            expect(
+                isTextsCapacityCapableObservation(
+                    { ...row, textsCapacityRevision: null },
+                    marker,
+                ),
+            ).toBe(false);
+            expect(
+                isConversationCapacityCapableObservation(
+                    { ...row, conversationCapacityRevision: null },
+                    marker,
+                ),
+            ).toBe(false);
+            expect(
+                isSentenceExecutionCapableObservation(
+                    { ...row, learningExecutionRevision: null },
+                    marker,
+                ),
+            ).toBe(false);
+            expect(isTextsExecutionCapableObservation(row, marker)).toBe(false);
+            expect(isConversationExecutionCapableObservation(row, marker)).toBe(
+                false,
+            );
+        },
+    );
     it('isolates Texts capabilities from legacy workers and publishes capacity separately', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({

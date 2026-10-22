@@ -35,8 +35,13 @@ source_paths:
     - apps/web/src/fsd/entities/conversation/api/conversation-api.ts
     - apps/web/src/fsd/entities/conversation/api/durable-chat-transport.ts
     - apps/backend/tests/unit/modules/conversations/conversation-worker-service.test.ts
-source_fingerprint: sha256:230c6c58eb28d7c762cf4ed9f82758cdcb955bffa32985d4d36bd52e29c6ca76
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+    - apps/backend/src/modules/conversations/application/turn-text-buffer.ts
+    - apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
+    - apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts
+source_fingerprint: sha256:02910cd38224bef7b1e25ec2c225bdd94b007fa2dbb4cb8ed1d9eca33b526784
+reviewed: 2026-10-22
 ---
 
 # Conversations and Knowledge workspace
@@ -65,7 +70,8 @@ no silent excerpting"]
     Limit --> Admission
     Send --> Admission["One active durable turn
 Flash Auto / compatible explicit model
-model, capacity and credit snapshot"]
+model, funding and independent rate snapshots
+bounded credit + operator USD allowance"]
     Admission --> Worker["Existing worker slot claims turn
 lease + latest source snapshot"]
     Worker --> Tutor["Mastra contextual tutor
@@ -74,7 +80,8 @@ accounted answer + synchronous memory calls"]
 bounded authorized material"]
     Tutor --> Memory["Thread-scoped Observational Memory
 application Drizzle storage and lease fences"]
-    Tutor --> Reply["Persist prose deltas / tool exchanges"] --> Replay["Durable replay to useChat transport
+    Tutor --> Reply["Persist batched prose: 100ms or 4KiB
+and durable tool exchanges"] --> Replay["Durable replay to useChat transport
 reconnect without duplicate generation"]
     Tutor --> Propose["propose_knowledge_note
 validated structured private draft"]
@@ -105,10 +112,21 @@ permanent primary deletion removes conversation + memory"]
     Lifecycle --> Open
 ```
 
+Private append/heartbeat progress transactions recheck the active actor with a shared
+lifecycle lock, source authority, chat/turn identity, lease and Stop state. They do not
+acquire global capacity locks or change billing/publication. Public arbitrary
+`withOperation`, admission and settlement keep the global-capacity and actor-update
+fences. Batched streaming progress therefore does not serialize all admissions while
+retaining the same lifecycle authority checks.
+
 Navigation or disconnect does not cancel worker-owned generation; explicit Stop is
 a separate command. Failed partial output remains incomplete; learner retry starts
 new generation rather than automatically repeating an ambiguous provider request.
-The model gate bounds each turn to five provider calls and two memory calls;
+The action bounds aggregate output to 10,000 tokens and separately bounds operator
+cost. Reduced affordable output requires a reviewed quote; changed funding requires
+confirmation again. Successful answers and eligible explicit Stop usage are charged;
+technical failure releases the customer hold. Memory calls remain operator-funded.
+The model gate also bounds each turn to five provider calls and two memory calls;
 observation/reflection run synchronously inside accounted work, with background
 buffering and vector recall disabled. Full readable history remains canonical.
 
@@ -181,3 +199,13 @@ access loss purges only that owner and invalidates queued publications.
 Snapshots/reconnect still reconcile canonical history; UI reveal and activity
 indicators do not execute tools or change durable turn state. The graph's
 authority and data-flow relationships remain unchanged.
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)
+
+- [apps/backend/src/modules/conversations/application/turn-text-buffer.ts](../../apps/backend/src/modules/conversations/application/turn-text-buffer.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts)

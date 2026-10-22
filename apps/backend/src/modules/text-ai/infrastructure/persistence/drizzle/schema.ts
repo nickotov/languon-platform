@@ -21,6 +21,7 @@ export const textAiPreferencesTable = pgTable(
             .notNull(),
         modelId: text('model_id'),
         version: integer('version').default(0).notNull(),
+        maxCreditsPerAction: text('max_credits_per_action'),
         createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
             .defaultNow()
             .notNull(),
@@ -29,6 +30,10 @@ export const textAiPreferencesTable = pgTable(
             .notNull(),
     },
     (table) => [
+        check(
+            'user_text_ai_preferences_action_budget_valid',
+            sql`${table.maxCreditsPerAction} is null or (${table.maxCreditsPerAction} ~ '^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,3})?$' and ${table.maxCreditsPerAction}::numeric > 0)`,
+        ),
         check(
             'user_text_ai_preferences_selection_valid',
             sql`(${table.mode} = 'auto' and ${table.modelId} is null) or (${table.mode} = 'explicit' and ${table.modelId} is not null and char_length(${table.modelId}) between 1 and 160)`,

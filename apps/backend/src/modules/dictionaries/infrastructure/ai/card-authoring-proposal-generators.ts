@@ -1,3 +1,4 @@
+import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { Buffer } from 'node:buffer';
 import { isIP } from 'node:net';
 
@@ -104,6 +105,20 @@ export function createMastraCardAuthoringProposalGenerator(options: {
 }): CardAuthoringProposalGenerator {
     return {
         async generate(request) {
+            let meteredUsage:
+                ReturnType<typeof readProviderTokenUsage> | undefined;
+            const failure = (
+                reason: ConstructorParameters<
+                    typeof CardAuthoringProposalGeneratorExecutionError
+                >[0],
+            ) => {
+                const result = new CardAuthoringProposalGeneratorExecutionError(
+                    reason,
+                );
+                if (meteredUsage) result.usage = meteredUsage;
+                return result;
+            };
+
             request.signal.throwIfAborted();
             const input = validatedInput(request.input);
             const message = JSON.stringify(input);
@@ -120,9 +135,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                 Buffer.byteLength(message, 'utf8') + fixedInputBytes >
                 requestLimits.maxInputTokens
             )
-                throw new CardAuthoringProposalGeneratorExecutionError(
-                    'invalid_input',
-                );
+                throw failure('invalid_input');
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
@@ -138,31 +151,52 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     tracingOptions: { hideInput: true, hideOutput: true },
                 });
                 request.signal.throwIfAborted();
+                if (result.usage) {
+                    try {
+                        meteredUsage = readProviderTokenUsage(
+                            result.usage,
+                            requestLimits,
+                        );
+                    } catch {
+                        throw failure('invalid_output');
+                    }
+                }
                 if (result.error || result.tripwire)
-                    throw new CardAuthoringProposalGeneratorExecutionError(
-                        'provider_failure',
-                    );
+                    throw failure('provider_failure');
                 const delta = validatedOutput(result.object, input);
                 if (!result.usage) return delta;
-                if (
-                    !Number.isSafeInteger(result.usage.inputTokens) ||
-                    !Number.isSafeInteger(result.usage.outputTokens) ||
-                    result.usage.inputTokens! < 0 ||
-                    result.usage.outputTokens! < 0 ||
-                    result.usage.inputTokens! > requestLimits.maxInputTokens ||
-                    result.usage.outputTokens! > requestLimits.maxOutputTokens
-                )
-                    throw new CardAuthoringProposalGeneratorExecutionError(
-                        'invalid_output',
-                    );
+                let usage;
+                try {
+                    usage = readProviderTokenUsage(result.usage, requestLimits);
+                } catch {
+                    throw failure('invalid_output');
+                }
+
                 return {
                     delta,
-                    usage: {
-                        inputTokens: result.usage.inputTokens!,
-                        outputTokens: result.usage.outputTokens!,
-                    },
+                    usage,
                 };
             } catch (error) {
+                if (
+                    error instanceof Error &&
+                    error.name === 'AI_NoObjectGeneratedError' &&
+                    'usage' in error
+                ) {
+                    try {
+                        meteredUsage = readProviderTokenUsage(
+                            error.usage,
+                            requestLimits,
+                        );
+                    } catch {
+                        /* Invalid/missing provider meters remain unknown. */
+                    }
+                }
+                if (
+                    error instanceof CardAuthoringProposalGeneratorError &&
+                    meteredUsage
+                )
+                    error.usage = meteredUsage;
+
                 if (request.signal.aborted)
                     throw (
                         request.signal.reason ??
@@ -173,9 +207,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     CardAuthoringProposalGeneratorExecutionError
                 )
                     throw error;
-                throw new CardAuthoringProposalGeneratorExecutionError(
-                    'provider_failure',
-                );
+                throw failure('provider_failure');
             }
         },
         readiness(signal) {

@@ -1,3 +1,16 @@
+import { tutorAdmissionInputBytes } from '../../../application/tutor-context-budget';
+import { projectConversationSource } from '../../../application/conversation-source-context';
+import {
+    overdueAccountingActions,
+    removeExpiredActionQuotes,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/action-accounting-maintenance';
+import { ConversationActionConfirmationRequired } from '../../../domain/conversation';
+import { ConversationActionQuoteSchema } from '@languon/contracts';
+import { formatCreditMilli } from '../../../../ai-credits/domain/exact-credit-amount';
+import {
+    prepareConversationActionSettlement,
+    settleConversationAction,
+} from '../../conversation-action-accounting';
 import {
     resolveConversationPortrait,
     portraitPreferenceFields,
@@ -54,6 +67,7 @@ import {
 import {
     ConversationError,
     conversationUnavailable,
+    type SourceAuthority,
     type SourceMaterial,
 } from '../../../domain/conversation';
 import {
@@ -103,7 +117,14 @@ const turnView = (r: TurnRow) => ({
     conversationId: r.conversationId,
     status: r.status,
     failureCode: r.failureCode,
-    usage: r.usage,
+    usage: {
+        inputTokens: r.usage.inputTokens,
+        outputTokens: r.usage.outputTokens,
+        chargedCredits: r.usage.chargedCredits,
+        estimated: r.usage.estimated,
+    },
+    outputLimitReached: r.usage.outputLimitReached ?? false,
+    ...(r.billing ? { billing: r.billing } : {}),
     modelId:
         typeof (r.execution.snapshot as Record<string, unknown> | undefined)
             ?.modelId === 'string'
@@ -138,6 +159,15 @@ const draftView = (r: DraftRow) => ({
 });
 const conflict = (message: string) =>
     new ConversationError('version_conflict', message);
+const sameConversationSourceRevision = (
+    kind: ConversationSource['kind'],
+    prepared: string,
+    current: string,
+) =>
+    kind === 'dictionary'
+        ? prepared.split(':').slice(0, 2).join(':') ===
+          current.split(':').slice(0, 2).join(':')
+        : prepared === current;
 export interface ConversationPersistenceDependencies {
     database: ConversationsDatabase;
     readPortrait?: (
@@ -155,7 +185,15 @@ export interface ConversationPersistenceDependencies {
     now?: () => Date;
     admitTurn: (
         tx: ConversationsTransaction,
-        input: { ownerId: string; turnId: string; conversationId: string },
+        input: {
+            ownerId: string;
+            turnId: string;
+            conversationId: string;
+            requestId?: string;
+            fingerprint?: string;
+            confirmedQuoteId?: string;
+            inputTokenBound?: number;
+        },
     ) => Promise<Record<string, unknown>>;
     publishNote: (
         tx: ConversationsTransaction,
@@ -181,9 +219,10 @@ export class DrizzleConversationStore implements ConversationStore {
     }
     private async transaction<T>(
         run: (tx: ConversationsTransaction) => Promise<T>,
+        acquireCapacity = true,
     ) {
         return this.dependencies.database.transaction(async (tx) => {
-            await lockTextAiCapacity(tx);
+            if (acquireCapacity) await lockTextAiCapacity(tx);
             return run(tx);
         });
     }
@@ -201,6 +240,9 @@ export class DrizzleConversationStore implements ConversationStore {
         material = false,
         query = '',
         write = true,
+        lockRows = true,
+        sourceOverride?: ConversationSource,
+        authorityOverride?: SourceAuthority,
     ) {
         // Mutation callbacks may acquire the Knowledge owner's exclusive fence.
         // Take that actor fence before source/chat locks, avoiding a SHARE upgrade
@@ -211,24 +253,41 @@ export class DrizzleConversationStore implements ConversationStore {
                 access.ownerId,
                 'update',
             );
-        const [candidate] = await tx
-            .select()
-            .from(chats)
-            .where(and(eq(chats.id, id), eq(chats.ownerId, access.ownerId)));
-        if (!candidate) throw conversationUnavailable();
+        const [candidate] = sourceOverride
+            ? []
+            : await tx
+                  .select()
+                  .from(chats)
+                  .where(
+                      and(
+                          eq(chats.id, id),
+                          eq(chats.ownerId, access.ownerId),
+                      ),
+                  );
+        if (!sourceOverride && !candidate) throw conversationUnavailable();
         const source = await this.dependencies.sources.resolve(
             tx,
             access.ownerId,
-            candidate.source,
-            access.shareKey ? { key: access.shareKey } : {},
+            sourceOverride ?? candidate!.source,
+            access.shareKey
+                ? { key: access.shareKey }
+                : authorityOverride
+                  ? { authority: authorityOverride }
+                  : {},
             material,
             query,
+            lockRows,
+            write && lockRows,
         );
-        const [chat] = await tx
+        const chatQuery = tx
             .select()
             .from(chats)
-            .where(and(eq(chats.id, id), eq(chats.ownerId, access.ownerId)))
-            .for(write ? 'update' : 'share');
+            .where(and(eq(chats.id, id), eq(chats.ownerId, access.ownerId)));
+        const [chat] = !lockRows
+            ? await chatQuery
+            : write
+              ? await chatQuery.for('update')
+              : await chatQuery.for('share');
         if (!chat) throw conversationUnavailable();
         return { chat, ...source };
     }
@@ -509,15 +568,31 @@ export class DrizzleConversationStore implements ConversationStore {
         id: string,
         input: SubmitConversationTurnRequest,
     ) {
-        return this.transaction(async (tx) => {
-            const { chat, authority, snapshot } = await this.authorize(
+        // Preparing a potentially large dictionary/text context must not keep
+        // the shared capacity fence occupied. This read transaction is closed
+        // before admission starts; all authorization and revision checks are
+        // repeated under the normal global-first write lock order below.
+        const prepared =
+            !input.editorContext && !input.retryOf
+                ? await this.readTransaction((tx) =>
+                      this.authorize(tx, access, id, true, '', false, false),
+                  )
+                : undefined;
+        const result = await this.transaction(async (tx) => {
+            const { chat, authority, snapshot: currentSnapshot } = await this.authorize(
                 tx,
                 access,
                 id,
-                !input.editorContext && !input.retryOf,
+                false,
+                '',
+                true,
+                true,
+                prepared?.chat.source,
             );
             const fingerprint = createHash('sha256')
-                .update(JSON.stringify(input))
+                .update(
+                    JSON.stringify({ ...input, confirmedQuoteId: undefined }),
+                )
                 .digest('hex');
             const [existing] = await tx
                 .select()
@@ -536,6 +611,29 @@ export class DrizzleConversationStore implements ConversationStore {
                     );
                 return turnView(existing);
             }
+            if (prepared) {
+                if (
+                    prepared.chat.version !== chat.version ||
+                    prepared.chat.title !== chat.title ||
+                    JSON.stringify(prepared.chat.preferences) !==
+                        JSON.stringify(chat.preferences) ||
+                    JSON.stringify(prepared.chat.source) !==
+                        JSON.stringify(chat.source) ||
+                    prepared.chat.sourceKind !== chat.sourceKind ||
+                    !sameConversationSourceRevision(
+                        chat.sourceKind,
+                        prepared.snapshot.version,
+                        currentSnapshot.version,
+                    ) ||
+                    prepared.snapshot.title !== currentSnapshot.title ||
+                    prepared.snapshot.studiedLanguage !==
+                        currentSnapshot.studiedLanguage
+                )
+                    throw conflict(
+                        'The conversation or its source changed while preparing your message. Review it and send again.',
+                    );
+            }
+            const snapshot = prepared?.snapshot ?? currentSnapshot;
             const [active] = await tx
                 .select()
                 .from(turns)
@@ -689,11 +787,59 @@ export class DrizzleConversationStore implements ConversationStore {
                 ChatPreferencesSchema.parse(chat.preferences),
                 await this.portraitPolicy(tx, access.ownerId),
             );
+            const recent = await tx
+                .select({
+                    modelContent: messages.modelContent,
+                    content: messages.content,
+                    attachments: messages.attachments,
+                })
+                .from(messages)
+                .where(eq(messages.conversationId, id))
+                .orderBy(desc(messages.createdAt))
+                .limit(20);
+            const retainedMemory = await tx
+                .select({ value: memory.value })
+                .from(memory)
+                .where(eq(memory.conversationId, id));
+            const inputTokenBound = tutorAdmissionInputBytes(
+                {
+                    message: {
+                        id: input.requestId,
+                        role: 'user',
+                        content: learnerContent,
+                        attachments: learnerAttachments,
+                        modelContent,
+                        createdAt: this.now().toISOString(),
+                        ...(editorTarget ? { editorTarget } : {}),
+                    },
+                    sourceContext: projectConversationSource(
+                        chat.source.kind,
+                        snapshot,
+                        learnerContent,
+                    ).initialContext,
+                    preferences: personalization.preferences,
+                    ...(personalization.context
+                        ? { portraitContext: personalization.context }
+                        : {}),
+                },
+                recent,
+                retainedMemory,
+            );
             const execution = await this.dependencies.admitTurn(tx, {
                 ownerId: access.ownerId,
                 turnId,
                 conversationId: id,
+                requestId: input.requestId,
+                inputTokenBound,
+                fingerprint,
+                ...(input.confirmedQuoteId
+                    ? { confirmedQuoteId: input.confirmedQuoteId }
+                    : {}),
             });
+            if (execution.confirmationRequired)
+                return {
+                    quote: ConversationActionQuoteSchema.parse(execution.quote),
+                };
             const now = this.now();
             const [turn] = await tx
                 .insert(turns)
@@ -708,6 +854,23 @@ export class DrizzleConversationStore implements ConversationStore {
                     sourceSnapshot: snapshot,
                     preferences: personalization.preferences,
                     execution,
+                    ...(execution.actionAccountingVersion === 1
+                        ? {
+                              billing: {
+                                  state:
+                                      execution.funding === 'customer'
+                                          ? ('held' as const)
+                                          : ('free' as const),
+                                  heldCredits: formatCreditMilli(
+                                      BigInt(
+                                          String(execution.heldCreditsMilli),
+                                      ),
+                                  ),
+                                  chargedCredits: null,
+                                  measurement: null,
+                              },
+                          }
+                        : {}),
                     portraitContext: personalization.context ?? null,
                     usage: {
                         inputTokens: 0,
@@ -728,71 +891,132 @@ export class DrizzleConversationStore implements ConversationStore {
                 createdAt: now.toISOString(),
                 modelContent,
             };
-            const [user] = await tx
+            const assistantId = randomUUID();
+            const inserted = await tx
                 .insert(messages)
-                .values({
-                    id: userId,
-                    conversationId: id,
-                    turnId,
-                    role: 'user',
-                    content: learnerContent,
-                    attachments: learnerAttachments,
-                    modelContent: [modelUserMessage],
-                    editorTarget,
-                    status: 'complete',
-                    sourceVersion: snapshot.version,
-                    sourceProvenance: snapshot.provenance,
-                    createdAt: now,
-                })
+                .values([
+                    {
+                        id: userId,
+                        conversationId: id,
+                        turnId,
+                        role: 'user',
+                        content: learnerContent,
+                        attachments: learnerAttachments,
+                        modelContent: [modelUserMessage],
+                        editorTarget,
+                        status: 'complete',
+                        sourceVersion: snapshot.version,
+                        sourceProvenance: snapshot.provenance,
+                        createdAt: now,
+                    },
+                    {
+                        id: assistantId,
+                        conversationId: id,
+                        turnId,
+                        role: 'assistant',
+                        content: '',
+                        attachments: [],
+                        editorTarget,
+                        status: 'streaming',
+                        sourceVersion: snapshot.version,
+                        sourceProvenance: snapshot.provenance,
+                        createdAt: new Date(now.getTime() + 1),
+                    },
+                ])
                 .returning();
-            const [assistant] = await tx
-                .insert(messages)
-                .values({
-                    id: randomUUID(),
-                    conversationId: id,
-                    turnId,
-                    role: 'assistant',
-                    content: '',
-                    attachments: [],
-                    editorTarget,
-                    status: 'streaming',
-                    sourceVersion: snapshot.version,
-                    sourceProvenance: snapshot.provenance,
-                    createdAt: new Date(now.getTime() + 1),
-                })
-                .returning();
+            const user = inserted.find((row) => row.id === userId);
+            const assistant = inserted.find((row) => row.id === assistantId);
+            if (!user || !assistant)
+                throw new Error('Conversation messages were not persisted.');
             await tx
                 .update(chats)
                 .set({ updatedAt: now })
                 .where(eq(chats.id, id));
-            await this.event(tx, id, 'message', messageView(user!));
-            await this.event(tx, id, 'message', messageView(assistant!));
-            await this.event(tx, id, 'turn', turnView(turn!));
+            await tx.insert(events).values([
+                {
+                    conversationId: id,
+                    type: 'message',
+                    data: messageView(user),
+                    createdAt: now,
+                },
+                {
+                    conversationId: id,
+                    type: 'message',
+                    data: messageView(assistant),
+                    createdAt: now,
+                },
+                {
+                    conversationId: id,
+                    type: 'turn',
+                    data: turnView(turn!),
+                    createdAt: now,
+                },
+            ]);
             return turnView(turn!);
+        });
+        if ('quote' in result)
+            throw new ConversationActionConfirmationRequired(result.quote);
+        return result;
+    }
+    /** Called by the maintenance worker, never during model dispatch or an HTTP subscription. */
+    async maintainAccounting() {
+        return this.transaction(async (tx) => {
+            const now = this.now();
+            const removedQuotes = await removeExpiredActionQuotes(tx, now);
+            const overdue = await overdueAccountingActions(
+                tx,
+                'conversation',
+                now,
+            );
+            let recoveredActions = 0;
+            for (const action of overdue) {
+                const [turn] = await tx
+                    .select()
+                    .from(turns)
+                    .where(
+                        and(
+                            eq(turns.id, action.id),
+                            eq(turns.ownerId, action.ownerId),
+                        ),
+                    )
+                    .for('update', { skipLocked: true });
+                if (!turn) continue;
+                if (!['queued', 'running'].includes(turn.status)) continue;
+                await this.terminal(tx, turn, 'failed', 'worker_interrupted');
+                recoveredActions += 1;
+            }
+            return { removedQuotes, recoveredActions };
         });
     }
     async stop(access: ConversationAccess, id: string, turnId: string) {
         return this.transaction(async (tx) => {
-            await this.authorize(tx, access, id);
+            // Stop mutates only the turn. Shared actor/source/chat locks are
+            // enough to block purge and avoid upgrading the actor lock.
+            await this.authorize(tx, access, id, false, '', false, true);
             const [row] = await tx
                 .select()
                 .from(turns)
                 .where(and(eq(turns.id, turnId), eq(turns.conversationId, id)))
                 .for('update');
             if (!row) throw conversationUnavailable();
-            if (row.status === 'queued')
+            if (row.status === 'queued') {
+                row.failureCode = 'explicit_stop';
                 await this.terminal(tx, row, 'cancelled', 'cancelled');
-            else if (row.status === 'running')
+            } else if (row.status === 'running')
                 await tx
                     .update(turns)
-                    .set({ cancelRequested: true, updatedAt: this.now() })
+                    .set({
+                        cancelRequested: true,
+                        failureCode: 'explicit_stop',
+                        updatedAt: this.now(),
+                    })
                     .where(eq(turns.id, turnId));
             const [result] = await tx
                 .select()
                 .from(turns)
                 .where(eq(turns.id, turnId));
             return turnView(result!);
-        });
+        }, false);
     }
     async context(access: ConversationAccess, id: string, query: string) {
         return this.readTransaction(async (tx) => {
@@ -1102,53 +1326,73 @@ export class DrizzleConversationStore implements ConversationStore {
         run: (tx: ConversationsTransaction, row: TurnRow) => Promise<T>,
         allowCancelled = false,
     ) {
-        return this.transaction(async (tx) => {
-            await this.dependencies.sources.assertActiveActor(
-                tx,
-                operation.ownerId,
-                'update',
+        return this.transaction((tx) =>
+            this.fencedOperation(tx, operation, run, allowCancelled, 'update'),
+        );
+    }
+    private async withProgress(
+        operation: ClaimedConversationTurn,
+        run: (tx: ConversationsTransaction, row: TurnRow) => Promise<void>,
+    ) {
+        // Only append/heartbeat use this path. They cannot alter admission,
+        // capacity, billing or publication. Shared lifecycle fences avoid both
+        // global admission contention and crossed shared-source actor upgrades.
+        return this.dependencies.database.transaction((tx) =>
+            this.fencedOperation(tx, operation, run, false, 'share'),
+        );
+    }
+    private async fencedOperation<T>(
+        tx: ConversationsTransaction,
+        operation: ClaimedConversationTurn,
+        run: (tx: ConversationsTransaction, row: TurnRow) => Promise<T>,
+        allowCancelled: boolean,
+        actorLock: 'share' | 'update',
+    ) {
+        await this.dependencies.sources.assertActiveActor(
+            tx,
+            operation.ownerId,
+            actorLock,
+        );
+        const [candidate] = await tx
+            .select()
+            .from(chats)
+            .where(
+                and(
+                    eq(chats.id, operation.conversationId),
+                    eq(chats.ownerId, operation.ownerId),
+                ),
             );
-            const [candidate] = await tx
-                .select()
-                .from(chats)
-                .where(
-                    and(
-                        eq(chats.id, operation.conversationId),
-                        eq(chats.ownerId, operation.ownerId),
-                    ),
-                );
-            if (!candidate) throw conversationUnavailable();
-            await this.dependencies.sources.resolve(
-                tx,
-                operation.ownerId,
-                candidate.source,
-                { authority: operation.authority },
-                false,
+        if (!candidate) throw conversationUnavailable();
+        await this.dependencies.sources.resolve(
+            tx,
+            operation.ownerId,
+            candidate.source,
+            { authority: operation.authority },
+            false,
+        );
+        await tx
+            .select({ id: chats.id })
+            .from(chats)
+            .where(eq(chats.id, candidate.id))
+            .for('update');
+        const [row] = await tx
+            .select()
+            .from(turns)
+            .where(eq(turns.id, operation.id))
+            .for('update');
+        if (
+            !row ||
+            row.status !== 'running' ||
+            row.leaseToken !== operation.leaseToken ||
+            !row.leaseUntil ||
+            row.leaseUntil <= this.now() ||
+            (!allowCancelled && row.cancelRequested)
+        )
+            throw new ConversationError(
+                'operation_interrupted',
+                'The response is no longer active.',
             );
-            await tx
-                .select({ id: chats.id })
-                .from(chats)
-                .where(eq(chats.id, candidate.id))
-                .for('update');
-            const [row] = await tx
-                .select()
-                .from(turns)
-                .where(eq(turns.id, operation.id))
-                .for('update');
-            if (
-                !row ||
-                row.status !== 'running' ||
-                row.leaseToken !== operation.leaseToken ||
-                !row.leaseUntil ||
-                row.leaseUntil <= this.now() ||
-                (!allowCancelled && row.cancelRequested)
-            )
-                throw new ConversationError(
-                    'operation_interrupted',
-                    'The response is no longer active.',
-                );
-            return run(tx, row);
-        });
+        return run(tx, row);
     }
     async claim() {
         return this.transaction(async (tx) => {
@@ -1197,20 +1441,13 @@ export class DrizzleConversationStore implements ConversationStore {
                 .from(turns)
                 .where(eq(turns.status, 'queued'))
                 .orderBy(asc(turns.createdAt))
-                .limit(100)
-                .for('update', { skipLocked: true });
+                .limit(100);
             let row: TurnRow | undefined;
+            let chat: ChatRow | undefined;
             for (const candidate of candidates) {
-                if (candidate.cancelRequested) {
-                    await this.terminal(
-                        tx,
-                        candidate,
-                        'cancelled',
-                        'cancelled',
-                    );
-                    continue;
-                }
-                const capacity = await readTextAiCapacity(tx, {
+                // Avoid retaining actor/source locks for candidates that can
+                // already be ruled out by the compact capacity projection.
+                const candidateCapacity = await readTextAiCapacity(tx, {
                     actorId: candidate.ownerId,
                     now,
                     budget:
@@ -1218,9 +1455,70 @@ export class DrizzleConversationStore implements ConversationStore {
                             candidate.execution as unknown as TextAiAdmissionExecution
                         ).budget ?? defaultTextAiProviderBudgetPolicy,
                 });
+                if (candidateCapacity.globalRunning >= 10) return null;
+                if (candidateCapacity.actorRunning >= 1) continue;
+                let authorized: Awaited<ReturnType<typeof this.authorize>>;
+                try {
+                    // Match Stop's actor -> source/chat -> turn order. Candidate
+                    // rows stay unlocked until this fence is held so Stop can
+                    // never hold an actor row while claim waits on its turn.
+                    authorized = await this.authorize(
+                        tx,
+                        { ownerId: candidate.ownerId },
+                        candidate.conversationId,
+                        false,
+                        '',
+                        true,
+                        true,
+                        undefined,
+                        candidate.authority,
+                    );
+                } catch (error) {
+                    if (!(error instanceof ConversationError)) throw error;
+                    const [unavailable] = await tx
+                        .select()
+                        .from(turns)
+                        .where(eq(turns.id, candidate.id))
+                        .for('update', { skipLocked: true });
+                    if (unavailable?.status === 'queued')
+                        await this.terminal(
+                            tx,
+                            unavailable,
+                            'failed',
+                            'source_unavailable',
+                        );
+                    // Do not carry locks from a failed source authorization
+                    // into another learner's candidate.
+                    return null;
+                }
+                const [lockedCandidate] = await tx
+                    .select()
+                    .from(turns)
+                    .where(eq(turns.id, candidate.id))
+                    .for('update', { skipLocked: true });
+                if (!lockedCandidate || lockedCandidate.status !== 'queued')
+                    return null;
+                if (lockedCandidate.cancelRequested) {
+                    await this.terminal(
+                        tx,
+                        lockedCandidate,
+                        'cancelled',
+                        'cancelled',
+                    );
+                    return null;
+                }
+                const capacity = await readTextAiCapacity(tx, {
+                    actorId: lockedCandidate.ownerId,
+                    now,
+                    budget:
+                        (
+                            lockedCandidate.execution as unknown as TextAiAdmissionExecution
+                        ).budget ?? defaultTextAiProviderBudgetPolicy,
+                });
                 if (capacity.globalRunning >= 10) return null;
-                if (capacity.actorRunning >= 1) continue;
-                row = candidate;
+                if (capacity.actorRunning >= 1) return null;
+                row = lockedCandidate;
+                chat = authorized.chat;
                 break;
             }
             if (!row) return null;
@@ -1228,24 +1526,7 @@ export class DrizzleConversationStore implements ConversationStore {
                 await this.terminal(tx, row, 'cancelled', 'cancelled');
                 return null;
             }
-            const [chat] = await tx
-                .select()
-                .from(chats)
-                .where(eq(chats.id, row.conversationId));
             if (!chat) return null;
-            try {
-                await this.dependencies.sources.resolve(
-                    tx,
-                    row.ownerId,
-                    chat.source,
-                    { authority: row.authority },
-                    false,
-                );
-            } catch (error) {
-                if (!(error instanceof ConversationError)) throw error;
-                await this.terminal(tx, row, 'failed', 'source_unavailable');
-                return null;
-            }
             const [message] = await tx
                 .select()
                 .from(messages)
@@ -1305,7 +1586,7 @@ export class DrizzleConversationStore implements ConversationStore {
         });
     }
     async heartbeat(turn: ClaimedConversationTurn) {
-        await this.withOperation(turn, async (tx) => {
+        await this.withProgress(turn, async (tx) => {
             await tx
                 .update(turns)
                 .set({
@@ -1317,7 +1598,7 @@ export class DrizzleConversationStore implements ConversationStore {
     }
     async append(turn: ClaimedConversationTurn, delta: string) {
         if (!delta) return;
-        await this.withOperation(turn, async (tx) => {
+        await this.withProgress(turn, async (tx) => {
             const [row] = await tx
                 .update(messages)
                 .set({
@@ -1441,11 +1722,21 @@ export class DrizzleConversationStore implements ConversationStore {
         status: 'succeeded' | 'failed' | 'cancelled',
         failureCode?: string,
     ) {
+        await prepareConversationActionSettlement(tx, row);
         const [turn] = await tx
             .update(turns)
             .set({
                 status,
-                failureCode: failureCode ?? null,
+                cancelRequested:
+                    status === 'cancelled' &&
+                    row.failureCode === 'explicit_stop'
+                        ? true
+                        : row.cancelRequested,
+                failureCode:
+                    status === 'cancelled' &&
+                    row.failureCode === 'explicit_stop'
+                        ? 'explicit_stop'
+                        : (failureCode ?? null),
                 portraitContext: null,
                 leaseToken: null,
                 leaseUntil: null,
@@ -1453,6 +1744,12 @@ export class DrizzleConversationStore implements ConversationStore {
             })
             .where(eq(turns.id, row.id))
             .returning();
+        if (turn)
+            await settleConversationAction(
+                tx,
+                turn,
+                status === 'cancelled' && row.failureCode === 'explicit_stop',
+            );
         const [message] = await tx
             .update(messages)
             .set({

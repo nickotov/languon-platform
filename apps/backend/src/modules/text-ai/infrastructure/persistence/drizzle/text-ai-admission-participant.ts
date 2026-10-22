@@ -1,3 +1,4 @@
+import { ensureActionBudgetDefault } from './action-budget-default';
 import { DrizzleModelPriceParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant';
 import { maximumTextPrice } from '../../../../ai-credits/domain/model-price';
 import type { TextAiExecutionSnapshot } from '../../../application/text-ai-provider-catalog';
@@ -183,10 +184,19 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     ))
             )
                 throw new TextAiSelectionUnavailableError();
+            const pricedSnapshot = await this.withEffectivePricing(
+                configured.snapshot,
+            );
+            await ensureActionBudgetDefault(
+                tx,
+                input.userId,
+                input.now,
+                preference,
+            );
             return {
                 budget: configured.snapshot.aggregateBudget,
                 revisionId: configured.id,
-                snapshot: await this.withEffectivePricing(configured.snapshot),
+                snapshot: pricedSnapshot,
                 selectionVersion: null,
             };
         }
@@ -320,10 +330,17 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             providerId: model.providerId,
             supportedFormats: [input.format],
         };
+        const pricedSnapshot = await this.withEffectivePricing(snapshot);
+        await ensureActionBudgetDefault(
+            tx,
+            input.userId,
+            input.now,
+            preference,
+        );
         return {
             budget: snapshot.aggregateBudget,
             revisionId: configured.id,
-            snapshot: await this.withEffectivePricing(snapshot),
+            snapshot: pricedSnapshot,
             selectionVersion: 1 as const,
         };
     }
@@ -338,6 +355,8 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         const rates = {
             inputCreditsPerMillionTokens: price.inputCreditsPerMillionTokens!,
             outputCreditsPerMillionTokens: price.outputCreditsPerMillionTokens!,
+            cachedInputCreditsPerMillionTokens:
+                price.cachedInputCreditsPerMillionTokens ?? null,
         };
         return {
             ...snapshot,

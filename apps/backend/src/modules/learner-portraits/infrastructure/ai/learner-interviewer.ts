@@ -76,8 +76,8 @@ export function createLearnerInterviewerRunner(options: {
                     modelSettings: {
                         maxRetries: 0,
                         maxOutputTokens: Math.min(
-                            4096,
-                            options.maxOutputTokens ?? 4096,
+                            10_000,
+                            options.maxOutputTokens ?? 10_000,
                         ),
                     },
                 });

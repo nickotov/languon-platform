@@ -207,6 +207,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
     it('rejects owner and shared stale example settings before admission through the real resolver', async () => {
         const admission = vi.fn();
         const service = new SpeechService({
+            burstLimiter: { consume: async () => ({ allowed: true }) },
             resolver,
             store: { prepare: admission } as unknown as SpeechStore,
             storage: {} as AudioObjectStorage,
@@ -272,6 +273,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
         const admission = vi.fn();
         const app = createSpeechRoutes({
             service: new SpeechService({
+                burstLimiter: { consume: async () => ({ allowed: true }) },
                 resolver,
                 store: { prepare: admission } as unknown as SpeechStore,
                 storage: {} as AudioObjectStorage,

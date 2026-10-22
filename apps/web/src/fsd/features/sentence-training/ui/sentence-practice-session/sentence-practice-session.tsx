@@ -1,4 +1,5 @@
 'use client';
+import { ActionBilling, ActionConsentDialog } from '@/fsd/entities/ai-action';
 import styles from './sentence-practice-session.module.css';
 import { Flag, Scale } from 'lucide-react';
 import { restoreSentenceTopLayer } from '../restore-sentence-top-layer';
@@ -41,6 +42,7 @@ import { SentencePracticeHeader } from '../sentence-practice-header/sentence-pra
 import { SentencePracticeFooter } from '../sentence-practice-footer/sentence-practice-footer';
 
 export type SentencePracticeSessionProps = {
+    budgetContent?: ReactNode;
     renderAudio?: SentenceAudioRenderer;
     controller: SentenceSessionController;
     open: boolean;
@@ -63,6 +65,7 @@ export type SentencePracticeSessionProps = {
 
 export function SentencePracticeSession({
     controller: c,
+    budgetContent,
     renderAudio,
     open,
     onClose,
@@ -323,6 +326,18 @@ export function SentencePracticeSession({
                 hidden={preferencesOpen || historyOpen}
                 className={styles.practiceContent}
             >
+                {budgetContent}
+                <ActionBilling
+                    billing={c.job?.billing}
+                    execution={c.job?.state}
+                />
+                {c.actionConsent && (
+                    <ActionConsentDialog
+                        quote={c.actionConsent.quote}
+                        onSend={c.actionConsent.confirm}
+                        onClose={c.actionConsent.cancel}
+                    />
+                )}
                 {c.phase === 'completed' ? (
                     <SentenceSessionResults
                         controller={c}

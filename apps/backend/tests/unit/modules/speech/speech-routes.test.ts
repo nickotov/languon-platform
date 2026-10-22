@@ -144,10 +144,11 @@ describe('speech HTTP boundary', () => {
         });
         expect(accepted.status).toBe(202);
         expect(authenticate).toHaveBeenCalledWith('header.payload.signature');
-        expect(service.prepare).toHaveBeenCalledWith(actorId, {
-            source,
-            operationId,
-        });
+        expect(service.prepare).toHaveBeenCalledWith(
+            actorId,
+            { source, operationId },
+            expect.any(AbortSignal),
+        );
         expect(accepted.headers.get('Cache-Control')).toBe('private, no-store');
         expect(accepted.headers.get('X-Content-Type-Options')).toBe('nosniff');
     });

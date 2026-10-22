@@ -58,7 +58,12 @@ const store = new DrizzleSpeechStore({
     revalidateSource: (actor, source, tx) =>
         resolver.resolveInTransaction(actor, source, tx),
 });
-const service = new SpeechService({ store, resolver, storage });
+const service = new SpeechService({
+    store,
+    resolver,
+    storage,
+    burstLimiter: { consume: async () => ({ allowed: true }) },
+});
 async function createSavedSource(text: string, label: string) {
     const now = new Date();
     const context = { now, signal: new AbortController().signal };

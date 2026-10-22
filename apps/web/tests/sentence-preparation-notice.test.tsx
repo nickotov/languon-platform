@@ -186,3 +186,56 @@ describe('preparation recovery notices', () => {
         expect(screen.queryByText('Rounds: 100')).not.toBeInTheDocument();
     });
 });
+
+it('requires an explicit new budget after preparation exhausts its parent allowance', () => {
+    const value = controller(null);
+    value.continueWithBudget = vi.fn();
+    value.preparation = {
+        id: '10000000-0000-4000-8000-000000000001',
+        dictionaryId: '10000000-0000-4000-8000-000000000002',
+        direction: 'source-to-target',
+        mode: 'new-only',
+        state: 'paused',
+        pauseReason: 'budget',
+        eligibleCount: 30,
+        preparedCount: 10,
+        reusedExerciseCount: 0,
+        generatedExerciseCount: 10,
+        initialBatch: null,
+        batchCount: 1,
+        activeJobId: null,
+        createdAt: '2026-10-22T00:00:00Z',
+        updatedAt: '2026-10-22T00:01:00Z',
+        requiresNewBudget: true,
+        remainingOutputTokens: 0,
+        billing: {
+            state: 'charged',
+            heldCredits: '40',
+            chargedCredits: '0.2',
+            measurement: 'measured',
+        },
+    };
+    render(
+        <SentencePreparationSheet
+            controller={value}
+            open
+            onClose={vi.fn()}
+            onRestartSetup={vi.fn()}
+            onStart={vi.fn()}
+            sourceLanguage='en'
+            targetLanguage='es'
+            budgetContent={<p>Paid action maximum: 40</p>}
+        />,
+    );
+    expect(screen.getByText('Paid action maximum: 40')).toBeVisible();
+    expect(screen.getByText('Remaining output tokens: 0')).toBeVisible();
+    expect(screen.getByText('Charged: 0.2')).toBeVisible();
+    expect(value.continueWithBudget).not.toHaveBeenCalled();
+    fireEvent.click(
+        screen.getAllByRole('button', {
+            name: 'Continue with a new budget',
+        })[0]!,
+    );
+    expect(value.continueWithBudget).toHaveBeenCalledOnce();
+    expect(value.resume).not.toHaveBeenCalled();
+});

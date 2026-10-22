@@ -12,6 +12,11 @@ import { adminI18nProvider } from '@/shared/i18n/admin-i18n-provider';
 import { AdminThemeProvider } from '@/shared/theme/admin-theme-provider';
 import { AdminLayout } from '@/widgets/admin-layout/admin-layout';
 
+const AccountingPage = lazy(() =>
+    import('@/pages/accounting').then((module) => ({
+        default: module.AccountingPage,
+    })),
+);
 const AuditPage = lazy(() =>
     import('@/pages/audit/audit-page').then((module) => ({
         default: module.AuditPage,
@@ -74,6 +79,7 @@ function RefineApplication() {
                 { name: 'users', list: '/users', show: '/users/:id' },
                 { name: 'audit-events', list: '/audit' },
                 { name: 'ai-settings', list: '/ai-settings' },
+                { name: 'accounting', list: '/accounting' },
                 { name: 'speech-recordings', list: '/speech-recordings' },
             ]}
             routerProvider={routerProvider}
@@ -101,6 +107,7 @@ function RefineApplication() {
                         <Route path='users' element={<UsersPage />} />
                         <Route path='users/:id' element={<UserDetailPage />} />
                         <Route path='audit' element={<AuditPage />} />
+                        <Route path='accounting' element={<AccountingPage />} />
                         <Route
                             path='speech-recordings'
                             element={<SpeechRecordingsPage />}

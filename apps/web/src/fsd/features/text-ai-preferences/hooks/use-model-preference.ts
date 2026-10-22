@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import { validActionBudget } from '../lib/action-budget';
 import type { TextAiPreferenceResponse } from '@languon/contracts';
 import { useSessionStore } from '@/fsd/entities/session';
 import {
@@ -21,6 +22,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     actorRef.current = actor;
     const [base, setBase] = useState<TextAiPreferenceResponse | null>(null);
     const [draft, setDraft] = useState<string | null>(null);
+    const [budgetDraft, setBudgetDraft] = useState('');
     const [saveState, setSaveState] = useState<
         'idle' | 'saving' | 'saved' | 'error' | 'rejected' | 'conflict'
     >('idle');
@@ -46,6 +48,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     useEffect(() => {
         setBase(null);
         setDraft(null);
+        setBudgetDraft('');
         setLatest(null);
         setSaveState('idle');
         savingRef.current = false;
@@ -63,6 +66,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         if (pref.data && !base && authenticated) {
             setBase(pref.data);
             setDraft(choiceOf(pref.data));
+            setBudgetDraft(pref.data.maxCreditsPerAction ?? '');
         }
     }, [pref.data, base, authenticated]);
     useEffect(() => {
@@ -75,12 +79,20 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             window.removeEventListener('offline', update);
         };
     }, []);
-    const dirty = authenticated && base !== null && draft !== choiceOf(base);
+    const budgetValid =
+        validActionBudget(budgetDraft) ||
+        (budgetDraft === '' && base?.maxCreditsPerAction == null);
+    const dirty =
+        authenticated &&
+        base !== null &&
+        (draft !== choiceOf(base) ||
+            budgetDraft !== (base.maxCreditsPerAction ?? ''));
     const draftModel = catalog.data?.models.find((model) => model.id === draft);
     const available =
         draft === 'auto' || draftModel?.availability === 'available';
     const saveAllowed =
         dirty &&
+        budgetValid &&
         online &&
         available &&
         saveState !== 'saving' &&
@@ -93,6 +105,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     function cancel() {
         if (!base || savingRef.current) return;
         setDraft(choiceOf(base));
+        setBudgetDraft(base.maxCreditsPerAction ?? '');
         setLatest(null);
         setSaveState('idle');
     }
@@ -127,6 +140,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             !choice ||
             !online ||
             !choiceAvailable ||
+            !budgetValid ||
             savingRef.current
         )
             return;
@@ -141,11 +155,17 @@ export function useModelPreference(requestWithSession: SessionRequest) {
                     ? {
                           mode: 'auto' as const,
                           expectedVersion: expected.version,
+                          ...(budgetDraft
+                              ? { maxCreditsPerAction: budgetDraft }
+                              : {}),
                       }
                     : {
                           mode: 'explicit' as const,
                           modelId: choice,
                           expectedVersion: expected.version,
+                          ...(budgetDraft
+                              ? { maxCreditsPerAction: budgetDraft }
+                              : {}),
                       };
             const saved = await requestWithSession((token) =>
                 preferencesApi.save(token, body),
@@ -158,6 +178,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
                 return;
             setBase(saved);
             setDraft(choiceOf(saved));
+            setBudgetDraft(saved.maxCreditsPerAction ?? '');
             setLatest(null);
             setSaveState('saved');
             queryClient.setQueryData(['text-ai-preference', actor], saved);
@@ -189,6 +210,7 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         if (!latest) return;
         setBase(latest);
         setDraft(choiceOf(latest));
+        setBudgetDraft(latest.maxCreditsPerAction ?? '');
         setLatest(null);
         setSaveState('idle');
     }
@@ -202,6 +224,13 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         online,
         latest: authenticated ? latest : null,
         saveAllowed,
+        budgetDraft,
+        budgetValid,
+        selectBudget(value: string) {
+            if (savingRef.current) return;
+            setBudgetDraft(value);
+            if (saveState !== 'conflict') setSaveState('idle');
+        },
         select,
         cancel,
         save,

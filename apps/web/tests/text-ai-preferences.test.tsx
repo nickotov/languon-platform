@@ -9,7 +9,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TextAiPreferenceResponse } from '@languon/contracts';
 import { useSessionStore } from '@/fsd/entities/session';
-import { ModelPreferenceSection } from '@/fsd/features/text-ai-preferences';
+import {
+    ActionBudgetSummary,
+    ModelPreferenceSection,
+} from '@/fsd/features/text-ai-preferences';
 import {
     preferencesApi,
     PreferenceApiError,
@@ -33,6 +36,7 @@ const initial: TextAiPreferenceResponse = {
     modelId: null,
     selectedModel: null,
     version: 1,
+    maxCreditsPerAction: null,
 };
 const sessionRequest = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test-token');
@@ -81,6 +85,71 @@ afterEach(() => {
     useSessionStore.getState().signOut();
 });
 describe('model preference persistence and concurrent edits', () => {
+    it('shows the backend maximum by the composer with expandable exact authorization', async () => {
+        vi.mocked(preferencesApi.read).mockResolvedValue({
+            ...initial,
+            maxCreditsPerAction: '0.001',
+        });
+        render(
+            <QueryClientProvider
+                client={
+                    new QueryClient({
+                        defaultOptions: { queries: { retry: false } },
+                    })
+                }
+            >
+                <ActionBudgetSummary request={sessionRequest} />
+            </QueryClientProvider>,
+        );
+        const summary = await screen.findByText('Maximum: <0.01');
+        expect(summary.closest('details')).not.toHaveAttribute('open');
+        fireEvent.click(summary);
+        expect(screen.getByText('Exact value: 0.001')).toBeInTheDocument();
+        expect(
+            screen.getByText(/Sending authorizes spending within the maximum/),
+        ).toBeInTheDocument();
+        act(() => useSessionStore.getState().signOut());
+        expect(screen.queryByText('Maximum: <0.01')).not.toBeInTheDocument();
+    });
+
+    it('validates precision and saves the exact action budget with the preference version', async () => {
+        vi.mocked(preferencesApi.read).mockResolvedValue({
+            ...initial,
+            maxCreditsPerAction: '1.000',
+        });
+        const save = vi.spyOn(preferencesApi, 'save').mockResolvedValue({
+            ...initial,
+            version: 2,
+            maxCreditsPerAction: '0.001',
+        });
+        mount();
+        const input = await screen.findByRole('textbox', {
+            name: 'Maximum credits per action',
+        });
+        fireEvent.change(input, { target: { value: '0.0001' } });
+        expect(
+            screen.getByRole('button', { name: 'Save preference' }),
+        ).toBeDisabled();
+        expect(screen.getByRole('alert')).toHaveTextContent(
+            'up to three decimal',
+        );
+        fireEvent.change(input, { target: { value: '0.001' } });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Save preference' }),
+        );
+        await waitFor(() =>
+            expect(save).toHaveBeenCalledWith('test-token', {
+                mode: 'auto',
+                expectedVersion: 1,
+                maxCreditsPerAction: '0.001',
+            }),
+        );
+        expect(await screen.findByText('Maximum: <0.01')).toBeInTheDocument();
+        fireEvent.change(input, { target: { value: '4.123' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel changes' }));
+        expect(input).toHaveValue('0.001');
+    });
+
     it('preserves a failed draft, retries its version and prevents duplicate saves', async () => {
         let resolve!: (value: TextAiPreferenceResponse) => void;
         const save = vi
@@ -117,6 +186,7 @@ describe('model preference persistence and concurrent edits', () => {
                 modelId: model.id,
                 selectedModel: model,
                 version: 2,
+                maxCreditsPerAction: null,
             }),
         );
         expect(
@@ -233,4 +303,37 @@ describe('model preference persistence and concurrent edits', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Cancel changes' }));
         expect(screen.getByRole('radio', { name: /Auto —/ })).not.toBeChecked();
     });
+});
+
+it('preserves a learner budget draft and saved budget when cached defaults refresh', async () => {
+    vi.mocked(preferencesApi.read).mockResolvedValue({
+        ...initial,
+        maxCreditsPerAction: '4.125',
+    });
+    const client = new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+        },
+    });
+    render(
+        <QueryClientProvider client={client}>
+            <ModelPreferenceSection requestWithSession={sessionRequest} />
+        </QueryClientProvider>,
+    );
+    const input = await screen.findByRole('textbox', {
+        name: 'Maximum credits per action',
+    });
+    expect(input).toHaveValue('4.125');
+    fireEvent.change(input, { target: { value: '0.125' } });
+    act(() =>
+        client.setQueryData(['text-ai-preference', 'actor-a'], {
+            ...initial,
+            maxCreditsPerAction: '20',
+            version: 2,
+        }),
+    );
+    expect(input).toHaveValue('0.125');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel changes' }));
+    expect(input).toHaveValue('4.125');
 });

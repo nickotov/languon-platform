@@ -1,3 +1,12 @@
+import {
+    ActionAllowanceConfirmationRequired,
+    withActionAllowanceConsent,
+} from '../../../../src/modules/ai-credits/infrastructure/action-allowance-consent';
+import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
+import {
+    aiCreditActionsTable as actions,
+    aiCreditActionAttemptsTable as actionAttempts,
+} from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { EnqueueTextTranslationRequestSchema } from '@languon/contracts';
 import { createHmac, randomUUID, randomBytes } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
@@ -62,7 +71,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
-            now = new Date('2026-10-15T12:00:00Z');
+            now = new Date();
             owner = randomUUID();
             folder = randomUUID();
             await db.insert(usersTable).values({ id: owner, status: 'active' });
@@ -122,6 +131,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+            await seedLegacyActionFixture(db);
             store = new DrizzleTextsJobStore(db, {
                 fingerprintSecret: 'synthetic-texts-jobs-secret',
                 globalQueueLimit: 1000,
@@ -140,8 +150,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         }, 120000);
         afterAll(async () => client?.end());
+        // Existing scenarios model a learner explicitly accepting any reduced offer.
+        // The dedicated quote case below separately proves the pre-consent rollback boundary.
+        const enqueueWithConsent = async (
+            ...args: Parameters<DrizzleTextsJobStore['enqueue']>
+        ) => {
+            try {
+                return await store.enqueue(...args);
+            } catch (error) {
+                if (!(error instanceof ActionAllowanceConfirmationRequired))
+                    throw error;
+                return withActionAllowanceConsent(error.quote.id, () =>
+                    store.enqueue(...args),
+                );
+            }
+        };
         const enqueue = () =>
-            store.enqueue(
+            enqueueWithConsent(
                 owner,
                 'text-detection',
                 {
@@ -151,8 +176,70 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 context(),
             );
+        it('quotes paid translation before creating work and dispatches exactly the accepted allowance', async () => {
+            const request = {
+                folderId: folder,
+                operationId: randomUUID(),
+                sourceText: 'Hello world.',
+                sourceLanguage: 'en',
+                targetLanguage: 'es',
+            };
+            let offer: ActionAllowanceConfirmationRequired | undefined;
+            try {
+                await store.enqueue(
+                    owner,
+                    'text-translation',
+                    request,
+                    context(),
+                );
+            } catch (error) {
+                offer = error as ActionAllowanceConfirmationRequired;
+            }
+            expect(offer).toBeInstanceOf(ActionAllowanceConfirmationRequired);
+            expect(offer!.quote.approximateOutputTokens).toBeGreaterThan(0);
+            expect(offer!.quote.approximateOutputTokens).toBeLessThan(10000);
+            expect(await db.select().from(jobs)).toHaveLength(0);
+            expect(await db.select().from(actions)).toHaveLength(0);
+            expect(await db.select().from(actionAttempts)).toHaveLength(0);
+            const admitted = await withActionAllowanceConsent(
+                offer!.quote.id,
+                () =>
+                    store.enqueue(
+                        owner,
+                        'text-translation',
+                        request,
+                        context(),
+                    ),
+            );
+            expect(admitted.billing).toMatchObject({
+                state: 'held',
+                heldCredits: offer!.quote.maximumCredits,
+                chargedCredits: null,
+            });
+            const lease = await store.claimNext(claimOptions, context());
+            expect(lease?.budget.maxOutputTokensPerAttempt).toBe(
+                offer!.quote.approximateOutputTokens,
+            );
+            const [action] = await db
+                .select()
+                .from(actions)
+                .where(eq(actions.id, admitted.id));
+            expect(action?.outputLimit).toBe(
+                offer!.quote.approximateOutputTokens,
+            );
+            await store.cancel(owner, admitted.id, context());
+            await store.fail(
+                lease!.lease,
+                { code: 'aborted', retryAt: null },
+                context(),
+            );
+            expect(
+                (await store.get(owner, admitted.id, context())).billing,
+            ).toMatchObject({ state: 'released', chargedCredits: '0' });
+        });
+
         it('admits independent jobs only to workers advertising nullable-folder formats', async () => {
-            const job = await store.enqueue(
+            const job = await enqueueWithConsent(
                 owner,
                 'text-detection',
                 {
@@ -195,7 +282,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ],
             });
             await expect(
-                store.enqueue(
+                enqueueWithConsent(
                     owner,
                     'text-detection',
                     {
@@ -225,7 +312,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguage: 'en',
                 targetLanguage: 'es',
             });
-            const job = await store.enqueue(
+            const job = await enqueueWithConsent(
                 owner,
                 'text-translation',
                 {
@@ -275,9 +362,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 retryDelayMs: 100,
             });
             expect(await worker.processNext(context().signal)).toBe(true);
-            expect((await store.get(owner, job.id, context())).state).toBe(
-                'completed',
-            );
+            expect(await store.get(owner, job.id, context())).toMatchObject({
+                state: 'completed',
+                billing: {
+                    state: 'charged',
+                    heldCredits: '20',
+                    chargedCredits: '0.13',
+                    measurement: 'measured',
+                },
+            });
             // A fresh repository (browser reload) recovers only the public proposal shape.
             const reloadedStore = new DrizzleTextContentStore(
                 db,
@@ -327,7 +420,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguage: 'en',
                 targetLanguage: 'es',
             });
-            await store.enqueue(
+            await enqueueWithConsent(
                 owner,
                 'text-translation',
                 {
@@ -391,18 +484,30 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, job.id));
-            expect(row?.aiCreditPolicyMode).toBe('limited');
+            expect(row?.aiCreditAccounted).toBe(false);
+            expect(row?.selectedExecutionSnapshot).toMatchObject({
+                actionAccountingVersion: 1,
+            });
             expect(row?.inputPayload).toBeNull();
-            const [reservation] = await db
+            const [action] = await db
                 .select()
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.jobId, job.id));
-            expect(reservation?.state).toBe('settled');
-            expect(reservation?.measurement).toBe('provider_reported');
-            expect(reservation?.chargedCredits).toBeGreaterThan(0n);
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(action).toMatchObject({
+                state: 'settled',
+                outcome: 'success',
+                chargedMilli: 130n,
+                heldMilli: 20000n,
+            });
+            expect(
+                await db
+                    .select()
+                    .from(aiCreditReservationsTable)
+                    .where(eq(aiCreditReservationsTable.jobId, job.id)),
+            ).toHaveLength(0);
         });
         it('completes translation after PostgreSQL JSONB normalizes source segment key order', async () => {
-            const job = await store.enqueue(
+            const job = await enqueueWithConsent(
                 owner,
                 'text-translation',
                 {
@@ -473,7 +578,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguage: 'en' as const,
                 targetLanguage: 'es' as const,
             };
-            const admitted = await store.enqueue(
+            const admitted = await enqueueWithConsent(
                 owner,
                 'text-translation',
                 request,
@@ -489,6 +594,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const legacyId = randomUUID();
             const legacy = {
                 ...template!,
+                selectedExecutionSnapshot: Object.fromEntries(
+                    Object.entries(template!.selectedExecutionSnapshot).filter(
+                        ([key]) => !key.startsWith('action'),
+                    ),
+                ) as NonNullable<typeof template>['selectedExecutionSnapshot'],
+                aiCreditAccounted: false,
+                aiCreditInputCreditsPerMillionTokens: null,
+                aiCreditOutputCreditsPerMillionTokens: null,
+                aiCreditMaxCreditsPerAttempt: null,
+                aiCreditPolicyMode: null,
+                aiCreditPricingRevision: null,
+                aiCreditProviderDispatchedAt: null,
+                aiCreditReservationId: null,
                 id: legacyId,
                 operationId: legacyRequest.operationId,
                 format: 'text-translation:v1',
@@ -516,7 +634,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await tx.insert(jobs).values(row);
                 });
             await insertFixture(legacy);
-            const replay = await store.enqueue(
+            const replay = await enqueueWithConsent(
                 owner,
                 'text-translation',
                 legacyRequest,
@@ -586,11 +704,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(eq(jobs.id, job.id));
             expect(row?.failureCategory).toBe('access_revoked');
             expect(row?.inputPayload).toBeNull();
-            const [reservation] = await db
+            const [action] = await db
                 .select()
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.jobId, job.id));
-            expect(reservation?.state).toBe('released');
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(action).toMatchObject({
+                state: 'settled',
+                outcome: 'failure',
+                chargedMilli: 0n,
+            });
         });
         it('rejects changed text versions at claim and scrubs stale source', async () => {
             const textId = randomUUID();
@@ -605,7 +727,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
-            const job = await store.enqueue(
+            const job = await enqueueWithConsent(
                 owner,
                 'text-translation',
                 {
@@ -628,7 +750,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await store.get(owner, job.id, context())).failureCode,
             ).toBe('stale_content');
         });
-        it('serializes concurrent claims and recovers an expired dispatch with a fenced retry', async () => {
+        it('serializes claims and absorbs an expired dispatched attempt without unsafe replay', async () => {
             const job = await enqueue();
             const claims = await Promise.all([
                 store.claimNext(claimOptions, context()),
@@ -643,47 +765,88 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 true,
             );
             now = new Date(now.getTime() + claimOptions.leaseMs + 1);
-            const recovered = await store.claimNext(claimOptions, context());
-            expect(recovered?.lease.attempt).toBe(2);
-            expect(recovered?.lease.fencingToken).not.toBe(
-                first.lease.fencingToken,
-            );
-            expect(recovered?.execution).toEqual(first.execution);
+            expect(await store.claimNext(claimOptions, context())).toBeNull();
+            const [action] = await db
+                .select()
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(action).toMatchObject({
+                state: 'settled',
+                outcome: 'failure',
+                chargedMilli: 0n,
+                measurement: 'unknown',
+            });
+            expect(
+                await db
+                    .select()
+                    .from(actionAttempts)
+                    .where(eq(actionAttempts.actionId, job.id)),
+            ).toHaveLength(1);
             expect(
                 await store.complete(
                     first.lease,
                     { language: 'en', confidence: 'high' },
-                    undefined,
+                    { inputTokens: 100, outputTokens: 10 },
                     context(),
                 ),
             ).toBe(false);
-            expect(
-                await store.markDispatched(recovered!.lease, context()),
-            ).toBe(true);
+        });
+        it('retains one action hold across one explicit safe rate-limit retry and charges only the valid result', async () => {
+            const job = await enqueue();
+            const first = await store.claimNext(claimOptions, context());
+            expect(first?.budget.maxOutputTokensPerAttempt).toBeLessThanOrEqual(
+                10000,
+            );
+            expect(first?.budget.maxInputTokensPerAttempt).toBeLessThan(
+                first!.execution.perCallMaxInputTokens,
+            );
+            expect(await store.markDispatched(first!.lease, context())).toBe(
+                true,
+            );
+            const retryAt = new Date(now.getTime() + 1000);
+            await store.fail(
+                first!.lease,
+                {
+                    code: 'provider_rate_limited',
+                    retryAt,
+                    usage: { inputTokens: 0, outputTokens: 0 },
+                },
+                context(),
+            );
+            const [held] = await db
+                .select()
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(held).toMatchObject({ state: 'active', heldMilli: 20000n });
+            now = retryAt;
+            const second = await store.claimNext(claimOptions, context());
+            expect(second?.lease.attempt).toBe(2);
+            expect(await store.markDispatched(second!.lease, context())).toBe(
+                true,
+            );
             expect(
                 await store.complete(
-                    recovered!.lease,
+                    second!.lease,
                     { language: 'en', confidence: 'high' },
                     { inputTokens: 100, outputTokens: 10 },
                     context(),
                 ),
             ).toBe(true);
-            const reservations = await db
+            const [action] = await db
                 .select()
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.jobId, job.id));
-            expect(reservations).toHaveLength(2);
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(action).toMatchObject({
+                state: 'settled',
+                outcome: 'success',
+                chargedMilli: 130n,
+            });
             expect(
-                reservations.map((reservation) => reservation.state),
-            ).toEqual(['settled', 'settled']);
-            expect(
-                reservations.find((reservation) => reservation.attempt === 1)
-                    ?.measurement,
-            ).toBe('estimated');
-            expect(
-                reservations.find((reservation) => reservation.attempt === 2)
-                    ?.measurement,
-            ).toBe('provider_reported');
+                await db
+                    .select()
+                    .from(actionAttempts)
+                    .where(eq(actionAttempts.actionId, job.id)),
+            ).toHaveLength(2);
         });
         it('rechecks owner authority before publishing an already dispatched result', async () => {
             const job = await enqueue();
@@ -707,12 +870,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(eq(jobs.id, job.id));
             expect(row?.failureCategory).toBe('access_revoked');
             expect(row?.resultPayload).toBeNull();
-            const [reservation] = await db
+            const [action] = await db
                 .select()
-                .from(aiCreditReservationsTable)
-                .where(eq(aiCreditReservationsTable.jobId, job.id));
-            expect(reservation?.state).toBe('settled');
-            expect(reservation?.measurement).toBe('provider_reported');
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(action).toMatchObject({
+                state: 'settled',
+                outcome: 'failure',
+                chargedMilli: 0n,
+            });
         });
         it('scrubs every expired terminal result across multiple bounded batches', async () => {
             for (let i = 0; i < 105; i++) {

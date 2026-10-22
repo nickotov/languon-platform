@@ -1,4 +1,15 @@
 import * as portraitCallSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
+import * as accountingSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
+import * as actionAccountingSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import * as actionAuthoritySchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-authority-schema';
+import * as operatorBudgetSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/operator-budget-schema';
+import * as capabilityPolicySchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+import * as providerPriceSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
+import * as capacitySchema from '../text-ai/capacity-schema';
+import {
+    aiCreditGrantBalancesTable,
+    aiCreditWalletTotalsTable,
+} from '../../modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import * as learnerPortraitSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/schema';
 import { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
 import { navigationResourcesTable } from '../../modules/navigation/infrastructure/persistence/drizzle/schema';
@@ -139,6 +150,15 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    ...accountingSchema,
+    ...actionAccountingSchema,
+    ...operatorBudgetSchema,
+    ...actionAuthoritySchema,
+    ...capabilityPolicySchema,
+    ...providerPriceSchema,
+    ...capacitySchema,
+    aiCreditGrantBalances: aiCreditGrantBalancesTable,
+    aiCreditWalletTotals: aiCreditWalletTotalsTable,
     ...learnerPortraitSchema,
     ...portraitCallSchema,
     navigationResources: navigationResourcesTable,
@@ -226,3 +246,12 @@ export * from '../../modules/conversations/infrastructure/persistence/drizzle/co
 export * from '../../modules/learner-portraits/infrastructure/persistence/drizzle/schema';
 
 export * from '../../modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/operator-budget-schema';
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
+export * from '../text-ai/capacity-schema';
+export { aiCreditGrantBalancesTable, aiCreditWalletTotalsTable };
+
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-authority-schema';

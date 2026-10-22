@@ -73,6 +73,7 @@ const webPort = webUrl.port;
 const reuseExistingServer = process.env.AUTH_E2E_REUSE_SERVERS === 'true';
 const sentenceServicesEnabled =
     process.env.AUTH_E2E_SENTENCE_SERVICES === 'true';
+const textServicesEnabled = process.env.AUTH_E2E_TEXT_SERVICES === 'true';
 const documentServicesEnabled =
     process.env.AUTH_E2E_DOCUMENT_SERVICES === 'true';
 const documentStorageOrigin = documentServicesEnabled
@@ -102,6 +103,15 @@ const dictionaryJobFormats = [
     'import-pairs:v1',
     'import-pairs:v2',
     'single-card:v2',
+    ...(textServicesEnabled
+        ? [
+              'text-detection:v1',
+              'text-detection:v2',
+              'text-translation:v1',
+              'text-translation:v2',
+              'text-translation:v3',
+          ]
+        : []),
     ...(documentServicesEnabled
         ? ['document-terms:v1', 'document-terms:v2']
         : []),
@@ -131,9 +141,9 @@ export default defineConfig({
     webServer: [
         {
             command:
-                'pnpm --filter @languon/backend db:migrate && pnpm --filter @languon/backend exec tsx src/index.ts',
+                'pnpm --filter @languon/backend db:migrate && pnpm --filter @languon/backend exec tsx tests/support/dictionary-web-accounting-fixture.ts && pnpm --filter @languon/backend exec tsx src/index.ts',
             env: {
-                APP_ENV: 'development',
+                APP_ENV: 'test',
                 AUTH_ALLOWED_ORIGINS: webOrigin,
                 AUTH_CODE_HMAC_SECRET:
                     'e2e-only-code-secret-do-not-use-outside-local-tests',
@@ -145,6 +155,8 @@ export default defineConfig({
                 AUTH_WEBAUTHN_RP_ID: webUrl.hostname,
                 BACKEND_PORT: backendPort,
                 DATABASE_URL: databaseUrl,
+                AUTH_E2E_DATABASE_URL: databaseUrl,
+                AUTH_E2E_DICTIONARY_ACCOUNTING_FIXTURE: 'true',
                 LEARNING_FLASHCARDS_ENABLED: 'true',
                 LEARNING_SENTENCES_ENABLED: sentenceServicesEnabled
                     ? 'true'
@@ -152,19 +164,17 @@ export default defineConfig({
                 LEARNING_SENTENCE_GENERATION_FORMAT: sentenceServicesEnabled
                     ? 'sentence-generation:v2'
                     : 'sentence-generation:v1',
-                DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED:
-                    sentenceServicesEnabled ? 'true' : 'false',
+                DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
                 SPEECH_PLAYBACK_ENABLED: 'true',
                 SPEECH_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                DICTIONARY_AUDIO_VOICE_MAP: '',
                 SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,es,fr',
                 DICTIONARY_AUDIO_STORAGE: 'postgres',
                 DICTIONARY_AUDIO_FINGERPRINT_SECRET:
                     'audio-e2e-only-fingerprint-secret-32bytes',
-                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'false',
-                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: sentenceServicesEnabled
-                    ? 'true'
-                    : 'false',
+                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'true',
+                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
                 DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_CANCELLABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_API_DISCARDABLE_FORMATS: dictionaryJobFormats,
@@ -202,9 +212,12 @@ export default defineConfig({
                     : 'false',
                 AUTH_E2E_DATABASE_URL: databaseUrl,
                 AUTH_E2E_RUN_ID: runId,
-                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'false',
-                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'false',
+                AUTH_E2E_DICTIONARY_ACCOUNTING_FIXTURE: 'true',
+                DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'true',
+                DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
+                DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
+                DEEPSEEK_API_KEY: 'synthetic-browser-provider-key',
                 DICTIONARY_GENERATION_MODEL_ID: '',
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_DOCUMENT_OCR_MODE: documentServicesEnabled
@@ -231,6 +244,7 @@ export default defineConfig({
                 SPEECH_PLAYBACK_ENABLED: 'true',
                 SPEECH_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
+                DICTIONARY_AUDIO_VOICE_MAP: '',
                 SPEECH_FIXTURE_SUPPORTED_LANGUAGES: 'en,es,fr',
                 DICTIONARY_AUDIO_STORAGE: 'postgres',
                 DICTIONARY_AUDIO_FINGERPRINT_SECRET:

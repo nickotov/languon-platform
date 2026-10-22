@@ -15,6 +15,7 @@ import { ConversationModel } from './conversation-model';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { tutorModeCopy } from './tutor-mode-copy';
 import { ConversationHistory } from './conversation-history';
+import { ActionBudgetConfirmation } from './action-budget-confirmation';
 import { AssistantDialogs } from './assistant-dialogs';
 import { TutorShell } from '../tutor-shell/tutor-shell';
 import type { ContextualAssistantProps } from '../../types';
@@ -189,6 +190,7 @@ export function AssistantPanel(
                             active={panel.active}
                             pending={chat.submit.isPending}
                             onRetry={panel.retry}
+                            onContinue={panel.continueResponse}
                             onPropose={panel.propose}
                             onAcceptWorkspaceProposal={
                                 props.workspace
@@ -221,7 +223,7 @@ export function AssistantPanel(
                             )}
                         </ConversationMessages>
                     )}
-                    {panel.error && (
+                    {panel.error && !chat.quote && (
                         <div className={styles.notice}>
                             <ConversationErrorNotice
                                 error={panel.error}
@@ -229,6 +231,11 @@ export function AssistantPanel(
                             />
                         </div>
                     )}
+                    <ActionBudgetConfirmation
+                        quote={chat.quote}
+                        onSend={chat.confirmQuote}
+                        onClose={chat.cancelQuote}
+                    />
                     {chat.actionError && (
                         <div
                             className={styles.notice}

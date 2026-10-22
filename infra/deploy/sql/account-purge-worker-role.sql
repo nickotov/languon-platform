@@ -3,17 +3,17 @@
 -- psql "$MIGRATION_DATABASE_URL" --set=account_purge_role=languon_account_purge --file infra/deploy/sql/account-purge-worker-role.sql
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM :"account_purge_role";
 REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM :"account_purge_role";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM :"account_purge_role";
 REVOKE CREATE ON SCHEMA public FROM :"account_purge_role";
 GRANT USAGE ON SCHEMA public TO :"account_purge_role";
-GRANT SELECT, UPDATE ON TABLE account_deletion_requests TO :"account_purge_role";
-GRANT SELECT (id, status, version), UPDATE (handle, status, updated_at, version)
-    ON TABLE users TO :"account_purge_role";
+GRANT SELECT ON TABLE account_deletion_requests TO :"account_purge_role";
+GRANT UPDATE (state, lease_worker_id, lease_deadline, fencing_token, attempt_count,
+    updated_at, completed_at, next_attempt_at) ON TABLE account_deletion_requests TO :"account_purge_role";
+GRANT SELECT (id, status, version) ON TABLE users TO :"account_purge_role";
 GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs, dictionary_document_uploads,
     dictionary_document_extractions, dictionary_document_object_versions,
     dictionary_generation_proposals, dictionary_card_revisions,
-    dictionary_idempotency_keys, dictionaries,
-    ai_credit_accounts, ai_credit_admin_removals, ai_credit_grants,
-    ai_credit_history, ai_credit_reservations TO :"account_purge_role";
+    dictionary_idempotency_keys, dictionaries TO :"account_purge_role";
 GRANT DELETE ON TABLE auth_verification_challenges, auth_passkeys,
     password_credentials, auth_sessions, user_emails TO :"account_purge_role";
 -- DELETE filters need only the opaque owner column, never email/hash/credential data.
@@ -70,7 +70,7 @@ GRANT SELECT (user_id, granted_by_user_id, revoked_by_user_id, revoked_at),
 GRANT DELETE ON TABLE sentence_preparations, sentence_library_snapshots,
     sentence_library_receipts, sentence_preparation_batches
 TO :"account_purge_role";
-GRANT SELECT (id, learner_id, dictionary_id, active_job_id) ON TABLE
+GRANT SELECT (id, learner_id, dictionary_id, active_job_id, current_action_id) ON TABLE
     sentence_preparations TO :"account_purge_role";
 GRANT UPDATE (state, pause_reason, active_job_id, updated_at) ON TABLE
     sentence_preparations TO :"account_purge_role";
@@ -93,17 +93,6 @@ GRANT UPDATE (actor_id) ON TABLE sentence_personal_visibility,
 
 -- Retained successful speech is not account-owned data: no recording/text grants.
 GRANT SELECT ON TABLE speech_jobs TO :"account_purge_role";
-GRANT UPDATE (payer_id, reservation_id, billing_state)
-    ON TABLE speech_jobs TO :"account_purge_role";
-GRANT SELECT (actor_id), DELETE ON TABLE speech_bindings, speech_quotes
-    TO :"account_purge_role";
--- Close speech holds before erasing the wallet; failure settlement debits zero.
-GRANT UPDATE (charged_credits, measured_credits, measurement, settled_at, state)
-    ON TABLE ai_credit_reservations TO :"account_purge_role";
-GRANT INSERT (id, owner_id, kind, amount, measurement, created_at,
-    expires_at, grant_source, reason)
-    ON TABLE ai_credit_history TO :"account_purge_role";
-
 -- Text erasure requires only opaque ownership, lifecycle, and numerical accounting.
 -- Never grant source/translation, revision snapshot, capability digest, job input,
 -- result payload, or selection authority access to this worker.
@@ -149,4 +138,16 @@ GRANT SELECT, DELETE ON TABLE learner_portrait_interview_provider_calls TO :"acc
 GRANT UPDATE (state, settled_at, actual_input_tokens, actual_output_tokens, actual_cost_micros)
     ON TABLE learner_portrait_interview_provider_calls TO :"account_purge_role";
 GRANT SELECT ON TABLE ai_credit_reservation_allocations TO :"account_purge_role";
-GRANT UPDATE (settled_credits) ON TABLE ai_credit_reservation_allocations TO :"account_purge_role";
+-- Financial removal is only available through a due, fenced deletion claim.
+GRANT SELECT ON TABLE ai_credit_actions, ai_credit_action_allocations,
+    ai_credit_action_attempts, ai_credit_grant_balances, ai_credit_wallet_totals
+TO :"account_purge_role";
+GRANT SELECT (user_id) ON TABLE ai_credit_accounts TO :"account_purge_role";
+GRANT SELECT (id,owner_id) ON TABLE ai_credit_grants, ai_credit_admin_removals TO :"account_purge_role";
+GRANT SELECT (id,owner_id,job_id,job_kind,state) ON TABLE ai_credit_reservations TO :"account_purge_role";
+GRANT EXECUTE ON FUNCTION languon_assert_accounting_purge_claim(uuid,text,integer),
+    languon_complete_account_purge(uuid,text,integer),
+    languon_purge_ai_credit_owner(uuid,text,integer),
+    languon_finalize_speech_accounting_for_purge(uuid,text,integer),
+    languon_recover_purge_interview_action(uuid,text,integer,uuid)
+TO :"account_purge_role";

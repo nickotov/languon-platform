@@ -26,6 +26,7 @@ e2e_tests:
 e2e_scenarios:
     - admin-grants-and-generation-consumes-ai-credits
 related_features:
+    - ai-accounting
     - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - admin-user-management
@@ -37,7 +38,7 @@ related_features:
 
 ## What this verifies
 
-This guide verifies that an active administration owner can inspect and adjust a user's normalized AI credits, configure limited or expiring/permanent unlimited access, and see immutable ledger activity. With credit enforcement activated after rollout preflight, each new managed dictionary text job reserves one attempt atomically and settles reported use or a labeled conservative estimate. Operational provider and concurrency limits remain separate.
+This guide verifies that an active administration owner can inspect and adjust a user's normalized AI credits, configure limited or expiring/permanent unlimited access, and see immutable ledger activity. With credit enforcement activated after rollout preflight, each new managed dictionary text job atomically admits a bounded action and hold. The action pins exact customer/provider rates and the learner maximum; settlement depends on usable outcome and defensible eligible usage. Operational provider and concurrency limits remain separate.
 
 Explicit and Auto selection both use the effective published model tariff;
 admission pins its immutable revision together with the selected provider/model. Replays/retries retain the admitted pricing and do
@@ -48,8 +49,9 @@ Subscriptions, checkout, purchased-credit UI and a standalone learner balance pa
 remain deferred. [Shared pronunciation playback](shared-pronunciation-playback.md)
 adds paid confirmation for long uncached speech and editable immutable model-rate
 revisions. Speech settles only after usable audio publication; its failure/deadline
-releases are distinct from existing text-model estimated settlement. Subscription
-and purchase grant sources remain future idempotent ledger inputs.
+releases follow the shared outcome policy. Manual external payment/refund and
+provider-funding records are covered by [AI accounting](./ai-accounting.md);
+checkout and subscription purchase flows remain deferred.
 
 ## Start the development environment
 
@@ -79,7 +81,17 @@ When enforcement is active, a limited user with no available credit receives `ai
 
 ## System verification
 
-The mapped journey saves a priced managed provider revision, grants synthetic credits, admits one dictionary generation, starts the current deterministic worker, and waits for review. Because that fixture reports no usage, PostgreSQL assertions verify one attempt reservation, a provider-dispatch marker, terminal `estimated` settlement at the reserved bound, and ledger history attributed to the user. The journey then accepts the proposal through the public API.
+The mapped journey saves a priced managed provider revision, grants synthetic
+credits and runs deterministic dictionary generation. New action accounting
+uses integer thousandths internally and exact decimal strings at public credit
+boundaries. It keeps separate immutable customer tariffs and provider cost
+revisions, learner/operator budgets and a compact transactional wallet. At most
+one safe automatic retry shares the same 10,000-total-output-token action
+allowance. A usable published proposal is eligible for actual usage settlement;
+missing trustworthy usage remains explicit and cannot default to the full hold.
+Document review becomes eligible only after original-byte cleanup and final
+publication commit. The existing browser flow accepts the resulting proposal;
+real PostgreSQL accounting tests cover charge/release and concurrent allocations.
 
 Before production activation, confirm migrations are applied, all running workers advertise the credit-settlement capability, the active provider revision contains credit pricing, and queued legacy work has the documented compatibility path. Roll back by disabling credit enforcement for new admissions; already credit-accounted jobs must drain on capable workers.
 
@@ -88,9 +100,13 @@ Before production activation, confirm migrations are applied, all running worker
 - Missing accounts are limited with zero available credits.
 - Expired lots are excluded from new reservations; an existing reservation remains settleable after its lot expires.
 - Concurrent admissions and admin removals serialize per owner and cannot overspend.
-- A retry reserves only its next attempt. Insufficient retry credit terminalizes before another provider call.
-- Cancellation or failure before provider dispatch releases the reservation. Ambiguous failure after dispatch charges the conservative attempt bound as `estimated`.
-- Provider-reported usage settles as `provider_reported`; unlimited work records `unmetered` usage without consuming finite grants.
+- Safe retry remains inside the admitted action allowance; failed attempts consume
+  execution/operator limits without inflating customer charges.
+- Technical, invalid-output and revoked-authority failures release customer holds
+  even after dispatch. Explicit learner cancellation is a stopped outcome: only
+  defensible measured/estimated usage within the hold can be charged. Unknown
+  usage is absorbed and cannot create a later surprise debit.
+- Provider-reported usage settles as `provider_reported`; unlimited work records usage without consuming finite grants.
 - Deletion-pending and purged targets reject admin mutations. Account purge closes
   speech holds without late debit before removing wallet/association data; successful
   retained speech text/audio remains. Existing text work keeps its established drain policy.
@@ -110,6 +126,6 @@ Stop the disposable E2E processes and remove only its synthetic database and Red
 
 ## E2E coverage
 
-- `admin-grants-and-generation-consumes-ai-credits` proves an owner grants a limited user's credits in the browser, managed dictionary generation reserves and settles one attempt through the real backend and deterministic worker, the ledger updates, and the resulting proposal is accepted.
+- `admin-grants-and-generation-consumes-ai-credits` proves an owner grants a limited user's credits in the browser, managed dictionary generation admits and terminalizes one action through the real backend and deterministic worker, the ledger updates, and the resulting proposal is accepted.
 
 Concurrent allocation, expiry ordering, missing usage, retry shortfall, purge ordering, worker fencing, and rejection-audit atomicity remain at focused domain and disposable PostgreSQL layers where timing and invariants are asserted directly.

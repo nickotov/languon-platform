@@ -1,4 +1,9 @@
 import {
+    ActionBilling,
+    ActionConsentCancelledError,
+} from '@/fsd/entities/ai-action';
+import type { ReactNode } from 'react';
+import {
     dictionaryErrorMessage,
     languageLabel,
 } from '@/fsd/entities/dictionary';
@@ -66,7 +71,10 @@ export function buildAiValue(
 
     let error: string | null = null;
 
-    if (requestError) {
+    if (
+        requestError &&
+        !(requestError instanceof ActionConsentCancelledError)
+    ) {
         error = dictionaryErrorMessage(requestError, model.t);
     } else if (authoringJob.data?.state === 'failed') {
         error = model.t(
@@ -94,7 +102,13 @@ export function buildAiValue(
     };
 }
 
-export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
+export function EditorCardSheet({
+    model,
+    budget,
+}: {
+    model: EditorCardSheetModel;
+    budget?: ReactNode;
+}) {
     const {
         t,
         locale,
@@ -237,6 +251,11 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
             title={titleValue}
             description={description}
         >
+            {budget}
+            <ActionBilling
+                billing={(authoringJob.data ?? authoringReviewJob)?.billing}
+                execution={(authoringJob.data ?? authoringReviewJob)?.state}
+            />
             <DictionaryCardForm
                 ai={aiValue}
                 card={cardValue}

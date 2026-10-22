@@ -4,6 +4,8 @@ import {
     uuid,
     text,
     integer,
+    bigint,
+    numeric,
     timestamp,
     jsonb,
     boolean,
@@ -103,14 +105,17 @@ export const dictionaryTextSelectionJobsTable = pgTable(
         aiCreditPolicyMode: text('ai_credit_policy_mode').$type<
             'limited' | 'unlimited'
         >(),
-        aiCreditMaxCreditsPerAttempt: integer(
+        aiCreditMaxCreditsPerAttempt: bigint(
             'ai_credit_max_credits_per_attempt',
+            { mode: 'number' },
         ),
-        aiCreditInputCreditsPerMillionTokens: integer(
+        aiCreditInputCreditsPerMillionTokens: numeric(
             'ai_credit_input_credits_per_million_tokens',
+            { precision: 18, scale: 3, mode: 'number' },
         ),
-        aiCreditOutputCreditsPerMillionTokens: integer(
+        aiCreditOutputCreditsPerMillionTokens: numeric(
             'ai_credit_output_credits_per_million_tokens',
+            { precision: 18, scale: 3, mode: 'number' },
         ),
         aiCreditProviderDispatchedAt: date('ai_credit_provider_dispatched_at'),
         workerId: text('worker_id'),

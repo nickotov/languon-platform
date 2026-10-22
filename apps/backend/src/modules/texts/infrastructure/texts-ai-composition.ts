@@ -1,6 +1,7 @@
 import type { TextAiAdmissionParticipant } from '../../text-ai/application/text-ai-admission-participant';
 import type { TextAiProviderBudgetPolicy } from '../../text-ai/application/text-ai-provider-catalog';
 import type { TextsAiProvider } from '../application/ports/texts-ai-provider';
+import type { GenerationBurstLimiter } from '../../text-ai/application/generation-burst-limiter';
 import { TextsJobService } from '../application/texts-job-service';
 import {
     TextsWorkerService,
@@ -14,6 +15,7 @@ import type {
 export function createTextsAiComposition(input: {
     database: TextsDatabase;
     enabled: boolean;
+    burstLimiter: GenerationBurstLimiter;
     fingerprintSecret: string;
     authenticate: (token: string) => Promise<{ userId: string }>;
     clock?: { now(): Date };
@@ -50,6 +52,7 @@ export function createTextsAiComposition(input: {
             store,
             clock,
             enabled: input.enabled,
+            burstLimiter: input.burstLimiter,
             authenticate: input.authenticate,
         }),
     };

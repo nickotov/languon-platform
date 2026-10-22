@@ -1,0 +1,26 @@
+   state   | pause_reason | parent_actions | child_jobs
+-----------+--------------+----------------+------------
+ completed |              |              2 |          3
+(1 row)
+
+  state  | outcome | measurement | held_milli | charged_milli | output_limit
+---------+---------+-------------+------------+---------------+--------------
+ settled | success | measured    |     292144 |         30100 |        10000
+ settled | success | measured    |     292144 |         24626 |        10000
+(2 rows)
+
+  action  | count
+----------+-------
+ continue |     1
+(1 row)
+
+ funding  |  state  | outcome | measurement | held_milli | charged_milli
+----------+---------+---------+-------------+------------+---------------
+ operator | settled | success | measured    |          0 |             0
+ customer | settled | success | measured    |      19000 |           140
+(2 rows)
+
+  state  | outcome | measurement | held_milli | charged_milli | output_limit
+---------+---------+-------------+------------+---------------+--------------
+ settled | success | measured    |      20000 |           200 |         3816
+(1 row)

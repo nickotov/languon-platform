@@ -1,3 +1,13 @@
+import {
+    requestSentenceCancellation,
+    sentenceDeletionBusy,
+} from '../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant';
+import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
+import {
+    aiCreditActionsTable,
+    aiCreditActionAttemptsTable,
+} from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import { sentencePreparationActionsTable } from '../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema';
 import { SentenceExerciseSchema } from '@languon/contracts';
 import { isSentenceCurrent } from '../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-persistence-support';
 import { randomUUID } from 'node:crypto';
@@ -81,8 +91,9 @@ run('sentence library persistence', () => {
     const shareId = 'c'.repeat(24);
     const keyDigest = `hmac-sha256:v1:${'C'.repeat(43)}`;
 
+    const testNow = new Date();
     const context = () => ({
-        now: new Date('2026-10-06T12:00:00.000Z'),
+        now: testNow,
         signal: new AbortController().signal,
     });
     const ownerAccess = (): LearningAccess => ({
@@ -104,7 +115,7 @@ run('sentence library persistence', () => {
         audit: {
             id: randomUUID(),
             correlationId: randomUUID(),
-            expiresAt: new Date('2026-10-07T12:00:00.000Z'),
+            expiresAt: new Date(testNow.getTime() + 86400_000),
         },
     });
     const activeLibraryQuery = {
@@ -225,6 +236,7 @@ run('sentence library persistence', () => {
 
     beforeEach(async () => {
         await client.unsafe('truncate users cascade');
+        await seedLegacyActionFixture(db);
         owner = randomUUID();
         reader = randomUUID();
         administrator = randomUUID();
@@ -279,9 +291,17 @@ run('sentence library persistence', () => {
         const model = textAiModelCatalog[0]!;
         const snapshot: TextAiExecutionSnapshot = {
             adapterRevision: model.adapterRevision,
-            aggregateBudget: model.aggregateBudget,
+            aggregateBudget: {
+                ...model.aggregateBudget,
+                maxOutputTokensPerAttempt: model.perCallMaxOutputTokens,
+            },
             credentialReference: model.credentialReference,
-            creditPricing: model.creditPricing,
+            creditPricing: {
+                ...model.creditPricing!,
+                inputCreditsPerMillionTokens: 100,
+                outputCreditsPerMillionTokens: 300,
+                maxCreditsPerAttempt: 10000,
+            },
             enabledModelIds: [model.id],
             modelId: model.id,
             perCallMaxInputTokens: model.perCallMaxInputTokens,
@@ -317,6 +337,7 @@ run('sentence library persistence', () => {
             onAdminMutation: async () => undefined,
         });
         preparation = new DrizzleSentencePreparationStore(db, {
+            authorizeAction: practice.preparePreparationAction.bind(practice),
             admitGeneration: practice.admitPreparationGeneration.bind(practice),
         });
     });
@@ -738,7 +759,7 @@ run('sentence library persistence', () => {
             ),
         ).rejects.toThrow('stale_content');
     });
-    it('stop lets the admitted child settle and resume reuses its saved coverage', async () => {
+    it('Stop cancels a running child, retains earlier usable coverage, and requires explicit Continue', async () => {
         const started = await preparation.start(
             ownerAccess(),
             {
@@ -749,12 +770,42 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+        const claim = () =>
+            worker.claimNext(
+                {
+                    workerId: 'stop-parent-proof',
+                    supportedFormats: [
+                        'sentence-preparation:v1',
+                        'sentence-preparation:v2',
+                    ],
+                    learningExecutionRevision: 1,
+                    textAiSelectionRevision: 1,
+                    creditSettlementRevision: 1,
+                    leaseMs: 60000,
+                    globalConcurrency: 10,
+                    learnerConcurrency: 3,
+                },
+                context(),
+            );
         await preparation.tick(context());
-        const running = await preparation.get(
-            ownerAccess(),
-            started.id,
+        const first = await claim();
+        if (!first || first.kind !== 'sentence-generation')
+            throw new Error('Expected first usable child');
+        await worker.markDispatched(first.lease, context());
+        await worker.completeGeneration(
+            first.lease,
+            {
+                content: generatedContent(first.input),
+                usage: { inputTokens: 1, outputTokens: 1 },
+            },
             context(),
         );
+        await preparation.tick(context());
+        await preparation.tick(context());
+        const second = await claim();
+        if (!second || second.kind !== 'sentence-generation')
+            throw new Error('Expected next running child');
+        await worker.markDispatched(second.lease, context());
         const stopped = await preparation.command(
             ownerAccess(),
             started.id,
@@ -767,9 +818,9 @@ run('sentence library persistence', () => {
                 await db
                     .select()
                     .from(sentenceAiJobsTable)
-                    .where(eq(sentenceAiJobsTable.id, running.activeJobId!))
+                    .where(eq(sentenceAiJobsTable.id, second.lease.jobId))
             )[0]!.cancellationRequestedAt,
-        ).toBeNull();
+        ).not.toBeNull();
         await expect(
             preparation.command(
                 ownerAccess(),
@@ -778,33 +829,16 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).rejects.toThrow('stale_content');
-        const job = await worker.claimNext(
-            {
-                workerId: 'stop-test',
-                supportedFormats: [
-                    'sentence-preparation:v1',
-                    'sentence-preparation:v2',
-                ],
-                learningExecutionRevision: 1,
-                textAiSelectionRevision: 1,
-                creditSettlementRevision: 1,
-                leaseMs: 60000,
-                globalConcurrency: 10,
-                learnerConcurrency: 3,
-            },
-            context(),
-        );
-        if (!job || job.kind !== 'sentence-generation')
-            throw new Error('Expected existing admitted child');
-        await worker.markDispatched(job.lease, context());
-        await worker.completeGeneration(
-            job.lease,
-            {
-                content: generatedContent(job.input),
-                usage: { inputTokens: 1, outputTokens: 1 },
-            },
-            context(),
-        );
+        expect(
+            await worker.completeGeneration(
+                second.lease,
+                {
+                    content: generatedContent(second.input),
+                    usage: { inputTokens: 1, outputTokens: 1 },
+                },
+                context(),
+            ),
+        ).toBe('terminalized');
         await preparation.tick(context());
         const paused = await preparation.get(
             ownerAccess(),
@@ -816,22 +850,31 @@ run('sentence library persistence', () => {
             pauseReason: 'user',
             preparedCount: 1,
             activeJobId: null,
+            requiresNewBudget: true,
         });
+        await expect(
+            preparation.command(
+                ownerAccess(),
+                started.id,
+                { operationId: randomUUID(), action: 'resume' },
+                context(),
+            ),
+        ).rejects.toThrow();
         await preparation.command(
             ownerAccess(),
             started.id,
-            { operationId: randomUUID(), action: 'resume' },
+            { operationId: randomUUID(), action: 'continue' },
             context(),
         );
         await preparation.tick(context());
-        const resumed = await preparation.get(
+        const continued = await preparation.get(
             ownerAccess(),
             started.id,
             context(),
         );
-        expect(resumed.preparedCount).toBe(1);
-        expect(resumed.activeJobId).not.toBe(running.activeJobId);
-        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(2);
+        expect(continued.preparedCount).toBe(1);
+        expect(continued.activeJobId).not.toBe(second.lease.jobId);
+        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(3);
     });
     it('discovers the second bounded preparation round and never generates during partial practice', async () => {
         const extra = Array.from({ length: 99 }, (_, index) => ({
@@ -1033,14 +1076,89 @@ run('sentence library persistence', () => {
         expect(second.initialBatch!.exerciseIds).toContain(laterId);
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(2);
     });
-    it('pauses without credits and admits one child only after explicit funded resume', async () => {
+    it('rejects an unfunded parent before background work and creates one hold after an explicit funded Start', async () => {
         await db
             .update(aiCreditAccountsTable)
             .set({ mode: 'limited', unlimitedUntil: null })
             .where(eq(aiCreditAccountsTable.userId, owner));
-        await db
-            .delete(aiCreditGrantsTable)
-            .where(eq(aiCreditGrantsTable.ownerId, owner));
+        const input = {
+            operationId: randomUUID(),
+            direction: 'source-to-target' as const,
+            mode: 'new-only' as const,
+            initialRoundScope: { type: 'all' as const },
+        };
+        await expect(
+            preparation.start(ownerAccess(), input, context()),
+        ).rejects.toThrow();
+        expect(await db.select().from(sentencePreparationsTable)).toHaveLength(
+            0,
+        );
+        expect(await db.select().from(aiCreditActionsTable)).toHaveLength(0);
+        await db.insert(aiCreditGrantsTable).values({
+            id: randomUUID(),
+            ownerId: owner,
+            amount: 20000n,
+            source: 'admin',
+            sourceReference: 'synthetic-parent-budget',
+            createdAt: context().now,
+        });
+        const started = await preparation.start(
+            ownerAccess(),
+            input,
+            context(),
+        );
+        await preparation.tick(context());
+        await preparation.tick(context());
+        const parent = await db.select().from(aiCreditActionsTable);
+        expect(parent).toHaveLength(1);
+        expect(parent[0]!.heldMilli).toBeGreaterThan(0n);
+        expect(parent[0]!.heldMilli).toBeLessThanOrEqual(20000n);
+        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(1);
+        expect(
+            (await preparation.get(ownerAccess(), started.id, context()))
+                .billing?.state,
+        ).toBe('held');
+    });
+    it('closes an idle parent after account lifecycle cancellation before allowing private erasure', async () => {
+        await preparation.start(
+            ownerAccess(),
+            {
+                operationId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'new-only',
+                initialRoundScope: { type: 'all' },
+            },
+            context(),
+        );
+        const scope = {
+            learnerId: owner,
+            dictionaryIds: [dictionaryId],
+            accountPurge: true,
+        };
+        await db.transaction(async (tx) => {
+            await tx.execute(
+                sql`select pg_advisory_xact_lock(${textAiCapacityLock})`,
+            );
+            await requestSentenceCancellation(tx, {
+                ...scope,
+                now: context().now,
+            });
+            await tx
+                .update(usersTable)
+                .set({ status: 'deletion_pending' })
+                .where(eq(usersTable.id, owner));
+            expect(await sentenceDeletionBusy(tx, scope)).toBe(true);
+        });
+        await preparation.tick(context());
+        expect((await db.select().from(aiCreditActionsTable))[0]).toMatchObject(
+            { state: 'settled', outcome: 'failure', chargedMilli: 0n },
+        );
+        expect(
+            await db.transaction((tx) => sentenceDeletionBusy(tx, scope)),
+        ).toBe(false);
+        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
+    });
+    it('recovers an expired paused parent without refreshing its authorization', async () => {
         const started = await preparation.start(
             ownerAccess(),
             {
@@ -1051,48 +1169,315 @@ run('sentence library persistence', () => {
             },
             context(),
         );
-        await preparation.tick(context());
+        await db
+            .update(sentencePreparationsTable)
+            .set({ state: 'paused', pauseReason: 'capacity' })
+            .where(eq(sentencePreparationsTable.id, started.id));
+        await preparation.tick({
+            ...context(),
+            now: new Date(context().now.getTime() + 16 * 60000),
+        });
+        const [parent] = await db.select().from(aiCreditActionsTable);
+        expect(parent).toMatchObject({
+            state: 'settled',
+            outcome: 'failure',
+            chargedMilli: 0n,
+        });
         expect(
             await preparation.get(ownerAccess(), started.id, context()),
         ).toMatchObject({
             state: 'paused',
-            pauseReason: 'credits',
-            activeJobId: null,
+            pauseReason: 'budget',
+            requiresNewBudget: true,
         });
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
-        expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
-            0,
-        );
+    });
+    it('shares the single safe automatic retry across all preparation children', async () => {
+        await db
+            .update(aiCreditAccountsTable)
+            .set({ mode: 'limited', unlimitedUntil: null })
+            .where(eq(aiCreditAccountsTable.userId, owner));
         await db.insert(aiCreditGrantsTable).values({
             id: randomUUID(),
             ownerId: owner,
-            amount: 100000000n,
+            amount: 100000n,
             source: 'admin',
-            sourceReference: 'disposable-preparation-resume',
+            sourceReference: 'synthetic-parent-retry',
             createdAt: context().now,
-            expiresAt: new Date(context().now.getTime() + 86400000),
         });
-        expect(await preparation.tick(context())).toBe(false);
-        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
+        const started = await preparation.start(
+            ownerAccess(),
+            {
+                operationId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'new-only',
+                initialRoundScope: { type: 'manual', entryIds: [firstEntryId] },
+            },
+            context(),
+        );
+        const claim = () =>
+            worker.claimNext(
+                {
+                    workerId: 'shared-parent-retry',
+                    supportedFormats: [
+                        'sentence-preparation:v1',
+                        'sentence-preparation:v2',
+                    ],
+                    learningExecutionRevision: 1,
+                    textAiSelectionRevision: 1,
+                    creditSettlementRevision: 1,
+                    leaseMs: 60000,
+                    globalConcurrency: 10,
+                    learnerConcurrency: 3,
+                },
+                context(),
+            );
+        await preparation.tick(context());
+        const first = await claim();
+        if (!first || first.kind !== 'sentence-generation')
+            throw new Error('Expected first child');
+        await worker.markDispatched(first.lease, context());
+        await worker.fail(
+            first.lease,
+            {
+                code: 'invalid_model_output',
+                retryAt: context().now,
+                usage: { inputTokens: 1, outputTokens: 1 },
+            },
+            context(),
+        );
+        const retry = await claim();
+        if (!retry || retry.kind !== 'sentence-generation')
+            throw new Error('Expected single safe retry');
+        expect(retry.lease.jobId).toBe(first.lease.jobId);
+        expect(retry.lease.attempt).toBe(2);
+        await worker.markDispatched(retry.lease, context());
+        await worker.completeGeneration(
+            retry.lease,
+            {
+                content: generatedContent(retry.input),
+                usage: { inputTokens: 1, outputTokens: 1 },
+            },
+            context(),
+        );
+        await preparation.tick(context());
+        await preparation.tick(context());
+        const next = await claim();
+        if (!next || next.kind !== 'sentence-generation')
+            throw new Error('Expected another necessary child');
+        expect(
+            (
+                await db
+                    .select()
+                    .from(sentenceAiJobsTable)
+                    .where(eq(sentenceAiJobsTable.id, next.lease.jobId))
+            )[0]!.maxAttempts,
+        ).toBe(1);
+        await worker.markDispatched(next.lease, context());
+        await worker.fail(
+            next.lease,
+            {
+                code: 'invalid_model_output',
+                retryAt: context().now,
+                usage: { inputTokens: 1, outputTokens: 1 },
+            },
+            context(),
+        );
+        expect(await claim()).toBeNull();
+        await preparation.tick(context());
+        const [settled] = await db.select().from(aiCreditActionsTable);
+        expect(settled).toMatchObject({
+            state: 'settled',
+            outcome: 'success',
+            chargedMilli: 1n,
+        });
+        expect(
+            await db.select().from(aiCreditActionAttemptsTable),
+        ).toHaveLength(3);
+        expect(
+            (await preparation.get(ownerAccess(), started.id, context()))
+                .requiresNewBudget,
+        ).toBe(true);
+    });
+    it('keeps multiple successful batches within one pinned parent and rejects a stale coordinator fence', async () => {
+        const started = await preparation.start(
+            ownerAccess(),
+            {
+                operationId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'new-only',
+                initialRoundScope: { type: 'manual', entryIds: [firstEntryId] },
+            },
+            context(),
+        );
+        const [parent] = await db.select().from(aiCreditActionsTable);
+        for (let index = 0; index < 2; index++) {
+            await preparation.tick(context());
+            const child = await worker.claimNext(
+                {
+                    workerId: 'multi-batch-parent',
+                    supportedFormats: [
+                        'sentence-preparation:v1',
+                        'sentence-preparation:v2',
+                    ],
+                    learningExecutionRevision: 1,
+                    textAiSelectionRevision: 1,
+                    creditSettlementRevision: 1,
+                    leaseMs: 60000,
+                    globalConcurrency: 10,
+                    learnerConcurrency: 3,
+                },
+                context(),
+            );
+            if (!child || child.kind !== 'sentence-generation')
+                throw new Error('Expected another authorized child');
+            await worker.markDispatched(child.lease, context());
+            await worker.completeGeneration(
+                child.lease,
+                {
+                    content: generatedContent(child.input),
+                    usage: { inputTokens: 1, outputTokens: 1 },
+                },
+                context(),
+            );
+            await preparation.tick(context());
+        }
+        await preparation.tick(context());
+        expect(await db.select().from(aiCreditActionsTable)).toHaveLength(1);
+        expect((await db.select().from(aiCreditActionsTable))[0]).toMatchObject(
+            { state: 'settled', outcome: 'success' },
+        );
+        expect(
+            await db.select().from(aiCreditActionAttemptsTable),
+        ).toHaveLength(2);
+        const childRows = await db.select().from(sentenceAiJobsTable);
+        expect(childRows).toHaveLength(2);
+        expect(
+            childRows.every(
+                (child) =>
+                    (
+                        child.selectedExecutionSnapshot as {
+                            actionParentId?: string;
+                        }
+                    ).actionParentId === parent!.id,
+            ),
+        ).toBe(true);
+        const [batch] = await db.select().from(sentencePreparationBatchesTable);
+        await expect(
+            db.execute(
+                sql`select languon_admit_sentence_preparation_child(${started.id}::uuid,${batch!.id}::uuid,0::bigint,${context().now.toISOString()}::timestamptz)`,
+            ),
+        ).rejects.toThrow();
+        expect(
+            (await preparation.get(ownerAccess(), started.id, context()))
+                .preparedCount,
+        ).toBe(2);
+    });
+    it('shares one parent across batches, pauses at its total output limit, and requires explicit Continue', async () => {
+        const started = await preparation.start(
+            ownerAccess(),
+            {
+                operationId: randomUUID(),
+                direction: 'source-to-target',
+                mode: 'new-only',
+                initialRoundScope: { type: 'manual', entryIds: [firstEntryId] },
+            },
+            context(),
+        );
+        await preparation.tick(context());
+        const [parent] = await db.select().from(aiCreditActionsTable);
+        const claimed = await worker.claimNext(
+            {
+                workerId: 'parent-budget-proof',
+                supportedFormats: [
+                    'sentence-preparation:v1',
+                    'sentence-preparation:v2',
+                ],
+                learningExecutionRevision: 1,
+                textAiSelectionRevision: 1,
+                creditSettlementRevision: 1,
+                leaseMs: 60000,
+                globalConcurrency: 10,
+                learnerConcurrency: 3,
+            },
+            context(),
+        );
+        if (!claimed || claimed.kind !== 'sentence-generation')
+            throw new Error('Expected pinned preparation child');
+        await worker.markDispatched(claimed.lease, context());
+        await worker.completeGeneration(
+            claimed.lease,
+            {
+                content: generatedContent(claimed.input),
+                usage: { inputTokens: 1, outputTokens: parent!.outputLimit },
+            },
+            context(),
+        );
+        await preparation.tick(context());
+        await preparation.tick(context());
+        const paused = await preparation.get(
+            ownerAccess(),
+            started.id,
+            context(),
+        );
+        expect(paused).toMatchObject({
+            state: 'paused',
+            pauseReason: 'budget',
+            requiresNewBudget: true,
+            remainingOutputTokens: 0,
+            preparedCount: 1,
+        });
+        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(1);
+        expect(await db.select().from(aiCreditActionsTable)).toHaveLength(1);
+        expect(
+            await db.select().from(aiCreditActionAttemptsTable),
+        ).toHaveLength(1);
+        await expect(
+            preparation.command(
+                ownerAccess(),
+                started.id,
+                { operationId: randomUUID(), action: 'resume' },
+                context(),
+            ),
+        ).rejects.toThrow();
+        const continuation = {
+            operationId: randomUUID(),
+            action: 'continue' as const,
+        };
         await preparation.command(
             ownerAccess(),
             started.id,
-            { operationId: randomUUID(), action: 'resume' },
+            continuation,
             context(),
         );
-        await preparation.tick(context());
-        const funded = await preparation.get(
+        await preparation.command(
             ownerAccess(),
             started.id,
+            continuation,
             context(),
         );
-        expect(funded.state).toBe('running');
-        expect(funded.activeJobId).not.toBeNull();
         await preparation.tick(context());
-        expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(1);
-        expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
-            1,
-        );
+        expect(await db.select().from(aiCreditActionsTable)).toHaveLength(2);
+        expect(
+            await db.select().from(sentencePreparationActionsTable),
+        ).toHaveLength(2);
+        const children = await db.select().from(sentenceAiJobsTable);
+        expect(children).toHaveLength(2);
+        expect(
+            children.filter(
+                (child) =>
+                    (
+                        child.selectedExecutionSnapshot as {
+                            actionParentId?: string;
+                        }
+                    ).actionParentId === parent!.id,
+            ),
+        ).toHaveLength(1);
+        expect(
+            (await db.select().from(aiCreditActionsTable)).find(
+                (action) => action.id === parent!.id,
+            )?.state,
+        ).toBe('settled');
     });
     it('starting preparation cannot monopolize the global AI admission lock', async () => {
         let unblock!: () => void;

@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:78ad180c5e1dd88f
+// @user-flow-revision shared-pronunciation-playback sha256:c732fe57d13e6a88
 import {
     expect,
     test,
@@ -16,11 +16,37 @@ import { speechCreditFixture } from './support/speech-credit-fixture';
 
 const runId = process.env.AUTH_E2E_RUN_ID ?? String(Date.now());
 const password = 'Speech-Journey-Password-24!';
+const browserErrors: string[] = [];
+function observeErrors(page: Page) {
+    page.on('pageerror', (error) => browserErrors.push(error.message));
+    page.on('console', (message) => {
+        if (
+            message.type() === 'error' &&
+            !message.text().startsWith('Failed to load resource:')
+        )
+            browserErrors.push(message.text());
+    });
+    page.on('response', (response) => {
+        if (response.status() < 400) return;
+        const path = new URL(response.url()).pathname.replace(
+            /^\/api(?=\/)/,
+            '',
+        );
+        if (path === '/auth/refresh' && response.status() === 401) return;
+        browserErrors.push(`${response.status()} ${path}`);
+    });
+    page.on('requestfailed', (request) => {
+        const error = request.failure()?.errorText ?? 'unknown';
+        if (!error.includes('ERR_ABORTED'))
+            browserErrors.push(`${error} ${new URL(request.url()).pathname}`);
+    });
+}
 
 async function learner(browser: Browser, role: string) {
     const context = await browser.newContext();
     await installSpeechAudioProbe(context);
     const page = await context.newPage();
+    observeErrors(page);
     await page.goto('/signup?returnTo=%2Fdictionaries');
     await page.getByLabel('Email').fill(`speech-${role}-${runId}@example.test`);
     await page.getByLabel('Password', { exact: true }).fill(password);
@@ -51,7 +77,10 @@ async function savedWord(
     sourceLanguage = 'es',
 ) {
     await page.goto('/dictionaries');
-    await page.getByRole('button', { name: 'New dictionary' }).click();
+    await page
+        .getByRole('main')
+        .getByRole('button', { name: 'New dictionary', exact: true })
+        .click();
     await page.getByLabel('Name').fill(`Speech ${role} ${runId}`);
     await page.getByLabel('Translate from').selectOption(sourceLanguage);
     await page.getByLabel('Translate to').selectOption('en');
@@ -90,7 +119,11 @@ test.describe.serial('shared pronunciation playback', () => {
     test.beforeAll(async ({ browser }, info) => {
         first = await learner(browser, `first-${info.workerIndex}`);
         second = await learner(browser, `second-${info.workerIndex}`);
+        await speechCreditFixture(first.actorId, 'setup');
     });
+    test.afterEach(() =>
+        expect(browserErrors, 'unexpected browser errors').toEqual([]),
+    );
     test.afterAll(async () => {
         await first?.context.close();
         await second?.context.close();
@@ -185,6 +218,7 @@ test.describe.serial('shared pronunciation playback', () => {
 
     // @user-flow shared-pronunciation-playback/paid-generation-confirmation-cancellation
     test('shows exact success-only billing and requires confirmation before paid generation', async () => {
+        const { parseCreditMilli } = await import('@languon/contracts');
         const text = `Esta frase de ejemplo contiene muchas palabras para comprobar la confirmación antes de generar una pronunciación ${runId}.`;
         await savedWord(first.page, text, 'paid');
         let confirmations = 0;
@@ -199,10 +233,13 @@ test.describe.serial('shared pronunciation playback', () => {
             name: 'Generate pronunciation?',
         });
         await expect(dialog).toBeVisible();
+        await dialog.getByText('Exact values', { exact: true }).click();
         await expect(
-            dialog.getByText(`${result.quote.credits} credits`, {
-                exact: true,
-            }),
+            dialog
+                .locator('details')
+                .getByText(`${result.quote.credits} credits`, {
+                    exact: true,
+                }),
         ).toBeVisible();
         await expect(
             dialog.getByText(/charged only if audio is saved successfully/),
@@ -212,7 +249,8 @@ test.describe.serial('shared pronunciation playback', () => {
         ).toBeVisible();
         if (
             !result.quote.unlimited &&
-            BigInt(result.quote.availableCredits) < BigInt(result.quote.credits)
+            parseCreditMilli(result.quote.availableCredits) <
+                parseCreditMilli(result.quote.credits)
         ) {
             await expect(
                 dialog.getByText('Not enough credits.', { exact: true }),
@@ -237,6 +275,7 @@ test.describe.serial('shared pronunciation playback', () => {
     });
     // @user-flow shared-pronunciation-playback/paid-generation-confirmed-success
     test('confirms a finite credit quote, settles saved audio once, and replays for free', async () => {
+        const { parseCreditMilli } = await import('@languon/contracts');
         test.setTimeout(90_000);
         const before = await speechCreditFixture(first.actorId, 'grant');
         expect(before.availableCredits).toBe('1000');
@@ -247,20 +286,38 @@ test.describe.serial('shared pronunciation playback', () => {
         const quoted = await preparation(first.page);
         expect(quoted.state).toBe('confirmation_required');
         expect(quoted.quote.unlimited).toBe(false);
+        expect(quoted.quote.credits).toBe('0.125');
         expect(quoted.quote.availableCredits).toBe('1000');
-        const amount = BigInt(quoted.quote.credits);
+        const amount = parseCreditMilli(quoted.quote.credits);
         expect(amount).toBeGreaterThan(0n);
         const dialog = first.page.getByRole('dialog', {
             name: 'Generate pronunciation?',
         });
         await expect(
-            dialog.getByText(`${quoted.quote.credits} credits`, {
-                exact: true,
-            }),
+            dialog.getByText('0.13 credits', { exact: true }),
+        ).toBeVisible();
+        await dialog.getByText('Exact values', { exact: true }).click();
+        await expect(
+            dialog
+                .locator('details')
+                .getByText(`${quoted.quote.credits} credits`, {
+                    exact: true,
+                }),
         ).toBeVisible();
         await expect(
             dialog.getByText('Available credits: 1,000', { exact: true }),
         ).toBeVisible();
+        await first.page.setViewportSize({ width: 390, height: 844 });
+        expect(
+            await first.page.evaluate(
+                () =>
+                    document.documentElement.scrollWidth <=
+                    document.documentElement.clientWidth + 1,
+            ),
+        ).toBe(true);
+        await first.page.screenshot({
+            path: test.info().outputPath('decimal-speech-confirmation.png'),
+        });
         const confirmation = first.page.waitForResponse(
             (value) =>
                 value.url().endsWith('/speech/confirm') &&
@@ -281,8 +338,10 @@ test.describe.serial('shared pronunciation playback', () => {
         await browserAudioEvidence(first.page, (await bytes).url());
         const after = await speechCreditFixture(first.actorId, 'summary');
         expect(after.reservedCredits).toBe('0');
-        expect(BigInt(after.consumedCredits)).toBe(amount);
-        expect(BigInt(after.availableCredits)).toBe(1000n - amount);
+        expect(parseCreditMilli(after.consumedCredits)).toBe(amount);
+        expect(parseCreditMilli(after.availableCredits)).toBe(
+            1_000_000n - amount,
+        );
         const cached = await preparation(first.page);
         expect(cached.state).toBe('ready');
         expect(cached.billingState).toBe('free');

@@ -7,6 +7,8 @@ import {
     pgTable,
     timestamp,
     uuid,
+    date,
+    primaryKey,
 } from 'drizzle-orm/pg-core';
 import type { PortraitState } from '@languon/contracts';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
@@ -120,6 +122,25 @@ export const learnerPortraitInterviewOperationsTable = pgTable(
         check(
             'portrait_operations_context_size',
             sql`octet_length(${t.context}::text) <= 150000`,
+        ),
+    ],
+);
+
+/** Compact durable admission counter; failures and erased transcripts never refund quota. */
+export const portraitInterviewDailyAdmissionsTable = pgTable(
+    'portrait_interview_daily_admissions',
+    {
+        ownerId: uuid('owner_id')
+            .notNull()
+            .references(() => usersTable.id, { onDelete: 'cascade' }),
+        utcDay: date('utc_day').notNull(),
+        admitted: integer('admitted').notNull(),
+    },
+    (t) => [
+        primaryKey({ columns: [t.ownerId, t.utcDay] }),
+        check(
+            'portrait_interview_daily_admissions_bound',
+            sql`${t.admitted} between 1 and 30`,
         ),
     ],
 );

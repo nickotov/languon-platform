@@ -1,3 +1,4 @@
+import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { z } from 'zod';
 import { SUPPORTED_LANGUAGE_TAGS } from '@languon/languages';
 import {
@@ -99,22 +100,11 @@ function usageOf(
     limits: { maxInputTokens: number; maxOutputTokens: number },
 ): TextsTokenUsage | undefined {
     if (value === undefined || value === null) return undefined;
-    const v = z
-        .object({
-            inputTokens: z
-                .number()
-                .int()
-                .nonnegative()
-                .max(limits.maxInputTokens),
-            outputTokens: z
-                .number()
-                .int()
-                .nonnegative()
-                .max(limits.maxOutputTokens),
-        })
-        .safeParse(value);
-    if (!v.success) throw new TextsProviderInvalidOutputError();
-    return v.data;
+    try {
+        return readProviderTokenUsage(value, limits);
+    } catch {
+        throw new TextsProviderInvalidOutputError();
+    }
 }
 export function createTextsAiProvider(options: {
     credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;

@@ -40,21 +40,29 @@ export interface TutorCallAdmission {
     purpose: TutorCallPurpose;
     inputTokenEstimate: number;
     maxOutputTokens: number;
+    /** Actual provider finish reason, retained even when numerical usage is unavailable. */
+    outputLimitReached?: boolean;
 }
 
 export interface TutorCallUsage {
     inputTokens: number;
     outputTokens: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+    outputLimitReached?: boolean;
 }
 
 /** Durable accounting surrounds every actual provider dispatch, including memory processing. */
 export interface TutorAccountingPort {
-    admit(call: TutorCallAdmission): Promise<void>;
+    admit(
+        call: TutorCallAdmission,
+    ): Promise<void | { maxOutputTokens: number }>;
     settle(call: TutorCallAdmission, usage: TutorCallUsage): Promise<void>;
     /** Missing usage is unknown, never a fabricated zero. Must retain the admitted liability. */
     fail(
         call: TutorCallAdmission,
         reason: 'provider-error' | 'missing-usage' | 'aborted',
+        usage?: TutorCallUsage,
     ): Promise<void>;
 }
 

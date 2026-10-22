@@ -1,3 +1,7 @@
+import {
+    actionAllowanceRequestMiddleware,
+    actionAllowanceErrorResponse,
+} from '../../../ai-credits/infrastructure/action-allowance-consent';
 import type { MiddlewareHandler } from 'hono';
 import { randomUUID } from 'node:crypto';
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
@@ -109,7 +113,10 @@ export function createTextsJobRoutes({
                 ),
         }),
     );
+    app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, c) => {
+        const allowanceError = actionAllowanceErrorResponse(error, c);
+        if (allowanceError) return allowanceError;
         if (error instanceof InvalidRequestOriginError)
             return c.json(
                 {

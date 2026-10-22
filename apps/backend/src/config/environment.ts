@@ -106,7 +106,6 @@ const RawEnvironmentSchema = z
         DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: z
             .enum(['true', 'false'])
             .default('false'),
-        AI_INTERVIEW_CREDITS_BYPASS: z.enum(['true', 'false']).default('false'),
         DICTIONARY_HMAC_SECRET: DictionarySecretSchema,
         KNOWLEDGE_REFERENCE_CHAR_LIMIT: z.coerce
             .number()
@@ -257,7 +256,6 @@ export type Environment = Omit<
     | 'DICTIONARY_JOB_API_ENQUEUED_FORMATS'
     | 'DICTIONARY_JOB_API_READABLE_FORMATS'
     | 'DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED'
-    | 'AI_INTERVIEW_CREDITS_BYPASS'
 > & {
     ADMIN_BASE_URL: string;
     AUTH_ACCESS_TOKEN_TTL: number;
@@ -275,7 +273,6 @@ export type Environment = Omit<
     DICTIONARY_JOB_API_ENQUEUED_FORMATS: string[];
     DICTIONARY_JOB_API_READABLE_FORMATS: string[];
     DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: boolean;
-    AI_INTERVIEW_CREDITS_BYPASS: boolean;
     DICTIONARY_GENERATION_PROVIDER_BUDGET: DictionaryGenerationProviderBudgetPolicy;
     DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: boolean;
     DICTIONARY_DOCUMENT_STORAGE: DictionaryDocumentS3Environment | undefined;
@@ -434,7 +431,6 @@ export function loadEnvironment(
         DICTIONARY_JOB_API_ENQUEUED_FORMATS: _rawEnqueuedFormats,
         DICTIONARY_JOB_API_READABLE_FORMATS: _rawReadableFormats,
         DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: _rawAiCreditEnforcement,
-        AI_INTERVIEW_CREDITS_BYPASS: _rawInterviewCreditsBypass,
         ...environment
     } = raw;
     const dictionaryJobCapabilities = {
@@ -529,7 +525,6 @@ export function loadEnvironment(
             dictionaryGenerationProviderBudget,
         DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED:
             _rawAiCreditEnforcement === 'true',
-        AI_INTERVIEW_CREDITS_BYPASS: _rawInterviewCreditsBypass === 'true',
         DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED: documentTermsLifecycleEnabled,
         DICTIONARY_DOCUMENT_STORAGE: dictionaryDocumentStorage,
         DICTIONARY_DOCUMENT_UPLOAD_AUTHORIZATION_ENABLED:

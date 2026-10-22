@@ -11,7 +11,7 @@ source_paths:
     - packages/browser-auth/src/refresh-coordinator.ts
     - docs/adr/0001-user-authentication-and-session-strategy.md
 source_fingerprint: sha256:f4b71748222606e68f29eda716500cbb8972c2768168eca7397e5c1986305ede
-reviewed: 2026-10-19
+reviewed: 2026-10-22
 ---
 
 # Authentication and session refresh

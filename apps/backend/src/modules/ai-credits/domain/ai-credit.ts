@@ -1,4 +1,4 @@
-export const maximumAdminCreditAdjustment = 1_000_000_000_000n;
+export const maximumAdminCreditAdjustment = 1_000_000_000_000_000n;
 export const maximumAiCreditAmount = BigInt(Number.MAX_SAFE_INTEGER);
 
 export type AiCreditPolicyMode = 'limited' | 'unlimited';
@@ -7,7 +7,8 @@ export type AiCreditMeasurement =
     | 'estimated'
     | 'unmetered'
     | 'speech_success'
-    | 'speech_no_charge';
+    | 'speech_no_charge'
+    | 'technical_failure';
 export type AiCreditGrantSource =
     'admin' | 'subscription' | 'purchase' | 'migration';
 
@@ -138,6 +139,19 @@ export function settleAiCreditReservation(input: {
         throw new AiCreditInvalidAmountError(
             'Speech uses success-only settlement.',
         );
+    if (input.measurement === 'technical_failure') {
+        if (input.measuredCredits !== null) {
+            throw new AiCreditInvalidAmountError(
+                'Technical failure cannot claim measured customer credits.',
+            );
+        }
+        return {
+            chargedCredits: 0n,
+            measuredCredits: null,
+            measurement: 'technical_failure',
+            releasedCredits: input.reservedCredits,
+        };
+    }
     if (input.measurement === 'provider_reported') {
         if (input.measuredCredits === null || input.measuredCredits < 0n) {
             throw new AiCreditInvalidAmountError(

@@ -21,6 +21,7 @@ export const speechCopy = {
         insufficient: 'Not enough credits.',
         disclaimer:
             'Credits are charged only if audio is saved successfully. Replaying existing audio is free. Generation continues if you leave this page.',
+        exact: 'Exact values',
         cost: 'credits',
         expires: 'This price expires shortly. If it expires, press Play again.',
     },
@@ -46,6 +47,7 @@ export const speechCopy = {
         insufficient: 'Недостаточно кредитов.',
         disclaimer:
             'Кредиты списываются только после успешного сохранения аудио. Повторное воспроизведение бесплатно. Создание продолжится, если вы покинете страницу.',
+        exact: 'Точные значения',
         cost: 'кредитов',
         expires:
             'Цена скоро истечёт. После истечения нажмите воспроизведение ещё раз.',
@@ -72,6 +74,7 @@ export const speechCopy = {
         insufficient: 'Crédits insuffisants.',
         disclaimer:
             'Les crédits ne sont débités que si le son est enregistré avec succès. Réécouter un son existant est gratuit. La génération continue si vous quittez cette page.',
+        exact: 'Valeurs exactes',
         cost: 'crédits',
         expires:
             'Ce prix expire bientôt. Ensuite, appuyez de nouveau sur Écouter.',
@@ -98,6 +101,7 @@ export const speechCopy = {
         insufficient: 'Créditos insuficientes.',
         disclaimer:
             'Los créditos solo se cobran si el audio se guarda correctamente. Reproducir audio existente es gratis. La generación continúa si sales de esta página.',
+        exact: 'Valores exactos',
         cost: 'créditos',
         expires: 'Este precio caduca pronto. Después, pulsa Escuchar de nuevo.',
     },

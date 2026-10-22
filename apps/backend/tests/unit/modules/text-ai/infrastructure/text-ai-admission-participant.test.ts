@@ -40,7 +40,7 @@ function database(results: unknown[][], overlap = false) {
             {
                 overlap: new PgDialect()
                     .sqlToQuery(query)
-                    .sql.includes('conversation_turns')
+                    .params.includes('conversation-turn')
                     ? false
                     : overlap,
             },
@@ -52,6 +52,7 @@ function database(results: unknown[][], overlap = false) {
                 where: () => chain,
                 limit: () => chain,
                 innerJoin: () => chain,
+                orderBy: () => chain,
                 then: (resolve: (value: unknown[]) => unknown) =>
                     Promise.resolve(result).then(resolve),
             };
@@ -67,6 +68,7 @@ function participant(
     rates?: {
         inputCreditsPerMillionTokens: number;
         outputCreditsPerMillionTokens: number;
+        cachedInputCreditsPerMillionTokens?: number;
     },
 ) {
     return new DrizzleTextAiAdmissionParticipant(
@@ -111,6 +113,7 @@ describe('transactional text AI admission selection', () => {
         const published = {
             inputCreditsPerMillionTokens: 2000000,
             outputCreditsPerMillionTokens: 0,
+            cachedInputCreditsPerMillionTokens: 1000000,
         };
         const execution = await participant(
             [[], [{ id: 'global-revision', snapshot: snapshot() }], []],
@@ -123,7 +126,7 @@ describe('transactional text AI admission selection', () => {
             rateRevisionId: '11111111-1111-4111-8111-111111111111',
         });
         expect(execution.snapshot?.creditPricing?.maxCreditsPerAttempt).toBe(
-            524288,
+            524_288_000,
         );
         expect(
             resolveTextAiExecutionSnapshot(

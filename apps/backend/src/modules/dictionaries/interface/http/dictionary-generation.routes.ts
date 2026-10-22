@@ -1,3 +1,7 @@
+import {
+    actionAllowanceRequestMiddleware,
+    actionAllowanceErrorResponse,
+} from '../../../ai-credits/infrastructure/action-allowance-consent';
 import { randomUUID } from 'node:crypto';
 
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
@@ -88,7 +92,10 @@ export function createDictionaryGenerationRoutes(dependencies: {
             );
         },
     });
+    app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
+        const allowanceError = actionAllowanceErrorResponse(error, context);
+        if (allowanceError) return allowanceError;
         const mapped = mapDictionaryHttpError(error);
         if (mapped.retryAfterSeconds)
             context.header('Retry-After', String(mapped.retryAfterSeconds));

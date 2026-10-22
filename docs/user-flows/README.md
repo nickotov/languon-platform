@@ -74,6 +74,7 @@ evidence with a repeatable manual/browser/API/device recipe.
   membership commands.
 - [AI Provider and Model Management](./ai-provider-management.md) — curated
   DeepSeek/Kie selection, immutable job routing, credentials, and admin audit.
+- [AI accounting and action budgets](./ai-accounting.md) — exact learner budgets, explicit affordable-output consent, canonical billing states and owner financial records.
 - [AI Credit Wallet](./ai-credit-wallet.md) — owner-managed user credit
   policies, ledger adjustments, and dictionary-generation consumption.
 - [Release and Deployment Platform](./release-deployment-platform.md) —

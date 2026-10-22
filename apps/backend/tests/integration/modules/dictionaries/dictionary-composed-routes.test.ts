@@ -1,3 +1,4 @@
+import { seedDictionaryAccountingFixture } from '../../../support/dictionary-accounting-fixture';
 import { randomUUID } from 'node:crypto';
 
 import {
@@ -51,7 +52,12 @@ run('composed dictionary routes', () => {
     });
 
     beforeEach(async () => {
-        await database.delete(usersTable);
+        await resetTestDatabase(client);
+        await migrateTestDatabase(client);
+        await seedDictionaryAccountingFixture(
+            database,
+            new Date('2026-08-21T12:00:00.000Z'),
+        );
         ownerId = randomUUID();
         authenticatedOwnerId = ownerId;
         await database
@@ -106,6 +112,7 @@ run('composed dictionary routes', () => {
             dictionaryHmacSecret:
                 'dictionary-route-integration-secret-longer-than-thirty-two-bytes',
             ids: { generate: randomUUID },
+            aiCreditEnforcementEnabled: true,
             generation: {
                 acceptableFormats: [dictionaryGenerationFormat],
                 cancellableFormats: [dictionaryGenerationFormat],
@@ -225,6 +232,7 @@ run('composed dictionary routes', () => {
         putCompleted = true;
 
         const lifecycleOnly = composition({
+            aiCreditEnforcementEnabled: false,
             documentUploadAuthorizationEnabled: false,
             documentUploadStorage: storage,
             generation: {
@@ -262,6 +270,12 @@ run('composed dictionary routes', () => {
         await expect(completed.json()).resolves.toMatchObject({
             job: { state: 'queued' },
         });
+        const completedJob = completedBody as { job: { id: string } };
+        const cancelled = await lifecycleOnly.routes.request(
+            `/dictionary-generation-jobs/${completedJob.job.id}/cancel`,
+            { method: 'POST', headers, body: '{}' },
+        );
+        expect(cancelled.status).toBe(200);
     });
 
     it('enqueues, discovers, reads, and cooperatively cancels a persisted generation job', async () => {
@@ -277,6 +291,7 @@ run('composed dictionary routes', () => {
         );
         expect(capabilities.status).toBe(200);
         await expect(capabilities.json()).resolves.toEqual({
+            cardAuthoringGeneration: { available: false },
             documentOcr: { available: false },
             documentTermsGeneration: { available: false },
             importPairsGeneration: { available: false },

@@ -1,4 +1,7 @@
-import type { CopiedAttachment } from '@languon/contracts';
+import type {
+    ConversationActionQuote,
+    CopiedAttachment,
+} from '@languon/contracts';
 
 export class ConversationError extends Error {
     constructor(
@@ -31,3 +34,12 @@ export type ConversationSourceSnapshot = {
     material: SourceMaterial[];
     scope?: 'complete' | 'selected-material' | 'workspace';
 };
+
+export class ConversationActionConfirmationRequired extends ConversationError {
+    constructor(public readonly quote: ConversationActionQuote) {
+        super(
+            'action_confirmation_required',
+            'The available budget permits a smaller response. Confirm the refreshed allowance to send.',
+        );
+    }
+}

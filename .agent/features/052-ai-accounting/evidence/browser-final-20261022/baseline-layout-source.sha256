@@ -1,0 +1,5 @@
+0e708bb9ad27610243a8475194bccb504b0b5b852ba30b6e2f85d19a895a2d22  HEAD-identical=True  apps/web/src/fsd/widgets/dictionary-editor/ui/dictionary-editor-common.module.css
+be9e19b81935e78339f4e698204eac7d134daccd8aa18437124611397afd3841  HEAD-identical=True  apps/web/src/fsd/features/dictionary-batch-generation/ui/dictionary-batch-generation-panel/dictionary-batch-generation-panel.module.css
+2868147791b00362851bed6f2aea0021f3d18a17fb3738cf08168635a99f787d  HEAD-identical=True  apps/web/src/fsd/features/dictionary-batch-generation/ui/dictionary-batch-generation-panel/dictionary-batch-generation-panel.tsx
+c3ee081ff8618e6dc6d31846c9df6edb23a4c76391e6e1bc088b119830d933c8  HEAD-identical=True  apps/web/src/fsd/shared/ui/dialog/dialog.module.css
+4b9f92097955e78f73efe981151c4df83b8303ec801ccd80993c64566a2a696e  HEAD-identical=True  apps/web/src/fsd/shared/ui/card/card.module.css

@@ -5,6 +5,7 @@ title: 'Learner portrait approval and use boundaries'
 status: accepted
 date: 2026-10-20
 supersedes: 'None'
+superseded_in_part_by: 'ADR-0045 action accounting, exact fractional units, provider expenses and capability funding policies'
 ---
 
 # ADR-0044: Learner portrait approval and use boundaries

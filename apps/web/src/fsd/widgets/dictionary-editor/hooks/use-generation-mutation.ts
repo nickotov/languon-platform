@@ -7,6 +7,7 @@ import type { useEditorState } from './use-editor-state';
 import type { useGenerationJob } from './use-generation-job';
 
 export function useGenerationMutation({
+    actionConsent,
     t,
     queryClient,
     generationTarget,
@@ -18,6 +19,7 @@ export function useGenerationMutation({
     generationJob,
 }: Pick<
     ReturnType<typeof useEditorState>,
+    | 'actionConsent'
     | 't'
     | 'queryClient'
     | 'generationTarget'
@@ -80,25 +82,38 @@ export function useGenerationMutation({
                         ? (action.instruction ?? null)
                         : null,
             };
+            const key = crypto.randomUUID();
             if (action.kind === 'regenerate') {
                 const jobId = generationJob.data?.job?.id;
                 if (!jobId) throw new Error('Generation job unavailable');
-                return requestWithSession((token) =>
-                    dictionaryApi.regenerateGenerationJob(
-                        token,
-                        jobId,
-                        body,
-                        crypto.randomUUID(),
+                return actionConsent.run((confirmedQuoteId) =>
+                    requestWithSession((token) =>
+                        dictionaryApi.regenerateGenerationJob(
+                            token,
+                            jobId,
+                            {
+                                ...body,
+                                ...(confirmedQuoteId
+                                    ? { confirmedQuoteId }
+                                    : {}),
+                            },
+                            key,
+                        ),
                     ),
                 );
             }
-            return requestWithSession((token) =>
-                dictionaryApi.enqueueCardGeneration(
-                    token,
-                    dictionaryId,
-                    currentCard.id,
-                    body,
-                    crypto.randomUUID(),
+            return actionConsent.run((confirmedQuoteId) =>
+                requestWithSession((token) =>
+                    dictionaryApi.enqueueCardGeneration(
+                        token,
+                        dictionaryId,
+                        currentCard.id,
+                        {
+                            ...body,
+                            ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+                        },
+                        key,
+                    ),
                 ),
             );
         },

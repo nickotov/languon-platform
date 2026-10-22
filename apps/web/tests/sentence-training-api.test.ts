@@ -42,6 +42,30 @@ const response = (body: unknown, status = 200) =>
     });
 afterEach(() => vi.unstubAllGlobals());
 describe('sentence transport contracts', () => {
+    it('transmits the confirmed next allowance without changing its frozen operation', async () => {
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValue(
+                response({
+                    kind: 'job',
+                    job: { ...job, kind: 'sentence-generation' },
+                }),
+            );
+        vi.stubGlobal('fetch', fetchMock);
+        const input = {
+            ...configuration,
+            operationId: operation,
+            sessionId: session,
+            visitedExerciseIds: [],
+            confirmedQuoteId: '10000000-0000-4000-8000-000000000004',
+        };
+        await createSentenceApi(options).next(input);
+        expect(
+            JSON.parse(
+                (fetchMock.mock.calls[0]![1] as RequestInit).body as string,
+            ),
+        ).toEqual(input);
+    });
     it('uses authenticated plural check and public capability routes without sharing protected credentials', async () => {
         const fetchMock = vi
             .fn()

@@ -582,6 +582,174 @@
       "when": 1792596987399,
       "tag": "0082_portrait_operation_output_bound",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1792683400524,
+      "tag": "0083_spicy_spacker_dave",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1792683477302,
+      "tag": "0084_accounting_wallet_projection_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1792683523932,
+      "tag": "0085_accounting_capability_policy_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1792683574410,
+      "tag": "0086_accounting_action_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1792684065561,
+      "tag": "0087_accounting_capacity_and_precision",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1792684291277,
+      "tag": "0088_accounting_final_action_meter_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1792684302949,
+      "tag": "0089_accounting_execution_invariants",
+      "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1792684995166,
+      "tag": "0090_accounting_failure_measurement",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1792685221551,
+      "tag": "0091_accounting_failure_constraint",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1792686195572,
+      "tag": "0092_accounting_financial_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1792686260521,
+      "tag": "0093_accounting_integrity_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1792686330479,
+      "tag": "0094_accounting_operator_anonymization",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1792687379633,
+      "tag": "0095_accounting_terminal_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1792687380888,
+      "tag": "0096_accounting_authority_refinements",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1792687563355,
+      "tag": "0097_accounting_speech_provider_costs",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1792688583399,
+      "tag": "0098_accounting_speech_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1792688761726,
+      "tag": "0099_accounting_speech_authority_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1792693406624,
+      "tag": "0100_accounting_authority_remediation",
+      "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1792693426413,
+      "tag": "0101_accounting_checked_financial_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1792693819775,
+      "tag": "0102_accounting_dispatch_precision",
+      "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1792693967268,
+      "tag": "0103_accounting_speech_dispatch",
+      "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1792694215029,
+      "tag": "0104_accounting_observation_clock",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1792694859008,
+      "tag": "0105_accounting_final_worker_scopes",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1792695650909,
+      "tag": "0106_accounting_scheduled_speech_cancellation",
+      "breakpoints": true
     }
   ]
 }

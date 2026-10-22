@@ -1,3 +1,26 @@
+import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
+import { ProviderCostAdmissionUnavailableError } from '../../../../ai-credits/domain/provider-cost-admission';
+import {
+    findTextAiModel,
+    textAiExecutionLimits,
+} from '../../../../text-ai/application/text-ai-provider-catalog';
+import {
+    readTextAiCapacity,
+    textAiProviderBudgetAllows,
+} from '../../../../../infrastructure/text-ai/text-ai-capacity';
+import {
+    prepareLegacyAction,
+    usesLegacyAction,
+    reserveLegacyAction,
+    recordLegacyAttempt,
+    settleLegacyAction,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import {
+    actionChargeNumerator,
+    roundActionChargeMilli,
+} from '../../../../ai-credits/domain/action-pricing';
+import { dictionaryActionInputOverhead } from './legacy-generation-input-limit';
 import { DrizzleTextAiAdmissionParticipant } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 
@@ -51,9 +74,7 @@ import {
 import { resolveCardSettings } from '../../../domain/settings';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import {
-    dictionaryGenerationProviderBudgetAllows,
     dictionaryGenerationAdmissionLock,
-    type DictionaryGenerationProviderBudgetUsage,
     type DictionaryGenerationIdGenerator,
 } from './drizzle-dictionary-generation-store';
 import {
@@ -107,18 +128,15 @@ function documentCreditUsage(
         job.aiCreditOutputCreditsPerMillionTokens === null
     )
         throw new Error('AI credit pricing is missing');
-    const million = 1_000_000n;
-    return (
-        (BigInt(usage.inputTokens) *
-            BigInt(job.aiCreditInputCreditsPerMillionTokens) +
-            million -
-            1n) /
-            million +
-        (BigInt(usage.outputTokens) *
-            BigInt(job.aiCreditOutputCreditsPerMillionTokens) +
-            million -
-            1n) /
-            million
+    return roundActionChargeMilli(
+        actionChargeNumerator(usage, {
+            inputCreditsPerMillionTokens: String(
+                job.aiCreditInputCreditsPerMillionTokens,
+            ),
+            outputCreditsPerMillionTokens: String(
+                job.aiCreditOutputCreditsPerMillionTokens,
+            ),
+        }),
     );
 }
 
@@ -196,14 +214,45 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         now: Date,
     ) {
         try {
-            return await new DrizzleTextAiAdmissionParticipant(tx).resolve({
+            const execution = await new DrizzleTextAiAdmissionParticipant(
+                tx,
+            ).resolve({
                 userId: ownerId,
                 format,
                 now,
                 legacyBudget: this.providerBudget,
             });
+            if (this.aiCreditEnforcementEnabled && !execution.snapshot)
+                throw new DictionaryGenerationNotAvailableError();
+            if (this.aiCreditEnforcementEnabled && execution.snapshot) {
+                const model = findTextAiModel(
+                    execution.snapshot.providerId,
+                    execution.snapshot.modelId,
+                );
+                if (!model) throw new DictionaryGenerationNotAvailableError();
+                execution.snapshot = {
+                    ...execution.snapshot,
+                    ...textAiExecutionLimits(model, [format]),
+                    supportedFormats: [format],
+                };
+
+                execution.snapshot = await prepareLegacyAction(
+                    tx,
+                    ownerId,
+                    'dictionary-generation',
+                    execution.snapshot,
+                    now,
+                );
+                execution.budget = execution.snapshot.aggregateBudget;
+                execution.selectionVersion = 1;
+            }
+            return execution;
         } catch (error) {
-            if (error instanceof TextAiSelectionUnavailableError)
+            if (
+                error instanceof TextAiSelectionUnavailableError ||
+                error instanceof OperatorBudgetUnavailableError ||
+                error instanceof ProviderCostAdmissionUnavailableError
+            )
                 throw new DictionaryGenerationNotAvailableError();
             throw error;
         }
@@ -213,8 +262,35 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
         tx: Transaction,
         job: DocumentJobRow,
         at: Date,
-        providerUsage?: { inputTokens: number; outputTokens: number },
+        providerUsage?: {
+            inputTokens: number;
+            outputTokens: number;
+            cacheReadTokens?: number;
+            cacheWriteTokens?: number;
+        },
+        outcome: 'success' | 'failure' = 'failure',
+        terminal = true,
     ) {
+        if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+            await recordLegacyAttempt(tx, {
+                id: job.id,
+                ownerId: job.ownerId,
+                attempt: job.attemptCount,
+                snapshot: job.selectedExecutionSnapshot,
+                successful: outcome === 'success',
+                dispatched: job.aiCreditProviderDispatchedAt !== null,
+                ...(providerUsage ? { usage: providerUsage } : {}),
+                at,
+            });
+            if (terminal)
+                await settleLegacyAction(tx, {
+                    id: job.id,
+                    ownerId: job.ownerId,
+                    outcome,
+                    at,
+                });
+            return;
+        }
         if (!job.aiCreditAccounted || !job.aiCreditReservationId) return;
         if (!job.aiCreditPolicyMode)
             throw new Error('AI credit reservation is missing');
@@ -224,6 +300,14 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 ownerId: job.ownerId,
                 releasedAt: at,
                 reservationId: job.aiCreditReservationId,
+            });
+            return;
+        }
+        if (outcome !== 'success' || !providerUsage) {
+            await participant.settleFailedAttempt({
+                ownerId: job.ownerId,
+                reservationId: job.aiCreditReservationId,
+                settledAt: at,
             });
             return;
         }
@@ -274,6 +358,12 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                     .from(dictionaryGenerationJobsTable)
                     .where(eq(dictionaryGenerationJobsTable.id, upload.jobId))
                     .for('update');
+                if (job && usesLegacyAction(job.selectedExecutionSnapshot))
+                    await this.settleAiCreditAttempt(
+                        tx,
+                        job,
+                        input.context.now,
+                    );
                 if (job?.aiCreditReservationId) {
                     await new DrizzleAiCreditTransactionParticipant(
                         tx,
@@ -358,247 +448,288 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
     public async authorize(
         input: Parameters<DictionaryDocumentStore['authorize']>[0],
     ) {
-        const authorization = await this.database.transaction(async (tx) => {
-            await enableAiCreditSettlement(tx);
-            abort(input.context.signal);
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(${documentAdmissionLock})`,
-            );
-            await tx
-                .select({ id: usersTable.id })
-                .from(usersTable)
-                .where(eq(usersTable.id, input.ownerId))
-                .for('update');
-
-            const [replayJob] = await tx
-                .select()
-                .from(dictionaryGenerationJobsTable)
-                .where(
-                    and(
-                        eq(
-                            dictionaryGenerationJobsTable.ownerId,
-                            input.ownerId,
-                        ),
-                        eq(
-                            dictionaryGenerationJobsTable.kind,
-                            'document-terms',
-                        ),
-                        eq(
-                            dictionaryGenerationJobsTable.idempotencyKey,
-                            input.idempotencyKey,
-                        ),
-                    ),
-                )
-                .limit(1)
-                .for('share');
-            if (replayJob) {
-                if (replayJob.requestFingerprint !== input.fingerprint)
-                    throw new DictionaryIdempotencyConflictError();
-                const [upload] = await tx
-                    .select()
-                    .from(dictionaryDocumentUploadsTable)
-                    .where(
-                        eq(dictionaryDocumentUploadsTable.jobId, replayJob.id),
-                    )
-                    .limit(1);
-                if (!upload) throw new DictionaryDocumentUploadNotFoundError();
-                return { jobId: replayJob.id, upload };
-            }
-
-            const [current] = await tx
-                .select({
-                    dictionary: dictionariesTable,
-                    settings: dictionarySettingsTable,
-                })
-                .from(dictionariesTable)
-                .innerJoin(
-                    dictionarySettingsTable,
-                    eq(
-                        dictionarySettingsTable.dictionaryId,
-                        dictionariesTable.id,
-                    ),
-                )
-                .where(
-                    and(
-                        eq(dictionariesTable.id, input.dictionaryId),
-                        eq(dictionariesTable.ownerId, input.ownerId),
-                    ),
-                )
-                .for('update');
-            if (!current || current.dictionary.lifecycle !== 'active')
-                throw new DictionaryNotFoundError();
-            if (
-                current.dictionary.version !==
-                    input.expectedDictionaryVersion ||
-                current.settings.version !== input.expectedSettingsVersion
-            )
-                throw new DictionaryVersionConflictError();
-
-            const [queue] = await tx
-                .select({
-                    global: count(),
-                    owner: sql<number>`count(*) filter (where ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId})`,
-                })
-                .from(dictionaryGenerationJobsTable)
-                .where(
-                    sql`${dictionaryGenerationJobsTable.executionState} in ('queued', 'running')`,
+        const authorization = await modelPricingTransaction(
+            this.database,
+            async (tx) => {
+                await enableAiCreditSettlement(tx);
+                abort(input.context.signal);
+                await tx.execute(
+                    sql`select pg_advisory_xact_lock(${documentAdmissionLock})`,
                 );
-            if (
-                Number(queue?.global ?? 0) >= documentQueueQuota.global ||
-                Number(queue?.owner ?? 0) >= documentQueueQuota.owner
-            )
-                throw new DictionaryGenerationNotAvailableError();
+                await tx
+                    .select({ id: usersTable.id })
+                    .from(usersTable)
+                    .where(eq(usersTable.id, input.ownerId))
+                    .for('update');
 
-            const [quota] = await tx
-                .select({
-                    globalBytes: sql<number>`coalesce(sum(${dictionaryDocumentUploadsTable.accountedPhysicalBytes}) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null), 0)`,
-                    globalUploads: sql<number>`count(*) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null)`,
-                    ownerBytes: sql<number>`coalesce(sum(${dictionaryDocumentUploadsTable.accountedPhysicalBytes}) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null and ${dictionaryDocumentUploadsTable.ownerId} = ${input.ownerId}), 0)`,
-                    ownerUploads: sql<number>`count(*) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null and ${dictionaryDocumentUploadsTable.ownerId} = ${input.ownerId})`,
-                })
-                .from(dictionaryDocumentUploadsTable);
-            if (
-                Number(quota?.ownerUploads ?? 0) >=
-                    documentQuota.ownerUploads ||
-                Number(quota?.globalUploads ?? 0) >=
-                    documentQuota.globalUploads ||
-                Number(quota?.ownerBytes ?? 0) + input.expectedSizeBytes >
-                    documentQuota.ownerBytes ||
-                Number(quota?.globalBytes ?? 0) + input.expectedSizeBytes >
-                    documentQuota.globalBytes
-            )
-                throw new DictionaryDocumentUploadCapacityError();
+                const [replayJob] = await tx
+                    .select()
+                    .from(dictionaryGenerationJobsTable)
+                    .where(
+                        and(
+                            eq(
+                                dictionaryGenerationJobsTable.ownerId,
+                                input.ownerId,
+                            ),
+                            eq(
+                                dictionaryGenerationJobsTable.kind,
+                                'document-terms',
+                            ),
+                            eq(
+                                dictionaryGenerationJobsTable.idempotencyKey,
+                                input.idempotencyKey,
+                            ),
+                        ),
+                    )
+                    .limit(1)
+                    .for('share');
+                if (replayJob) {
+                    if (replayJob.requestFingerprint !== input.fingerprint)
+                        throw new DictionaryIdempotencyConflictError();
+                    const [upload] = await tx
+                        .select()
+                        .from(dictionaryDocumentUploadsTable)
+                        .where(
+                            eq(
+                                dictionaryDocumentUploadsTable.jobId,
+                                replayJob.id,
+                            ),
+                        )
+                        .limit(1);
+                    if (!upload)
+                        throw new DictionaryDocumentUploadNotFoundError();
+                    return { jobId: replayJob.id, upload };
+                }
 
-            const jobId = this.ids.generate();
-            const providerExecution = await this.activeProviderExecution(
-                tx,
-                input.ownerId,
-                dictionaryDocumentGenerationFormat,
-                input.context.now,
-            );
-            const creditPricing = this.aiCreditEnforcementEnabled
-                ? providerExecution.snapshot?.creditPricing
-                : undefined;
-            if (
-                this.aiCreditEnforcementEnabled &&
-                (!providerExecution.revisionId || !creditPricing)
-            )
-                throw new DictionaryGenerationNotAvailableError();
-            const uploadId = this.ids.generate();
-            const objectKey = `dictionary-documents/${input.ownerId}/${uploadId}`;
-            await tx.insert(dictionaryGenerationJobsTable).values({
-                ...(creditPricing
-                    ? {
-                          aiCreditAccounted: true,
-                          aiCreditInputCreditsPerMillionTokens:
-                              creditPricing.inputCreditsPerMillionTokens,
-                          aiCreditMaxCreditsPerAttempt:
-                              creditPricing.maxCreditsPerAttempt,
-                          aiCreditOutputCreditsPerMillionTokens:
-                              creditPricing.outputCreditsPerMillionTokens,
-                          aiCreditPricingRevision: creditPricing.revision,
-                      }
-                    : {}),
-                awaitingUploadAt: input.context.now,
-                createdAt: input.context.now,
-                dictionaryId: input.dictionaryId,
-                executionRevisionId: providerExecution.revisionId,
-                selectedExecutionVersion: providerExecution.selectionVersion,
-                selectedExecutionSnapshot: providerExecution.selectionVersion
-                    ? providerExecution.snapshot
-                    : null,
-                expectedCardVersion: null,
-                expectedDictionaryVersion: input.expectedDictionaryVersion,
-                expectedSettingsVersion: input.expectedSettingsVersion,
-                format: dictionaryDocumentGenerationFormat,
-                id: jobId,
-                idempotencyKey: input.idempotencyKey,
-                inputPayload: {
-                    context: {
+                const [current] = await tx
+                    .select({
+                        dictionary: dictionariesTable,
+                        settings: dictionarySettingsTable,
+                    })
+                    .from(dictionariesTable)
+                    .innerJoin(
+                        dictionarySettingsTable,
+                        eq(
+                            dictionarySettingsTable.dictionaryId,
+                            dictionariesTable.id,
+                        ),
+                    )
+                    .where(
+                        and(
+                            eq(dictionariesTable.id, input.dictionaryId),
+                            eq(dictionariesTable.ownerId, input.ownerId),
+                        ),
+                    )
+                    .for('update');
+                if (!current || current.dictionary.lifecycle !== 'active')
+                    throw new DictionaryNotFoundError();
+                if (
+                    current.dictionary.version !==
+                        input.expectedDictionaryVersion ||
+                    current.settings.version !== input.expectedSettingsVersion
+                )
+                    throw new DictionaryVersionConflictError();
+
+                const [queue] = await tx
+                    .select({
+                        global: count(),
+                        owner: sql<number>`count(*) filter (where ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId})`,
+                    })
+                    .from(dictionaryGenerationJobsTable)
+                    .where(
+                        sql`${dictionaryGenerationJobsTable.executionState} in ('queued', 'running')`,
+                    );
+                if (
+                    Number(queue?.global ?? 0) >= documentQueueQuota.global ||
+                    Number(queue?.owner ?? 0) >= documentQueueQuota.owner
+                )
+                    throw new DictionaryGenerationNotAvailableError();
+
+                const [quota] = await tx
+                    .select({
+                        globalBytes: sql<number>`coalesce(sum(${dictionaryDocumentUploadsTable.accountedPhysicalBytes}) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null), 0)`,
+                        globalUploads: sql<number>`count(*) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null)`,
+                        ownerBytes: sql<number>`coalesce(sum(${dictionaryDocumentUploadsTable.accountedPhysicalBytes}) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null and ${dictionaryDocumentUploadsTable.ownerId} = ${input.ownerId}), 0)`,
+                        ownerUploads: sql<number>`count(*) filter (where ${dictionaryDocumentUploadsTable.quotaReleasedAt} is null and ${dictionaryDocumentUploadsTable.ownerId} = ${input.ownerId})`,
+                    })
+                    .from(dictionaryDocumentUploadsTable);
+                if (
+                    Number(quota?.ownerUploads ?? 0) >=
+                        documentQuota.ownerUploads ||
+                    Number(quota?.globalUploads ?? 0) >=
+                        documentQuota.globalUploads ||
+                    Number(quota?.ownerBytes ?? 0) + input.expectedSizeBytes >
+                        documentQuota.ownerBytes ||
+                    Number(quota?.globalBytes ?? 0) + input.expectedSizeBytes >
+                        documentQuota.globalBytes
+                )
+                    throw new DictionaryDocumentUploadCapacityError();
+
+                const jobId = this.ids.generate();
+                const providerExecution = await this.activeProviderExecution(
+                    tx,
+                    input.ownerId,
+                    dictionaryDocumentGenerationFormat,
+                    input.context.now,
+                );
+                const creditPricing = this.aiCreditEnforcementEnabled
+                    ? providerExecution.snapshot?.creditPricing
+                    : undefined;
+                if (
+                    this.aiCreditEnforcementEnabled &&
+                    (!providerExecution.revisionId || !creditPricing)
+                )
+                    throw new DictionaryGenerationNotAvailableError();
+                const uploadId = this.ids.generate();
+                const objectKey = `dictionary-documents/${input.ownerId}/${uploadId}`;
+                const [admittedJob] = await tx
+                    .insert(dictionaryGenerationJobsTable)
+                    .values({
+                        ...(creditPricing
+                            ? {
+                                  aiCreditAccounted: false,
+                                  maxAttempts: 2,
+                                  aiCreditInputCreditsPerMillionTokens:
+                                      creditPricing.inputCreditsPerMillionTokens,
+                                  aiCreditMaxCreditsPerAttempt:
+                                      creditPricing.maxCreditsPerAttempt,
+                                  aiCreditOutputCreditsPerMillionTokens:
+                                      creditPricing.outputCreditsPerMillionTokens,
+                                  aiCreditPricingRevision:
+                                      creditPricing.revision,
+                              }
+                            : {}),
+                        awaitingUploadAt: input.context.now,
+                        createdAt: input.context.now,
                         dictionaryId: input.dictionaryId,
+                        executionRevisionId: providerExecution.revisionId,
+                        selectedExecutionVersion:
+                            providerExecution.selectionVersion,
+                        selectedExecutionSnapshot:
+                            providerExecution.selectionVersion
+                                ? providerExecution.snapshot
+                                : null,
+                        expectedCardVersion: null,
                         expectedDictionaryVersion:
                             input.expectedDictionaryVersion,
                         expectedSettingsVersion: input.expectedSettingsVersion,
-                        sourceLanguage: current.dictionary.sourceLanguageTag,
-                        targetLanguage: current.dictionary.targetLanguageTag,
-                    },
-                    effectiveSettings: effectiveSettings(current.settings),
-                    format: dictionaryDocumentGenerationFormat,
-                    instruction: input.instruction,
-                    translationContext: current.dictionary.translationContext,
-                    uploadId,
-                },
-                kind: 'document-terms',
-                nextAttemptAt: input.context.now,
-                ownerId: input.ownerId,
-                providerInputCostMicrosPerMillionTokens:
-                    providerExecution.budget.inputCostMicrosPerMillionTokens,
-                providerMaxCostMicrosPerAttempt:
-                    providerExecution.budget.maxCostMicrosPerAttempt,
-                providerMaxInputTokensPerAttempt:
-                    providerExecution.budget.maxInputTokensPerAttempt,
-                providerMaxOutputTokensPerAttempt:
-                    providerExecution.budget.maxOutputTokensPerAttempt,
-                providerOutputCostMicrosPerMillionTokens:
-                    providerExecution.budget.outputCostMicrosPerMillionTokens,
-                progressPercent: 0,
-                progressStage: 'awaiting_upload',
-                requestFingerprint: input.fingerprint,
-                sourceLanguageTag: current.dictionary.sourceLanguageTag,
-                targetLanguageTag: current.dictionary.targetLanguageTag,
-                updatedAt: input.context.now,
-            });
-            if (creditPricing) {
-                const reservationId = this.ids.generate();
-                try {
-                    const reservation =
-                        await new DrizzleAiCreditTransactionParticipant(
-                            tx,
-                        ).reserveAttempt({
-                            at: input.context.now,
-                            attempt: 1,
-                            jobId,
-                            maximumCredits: BigInt(
-                                creditPricing.maxCreditsPerAttempt,
+                        format: dictionaryDocumentGenerationFormat,
+                        id: jobId,
+                        idempotencyKey: input.idempotencyKey,
+                        inputPayload: {
+                            context: {
+                                dictionaryId: input.dictionaryId,
+                                expectedDictionaryVersion:
+                                    input.expectedDictionaryVersion,
+                                expectedSettingsVersion:
+                                    input.expectedSettingsVersion,
+                                sourceLanguage:
+                                    current.dictionary.sourceLanguageTag,
+                                targetLanguage:
+                                    current.dictionary.targetLanguageTag,
+                            },
+                            effectiveSettings: effectiveSettings(
+                                current.settings,
                             ),
-                            ownerId: input.ownerId,
-                            reservationId,
-                        });
-                    await tx
-                        .update(dictionaryGenerationJobsTable)
-                        .set({
-                            aiCreditPolicyMode: reservation.policy.mode,
-                            aiCreditReservationId: reservationId,
-                        })
-                        .where(eq(dictionaryGenerationJobsTable.id, jobId));
-                } catch (error) {
-                    if (error instanceof AiCreditInsufficientBalanceError)
-                        throw new DictionaryAiCreditsExhaustedError();
-                    throw error;
+                            format: dictionaryDocumentGenerationFormat,
+                            instruction: input.instruction,
+                            translationContext:
+                                current.dictionary.translationContext,
+                            uploadId,
+                        },
+                        kind: 'document-terms',
+                        nextAttemptAt: input.context.now,
+                        ownerId: input.ownerId,
+                        providerInputCostMicrosPerMillionTokens:
+                            providerExecution.budget
+                                .inputCostMicrosPerMillionTokens,
+                        providerMaxCostMicrosPerAttempt:
+                            providerExecution.budget.maxCostMicrosPerAttempt,
+                        providerMaxInputTokensPerAttempt:
+                            providerExecution.budget.maxInputTokensPerAttempt,
+                        providerMaxOutputTokensPerAttempt:
+                            providerExecution.budget.maxOutputTokensPerAttempt,
+                        providerOutputCostMicrosPerMillionTokens:
+                            providerExecution.budget
+                                .outputCostMicrosPerMillionTokens,
+                        progressPercent: 0,
+                        progressStage: 'awaiting_upload',
+                        requestFingerprint: input.fingerprint,
+                        sourceLanguageTag: current.dictionary.sourceLanguageTag,
+                        targetLanguageTag: current.dictionary.targetLanguageTag,
+                        updatedAt: input.context.now,
+                    })
+                    .returning();
+                if (
+                    admittedJob &&
+                    usesLegacyAction(admittedJob.selectedExecutionSnapshot)
+                ) {
+                    await reserveLegacyAction(tx, {
+                        id: admittedJob.id,
+                        requestKey: admittedJob.idempotencyKey,
+                        fingerprint: admittedJob.requestFingerprint,
+                        scope: `dictionary-generation:${admittedJob.kind}`,
+                        ownerId: admittedJob.ownerId,
+                        kind: 'dictionary-generation',
+                        snapshot: admittedJob.selectedExecutionSnapshot,
+                        inputPayload: admittedJob.inputPayload,
+                        inputOverheadTokens: dictionaryActionInputOverhead(
+                            admittedJob.inputPayload,
+                        ),
+                        at: input.context.now,
+                    });
+                } else if (creditPricing) {
+                    const reservationId = this.ids.generate();
+                    try {
+                        const reservation =
+                            await new DrizzleAiCreditTransactionParticipant(
+                                tx,
+                            ).reserveAttempt({
+                                at: input.context.now,
+                                attempt: 1,
+                                jobId,
+                                maximumCredits: BigInt(
+                                    creditPricing.maxCreditsPerAttempt,
+                                ),
+                                ownerId: input.ownerId,
+                                reservationId,
+                            });
+                        await tx
+                            .update(dictionaryGenerationJobsTable)
+                            .set({
+                                aiCreditPolicyMode: reservation.policy.mode,
+                                aiCreditReservationId: reservationId,
+                            })
+                            .where(eq(dictionaryGenerationJobsTable.id, jobId));
+                    } catch (error) {
+                        if (error instanceof AiCreditInsufficientBalanceError)
+                            throw new DictionaryAiCreditsExhaustedError();
+                        throw error;
+                    }
                 }
-            }
-            const [upload] = await tx
-                .insert(dictionaryDocumentUploadsTable)
-                .values({
-                    accountedPhysicalBytes: input.expectedSizeBytes,
-                    capabilityExpiresAt: input.capabilityExpiresAt,
-                    cleanupNextAttemptAt: input.context.now,
-                    createdAt: input.context.now,
-                    dictionaryId: input.dictionaryId,
-                    expectedChecksumSha256: input.expectedChecksumSha256,
-                    expectedContentType: input.expectedContentType,
-                    expectedFormat:
-                        formatByMediaType[input.expectedContentType],
-                    expectedSizeBytes: input.expectedSizeBytes,
-                    id: uploadId,
-                    jobId,
-                    objectKey,
-                    ownerId: input.ownerId,
-                    updatedAt: input.context.now,
-                })
-                .returning();
-            return { jobId, upload: upload! };
-        });
+                const [upload] = await tx
+                    .insert(dictionaryDocumentUploadsTable)
+                    .values({
+                        accountedPhysicalBytes: input.expectedSizeBytes,
+                        capabilityExpiresAt: input.capabilityExpiresAt,
+                        cleanupNextAttemptAt: input.context.now,
+                        createdAt: input.context.now,
+                        dictionaryId: input.dictionaryId,
+                        expectedChecksumSha256: input.expectedChecksumSha256,
+                        expectedContentType: input.expectedContentType,
+                        expectedFormat:
+                            formatByMediaType[input.expectedContentType],
+                        expectedSizeBytes: input.expectedSizeBytes,
+                        id: uploadId,
+                        jobId,
+                        objectKey,
+                        ownerId: input.ownerId,
+                        updatedAt: input.context.now,
+                    })
+                    .returning();
+                return { jobId, upload: upload! };
+            },
+        );
         const job = await this.generationStore.read({
             context: input.context,
             jobId: authorization.jobId,
@@ -707,6 +838,12 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 current.contentType !== upload.expectedContentType ||
                 input.detectedFormat !== upload.expectedFormat
             ) {
+                if (usesLegacyAction(job.selectedExecutionSnapshot))
+                    await this.settleAiCreditAttempt(
+                        tx,
+                        job,
+                        input.context.now,
+                    );
                 if (job.aiCreditReservationId)
                     await new DrizzleAiCreditTransactionParticipant(
                         tx,
@@ -760,81 +897,14 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 return { conflict: true as const, jobId: job.id };
             }
 
-            const windowStart = new Date(
-                input.context.now.getTime() - 86_400_000,
-            ).toISOString();
-            const [providerAdmission] = await tx
-                .select({
-                    globalActiveCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
-                    globalActiveInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
-                    globalActiveOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active'), 0)`,
-                    globalSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                    globalSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                    globalSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                    ownerActiveCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId}), 0)`,
-                    ownerActiveInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId}), 0)`,
-                    ownerActiveOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerReservedOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'active' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId}), 0)`,
-                    ownerSettledCostMicros: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualCostMicros}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                    ownerSettledInputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualInputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                    ownerSettledOutputTokens: sql<number>`coalesce(sum(${dictionaryGenerationJobsTable.providerActualOutputTokens}) filter (where ${dictionaryGenerationJobsTable.providerReservationState} = 'settled' and ${dictionaryGenerationJobsTable.ownerId} = ${input.ownerId} and ${dictionaryGenerationJobsTable.providerReservationSettledAt} > ${windowStart}::timestamptz), 0)`,
-                })
-                .from(dictionaryGenerationJobsTable)
-                .where(
-                    and(
-                        eq(
-                            dictionaryGenerationJobsTable.providerInputCostMicrosPerMillionTokens,
-                            providerBudget.inputCostMicrosPerMillionTokens,
-                        ),
-                        eq(
-                            dictionaryGenerationJobsTable.providerOutputCostMicrosPerMillionTokens,
-                            providerBudget.outputCostMicrosPerMillionTokens,
-                        ),
-                        eq(
-                            dictionaryGenerationJobsTable.providerMaxCostMicrosPerAttempt,
-                            providerBudget.maxCostMicrosPerAttempt,
-                        ),
-                        eq(
-                            dictionaryGenerationJobsTable.providerMaxInputTokensPerAttempt,
-                            providerBudget.maxInputTokensPerAttempt,
-                        ),
-                        eq(
-                            dictionaryGenerationJobsTable.providerMaxOutputTokensPerAttempt,
-                            providerBudget.maxOutputTokensPerAttempt,
-                        ),
-                    ),
-                );
+            const capacity = await readTextAiCapacity(tx, {
+                actorId: input.ownerId,
+                now: input.context.now,
+                budget: providerBudget,
+            });
             if (
-                !dictionaryGenerationProviderBudgetAllows(
-                    {
-                        ...(Object.fromEntries(
-                            (
-                                [
-                                    'globalActiveCostMicros',
-                                    'globalActiveInputTokens',
-                                    'globalActiveOutputTokens',
-                                    'globalSettledCostMicros',
-                                    'globalSettledInputTokens',
-                                    'globalSettledOutputTokens',
-                                    'ownerActiveCostMicros',
-                                    'ownerActiveInputTokens',
-                                    'ownerActiveOutputTokens',
-                                    'ownerSettledCostMicros',
-                                    'ownerSettledInputTokens',
-                                    'ownerSettledOutputTokens',
-                                ] as const
-                            ).map((key) => [
-                                key,
-                                Number(providerAdmission?.[key] ?? 0),
-                            ]),
-                        ) as unknown as DictionaryGenerationProviderBudgetUsage),
-                        ...(job.aiCreditAccounted
-                            ? {
-                                  ownerSettledCostMicros: 0,
-                                  ownerSettledInputTokens: 0,
-                                  ownerSettledOutputTokens: 0,
-                              }
-                            : {}),
-                    },
+                !textAiProviderBudgetAllows(
+                    capacity.providerUsage,
                     true,
                     providerBudget,
                 )
@@ -1115,6 +1185,8 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 job,
                 input.context.now,
                 input.providerUsage,
+                'success',
+                false,
             );
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
@@ -1173,6 +1245,25 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 .for('update');
             if (!proposal?.documentStagedAt) return false;
             if (proposal.documentPublishedAt) return true;
+            const [job] = await tx
+                .select()
+                .from(dictionaryGenerationJobsTable)
+                .where(eq(dictionaryGenerationJobsTable.id, input.jobId))
+                .for('update');
+            if (
+                !job ||
+                job.cancellationRequestedAt ||
+                ['cancelled', 'failed', 'expired'].includes(job.executionState)
+            )
+                return false;
+            if (usesLegacyAction(job.selectedExecutionSnapshot))
+                await settleLegacyAction(tx, {
+                    id: job.id,
+                    ownerId: job.ownerId,
+                    outcome: 'success',
+                    at: input.context.now,
+                });
+
             await tx
                 .update(dictionaryGenerationProposalsTable)
                 .set({
@@ -1352,13 +1443,22 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 })
                 .where(eq(dictionaryDocumentUploadsTable.id, upload.id));
             const priorAttempts = Math.max(0, job.attemptCount - 1);
-            await this.settleAiCreditAttempt(tx, job, input.context.now);
+            await this.settleAiCreditAttempt(
+                tx,
+                job,
+                input.context.now,
+                undefined,
+                'failure',
+                !retry,
+            );
             const [updated] = await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({
-                    aiCreditProviderDispatchedAt: job.aiCreditAccounted
-                        ? null
-                        : job.aiCreditProviderDispatchedAt,
+                    aiCreditProviderDispatchedAt:
+                        job.aiCreditAccounted ||
+                        usesLegacyAction(job.selectedExecutionSnapshot)
+                            ? null
+                            : job.aiCreditProviderDispatchedAt,
                     aiCreditReservationId: job.aiCreditAccounted
                         ? null
                         : job.aiCreditReservationId,
@@ -1818,6 +1918,13 @@ export class DrizzleDictionaryDocumentStore implements DictionaryDocumentStore {
                 .where(eq(dictionaryGenerationProposalsTable.jobId, jobId));
             return false;
         }
+        if (usesLegacyAction(job.selectedExecutionSnapshot))
+            await settleLegacyAction(tx, {
+                id: job.id,
+                ownerId: job.ownerId,
+                outcome: 'success',
+                at: now,
+            });
         await tx
             .update(dictionaryGenerationProposalsTable)
             .set({ documentPublishedAt: now, updatedAt: now })

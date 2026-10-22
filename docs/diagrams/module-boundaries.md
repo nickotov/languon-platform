@@ -16,8 +16,16 @@ source_paths:
     - docs/architecture.md
     - docs/adr/0005-frontend-component-and-fsd-standards.md
     - docs/adr/0010-admin-application-and-authorization.md
-source_fingerprint: sha256:3c9c9640dd4bb98e8d7f7bcc198060b7dd35dd60f482922af59b08e15d9178aa
-reviewed: 2026-10-19
+    - docs/adr/0045-action-accounting-and-provider-expenses.md
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-authorized-purge.sql
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-purge-recovery.sql
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql
+    - infra/deploy/sql/dictionary-worker-role.sql
+    - infra/deploy/sql/account-purge-worker-role.sql
+source_fingerprint: sha256:e584bc9c34366bf54cfedbb70344c4d808607e8179cc83d2f01c77d81dd0b0c9
+reviewed: 2026-10-22
 ---
 
 # Module and layer boundaries
@@ -44,7 +52,7 @@ Zod wire schemas"]
         Modules["Authentication • Users • Administration
 Dictionaries • Learning • Texts
 Conversations • Knowledge • Speech
-Text AI • AI credits"] --- App
+Text AI • AI credits and accounting"] --- App
     end
     Contracts --- HTTP
 ```
@@ -64,6 +72,17 @@ Web and admin share public framework-neutral packages rather than application so
 Admin intentionally uses its own four-layer structure under ADR-0010. This diagram
 summarizes inspected composition roots; it is not an automated proof of all imports.
 
+AI credits now also owns action/attempt accounting, capability funding policies, reviewed
+provider prices and admin financial records. These are in-process transaction participants,
+not another deployment or Kafka service. Restricted workers receive checked SQL
+entry points for current typed dispatch and outcome-derived settlement, not unrestricted
+financial write authority. Provider expense facts derive from pinned rates and immutable
+observations. Financial purge/recovery requires an active due deletion claim with matching
+worker/fence; mutable session settings alone do not authorize erasure. Anonymous financial
+attribution is preserved before personal wallet links are removed. This describes the new
+financial boundary, not a redesign of all pre-existing domain purge permissions. Admin adds an accounting page through the existing
+app/pages/shared boundaries; public contract exports remain framework-neutral.
+
 ## Sources
 
 - [apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts](../../apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts)
@@ -79,3 +98,19 @@ summarizes inspected composition roots; it is not an automated proof of all impo
 - [docs/architecture.md](../../docs/architecture.md)
 - [docs/adr/0005-frontend-component-and-fsd-standards.md](../../docs/adr/0005-frontend-component-and-fsd-standards.md)
 - [docs/adr/0010-admin-application-and-authorization.md](../../docs/adr/0010-admin-application-and-authorization.md)
+
+- [docs/adr/0045-action-accounting-and-provider-expenses.md](../adr/0045-action-accounting-and-provider-expenses.md)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-authorized-purge.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-authorized-purge.sql)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-purge-recovery.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-purge-recovery.sql)
+
+- [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql)
+
+- [infra/deploy/sql/dictionary-worker-role.sql](../../infra/deploy/sql/dictionary-worker-role.sql)
+
+- [infra/deploy/sql/account-purge-worker-role.sql](../../infra/deploy/sql/account-purge-worker-role.sql)

@@ -1,0 +1,16 @@
+{
+  "base": "d441863",
+  "evidence": "Registered mappedjourney12756:2/2 through0104",
+  "files": {
+    "apps/backend/tests/integration/modules/learning/sentence-practice.journeys.test.ts": "e5a536ecb6c0f42301a9a4967f4539d90fb6ad94d890873c39a5cc661a01e2b7",
+    "docs/user-flows/sentence-practice-backend.md": "5f701747bdf170bcdad9efdce12d47a0b2dbb36e2987da7077c620dbdd90a974",
+    "apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts": "5db239afc7fb9abab4f882cc0a16e572869bfc96daf649b70a890d13ce19f664",
+    "scripts/run-sentence-practice-e2e.mjs": "fc8925ee578819598a89c8bf01595c59d9f3bd395dd3eccb2a6348c9929a72b5",
+    "apps/backend/drizzle/0104_accounting_observation_clock.sql": "6b115c9ae1bf62d9039c751e21d59f32199030ce0c5b12aa118415be6f7a5b3d",
+    "apps/backend/drizzle/0102_accounting_dispatch_precision.sql": "72c8eba5b61d25539fc5147171225bcc1f098a8f7a703223391a18c78f50c521",
+    "apps/backend/drizzle/0100_accounting_authority_remediation.sql": "6a2e5be0e269932f6429a78c1deb8d67207c285343ddea0a2989bb12ffce9c53",
+    "apps/backend/drizzle/0105_accounting_final_worker_scopes.sql": "b3cc75fa802f8a5b333c480eb0d77f3d2185602e108f36fb33d3ade3c6939413",
+    "apps/backend/drizzle/0103_accounting_speech_dispatch.sql": "e8f1105f4cf71018bd374b4f34868e1152f59eeffb3b4abfedd0cecadf744648",
+    "apps/backend/drizzle/0101_accounting_checked_financial_authority.sql": "31fff9a2d3f66a06333a5a8ff5832989a864f6b1af928139ec381037286f6ccd"
+  }
+}

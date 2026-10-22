@@ -34,9 +34,6 @@ export class DrizzleModelPriceParticipant {
         modelId: string;
         meter: ModelPrice['meter'];
     }): Promise<ModelPrice> {
-        await this.transaction.execute(
-            sql`select pg_advisory_xact_lock(hashtextextended(${input.providerId + '/' + input.modelId}, 1920424382))`,
-        );
         const t = modelPriceRevisionsTable;
         let [row] = await this.transaction
             .select()
@@ -49,6 +46,25 @@ export class DrizzleModelPriceParticipant {
             )
             .orderBy(desc(t.version))
             .limit(1);
+        if (!row) {
+            // Existing published revisions are immutable: readers must not
+            // serialize behind a model-wide publication lock. Only legacy
+            // bootstrap needs coordination; publication still locks writes.
+            await this.transaction.execute(
+                sql`select pg_advisory_xact_lock(hashtextextended(${input.providerId + '/' + input.modelId}, 1920424382))`,
+            );
+            [row] = await this.transaction
+                .select()
+                .from(t)
+                .where(
+                    and(
+                        eq(t.providerId, input.providerId),
+                        eq(t.modelId, input.modelId),
+                    ),
+                )
+                .orderBy(desc(t.version))
+                .limit(1);
+        }
         if (!row) {
             let seed = this.seed(input);
             if (input.meter === 'text-tokens') {
@@ -115,6 +131,8 @@ export class DrizzleModelPriceParticipant {
             version: row.version,
             rateRevisionId: row.id,
             ...row.rates,
+            cachedInputCreditsPerMillionTokens:
+                row.rates.cachedInputCreditsPerMillionTokens ?? null,
             updatedAt: row.createdAt.toISOString(),
         };
     }
@@ -169,21 +187,23 @@ export class DrizzleModelPriceParticipant {
             minimumCredits: input.minimumCredits,
             inputCreditsPerMillionTokens: input.inputCreditsPerMillionTokens,
             outputCreditsPerMillionTokens: input.outputCreditsPerMillionTokens,
+            cachedInputCreditsPerMillionTokens:
+                input.cachedInputCreditsPerMillionTokens ?? null,
             provisional: input.provisional,
         };
         if (
             input.meter === 'speech-characters'
                 ? rates.creditsPer1000Characters === null ||
-                  rates.creditsPer1000Characters < 1 ||
+                  rates.creditsPer1000Characters <= 0 ||
                   rates.minimumCredits === null ||
-                  rates.minimumCredits < 1 ||
+                  rates.minimumCredits < 0 ||
                   rates.inputCreditsPerMillionTokens !== null ||
-                  rates.outputCreditsPerMillionTokens !== null
+                  rates.outputCreditsPerMillionTokens !== null ||
+                  rates.cachedInputCreditsPerMillionTokens !== null
                 : rates.inputCreditsPerMillionTokens === null ||
                   rates.outputCreditsPerMillionTokens === null ||
-                  rates.inputCreditsPerMillionTokens +
-                      rates.outputCreditsPerMillionTokens ===
-                      0 ||
+                  (rates.inputCreditsPerMillionTokens === 0 &&
+                      rates.outputCreditsPerMillionTokens === 0) ||
                   rates.minimumCredits !== null ||
                   rates.creditsPer1000Characters !== null
         )
@@ -230,6 +250,7 @@ export class DrizzleModelPriceParticipant {
         | 'minimumCredits'
         | 'inputCreditsPerMillionTokens'
         | 'outputCreditsPerMillionTokens'
+        | 'cachedInputCreditsPerMillionTokens'
         | 'provisional'
     > {
         if (
@@ -245,6 +266,7 @@ export class DrizzleModelPriceParticipant {
                 minimumCredits: 1,
                 inputCreditsPerMillionTokens: null,
                 outputCreditsPerMillionTokens: null,
+                cachedInputCreditsPerMillionTokens: null,
                 provisional: true,
             };
         const model = textAiModelCatalog.find(
@@ -259,6 +281,7 @@ export class DrizzleModelPriceParticipant {
                 model.creditPricing.inputCreditsPerMillionTokens,
             outputCreditsPerMillionTokens:
                 model.creditPricing.outputCreditsPerMillionTokens,
+            cachedInputCreditsPerMillionTokens: null,
             provisional: false,
         };
     }

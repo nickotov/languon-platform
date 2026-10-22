@@ -64,6 +64,8 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0043](./0043-sidebar-navigation-and-optional-text-folders.md) | Synced resource navigation and optional Texts folders | Accepted |
 | [ADR-0044](./0044-learner-portrait-approval-and-use-boundaries.md) | Learner portrait approval and use boundaries | Accepted |
 
+| [ADR-0045](./0045-action-accounting-and-provider-expenses.md) | Bounded action accounting and independent provider expenses | Accepted |
+
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
 

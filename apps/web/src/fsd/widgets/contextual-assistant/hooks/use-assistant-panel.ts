@@ -294,7 +294,7 @@ export function useAssistantPanel(
                 preparationFailed.current = false;
                 setLocalError(null);
                 try {
-                    const { turn } = await chat.submit.mutateAsync({
+                    await chat.submit.mutateAsync({
                         content: question,
                         copiedAttachments,
                         editorContext: {
@@ -302,13 +302,15 @@ export function useAssistantPanel(
                             selectedText: selectedPassage?.content,
                             editorTarget,
                         },
+                        onAccepted(turn) {
+                            if (targetId)
+                                setProposalTargets((previous) =>
+                                    new Map(previous).set(turn.id, targetId),
+                                );
+                            props.workspace?.onSent?.();
+                            workspaceSelection.sent(selectedPassage?.id);
+                        },
                     });
-                    if (targetId)
-                        setProposalTargets((previous) =>
-                            new Map(previous).set(turn.id, targetId),
-                        );
-                    props.workspace?.onSent?.();
-                    workspaceSelection.sent(selectedPassage?.id);
                 } catch {
                     // The mutation retains the composer and displays its error.
                 } finally {
@@ -380,6 +382,15 @@ export function useAssistantPanel(
             explanation,
             locale,
         );
+        chat.submit.mutate({ content });
+    }
+    function continueResponse() {
+        const content = {
+            en: 'Continue your previous response from where it stopped.',
+            ru: 'Продолжи предыдущий ответ с того места, где остановился.',
+            fr: 'Continue ta réponse précédente à partir de là où elle s’est arrêtée.',
+            es: 'Continúa tu respuesta anterior desde donde se detuvo.',
+        }[locale];
         chat.submit.mutate({ content });
     }
     function retry(turn: ConversationTurn) {
@@ -503,6 +514,7 @@ export function useAssistantPanel(
         proposalTargets,
         propose,
         retry,
+        continueResponse,
         context,
         closePicker,
         attach,

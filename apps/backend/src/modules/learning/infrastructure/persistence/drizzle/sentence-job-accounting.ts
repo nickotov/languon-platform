@@ -1,11 +1,22 @@
+import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
+import {
+    usesLegacyAction,
+    reserveLegacyAction,
+    recordLegacyAttempt,
+    settleLegacyAction,
+} from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import {
+    actionChargeNumerator,
+    roundActionChargeMilli,
+} from '../../../../ai-credits/domain/action-pricing';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { AiCreditInsufficientBalanceError } from '../../../../ai-credits/domain/ai-credit';
 import {
-    AiCreditInsufficientBalanceError,
-    resolveAiCreditMeasurement,
-} from '../../../../ai-credits/domain/ai-credit';
-import { SentenceCreditsExhaustedError } from '../../../domain/sentence-errors';
+    SentenceCreditsExhaustedError,
+    SentenceCapacityUnavailableError,
+} from '../../../domain/sentence-errors';
 import { textAiProviderUsageCostMicros } from '../../../../text-ai/application/text-ai-provider-catalog';
 import { sentenceAiJobsTable as jobs } from './sentence-schema';
 import type {
@@ -29,6 +40,29 @@ export async function reserveSentenceAttempt(
     attempt: number,
     now: Date,
 ) {
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        try {
+            if (attempt === 1 && !job.selectedExecutionSnapshot.actionParentId)
+                await reserveLegacyAction(tx, {
+                    id: job.id,
+                    requestKey: job.operationId,
+                    fingerprint: job.requestFingerprint,
+                    scope: job.jobKind,
+                    ownerId: job.learnerId,
+                    kind: job.jobKind,
+                    snapshot: job.selectedExecutionSnapshot,
+                    inputPayload: job.inputPayload,
+                    at: now,
+                });
+        } catch (error) {
+            if (error instanceof OperatorBudgetUnavailableError)
+                throw new SentenceCapacityUnavailableError();
+            if (error instanceof AiCreditInsufficientBalanceError)
+                throw new SentenceCreditsExhaustedError();
+            throw error;
+        }
+        return;
+    }
     if (!job.aiCreditAccounted) return;
     const id = randomUUID();
     try {
@@ -61,8 +95,34 @@ export async function settleSentenceAttempt(
     tx: SentenceTransaction,
     job: SentenceJobRow,
     now: Date,
-    usage?: { inputTokens: number; outputTokens: number },
+    usage?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+    },
+    outcome: 'success' | 'stopped' | 'failure' = 'failure',
+    terminal = true,
 ) {
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        await recordLegacyAttempt(tx, {
+            id: job.id,
+            ownerId: job.learnerId,
+            attempt: job.attemptCount,
+            snapshot: job.selectedExecutionSnapshot,
+            successful: outcome !== 'failure',
+            dispatched: job.aiCreditProviderDispatchedAt !== null,
+            ...(usage ? { usage } : {}),
+            at: now,
+        });
+        if (terminal && !job.selectedExecutionSnapshot.actionParentId)
+            await settleLegacyAction(tx, {
+                id: job.id,
+                ownerId: job.learnerId,
+                outcome,
+                at: now,
+            });
+    }
     if (job.providerReservationState !== 'active') return;
     if (
         usage &&
@@ -83,30 +143,35 @@ export async function settleSentenceAttempt(
                 reservationId: job.aiCreditReservationId,
             });
         else {
-            const measured = usage
-                ? BigInt(
-                      Math.ceil(
-                          (usage.inputTokens *
-                              job.aiCreditInputCreditsPerMillionTokens!) /
-                              1_000_000,
-                      ) +
-                          Math.ceil(
-                              (usage.outputTokens *
-                                  job.aiCreditOutputCreditsPerMillionTokens!) /
-                                  1_000_000,
-                          ),
-                  )
-                : null;
-            await credits.settleAttempt({
-                ownerId: job.learnerId,
-                reservationId: job.aiCreditReservationId,
-                settledAt: now,
-                measuredCredits: measured,
-                measurement: resolveAiCreditMeasurement(
-                    job.aiCreditPolicyMode!,
-                    usage !== undefined,
-                ),
-            });
+            // Customer eligibility is independent of incurred provider usage.
+            const measured =
+                outcome !== 'failure' && usage
+                    ? roundActionChargeMilli(
+                          actionChargeNumerator(usage, {
+                              inputCreditsPerMillionTokens: String(
+                                  job.aiCreditInputCreditsPerMillionTokens!,
+                              ),
+                              outputCreditsPerMillionTokens: String(
+                                  job.aiCreditOutputCreditsPerMillionTokens!,
+                              ),
+                          }),
+                      )
+                    : 0n;
+            if (outcome === 'failure' || !usage)
+                await credits.settleFailedAttempt({
+                    ownerId: job.learnerId,
+                    reservationId: job.aiCreditReservationId,
+                    settledAt: now,
+                });
+            else {
+                await credits.settleAttempt({
+                    ownerId: job.learnerId,
+                    reservationId: job.aiCreditReservationId,
+                    settledAt: now,
+                    measuredCredits: measured,
+                    measurement: 'provider_reported',
+                });
+            }
         }
     }
     const dispatched = job.aiCreditProviderDispatchedAt !== null;

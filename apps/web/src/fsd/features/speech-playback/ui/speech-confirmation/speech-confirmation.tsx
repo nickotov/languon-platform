@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
-import type { SpeechQuote } from '@languon/contracts';
+import { parseCreditMilli, type SpeechQuote } from '@languon/contracts';
+import { compactCreditAmount } from '@/fsd/shared/lib/credit-amount';
 import { Button, Dialog, InlineAlert } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import { speechCopy } from '../../lib/copy';
@@ -28,11 +29,12 @@ export function SpeechConfirmation({
     }, [quote.expiresAt]);
     const insufficient =
         !quote.unlimited &&
-        BigInt(quote.availableCredits) < BigInt(quote.credits);
-    const amount = new Intl.NumberFormat(locale).format(BigInt(quote.credits));
+        parseCreditMilli(quote.availableCredits) <
+            parseCreditMilli(quote.credits);
+    const amount = compactCreditAmount(quote.credits, locale);
     const balance = quote.unlimited
         ? copy.unlimited
-        : new Intl.NumberFormat(locale).format(BigInt(quote.availableCredits));
+        : compactCreditAmount(quote.availableCredits, locale);
     const footer = (
         <>
             <Button variant='secondary' onClick={onCancel}>
@@ -60,6 +62,16 @@ export function SpeechConfirmation({
             <p>
                 {copy.balance}: {balance}
             </p>
+            <details>
+                <summary>{copy.exact}</summary>
+                <p>
+                    {quote.credits} {copy.cost}
+                </p>
+                <p>
+                    {copy.balance}:{' '}
+                    {quote.unlimited ? copy.unlimited : quote.availableCredits}
+                </p>
+            </details>
             {quote.provisional ? <p>{copy.provisional}</p> : null}
             <p>{copy.disclaimer}</p>
             <p>{copy.expires}</p>

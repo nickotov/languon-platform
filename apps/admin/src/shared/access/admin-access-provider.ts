@@ -8,6 +8,7 @@ export const adminAccessProvider: AccessControlProvider = {
                 'users',
                 'audit-events',
                 'ai-settings',
+                'accounting',
                 'speech-recordings',
             ].includes(resource ?? '') &&
             !['create', 'delete'].includes(action),

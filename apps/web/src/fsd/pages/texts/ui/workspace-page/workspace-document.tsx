@@ -1,3 +1,4 @@
+import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
 import { TextReading } from '@/fsd/features/text-reading';
 import type { TextWorkspace } from '../../hooks/use-text-workspace';
 import { workspaceReadingDocument } from '../../lib/workspace-reading';
@@ -31,6 +32,9 @@ export function WorkspaceDocument({
             )}
             {showRead && readingDocument && (
                 <TextReading
+                    collectionBudgetContent={
+                        <ActionBudgetSummary request={ws.requestWithSession} />
+                    }
                     collectionActorKey={actorId}
                     document={readingDocument}
                     source={readingSource}

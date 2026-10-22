@@ -1,0 +1,1 @@
+ALTER TABLE "ai_operator_action_budgets" ALTER COLUMN "owner_id" DROP NOT NULL;

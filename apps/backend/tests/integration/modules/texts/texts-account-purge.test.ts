@@ -22,7 +22,7 @@ import {
     resetTestDatabase,
 } from '../../support/test-database';
 
-const now = new Date('2026-10-15T12:00:00Z');
+const now = new Date();
 let client: PostgresClient;
 const database = () => createDrizzleDatabase(client, databaseSchema);
 const role = 'languon_texts_purge_test_role';
@@ -115,10 +115,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     eraseTextsOwnedContent(tx, ids.owner, now),
                 ),
             ).rejects.toThrow('not quiescent');
+            await client`update users set status='deletion_pending' where id=${ids.owner}`;
+            await client`insert into account_deletion_requests(user_id,state,scheduled_at,purge_at,next_attempt_at,lease_deadline,lease_worker_id,fencing_token,updated_at) values(${ids.owner},'running',clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '1 minute',clock_timestamp()-interval '1 minute',clock_timestamp()+interval '5 minutes','texts-busy-purge',1,clock_timestamp())`;
             expect(
                 (
                     await new DrizzleAccountPurgeStore(database()).inspectOwner(
-                        { userId: ids.owner, fencingToken: 1 },
+                        {
+                            userId: ids.owner,
+                            fencingToken: 1,
+                            workerId: 'texts-busy-purge',
+                        },
                     )
                 ).activeJobs,
             ).toBeGreaterThan(0);

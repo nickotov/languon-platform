@@ -1,4 +1,5 @@
 'use client';
+import type { ActionBilling } from '@languon/contracts';
 import { useEffect } from 'react';
 import {
     portraitApi,
@@ -19,6 +20,7 @@ export function useInterviewOperationPolling({
     load,
     onOperation,
     onBusy,
+    onProjection,
     onError,
 }: {
     operationId: string | null;
@@ -28,6 +30,10 @@ export function useInterviewOperationPolling({
     load(): Promise<void>;
     onOperation(id: string | null): void;
     onBusy(value: boolean): void;
+    onProjection?(value: {
+        billing?: ActionBilling | undefined;
+        state: string;
+    }): void;
     onError(value: string | null): void;
 }) {
     useEffect(() => {
@@ -51,6 +57,7 @@ export function useInterviewOperationPolling({
                 if (controller.signal.aborted || !isInterviewOwner(ownerId))
                     return;
                 if (!operation) throw new Error('Operation unavailable');
+                onProjection?.(operation);
                 if (
                     operation.state === 'queued' ||
                     operation.state === 'running'
@@ -69,6 +76,7 @@ export function useInterviewOperationPolling({
                 onOperation(null);
                 onBusy(false);
                 await load();
+                onProjection?.(operation);
                 if (operation.state !== 'succeeded')
                     onError(
                         operation.errorCode ??
@@ -93,6 +101,7 @@ export function useInterviewOperationPolling({
         onBusy,
         onError,
         onOperation,
+        onProjection,
         operationId,
         ownerId,
         requestWithSession,

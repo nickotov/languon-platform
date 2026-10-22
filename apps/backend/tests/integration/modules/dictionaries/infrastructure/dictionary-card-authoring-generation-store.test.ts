@@ -1,3 +1,5 @@
+import { seedLegacyActionFixture } from '../../../../support/legacy-action-fixture';
+import { aiCreditActionsTable as actions } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import {
     dictionaryAiConfigurationRevisionsTable,
     dictionaryAiConfigurationTable,
@@ -28,6 +30,7 @@ import {
 } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/schema';
 import { dictionaryCardAuthoringGenerationFormatV1 as dictionaryCardAuthoringGenerationFormat } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import {
+    DictionaryGenerationNotAvailableError,
     DictionaryGenerationCandidateConflictError,
     DictionaryGenerationCompletionConflictError,
     DictionaryGenerationNotReviewableError,
@@ -56,8 +59,8 @@ import {
 } from '../../../support/test-database';
 
 const run = describe.runIf(isDatabaseIntegrationEnabled());
-const instant = (offset = 0) =>
-    new Date(Date.parse('2026-08-26T12:00:00.000Z') + offset);
+let instantOrigin = Date.now();
+const instant = (offset = 0) => new Date(instantOrigin + offset);
 const context = (offset = 0) => ({
     now: instant(offset),
     signal: new AbortController().signal,
@@ -96,6 +99,7 @@ run('card-authoring generation persistence', () => {
     beforeEach(async () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
+        instantOrigin = Date.now();
         ownerId = randomUUID();
         await database.insert(usersTable).values({
             createdAt: instant(),
@@ -103,9 +107,48 @@ run('card-authoring generation persistence', () => {
             status: 'active',
             updatedAt: instant(),
         });
+        await seedLegacyActionFixture(database);
     });
 
     afterAll(async () => client.end());
+
+    it('rejects new accounted admissions without a managed execution snapshot', async () => {
+        const dictionary = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('Z'),
+            idempotencyKey: randomUUID(),
+            ownerId,
+            request: {
+                description: null,
+                name: 'Accounting fence',
+                sourceLanguage: 'en',
+                targetLanguage: 'fr',
+            },
+        });
+        const accounted = new DrizzleDictionaryGenerationStore(
+            database,
+            { generate: randomUUID },
+            undefined,
+            true,
+        );
+        await expect(
+            accounted.enqueuePastedTerms({
+                context: context(1),
+                dictionaryId: dictionary.id,
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settings.version,
+                fingerprint: fingerprint('Y'),
+                idempotencyKey: randomUUID(),
+                ownerId,
+                sharedContext: null,
+                text: 'hello',
+            }),
+        ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+        expect(
+            await database.select().from(dictionaryGenerationJobsTable),
+        ).toHaveLength(0);
+        expect(await database.select().from(actions)).toHaveLength(0);
+    });
 
     it.each([true, false])(
         'latest advanced rewrite lookup ignores newer inline authoring jobs (hasRewrite=%s)',
@@ -306,6 +349,15 @@ run('card-authoring generation persistence', () => {
             ownerId,
         };
         const first = await creditedStore.enqueue(request);
+        const [action] = await database
+            .select()
+            .from(actions)
+            .where(eq(actions.id, first.id));
+        expect(action).toMatchObject({
+            state: 'active',
+            funding: 'unlimited',
+            outputLimit: 10000,
+        });
 
         await database.insert(dictionaryAiConfigurationRevisionsTable).values({
             catalogSnapshot: snapshot(kie),
@@ -358,49 +410,49 @@ run('card-authoring generation persistence', () => {
                 })
                 .where(eq(dictionaryGenerationJobsTable.id, first.id))
                 .returning({ id: dictionaryGenerationJobsTable.id }),
+        ).resolves.toEqual([]);
+        expect(
+            (
+                await database
+                    .select()
+                    .from(dictionaryGenerationJobsTable)
+                    .where(eq(dictionaryGenerationJobsTable.id, first.id))
+            )[0]?.executionState,
+        ).toBe('queued');
+
+        // Routing flags alone cannot authorize running work without a durable action attempt.
+        await expect(
+            database.transaction(async (tx) => {
+                await tx.execute(
+                    sql`select set_config('languon.text_ai_selection_revision', '1', true)`,
+                );
+                await tx.execute(
+                    sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
+                );
+                await tx.execute(
+                    sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
+                );
+                return tx
+                    .update(dictionaryGenerationJobsTable)
+                    .set({
+                        executionState: 'running',
+                        heartbeatAt: instant(8),
+                        leaseDeadline: instant(1_008),
+                        workerId: 'managed-routing-worker',
+                    })
+                    .where(eq(dictionaryGenerationJobsTable.id, first.id));
+            }),
         ).rejects.toThrow();
-
-        const compatibleUpdate = await database.transaction(async (tx) => {
-            await tx.execute(
-                sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
-            );
-            await tx.execute(
-                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
-            );
-            return tx
-                .update(dictionaryGenerationJobsTable)
-                .set({
-                    executionState: 'running',
-                    heartbeatAt: instant(8),
-                    leaseDeadline: instant(1_008),
-                    workerId: 'managed-routing-worker',
-                })
-                .where(eq(dictionaryGenerationJobsTable.id, first.id))
-                .returning({ id: dictionaryGenerationJobsTable.id });
+        await creditedStore.cancel({
+            context: context(8),
+            jobId: second.id,
+            ownerId,
         });
-        expect(compatibleUpdate).toEqual([{ id: first.id }]);
-
-        await database.transaction(async (tx) => {
-            await tx.execute(
-                sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
-            );
-            await tx
-                .update(dictionaryGenerationJobsTable)
-                .set({
-                    executionState: 'queued',
-                    heartbeatAt: null,
-                    leaseDeadline: null,
-                    workerId: null,
-                })
-                .where(eq(dictionaryGenerationJobsTable.id, first.id));
-        });
-        await database
-            .delete(dictionaryGenerationJobsTable)
-            .where(eq(dictionaryGenerationJobsTable.id, second.id));
 
         const claim = await creditedStore.claim({
             context: context(9),
             creditSettlementRevision: 1,
+            textAiSelectionRevision: 1,
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
             managedRoutingRevision: 1,
@@ -488,25 +540,27 @@ run('card-authoring generation persistence', () => {
                 ownerId,
             }),
         ).resolves.toMatchObject({ state: 'review' });
-        await expect(
-            database
-                .select({
-                    chargedCredits: aiCreditReservationsTable.chargedCredits,
-                    measurement: aiCreditReservationsTable.measurement,
-                    policyMode: aiCreditReservationsTable.policyMode,
-                })
+        const [settledAction] = await database
+            .select()
+            .from(actions)
+            .where(eq(actions.id, claim.id));
+        expect(settledAction).toMatchObject({
+            state: 'settled',
+            funding: 'unlimited',
+            outcome: 'success',
+            measurement: 'unknown',
+            chargedMilli: 0n,
+        });
+        expect(
+            await database
+                .select()
                 .from(aiCreditReservationsTable)
                 .where(eq(aiCreditReservationsTable.jobId, claim.id)),
-        ).resolves.toEqual([
-            {
-                chargedCredits: 0n,
-                measurement: 'unmetered',
-                policyMode: 'unlimited',
-            },
-        ]);
+        ).toHaveLength(0);
     });
 
-    it('settles provider budget and exposes credit exhaustion when a retry cannot reserve credits', async () => {
+    it('absorbs an ambiguous dispatched timeout and releases the original customer action hold', async () => {
+        await seedLegacyActionFixture(database, '100');
         const dictionary = await dictionaryStore.createDictionary({
             context: context(),
             fingerprint: fingerprint('C'),
@@ -587,6 +641,7 @@ run('card-authoring generation persistence', () => {
         const firstClaim = await creditedStore.claim({
             context: context(3),
             creditSettlementRevision: 1,
+            textAiSelectionRevision: 1,
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
             managedRoutingRevision: 1,
@@ -620,6 +675,7 @@ run('card-authoring generation persistence', () => {
             creditedStore.claim({
                 context: context(6),
                 creditSettlementRevision: 1,
+                textAiSelectionRevision: 1,
                 globalConcurrency: 2,
                 leaseDurationMs: 1_000,
                 managedRoutingRevision: 1,
@@ -635,8 +691,17 @@ run('card-authoring generation persistence', () => {
                 ownerId,
             }),
         ).resolves.toMatchObject({
-            failure: { code: 'ai_credits_exhausted', retryable: false },
+            failure: { code: 'provider_timeout', retryable: true },
             state: 'failed',
+        });
+        const [action] = await database
+            .select()
+            .from(actions)
+            .where(eq(actions.id, job.id));
+        expect(action).toMatchObject({
+            state: 'settled',
+            outcome: 'failure',
+            chargedMilli: 0n,
         });
         const [stored] = await database
             .select({

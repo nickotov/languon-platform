@@ -1,3 +1,4 @@
+import { ActionBillingSchema } from '../ai-action';
 import { z } from 'zod';
 
 import {
@@ -243,6 +244,7 @@ export const DictionaryCardAuthoringAcceptedOutcomeSchema = z
     .strict();
 
 const authoringJobBase = {
+    billing: ActionBillingSchema.optional(),
     id: DictionaryIdSchema,
     kind: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_KIND),
     format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V1),
@@ -625,6 +627,7 @@ export const DictionaryCardAuthoringAnyGenerationJobSchema = z.union([
 
 const EnqueueDictionaryCardAuthoringV1GenerationRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         expectedDictionaryVersion: DictionaryVersionSchema,
         expectedSettingsVersion: DictionaryVersionSchema,
         source: DictionaryCardPrimaryValueSchema,
@@ -634,6 +637,7 @@ const EnqueueDictionaryCardAuthoringV1GenerationRequestSchema = z
     .strict();
 
 const enqueueV2Base = {
+    confirmedQuoteId: z.uuid().optional(),
     format: z.literal(DICTIONARY_CARD_AUTHORING_GENERATION_FORMAT_V2),
     expectedDictionaryVersion: DictionaryVersionSchema,
     expectedSettingsVersion: DictionaryVersionSchema,
@@ -704,6 +708,7 @@ export const EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema =
     ]);
 
 const regenerationBase = {
+    confirmedQuoteId: z.uuid().optional(),
     expectedDictionaryVersion: DictionaryVersionSchema,
     expectedSettingsVersion: DictionaryVersionSchema,
     source: DictionaryCardPrimaryValueSchema,

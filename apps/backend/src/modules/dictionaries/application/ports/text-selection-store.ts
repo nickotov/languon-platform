@@ -51,12 +51,22 @@ export interface TextSelectionStore {
     complete(
         lease: SelectionLease,
         delta: DictionaryCardAuthoringProviderDelta,
-        usage?: { inputTokens: number; outputTokens: number },
+        usage?: {
+            inputTokens: number;
+            outputTokens: number;
+            cacheReadTokens?: number;
+            cacheWriteTokens?: number;
+        },
     ): Promise<boolean>;
     fail(
         lease: SelectionLease,
         code: string,
-        usage?: { inputTokens: number; outputTokens: number },
+        usage?: {
+            inputTokens: number;
+            outputTokens: number;
+            cacheReadTokens?: number;
+            cacheWriteTokens?: number;
+        },
     ): Promise<void>;
     releaseWorkerLeases(workerId: string): Promise<void>;
 }

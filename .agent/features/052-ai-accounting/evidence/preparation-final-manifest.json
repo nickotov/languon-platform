@@ -1,0 +1,38 @@
+{
+  "base": "d441863",
+  "checks": {
+    "PG19614": "21/21 parent repository cases through0104",
+    "PG20979": "1/1 actual restricted worker role through0104",
+    "Journey12756": "2/2 registered composed journey through0104"
+  },
+  "files": {
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-schema.ts": "14b7d167e4c29d8a2f26c4da174f2adba18d0caf8713ddf57f0ff8aa9fda8873",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-schema.ts": "1a16857472b1b967fa1b8823d76d81d44a43ef54fd158819561cdb42fde3ca08",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-persistence-support.ts": "04d0633f77bfd4fbcfa1459068083d746337a934ac009b8ea9a0b44ae3ea19a7",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts": "63520042c34d234f8e4dd7b58d5ff923bf712fd5af0d9cb07babb36628ed7fd7",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-job-accounting.ts": "87413eafb79f1be9bb6a892827388ffd68088f872af61cfa695e130f8bd3e403",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts": "b2d04d8423afeebaed74f37f92b740bad879fb112dbec3b5c2dbe12dfa2cc331",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store.ts": "213205fe58248ce1867de317771aa8a4532a812fe2debe247d42f0d8ddb21f0b",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-schema.ts": "89acb576df514d6191d58779c93604d6b2baff2a13d9131b99ba8823ff8a3ef9",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-library-store.ts": "aa850824396ee86270de7fc828ef795b53beb60d66e19257adae8a7a781ec1ab",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-accounting.sql": "9b248da426079a55583ceaa8766a278e60ea49396b50be7e06ab8da01f2e892f",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-visibility.ts": "070fbb4df1288307d633b4ca718bfba78cc36f83f89a06bb6bcd45741aefcaee",
+    "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store.ts": "cbf2d9c5d1d7287e94bf427c6701cf96edb71a31f37ae7b3393b7411b77f564d",
+    "apps/backend/src/modules/learning/infrastructure/sentence-composition.ts": "8bb9038dbbf24be4539f929341d625b14358c2721cba0da40a817a33ecdba6c5",
+    "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts": "d2f085c3cc2a3e27e9305f7ea3a08cacd80e51f37fb3866a01045df7cbdd1af5",
+    "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts": "b6afc1a67a36fad95e3b518ac084356ad7cfcad2cf5b404b3136f40fbf1c9bd9",
+    "apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts": "5db239afc7fb9abab4f882cc0a16e572869bfc96daf649b70a890d13ce19f664",
+    "infra/deploy/sql/dictionary-worker-role.sql": "33d4092741f4efe22383a6d91355ce849e52b1995eb87207634d0ed5c8a16315",
+    "packages/contracts/src/learning/sentence-preparation.ts": "eb55d180e2dc9611c91cc3bd88f16add39f479a26649af591984ef8f08e99582",
+    "apps/backend/tests/integration/modules/learning/sentence-library-preparation.integration.test.ts": "beb5e0ea77131dabfc40082e34a3a1faaa0a5de4cf374f6eae834ac8be659d4a",
+    "apps/backend/tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts": "90cfdfcd36450d55b0c4203cc684988fbe9070990720f04d6f8c2dffe25b463d",
+    "apps/backend/tests/integration/modules/learning/sentence-practice.journeys.test.ts": "e5a536ecb6c0f42301a9a4967f4539d90fb6ad94d890873c39a5cc661a01e2b7",
+    "docs/user-flows/sentence-practice-backend.md": "7e62247b8575e196d1e8e119f4516d68d539b42c5429eb59804b2122119f25b3",
+    "apps/backend/tests/support/sentence-web-worker.ts": "ec363e28fc1de952869c21a6e4abf6b57c81c35b03ec66cb5f48a76f8f914871",
+    "apps/backend/drizzle/0104_accounting_observation_clock.sql": "6b115c9ae1bf62d9039c751e21d59f32199030ce0c5b12aa118415be6f7a5b3d",
+    "apps/backend/drizzle/0102_accounting_dispatch_precision.sql": "72c8eba5b61d25539fc5147171225bcc1f098a8f7a703223391a18c78f50c521",
+    "apps/backend/drizzle/0100_accounting_authority_remediation.sql": "6a2e5be0e269932f6429a78c1deb8d67207c285343ddea0a2989bb12ffce9c53",
+    "apps/backend/drizzle/0103_accounting_speech_dispatch.sql": "e8f1105f4cf71018bd374b4f34868e1152f59eeffb3b4abfedd0cecadf744648",
+    "apps/backend/drizzle/0101_accounting_checked_financial_authority.sql": "31fff9a2d3f66a06333a5a8ff5832989a864f6b1af928139ec381037286f6ccd"
+  }
+}

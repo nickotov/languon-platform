@@ -18,7 +18,10 @@ export class AccountPurgeService {
         const claim = await this.store.claimDue(input);
         if (!claim) return false;
         try {
-            const owner = await this.store.inspectOwner(claim);
+            const owner = await this.store.inspectOwner({
+                ...claim,
+                workerId: input.workerId,
+            });
             if (
                 owner.activeJobs > 0 ||
                 owner.objects.some(

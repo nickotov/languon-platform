@@ -21,181 +21,131 @@ export interface TextAiProviderBudgetUsage {
     ownerSettledOutputTokens: number;
 }
 
+// PostgreSQL transactions and savepoints have distinct adapter objects. Cache
+// only this transaction's fence promise; never cache capacity or permissions.
+const acquiredFences = new WeakMap<Transaction, Promise<void>>();
 /** Acquire before user/job row locks. The marker is transaction-local and only
  * written after the common admission/claim lock has been acquired. */
 export async function lockTextAiCapacity(tx: Transaction): Promise<void> {
-    await tx.execute(sql`select pg_advisory_xact_lock(${textAiCapacityLock})`);
-    await tx.execute(
-        sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true), set_config('languon.portrait_capacity_revision', '1', true)`,
-    );
+    let acquired = acquiredFences.get(tx);
+    if (!acquired) {
+        acquired = (async () => {
+            await tx.execute(
+                sql`select pg_advisory_xact_lock(${textAiCapacityLock})`,
+            );
+            await tx.execute(
+                sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true), set_config('languon.portrait_capacity_revision', '1', true)`,
+            );
+        })();
+        acquiredFences.set(tx, acquired);
+    }
+    try {
+        await acquired;
+    } catch (error) {
+        acquiredFences.delete(tx);
+        throw error;
+    }
 }
 
 export async function hasSentenceCapacityOverlap(
     tx: Transaction,
     now: Date,
 ): Promise<boolean> {
-    const rows = await tx.execute(sql`select exists (
-        select 1 from sentence_ai_jobs where execution_state in ('queued','running')
-            or provider_reservation_state = 'active'
-            or (provider_reservation_state = 'settled' and provider_reservation_settled_at > ${new Date(now.getTime() - 86_400_000).toISOString()}::timestamptz
-                and (provider_actual_cost_micros > 0 or provider_actual_input_tokens > 0 or provider_actual_output_tokens > 0))
-        union all
-        select 1 from dictionary_generation_provider_usage_archive
-            where job_kind in ('sentence-generation','sentence-check')
-            and settled_at > ${new Date(now.getTime() - 86_400_000).toISOString()}::timestamptz
-            and (actual_cost_micros > 0 or actual_input_tokens > 0 or actual_output_tokens > 0)
-    ) as overlap`);
-    return rows[0]?.overlap === true;
+    return hasCapacityOverlap(tx, now, [
+        'sentence-generation',
+        'sentence-check',
+    ]);
 }
 
-/** New domains require a capacity-aware worker until their numerical usage ages out. */
 export async function hasTextsCapacityOverlap(
     tx: Transaction,
     now: Date,
 ): Promise<boolean> {
-    const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
-    const rows = await tx.execute(sql`select exists (
-        select 1 from texts_ai_jobs where execution_state in ('queued','running')
-            or provider_reservation_state='active'
-            or (provider_reservation_state='settled' and provider_reservation_settled_at>${windowStart}::timestamptz
-                and (provider_actual_cost_micros>0 or provider_actual_input_tokens>0 or provider_actual_output_tokens>0))
-        union all
-        select 1 from dictionary_text_selection_jobs where execution_state in ('queued','running')
-            or provider_reservation_state='active'
-            or (provider_reservation_state='settled' and provider_reservation_settled_at>${windowStart}::timestamptz
-                and (provider_actual_cost_micros>0 or provider_actual_input_tokens>0 or provider_actual_output_tokens>0))
-        union all
-        select 1 from dictionary_generation_provider_usage_archive
-            where job_kind in ('text-detection','text-translation','text-selection-card')
-            and settled_at>${windowStart}::timestamptz
-            and (actual_cost_micros>0 or actual_input_tokens>0 or actual_output_tokens>0)
-    ) as overlap`);
-    return rows[0]?.overlap === true;
+    return hasCapacityOverlap(tx, now, [
+        'text-detection',
+        'text-translation',
+        'text-selection-card',
+    ]);
 }
 
-/** Conversation accounting includes every actor, observer and reflector call. */
 export async function hasConversationCapacityOverlap(
     tx: Transaction,
     now: Date,
 ): Promise<boolean> {
-    const windowStart = new Date(now.getTime() - 86_400_000).toISOString();
-    const rows = await tx.execute(sql`select exists (
-        select 1 from conversation_turns where status in ('queued','running')
-        union all
-        select 1 from conversation_provider_calls where state <> 'settled'
-            or (settled_at > ${windowStart}::timestamptz and (actual_cost_micros > 0 or actual_input_tokens > 0 or actual_output_tokens > 0))
-        union all
-        select 1 from dictionary_generation_provider_usage_archive where job_kind='conversation-turn'
-            and settled_at > ${windowStart}::timestamptz and (actual_cost_micros > 0 or actual_input_tokens > 0 or actual_output_tokens > 0)
-    ) as overlap`);
+    return hasCapacityOverlap(tx, now, ['conversation-turn']);
+}
+
+async function hasCapacityOverlap(
+    tx: Transaction,
+    now: Date,
+    kinds: readonly string[],
+): Promise<boolean> {
+    const rows =
+        await tx.execute(sql`select languon_text_ai_has_capacity_overlap(
+        array[${sql.join(
+            kinds.map((kind) => sql`${kind}`),
+            sql`, `,
+        )}]::text[],
+        ${now.toISOString()}::timestamptz) as overlap`);
     return rows[0]?.overlap === true;
 }
 
-/** Closed typed union: dictionaries, sentences and Texts share existing limits.
- * Provider usage remains grouped by the immutable five-field budget cohort. */
+/** Queue and active usage are transactionally maintained counters. Settled usage
+ * uses minute aggregates plus the exact partial boundary minute, preserving the
+ * strict rolling 24-hour window without scanning historical feature rows. */
 export async function readTextAiCapacity(
     tx: Transaction,
-    input: {
-        actorId: string;
-        now: Date;
-        budget: TextAiProviderBudgetPolicy;
-    },
+    input: { actorId: string; now: Date; budget: TextAiProviderBudgetPolicy },
 ) {
     const { actorId, now, budget } = input;
     const windowStart = new Date(now.getTime() - 86_400_000);
-    // Preserve the previous provider participant's bounded retention lifecycle.
-    await tx.execute(
-        sql`delete from dictionary_generation_provider_usage_archive where settled_at<=${windowStart.toISOString()}::timestamptz`,
+    const boundaryEnd = new Date(
+        Math.floor(windowStart.getTime() / 60_000) * 60_000 + 60_000,
     );
-    const counts = await tx.execute(sql`with jobs as (
-        select owner_id as actor_id, execution_state::text as execution_state, created_at, next_attempt_at, (input_payload->>'awaitingUpload') is distinct from 'true' as runnable from dictionary_generation_jobs
+    const cohort = [
+        budget.inputCostMicrosPerMillionTokens,
+        budget.outputCostMicrosPerMillionTokens,
+        budget.maxCostMicrosPerAttempt,
+        budget.maxInputTokensPerAttempt,
+        budget.maxOutputTokensPerAttempt,
+    ].join(':');
+    const counts = await tx.execute(sql`select
+        coalesce(g.queued,0) as global_queued, coalesce(a.queued,0) as actor_queued,
+        coalesce(g.running,0) as global_running, coalesce(a.running,0) as actor_running,
+        (select min(created_at) from text_ai_capacity_jobs where state='queued' and runnable
+            and next_attempt_at<=${now.toISOString()}::timestamptz) as oldest_runnable_at
+        from (select 1) singleton
+        left join text_ai_capacity_queue_totals g on g.scope='global'
+        left join text_ai_capacity_queue_totals a on a.scope=${actorId}`);
+    const usage = await tx.execute(sql`with settled as (
+        select scope, sum(cost) as cost, sum(input_tokens) as input_tokens, sum(output_tokens) as output_tokens
+        from text_ai_capacity_settled_buckets where scope in ('global',${actorId}) and cohort=${cohort}
+            and minute>=${boundaryEnd.toISOString()}::timestamptz group by scope
         union all
-        select learner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from sentence_ai_jobs
+        select 'global', coalesce(sum(cost),0), coalesce(sum(input_tokens),0), coalesce(sum(output_tokens),0)
+        from text_ai_capacity_provider_usage where cohort=${cohort} and state='settled'
+            and settled_at>${windowStart.toISOString()}::timestamptz and settled_at<${boundaryEnd.toISOString()}::timestamptz
         union all
-        select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from texts_ai_jobs
-        union all
-        select owner_id as actor_id, execution_state, created_at, next_attempt_at, true as runnable from dictionary_text_selection_jobs
-        union all
-        select owner_id as actor_id, status as execution_state, created_at, created_at as next_attempt_at, not cancel_requested as runnable from conversation_turns
-        union all
-        select owner_id as actor_id, state as execution_state, created_at, created_at as next_attempt_at, not cancel_requested as runnable from learner_portrait_interview_operations
-    ) select
-        count(*) filter (where execution_state='queued') as global_queued,
-        count(*) filter (where execution_state='queued' and actor_id=${actorId}::uuid) as actor_queued,
-        count(*) filter (where execution_state='running') as global_running,
-        count(*) filter (where execution_state='running' and actor_id=${actorId}::uuid) as actor_running,
-        min(created_at) filter (where execution_state='queued' and runnable and next_attempt_at<=${now.toISOString()}::timestamptz) as oldest_runnable_at from jobs`);
-    const usage = await tx.execute(sql`with live_jobs as (
-        select id, owner_id as actor_id, provider_reservation_state::text as provider_reservation_state, provider_reservation_settled_at,
-            provider_reserved_cost_micros, provider_reserved_input_tokens, provider_reserved_output_tokens,
-            provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
-            provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
-            provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from dictionary_generation_jobs
-        union all
-        select id, learner_id as actor_id, provider_reservation_state, provider_reservation_settled_at,
-            provider_reserved_cost_micros, provider_reserved_input_tokens, provider_reserved_output_tokens,
-            provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
-            provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
-            provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from sentence_ai_jobs
-        union all
-        select id, owner_id as actor_id, provider_reservation_state, provider_reservation_settled_at,
-            provider_reserved_cost_micros, provider_reserved_input_tokens, provider_reserved_output_tokens,
-            provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
-            provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
-            provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from texts_ai_jobs
-        union all
-        select id, owner_id as actor_id, provider_reservation_state, provider_reservation_settled_at,
-            provider_reserved_cost_micros, provider_reserved_input_tokens, provider_reserved_output_tokens,
-            provider_actual_cost_micros, provider_actual_input_tokens, provider_actual_output_tokens,
-            provider_input_cost_micros_per_million_tokens, provider_output_cost_micros_per_million_tokens,
-            provider_max_cost_micros_per_attempt, provider_max_input_tokens_per_attempt, provider_max_output_tokens_per_attempt from dictionary_text_selection_jobs
-        union all
-        select id, owner_id as actor_id, case when state='settled' then 'settled' else 'active' end as provider_reservation_state, settled_at as provider_reservation_settled_at,
-            reserved_cost_micros, reserved_input_tokens, reserved_output_tokens,
-            actual_cost_micros, actual_input_tokens, actual_output_tokens,
-            input_cost_micros_per_million_tokens, output_cost_micros_per_million_tokens,
-            max_cost_micros_per_attempt, max_input_tokens_per_attempt, max_output_tokens_per_attempt from conversation_provider_calls
-        union all
-        select id, owner_id as actor_id, case when state='settled' then 'settled' else 'active' end as provider_reservation_state, settled_at as provider_reservation_settled_at,
-            reserved_cost_micros, reserved_input_tokens, reserved_output_tokens,
-            actual_cost_micros, actual_input_tokens, actual_output_tokens,
-            input_cost_micros_per_million_tokens, output_cost_micros_per_million_tokens,
-            max_cost_micros_per_attempt, max_input_tokens_per_attempt, max_output_tokens_per_attempt from learner_portrait_interview_provider_calls
-    ), cohorts as (
-        select * from live_jobs where provider_input_cost_micros_per_million_tokens=${budget.inputCostMicrosPerMillionTokens}
-            and provider_output_cost_micros_per_million_tokens=${budget.outputCostMicrosPerMillionTokens}
-            and provider_max_cost_micros_per_attempt=${budget.maxCostMicrosPerAttempt}
-            and provider_max_input_tokens_per_attempt=${budget.maxInputTokensPerAttempt}
-            and provider_max_output_tokens_per_attempt=${budget.maxOutputTokensPerAttempt}
+        select ${actorId}, coalesce(sum(cost),0), coalesce(sum(input_tokens),0), coalesce(sum(output_tokens),0)
+        from text_ai_capacity_provider_usage where cohort=${cohort} and state='settled' and owner_id=${actorId}::uuid
+            and settled_at>${windowStart.toISOString()}::timestamptz and settled_at<${boundaryEnd.toISOString()}::timestamptz
     ), amounts as (
-        select actor_id, provider_reservation_state='active' as active,
-            case when provider_reservation_state='active' then provider_reserved_cost_micros else provider_actual_cost_micros end as cost,
-            case when provider_reservation_state='active' then provider_reserved_input_tokens else provider_actual_input_tokens end as input_tokens,
-            case when provider_reservation_state='active' then provider_reserved_output_tokens else provider_actual_output_tokens end as output_tokens
-        from cohorts where provider_reservation_state='active' or
-            (provider_reservation_state='settled' and provider_reservation_settled_at>${windowStart.toISOString()}::timestamptz
-            and not exists(select 1 from dictionary_generation_provider_usage_archive a where a.id=cohorts.id))
-        union all
-        select owner_id as actor_id, false, actual_cost_micros, actual_input_tokens, actual_output_tokens
-        from dictionary_generation_provider_usage_archive where settled_at>${windowStart.toISOString()}::timestamptz
-            and input_cost_micros_per_million_tokens=${budget.inputCostMicrosPerMillionTokens}
-            and output_cost_micros_per_million_tokens=${budget.outputCostMicrosPerMillionTokens}
-            and max_cost_micros_per_attempt=${budget.maxCostMicrosPerAttempt}
-            and max_input_tokens_per_attempt=${budget.maxInputTokensPerAttempt}
-            and max_output_tokens_per_attempt=${budget.maxOutputTokensPerAttempt}
+        select scope, true as active, cost, input_tokens, output_tokens from text_ai_capacity_active_totals
+            where scope in ('global',${actorId}) and cohort=${cohort}
+        union all select scope, false, cost, input_tokens, output_tokens from settled
     ) select
-        coalesce(sum(cost) filter(where active),0) as global_active_cost,
-        coalesce(sum(input_tokens) filter(where active),0) as global_active_input,
-        coalesce(sum(output_tokens) filter(where active),0) as global_active_output,
-        coalesce(sum(cost) filter(where not active),0) as global_settled_cost,
-        coalesce(sum(input_tokens) filter(where not active),0) as global_settled_input,
-        coalesce(sum(output_tokens) filter(where not active),0) as global_settled_output,
-        coalesce(sum(cost) filter(where active and actor_id=${actorId}::uuid),0) as owner_active_cost,
-        coalesce(sum(input_tokens) filter(where active and actor_id=${actorId}::uuid),0) as owner_active_input,
-        coalesce(sum(output_tokens) filter(where active and actor_id=${actorId}::uuid),0) as owner_active_output,
-        coalesce(sum(cost) filter(where not active and actor_id=${actorId}::uuid),0) as owner_settled_cost,
-        coalesce(sum(input_tokens) filter(where not active and actor_id=${actorId}::uuid),0) as owner_settled_input,
-        coalesce(sum(output_tokens) filter(where not active and actor_id=${actorId}::uuid),0) as owner_settled_output from amounts`);
+        coalesce(sum(cost) filter(where active and scope='global'),0) as global_active_cost,
+        coalesce(sum(input_tokens) filter(where active and scope='global'),0) as global_active_input,
+        coalesce(sum(output_tokens) filter(where active and scope='global'),0) as global_active_output,
+        coalesce(sum(cost) filter(where not active and scope='global'),0) as global_settled_cost,
+        coalesce(sum(input_tokens) filter(where not active and scope='global'),0) as global_settled_input,
+        coalesce(sum(output_tokens) filter(where not active and scope='global'),0) as global_settled_output,
+        coalesce(sum(cost) filter(where active and scope=${actorId}),0) as owner_active_cost,
+        coalesce(sum(input_tokens) filter(where active and scope=${actorId}),0) as owner_active_input,
+        coalesce(sum(output_tokens) filter(where active and scope=${actorId}),0) as owner_active_output,
+        coalesce(sum(cost) filter(where not active and scope=${actorId}),0) as owner_settled_cost,
+        coalesce(sum(input_tokens) filter(where not active and scope=${actorId}),0) as owner_settled_input,
+        coalesce(sum(output_tokens) filter(where not active and scope=${actorId}),0) as owner_settled_output from amounts`);
     const c = counts[0];
     const u = usage[0];
     return {
@@ -222,6 +172,18 @@ export async function readTextAiCapacity(
             ownerSettledOutputTokens: Number(u?.owner_settled_output ?? 0),
         } satisfies TextAiProviderBudgetUsage,
     };
+}
+
+/** Maintenance-worker entry point; never invoke while admitting generation. */
+export async function cleanupTextAiCapacity(
+    tx: Transaction,
+    now: Date,
+    batchLimit = 1000,
+): Promise<number> {
+    const rows = await tx.execute(
+        sql`select languon_text_ai_cleanup_capacity(${now.toISOString()}::timestamptz, ${batchLimit}) as removed`,
+    );
+    return Number(rows[0]?.removed ?? 0);
 }
 
 /** IDs identify only erased jobs; archive holds numerical cost/tokens and actor,

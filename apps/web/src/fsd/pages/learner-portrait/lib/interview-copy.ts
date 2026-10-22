@@ -20,6 +20,12 @@ const rows = {
         'temas tratados',
     ],
 
+    freePolicy: [
+        'Free · Up to 30 actions per account per UTC day, including failed actions. One action at a time.',
+        'Бесплатно · До 30 действий на аккаунт за день UTC, включая неудачные. Одно действие за раз.',
+        'Gratuit · Jusqu’à 30 actions par compte et par jour UTC, échecs compris. Une action à la fois.',
+        'Gratis · Hasta 30 acciones por cuenta y día UTC, incluidos los fallos. Una acción a la vez.',
+    ],
     composerFree: ['free', 'бесплатно', 'gratuit', 'gratis'],
     composerPaid: [
         'uses credits',

@@ -1,3 +1,5 @@
+import { ActionAllowanceQuoteSchema } from '../ai-action';
+import { ActionBillingSchema } from '../ai-action';
 import { z } from 'zod';
 import { LearningErrorCodeSchema, LearningErrorResponseSchema } from './index';
 import {
@@ -85,6 +87,7 @@ const SentenceSetupRequestSchema = z
     })
     .strict();
 export const SentencePrepareRequestSchema = SentenceSetupRequestSchema.extend({
+    confirmedQuoteId: z.uuid().optional(),
     replayExerciseIds: distinctIds(
         SENTENCE_LIMITS.visitedExercises,
         1,
@@ -99,6 +102,7 @@ export const SentencePrepareRequestSchema = SentenceSetupRequestSchema.extend({
         },
     );
 export const SentenceNextRequestSchema = SentenceSetupRequestSchema.extend({
+    confirmedQuoteId: z.uuid().optional(),
     operationId: id,
     sessionId: id,
     visitedExerciseIds: distinctIds(SENTENCE_LIMITS.visitedExercises),
@@ -282,6 +286,7 @@ export const SentenceFeedbackSchema = z
     .strict();
 export const SentenceCheckRequestSchema = z
     .object({
+        confirmedQuoteId: z.uuid().optional(),
         operationId: id,
         sessionId: id,
         answer: safeText(SENTENCE_LIMITS.answerCodePoints),
@@ -331,6 +336,7 @@ export const SentenceJobFailureSchema = z.enum([
 ]);
 export const SentenceJobSchema = z
     .object({
+        billing: ActionBillingSchema.optional(),
         id,
         kind: z.enum(['sentence-generation', 'sentence-check']),
         state: z.enum([
@@ -474,6 +480,7 @@ export type SentenceProgressResponse = z.infer<
 /** Sentence-specific failures remain separate from the legacy flashcard envelope. */
 export const SentenceErrorCodeSchema = z.enum([
     ...LearningErrorCodeSchema.options,
+    'action_confirmation_required',
     'model_unavailable',
     'capacity_unavailable',
     'ai_credits_exhausted',
@@ -483,7 +490,13 @@ export const SentenceErrorCodeSchema = z.enum([
 ]);
 export const SentenceErrorResponseSchema = LearningErrorResponseSchema.extend({
     error: LearningErrorResponseSchema.shape.error
-        .extend({ code: SentenceErrorCodeSchema })
+        .extend({
+            code: SentenceErrorCodeSchema,
+            details: z
+                .object({ quote: ActionAllowanceQuoteSchema })
+                .strict()
+                .optional(),
+        })
         .strict(),
 }).strict();
 export type SentenceErrorCode = z.infer<typeof SentenceErrorCodeSchema>;

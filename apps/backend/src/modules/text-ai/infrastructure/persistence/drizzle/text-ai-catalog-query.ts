@@ -142,6 +142,8 @@ export async function readTextAiCatalog(
                         price.inputCreditsPerMillionTokens!,
                     outputCreditsPerMillionTokens:
                         price.outputCreditsPerMillionTokens!,
+                    cachedInputCreditsPerMillionTokens:
+                        price.cachedInputCreditsPerMillionTokens ?? null,
                 },
             };
         }),

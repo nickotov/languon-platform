@@ -78,6 +78,14 @@ export interface AiCreditTransactionParticipant {
         source: AiCreditGrantSource;
         sourceReference: string;
     }): Promise<{ created: boolean; grantId: string }>;
+    revokePurchaseGrantAvailable(input: {
+        ownerId: string;
+        grantId: string;
+        amount: bigint;
+        sourceReference: string;
+        reason: string;
+        at: Date;
+    }): Promise<{ created: boolean; revokedCredits: bigint }>;
     adjustByAdmin(input: {
         amount: bigint;
         at: Date;
@@ -114,6 +122,11 @@ export interface AiCreditTransactionParticipant {
     settleAttempt(input: {
         measuredCredits: bigint | null;
         measurement: AiCreditMeasurement;
+        ownerId: string;
+        reservationId: string;
+        settledAt: Date;
+    }): Promise<AiCreditSettlementResult>;
+    settleFailedAttempt(input: {
         ownerId: string;
         reservationId: string;
         settledAt: Date;

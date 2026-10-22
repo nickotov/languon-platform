@@ -1,0 +1,13 @@
+      capability       | funding  |  state  | outcome | measurement | held_milli | charged_milli | output_limit |         created_at
+-----------------------+----------+---------+---------+-------------+------------+---------------+--------------+----------------------------
+ dictionary-generation | customer | settled | success | unknown     |      39000 |             0 |         1745 | 2026-10-22 18:53:08.185+00
+ portrait-interview    | customer | settled | success | measured    |      19000 |           140 |         4374 | 2026-10-22 18:52:03.284+00
+ text-translation      | customer | settled | success | measured    |      20000 |             4 |         3835 | 2026-10-22 18:53:13.561+00
+(3 rows)
+
+      capability       | source_kind  | measurement | amount_usd_micros
+-----------------------+--------------+-------------+-------------------
+ dictionary-generation | text-attempt | unknown     |
+ portrait-interview    | text-attempt | measured    |               140
+ text-translation      | text-attempt | measured    |                 4
+(3 rows)

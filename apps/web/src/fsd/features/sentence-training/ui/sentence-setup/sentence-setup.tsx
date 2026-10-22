@@ -1,7 +1,7 @@
 'use client';
 import styles from './sentence-setup.module.css';
 import { SENTENCE_LIMITS } from '@languon/contracts';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
 import { usePreparationCopy } from '../sentence-preparation-copy';
 import { SentencePreparationOption } from '../sentence-preparation-option/sentence-preparation-option';
@@ -26,6 +26,7 @@ import type {
 import { SentenceErrorNotice } from '../sentence-errors/sentence-errors';
 
 export type SentenceSetupProps = {
+    budgetContent?: ReactNode;
     controller: SentenceSetupController;
     open: boolean;
     onClose(): void;
@@ -42,6 +43,7 @@ export type SentenceSetupProps = {
 
 export function SentenceSetup({
     controller: c,
+    budgetContent,
     open,
     onClose,
     onStart,
@@ -156,6 +158,7 @@ export function SentenceSetup({
             }
         >
             <div className={styles.setupContent}>
+                {c.configuration.mode !== 'review-only' && budgetContent}
                 {onOpenLibrary ? (
                     <button
                         type='button'

@@ -12,6 +12,8 @@ import {
 import {
     AdminAuditActionSchema,
     AdminAiCreditModeSchema,
+    AdminAiCreditAmountSchema,
+    AdminAiCreditSignedAmountSchema,
     AdminAuditOutcomeSchema,
     AdminIdSchema,
     AdminPageSchema,
@@ -130,9 +132,15 @@ export const AdminAiModelSchema = z
         creditPricing: z
             .object({
                 revision: z.literal(1),
-                inputCreditsPerMillionTokens: z.number().int().positive(),
-                outputCreditsPerMillionTokens: z.number().int().positive(),
-                maxCreditsPerAttempt: z.number().int().positive(),
+                inputCreditsPerMillionTokens: AdminAiCreditAmountSchema.refine(
+                    (value) => value > 0,
+                ),
+                outputCreditsPerMillionTokens: AdminAiCreditAmountSchema.refine(
+                    (value) => value > 0,
+                ),
+                maxCreditsPerAttempt: AdminAiCreditAmountSchema.refine(
+                    (value) => value > 0,
+                ),
             })
             .strict(),
         supportedFormats: z.array(z.string().trim().min(1).max(160)).min(1),
@@ -239,11 +247,10 @@ export const AdminAiCreditPolicyMutationRequestSchema = z
 export const AdminAiCreditAdjustmentRequestSchema = z
     .object({
         expectedVersion: z.number().int().nonnegative(),
-        amountCredits: z
-            .number()
-            .int()
-            .min(-1_000_000_000_000)
-            .max(1_000_000_000_000),
+        amountCredits:
+            AdminAiCreditSignedAmountSchema.min(-1_000_000_000_000).max(
+                1_000_000_000_000,
+            ),
         expiresAt: z.string().datetime().nullable(),
         reason: AdminReasonSchema,
     })

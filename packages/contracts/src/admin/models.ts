@@ -110,6 +110,7 @@ export const AdminAiCreditHistoryEntrySchema = z
                 'unmetered',
                 'speech_success',
                 'speech_no_charge',
+                'technical_failure',
             ])
             .nullable(),
         reason: z.string().trim().min(5).max(500).nullable(),

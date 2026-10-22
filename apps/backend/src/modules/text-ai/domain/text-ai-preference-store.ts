@@ -4,6 +4,7 @@ export interface TextAiPreference {
     mode: 'auto' | 'explicit';
     modelId: string | null;
     version: number;
+    maxCreditsPerAction?: string | null;
 }
 export interface TextAiPreferenceSession {
     read(): Promise<TextAiPreference>;

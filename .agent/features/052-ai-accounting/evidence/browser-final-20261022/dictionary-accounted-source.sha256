@@ -1,0 +1,7 @@
+cef50e091f432c44f2ac9b921e63a259b1152e0da6a6d70c05c17f100a2d3200  apps/web/tests/e2e/dictionary-platform.journeys.spec.ts
+27c08c01f58818f95af9b128beb709d8941c86315aa504a938668e9d9a7879b9  apps/web/playwright.config.ts
+a706988297f159bb6104e94c306da7afde1c722142327b1c768421dce254e070  apps/backend/tests/support/dictionary-web-accounting-fixture.ts
+73b0d5b9e96976abbd5830b09c1f4fa55f51db688685ebe9a39b5fc73f969f1a  apps/backend/tests/support/dictionary-accounting-fixture.ts
+48021c4f7df5180cbfe2e3ba871212bbb40d94c66629d47695f8c3252ae1a0b6  apps/backend/tests/support/legacy-action-fixture.ts
+388ca62c0a92a84d14cbef731288c7705003873adee96beb032ed4ee8e775aa7  apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store.ts
+072da7e60f388306726f018502e219c9d899c3c710fc74efcac856be1d52b614  docs/user-flows/dictionary-platform.md

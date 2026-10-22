@@ -1,3 +1,4 @@
+import { ActionConsentCancelledError } from '@/fsd/entities/ai-action';
 import { describe, expect, it, vi } from 'vitest';
 import {
     buildAiValue,
@@ -35,6 +36,11 @@ function model(
 }
 
 describe('editor proposal ownership during polling', () => {
+    it('keeps editing after declined budget consent without presenting a failed request', () => {
+        const state = model({ id: 'prior-job', state: 'review' }, 'prior-job');
+        state.cardAuthoringAction.error = new ActionConsentCancelledError();
+        expect(buildAiValue(state, vi.fn())?.error).toBeNull();
+    });
     it('offers explicit reload for a changed accepted revision rather than claiming refresh failed', () => {
         const cause = new DictionaryApiError(409, {
             code: 'version_conflict',

@@ -63,6 +63,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - ai-accounting
     - learner-portrait
     - persistent-tutor-modes
     - knowledge-workspace
@@ -148,9 +149,10 @@ configuration startup requires its guard and does not own this cleanup.
    visible even when an assistant placeholder is empty. Completed, failed and
    explicitly stopped turns remove the activity indicator. Streamed Markdown
    remains readable while incomplete and settles to the final explanation.
-   Observe material discussed and final usage. Select **Charged credits** to open the usage popover above
-   the answer action; it shows model, input/output tokens and estimated/reported
-   accounting. Escape closes the popover and restores focus to its trigger.
+   Observe material discussed and final usage. Select the billing status to open
+   the usage popover above the answer action; it shows execution separately from
+   held/charged/released/Free billing, exact credits, model, input/output tokens
+   and measured/estimated/unknown accounting. Escape closes the popover and restores focus to its trigger.
    **Minimize tutor** folds the widget into the lower-right pill while preserving
    the question, attachments, scroll, note edits and running response. **Open language
    tutor** returns to the same conversation. **New conversation** starts separate
@@ -204,6 +206,20 @@ Opening and folding use restrained transitions; reduced-motion preferences suppr
 those transitions. Observe focus, labels, keyboard access, narrow-screen overflow, browser console
 errors, and unexpected failed requests. Streaming cancellation may abort the
 subscription; this is expected and does not cancel durable work.
+
+## Action budgets and response limits
+
+The composer shows the learner's saved maximum credits, with expandable exact
+value. Sending authorizes spending within that maximum and available balance.
+A reduced allowance returns an explicit Send/Top up/Keep editing offer before
+admission. Reconfirm a newer reduced offer; it cannot silently shrink an already
+reviewed authorization. Response limit reached offers explicit Continue as a new
+action/budget. Disconnecting only unsubscribes: generation continues until it
+finishes or the learner selects Stop. Reconnect replays durable events.
+
+The dedicated [AI accounting guide](./ai-accounting.md) owns the repeatable
+profile, quote, exact billing and Continue browser scenarios. This guide retains
+source access, publication, modes and durable lifecycle coverage.
 
 ## API verification
 

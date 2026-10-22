@@ -1,4 +1,6 @@
 'use client';
+import type { ReactNode } from 'react';
+import { ActionBilling, ActionConsentDialog } from '@/fsd/entities/ai-action';
 import styles from './sentence-preparation-sheet.module.css';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import type { SentencePreparationBatch } from '@languon/contracts';
@@ -11,6 +13,7 @@ import { SentencePreparationProgress } from '../sentence-preparation-progress/se
 
 export function SentencePreparationSheet({
     controller,
+    budgetContent,
     open,
     onClose,
     onRestartSetup,
@@ -22,6 +25,7 @@ export function SentencePreparationSheet({
     onOpenAiSettings,
 }: {
     controller: SentencePreparationController;
+    budgetContent?: ReactNode;
     open: boolean;
     onClose(): void;
     onRestartSetup(): void;
@@ -47,7 +51,8 @@ export function SentencePreparationSheet({
         void controller.stop();
     }
     function resume() {
-        void controller.resume();
+        if (run?.requiresNewBudget) void controller.continueWithBudget?.();
+        else void controller.resume();
     }
     function startAgain() {
         if (!run) {
@@ -110,7 +115,9 @@ export function SentencePreparationSheet({
                         disabled={controller.busy || cooldown}
                         onClick={resume}
                     >
-                        {P('resume')}
+                        {run?.requiresNewBudget
+                            ? P('continueBudget')
+                            : P('resume')}
                     </Button>
                 ) : null}
                 <Button
@@ -123,25 +130,46 @@ export function SentencePreparationSheet({
         </div>
     );
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            variant={compact ? 'sheet' : 'dialog'}
-            className={compact ? styles.compactDialog : ''}
-            size='md'
-            title={P('title')}
-            description={dictionaryTitle}
-            footer={footer}
-        >
-            <SentencePreparationProgress
-                controller={controller}
-                sourceLanguage={sourceLanguage}
-                targetLanguage={targetLanguage}
-                onStartRound={startRound}
-                onStartAgain={startAgain}
-                onOpenLibrary={onOpenLibrary}
-                onOpenAiSettings={onOpenAiSettings}
-            />
-        </Dialog>
+        <>
+            {controller.actionConsent && (
+                <ActionConsentDialog
+                    quote={controller.actionConsent.quote}
+                    onSend={controller.actionConsent.confirm}
+                    onClose={controller.actionConsent.cancel}
+                />
+            )}
+            <Dialog
+                open={open}
+                onClose={onClose}
+                variant={compact ? 'sheet' : 'dialog'}
+                className={compact ? styles.compactDialog : ''}
+                size='md'
+                title={P('title')}
+                description={dictionaryTitle}
+                footer={footer}
+            >
+                {run?.mode !== 'review-only' && (
+                    <>
+                        {budgetContent}
+                        <p>{P('totalBudget')}</p>
+                    </>
+                )}
+                <ActionBilling billing={run?.billing} execution={run?.state} />
+                {run?.remainingOutputTokens != null && (
+                    <p>
+                        {P('remainingOutput', { n: run.remainingOutputTokens })}
+                    </p>
+                )}
+                <SentencePreparationProgress
+                    controller={controller}
+                    sourceLanguage={sourceLanguage}
+                    targetLanguage={targetLanguage}
+                    onStartRound={startRound}
+                    onStartAgain={startAgain}
+                    onOpenLibrary={onOpenLibrary}
+                    onOpenAiSettings={onOpenAiSettings}
+                />
+            </Dialog>
+        </>
     );
 }

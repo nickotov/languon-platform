@@ -104,3 +104,47 @@ describe('workspace durable job fencing', () => {
         unmount();
     });
 });
+
+it('keeps the exact text operation and source while awaiting explicit allowance consent', async () => {
+    const { TextsApiError } = await import('@/fsd/entities/texts');
+    const quote = {
+        id: '00000000-0000-4000-8000-000000000001',
+        maximumCredits: '0.125',
+        approximateOutputTokens: 20,
+        expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    };
+    const enqueue = vi
+        .spyOn(textsApi, 'translateText')
+        .mockRejectedValueOnce(
+            new TextsApiError(409, {
+                code: 'action_confirmation_required',
+                correlationId: 'synthetic-quote',
+                message: 'Review allowance.',
+                details: { quote },
+            }),
+        )
+        .mockResolvedValueOnce({
+            job: { ...job, state: 'completed', completedAt: job.createdAt },
+        });
+    const { result, unmount } = renderHook(() => useTextWorkspaceJob(request), {
+        wrapper,
+    });
+    let pending!: Promise<void>;
+    act(() => {
+        pending = result.current.start(body);
+    });
+    await waitFor(() =>
+        expect(result.current.actionConsent.quote?.id).toBe(quote.id),
+    );
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    expect(result.current.job).toBeNull();
+    act(() => result.current.actionConsent.confirm());
+    await act(async () => pending);
+    expect(enqueue.mock.calls[0]?.[1]).toEqual(body);
+    expect(enqueue.mock.calls[1]?.[1]).toEqual({
+        ...body,
+        confirmedQuoteId: quote.id,
+    });
+    expect(result.current.job?.state).toBe('completed');
+    unmount();
+});

@@ -1,3 +1,4 @@
+import type { ActionBilling } from '@languon/contracts';
 import type {
     PortraitInterviewerOutput,
     PortraitInterviewCompletedOperation,
@@ -20,6 +21,7 @@ export interface InterviewContext {
     completedTopics: PortraitInterviewerOutput['topic'][];
 }
 export interface InterviewOperation {
+    billing?: ActionBilling;
     id: string;
     interviewId: string;
     ownerId: string;
@@ -111,6 +113,7 @@ export interface InterviewRunner {
 }
 
 export class PortraitInterviewResourceLimitError extends Error {}
+export class PortraitInterviewDailyQuotaError extends PortraitInterviewResourceLimitError {}
 
 /** Safe category only: never retains provider text, prompt, validation issues or causes. */
 export class PortraitInterviewInvalidModelOutputError extends Error {

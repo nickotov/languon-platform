@@ -1,3 +1,4 @@
+import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { Buffer } from 'node:buffer';
 
 import type {
@@ -132,15 +133,27 @@ export function createMastraImportPairsProposalGenerator(options: {
 }): ImportPairsProposalGenerator {
     return {
         async generate(request) {
+            let meteredUsage:
+                ReturnType<typeof readProviderTokenUsage> | undefined;
+            const failure = (
+                reason: ConstructorParameters<
+                    typeof ImportPairsProposalGeneratorExecutionError
+                >[0],
+            ) => {
+                const result = new ImportPairsProposalGeneratorExecutionError(
+                    reason,
+                );
+                if (meteredUsage) result.usage = meteredUsage;
+                return result;
+            };
+
             request.signal.throwIfAborted();
             const input =
                 DictionaryImportPairsGenerationInputPayloadSchema.parse(
                     request.input,
                 );
             if (input.rows.length > dictionaryBatchGenerationLimits.chunkRows)
-                throw new ImportPairsProposalGeneratorExecutionError(
-                    'invalid_model_output',
-                );
+                throw failure('invalid_model_output');
             const message = JSON.stringify({
                 effectiveSettings: input.effectiveSettings,
                 instruction: input.instruction,
@@ -167,9 +180,7 @@ export function createMastraImportPairsProposalGenerator(options: {
                 Buffer.byteLength(message, 'utf8') + 16_384 >
                     requestLimits.maxInputTokens
             )
-                throw new ImportPairsProposalGeneratorExecutionError(
-                    'invalid_model_output',
-                );
+                throw failure('invalid_model_output');
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
@@ -184,37 +195,56 @@ export function createMastraImportPairsProposalGenerator(options: {
                     toolChoice: 'none',
                     tracingOptions: { hideInput: true, hideOutput: true },
                 });
+                if (result.usage) {
+                    try {
+                        meteredUsage = readProviderTokenUsage(
+                            result.usage,
+                            requestLimits,
+                        );
+                    } catch {
+                        throw failure('invalid_model_output');
+                    }
+                }
                 if (result.error || result.tripwire)
-                    throw new ImportPairsProposalGeneratorExecutionError(
-                        'provider_unavailable',
-                    );
+                    throw failure('provider_unavailable');
                 const proposal = parseDictionaryImportPairsGenerationProposal(
                     result.object,
                 );
                 if (!proposalMatchesTrustedInput(proposal, input))
-                    throw new ImportPairsProposalGeneratorExecutionError(
-                        'invalid_model_output',
-                    );
+                    throw failure('invalid_model_output');
                 const usage = result.usage;
-                if (
-                    !Number.isSafeInteger(usage?.inputTokens) ||
-                    !Number.isSafeInteger(usage?.outputTokens) ||
-                    usage!.inputTokens! < 0 ||
-                    usage!.outputTokens! < 0 ||
-                    usage!.inputTokens! > requestLimits.maxInputTokens ||
-                    usage!.outputTokens! > requestLimits.maxOutputTokens
-                )
-                    throw new ImportPairsProposalGeneratorExecutionError(
-                        'invalid_model_output',
+                let measuredUsage;
+                try {
+                    measuredUsage = readProviderTokenUsage(
+                        usage,
+                        requestLimits,
                     );
+                } catch {
+                    throw failure('invalid_model_output');
+                }
+
                 return {
                     proposal,
-                    usage: {
-                        inputTokens: usage!.inputTokens!,
-                        outputTokens: usage!.outputTokens!,
-                    },
+                    usage: measuredUsage,
                 };
             } catch (error) {
+                if (
+                    error instanceof Error &&
+                    error.name === 'AI_NoObjectGeneratedError' &&
+                    'usage' in error
+                ) {
+                    try {
+                        meteredUsage = readProviderTokenUsage(
+                            error.usage,
+                            requestLimits,
+                        );
+                    } catch {
+                        /* Invalid/missing provider meters remain unknown. */
+                    }
+                }
+                if (error instanceof CardProposalGeneratorError && meteredUsage)
+                    error.usage = meteredUsage;
+
                 if (request.signal.aborted)
                     throw (
                         request.signal.reason ??
@@ -222,9 +252,7 @@ export function createMastraImportPairsProposalGenerator(options: {
                     );
                 if (error instanceof ImportPairsProposalGeneratorExecutionError)
                     throw error;
-                throw new ImportPairsProposalGeneratorExecutionError(
-                    'invalid_model_output',
-                );
+                throw failure('invalid_model_output');
             }
         },
         readiness(signal) {

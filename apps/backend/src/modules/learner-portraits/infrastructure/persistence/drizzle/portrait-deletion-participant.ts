@@ -1,3 +1,7 @@
+import {
+    settleInterviewAction,
+    usesActionAccounting,
+} from '../../interview-action-accounting';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import { settleInterruptedInterviewCalls } from '../../interview-accounting';
@@ -8,12 +12,35 @@ import {
 import { and, eq, lte, sql } from 'drizzle-orm';
 import type { PortraitTransaction } from './drizzle-portrait-store';
 
+type PurgeAuthorization = { workerId: string; fencingToken: number };
+
+async function assertPurgeClaim(
+    tx: PortraitTransaction,
+    ownerId: string,
+    authorization: PurgeAuthorization,
+): Promise<void> {
+    await tx.execute(sql`select public.languon_assert_accounting_purge_claim(
+        ${ownerId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer)`);
+}
+
+async function recoverPurgeInterviewAction(
+    tx: PortraitTransaction,
+    ownerId: string,
+    operationId: string,
+    authorization: PurgeAuthorization,
+): Promise<void> {
+    await tx.execute(sql`select public.languon_recover_purge_interview_action(
+        ${ownerId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer,${operationId}::uuid)`);
+}
+
 /** Strip every private input immediately. Keep numerical identities until their
  * already-admitted provider call and reservation have been settled. */
 export async function clearLearnerPortraitInterview(
     tx: PortraitTransaction,
     ownerId: string,
+    authorization?: PurgeAuthorization,
 ): Promise<void> {
+    if (authorization) await assertPurgeClaim(tx, ownerId, authorization);
     await tx.execute(
         sql`update learner_portrait_interview_operations set lease_token=null where owner_id=${ownerId}::uuid and state='queued'`,
     );
@@ -27,6 +54,32 @@ export async function clearLearnerPortraitInterview(
         input='{"kind":"skip","topic":"update"}'::jsonb,
         context='{"locale":"en","approvedItems":null,"draftItems":null,"messages":[],"completedTopics":[]}'::jsonb,
         result=null where owner_id=${ownerId}::uuid`);
+    const cancelled = await tx
+        .select({
+            id: operations.id,
+            ownerId: operations.ownerId,
+            execution: operations.execution,
+            errorCode: authorization
+                ? sql<string | null>`null`
+                : operations.errorCode,
+        })
+        .from(operations)
+        .where(
+            and(
+                eq(operations.ownerId, ownerId),
+                eq(operations.state, 'cancelled'),
+            ),
+        );
+    for (const operation of cancelled) {
+        if (authorization && usesActionAccounting(operation.execution))
+            await recoverPurgeInterviewAction(
+                tx,
+                ownerId,
+                operation.id,
+                authorization,
+            );
+        else await settleInterviewAction(tx, operation, 'failure', new Date());
+    }
     await tx.execute(
         sql`delete from learner_portrait_interviews where owner_id=${ownerId}::uuid`,
     );
@@ -35,19 +88,27 @@ export async function clearLearnerPortraitInterview(
 export async function requestPortraitCancellation(
     tx: PortraitTransaction,
     ownerId: string,
+    authorization?: PurgeAuthorization,
 ): Promise<void> {
-    await recoverExpiredPortraitOperations(tx, ownerId, new Date());
-    await clearLearnerPortraitInterview(tx, ownerId);
+    await recoverExpiredPortraitOperations(
+        tx,
+        ownerId,
+        new Date(),
+        authorization,
+    );
+    await clearLearnerPortraitInterview(tx, ownerId, authorization);
 }
 export async function portraitDeletionBusy(
     tx: PortraitTransaction,
     ownerId: string,
     now = new Date(),
+    authorization?: PurgeAuthorization,
 ): Promise<boolean> {
-    await recoverExpiredPortraitOperations(tx, ownerId, now);
+    await recoverExpiredPortraitOperations(tx, ownerId, now, authorization);
     const rows =
         await tx.execute(sql`select 1 from learner_portrait_interview_operations o where o.owner_id=${ownerId}::uuid and
       (o.state in ('queued','running') or o.lease_until>${now.toISOString()}::timestamptz
+      or exists(select 1 from ai_credit_actions a where a.id=o.id and a.state='active')
       or exists(select 1 from ai_credit_reservations r where r.job_kind='portrait-interview' and r.job_id=o.id and r.state='active')
       or exists(select 1 from learner_portrait_interview_provider_calls p where p.operation_id=o.id and p.state<>'settled')) limit 1`);
     return rows.length > 0;
@@ -78,8 +139,9 @@ export async function eraseOwnerLearnerPortrait(
     tx: PortraitTransaction,
     ownerId: string,
     now: Date,
+    authorization?: PurgeAuthorization,
 ): Promise<void> {
-    if (await portraitDeletionBusy(tx, ownerId, now))
+    if (await portraitDeletionBusy(tx, ownerId, now, authorization))
         throw new Error('Portrait work is not quiescent');
     await eraseTerminalOperations(tx, ownerId, now);
     await tx.execute(
@@ -96,13 +158,18 @@ export async function recoverExpiredPortraitOperations(
     tx: PortraitTransaction,
     ownerId: string,
     now: Date,
+    authorization?: PurgeAuthorization,
 ): Promise<void> {
     await lockTextAiCapacity(tx);
-    const [owner] = await tx
+    if (authorization) await assertPurgeClaim(tx, ownerId, authorization);
+    const ownerQuery = tx
         .select({ status: usersTable.status })
         .from(usersTable)
-        .where(eq(usersTable.id, ownerId))
-        .for('update');
+        .where(eq(usersTable.id, ownerId));
+    // The checked purge claim already locks the user through its restricted seam.
+    const [owner] = authorization
+        ? await ownerQuery
+        : await ownerQuery.for('update');
     const expired = await tx
         .select({
             id: operations.id,
@@ -123,7 +190,9 @@ export async function recoverExpiredPortraitOperations(
         )
         .for('update');
     for (const row of expired) {
-        await settleInterruptedInterviewCalls(tx, row);
+        const purgeAction =
+            authorization && usesActionAccounting(row.execution);
+        if (!purgeAction) await settleInterruptedInterviewCalls(tx, row);
         const [session] = await tx
             .select({ expiresAt: interviews.expiresAt })
             .from(interviews)
@@ -150,11 +219,25 @@ export async function recoverExpiredPortraitOperations(
                     },
                 })
                 .where(eq(operations.id, row.id));
+            if (purgeAction)
+                await recoverPurgeInterviewAction(
+                    tx,
+                    ownerId,
+                    row.id,
+                    authorization,
+                );
             continue;
         }
         await tx.execute(sql`update learner_portrait_interview_operations set state='cancelled',cancel_requested=true,error_code='interrupted',lease_until=null,lease_token=null,
             fingerprint='erased',input='{"kind":"skip","topic":"update"}'::jsonb,
             context='{"locale":"en","approvedItems":null,"draftItems":null,"messages":[],"completedTopics":[]}'::jsonb,result=null
             where id=${row.id}::uuid`);
+        if (purgeAction)
+            await recoverPurgeInterviewAction(
+                tx,
+                ownerId,
+                row.id,
+                authorization,
+            );
     }
 }

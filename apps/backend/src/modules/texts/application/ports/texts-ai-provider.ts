@@ -21,6 +21,8 @@ export type TextJobResult = TextDetectionResult | TextTranslationProposal;
 export interface TextsTokenUsage {
     inputTokens: number;
     outputTokens: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
 }
 export interface TextsProviderCall {
     input: TextJobInput;

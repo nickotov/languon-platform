@@ -16,6 +16,37 @@ import {
 const at = new Date('2026-09-25T12:00:00.000Z');
 
 describe('AI credit domain', () => {
+    it.each(['limited', 'unlimited'] as const)(
+        'releases %s technical failures without inventing measured usage',
+        (policyMode) => {
+            const reservedCredits = policyMode === 'limited' ? 100n : 0n;
+            expect(
+                settleAiCreditReservation({
+                    policyMode,
+                    reservedCredits,
+                    measurement: 'technical_failure',
+                    measuredCredits: null,
+                }),
+            ).toEqual({
+                chargedCredits: 0n,
+                releasedCredits: reservedCredits,
+                measuredCredits: null,
+                measurement: 'technical_failure',
+            });
+        },
+    );
+
+    it('rejects technical failures claiming measured customer usage', () => {
+        expect(() =>
+            settleAiCreditReservation({
+                policyMode: 'limited',
+                reservedCredits: 100n,
+                measurement: 'technical_failure',
+                measuredCredits: 10n,
+            }),
+        ).toThrow(AiCreditInvalidAmountError);
+    });
+
     it('treats an absent or expired unlimited account as limited', () => {
         expect(effectiveAiCreditPolicy(null, at)).toBe('limited');
         expect(
