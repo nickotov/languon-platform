@@ -51,6 +51,7 @@ export class ConversationSourceResolver {
     constructor(
         private readonly dependencies: ConversationSourceDependencies,
     ) {}
+
     async assertActiveActor(
         tx: ConversationsTransaction,
         ownerId: string,
@@ -63,6 +64,7 @@ export class ConversationSourceResolver {
         const [actor] = lock === 'none' ? await query : await query.for(lock);
         if (actor?.status !== 'active') throw conversationUnavailable();
     }
+
     async resolve(
         tx: ConversationsTransaction,
         ownerId: string,
@@ -88,6 +90,7 @@ export class ConversationSourceResolver {
                 ownerId,
                 source.id,
             );
+
             return {
                 authority: { sourceOwnerId: ownerId },
                 snapshot: {
@@ -109,6 +112,7 @@ export class ConversationSourceResolver {
                 },
             };
         }
+
         if (source.kind === 'dictionary') {
             // Discover identity without a resource lock, then follow lifecycle
             // writers' owner-before-resource order. Only the locked re-read can
@@ -117,6 +121,7 @@ export class ConversationSourceResolver {
                 .select({ ownerId: dictionariesTable.ownerId })
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, source.id));
+
             if (!candidate) throw conversationUnavailable();
             await this.owner(tx, candidate.ownerId, lockRows);
             const dictionaryQuery = tx
@@ -126,6 +131,7 @@ export class ConversationSourceResolver {
             const [dictionary] = lockRows
                 ? await dictionaryQuery.for('share')
                 : await dictionaryQuery;
+
             if (
                 !dictionary ||
                 dictionary.ownerId !== candidate.ownerId ||
@@ -135,6 +141,7 @@ export class ConversationSourceResolver {
             const authority: SourceAuthority = {
                 sourceOwnerId: dictionary.ownerId,
             };
+
             if (dictionary.ownerId !== ownerId) {
                 const known = access.authority?.share;
                 if (
@@ -156,12 +163,16 @@ export class ConversationSourceResolver {
                     version: dictionary.shareKeyVersion!,
                 };
             }
+
             const [settings] = includeMaterial
                 ? await tx
                       .select()
                       .from(dictionarySettingsTable)
                       .where(
-                          eq(dictionarySettingsTable.dictionaryId, dictionary.id),
+                          eq(
+                              dictionarySettingsTable.dictionaryId,
+                              dictionary.id,
+                          ),
                       )
                 : [];
             const [settingsRevision] = includeMaterial
@@ -170,7 +181,10 @@ export class ConversationSourceResolver {
                       .select({ version: dictionarySettingsTable.version })
                       .from(dictionarySettingsTable)
                       .where(
-                          eq(dictionarySettingsTable.dictionaryId, dictionary.id),
+                          eq(
+                              dictionarySettingsTable.dictionaryId,
+                              dictionary.id,
+                          ),
                       );
             const terms = query
                 .toLocaleLowerCase()
@@ -202,6 +216,7 @@ export class ConversationSourceResolver {
                       .orderBy(dictionaryCardsTable.sortKey)
                       .limit(query ? 100 : 10001)
                 : [];
+
             if (!query && cards.length > 10000)
                 throw new ConversationError(
                     'source_too_large',
@@ -284,6 +299,7 @@ export class ConversationSourceResolver {
                           }
                         : {}),
                 };
+
                 return {
                     id: card.id,
                     label: card.source,
@@ -292,6 +308,7 @@ export class ConversationSourceResolver {
                     content: JSON.stringify(copiedCard),
                 };
             });
+
             if (Buffer.byteLength(JSON.stringify(material), 'utf8') > 4_000_000)
                 throw new ConversationError(
                     'source_too_large',
@@ -301,6 +318,7 @@ export class ConversationSourceResolver {
                 .update(JSON.stringify(material))
                 .digest('hex')
                 .slice(0, 16);
+
             return {
                 authority,
                 snapshot: {
@@ -314,10 +332,12 @@ export class ConversationSourceResolver {
                 },
             };
         }
+
         const [candidate] = await tx
             .select()
             .from(textsTable)
             .where(eq(textsTable.id, source.id));
+
         if (!candidate) throw conversationUnavailable();
         await this.owner(tx, candidate.ownerId, lockRows);
         const folderQuery =
@@ -339,6 +359,7 @@ export class ConversationSourceResolver {
         const [document] = lockRows
             ? await documentQuery.for('share')
             : await documentQuery;
+
         if (
             !document ||
             document.lifecycle !== 'active' ||
@@ -387,6 +408,7 @@ export class ConversationSourceResolver {
                 version: share.version,
             };
         }
+
         return {
             authority,
             snapshot: {
@@ -410,6 +432,7 @@ export class ConversationSourceResolver {
             },
         };
     }
+
     private async owner(
         tx: ConversationsTransaction,
         id: string,

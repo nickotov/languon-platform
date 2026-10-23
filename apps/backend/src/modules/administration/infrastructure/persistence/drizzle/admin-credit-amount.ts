@@ -7,9 +7,12 @@ import {
 export function adminCreditsToMilli(amount: number): bigint {
     const canonical = String(amount);
     if (canonical.startsWith('-')) return -parseCreditMilli(canonical.slice(1));
+
     return parseCreditMilli(canonical);
 }
+
 export function milliToAdminCredits(amount: bigint): number {
     if (amount < 0n) return Number(`-${formatCreditMilli(-amount)}`);
+
     return Number(formatCreditMilli(amount));
 }

@@ -11,10 +11,12 @@ export async function eraseOwnerKnowledge(
     await tx
         .delete(knowledgeNotesTable)
         .where(eq(knowledgeNotesTable.ownerId, ownerId));
+
     await tx
         .delete(knowledgeOperationReceiptsTable)
         .where(eq(knowledgeOperationReceiptsTable.ownerId, ownerId));
 }
+
 export async function hasOwnerKnowledge(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -22,5 +24,6 @@ export async function hasOwnerKnowledge(
     const rows = await tx.execute(
         sql`select 1 from knowledge_notes where owner_id=${ownerId}::uuid union all select 1 from knowledge_operation_receipts where owner_id=${ownerId}::uuid limit 1`,
     );
+
     return rows.length > 0;
 }

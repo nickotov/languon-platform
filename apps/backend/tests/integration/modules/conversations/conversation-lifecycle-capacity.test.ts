@@ -56,7 +56,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client?.end();
         });
         beforeEach(async () => {
-            await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, users cascade`;
+            // TRUNCATE skips source-row triggers; clear their projections too.
+            await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, text_ai_capacity_jobs, text_ai_capacity_queue_totals, text_ai_capacity_provider_usage, text_ai_capacity_active_totals, text_ai_capacity_settled_buckets, users cascade`;
             owner = randomUUID();
             learner = randomUUID();
             dictionary = randomUUID();
@@ -328,7 +329,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const active = await conversation(learner, dictionary);
             await expect(legacy()).rejects.toMatchObject({ code: '55000' });
             // Legacy workers may finish or cancel old work without advertising new capacity.
-            await client`update dictionary_generation_jobs set execution_state='cancelled',completed_at=${now.toISOString()} where id=${old!.id}`;
+            await client`update dictionary_generation_jobs set execution_state='cancelled',completed_at=now() where id=${old!.id}`;
             await call(active.turn, learner, 'settled');
             await client`update conversation_turns set status='succeeded' where id=${active.turn}`;
             await expect(legacy()).rejects.toMatchObject({ code: '55000' });

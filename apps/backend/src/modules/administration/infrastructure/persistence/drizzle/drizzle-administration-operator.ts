@@ -53,6 +53,7 @@ export class DrizzleAdministrationOperator {
                 activeOwners === 0
                     ? requireBootstrapTarget(target)
                     : await requireActor(transaction, input.actorEmail);
+
             if (!target || target.status !== 'active' || !target.verifiedAt) {
                 return rejection({
                     action: 'membership_granted',
@@ -66,6 +67,7 @@ export class DrizzleAdministrationOperator {
                     ...(target ? { targetUserId: target.id } : {}),
                 });
             }
+
             const existing = await activeMembership(transaction, target.id);
             if (existing) {
                 return rejection({
@@ -84,6 +86,7 @@ export class DrizzleAdministrationOperator {
                     targetUserId: target.id,
                 });
             }
+
             const membershipId = randomUUID();
             await transaction.insert(adminMembershipsTable).values({
                 grantReason: input.reason,
@@ -94,6 +97,7 @@ export class DrizzleAdministrationOperator {
                 updatedAt: input.now,
                 userId: target.id,
             });
+
             await writeMembershipAudit(transaction, {
                 action: 'membership_granted',
                 actorUserId: actor.id,
@@ -102,6 +106,7 @@ export class DrizzleAdministrationOperator {
                 reason: input.reason,
                 targetUserId: target.id,
             });
+
             return success({
                 actorEmail: actor.email.toLowerCase(),
                 email: target.email.toLowerCase(),
@@ -110,10 +115,13 @@ export class DrizzleAdministrationOperator {
                 role: 'owner' as const,
             });
         });
+
         if (result.outcome === 'rejected') {
             await writeMembershipRejectedAudit(this.database, input, result);
+
             throw result.error;
         }
+
         return result.value;
     }
 
@@ -133,6 +141,7 @@ export class DrizzleAdministrationOperator {
                     },
                 });
             }
+
             const membership = await activeMembership(transaction, target.id);
             if (!membership) {
                 return rejection({
@@ -149,6 +158,7 @@ export class DrizzleAdministrationOperator {
                     targetUserId: target.id,
                 });
             }
+
             const activeOwners = await ownerCount(transaction);
             if (activeOwners <= 1) {
                 return rejection({
@@ -165,6 +175,7 @@ export class DrizzleAdministrationOperator {
                     targetUserId: target.id,
                 });
             }
+
             await transaction
                 .update(adminMembershipsTable)
                 .set({
@@ -174,6 +185,7 @@ export class DrizzleAdministrationOperator {
                     updatedAt: input.now,
                 })
                 .where(eq(adminMembershipsTable.id, membership.id));
+
             await writeMembershipAudit(transaction, {
                 action: 'membership_revoked',
                 actorUserId: actor.id,
@@ -182,6 +194,7 @@ export class DrizzleAdministrationOperator {
                 reason: input.reason,
                 targetUserId: target.id,
             });
+
             return success({
                 actorEmail: actor.email.toLowerCase(),
                 email: target.email.toLowerCase(),
@@ -190,10 +203,13 @@ export class DrizzleAdministrationOperator {
                 role: 'owner' as const,
             });
         });
+
         if (result.outcome === 'rejected') {
             await writeMembershipRejectedAudit(this.database, input, result);
+
             throw result.error;
         }
+
         return result.value;
     }
 
@@ -216,6 +232,7 @@ export class DrizzleAdministrationOperator {
             )
             .where(isNull(adminMembershipsTable.revokedAt))
             .orderBy(adminMembershipsTable.grantedAt);
+
         return rows.map((row) => ({
             ...row,
             email: row.email.toLowerCase(),
@@ -231,6 +248,7 @@ export class DrizzleAdministrationOperator {
                 .delete(adminAuditEventsTable)
                 .where(lte(adminAuditEventsTable.expiresAt, input.now))
                 .returning({ id: adminAuditEventsTable.id });
+
             await transaction.insert(adminAuditEventsTable).values({
                 action: 'audit_pruned',
                 actorUserId: actor.id,
@@ -242,6 +260,7 @@ export class DrizzleAdministrationOperator {
                 outcome: 'success',
                 reason: input.reason,
             });
+
             return {
                 prunedAt: input.now.toISOString(),
                 removed: removed.length,
@@ -270,6 +289,7 @@ async function activeMembership(
             ),
         )
         .limit(1);
+
     return membership ?? null;
 }
 
@@ -284,6 +304,7 @@ async function ownerCount(transaction: AdministrationTransaction) {
                 eq(usersTable.status, 'active'),
             ),
         );
+
     return result?.value ?? 0;
 }
 
@@ -301,6 +322,7 @@ async function requireActor(
     ) {
         throw new AdminOperatorActorRequiredError();
     }
+
     return actor;
 }
 
@@ -328,6 +350,7 @@ async function findUserByEmail(
         .where(eq(userEmailsTable.canonicalEmail, canonical))
         .limit(1)
         .for('update');
+
     return user ?? null;
 }
 
@@ -337,6 +360,7 @@ function requireBootstrapTarget(
     if (!target || target.status !== 'active' || !target.verifiedAt) {
         throw new AdminUserNotFoundError();
     }
+
     return target;
 }
 

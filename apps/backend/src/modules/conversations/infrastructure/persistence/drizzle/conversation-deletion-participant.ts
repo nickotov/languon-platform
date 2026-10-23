@@ -27,6 +27,7 @@ function scopePredicate(scope: ConversationDeletionScope): SQL {
                   sql`,`,
               )})`
             : sql`false`;
+
     return scope.sourceIds.length
         ? sql`c.source_kind=${scope.sourceKind} and c.source_id in (${sql.join(
               scope.sourceIds.map((id) => sql`${id}::uuid`),
@@ -60,6 +61,7 @@ export async function conversationDeletionBusy(
             or exists(select 1 from ai_credit_reservations r where r.job_id=t.id and r.job_kind='conversation-turn' and r.state='active')
             or exists(select 1 from conversation_provider_calls p where p.turn_id=t.id and
                 (p.state<>'settled' or exists(select 1 from ai_credit_reservations r where r.id=p.reservation_id and r.state='active')))) limit 1`);
+
     return rows.length > 0;
 }
 
@@ -83,9 +85,11 @@ export async function eraseConversationContent(
         p.max_cost_micros_per_attempt,p.max_input_tokens_per_attempt,p.max_output_tokens_per_attempt,p.settled_at,${now.toISOString()}::timestamptz
         from conversation_provider_calls p where p.turn_id in (${turns}) and p.state='settled'
             and p.settled_at>${new Date(now.getTime() - 86_400_000).toISOString()}::timestamptz on conflict(id) do nothing`);
+
     await tx.execute(
         sql`delete from conversation_provider_calls where turn_id in (${turns})`,
     );
+
     await tx.execute(
         sql`delete from conversation_chats c where (${scopePredicate(scope)})`,
     );
@@ -103,6 +107,7 @@ export async function eraseConversationSource(
         now,
     );
 }
+
 export async function eraseOwnerConversations(
     tx: ConversationDeletionTransaction,
     ownerId: string,

@@ -46,6 +46,7 @@ export class DrizzleModelPriceParticipant {
             )
             .orderBy(desc(t.version))
             .limit(1);
+
         if (!row) {
             // Existing published revisions are immutable: readers must not
             // serialize behind a model-wide publication lock. Only legacy
@@ -53,6 +54,7 @@ export class DrizzleModelPriceParticipant {
             await this.transaction.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${input.providerId + '/' + input.modelId}, 1920424382))`,
             );
+
             [row] = await this.transaction
                 .select()
                 .from(t)
@@ -65,6 +67,7 @@ export class DrizzleModelPriceParticipant {
                 .orderBy(desc(t.version))
                 .limit(1);
         }
+
         if (!row) {
             let seed = this.seed(input);
             if (input.meter === 'text-tokens') {
@@ -83,6 +86,7 @@ export class DrizzleModelPriceParticipant {
                     )
                     .where(eq(dictionaryAiConfigurationTable.id, 'global'))
                     .limit(1);
+
                 if (
                     configuration?.snapshot.providerId === input.providerId &&
                     configuration.snapshot.modelId === input.modelId &&
@@ -98,6 +102,7 @@ export class DrizzleModelPriceParticipant {
                                 .outputCreditsPerMillionTokens,
                     };
             }
+
             await this.transaction
                 .insert(t)
                 .values({
@@ -110,6 +115,7 @@ export class DrizzleModelPriceParticipant {
                     createdBy: null,
                 })
                 .onConflictDoNothing();
+
             [row] = await this.transaction
                 .select()
                 .from(t)
@@ -122,8 +128,10 @@ export class DrizzleModelPriceParticipant {
                 .orderBy(desc(t.version))
                 .limit(1);
         }
+
         if (!row || row.meter !== input.meter)
             throw new ModelPriceUnavailableError();
+
         return {
             providerId: row.providerId,
             modelId: row.modelId,
@@ -136,6 +144,7 @@ export class DrizzleModelPriceParticipant {
             updatedAt: row.createdAt.toISOString(),
         };
     }
+
     public async list(): Promise<ModelPrice[]> {
         return Promise.all(
             [
@@ -151,6 +160,7 @@ export class DrizzleModelPriceParticipant {
             ].map((input) => this.current(input)),
         );
     }
+
     public async publish(
         input: Publish,
         actorId: string,
@@ -173,12 +183,14 @@ export class DrizzleModelPriceParticipant {
                 ),
             )
             .for('share');
+
         if (!membership || membership.role !== 'owner')
             throw new AdminAccessDeniedError();
         this.seed(input);
         await this.transaction.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${input.providerId + '/' + input.modelId}, 1920424382))`,
         );
+
         const current = await this.current(input);
         if (current.version !== input.expectedVersion)
             throw new ModelPriceConflictError();
@@ -191,6 +203,7 @@ export class DrizzleModelPriceParticipant {
                 input.cachedInputCreditsPerMillionTokens ?? null,
             provisional: input.provisional,
         };
+
         if (
             input.meter === 'speech-characters'
                 ? rates.creditsPer1000Characters === null ||
@@ -219,6 +232,7 @@ export class DrizzleModelPriceParticipant {
             createdBy: actorId,
             reason: input.reason,
         });
+
         const result = await this.current(input);
         await this.transaction.insert(adminAuditEventsTable).values({
             id: randomUUID(),
@@ -238,8 +252,10 @@ export class DrizzleModelPriceParticipant {
                 rateRevisionId: result.rateRevisionId,
             },
         });
+
         return result;
     }
+
     private seed(input: {
         providerId: string;
         modelId: string;
@@ -272,8 +288,10 @@ export class DrizzleModelPriceParticipant {
         const model = textAiModelCatalog.find(
             (m) => m.providerId === input.providerId && m.id === input.modelId,
         );
+
         if (!model || input.meter !== 'text-tokens')
             throw new ModelPriceUnavailableError('Model is not curated.');
+
         return {
             creditsPer1000Characters: null,
             minimumCredits: null,

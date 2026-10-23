@@ -882,6 +882,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
         it('scrubs every expired terminal result across multiple bounded batches', async () => {
             for (let i = 0; i < 105; i++) {
+                // Each worker lease must start from the current real clock.
+                now = new Date();
                 const job = await enqueue();
                 const claim = await store.claimNext(claimOptions, context());
                 expect(

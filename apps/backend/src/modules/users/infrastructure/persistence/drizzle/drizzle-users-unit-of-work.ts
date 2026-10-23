@@ -24,6 +24,7 @@ interface DatabaseError {
 
 function isCanonicalEmailConflict(error: unknown): boolean {
     const databaseError = error as DatabaseError;
+
     return Boolean(
         (databaseError.code === '23505' &&
             databaseError.constraint_name ===
@@ -53,6 +54,7 @@ class TransactionalUserRepository implements UserRepository {
                 updatedAt: input.user.updatedAt,
                 version: input.user.version,
             });
+
             await this.transaction.insert(userEmailsTable).values({
                 canonicalEmail: input.primaryEmail.canonicalValue,
                 createdAt: input.user.createdAt,
@@ -67,6 +69,7 @@ class TransactionalUserRepository implements UserRepository {
             if (isCanonicalEmailConflict(error)) {
                 throw new UserEmailAlreadyExistsError();
             }
+
             throw error;
         }
     }
@@ -99,11 +102,13 @@ class TransactionalUserRepository implements UserRepository {
                     ),
                 )
                 .returning({ id: usersTable.id });
+
             return updated.length === 1;
         } catch (error) {
             if (isHandleConflict(error)) {
                 throw new UserHandleAlreadyExistsError();
             }
+
             throw error;
         }
     }
@@ -111,6 +116,7 @@ class TransactionalUserRepository implements UserRepository {
 
 function isHandleConflict(error: unknown): boolean {
     const databaseError = error as DatabaseError;
+
     return Boolean(
         (databaseError.code === '23505' &&
             databaseError.constraint_name === 'users_handle_unique') ||

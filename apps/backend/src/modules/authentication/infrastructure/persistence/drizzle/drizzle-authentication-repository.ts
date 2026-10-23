@@ -227,6 +227,7 @@ export function throwMappedAuthenticationConflict(error: unknown): never {
                 throw conflict;
             }
         }
+
         candidate = databaseError.cause;
     }
 
@@ -308,6 +309,7 @@ export class DrizzleAuthenticationRepository {
         if (!row) {
             return null;
         }
+
         if (row.algorithm !== 'argon2id') {
             throw new Error('Persisted password algorithm is unsupported.');
         }

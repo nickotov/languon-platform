@@ -26,6 +26,7 @@ function copiedEntryList(scope: SentenceDeletionScope) {
         sql`,`,
     );
 }
+
 function affectedExerciseScope(scope: SentenceDeletionScope): SQL {
     if (
         scope.exerciseIds &&
@@ -49,8 +50,10 @@ function affectedExerciseScope(scope: SentenceDeletionScope): SQL {
         clauses.push(
             sql`exists(select 1 from ${exerciseEntries} e where e.exercise_id=${exercises.id} and e.entry_id in (${copiedEntryList(scope)})) or exists(select 1 from ${jobs} g join ${jobEntries} p on p.job_id=g.id where g.result_exercise_id=${exercises.id} and p.entry_id in (${copiedEntryList(scope)}))`,
         );
+
     return or(...clauses) ?? sql`false`;
 }
+
 function jobScope(scope: SentenceDeletionScope): SQL {
     if (scope.accountPurge) {
         if (
@@ -60,6 +63,7 @@ function jobScope(scope: SentenceDeletionScope): SQL {
             scope.exerciseIds?.length
         )
             throw new Error('Account purge requires complete ownership scope');
+
         return or(
             eq(jobs.learnerId, scope.learnerId),
             scope.dictionaryIds.length
@@ -67,6 +71,7 @@ function jobScope(scope: SentenceDeletionScope): SQL {
                 : undefined,
         )!;
     }
+
     const clauses: SQL[] = [];
     if (scope.dictionaryIds?.length)
         clauses.push(inArray(jobs.dictionaryId, [...scope.dictionaryIds]));
@@ -78,8 +83,10 @@ function jobScope(scope: SentenceDeletionScope): SQL {
     clauses.push(
         sql`exists(select 1 from ${exercises} where (${exercises.id}::text=${jobs.inputPayload}->>'exerciseId' or ${exercises.id}=${jobs.resultExerciseId}) and (${affectedExerciseScope(scope)}))`,
     );
+
     return or(...clauses) ?? sql`false`;
 }
+
 /** Preparation ownership includes captured words and saved manifests, not only a running child. */
 function preparationScope(scope: SentenceDeletionScope): SQL {
     const direct: SQL[] = [];
@@ -104,8 +111,10 @@ function preparationScope(scope: SentenceDeletionScope): SQL {
                 : sql``
         }
     ))`);
+
     return or(...direct)!;
 }
+
 /** Caller already holds lifecycle/capacity locks. An active reservation is busy
  * even while queued; deletion must release/settle it before removing evidence. */
 export async function sentenceDeletionBusy(
@@ -116,6 +125,7 @@ export async function sentenceDeletionBusy(
         await tx.execute(sql`select 1 from sentence_preparations p
         join ai_credit_actions a on a.id=p.current_action_id
         where a.state='active' and (${preparationScope(scope)}) limit 1`);
+
     if (activeParent) return true;
     const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
     const deletedEntries = scope.entryIds?.length
@@ -130,6 +140,7 @@ export async function sentenceDeletionBusy(
     const [preparationBusy] = await tx.execute(
         sql`select 1 from sentence_preparations p join sentence_ai_jobs j on j.id=p.active_job_id where (j.execution_state in ('queued','running') or j.provider_reservation_state='active') and exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (exists(select 1 from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid in (${selected})) ${copiedEntryCondition})) limit 1`,
     );
+
     if (preparationBusy) return true;
     const [busy] = await tx
         .select({ id: jobs.id })
@@ -145,8 +156,10 @@ export async function sentenceDeletionBusy(
             ),
         )
         .limit(1);
+
     return !!busy;
 }
+
 /** Internal lifecycle cancellation may be invoked after the owner became inactive.
  * It never calls public authorization or dispatches work. */
 export async function requestSentenceCancellation(
@@ -168,6 +181,7 @@ export async function requestSentenceCancellation(
                 inArray(jobs.executionState, ['queued', 'running']),
             ),
         );
+
     // Do not acquire another learner's wallet while the lifecycle owner is locked.
     // The coordinator closes the existing authorization after child fences settle.
     await tx.execute(sql`update sentence_preparations p set
@@ -175,6 +189,7 @@ export async function requestSentenceCancellation(
         pause_reason='access',updated_at=${scope.now.toISOString()}::timestamptz
         where (${preparationScope(scope)}) and exists(select 1 from ai_credit_actions a where a.id=p.current_action_id and a.state='active')`);
 }
+
 /** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
  * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */
 /** Remove copied preparation content without broadening selected-exercise erasure. */
@@ -186,13 +201,16 @@ async function scrubPreparationContent(
         await tx.execute(
             sql`delete from sentence_personal_visibility where learner_id=${scope.learnerId}::uuid`,
         );
+
         await tx.execute(
             sql`update sentence_personal_visibility set actor_id=null where actor_id=${scope.learnerId}::uuid`,
         );
+
         await tx.execute(
             sql`update sentence_global_visibility set actor_id=null where actor_id=${scope.learnerId}::uuid`,
         );
     }
+
     if (scope.learnerId || scope.dictionaryIds?.length) {
         const dictionaryList = scope.dictionaryIds?.length
             ? sql`dictionary_id in (${sql.join(
@@ -203,17 +221,21 @@ async function scrubPreparationContent(
         const learner = scope.learnerId
             ? sql`learner_id=${scope.learnerId}::uuid`
             : sql`false`;
+
         await tx.execute(
             sql`delete from sentence_preparations where (${learner}) or (${dictionaryList})`,
         );
+
         await tx.execute(
             sql`delete from sentence_library_snapshots where (${learner}) or (${dictionaryList})${scope.accountPurge ? sql` or actor_id=${scope.learnerId}::uuid` : sql``}`,
         );
+
         if (scope.accountPurge)
             await tx.execute(
                 sql`delete from sentence_library_receipts where (${learner}) or (${dictionaryList}) or actor_id=${scope.learnerId}::uuid`,
             );
     }
+
     const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
     const deletedEntries = scope.entryIds?.length
         ? sql`item->>'entryId' in (${sql.join(
@@ -228,10 +250,12 @@ async function scrubPreparationContent(
     await tx.execute(
         sql`update sentence_preparations p set state='paused',pause_reason='stale',active_job_id=null,updated_at=${scope.now.toISOString()}::timestamptz where exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (${relevant}))`,
     );
+
     if (scope.entryIds?.length) {
         await tx.execute(
             sql`delete from sentence_preparation_batches b where (${relevant}) and not exists(select 1 from jsonb_array_elements(b.entries) item where not (${deletedEntries}))`,
         );
+
         await tx.execute(
             sql`update sentence_preparation_batches b set entries=(select coalesce(jsonb_agg(item),'[]'::jsonb) from jsonb_array_elements(b.entries) item where not (${deletedEntries})),manifest=(select coalesce(jsonb_agg(item),'[]'::jsonb) from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid not in (${selected})) where (${relevant})`,
         );
@@ -240,6 +264,7 @@ async function scrubPreparationContent(
             sql`update sentence_preparation_batches b set manifest=(select coalesce(jsonb_agg(item),'[]'::jsonb) from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid not in (${selected})) where (${relevant})`,
         );
     }
+
     await tx.execute(
         sql`delete from sentence_library_snapshots s where exists(select 1 from jsonb_array_elements(s.items) item where (item->>'exerciseId')::uuid in (${selected}))`,
     );
@@ -297,6 +322,7 @@ export async function eraseSentenceDerivedContent(
         })
         .from(manualReviews)
         .where(or(...manualConditions) ?? sql`false`);
+
     for (const review of scope.accountPurge ? [] : erasedManuals)
         await tx
             .insert(receipts)
@@ -343,6 +369,7 @@ export async function eraseSentenceDerivedContent(
                   })
                   .from(jobs)
                   .where(inArray(jobs.id, ids));
+
         // Check jobs have no Next receipt. Retain a content-free operation tombstone
         // so deletion cannot turn an old idempotency key into a fresh paid action.
         for (const job of erasedJobs)
@@ -382,10 +409,12 @@ export async function eraseSentenceDerivedContent(
                 ),
             )
             .limit(1);
+
         if (busy) throw new Error('Derived sentence work is not quiescent');
         await archiveSentenceProviderUsage(tx, { jobIds: ids, now: scope.now });
         await tx.delete(jobs).where(inArray(jobs.id, ids));
     }
+
     if (selectedExercises.length && !scope.accountPurge)
         await tx
             .update(receipts)
@@ -413,24 +442,30 @@ export async function eraseSentenceDerivedContent(
         await tx
             .delete(attempts)
             .where(eq(attempts.learnerId, scope.learnerId));
+
         await tx
             .delete(exposures)
             .where(eq(exposures.learnerId, scope.learnerId));
+
         await tx
             .delete(coverage)
             .where(eq(coverage.learnerId, scope.learnerId));
+
         await tx
             .delete(receipts)
             .where(eq(receipts.learnerId, scope.learnerId));
     }
+
     if (scope.dictionaryIds?.length) {
         await tx
             .delete(coverage)
             .where(inArray(coverage.dictionaryId, [...scope.dictionaryIds]));
+
         await tx
             .delete(receipts)
             .where(inArray(receipts.dictionaryId, [...scope.dictionaryIds]));
     }
+
     if (scope.entryIds?.length)
         await tx
             .delete(coverage)

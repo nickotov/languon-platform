@@ -42,6 +42,7 @@ import {
     usersTable,
 } from '../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
+import { DrizzleAccountPurgeStore } from '../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
 
 import { publishTextAiWorkerObservations } from '../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import {
@@ -512,14 +513,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toBeInstanceOf(AdminUserStateConflictError);
 
+            const claimNow = new Date();
             await database
                 .update(accountDeletionRequestsTable)
                 .set({
-                    leaseDeadline: new Date(Date.now() + 60_000),
-                    leaseWorkerId: 'test-worker',
-                    state: 'running',
+                    nextAttemptAt: claimNow,
+                    purgeAt: claimNow,
+                    scheduledAt: new Date(
+                        claimNow.getTime() - 30 * 24 * 60 * 60_000,
+                    ),
                 })
                 .where(eq(accountDeletionRequestsTable.userId, targetId));
+            expect(
+                await new DrizzleAccountPurgeStore(database).claimDue({
+                    now: claimNow,
+                    workerId: 'test-worker',
+                }),
+            ).toMatchObject({ userId: targetId, fencingToken: 1 });
             await expect(
                 store.cancelUserDeletion(
                     mutation(targetId, 2, 'Attempt after purge worker claim'),

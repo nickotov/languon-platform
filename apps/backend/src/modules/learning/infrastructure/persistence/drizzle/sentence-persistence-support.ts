@@ -40,8 +40,10 @@ export type SentenceTransaction = Parameters<
 export type SentenceJobRow = typeof jobs.$inferSelect;
 export function sentenceLearner(access: LearningAccess): string {
     if (!access.learnerId) throw new LearningAuthenticationRequiredError();
+
     return access.learnerId;
 }
+
 export async function authorizeSentence(
     tx: SentenceTransaction,
     access: LearningAccess,
@@ -63,6 +65,7 @@ export async function authorizeSentence(
                     : eq(dictionariesTable.shareLocator, access.shareId),
             )
             .limit(1);
+
         if (!candidate) throw new SentenceUnavailableError();
         const ids = [...new Set([learnerId, candidate.ownerId])].sort();
         await tx
@@ -72,14 +75,17 @@ export async function authorizeSentence(
             .orderBy(asc(usersTable.id))
             .for('update');
     }
+
     try {
         return await authorizeLearningDictionary(tx, access);
     } catch (error) {
         if (error instanceof DictionaryNotFoundError)
             throw new SentenceUnavailableError();
+
         throw error;
     }
 }
+
 export async function lockSentenceActorBatch(
     tx: SentenceTransaction,
     rows: readonly { learnerId: string; dictionaryId: string }[],
@@ -99,6 +105,7 @@ export async function lockSentenceActorBatch(
             ...owners.map((r) => r.id),
         ]),
     ].sort();
+
     await tx
         .select({ id: usersTable.id })
         .from(usersTable)
@@ -106,11 +113,13 @@ export async function lockSentenceActorBatch(
         .orderBy(asc(usersTable.id))
         .for('update');
 }
+
 export async function lockSentenceLearner(tx: SentenceTransaction, id: string) {
     await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${`sentence:${id}`},0))`,
     );
 }
+
 export async function sentenceCandidates(
     tx: SentenceTransaction,
     dictionaryId: string,
@@ -134,6 +143,7 @@ export async function sentenceCandidates(
     const selected = new Set(
         scope.type === 'manual' ? scope.entryIds : all.map((c) => c.id),
     );
+
     if (
         scope.type === 'manual' &&
         scope.entryIds.some((id) => !all.some((c) => c.id === id))
@@ -156,6 +166,7 @@ export async function sentenceCandidates(
                 eq(coverage.direction, direction),
             ),
         );
+
     return {
         skippedCount: [...selected].length - eligible.length,
         candidates: eligible.map((c) => ({
@@ -175,12 +186,14 @@ export async function sentenceCandidates(
         })),
     };
 }
+
 export async function sentenceExerciseEntries(
     tx: SentenceTransaction,
     exerciseId: string,
 ) {
     return tx.select().from(entries).where(eq(entries.exerciseId, exerciseId));
 }
+
 export async function isSentenceCurrent(
     tx: SentenceTransaction,
     exerciseId: string,
@@ -201,6 +214,7 @@ export async function isSentenceCurrent(
                 linked.map((e) => e.entryId),
             ),
         );
+
     return linked.every((e) =>
         current.some(
             (c) =>
@@ -211,6 +225,7 @@ export async function isSentenceCurrent(
         ),
     );
 }
+
 export async function readableExercise(
     tx: SentenceTransaction,
     id: string,
@@ -224,14 +239,17 @@ export async function readableExercise(
         .where(
             and(eq(exercises.id, id), eq(exercises.dictionaryId, dictionaryId)),
         );
+
     if (
         !exercise ||
         (!exercise.shared && exercise.creatorId !== learnerId) ||
         (current && !(await isSentenceCurrent(tx, id)))
     )
         throw new SentenceUnavailableError();
+
     return exercise;
 }
+
 export async function exposeSentence(
     tx: SentenceTransaction,
     learnerId: string,
@@ -248,6 +266,7 @@ export async function exposeSentence(
         })
         .onConflictDoNothing()
         .returning();
+
     if (!inserted.length) return;
     const linked = await sentenceExerciseEntries(tx, exercise.id);
     for (const entry of linked)
@@ -271,6 +290,7 @@ export async function exposeSentence(
                 set: { exposureCount: sql`${coverage.exposureCount}+1` },
             });
 }
+
 export async function presentSentenceAttempt(
     tx: SentenceTransaction,
     row: typeof attempts.$inferSelect,
@@ -279,7 +299,9 @@ export async function presentSentenceAttempt(
         .select()
         .from(exercises)
         .where(eq(exercises.id, row.exerciseId));
+
     if (!exercise) throw new SentenceUnavailableError();
+
     return {
         id: row.id,
         exercise: exercise.publicContent,
@@ -298,6 +320,7 @@ export async function presentSentenceAttempt(
         createdAt: row.createdAt.toISOString(),
     };
 }
+
 export async function presentSentenceJob(
     tx: SentenceTransaction,
     row: SentenceJobRow,
@@ -309,6 +332,7 @@ export async function presentSentenceJob(
                 .select()
                 .from(exercises)
                 .where(eq(exercises.id, row.resultExerciseId));
+
             if (exercise)
                 result = { kind: 'exercise', exercise: exercise.publicContent };
         } else if (row.resultAttemptId) {
@@ -316,18 +340,22 @@ export async function presentSentenceJob(
                 .select()
                 .from(attempts)
                 .where(eq(attempts.id, row.resultAttemptId));
+
             if (attempt)
                 result = {
                     kind: 'attempt',
                     attempt: await presentSentenceAttempt(tx, attempt),
                 };
         }
+
         if (!result) throw new SentenceUnavailableError();
     }
+
     const actionId = usesLegacyAction(row.selectedExecutionSnapshot)
         ? (row.selectedExecutionSnapshot.actionParentId ?? row.id)
         : row.id;
     const billing = await readActionBilling(tx, actionId, row.learnerId);
+
     return {
         ...(billing ? { billing } : {}),
         id: row.id,
@@ -355,6 +383,7 @@ export async function presentSentenceManualReview(
         row.dictionaryId,
         row.learnerId,
     );
+
     return {
         id: row.id,
         exercise: exercise.publicContent,

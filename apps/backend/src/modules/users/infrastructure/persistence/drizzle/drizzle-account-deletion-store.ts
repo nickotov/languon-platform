@@ -46,15 +46,18 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                         ')',
                 ),
             );
+
             await transaction.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${input.userId}, 76021941))`,
             );
+
             const [request] = await transaction
                 .select({ state: accountDeletionRequestsTable.state })
                 .from(accountDeletionRequestsTable)
                 .where(eq(accountDeletionRequestsTable.userId, input.userId))
                 .limit(1)
                 .for('update');
+
             if (request && request.state !== 'cancelled') {
                 throw new AccountDeletionConflictError();
             }
@@ -77,6 +80,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 )
                 .limit(1)
                 .for('update');
+
             if (!session) throw new RecentAuthenticationRequiredError();
 
             const [user] = await transaction
@@ -88,9 +92,11 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 .where(eq(usersTable.id, input.userId))
                 .limit(1)
                 .for('update');
+
             if (!user || user.status !== 'active') {
                 throw new AccountDeletionConflictError();
             }
+
             const [membership] = await transaction
                 .select({ id: adminMembershipsTable.id })
                 .from(adminMembershipsTable)
@@ -101,6 +107,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                     ),
                 )
                 .limit(1);
+
             if (membership)
                 throw new AccountDeletionOwnerTransferRequiredError();
 
@@ -120,6 +127,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
             ) {
                 throw new RecentAuthenticationRequiredError();
             }
+
             const purgeAt = new Date(
                 operationTime.getTime() + 30 * 24 * 60 * 60_000,
             );
@@ -141,6 +149,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                     ),
                 )
                 .returning({ version: usersTable.version });
+
             if (!changed) throw new AccountDeletionConflictError();
 
             const scheduleValues = {
@@ -154,6 +163,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 state: 'pending' as const,
                 updatedAt: operationTime,
             };
+
             if (request) {
                 await transaction
                     .update(accountDeletionRequestsTable)
@@ -167,6 +177,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                     userId: input.userId,
                 });
             }
+
             await transaction
                 .update(authSessionsTable)
                 .set({
@@ -180,6 +191,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                         isNull(authSessionsTable.revokedAt),
                     ),
                 );
+
             // Unlisted links have no bearer session. Revoke their locators in the
             // same commit so shared readers lose access immediately too.
             await transaction
@@ -194,6 +206,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                     version: sql`${dictionariesTable.version} + 1`,
                 })
                 .where(eq(dictionariesTable.ownerId, input.userId));
+
             await transaction
                 .delete(knowledgeSharesTable)
                 .where(
@@ -207,6 +220,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                             ),
                     ),
                 );
+
             await transaction.insert(authSecurityEventsTable).values({
                 correlationId: randomUUID(),
                 eventType: 'auth.account_deletion_scheduled',
@@ -220,6 +234,7 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 sessionId: input.sessionId,
                 userId: input.userId,
             });
+
             return {
                 purgeAt,
                 scheduledAt: operationTime,

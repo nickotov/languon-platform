@@ -9,6 +9,7 @@ export function dictionaryActionInputOverhead(payload: unknown): number {
         Array.isArray(payload.rows)
             ? payload.rows.length
             : 0;
+
     return (
         Math.max(
             1,

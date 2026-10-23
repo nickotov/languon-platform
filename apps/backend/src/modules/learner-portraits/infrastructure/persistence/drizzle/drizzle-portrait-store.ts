@@ -30,8 +30,10 @@ export async function lockPortraitOwner(
         .from(usersTable)
         .where(eq(usersTable.id, userId))
         .for('update');
+
     if (owner?.status !== 'active') throw new PortraitUserUnavailableError();
 }
+
 export async function readPortraitState(
     tx: PortraitTransaction,
     userId: string,
@@ -40,8 +42,10 @@ export async function readPortraitState(
         .select({ state: learnerPortraitsTable.state })
         .from(learnerPortraitsTable)
         .where(eq(learnerPortraitsTable.ownerId, userId));
+
     return row ? PortraitStateSchema.parse(row.state) : emptyPortraitState();
 }
+
 export async function savePortraitState(
     tx: PortraitTransaction,
     userId: string,
@@ -57,11 +61,13 @@ export async function savePortraitState(
         draftExpiresAt: state.draft ? new Date(state.draft.expiresAt) : null,
         updatedAt: at,
     };
+
     await tx.insert(learnerPortraitsTable).values(record).onConflictDoUpdate({
         target: learnerPortraitsTable.ownerId,
         set: record,
     });
 }
+
 export class DrizzlePortraitStore implements PortraitStore {
     constructor(private readonly database: PortraitDatabase) {}
     run<T>(
@@ -70,6 +76,7 @@ export class DrizzlePortraitStore implements PortraitStore {
     ): Promise<T> {
         return this.database.transaction(async (tx) => {
             await lockPortraitOwner(tx, userId);
+
             return work({
                 read: () => readPortraitState(tx, userId),
                 save: (state, at) => savePortraitState(tx, userId, state, at),
@@ -103,6 +110,7 @@ export async function readApprovedPortraitForConversation(
     ownerId: string,
 ): Promise<{ enabled: boolean; portrait: PortraitState['approved'] }> {
     const state = await readPortraitState(tx, ownerId);
+
     return {
         enabled: state.useEnabled && Boolean(state.approved),
         portrait: state.approved,

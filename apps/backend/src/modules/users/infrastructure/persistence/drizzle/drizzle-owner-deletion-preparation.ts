@@ -26,6 +26,7 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 76021941))`,
             );
+
             await requestPortraitCancellation(tx, userId);
             await requestTextsCancellation(tx, userId, new Date());
             await requestConversationCancellation(
@@ -33,10 +34,12 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
                 { ownerId: userId },
                 new Date(),
             );
+
             const ownedDictionaries = await tx
                 .select({ id: dictionariesTable.id })
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.ownerId, userId));
+
             await requestSentenceCancellation(tx, {
                 accountPurge: true,
                 learnerId: userId,
@@ -46,6 +49,7 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
                 now: new Date(),
             });
         });
+
         await this.database
             .update(dictionaryGenerationJobsTable)
             .set({

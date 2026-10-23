@@ -36,6 +36,7 @@ export async function resolveSelectionSource(
             jobId: source.jobId,
             now,
         });
+
         return {
             ...proposal,
             sourceOwnerId: ownerId,
@@ -46,6 +47,7 @@ export async function resolveSelectionSource(
             },
         };
     }
+
     let share;
     if (source.kind === 'shared-text') {
         if (!shareKey) throw new TextSelectionError('not_found');
@@ -54,9 +56,11 @@ export async function resolveSelectionSource(
             .from(textSharesTable)
             .where(eq(textSharesTable.locator, source.shareId))
             .limit(1);
+
         if (!row) throw new TextSelectionError('not_found');
         share = { kind: row.kind, locator: source.shareId, key: shareKey };
     }
+
     const result = await resolveTextSource(
         tx,
         {
@@ -67,8 +71,10 @@ export async function resolveSelectionSource(
         },
         options.verifyShare,
     );
+
     if (!result.document.alignment)
         throw new TextSelectionError('stale_content');
+
     return {
         sourceOwnerId: result.sourceOwnerId,
         alignment: result.document.alignment,
@@ -77,6 +83,7 @@ export async function resolveSelectionSource(
         authority: { kind: 'text', ...result.authority },
     };
 }
+
 export async function assertSelectionSource(
     tx: SelectionTransaction,
     options: SelectionSourceOptions,

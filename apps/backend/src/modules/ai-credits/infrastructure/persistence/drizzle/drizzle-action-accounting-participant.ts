@@ -29,11 +29,13 @@ export class DrizzleActionAccountingParticipant {
             ownerId,
         );
     }
+
     private async lock(ownerId: string) {
         await this.tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${ownerId}, 1920424381))`,
         );
     }
+
     async reserve(input: {
         id: string;
         ownerId: string;
@@ -61,6 +63,7 @@ export class DrizzleActionAccountingParticipant {
             .from(actions)
             .where(eq(actions.id, input.id))
             .for('update');
+
         if (previous) {
             if (
                 previous.ownerId !== input.ownerId ||
@@ -72,8 +75,10 @@ export class DrizzleActionAccountingParticipant {
                 JSON.stringify(previous.tariff) !== JSON.stringify(input.tariff)
             )
                 throw new Error('Conflicting action admission identity.');
+
             return previous;
         }
+
         if (input.operatorMaximumMicros === undefined)
             throw new OperatorBudgetUnavailableError(
                 'Operator execution allowance is required.',
@@ -89,6 +94,7 @@ export class DrizzleActionAccountingParticipant {
                 ).settings()),
             at: input.at,
         });
+
         const grants =
             input.funding === 'customer'
                 ? await this.tx
@@ -132,6 +138,7 @@ export class DrizzleActionAccountingParticipant {
             input.tariff.cachedInputCreditsPerMillionTokens ??
                 input.tariff.inputCreditsPerMillionTokens,
         ].every((rate) => parseCreditMilli(rate) === 0n);
+
         if (input.funding === 'customer' && held <= 0n && !zeroTariff)
             throw new AiCreditInsufficientBalanceError();
         const [action] = await this.tx
@@ -158,13 +165,16 @@ export class DrizzleActionAccountingParticipant {
                 remaining < grant.remainingCredits
                     ? remaining
                     : grant.remainingCredits;
+
             await this.tx.insert(allocations).values({
                 actionId: input.id,
                 grantId: grant.grantId,
                 allocatedMilli: allocated,
             });
+
             remaining -= allocated;
         }
+
         await this.tx.insert(history).values({
             id: randomUUID(),
             ownerId: input.ownerId,
@@ -172,17 +182,22 @@ export class DrizzleActionAccountingParticipant {
             kind: 'reservation',
             createdAt: input.at,
         });
+
         return action!;
     }
+
     async read(actionId: string, ownerId: string) {
         const [action] = await this.tx
             .select()
             .from(actions)
             .where(and(eq(actions.id, actionId), eq(actions.ownerId, ownerId)))
             .for('update');
+
         if (!action) throw new Error('Admitted action is missing.');
+
         return action;
     }
+
     async admitAttempt(input: {
         actionId: string;
         ownerId: string;
@@ -204,6 +219,7 @@ export class DrizzleActionAccountingParticipant {
             .select({ ownerId: actions.ownerId })
             .from(actions)
             .where(eq(actions.id, input.actionId));
+
         if (!admission || admission.ownerId !== input.ownerId)
             throw new Error('Admitted action is missing.');
         const witness = input.executionWitness;
@@ -242,16 +258,21 @@ export class DrizzleActionAccountingParticipant {
                 )
                     throw new OperatorBudgetUnavailableError(cause.message);
             }
+
             throw error;
         }
+
         const [attempt] = await this.tx
             .select()
             .from(attempts)
             .where(eq(attempts.id, input.callId));
+
         if (!attempt)
             throw new Error('Provider dispatch authorization is missing.');
+
         return attempt;
     }
+
     async recordAttempt(input: {
         actionId: string;
         ownerId: string;
@@ -278,6 +299,7 @@ export class DrizzleActionAccountingParticipant {
                 ),
             )
             .for('update');
+
         if (!attempt) throw new Error('Provider attempt is missing.');
         if (action.state !== 'active' && attempt.state !== 'settled')
             throw new Error('Action is already terminal.');
@@ -295,6 +317,7 @@ export class DrizzleActionAccountingParticipant {
                 (value) => Number.isSafeInteger(value) && value >= 0,
             ) &&
             cacheRead + cacheWrite <= input.usage.inputTokens;
+
         await this.tx.execute(sql`select languon_settle_text_provider_attempt(
             ${attempt.id}::uuid, ${Boolean(input.successful && valid)},
             ${valid ? input.usage!.inputTokens : null}::integer,
@@ -302,6 +325,7 @@ export class DrizzleActionAccountingParticipant {
             ${valid ? cacheRead : null}::integer, ${valid ? cacheWrite : null}::integer,
             ${input.at.toISOString()}::timestamptz)`);
     }
+
     async settle(input: {
         actionId: string;
         ownerId: string;
@@ -312,6 +336,7 @@ export class DrizzleActionAccountingParticipant {
         await this.read(input.actionId, input.ownerId);
         await this.tx.execute(sql`select languon_settle_credit_action(
             ${input.actionId}::uuid, ${input.outcome}, ${input.at.toISOString()}::timestamptz)`);
+
         return this.read(input.actionId, input.ownerId);
     }
 }

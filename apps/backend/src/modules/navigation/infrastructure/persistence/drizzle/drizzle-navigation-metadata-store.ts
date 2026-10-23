@@ -24,6 +24,7 @@ export class DrizzleNavigationMetadataStore implements NavigationMetadataStore {
                 .from(usersTable)
                 .where(eq(usersTable.id, ownerId))
                 .for('share');
+
             if (owner?.status !== 'active')
                 throw new NavigationError(
                     'resource_not_found',
@@ -35,6 +36,7 @@ export class DrizzleNavigationMetadataStore implements NavigationMetadataStore {
                       lastOpenedAt: sql`greatest(${navigationResourcesTable.lastOpenedAt}, ${mutation.openedAt.toISOString()}::timestamptz)`,
                   }
                 : { pinnedAt };
+
             await tx
                 .insert(navigationResourcesTable)
                 .values({

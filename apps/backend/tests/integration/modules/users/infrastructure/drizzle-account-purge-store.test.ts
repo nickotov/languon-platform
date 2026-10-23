@@ -164,15 +164,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await store.claimDue({ now, workerId: 'worker-b' }),
             ).toBeNull();
             await store.retry({ ...claim!, now, workerId: 'worker-a' });
+            expect(
+                await store.claimDue({ now: new Date(), workerId: 'worker-b' }),
+            ).toBeNull();
+            // Simulate elapsed backoff in persisted due state, rather than
+            // bypassing the database's real-clock claim guard with a future now.
+            const retryNow = new Date();
+            await database
+                .update(accountDeletionRequestsTable)
+                .set({ nextAttemptAt: new Date(retryNow.getTime() - 1) })
+                .where(eq(accountDeletionRequestsTable.userId, userId));
             const next = await store.claimDue({
-                now: new Date(now.getTime() + 5 * 60_000),
+                now: retryNow,
                 workerId: 'worker-b',
             });
             expect(next?.fencingToken).toBe(2);
             expect(
                 await store.finish({
                     ...claim!,
-                    now: new Date(now.getTime() + 5 * 60_000),
+                    now: retryNow,
                     workerId: 'worker-a',
                 }),
             ).toBe(false);

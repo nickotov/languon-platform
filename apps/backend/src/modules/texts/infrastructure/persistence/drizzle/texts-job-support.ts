@@ -31,6 +31,7 @@ export function exposeTextsJob(job: TextsJobRow) {
         completedAt: job.completedAt?.toISOString() ?? null,
     });
 }
+
 export async function authorizeTextsJob(
     tx: TextsTransaction,
     input: {
@@ -45,6 +46,7 @@ export async function authorizeTextsJob(
         .from(usersTable)
         .where(eq(usersTable.id, input.ownerId))
         .for('share');
+
     if (!owner || owner.status !== 'active')
         throw new TextsAiError('access_revoked');
     const [folder] = input.folderId
@@ -59,6 +61,7 @@ export async function authorizeTextsJob(
               )
               .for('share')
         : [];
+
     if (input.folderId && (!folder || folder.lifecycle !== 'active'))
         throw new TextsAiError('folder_not_found');
     if (input.textId) {
@@ -75,12 +78,14 @@ export async function authorizeTextsJob(
                 ),
             )
             .for('share');
+
         if (!text || text.lifecycle !== 'active')
             throw new TextsAiError('text_not_found');
         if (text.version !== input.expectedTextVersion)
             throw new TextsAiError('version_conflict');
     }
 }
+
 export async function loadTextTranslationProposal(
     tx: TextsTransaction,
     input: {
@@ -97,6 +102,7 @@ export async function loadTextTranslationProposal(
         .from(jobs)
         .where(and(eq(jobs.id, input.jobId), eq(jobs.ownerId, input.ownerId)))
         .for('update');
+
     if (!job) throw new TextsAiError('generation_job_not_found');
     if (job.expiresAt <= (input.now ?? new Date()))
         throw new TextsAiError('generation_proposal_expired');
@@ -121,8 +127,10 @@ export async function loadTextTranslationProposal(
         .update(jobs)
         .set({ appliedTextId: input.textId })
         .where(eq(jobs.id, job.id));
+
     return proposal;
 }
+
 /** Read-only proposal authority seam for dictionary selection; call again before commit. */
 export async function resolveTextTranslationProposal(
     tx: TextsTransaction,
@@ -132,6 +140,7 @@ export async function resolveTextTranslationProposal(
         .select()
         .from(jobs)
         .where(and(eq(jobs.id, input.jobId), eq(jobs.ownerId, input.ownerId)));
+
     if (!candidate) throw new TextsAiError('generation_job_not_found');
     await authorizeTextsJob(tx, candidate);
     const [job] = await tx
@@ -139,6 +148,7 @@ export async function resolveTextTranslationProposal(
         .from(jobs)
         .where(eq(jobs.id, input.jobId))
         .for('share');
+
     if (!job || job.expiresAt <= input.now)
         throw new TextsAiError('generation_proposal_expired');
     if (
@@ -149,5 +159,6 @@ export async function resolveTextTranslationProposal(
         job.appliedTextId
     )
         throw new TextsAiError('generation_not_reviewable');
+
     return TextTranslationProposalSchema.parse(job.resultPayload);
 }

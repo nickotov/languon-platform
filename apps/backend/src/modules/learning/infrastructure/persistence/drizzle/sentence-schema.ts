@@ -42,6 +42,7 @@ const dictionary = () =>
     uuid('dictionary_id')
         .notNull()
         .references(() => dictionariesTable.id, { onDelete: 'cascade' });
+
 export const sentenceExercisesTable = pgTable(
     'sentence_exercises',
     {

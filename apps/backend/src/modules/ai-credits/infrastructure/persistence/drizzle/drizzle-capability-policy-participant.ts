@@ -28,6 +28,7 @@ export class DrizzleCapabilityPolicyParticipant {
             .where(eq(policies.capability, capability))
             .orderBy(desc(policies.version))
             .limit(1);
+
         return row
             ? {
                   capability: row.capability,
@@ -38,6 +39,7 @@ export class DrizzleCapabilityPolicyParticipant {
               }
             : initialCapabilityPolicy(capability);
     }
+
     async pinAction(input: {
         jobId: string;
         jobKind: AiCreditJobKind;
@@ -49,17 +51,21 @@ export class DrizzleCapabilityPolicyParticipant {
             .select()
             .from(actionChargingPoliciesTable)
             .where(eq(actionChargingPoliciesTable.jobId, input.jobId));
+
         if (existing) {
             if (
                 existing.ownerId !== input.ownerId ||
                 existing.jobKind !== input.jobKind
             )
                 throw new CapabilityPolicyConflictError();
+
             return existing.policy;
         }
+
         const policy =
             input.policy ??
             (await this.current(capabilityForJob(input.jobKind)));
+
         if (policy.capability !== capabilityForJob(input.jobKind))
             throw new CapabilityPolicyConflictError();
         await this.tx
@@ -72,24 +78,29 @@ export class DrizzleCapabilityPolicyParticipant {
                 createdAt: input.at,
             })
             .onConflictDoNothing();
+
         const [pinned] = await this.tx
             .select()
             .from(actionChargingPoliciesTable)
             .where(eq(actionChargingPoliciesTable.jobId, input.jobId));
+
         if (
             !pinned ||
             pinned.ownerId !== input.ownerId ||
             pinned.jobKind !== input.jobKind
         )
             throw new CapabilityPolicyConflictError();
+
         return pinned.policy;
     }
+
     async settings(): Promise<z.infer<typeof AiAccountingSettingsSchema>> {
         const [row] = await this.tx
             .select()
             .from(aiAccountingSettingsRevisionsTable)
             .orderBy(desc(aiAccountingSettingsRevisionsTable.version))
             .limit(1);
+
         return AiAccountingSettingsSchema.parse(
             row
                 ? {
@@ -105,6 +116,7 @@ export class DrizzleCapabilityPolicyParticipant {
                 : { version: 0, defaultMaxCreditsPerAction: null },
         );
     }
+
     async publishSettings(
         raw: z.input<typeof AiAccountingSettingsPublishSchema>,
         actorId: string,
@@ -127,10 +139,12 @@ export class DrizzleCapabilityPolicyParticipant {
                 ),
             )
             .for('share');
+
         if (membership?.role !== 'owner') throw new AdminAccessDeniedError();
         await this.tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended('ai-accounting-settings', 1920424383))`,
         );
+
         const before = await this.settings();
         if (before.version !== input.expectedVersion)
             throw new CapabilityPolicyConflictError();
@@ -146,6 +160,7 @@ export class DrizzleCapabilityPolicyParticipant {
             createdBy: actorId,
             reason: input.reason,
         });
+
         const result = await this.settings();
         await this.tx.insert(adminAuditEventsTable).values({
             id: randomUUID(),
@@ -166,8 +181,10 @@ export class DrizzleCapabilityPolicyParticipant {
                 maxProviderCostUsdPerDay: result.maxProviderCostUsdPerDay,
             },
         });
+
         return result;
     }
+
     async list() {
         return Promise.all(
             AiCapabilitySchema.options.map((capability) =>
@@ -175,6 +192,7 @@ export class DrizzleCapabilityPolicyParticipant {
             ),
         );
     }
+
     async publish(
         raw: z.infer<typeof CapabilityPolicyPublishSchema>,
         actorId: string,
@@ -197,10 +215,12 @@ export class DrizzleCapabilityPolicyParticipant {
                 ),
             )
             .for('share');
+
         if (membership?.role !== 'owner') throw new AdminAccessDeniedError();
         await this.tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${input.capability}, 1920424383))`,
         );
+
         const before = await this.current(input.capability);
         if (before.version !== input.expectedVersion)
             throw new CapabilityPolicyConflictError();
@@ -213,6 +233,7 @@ export class DrizzleCapabilityPolicyParticipant {
             createdBy: actorId,
             reason: input.reason,
         });
+
         const result = await this.current(input.capability);
         await this.tx.insert(adminAuditEventsTable).values({
             id: randomUUID(),
@@ -231,6 +252,7 @@ export class DrizzleCapabilityPolicyParticipant {
                 revisionId: result.revisionId,
             },
         });
+
         return result;
     }
 }

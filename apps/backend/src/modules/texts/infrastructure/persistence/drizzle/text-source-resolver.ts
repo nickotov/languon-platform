@@ -20,12 +20,14 @@ export async function lockTextSource(
         .select({ folderId: textsTable.folderId, ownerId: textsTable.ownerId })
         .from(textsTable)
         .where(eq(textsTable.id, textId));
+
     if (!candidate) throw textNotFound();
     const [owner] = await tx
         .select({ status: usersTable.status })
         .from(usersTable)
         .where(eq(usersTable.id, candidate.ownerId))
         .for('share');
+
     if (owner?.status !== 'active') throw textNotFound();
     const [folder] = candidate.folderId
         ? await tx
@@ -39,6 +41,7 @@ export async function lockTextSource(
         .from(textsTable)
         .where(eq(textsTable.id, textId))
         .for('update');
+
     if (
         !text ||
         (candidate.folderId !== null &&
@@ -53,8 +56,10 @@ export async function lockTextSource(
             'version_conflict',
             'The text moved. Reload it and try again.',
         );
+
     return { folder, text };
 }
+
 export async function resolveTextSource(
     tx: TextsContentTransaction,
     input: {
@@ -71,6 +76,7 @@ export async function resolveTextSource(
         textId: text.id,
         version: text.version,
     };
+
     if (text.ownerId !== input.actorId) {
         if (!input.share || text.status === 'draft') throw textNotFound();
         const [share] = await tx
@@ -83,6 +89,7 @@ export async function resolveTextSource(
                 ),
             )
             .for('update');
+
         if (
             !share ||
             share.ownerId !== text.ownerId ||
@@ -97,17 +104,20 @@ export async function resolveTextSource(
             version: share.version,
         };
     }
+
     if (text.version !== input.version)
         throw new TextDomainError(
             'version_conflict',
             'The text changed. Reload it and try again.',
         );
+
     return {
         document: textDocument(text),
         authority,
         sourceOwnerId: text.ownerId,
     };
 }
+
 export async function assertTextSourceAuthority(
     tx: TextsContentTransaction,
     authority: TextSourceAuthority,
@@ -119,6 +129,7 @@ export async function assertTextSourceAuthority(
             .from(textSharesTable)
             .where(eq(textSharesTable.id, authority.share.id))
             .for('update');
+
         if (
             !share ||
             text.status === 'draft' ||
@@ -135,5 +146,6 @@ export async function assertTextSourceAuthority(
             'version_conflict',
             'The text changed. Select the phrase again.',
         );
+
     return textDocument(text);
 }

@@ -121,6 +121,8 @@ run('dictionary document persistence', () => {
         await database.delete(dictionaryGenerationJobsTable);
         await database.delete(configuration);
         await database.delete(revisions);
+        // Worker fences compare leases to the real database clock.
+        instantOrigin = Date.now();
         // Each case gets a distinct owner; retain prior owners' immutable wallet facts.
         ownerId = randomUUID();
         await database.insert(usersTable).values({

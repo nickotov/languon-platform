@@ -23,6 +23,7 @@ import { dictionaryAiConfigurationRevisionsTable } from '../../../../text-ai/inf
 import { textFoldersTable, textsTable } from './schema';
 const date = (name: string) =>
     timestamp(name, { withTimezone: true, mode: 'date' });
+
 export const textsAiJobsTable = pgTable(
     'texts_ai_jobs',
     {

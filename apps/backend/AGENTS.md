@@ -21,6 +21,32 @@ interface/infrastructure -> application -> domain
 Do not query PostgreSQL or Redis from domain or application code. Do not expose
 database rows, SDK types, or Hono contexts across layer boundaries.
 
+## Persistence readability
+
+When adding or changing module Drizzle persistence implementations:
+
+- Keep each handwritten implementation file within 500 nonblank, noncomment
+  lines. The authoritative size and spacing rules are in
+  [`scripts/eslint-persistence-readability.mjs`](../../scripts/eslint-persistence-readability.mjs),
+  enforced by the normal ESLint commands. Declarative `schema.ts` files and
+  tests are excluded from this implementation-size policy.
+- Extract cohesive operations or responsibilities into clearly named internal
+  modules before reaching the limit. Keep the public store interface stable.
+  Use explicit typed dependencies and the existing transaction when extracting
+  persistence operations. Keep related queries and invariants together.
+- Separate validation, reads, decisions, writes and result construction with
+  blank lines where the logical stage changes. Separate methods visibly. Use
+  named intermediate values when nested expressions obscure intent, then run
+  ESLint and Prettier on the affected files.
+- Preserve transaction boundaries, lock ordering, query behavior, authorization,
+  idempotency, cancellation and settlement semantics during extraction. Verify
+  affected repository behavior against disposable infrastructure.
+- Do not compress code, remove useful whitespace, create numbered fragments,
+  introduce inheritance chains, or move unrelated logic into generic helper
+  files to satisfy the limit. A temporary exception requires a specific
+  rationale in the active work record and an exact, reviewed numeric allowance
+  in lint configuration; never disable the rule for an entire directory.
+
 ## API and validation
 
 - Validate path, query, header, body, environment, event, and external API data

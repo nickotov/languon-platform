@@ -15,6 +15,7 @@ import { dictionariesTable } from '../../../../dictionaries/infrastructure/persi
 import { sentenceExercisesTable } from './sentence-schema';
 const date = (name: string) =>
     timestamp(name, { withTimezone: true, mode: 'date' });
+
 export const sentencePersonalVisibilityTable = pgTable(
     'sentence_personal_visibility',
     {

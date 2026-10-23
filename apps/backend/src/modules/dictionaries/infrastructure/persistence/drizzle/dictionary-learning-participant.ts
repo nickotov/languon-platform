@@ -68,6 +68,7 @@ export async function authorizeLearningDictionary(
         .from(dictionariesTable)
         .where(condition)
         .limit(1);
+
     if (!candidate) throw new DictionaryNotFoundError();
     // Users precede dictionaries, matching edit/account-purge order. Stable ordering handles shared learners.
     const ids = [
@@ -82,6 +83,7 @@ export async function authorizeLearningDictionary(
         .where(inArray(usersTable.id, ids))
         .orderBy(asc(usersTable.id))
         .for('share');
+
     if (
         users.length !== ids.length ||
         users.some((user) => user.status !== 'active')
@@ -102,6 +104,7 @@ export async function authorizeLearningDictionary(
         .from(dictionariesTable)
         .where(and(condition, eq(dictionariesTable.id, candidate.id)))
         .for('share');
+
     if (
         !dictionary ||
         dictionary.lifecycle !== 'active' ||
@@ -127,7 +130,9 @@ export async function authorizeLearningDictionary(
         })
         .from(dictionarySettingsTable)
         .where(eq(dictionarySettingsTable.dictionaryId, dictionary.id));
+
     if (!settings) throw new DictionaryNotFoundError();
+
     return { dictionary, settings };
 }
 

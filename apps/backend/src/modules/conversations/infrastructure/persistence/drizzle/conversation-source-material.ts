@@ -7,6 +7,7 @@ function textChunks(text: string, maxEncodedBytes: number) {
     const result: string[] = [];
     let chunk = '',
         bytes = 0;
+
     for (const character of text) {
         const size = Buffer.byteLength(JSON.stringify(character), 'utf8') - 2;
         if (chunk && bytes + size > maxEncodedBytes) {
@@ -14,12 +15,16 @@ function textChunks(text: string, maxEncodedBytes: number) {
             chunk = '';
             bytes = 0;
         }
+
         chunk += character;
         bytes += size;
     }
+
     if (chunk || !result.length) result.push(chunk);
+
     return result;
 }
+
 function passageId(sourceId: string, version: string, index: number) {
     const namespace = Buffer.from(sourceId.replaceAll('-', ''), 'hex');
     const value = createHash('sha1')
@@ -27,19 +32,24 @@ function passageId(sourceId: string, version: string, index: number) {
         .update(`${version}:${index}`)
         .digest()
         .subarray(0, 16);
+
     value[6] = (value[6]! & 0x0f) | 0x50;
     value[8] = (value[8]! & 0x3f) | 0x80;
     const hex = value.toString('hex');
+
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
+
 function labelPrefix(title: string, maxLength: number) {
     let label = '';
     for (const character of title) {
         if (label.length + character.length > maxLength) break;
         label += character;
     }
+
     return label;
 }
+
 function passages(
     sourceId: string,
     version: string,
@@ -58,6 +68,7 @@ function passages(
         content,
     }));
 }
+
 export function textSourceMaterial(input: {
     id: string;
     version: string;
@@ -77,6 +88,7 @@ export function textSourceMaterial(input: {
             alignment: input.alignment,
         }),
     };
+
     if (Buffer.byteLength(JSON.stringify(complete), 'utf8') <= 8000)
         return [complete];
     const pairs = input.alignment?.source.map((source, index) => ({
@@ -90,6 +102,7 @@ export function textSourceMaterial(input: {
         const source = textChunks(pair.sourceText, 1500),
             translation = textChunks(pair.translationText, 1500);
         const count = Math.max(source.length, translation.length);
+
         return Array.from({ length: count }, (_, index) =>
             JSON.stringify({
                 sourceText:
@@ -107,8 +120,10 @@ export function textSourceMaterial(input: {
             }),
         );
     });
+
     return passages(input.id, input.version, input.title, contents);
 }
+
 export function noteSourceMaterial(input: {
     id: string;
     version: string;
@@ -119,12 +134,16 @@ export function noteSourceMaterial(input: {
     const render = (node: KnowledgeBody['document']): string => {
         if (node.type === 'text') {
             const link = node.marks?.find((mark) => mark.type === 'link');
+
             return `${node.text ?? ''}${link?.type === 'link' ? ` (${link.attrs.href})` : ''}`;
         }
+
         const text = (node.content ?? []).map(render).join('');
+
         return `${text}${['paragraph', 'heading', 'tableCell', 'tableHeader', 'listItem', 'hardBreak'].includes(node.type) ? '\n' : ''}`;
     };
     const text = `${input.title}\n${input.summary}\n\n${render(input.body.document)}`;
+
     return passages(
         input.id,
         input.version,

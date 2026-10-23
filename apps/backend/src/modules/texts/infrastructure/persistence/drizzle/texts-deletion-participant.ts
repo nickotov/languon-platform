@@ -30,6 +30,7 @@ export async function requestTextsCancellation(
                 inArray(textsAiJobsTable.executionState, ['queued', 'running']),
             ),
         );
+
     await tx.execute(
         sql`update dictionary_text_selection_jobs set failure_code='access_revoked',cancellation_requested_at=${now.toISOString()}::timestamptz,updated_at=${now.toISOString()}::timestamptz where (owner_id=${ownerId}::uuid or source_owner_id=${ownerId}::uuid) and execution_state in ('queued','running')`,
     );
@@ -46,6 +47,7 @@ export async function textsDeletionBusy(
         union all
         select execution_state, provider_reservation_state, ai_credit_reservation_id, lease_deadline from dictionary_text_selection_jobs where owner_id=${ownerId}::uuid or source_owner_id=${ownerId}::uuid
     ) work where execution_state in ('queued','running') or provider_reservation_state='active' or lease_deadline>now() or exists(select 1 from ai_credit_reservations r where r.id=work.ai_credit_reservation_id and r.state='active') limit 1`);
+
     return !!busy;
 }
 
@@ -82,21 +84,27 @@ export async function eraseTextsOwnedContent(
     await tx
         .delete(dictionaryTextSelectionJobsTable)
         .where(eq(dictionaryTextSelectionJobsTable.ownerId, ownerId));
+
     await tx.execute(
         sql`update dictionary_text_selection_jobs set source_owner_id=null where source_owner_id=${ownerId}::uuid`,
     );
+
     await tx
         .delete(textsAiJobsTable)
         .where(eq(textsAiJobsTable.ownerId, ownerId));
+
     await tx
         .delete(textIdempotencyTable)
         .where(eq(textIdempotencyTable.ownerId, ownerId));
+
     await tx
         .delete(textSharesTable)
         .where(eq(textSharesTable.ownerId, ownerId));
+
     await tx
         .delete(textRevisionsTable)
         .where(eq(textRevisionsTable.ownerId, ownerId));
+
     await tx.delete(textsTable).where(eq(textsTable.ownerId, ownerId));
     await tx
         .delete(textFoldersTable)

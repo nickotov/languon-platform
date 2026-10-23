@@ -25,6 +25,7 @@ export async function ensureActionBudgetDefault(
     const settings = await new DrizzleCapabilityPolicyParticipant(
         tx,
     ).settings();
+
     if (settings.defaultMaxCreditsPerAction === null) return current;
     const [copied] = await tx
         .insert(preferences)
@@ -47,11 +48,13 @@ export async function ensureActionBudgetDefault(
             setWhere: isNull(preferences.maxCreditsPerAction),
         })
         .returning();
+
     if (copied) return copied;
     // A simultaneous learner save (or another first admission) supplied it.
     const [latest] = await tx
         .select()
         .from(preferences)
         .where(eq(preferences.userId, userId));
+
     return latest;
 }

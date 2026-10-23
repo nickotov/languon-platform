@@ -57,6 +57,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             'current'
         > = new DrizzleModelPriceParticipant(transaction),
     ) {}
+
     public async resolve(
         input: Parameters<TextAiAdmissionParticipant['resolve']>[0],
     ) {
@@ -100,6 +101,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             )
             .where(eq(dictionaryAiConfigurationTable.id, 'global'))
             .limit(1);
+
         if (!configured) {
             if (
                 conversation ||
@@ -108,6 +110,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 preference?.mode === 'explicit'
             )
                 throw new TextAiSelectionUnavailableError();
+
             return {
                 budget: input.legacyBudget,
                 revisionId: null,
@@ -115,6 +118,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 selectionVersion: null,
             };
         }
+
         if (this.policy.pricingAdmissionEnabled === false)
             throw new TextAiSelectionUnavailableError();
         if (
@@ -158,6 +162,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                         ),
                     ),
                 );
+
             if (
                 (conversationOverlap &&
                     !observations.some(
@@ -187,12 +192,14 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             const pricedSnapshot = await this.withEffectivePricing(
                 configured.snapshot,
             );
+
             await ensureActionBudgetDefault(
                 tx,
                 input.userId,
                 input.now,
                 preference,
             );
+
             return {
                 budget: configured.snapshot.aggregateBudget,
                 revisionId: configured.id,
@@ -200,6 +207,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 selectionVersion: null,
             };
         }
+
         const model = textAiModelCatalog.find(
             (candidate) =>
                 candidate.id ===
@@ -209,6 +217,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                       ? 'deepseek-flash'
                       : configured.snapshot.modelId),
         );
+
         if (
             !model ||
             !this.policy.routingEnabled ||
@@ -237,6 +246,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     ),
                 ),
             );
+
         if (
             (conversationOverlap &&
                 !observations.some(
@@ -304,11 +314,13 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                 sql`select set_config('languon.texts_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,
             );
         }
+
         if (learning) {
             await tx.execute(
                 sql`select set_config('languon.learning_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,
             );
         }
+
         const snapshot = {
             adapterRevision: model.adapterRevision,
             aggregateBudget: {
@@ -337,6 +349,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             input.now,
             preference,
         );
+
         return {
             budget: snapshot.aggregateBudget,
             revisionId: configured.id,
@@ -344,6 +357,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             selectionVersion: 1 as const,
         };
     }
+
     private async withEffectivePricing(
         snapshot: TextAiExecutionSnapshot,
     ): Promise<TextAiExecutionSnapshot> {
@@ -358,6 +372,7 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             cachedInputCreditsPerMillionTokens:
                 price.cachedInputCreditsPerMillionTokens ?? null,
         };
+
         return {
             ...snapshot,
             creditPricing: {

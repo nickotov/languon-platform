@@ -1,17 +1,13 @@
-import {
-    conversationDeletionBusy,
-    eraseConversationContent,
-} from '../../../../conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
+import { deleteDictionaryContent } from './dictionary-deletion-content';
 import { createHash } from 'node:crypto';
 
 import { DictionaryDeletionReceiptResponseSchema } from '@languon/contracts';
-import { and, eq, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, lte, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import {
-    DictionaryDeletionBusyError,
     DictionaryIdempotencyConflictError,
     DictionaryNotFoundError,
     DictionaryVersionConflictError,
@@ -22,24 +18,13 @@ import type {
 } from '../../../application/ports/dictionary-store';
 import {
     dictionariesTable,
-    dictionaryCardRevisionsTable,
     dictionaryCardsTable,
     dictionaryDeletionReceiptsTable,
-    dictionaryDocumentExtractionsTable,
-    dictionaryDocumentObjectVersionsTable,
-    dictionaryDocumentUploadsTable,
-    dictionaryGenerationJobsTable,
-    dictionaryGenerationProposalsTable,
-    dictionaryGenerationProviderUsageArchiveTable,
     dictionaryIdempotencyKeysTable,
 } from './schema';
 
 import type { DictionaryIdGenerator } from './dictionary-id-generator';
 import { dictionaryGenerationAdmissionLock } from './drizzle-dictionary-generation-store';
-import {
-    sentenceDeletionBusy,
-    eraseSentenceDerivedContent,
-} from '../../../../learning/infrastructure/persistence/drizzle/sentence-deletion-participant';
 
 type DictionaryDatabase = PostgresJsDatabase<typeof databaseSchema>;
 type DictionaryTransaction = Parameters<
@@ -90,6 +75,7 @@ export class DrizzleDictionaryDeletionStore {
                     eq(dictionariesTable.lifecycle, 'archived'),
                 ),
             );
+
         return {
             eligibleCount: rows.length,
             snapshot: deletionSnapshot('dictionary', rows),
@@ -115,6 +101,7 @@ export class DrizzleDictionaryDeletionStore {
                 ),
             )
             .limit(1);
+
         if (!dictionary) throw new DictionaryNotFoundError();
         const rows = await this.database
             .select({
@@ -128,6 +115,7 @@ export class DrizzleDictionaryDeletionStore {
                     eq(dictionaryCardsTable.lifecycle, 'archived'),
                 ),
             );
+
         return {
             eligibleCount: rows.length,
             snapshot: deletionSnapshot('card', rows),
@@ -171,6 +159,7 @@ export class DrizzleDictionaryDeletionStore {
                           id: target.dictionaryId,
                           version: target.expectedVersion,
                       }));
+
             if (
                 targets.length === 0 ||
                 (input.request.scope.kind === 'all-archived'
@@ -180,7 +169,7 @@ export class DrizzleDictionaryDeletionStore {
             )
                 throw new DictionaryVersionConflictError();
             const ids = targets.map((target) => target.id);
-            await this.deleteContent(tx, input, ids, null);
+            await deleteDictionaryContent(tx, input, ids, null);
             await tx
                 .update(dictionaryIdempotencyKeysTable)
                 .set({
@@ -196,16 +185,20 @@ export class DrizzleDictionaryDeletionStore {
                         ids,
                     ),
                 );
+
             await tx
                 .delete(dictionariesTable)
                 .where(inArray(dictionariesTable.id, ids));
+
             const receipt = {
                 deletedCount: ids.length,
                 operationId: this.ids.generate(),
                 resultingDictionaryVersion: null,
                 targetKind: 'dictionary' as const,
             };
+
             await this.saveDeletionReceipt(tx, input, receipt);
+
             return receipt;
         });
     }
@@ -232,6 +225,7 @@ export class DrizzleDictionaryDeletionStore {
                 )
                 .limit(1)
                 .for('update');
+
             if (!dictionary || dictionary.lifecycle !== 'active')
                 throw new DictionaryNotFoundError();
             if (dictionary.version !== input.request.expectedDictionaryVersion)
@@ -266,6 +260,7 @@ export class DrizzleDictionaryDeletionStore {
                           id: target.cardId,
                           version: target.expectedVersion,
                       }));
+
             if (
                 targets.length === 0 ||
                 (input.request.scope.kind === 'all-archived'
@@ -275,7 +270,13 @@ export class DrizzleDictionaryDeletionStore {
             )
                 throw new DictionaryVersionConflictError();
             const cardIds = targets.map((target) => target.id);
-            await this.deleteContent(tx, input, [input.dictionaryId], cardIds);
+            await deleteDictionaryContent(
+                tx,
+                input,
+                [input.dictionaryId],
+                cardIds,
+            );
+
             await tx
                 .update(dictionaryIdempotencyKeysTable)
                 .set({
@@ -301,9 +302,11 @@ export class DrizzleDictionaryDeletionStore {
                         ),
                     ),
                 );
+
             await tx
                 .delete(dictionaryCardsTable)
                 .where(inArray(dictionaryCardsTable.id, cardIds));
+
             const [updated] = await tx
                 .update(dictionariesTable)
                 .set({
@@ -312,6 +315,7 @@ export class DrizzleDictionaryDeletionStore {
                 })
                 .where(eq(dictionariesTable.id, input.dictionaryId))
                 .returning({ version: dictionariesTable.version });
+
             if (!updated) throw new DictionaryVersionConflictError();
             const receipt = {
                 deletedCount: cardIds.length,
@@ -319,7 +323,9 @@ export class DrizzleDictionaryDeletionStore {
                 resultingDictionaryVersion: updated.version,
                 targetKind: 'card' as const,
             };
+
             await this.saveDeletionReceipt(tx, input, receipt);
+
             return receipt;
         });
     }
@@ -331,6 +337,7 @@ export class DrizzleDictionaryDeletionStore {
         const byId = new Map(
             eligible.map((target) => [target.id, target.version]),
         );
+
         return requested.every(
             (target) => byId.get(target.id) === target.version,
         );
@@ -343,6 +350,7 @@ export class DrizzleDictionaryDeletionStore {
         await tx.execute(
             sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
         );
+
         await tx.execute(
             sql`select ${usersTable.id} from ${usersTable} where ${usersTable.id} = ${ownerId} for update`,
         );
@@ -374,6 +382,7 @@ export class DrizzleDictionaryDeletionStore {
                     ),
                 ),
             );
+
         const [existing] = await tx
             .select()
             .from(dictionaryDeletionReceiptsTable)
@@ -388,13 +397,16 @@ export class DrizzleDictionaryDeletionStore {
                 ),
             )
             .limit(1);
+
         if (!existing) return null;
         if (existing.requestFingerprint !== input.fingerprint)
             throw new DictionaryIdempotencyConflictError();
         const parsed = DictionaryDeletionReceiptResponseSchema.safeParse(
             existing.resultPayload,
         );
+
         if (!parsed.success) throw new DictionaryIdempotencyConflictError();
+
         return parsed.data;
     }
 
@@ -422,230 +434,5 @@ export class DrizzleDictionaryDeletionStore {
             resultPayload: result,
             targetKind: result.targetKind,
         });
-    }
-
-    private async deleteContent(
-        tx: DictionaryTransaction,
-        input: {
-            context: DictionaryOperationContext;
-            ownerId: string;
-        },
-        dictionaryIds: readonly string[],
-        cardIds: readonly string[] | null,
-    ): Promise<void> {
-        abort(input.context);
-        if (!cardIds) {
-            const scope = {
-                sourceKind: 'dictionary' as const,
-                sourceIds: dictionaryIds,
-            };
-            if (await conversationDeletionBusy(tx, scope, input.context.now))
-                throw new DictionaryDeletionBusyError();
-            await eraseConversationContent(tx, scope, input.context.now);
-        }
-        const sentenceScope = cardIds
-            ? { entryIds: cardIds }
-            : { dictionaryIds };
-        if (await sentenceDeletionBusy(tx, sentenceScope))
-            throw new DictionaryDeletionBusyError();
-        await eraseSentenceDerivedContent(tx, {
-            ...sentenceScope,
-            now: input.context.now,
-        });
-        const directJobCondition = cardIds
-            ? inArray(dictionaryGenerationJobsTable.cardId, [...cardIds])
-            : inArray(dictionaryGenerationJobsTable.dictionaryId, [
-                  ...dictionaryIds,
-              ]);
-        const directJobs = await tx
-            .select()
-            .from(dictionaryGenerationJobsTable)
-            .where(directJobCondition)
-            .for('update');
-        const relatedJobIds = new Set(directJobs.map((job) => job.id));
-        if (cardIds) {
-            const revisionJobs = await tx
-                .select({
-                    id: dictionaryCardRevisionsTable.acceptedGenerationJobId,
-                })
-                .from(dictionaryCardRevisionsTable)
-                .where(
-                    inArray(dictionaryCardRevisionsTable.cardId, [...cardIds]),
-                );
-            const proposalJobs = await tx
-                .select({ id: dictionaryGenerationProposalsTable.jobId })
-                .from(dictionaryGenerationProposalsTable)
-                .where(
-                    inArray(dictionaryGenerationProposalsTable.acceptedCardId, [
-                        ...cardIds,
-                    ]),
-                );
-            for (const row of [...revisionJobs, ...proposalJobs])
-                if (row.id) relatedJobIds.add(row.id);
-        }
-        const jobs =
-            relatedJobIds.size === 0
-                ? []
-                : await tx
-                      .select()
-                      .from(dictionaryGenerationJobsTable)
-                      .where(
-                          inArray(dictionaryGenerationJobsTable.id, [
-                              ...relatedJobIds,
-                          ]),
-                      )
-                      .for('update');
-        if (
-            jobs.some(
-                (job) =>
-                    job.executionState === 'queued' ||
-                    job.executionState === 'running' ||
-                    job.providerReservationState === 'active',
-            )
-        )
-            throw new DictionaryDeletionBusyError();
-        const jobIds = directJobs.map((job) => job.id);
-        const contentJobIds = [...relatedJobIds];
-        if (contentJobIds.length > 0) {
-            const uploads = await tx
-                .select()
-                .from(dictionaryDocumentUploadsTable)
-                .where(
-                    inArray(
-                        dictionaryDocumentUploadsTable.jobId,
-                        contentJobIds,
-                    ),
-                )
-                .for('update');
-            if (
-                uploads.some(
-                    (upload) =>
-                        upload.cleanupState !== 'complete' ||
-                        upload.dataVersionsDeletedAt === null ||
-                        upload.quotaReleasedAt === null,
-                )
-            )
-                throw new DictionaryDeletionBusyError();
-        }
-
-        const settledJobs = directJobs.filter(
-            (job) =>
-                job.providerReservationState === 'settled' &&
-                job.providerReservationSettledAt !== null &&
-                job.providerActualCostMicros !== null &&
-                job.providerActualInputTokens !== null &&
-                job.providerActualOutputTokens !== null,
-        );
-        if (settledJobs.length > 0)
-            await tx
-                .insert(dictionaryGenerationProviderUsageArchiveTable)
-                .values(
-                    settledJobs.map((job) => ({
-                        actualCostMicros: job.providerActualCostMicros!,
-                        actualInputTokens: job.providerActualInputTokens!,
-                        actualOutputTokens: job.providerActualOutputTokens!,
-                        archivedAt: input.context.now,
-                        id: job.id,
-                        inputCostMicrosPerMillionTokens:
-                            job.providerInputCostMicrosPerMillionTokens,
-                        maxCostMicrosPerAttempt:
-                            job.providerMaxCostMicrosPerAttempt,
-                        maxInputTokensPerAttempt:
-                            job.providerMaxInputTokensPerAttempt,
-                        maxOutputTokensPerAttempt:
-                            job.providerMaxOutputTokensPerAttempt,
-                        outputCostMicrosPerMillionTokens:
-                            job.providerOutputCostMicrosPerMillionTokens,
-                        ownerId: job.ownerId,
-                        settledAt: job.providerReservationSettledAt!,
-                    })),
-                )
-                .onConflictDoNothing();
-
-        if (contentJobIds.length > 0) {
-            const uploadIds = await tx
-                .select({ id: dictionaryDocumentUploadsTable.id })
-                .from(dictionaryDocumentUploadsTable)
-                .where(
-                    inArray(
-                        dictionaryDocumentUploadsTable.jobId,
-                        contentJobIds,
-                    ),
-                );
-            if (uploadIds.length > 0) {
-                const ids = uploadIds.map((upload) => upload.id);
-                await tx
-                    .delete(dictionaryDocumentExtractionsTable)
-                    .where(
-                        inArray(
-                            dictionaryDocumentExtractionsTable.uploadId,
-                            ids,
-                        ),
-                    );
-                await tx
-                    .delete(dictionaryDocumentObjectVersionsTable)
-                    .where(
-                        inArray(
-                            dictionaryDocumentObjectVersionsTable.uploadId,
-                            ids,
-                        ),
-                    );
-                await tx
-                    .delete(dictionaryDocumentUploadsTable)
-                    .where(inArray(dictionaryDocumentUploadsTable.id, ids));
-            }
-        }
-        const proposalConditions: SQL[] = [];
-        if (contentJobIds.length > 0)
-            proposalConditions.push(
-                inArray(
-                    dictionaryGenerationProposalsTable.jobId,
-                    contentJobIds,
-                ),
-            );
-        if (cardIds && cardIds.length > 0)
-            proposalConditions.push(
-                inArray(dictionaryGenerationProposalsTable.acceptedCardId, [
-                    ...cardIds,
-                ]),
-            );
-        if (proposalConditions.length > 0)
-            await tx
-                .delete(dictionaryGenerationProposalsTable)
-                .where(or(...proposalConditions));
-        if (cardIds)
-            await tx
-                .delete(dictionaryCardRevisionsTable)
-                .where(
-                    inArray(dictionaryCardRevisionsTable.cardId, [...cardIds]),
-                );
-        else
-            await tx
-                .delete(dictionaryCardRevisionsTable)
-                .where(
-                    inArray(dictionaryCardRevisionsTable.dictionaryId, [
-                        ...dictionaryIds,
-                    ]),
-                );
-        if (jobIds.length > 0)
-            await tx
-                .delete(dictionaryGenerationJobsTable)
-                .where(inArray(dictionaryGenerationJobsTable.id, jobIds));
-        const retainedRelatedJobIds = [...relatedJobIds].filter(
-            (id) => !jobIds.includes(id),
-        );
-        if (retainedRelatedJobIds.length > 0)
-            await tx
-                .update(dictionaryGenerationJobsTable)
-                .set({
-                    inputPayload: null,
-                    updatedAt: input.context.now,
-                })
-                .where(
-                    inArray(
-                        dictionaryGenerationJobsTable.id,
-                        retainedRelatedJobIds,
-                    ),
-                );
     }
 }

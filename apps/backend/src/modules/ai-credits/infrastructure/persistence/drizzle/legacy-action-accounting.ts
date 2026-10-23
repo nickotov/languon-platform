@@ -53,6 +53,7 @@ export function usesLegacyAction(
         snapshot.actionAccountingVersion === 1
     );
 }
+
 export async function prepareLegacyAction(
     tx: AiCreditTransaction,
     ownerId: string,
@@ -90,6 +91,7 @@ export async function prepareLegacyAction(
             snapshot.creditPricing.cachedInputCreditsPerMillionTokens ??
                 snapshot.creditPricing.inputCreditsPerMillionTokens,
         ].every((rate) => rate === 0);
+
     if (funding === 'customer' && !budget && !zeroCustomerTariff)
         throw new OperatorBudgetUnavailableError(
             'An action budget must be configured.',
@@ -100,12 +102,14 @@ export async function prepareLegacyAction(
         meter: 'text-tokens',
         at,
     });
+
     if (!price)
         throw new ProviderCostAdmissionUnavailableError(
             'Reviewed provider pricing is required before paid generation.',
         );
     if (!snapshot.creditPricing)
         throw new Error('Action customer tariff is missing.');
+
     return {
         ...snapshot,
         aggregateBudget: reviewedTextProviderBudget(
@@ -122,6 +126,7 @@ export async function prepareLegacyAction(
         actionProviderPrice: price,
     };
 }
+
 export async function reserveLegacyAction(
     tx: AiCreditTransaction,
     input: {
@@ -144,6 +149,7 @@ export async function reserveLegacyAction(
         ownerId: input.ownerId,
         at: input.at,
     });
+
     if (
         policy.version !== input.snapshot.actionPolicyVersion ||
         (policy.funding === 'operator') !==
@@ -166,6 +172,7 @@ export async function reserveLegacyAction(
                   ),
               }),
     };
+
     if (
         input.holdMaximumInputTokens !== undefined &&
         (!Number.isSafeInteger(input.holdMaximumInputTokens) ||
@@ -217,6 +224,7 @@ export async function reserveLegacyAction(
         providerBudget: input.snapshot.aggregateBudget,
         at: input.at,
     });
+
     return new DrizzleActionAccountingParticipant(tx).reserve({
         id: input.id,
         ownerId: input.ownerId,
@@ -234,12 +242,15 @@ export async function reserveLegacyAction(
         deadlineAt: new Date(input.at.getTime() + 15 * 60_000),
     });
 }
+
 function attemptId(id: string, attempt: number) {
     const hash = createHash('sha256')
         .update(`legacy-action:${id}:${attempt}`)
         .digest('hex');
+
     return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
+
 /** Reserve before returning provider limits to the worker. Call ids are stable across process recovery. */
 export async function admitLegacyAttempt(
     tx: AiCreditTransaction,
@@ -274,6 +285,7 @@ export async function admitLegacyAttempt(
                 eq(attempts.actionId, input.actionId ?? input.id),
             ),
         );
+
     if (previous)
         throw new Error('Provider attempt cannot be dispatched twice.');
     try {
@@ -297,6 +309,7 @@ export async function admitLegacyAttempt(
             budget: input.budget,
             at: input.at,
         });
+
         return {
             ...input.budget,
             maxInputTokensPerAttempt: inputLimit,
@@ -315,9 +328,11 @@ export async function admitLegacyAttempt(
                 ].includes(error.message))
         )
             return null;
+
         throw error;
     }
 }
+
 export async function recordLegacyAttempt(
     tx: AiCreditTransaction,
     input: {
@@ -349,6 +364,7 @@ export async function recordLegacyAttempt(
                 ),
             ),
         );
+
     if (!attempt || attempt.state === 'settled') return;
     let usage: ProviderTokenUsage | undefined;
     if (!input.dispatched) usage = { inputTokens: 0, outputTokens: 0 };
@@ -365,12 +381,14 @@ export async function recordLegacyAttempt(
                 );
         }
     }
+
     const measured = usage !== undefined;
     const expense = !input.dispatched
         ? 0n
         : measured && usage
           ? providerTextExpenseMicros(input.snapshot.actionProviderPrice, usage)
           : null;
+
     await new DrizzleActionAccountingParticipant(tx).recordAttempt({
         actionId: input.snapshot.actionParentId ?? input.id,
         ownerId: input.ownerId,
@@ -380,6 +398,7 @@ export async function recordLegacyAttempt(
         operatorCostMicros: expense,
         at: input.at,
     });
+
     await recordProviderExpense(tx, {
         attemptReference: `legacy:${callId}`,
         attemptId: callId,
@@ -392,6 +411,7 @@ export async function recordLegacyAttempt(
         occurredAt: attempt.createdAt,
     });
 }
+
 export async function settleLegacyAction(
     tx: AiCreditTransaction,
     input: {

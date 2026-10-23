@@ -10,6 +10,7 @@ import { SentenceUnavailableError } from '../../../domain/sentence-errors';
 export function sentencePracticeVisibilityCondition(learnerId: string): SQL {
     return sql`not exists(select 1 from ${personal} p where p.exercise_id=${exercises.id} and p.learner_id=${learnerId}::uuid and p.archived_at is not null) and not exists(select 1 from ${global} g where g.exercise_id=${exercises.id} and g.archived_at is not null)`;
 }
+
 export async function assertSentencePracticeVisible(
     tx: SentenceTransaction,
     exerciseId: string,
@@ -18,5 +19,6 @@ export async function assertSentencePracticeVisible(
     const rows = await tx.execute(
         sql`select ${exercises.id} from ${exercises} where ${exercises.id}=${exerciseId}::uuid and (${sentencePracticeVisibilityCondition(learnerId)})`,
     );
+
     if (!rows.length) throw new SentenceUnavailableError();
 }

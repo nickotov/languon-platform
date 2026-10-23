@@ -20,6 +20,7 @@ export class DrizzleTextAiPreferenceStore implements TextAiPreferenceStore {
         private readonly database: PostgresJsDatabase<typeof databaseSchema>,
         private readonly policy: TextAiAvailabilityPolicy = defaultTextAiAvailabilityPolicy(),
     ) {}
+
     public run<T>(
         userId: string,
         work: (session: TextAiPreferenceSession) => Promise<T>,
@@ -30,8 +31,10 @@ export class DrizzleTextAiPreferenceStore implements TextAiPreferenceStore {
                 .from(usersTable)
                 .where(eq(usersTable.id, userId))
                 .for('update');
+
             if (!user || user.status !== 'active')
                 throw new TextAiUserUnavailableError();
+
             return work({
                 read: async () => {
                     const preference = await ensureActionBudgetDefault(
@@ -39,6 +42,7 @@ export class DrizzleTextAiPreferenceStore implements TextAiPreferenceStore {
                         userId,
                         new Date(),
                     );
+
                     return preference
                         ? {
                               mode: preference.mode,

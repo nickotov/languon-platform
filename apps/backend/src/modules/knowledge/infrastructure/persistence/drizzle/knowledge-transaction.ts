@@ -36,6 +36,7 @@ export function knowledgeUnavailable(): KnowledgeDomainError {
         'The knowledge note is unavailable.',
     );
 }
+
 export async function lockKnowledgeOwner(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -45,8 +46,10 @@ export async function lockKnowledgeOwner(
         .from(usersTable)
         .where(eq(usersTable.id, ownerId))
         .for('update');
+
     if (owner?.status !== 'active') throw knowledgeUnavailable();
 }
+
 export function knowledgeNote(
     row: typeof knowledgeNotesTable.$inferSelect,
 ): KnowledgeNote {
@@ -63,6 +66,7 @@ export function knowledgeNote(
         updatedAt: row.updatedAt.toISOString(),
     });
 }
+
 export async function getOwnedKnowledgeRow(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -79,9 +83,12 @@ export async function getOwnedKnowledgeRow(
             ),
         )
         .for('update');
+
     if (!row) throw knowledgeUnavailable();
+
     return row;
 }
+
 export async function getOwnedKnowledgeNote(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -89,8 +96,10 @@ export async function getOwnedKnowledgeNote(
 ): Promise<KnowledgeNote> {
     const row = await getOwnedKnowledgeRow(tx, ownerId, noteId);
     if (row.status !== 'saved') throw knowledgeUnavailable();
+
     return knowledgeNote(row);
 }
+
 function canonicalJson(value: unknown): string {
     if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
     if (value !== null && typeof value === 'object')
@@ -101,11 +110,14 @@ function canonicalJson(value: unknown): string {
                     `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`,
             )
             .join(',')}}`;
+
     return JSON.stringify(value) ?? 'null';
 }
+
 export function knowledgeFingerprint(value: unknown): string {
     return createHash('sha256').update(canonicalJson(value)).digest('hex');
 }
+
 export async function readKnowledgeReceipt(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -121,13 +133,16 @@ export async function readKnowledgeReceipt(
                 eq(knowledgeOperationReceiptsTable.operationId, operationId),
             ),
         );
+
     if (receipt && receipt.fingerprint !== fingerprint)
         throw new KnowledgeDomainError(
             'idempotency_conflict',
             'This operation ID was already used for a different request.',
         );
+
     return receipt;
 }
+
 export async function replayKnowledgeNote(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -143,7 +158,9 @@ export async function replayKnowledgeNote(
                 eq(knowledgeNoteRevisionsTable.version, receipt.version),
             ),
         );
+
     if (!revision) throw knowledgeUnavailable();
+
     return KnowledgeNoteSchema.parse({
         ...revision.content,
         id: current.id,
@@ -152,6 +169,7 @@ export async function replayKnowledgeNote(
         updatedAt: revision.createdAt.toISOString(),
     });
 }
+
 export async function writeKnowledgeReceipt(
     tx: KnowledgeTransaction,
     input: Omit<typeof knowledgeOperationReceiptsTable.$inferInsert, 'id'>,
@@ -160,6 +178,7 @@ export async function writeKnowledgeReceipt(
         .insert(knowledgeOperationReceiptsTable)
         .values({ ...input, id: randomUUID() });
 }
+
 /** Call within the conversation draft's transaction, after its version and source/lease fences.
  * No origin or draft identity is persisted by Knowledge. Existing targets are never upserted. */
 export class DrizzleKnowledgeTransactionParticipant {
@@ -167,6 +186,7 @@ export class DrizzleKnowledgeTransactionParticipant {
     get(ownerId: string, noteId: string) {
         return getOwnedKnowledgeNote(this.tx, ownerId, noteId);
     }
+
     /** Short shared lifecycle fence for authorized source reads; does not reserve a writer. */
     async getForSource(ownerId: string, noteId: string) {
         const [owner] = await this.tx
@@ -174,6 +194,7 @@ export class DrizzleKnowledgeTransactionParticipant {
             .from(usersTable)
             .where(eq(usersTable.id, ownerId))
             .for('share');
+
         if (owner?.status !== 'active') throw knowledgeUnavailable();
         const [row] = await this.tx
             .select()
@@ -185,9 +206,11 @@ export class DrizzleKnowledgeTransactionParticipant {
                 ),
             )
             .for('share');
+
         if (!row) throw knowledgeUnavailable();
         if (row.status === 'saved') {
             const note = knowledgeNote(row);
+
             return {
                 title: note.title,
                 summary: note.summary,
@@ -196,13 +219,16 @@ export class DrizzleKnowledgeTransactionParticipant {
                 body: note.body,
             };
         }
+
         const [branch] = await this.tx
             .select()
             .from(knowledgeWorkingBranchesTable)
             .where(
                 eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId!),
             );
+
         if (!branch) throw knowledgeUnavailable();
+
         return {
             title: branch.content.title,
             summary: branch.content.summary,
@@ -211,6 +237,7 @@ export class DrizzleKnowledgeTransactionParticipant {
             body: branch.content.body,
         };
     }
+
     async nameUntitledFromFirstMessage(
         ownerId: string,
         noteId: string,
@@ -225,12 +252,14 @@ export class DrizzleKnowledgeTransactionParticipant {
                 title: row.title === 'Untitled' ? title : row.title,
             })
             .where(eq(knowledgeNotesTable.id, noteId));
+
         if (row.title !== 'Untitled') return;
         const [branch] = await this.tx
             .select()
             .from(knowledgeWorkingBranchesTable)
             .where(eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId!))
             .for('update');
+
         if (branch?.content.title === 'Untitled')
             await this.tx
                 .update(knowledgeWorkingBranchesTable)
@@ -241,6 +270,7 @@ export class DrizzleKnowledgeTransactionParticipant {
                 })
                 .where(eq(knowledgeWorkingBranchesTable.id, branch.id));
     }
+
     async publish(
         ownerId: string,
         input: KnowledgePublication,
@@ -274,6 +304,7 @@ export class DrizzleKnowledgeTransactionParticipant {
             input.operationId,
             fingerprint,
         );
+
         if (receipt) return replayKnowledgeNote(this.tx, ownerId, receipt);
         const note = input.noteId
             ? await replaceKnowledgeContent(
@@ -285,6 +316,7 @@ export class DrizzleKnowledgeTransactionParticipant {
                   now,
               )
             : await createKnowledgeContent(this.tx, ownerId, content, now);
+
         await writeKnowledgeReceipt(this.tx, {
             ownerId,
             operationId: input.operationId,
@@ -294,6 +326,7 @@ export class DrizzleKnowledgeTransactionParticipant {
             version: note.version,
             createdAt: now,
         });
+
         return note;
     }
 }
@@ -316,9 +349,11 @@ async function createKnowledgeContent(
             updatedAt: now,
         })
         .returning();
+
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId: id, version: 1, content, createdAt: now });
+
     const branchId = randomUUID();
     await tx.insert(knowledgeWorkingBranchesTable).values({
         id: branchId,
@@ -328,12 +363,15 @@ async function createKnowledgeContent(
         content,
         updatedAt: now,
     });
+
     await tx
         .update(knowledgeNotesTable)
         .set({ preferredBranchId: branchId })
         .where(eq(knowledgeNotesTable.id, id));
+
     return knowledgeNote(row!);
 }
+
 export async function replaceKnowledgeContent(
     tx: KnowledgeTransaction,
     ownerId: string,
@@ -364,6 +402,7 @@ export async function replaceKnowledgeContent(
             ),
         )
         .returning();
+
     if (!row)
         throw new KnowledgeDomainError(
             'version_conflict',
@@ -372,12 +411,14 @@ export async function replaceKnowledgeContent(
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId, version: row.version, content, createdAt: now });
+
     if (row.preferredBranchId) {
         const [branch] = await tx
             .select()
             .from(knowledgeWorkingBranchesTable)
             .where(eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId))
             .for('update');
+
         if (
             branch &&
             branch.basePublishedVersion === expectedVersion &&
@@ -406,8 +447,10 @@ export async function replaceKnowledgeContent(
             });
         }
     }
+
     return knowledgeNote(row);
 }
+
 function currentContentFromNote(note: KnowledgeNote): KnowledgeNoteContent {
     return {
         title: note.title,

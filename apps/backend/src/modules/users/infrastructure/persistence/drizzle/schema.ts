@@ -37,7 +37,10 @@ export const usersTable = pgTable(
     },
     (table) => [
         check('users_version_positive', sql`${table.version} > 0`),
-        check('users_handle_format', sql`${table.handle} is null or ${table.handle} ~ '^[a-z0-9_]{3,30}$'`),
+        check(
+            'users_handle_format',
+            sql`${table.handle} is null or ${table.handle} ~ '^[a-z0-9_]{3,30}$'`,
+        ),
         uniqueIndex('users_handle_unique').on(table.handle),
         index('users_status_idx').on(table.status),
     ],

@@ -20,6 +20,7 @@ import type { TextAiExecutionSnapshot } from '../../../../text-ai/application/te
 import type { SelectionSourceAuthority } from '../../../application/ports/text-selection-store';
 const date = (name: string) =>
     timestamp(name, { mode: 'date', withTimezone: true });
+
 export const dictionaryTextSelectionJobsTable = pgTable(
     'dictionary_text_selection_jobs',
     {

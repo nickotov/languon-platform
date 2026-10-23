@@ -13,11 +13,13 @@ export async function readActionBilling(
         .from(actions)
         .where(and(eq(actions.id, actionId), eq(actions.ownerId, ownerId)))
         .limit(1);
+
     if (!action) return undefined;
     const free =
         action.funding !== 'customer' ||
         (action.heldMilli === 0n &&
             Object.values(action.tariff).every((rate) => Number(rate) === 0));
+
     return {
         state: free
             ? 'free'
@@ -34,6 +36,7 @@ export async function readActionBilling(
         measurement: action.measurement,
     };
 }
+
 export async function withActionBilling<T extends object>(
     tx: Pick<AiCreditTransaction, 'select'>,
     value: T,
@@ -41,5 +44,6 @@ export async function withActionBilling<T extends object>(
     ownerId: string,
 ): Promise<T & { billing?: ActionBilling }> {
     const billing = await readActionBilling(tx, actionId, ownerId);
+
     return { ...value, ...(billing ? { billing } : {}) };
 }

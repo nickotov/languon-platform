@@ -28,6 +28,7 @@ import { dictionariesTable } from '../../../../dictionaries/infrastructure/persi
 import { sentenceAiJobsTable, type SentenceAuthority } from './sentence-schema';
 const date = (name: string) =>
     timestamp(name, { withTimezone: true, mode: 'date' });
+
 export const sentencePreparationsTable = pgTable(
     'sentence_preparations',
     {

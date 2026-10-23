@@ -11,6 +11,7 @@ export function textAiSelectionObservationId(
 ): string {
     return `${workerId}/${providerId}/${modelId}/text-ai-selection:v1`;
 }
+
 function identity(
     workerId: string,
     providerId: string,
@@ -24,6 +25,7 @@ function identity(
         .update(modelId)
         .digest('hex');
 }
+
 export function textAiCapacityObservationId(
     workerId: string,
     providerId: string,
@@ -31,6 +33,7 @@ export function textAiCapacityObservationId(
 ): string {
     return `text-ai-capacity:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 export function sentenceExecutionObservationId(
     workerId: string,
     providerId: string,
@@ -38,6 +41,7 @@ export function sentenceExecutionObservationId(
 ): string {
     return `sentence-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 export function textsCapacityObservationId(
     workerId: string,
     providerId: string,
@@ -45,6 +49,7 @@ export function textsCapacityObservationId(
 ): string {
     return `texts-capacity:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 export function textsExecutionObservationId(
     workerId: string,
     providerId: string,
@@ -52,6 +57,7 @@ export function textsExecutionObservationId(
 ): string {
     return `texts-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 export function conversationCapacityObservationId(
     workerId: string,
     providerId: string,
@@ -59,6 +65,7 @@ export function conversationCapacityObservationId(
 ): string {
     return `conversation-capacity:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 export function conversationExecutionObservationId(
     workerId: string,
     providerId: string,
@@ -66,6 +73,7 @@ export function conversationExecutionObservationId(
 ): string {
     return `conversation-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 export function portraitInterviewExecutionObservationId(
     workerId: string,
     providerId: string,
@@ -73,6 +81,7 @@ export function portraitInterviewExecutionObservationId(
 ): string {
     return `portrait-interview-execution:v1/${identity(workerId, providerId, modelId)}`;
 }
+
 interface WorkerCapabilityObservation {
     id: string;
     workerId: string;
@@ -100,6 +109,7 @@ function supports(
             : format === 'sentence-preparation:v2'
               ? 'sentence-generation:v2'
               : undefined;
+
     return (
         observation.textAiSelectionRevision === 1 &&
         Array.isArray(observation.textAiSupportedFormats) &&
@@ -115,6 +125,7 @@ function supports(
         )
     );
 }
+
 export function isTextAiCapacityCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,
@@ -130,6 +141,7 @@ export function isTextAiCapacityCapableObservation(
             )
     );
 }
+
 export function isTextsCapacityCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,
@@ -167,6 +179,7 @@ export function isTextsCapacityCapableObservation(
         ].includes(observation.id)
     );
 }
+
 export function isTextsExecutionCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,
@@ -189,6 +202,7 @@ export function isTextsExecutionCapableObservation(
         ].includes(observation.id)
     );
 }
+
 export function isConversationCapacityCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,
@@ -217,6 +231,7 @@ export function isConversationCapacityCapableObservation(
         ].includes(observation.id)
     );
 }
+
 export function isConversationExecutionCapableObservation(
     observation: WorkerCapabilityObservation,
     format: string = 'conversation:v1',
@@ -236,6 +251,7 @@ export function isConversationExecutionCapableObservation(
             )
     );
 }
+
 export function isSentenceExecutionCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,
@@ -250,6 +266,7 @@ export function isSentenceExecutionCapableObservation(
         ? supports(observation, preparationBase) &&
           observation.textAiSupportedFormats!.includes(format!)
         : supports(observation, format);
+
     return (
         formatSupported &&
         observation.textAiCapacityRevision === 1 &&
@@ -269,6 +286,7 @@ export function isSentenceExecutionCapableObservation(
         ].includes(observation.id)
     );
 }
+
 export function isTextAiSelectionCapableObservation(
     observation: WorkerCapabilityObservation,
     format?: string,

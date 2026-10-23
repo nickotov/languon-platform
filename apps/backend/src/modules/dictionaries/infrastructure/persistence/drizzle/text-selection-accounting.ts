@@ -28,6 +28,7 @@ export function selectionBudget(job: SentenceJobRow) {
         maxOutputTokensPerAttempt: job.providerMaxOutputTokensPerAttempt,
     };
 }
+
 export async function reserveSelectionAttempt(
     tx: SentenceTransaction,
     job: SentenceJobRow,
@@ -48,8 +49,10 @@ export async function reserveSelectionAttempt(
                 inputOverheadTokens: 32768,
                 at: now,
             });
+
         return;
     }
+
     if (!job.aiCreditAccounted) return;
     const id = randomUUID();
     try {
@@ -64,6 +67,7 @@ export async function reserveSelectionAttempt(
             ownerId: job.ownerId,
             reservationId: id,
         });
+
         await tx
             .update(jobs)
             .set({
@@ -75,9 +79,11 @@ export async function reserveSelectionAttempt(
     } catch (error) {
         if (error instanceof AiCreditInsufficientBalanceError)
             throw new SelectionCreditsError();
+
         throw error;
     }
 }
+
 export async function settleSelectionAttempt(
     tx: SentenceTransaction,
     job: SentenceJobRow,
@@ -102,6 +108,7 @@ export async function settleSelectionAttempt(
             ...(usage ? { usage } : {}),
             at: now,
         });
+
         if (terminal)
             await settleLegacyAction(tx, {
                 id: job.id,
@@ -110,6 +117,7 @@ export async function settleSelectionAttempt(
                 at: now,
             });
     }
+
     if (job.providerReservationState !== 'active') return;
     if (
         usage &&
@@ -144,6 +152,7 @@ export async function settleSelectionAttempt(
                           }),
                       )
                     : 0n;
+
             if (outcome === 'failure' || !usage)
                 await credits.settleFailedAttempt({
                     ownerId: job.ownerId,
@@ -161,6 +170,7 @@ export async function settleSelectionAttempt(
             }
         }
     }
+
     const dispatched = job.aiCreditProviderDispatchedAt !== null;
     const actual = dispatched
         ? (usage ?? {
@@ -168,6 +178,7 @@ export async function settleSelectionAttempt(
               outputTokens: job.providerMaxOutputTokensPerAttempt,
           })
         : { inputTokens: 0, outputTokens: 0 };
+
     await tx
         .update(jobs)
         .set({

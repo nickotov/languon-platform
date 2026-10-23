@@ -48,6 +48,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
         if (row.algorithm !== 'argon2id') {
             throw new Error('Persisted password algorithm is unsupported.');
         }
+
         return { ...row, algorithm: 'argon2id' };
     }
 
@@ -118,6 +119,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                 ),
             )
             .returning({ flowId: authVerificationChallengesTable.flowId });
+
         return invalidated.length;
     }
 
@@ -137,6 +139,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
             .limit(1)
             .for('update');
         const row = rows[0];
+
         return row
             ? {
                   attemptsUsed: row.attempts,
@@ -173,6 +176,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
             })
             .where(eq(authVerificationChallengesTable.flowId, input.flowId))
             .returning({ flowId: authVerificationChallengesTable.flowId });
+
         return updated.length === 1;
     }
 
@@ -213,6 +217,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
             .where(eq(authSessionsTable.refreshTokenDigest, refreshDigest))
             .limit(1)
             .for('update');
+
         return rows[0] ? mapStoredRefreshSession(rows[0]) : null;
     }
 
@@ -224,6 +229,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
             .from(authSessionsTable)
             .where(eq(authSessionsTable.id, id))
             .limit(1);
+
         return rows[0] ? mapStoredRefreshSession(rows[0]) : null;
     }
 
@@ -267,6 +273,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                 ),
             )
             .returning({ id: authSessionsTable.id });
+
         if (consumed.length !== 1) {
             throw new RefreshSessionRotationConflictError();
         }
@@ -292,6 +299,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                 ),
             )
             .returning({ id: authSessionsTable.id });
+
         if (input.replayDetectedSessionId) {
             await this.transaction
                 .update(authSessionsTable)
@@ -303,6 +311,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                 })
                 .where(eq(authSessionsTable.id, input.replayDetectedSessionId));
         }
+
         return revoked.length;
     }
 
@@ -341,6 +350,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
             .where(eq(authPasskeysTable.credentialId, credentialId))
             .limit(1)
             .for('update');
+
         return rows[0] ? mapStoredPasskey(rows[0]) : null;
     }
 
@@ -369,6 +379,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                 ),
             )
             .returning({ id: authPasskeysTable.id });
+
         return updated.length === 1;
     }
 
@@ -395,6 +406,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                     ),
                 )
                 .returning({ id: authPasskeysTable.id });
+
             return renamed.length === 1;
         } catch (error) {
             throwMappedAuthenticationConflict(error);
@@ -417,6 +429,7 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
                 ),
             )
             .returning({ id: authPasskeysTable.id });
+
         return revoked.length === 1;
     }
 

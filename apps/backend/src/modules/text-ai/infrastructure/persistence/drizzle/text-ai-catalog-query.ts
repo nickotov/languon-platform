@@ -25,6 +25,7 @@ export function defaultTextAiAvailabilityPolicy(
             ?.split(',')
             .map((part) => part.trim())
             .includes('1') === true;
+
     return {
         pricingAdmissionEnabled:
             !['staging', 'production'].includes(environment.APP_ENV ?? '') ||
@@ -44,6 +45,7 @@ export function defaultTextAiAvailabilityPolicy(
             ] === 'true',
     };
 }
+
 export async function readTextAiCatalog(
     database: PostgresJsDatabase<typeof databaseSchema>,
     at: Date,
@@ -83,6 +85,7 @@ export async function readTextAiCatalog(
         ),
     );
     const enabledIds = configuration?.snapshot.enabledModelIds ?? [];
+
     return {
         defaultModelId: configuration?.snapshot.modelId ?? null,
         models: textAiModelCatalog.map((model, index) => {
@@ -123,6 +126,7 @@ export async function readTextAiCatalog(
                   : unavailable
                     ? ('unavailable' as const)
                     : ('available' as const);
+
             return {
                 id: model.id,
                 label: model.label,

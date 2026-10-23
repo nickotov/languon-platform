@@ -19,6 +19,7 @@ const dto = (row: typeof prices.$inferSelect): ProviderPrice => ({
     createdAt: row.createdAt.toISOString(),
     effectiveAt: row.effectiveAt.toISOString(),
 });
+
 export class DrizzleProviderPriceStore {
     constructor(private readonly database: Database) {}
     async list(): Promise<ProviderPrice[]> {
@@ -32,8 +33,10 @@ export class DrizzleProviderPriceStore {
                 prices.meter,
                 desc(prices.version),
             );
+
         return rows.map(dto);
     }
+
     async publish(
         input: ProviderPricePublishRequest,
         actorId: string,
@@ -43,6 +46,7 @@ export class DrizzleProviderPriceStore {
             await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${`provider-price:${input.providerId}:${input.modelId}:${input.meter}`},0))`,
             );
+
             const [latest] = await tx
                 .select()
                 .from(prices)
@@ -55,6 +59,7 @@ export class DrizzleProviderPriceStore {
                 )
                 .orderBy(desc(prices.version))
                 .limit(1);
+
             if ((latest?.version ?? 0) !== input.expectedVersion)
                 throw new AccountingConflictError(
                     'Provider price revision changed.',
@@ -74,7 +79,9 @@ export class DrizzleProviderPriceStore {
                     data,
                 })
                 .returning();
+
             if (!saved) throw new Error('Provider price publication failed.');
+
             return dto(saved);
         });
     }
@@ -103,6 +110,7 @@ export async function pinProviderPrice(
         )
         .orderBy(desc(prices.effectiveAt), desc(prices.version))
         .limit(1);
+
     // Execution snapshots cross account lifetimes; retain numerical provenance,
     // never copy an administrator identity or free-text review metadata into another owner's job.
     return row

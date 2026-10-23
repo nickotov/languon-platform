@@ -23,8 +23,10 @@ function amount(value: string | null) {
         throw new OperatorBudgetUnavailableError(
             'Invalid operator spending limit.',
         );
+
     return result;
 }
+
 /** All model/capability cohorts use the same UTC daily counters in one transaction. */
 export class DrizzleOperatorBudgetParticipant {
     constructor(private readonly tx: AiCreditTransaction) {}
@@ -33,25 +35,30 @@ export class DrizzleOperatorBudgetParticipant {
             sql`select pg_advisory_xact_lock(hashtextextended(${ownerId},1920424381))`,
         );
     }
+
     private async lockActionOwner(actionId: string) {
         const [action] = await this.tx
             .select({ ownerId: actions.ownerId })
             .from(actions)
             .where(eq(actions.actionId, actionId));
+
         if (!action?.ownerId)
             throw new OperatorBudgetUnavailableError(
                 'Operator action authorization is missing.',
             );
         await this.lockOwner(action.ownerId);
     }
+
     private async lock() {
         await this.tx.execute(sql`select pg_advisory_xact_lock(1920424395)`);
     }
+
     /** Reserve settlement's global locks before a job status update fires capacity projections. */
     async lockForSettlement(ownerId: string) {
         await this.lockOwner(ownerId);
         await this.lock();
     }
+
     async reserveAction(input: {
         actionId: string;
         ownerId: string;
@@ -70,6 +77,7 @@ export class DrizzleOperatorBudgetParticipant {
             input.maximumMicros < limits.action
                 ? input.maximumMicros
                 : limits.action;
+
         if (maximum < 0n || maximum > MAX)
             throw new OperatorBudgetUnavailableError(
                 'Invalid operator action reservation.',
@@ -79,6 +87,7 @@ export class DrizzleOperatorBudgetParticipant {
             .from(actions)
             .where(eq(actions.actionId, input.actionId))
             .for('update');
+
         if (previous) {
             if (
                 previous.ownerId !== input.ownerId ||
@@ -87,8 +96,10 @@ export class DrizzleOperatorBudgetParticipant {
                 throw new OperatorBudgetUnavailableError(
                     'Conflicting operator action identity.',
                 );
+
             return previous;
         }
+
         const day = input.at.toISOString().slice(0, 10);
         const [reservation] = await this.tx
             .insert(actions)
@@ -114,10 +125,13 @@ export class DrizzleOperatorBudgetParticipant {
                     throw new OperatorBudgetUnavailableError(
                         'The operator spending allowance is unavailable.',
                     );
+
                 throw error;
             });
+
         return reservation!;
     }
+
     async remaining(actionId: string): Promise<bigint> {
         await this.lockActionOwner(actionId);
         // Keep operator authorization before report-dirty locks during expense writes.
@@ -127,6 +141,7 @@ export class DrizzleOperatorBudgetParticipant {
             .from(actions)
             .where(eq(actions.actionId, actionId))
             .for('update');
+
         if (!action || action.state !== 'active')
             throw new OperatorBudgetUnavailableError(
                 'Active operator authorization is missing.',
@@ -137,8 +152,10 @@ export class DrizzleOperatorBudgetParticipant {
             })
             .from(attempts)
             .where(eq(attempts.actionId, actionId));
+
         return action.reservedMicros - BigInt(usage?.used ?? '0');
     }
+
     async reserveAttempt(input: {
         actionId: string;
         attemptId: string;
@@ -157,6 +174,7 @@ export class DrizzleOperatorBudgetParticipant {
             createdAt: input.at,
         });
     }
+
     async recordAttempt(input: {
         actionId: string;
         attemptId: string;
@@ -174,6 +192,7 @@ export class DrizzleOperatorBudgetParticipant {
                 ),
             )
             .for('update');
+
         if (!attempt)
             throw new OperatorBudgetUnavailableError(
                 'Provider attempt operator authorization is missing.',
@@ -183,6 +202,7 @@ export class DrizzleOperatorBudgetParticipant {
             input.measuredMicros !== null &&
             input.measuredMicros >= 0n &&
             input.measuredMicros <= attempt.reservedMicros;
+
         await this.tx
             .update(attempts)
             .set({
@@ -194,6 +214,7 @@ export class DrizzleOperatorBudgetParticipant {
             })
             .where(eq(attempts.attemptId, input.attemptId));
     }
+
     async settleAction(input: { actionId: string; at: Date }) {
         await this.lockActionOwner(input.actionId);
         await this.lock();
@@ -202,6 +223,7 @@ export class DrizzleOperatorBudgetParticipant {
             .from(actions)
             .where(eq(actions.actionId, input.actionId))
             .for('update');
+
         if (!action)
             throw new OperatorBudgetUnavailableError(
                 'Operator action authorization is missing.',
@@ -220,6 +242,7 @@ export class DrizzleOperatorBudgetParticipant {
                     sql`${attempts.settledAt} is null`,
                 ),
             );
+
         const [usage] = await this.tx
             .select({
                 used: sql<string>`coalesce(sum(coalesce(${attempts.consumedMicros},${attempts.reservedMicros})),0)::text`,
@@ -236,6 +259,7 @@ export class DrizzleOperatorBudgetParticipant {
             })
             .where(eq(actions.actionId, action.actionId))
             .returning();
+
         return result!;
     }
 }

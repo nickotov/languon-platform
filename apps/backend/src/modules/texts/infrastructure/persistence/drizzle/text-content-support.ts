@@ -28,6 +28,7 @@ export function textDocument(row: TextRow): TextDocument {
         updatedAt: row.updatedAt.toISOString(),
     });
 }
+
 export function textFolder(row: FolderRow): TextFolder {
     return {
         id: row.id,

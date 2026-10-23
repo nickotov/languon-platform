@@ -34,6 +34,7 @@ export function sentenceBudget(job: SentenceJobRow) {
         maxOutputTokensPerAttempt: job.providerMaxOutputTokensPerAttempt,
     };
 }
+
 export async function reserveSentenceAttempt(
     tx: SentenceTransaction,
     job: SentenceJobRow,
@@ -59,10 +60,13 @@ export async function reserveSentenceAttempt(
                 throw new SentenceCapacityUnavailableError();
             if (error instanceof AiCreditInsufficientBalanceError)
                 throw new SentenceCreditsExhaustedError();
+
             throw error;
         }
+
         return;
     }
+
     if (!job.aiCreditAccounted) return;
     const id = randomUUID();
     try {
@@ -77,6 +81,7 @@ export async function reserveSentenceAttempt(
             ownerId: job.learnerId,
             reservationId: id,
         });
+
         await tx
             .update(jobs)
             .set({
@@ -88,9 +93,11 @@ export async function reserveSentenceAttempt(
     } catch (error) {
         if (error instanceof AiCreditInsufficientBalanceError)
             throw new SentenceCreditsExhaustedError();
+
         throw error;
     }
 }
+
 export async function settleSentenceAttempt(
     tx: SentenceTransaction,
     job: SentenceJobRow,
@@ -115,6 +122,7 @@ export async function settleSentenceAttempt(
             ...(usage ? { usage } : {}),
             at: now,
         });
+
         if (terminal && !job.selectedExecutionSnapshot.actionParentId)
             await settleLegacyAction(tx, {
                 id: job.id,
@@ -123,6 +131,7 @@ export async function settleSentenceAttempt(
                 at: now,
             });
     }
+
     if (job.providerReservationState !== 'active') return;
     if (
         usage &&
@@ -157,6 +166,7 @@ export async function settleSentenceAttempt(
                           }),
                       )
                     : 0n;
+
             if (outcome === 'failure' || !usage)
                 await credits.settleFailedAttempt({
                     ownerId: job.learnerId,
@@ -174,6 +184,7 @@ export async function settleSentenceAttempt(
             }
         }
     }
+
     const dispatched = job.aiCreditProviderDispatchedAt !== null;
     const actual = dispatched
         ? (usage ?? {
@@ -181,6 +192,7 @@ export async function settleSentenceAttempt(
               outputTokens: job.providerMaxOutputTokensPerAttempt,
           })
         : { inputTokens: 0, outputTokens: 0 };
+
     await tx
         .update(jobs)
         .set({

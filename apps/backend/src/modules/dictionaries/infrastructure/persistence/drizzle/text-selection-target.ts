@@ -61,6 +61,7 @@ export async function selectionTarget(
             ),
         )
         .for('update');
+
     if (!dictionary || dictionary.lifecycle !== 'active')
         throw new TextSelectionError('not_found');
     const [values] = await tx
@@ -68,6 +69,7 @@ export async function selectionTarget(
         .from(settings)
         .where(eq(settings.dictionaryId, dictionary.id))
         .for('update');
+
     if (
         !values ||
         dictionary.version !== target.expectedDictionaryVersion ||
@@ -94,9 +96,11 @@ export async function selectionTarget(
                 ),
             )
             .limit(1);
+
         if (duplicate)
             throw new TextSelectionError('duplicate_confirmation_required');
     }
+
     const resolved: DictionarySettings = {
         customNotationLabel: values.customNotationLabel,
         definitionEnabled: values.definitionEnabled,
@@ -108,11 +112,13 @@ export async function selectionTarget(
         transcriptionNotation: values.transcriptionNotation,
         version: values.version,
     };
+
     return {
         settings: resolved,
         translationContext: dictionary.translationContext,
     };
 }
+
 export async function saveSelectionCard(
     tx: SelectionTransaction,
     input: {
@@ -137,6 +143,7 @@ export async function saveSelectionCard(
     const counts = await tx.execute(
         sql`select (select count(*) from dictionaries where owner_id=${input.ownerId}::uuid) dictionaries,(select count(*) from dictionary_cards c join dictionaries d on c.dictionary_id=d.id where d.owner_id=${input.ownerId}::uuid) cards,(select count(*) from dictionary_card_revisions r join dictionaries d on r.dictionary_id=d.id where d.owner_id=${input.ownerId}::uuid) revisions`,
     );
+
     assertDictionaryOwnerCapacity(
         {
             dictionaries: Number(counts[0]?.dictionaries ?? 0),
@@ -149,8 +156,10 @@ export async function saveSelectionCard(
             revisions: 1,
         },
     );
+
     const dictionaryId =
         input.target.kind === 'new' ? randomUUID() : input.target.dictionaryId;
+
     if (input.target.kind === 'new') {
         await tx.insert(dictionaries).values({
             id: dictionaryId,
@@ -161,12 +170,14 @@ export async function saveSelectionCard(
             createdAt: input.now,
             updatedAt: input.now,
         });
+
         await tx.insert(settings).values({
             dictionaryId,
             createdAt: input.now,
             updatedAt: input.now,
         });
     }
+
     const [totals] = await tx
         .select({
             count: sql<number>`count(*) filter(where ${cards.lifecycle}='active')`,
@@ -174,9 +185,11 @@ export async function saveSelectionCard(
         })
         .from(cards)
         .where(eq(cards.dictionaryId, dictionaryId));
+
     assertDictionaryCardCapacity(Number(totals?.count ?? 0) + 1);
     const values = normalizeCardValues(input.values),
         cardId = randomUUID();
+
     await tx.insert(cards).values({
         ...values,
         id: cardId,
@@ -190,6 +203,7 @@ export async function saveSelectionCard(
         createdAt: input.now,
         updatedAt: input.now,
     });
+
     const effective = resolveCardSettings({
         dictionary: resolved.settings,
         overrides: selectionCardOverrides,
@@ -205,6 +219,7 @@ export async function saveSelectionCard(
         rawTranslationContext: null,
         effectiveTranslationContext: resolved.translationContext,
     });
+
     await tx.insert(revisions).values({
         id: randomUUID(),
         actorUserId: input.ownerId,
@@ -219,6 +234,7 @@ export async function saveSelectionCard(
         snapshot,
         createdAt: input.now,
     });
+
     if (input.target.kind === 'existing')
         await tx
             .update(dictionaries)
@@ -227,5 +243,6 @@ export async function saveSelectionCard(
                 updatedAt: input.now,
             })
             .where(eq(dictionaries.id, dictionaryId));
+
     return { dictionaryId, cardId };
 }

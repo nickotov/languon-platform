@@ -31,6 +31,7 @@ export function textsBudget(job: TextsJobRow) {
         maxOutputTokensPerAttempt: job.providerMaxOutputTokensPerAttempt,
     };
 }
+
 export async function reserveTextsAttempt(
     tx: TextsTransaction,
     job: TextsJobRow,
@@ -56,10 +57,13 @@ export async function reserveTextsAttempt(
                 throw new TextsAiError('rate_limited');
             if (error instanceof AiCreditInsufficientBalanceError)
                 throw new TextsCreditsExhaustedError();
+
             throw error;
         }
+
         return;
     }
+
     if (!job.aiCreditAccounted) return;
     const id = randomUUID();
     try {
@@ -74,6 +78,7 @@ export async function reserveTextsAttempt(
             ownerId: job.ownerId,
             reservationId: id,
         });
+
         await tx
             .update(jobs)
             .set({
@@ -85,9 +90,11 @@ export async function reserveTextsAttempt(
     } catch (error) {
         if (error instanceof AiCreditInsufficientBalanceError)
             throw new TextsCreditsExhaustedError();
+
         throw error;
     }
 }
+
 export async function settleTextsAttempt(
     tx: TextsTransaction,
     job: TextsJobRow,
@@ -112,6 +119,7 @@ export async function settleTextsAttempt(
             ...(usage ? { usage } : {}),
             at: now,
         });
+
         if (terminal)
             await settleLegacyAction(tx, {
                 id: job.id,
@@ -120,6 +128,7 @@ export async function settleTextsAttempt(
                 at: now,
             });
     }
+
     if (job.providerReservationState !== 'active') return;
     if (
         usage &&
@@ -154,6 +163,7 @@ export async function settleTextsAttempt(
                           }),
                       )
                     : 0n;
+
             if (outcome === 'failure' || !usage)
                 await credits.settleFailedAttempt({
                     ownerId: job.ownerId,
@@ -171,6 +181,7 @@ export async function settleTextsAttempt(
             }
         }
     }
+
     const dispatched = job.aiCreditProviderDispatchedAt !== null;
     const actual = dispatched
         ? (usage ?? {
@@ -178,6 +189,7 @@ export async function settleTextsAttempt(
               outputTokens: job.providerMaxOutputTokensPerAttempt,
           })
         : { inputTokens: 0, outputTokens: 0 };
+
     await tx
         .update(jobs)
         .set({

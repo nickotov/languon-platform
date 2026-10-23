@@ -182,23 +182,24 @@ run('flashcard learning lifecycle persistence', () => {
         await expect(
             learning.progress(access, context()),
         ).rejects.toBeInstanceOf(LearningUnavailableError);
+        const purgeNow = new Date();
         await database.insert(accountDeletionRequestsTable).values({
-            nextAttemptAt: now,
-            purgeAt: now,
-            scheduledAt: new Date(now.getTime() - 30 * 24 * 60 * 60_000),
-            updatedAt: now,
+            nextAttemptAt: purgeNow,
+            purgeAt: purgeNow,
+            scheduledAt: new Date(purgeNow.getTime() - 30 * 24 * 60 * 60_000),
+            updatedAt: purgeNow,
             userId: learnerId,
         });
         const purge = new DrizzleAccountPurgeStore(database);
         const claim = await purge.claimDue({
-            now,
+            now: purgeNow,
             workerId: 'learning-lifecycle-test',
         });
         expect(claim).toMatchObject({ userId: learnerId });
         expect(
             await purge.finish({
                 ...claim!,
-                now,
+                now: purgeNow,
                 workerId: 'learning-lifecycle-test',
             }),
         ).toBe(true);
