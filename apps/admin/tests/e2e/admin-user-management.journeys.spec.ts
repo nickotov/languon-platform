@@ -1171,6 +1171,75 @@ test.describe.serial('admin user management journeys', () => {
         assertNoBrowserErrors();
     });
 
+    test('refreshes expired admin access before a single pricing write', async ({
+        page,
+    }) => {
+        test.skip(
+            process.env.ADMIN_E2E_ACCESS_TOKEN_TTL !== '60s',
+            'Requires the shortened token-expiry verification environment.',
+        );
+        test.setTimeout(120_000);
+        const clean = captureBrowserErrors(page, {
+            '/api/admin/auth/refresh': 401,
+        });
+        const loginResponse = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/admin/auth/login/password') &&
+                response.status() === 200,
+        );
+        await passwordLogin(page);
+        const { accessTokenExpiresAt } = (await (
+            await loginResponse
+        ).json()) as { accessTokenExpiresAt: string };
+        await page.getByRole('menuitem', { name: 'AI settings' }).click();
+        const row = page.getByRole('row').filter({ hasText: 'deepseek-flash' });
+        await row.getByRole('button', { name: 'Edit price' }).click();
+        const dialog = page.getByRole('dialog', {
+            name: 'Publish model price',
+        });
+        await dialog
+            .getByLabel('Credits per million input tokens', { exact: true })
+            .fill('100');
+        await dialog
+            .getByLabel('Credits per million output tokens', { exact: true })
+            .fill('300');
+        await dialog
+            .getByLabel('Reason', { exact: true })
+            .fill(
+                'Verify expired access refresh before one explicit price publication',
+            );
+        let refreshes = 0;
+        let publications = 0;
+        page.on('request', (request) => {
+            if (request.url().endsWith('/admin/auth/refresh')) refreshes++;
+            if (
+                request.method() === 'POST' &&
+                request.url().endsWith('/admin/ai/model-prices')
+            )
+                publications++;
+        });
+        // Real backend token expiry; no mocked response, clock or auth state.
+        await page.waitForTimeout(
+            Math.max(0, Date.parse(accessTokenExpiresAt) - Date.now() + 1500),
+        );
+        const published = page.waitForResponse(
+            (response) =>
+                response.request().method() === 'POST' &&
+                response.url().endsWith('/admin/ai/model-prices'),
+        );
+        await dialog
+            .getByRole('button', { name: 'Publish price revision' })
+            .click();
+        expect((await published).status()).toBe(200);
+        await expect(dialog).not.toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: 'AI providers', exact: true }),
+        ).toBeVisible();
+        expect(refreshes).toBe(1);
+        expect(publications).toBe(1);
+        clean();
+    });
+
     // @user-flow admin-user-management/admin-owner-disable-and-restore-user
     test('owner disables and restores a user with explicit audited reasons', async ({
         page,

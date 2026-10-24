@@ -66,6 +66,41 @@ and reported balances are cash/balance observations, not generation expense.
 Invoice differences stay unallocated at provider/period level unless evidence
 supports finer attribution.
 
+### DeepSeek Flash testing preset
+
+Use these values for local testing. They configure operator spending limits and
+provider expense estimates; customer credit tariffs remain separate.
+
+In **Accounting settings**, enter:
+
+| Field                                | Value |
+| ------------------------------------ | ----: |
+| Default maximum credits per action   |    10 |
+| Maximum provider USD per action      |  0.10 |
+| Maximum provider USD per account/day |     1 |
+| Maximum provider USD globally/day    |     5 |
+
+In **Provider prices**, publish a revision with:
+
+| Field                             | Value                                       |
+| --------------------------------- | ------------------------------------------- |
+| Provider                          | `deepseek`                                  |
+| Model                             | `deepseek-flash`                            |
+| Meter                             | `text-tokens`                               |
+| Input USD per million tokens      | 0.30                                        |
+| Output USD per million tokens     | 1.20                                        |
+| Cache-read USD per million tokens | 0.006                                       |
+| Cache-write rate                  | Leave empty                                 |
+| Effective date                    | Now (the time you publish the revision)     |
+| Source reference                  | `deepseek-flash-peak-testing`               |
+| Reason                            | Local testing using conservative peak rates |
+
+These are conservative peak-rate testing estimates and can overestimate
+off-peak provider expense. Review the current
+[DeepSeek pricing](https://api-docs.deepseek.com/quick_start/pricing/) before
+using the rates for actual cost reporting. This preset is not a production
+economic default.
+
 ## Operational checks
 
 Use the exact settled amount for transactions and admission. Compact learner

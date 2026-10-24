@@ -17,6 +17,153 @@ afterEach(() => {
 });
 
 describe('admin API boundary', () => {
+    it('retains expiry in memory and refreshes before its safety window', () => {
+        accessTokenStore.set(
+            'valid-token',
+            new Date(Date.now() + 60_000).toISOString(),
+        );
+        expect(accessTokenStore.getUsable()).toBe('valid-token');
+
+        accessTokenStore.set(
+            'near-expiry',
+            new Date(Date.now() + 10_000).toISOString(),
+        );
+        expect(accessTokenStore.getUsable()).toBeNull();
+        expect(accessTokenStore.get()).toBe('near-expiry');
+
+        accessTokenStore.set('bad-expiry', 'invalid');
+        expect(accessTokenStore.getUsable()).toBeNull();
+        accessTokenStore.clear();
+        expect(accessTokenStore.getUsable()).toBeNull();
+    });
+
+    it('coordinates preflight refresh for concurrent reads and audio previews', async () => {
+        const fetchMock = vi.fn(
+            async (input: RequestInfo | URL, _init?: RequestInit) => {
+                if (String(input).endsWith('/admin/auth/refresh')) {
+                    return jsonResponse(authenticationResponse());
+                }
+                if (String(input).endsWith('/content')) {
+                    return new Response(new Uint8Array([1, 2]), {
+                        headers: { 'Content-Type': 'audio/mpeg' },
+                    });
+                }
+                return jsonResponse({
+                    data: [],
+                    page: 1,
+                    pageSize: 25,
+                    total: 0,
+                });
+            },
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set(
+            'expired-token',
+            new Date(Date.now() - 1000).toISOString(),
+        );
+
+        const [users, audio] = await Promise.all([
+            adminApi.users({ page: 1, pageSize: 25 }),
+            adminApi.speechRecordingContent(
+                '00000000-0000-4000-8000-000000000042',
+            ),
+        ]);
+        expect(users.data).toEqual([]);
+        expect(audio.type).toBe('audio/mpeg');
+        expect(
+            fetchMock.mock.calls.filter(([url]) =>
+                String(url).endsWith('/admin/auth/refresh'),
+            ),
+        ).toHaveLength(1);
+        for (const [, init] of fetchMock.mock.calls.slice(1)) {
+            expect(init).toMatchObject({
+                headers: { Authorization: 'Bearer aaa.bbb.ccc' },
+            });
+        }
+    });
+
+    it('does not treat recent-sign-in denial as access-token expiry', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+            jsonResponse(
+                {
+                    error: {
+                        code: 'recent_authentication_required',
+                        message: 'Recent authentication is required.',
+                        correlationId: 'recent-auth',
+                    },
+                },
+                403,
+            ),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set(
+            'valid-token',
+            new Date(Date.now() + 60_000).toISOString(),
+        );
+
+        await expect(
+            adminApi.publishAccountingSettings({
+                expectedVersion: 0,
+                defaultMaxCreditsPerAction: '10',
+                maxProviderCostUsdPerAction: '0.1',
+                maxProviderCostUsdPerAccountDay: '1',
+                maxProviderCostUsdPerDay: '5',
+                reason: 'Configure local testing budget limits',
+            }),
+        ).rejects.toMatchObject({
+            detail: { code: 'recent_authentication_required' },
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(accessTokenStore.get()).toBe('valid-token');
+    });
+
+    it('refreshes an expired token before sending a sensitive accounting write once', async () => {
+        const settings = {
+            version: 1,
+            defaultMaxCreditsPerAction: '10',
+            maxProviderCostUsdPerAction: '0.1',
+            maxProviderCostUsdPerAccountDay: '1',
+            maxProviderCostUsdPerDay: '5',
+        };
+        const fetchMock = vi.fn(
+            async (input: RequestInfo | URL, init?: RequestInit) => {
+                if (String(input).endsWith('/admin/auth/refresh')) {
+                    return jsonResponse(authenticationResponse());
+                }
+                const headers = init?.headers as Record<string, string>;
+                if (headers.Authorization === 'Bearer expired-token') {
+                    return jsonResponse(
+                        {
+                            error: {
+                                code: 'authentication_required',
+                                message: 'Authentication is required.',
+                                correlationId: 'expired-sensitive-write',
+                            },
+                        },
+                        401,
+                    );
+                }
+                return jsonResponse(settings);
+            },
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set(
+            'expired-token',
+            new Date(Date.now() - 1000).toISOString(),
+        );
+
+        await expect(
+            adminApi.publishAccountingSettings({
+                ...settings,
+                expectedVersion: 0,
+                reason: 'Configure local testing budget limits',
+            }),
+        ).resolves.toEqual(settings);
+        expect(
+            fetchMock.mock.calls.map(([url]) => String(url).split('/').pop()),
+        ).toEqual(['refresh', 'accounting-settings']);
+    });
+
     it('provides English labels and interpolated values through Refine i18n', () => {
         expect(adminI18nProvider.getLocale()).toBe('en');
         expect(
@@ -495,7 +642,7 @@ function aiCreditsResponse() {
 function authenticationResponse() {
     return {
         accessToken: 'aaa.bbb.ccc',
-        accessTokenExpiresAt: '2026-08-20T09:15:00.000Z',
+        accessTokenExpiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
         session: {
             authenticatedAt: '2026-08-20T09:00:00.000Z',
             createdAt: '2026-08-20T09:00:00.000Z',

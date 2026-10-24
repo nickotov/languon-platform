@@ -112,7 +112,7 @@ async function authorized<TResponse>(
     signal?: AbortSignal,
 ) {
     let accessToken =
-        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+        accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
     try {
         return await client.request(path, {
             accessToken,
@@ -159,7 +159,7 @@ async function refreshSession(signal?: AbortSignal) {
             message: 'Authentication is required.',
         });
     }
-    accessTokenStore.set(session.accessToken);
+    accessTokenStore.set(session.accessToken, session.accessTokenExpiresAt);
     return session;
 }
 
@@ -495,7 +495,7 @@ async function authorizedMutation(
     signal?: AbortSignal,
 ) {
     let accessToken =
-        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+        accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
     const request = () =>
         client.request(path, {
             accessToken,
@@ -524,7 +524,7 @@ async function authorizedRequest<TBody, TResponse>(
     signal?: AbortSignal,
 ) {
     let accessToken =
-        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+        accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
     const request = () =>
         client.request(path, {
             accessToken,
@@ -562,7 +562,7 @@ async function authorizedSingleRequest<TBody, TResponse>(
     method: 'POST' | 'PATCH' = 'POST',
 ) {
     const accessToken =
-        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+        accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
     return client.request(path, {
         accessToken,
         body,
@@ -578,7 +578,7 @@ async function authorizedAudio(
     signal?: AbortSignal,
 ): Promise<Blob> {
     const accessToken =
-        accessTokenStore.get() ?? (await refreshAccessToken(signal));
+        accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
     const response = await fetch(`${apiUrl}${path}`, {
         headers: {
             [resolveAdminAccessTokenHeader(import.meta.env.PROD)]:

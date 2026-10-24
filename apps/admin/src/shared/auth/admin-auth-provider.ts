@@ -29,7 +29,10 @@ export const adminAuthProvider: AuthProvider = {
                     success: false,
                 };
             }
-            accessTokenStore.set(response.accessToken);
+            accessTokenStore.set(
+                response.accessToken,
+                response.accessTokenExpiresAt,
+            );
             adminRefreshCoordinator.publishAuthenticated(response);
             actor = (await adminApi.me()).actor;
             return { redirectTo: '/', success: true };
