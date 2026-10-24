@@ -54,7 +54,7 @@ jobs:
             - name: Check formatting
               run: pnpm format:check
             - name: Check agent and user-flow contracts
-              run: pnpm agent-skills:check && pnpm docs:user-flows:check
+              run: pnpm agent-skills:check && pnpm docs:user-flows:check && pnpm critical-flows:check && pnpm check:setup-docs
             - name: Lint
               run: pnpm lint
             - name: Typecheck
@@ -63,6 +63,20 @@ jobs:
               run: pnpm test
             - name: Test release workflow contracts
               run: node --test scripts/release-manifest.test.mjs scripts/release-workflow-contract.test.mjs
+            - name: Test critical workflow runner contracts
+              run: node --test scripts/critical-flows/*.test.mjs
+            - name: Install critical-flow browser
+              run: pnpm --filter @languon/web exec playwright install --with-deps chromium
+            - name: Verify critical application workflows
+              run: pnpm test:e2e:critical
+            - name: Preserve critical-flow evidence
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: critical-flows-${{ inputs.identity }}
+                  path: test-results/critical-flows/
+                  if-no-files-found: warn
+                  retention-days: 14
             - name: Verify migration history
               run: pnpm db:check
             - name: Build production workspaces

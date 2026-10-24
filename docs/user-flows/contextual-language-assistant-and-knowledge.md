@@ -289,10 +289,13 @@ accounting behavior have separate real composed HTTP/integration coverage.
 - Auto chat uses DeepSeek Flash. An explicit incompatible/unavailable model
   fails visibly without fallback. Capacity/credit failures never silently charge
   an unissued provider call; incurred dispatched work remains accounted.
-- Provider failures keep the learner question and incomplete assistant output.
-  Conservative usage is visibly marked **Estimated**, with separate input/output
-  token and charged-credit labels. Reopening reconnects. Retrying always requires
-  explicit learner action.
+- Technical provider failures keep the learner question and incomplete assistant
+  output, release the credit hold, and charge the learner nothing. The billing
+  popover shows **Hold released · no charge** and exact charged credits of zero.
+  Usage is reported, estimated, or **Unknown** according to the available evidence;
+  missing provider usage must not be presented as a measured zero or an estimate
+  without a defensible basis. Provider expense remains an operator accounting
+  concern. Reopening reconnects; retrying always requires explicit learner action.
 - A learner can keep at most eight active assistant event subscriptions. Rapid
   reconnect attempts are also limited to twelve per minute. A busy/rate-limit
   response preserves durable work; wait briefly and retry the connection.

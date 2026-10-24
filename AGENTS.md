@@ -264,6 +264,15 @@ Follow `docs/user-flows/README.md`. Before changing behavior or commands, scan
 guide `feature`, `related_features`, and `source_paths`; inspect mapped
 coverage with `pnpm user-flow:e2e -- inspect <slug>`.
 
+For important workflows, follow [critical verification](docs/operations/critical-workflows.md):
+register new critical journeys and prerequisites in the existing registry, run
+affected entries before handoff, and run the full gate for shared authentication,
+accounting, model-selection or worker/configuration changes. Required skipped
+flows are missing evidence. Keep [local setup](docs/operations/local-testing-setup.md)
+and doctor/profile definitions current when prerequisites change; use
+`$local-test-setup` for repeatable setup and `$critical-browser-verification`
+for additional bounded Luna browser observations.
+
 - Features create or update all applicable guides. A feature with an executable
   browser, API, mobile, admin, CLI, or system journey normally requires one;
   record a concrete reason in `FEATURE.md` when none applies.

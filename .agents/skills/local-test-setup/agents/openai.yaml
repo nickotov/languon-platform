@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Local Test Setup'
+    short_description: 'Prepare repeatable local feature testing'
+    default_prompt: 'Use $local-test-setup to inspect and prepare this local testing flow.'

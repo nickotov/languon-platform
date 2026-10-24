@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:daf894d6a34e6f4d
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:4aa983c33e115f37
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -1750,6 +1750,20 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
     const assertClean = runtimeErrors(page);
     await page.setViewportSize({ width: 390, height: 844 });
     const token = await signup(page, info);
+    // This lifecycle scenario funds the complete synthetic tool/system prompt;
+    // reduced-budget authorization is exercised by the accounting journeys.
+    const preference = await api(page, token, '/users/me/ai-model-preference');
+    await api(
+        page,
+        token,
+        '/users/me/ai-model-preference',
+        {
+            mode: 'auto',
+            expectedVersion: preference.version,
+            maxCreditsPerAction: '100',
+        },
+        'PUT',
+    );
     const text = await source(page, token, info);
     const sheet = page.getByRole('region', {
         name: 'Language tutor',
@@ -1758,9 +1772,22 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
     await expect
         .poll(async () => Math.round((await sheet.boundingBox())!.width))
         .toBe(390);
+    // The full sheet respects the application top bar instead of assuming it occupies the entire viewport.
     await expect
-        .poll(async () => Math.round((await sheet.boundingBox())!.height))
-        .toBe(832);
+        .poll(async () => {
+            const bounds = await sheet.boundingBox();
+            return (
+                bounds !== null &&
+                bounds.y >= 0 &&
+                bounds.y + bounds.height <= 844
+            );
+        })
+        .toBe(true);
+    await expect(sheet.getByLabel('Your question')).toBeInViewport();
+    await expect(sheet.getByLabel('Your question')).toBeEditable();
+    await expect(
+        sheet.getByRole('button', { name: 'Send', exact: true }),
+    ).toBeInViewport();
     await capture(page, info, 'tutor-initial-full-sheet-mobile');
     await sheet
         .getByRole('button', { name: 'Reduce to partial height', exact: true })
@@ -1870,6 +1897,8 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
         `/conversations/${conversationId}`,
     )) as ConversationDetail;
     expect(detail.turns).toHaveLength(1);
+    expect(detail.turns[0]?.billing?.state).toBe('charged');
+    expect(Number(detail.turns[0]?.billing?.chargedCredits)).toBeGreaterThan(0);
     expect(
         detail.messages.filter((message) => message.role === 'user'),
     ).toHaveLength(1);
@@ -1920,7 +1949,9 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
             `/conversations/${conversationId}`,
         )) as ConversationDetail
     ).turns.find((turn) => turn.status === 'failed')!;
-    expect(failed.usage.estimated).toBe(true);
+    expect(failed.billing?.measurement).toBe('unknown');
+    expect(failed.usage.chargedCredits).toBe('0');
+    expect(failed.billing?.state).toBe('released');
     const retry = page
         .getByRole('region', {
             name: 'Incomplete response: Explain river bank; fail once.',
@@ -1930,12 +1961,13 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
     await expect(retry).toBeEnabled();
     const failedArticle = page.locator('article').filter({ has: retry });
     const usageTrigger = failedArticle.getByRole('button', {
-        name: /^Charged credits:/u,
+        name: 'Hold released · no charge',
+        exact: true,
     });
     await usageTrigger.click();
     const usage = page.getByRole('dialog', { name: 'Usage', exact: true });
     await expect(usage).toBeVisible();
-    await expect(usage.getByText('Estimated', { exact: true })).toBeVisible();
+    await expect(usage.getByText('Unknown', { exact: true })).toBeVisible();
     await expect(
         usage
             .getByRole('term')
@@ -1948,12 +1980,16 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
             .filter({ hasText: /^Output tokens$/u })
             .locator('+ dd'),
     ).toHaveText(String(failed.usage.outputTokens));
-    await expect(usageTrigger).toContainText(
-        `Charged credits: ${failed.usage.chargedCredits}`,
-    );
+    await expect(
+        usage
+            .getByRole('term')
+            .filter({ hasText: /^Charged credits$/u })
+            .locator('+ dd'),
+    ).toHaveText('0');
+    await expect(usageTrigger).toContainText('Hold released · no charge');
     await usage.scrollIntoViewIfNeeded();
     await noOverflow(page);
-    await capture(page, info, 'assistant-estimated-usage-mobile');
+    await capture(page, info, 'assistant-unknown-usage-no-charge-mobile');
     await page.keyboard.press('Escape');
     await expect(usage).toHaveCount(0);
     await expect(usageTrigger).toBeFocused();

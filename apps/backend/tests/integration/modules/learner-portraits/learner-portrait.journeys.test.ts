@@ -5,7 +5,7 @@ import {
     aiCreditActionAllocationsTable,
 } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { capabilityPolicyRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
-// @user-flow-revision learner-portrait sha256:27ccde52e3d3cddf
+// @user-flow-revision learner-portrait sha256:75f6ddbc5274a8aa
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
@@ -1006,6 +1006,7 @@ run('real learner portrait HTTP and accounting journey', () => {
     });
 
     it.each([
+        null, // A new learner has no credit account or wallet rows.
         0n,
         100n,
         BigInt(
@@ -1044,7 +1045,12 @@ run('real learner portrait HTTP and accounting journey', () => {
                 paid.app,
                 `portrait-low-paid-${amount}`,
             );
-            await grantCredits(learner.userId, amount);
+            // Keep this regression runnable independently of earlier scenarios.
+            const configured = await authentication.productDependencies.database
+                .select()
+                .from(dictionaryAiConfigurationTable);
+            if (configured.length === 0) await configure(learner.userId);
+            if (amount !== null) await grantCredits(learner.userId, amount);
             const state = PortraitStateSchema.parse(
                 await (
                     await request(paid.app, '/learner-portrait', {
@@ -1086,6 +1092,23 @@ run('real learner portrait HTTP and accounting journey', () => {
             expect(await submitted.json()).toMatchObject({
                 error: { code: 'credits_exhausted' },
             });
+            expect(
+                await authentication.productDependencies.database
+                    .select()
+                    .from(aiCreditActionsTable)
+                    .where(eq(aiCreditActionsTable.ownerId, learner.userId)),
+            ).toHaveLength(0);
+            expect(
+                await authentication.productDependencies.database
+                    .select()
+                    .from(learnerPortraitInterviewOperationsTable)
+                    .where(
+                        eq(
+                            learnerPortraitInterviewOperationsTable.ownerId,
+                            learner.userId,
+                        ),
+                    ),
+            ).toHaveLength(0);
             expect(
                 await authentication.productDependencies.database
                     .select()

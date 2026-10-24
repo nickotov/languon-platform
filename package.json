@@ -18,7 +18,7 @@
         "browser:check": "node --test scripts/agent-browser.test.mjs scripts/agent-browser.integration.test.mjs && node scripts/agent-browser.mjs --doctor",
         "browser:install": "node scripts/agent-browser.mjs --install",
         "build": "turbo run build",
-        "check": "pnpm format:check && pnpm agent-skills:check && pnpm styles:check && pnpm web-dev-panel:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+        "check": "pnpm check:setup-docs && pnpm format:check && pnpm agent-skills:check && pnpm styles:check && pnpm web-dev-panel:check && pnpm docs:user-flows:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
         "db:check": "pnpm --filter @languon/backend db:check",
         "db:generate": "pnpm --filter @languon/backend db:generate",
         "db:migrate": "pnpm --filter @languon/backend db:migrate",
@@ -52,7 +52,7 @@
         "lint": "eslint .",
         "resources:dashboard": "node scripts/resources/dashboard.mjs",
         "resources:profile": "node scripts/resources/profile.mjs",
-        "test": "pnpm test:diagrams && pnpm test:code-search && node --test scripts/create-feature.test.mjs && pnpm test:agent-browser && pnpm test:document-services && pnpm test:frontend-architecture && pnpm test:persistence-readability && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
+        "test": "pnpm test:critical-tooling && pnpm test:diagrams && pnpm test:code-search && node --test scripts/create-feature.test.mjs && pnpm test:agent-browser && pnpm test:document-services && pnpm test:frontend-architecture && pnpm test:persistence-readability && pnpm test:mastra-harness && pnpm test:release-deployment && turbo run test",
         "test:agent-browser": "node --test scripts/agent-browser.test.mjs",
         "test:document-services": "node --test infra/test/document-services.test.mjs",
         "test:e2e:admin-user-management": "node scripts/run-admin-user-management-e2e.mjs",
@@ -83,7 +83,13 @@
         "diagrams": "node scripts/architecture-viewer/server.mjs",
         "diagrams:check": "node scripts/architecture-viewer/check.mjs",
         "test:diagrams": "node --test scripts/architecture-viewer/test/*.test.mjs",
-        "test:e2e:diagrams": "playwright test --config scripts/architecture-viewer/playwright.config.mjs"
+        "test:e2e:diagrams": "playwright test --config scripts/architecture-viewer/playwright.config.mjs",
+        "dev:doctor": "node scripts/dev-doctor.mjs",
+        "dev:configure": "node scripts/dev-configure.mjs",
+        "test:e2e:critical": "node scripts/run-critical-flows.mjs",
+        "test:critical-tooling": "pnpm exec turbo run build --filter=@languon/contracts && node --test scripts/dev-all.test.mjs scripts/dev-readiness/*.test.mjs scripts/dev-setup/*.test.mjs scripts/critical-flows/*.test.mjs",
+        "check:setup-docs": "node scripts/dev-configure.mjs --check-docs docs/operations/local-testing-setup.md",
+        "critical-flows:check": "node scripts/check-critical-flows.mjs"
     },
     "devDependencies": {
         "@ast-grep/cli": "0.45.3",

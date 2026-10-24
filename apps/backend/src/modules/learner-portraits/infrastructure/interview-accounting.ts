@@ -274,6 +274,14 @@ export function createInterviewAdmission(options: {
             ),
             providerBudget: execution.budget,
             at: now,
+        }).catch((error: unknown) => {
+            // Allowance admission can reject before a reservation is attempted.
+            if (error instanceof AiCreditInsufficientBalanceError)
+                throw new InterviewAccountingError(
+                    'credits_exhausted',
+                    'You do not have enough AI credits for input and any output.',
+                );
+            throw error;
         });
         const action = await new DrizzleActionAccountingParticipant(tx)
             .reserve({

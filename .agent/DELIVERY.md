@@ -106,6 +106,11 @@ Before an independent completion review or lightweight handoff:
 - Confirm public exports/callers and contracts where changed; inspect the final
   diff for accidental scope, secrets, generated output, and temporary artifacts.
 - Complete affected documentation and guide checks. Verify commands exist.
+- Apply the [critical workflow gate](../docs/operations/critical-workflows.md):
+  register new important journeys and prerequisites, execute affected entries,
+  and retain the full critical suite for shared auth/accounting/model/worker
+  changes. Verify the documented setup path as well as prepared fixtures.
+  Missing configuration or skipped tests cannot be reported as a passing flow.
 - For backlog work, reconcile the task and index using the synchronization rule
   below; a partial delivery must not imply the whole backlog task is Done.
 - Apply `$testing` evidence validity rules to the final patch. Reuse valid

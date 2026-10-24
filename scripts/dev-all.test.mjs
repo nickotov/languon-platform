@@ -118,7 +118,7 @@ test('missing local environment produces actionable failure', async () => {
 test('setup runs in order, then all services stop on command stop', async (t) => {
     const options = await fixture(t);
     const running = runDevelopment(options);
-    await waitFor(async () => (await options.events()).length === 5);
+    await waitFor(async () => (await options.events()).length === 7);
     options.signals.emit('SIGTERM');
     assert.equal(await running, 130);
     const events = await options.events();
@@ -131,6 +131,21 @@ test('setup runs in order, then all services stop on command stop', async (t) =>
             code: 'ESRCH',
         });
     assert.equal(options.signals.listenerCount('SIGTERM'), 0);
+});
+
+test('missing AI readiness does not prevent configuring the running app', async (t) => {
+    const options = await fixture(t, 'readiness');
+    const messages = [];
+    options.log = (message) => messages.push(message);
+    const running = runDevelopment(options);
+    await waitFor(async () => (await options.events()).length === 7);
+    assert.ok(
+        messages.some((message) =>
+            message.includes('Applications will still start'),
+        ),
+    );
+    options.signals.emit('SIGTERM');
+    assert.equal(await running, 130);
 });
 
 for (const name of ['infrastructure', 'dependencies', 'migrations']) {

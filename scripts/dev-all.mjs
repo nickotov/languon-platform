@@ -37,6 +37,20 @@ export const developmentCommands = {
         '--filter=@languon/backend^...',
     ],
     migrations: ['pnpm', 'db:migrate'],
+    readiness: [
+        'node',
+        'scripts/dev-doctor.mjs',
+        '--process-environment',
+        '--phase',
+        'configuration',
+    ],
+    runtimeReadiness: [
+        'node',
+        'scripts/dev-doctor.mjs',
+        '--process-environment',
+        '--wait-ms',
+        '15000',
+    ],
     applications: [
         'pnpm',
         'exec',
@@ -291,8 +305,23 @@ export async function runDevelopment({
                     `${name} ${result.failedToStart ? 'could not start; check Docker/pnpm installation' : 'failed; review the output above'}. No app processes were started.`,
                 );
         }
+        if (!stopping && commands.readiness) {
+            const result = await start('readiness');
+            if (result?.code !== 0 && !stopping)
+                log(
+                    'Some AI prerequisites are missing; review the doctor output. Applications will still start so you can configure them in admin.',
+                );
+        }
         if (!stopping) {
             const running = ['applications', 'dictionary'].map(start);
+            if (commands.runtimeReadiness) {
+                void start('runtimeReadiness').then((result) => {
+                    if (result?.code !== 0 && !stopping)
+                        log(
+                            'Runtime readiness is incomplete. After services are ready, run pnpm dev:doctor for actionable checks.',
+                        );
+                });
+            }
             log(
                 'Applications and dictionary worker launched; wait for their ready messages. Stop this command to stop them. PostgreSQL and Redis remain running.',
             );

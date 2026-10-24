@@ -46,7 +46,10 @@ const backendPort = new URL(backendOrigin).port || '4000';
 const adminPort = new URL(adminOrigin).port || '3001';
 const webPort = new URL(webOrigin).port || '3333';
 const reuseExistingServer = process.env.ADMIN_E2E_REUSE_SERVERS === 'true';
-const generationFormats = 'single-card:v2';
+const generationFormats =
+    process.env.ADMIN_E2E_SETUP_JOURNEY === 'true'
+        ? 'single-card:v2,text-detection:v2,text-translation:v3'
+        : 'single-card:v2';
 
 export default defineConfig({
     expect: { timeout: 10_000 },
@@ -89,6 +92,7 @@ export default defineConfig({
                 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
                 DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
                 DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'true',
+                TEXTS_AI_ENABLED: 'true',
                 DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED: 'true',
                 DICTIONARY_JOB_API_ACCEPTABLE_FORMATS: generationFormats,
                 DICTIONARY_JOB_API_CANCELLABLE_FORMATS: generationFormats,
@@ -135,7 +139,8 @@ export default defineConfig({
             command: `pnpm --filter @languon/web exec next dev --turbopack -p ${webPort} -H 127.0.0.1`,
             env: {
                 AUTH_E2E_DIST_DIR: '.next-admin-e2e',
-                NEXT_PUBLIC_API_URL: backendOrigin,
+                NEXT_PUBLIC_API_URL: '/api',
+                WEB_API_PROXY_TARGET: backendOrigin,
             },
             reuseExistingServer,
             stderr: 'pipe',

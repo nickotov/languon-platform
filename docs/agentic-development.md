@@ -1,4 +1,15 @@
+---
+type: reference
+title: Agentic development
+---
+
 # Agentic development
+
+Use [critical workflow verification](./operations/critical-workflows.md) for
+the mandatory reusable browser gate and registration of future important
+features. Use [local testing setup](./operations/local-testing-setup.md) for
+read-only readiness checks and repeatable admin configuration. Feature delivery
+must verify the setup path as well as the behavior in preconfigured fixtures.
 
 This guide describes how a developer works effectively with Codex in Languon:
 how to state work, run the project, select verification tools, review evidence,

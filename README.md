@@ -214,6 +214,11 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm diagrams:check`                         | Check diagram syntax and source freshness                                           |
 | `pnpm test:diagrams`                          | Test the diagram catalog and read-only HTTP boundary                                |
 | `pnpm test:e2e:diagrams`                      | Verify the real diagram viewer in Chromium                                          |
+| `pnpm dev:doctor`                             | Inspect local capability, worker, pricing and budget readiness without mutations    |
+| `pnpm dev:configure -- --help`                | Preview/apply reviewed local setup profiles through admin APIs                      |
+| `pnpm test:e2e:critical`                      | Run critical browser journeys with fresh owned deterministic infrastructure         |
+| `pnpm critical-flows:check`                   | Validate the extensible critical workflow registry                                  |
+| `pnpm check:setup-docs`                       | Check documented setup values against reviewed profile definitions                  |
 | `pnpm browser:install`                        | Install Chrome for agent-led browser checks                                         |
 | `pnpm browser:check`                          | Test the safe wrapper and live browser launch                                       |
 | `pnpm agent-skills:check`                     | Validate repository-scoped agent skill packages                                     |

@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Critical Browser Verification'
+    short_description: 'Inspect critical flows with bounded browser evidence'
+    default_prompt: 'Use $critical-browser-verification to check this critical local journey with Luna where available.'

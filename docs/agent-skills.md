@@ -5,6 +5,12 @@ title: Repository agent skills
 
 # Repository agent skills
 
+- [`local-test-setup`](../.agents/skills/local-test-setup/SKILL.md) inspects and
+  prepares reviewed local profiles through existing admin controls.
+- [`critical-browser-verification`](../.agents/skills/critical-browser-verification/SKILL.md)
+  delegates bounded exploratory checks to Luna where available, while preserving
+  required Playwright regression evidence.
+
 Languon keeps project-specific Codex workflows under `.agents/skills`. They are
 reviewed repository source, versioned with the behavior and architecture they
 govern, and discovered when Codex starts in the project root.

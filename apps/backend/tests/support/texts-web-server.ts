@@ -1,3 +1,5 @@
+import { seedLegacyActionFixture } from './legacy-action-fixture';
+import { createTextAiModule } from '../../src/modules/text-ai/infrastructure/text-ai-composition';
 import { RedisGenerationBurstLimiter } from '../../src/modules/text-ai/infrastructure/generation-burst-limiter';
 import { randomUUID } from 'node:crypto';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
@@ -65,7 +67,7 @@ if (process.env.TEXTS_WEB_FIXTURE !== 'true' || process.env.APP_ENV !== 'test')
 const target = new URL(getTestDatabaseUrl());
 if (
     target.pathname !== '/languon_auth_texts_ui_web_test' ||
-    target.port !== '55443'
+    !['55443', '55487'].includes(target.port)
 )
     throw new Error(
         'Texts web fixture requires exclusive disposable UI web database',
@@ -73,7 +75,7 @@ if (
 const redisTarget = new URL(process.env.AUTH_TEST_REDIS_URL!);
 if (
     !['127.0.0.1', 'localhost'].includes(redisTarget.hostname) ||
-    redisTarget.port !== '56443' ||
+    redisTarget.port !== (target.port === '55487' ? '56487' : '56443') ||
     redisTarget.pathname !== '/1' ||
     process.env.ALLOW_DISPOSABLE_REDIS_TESTS !== 'true' ||
     process.env.AUTH_TEST_REDIS_CONFIRM !==
@@ -120,6 +122,8 @@ async function start() {
         }),
     );
     const d = authentication.productDependencies;
+    // Full translation journeys fund the configured output ceiling; reduced-budget consent has separate coverage.
+    await seedLegacyActionFixture(d.database, '100');
     // The full suite shares one loopback IP. Keep the real Redis limiter and
     // production per-account limits; bound only this explicit fixture's shared
     // address email budget above the number of synthetic test identities.
@@ -340,6 +344,10 @@ async function start() {
         selectionPolicy,
     });
     app = createApp({
+        textAi: createTextAiModule({
+            ...d,
+            policy: authentication.options.policy,
+        }).routes,
         learnerPortraits: createLearnerPortraitRoutes({
             portraits: learnerPortraits.portraits,
             interviews: learnerPortraits.interviews,

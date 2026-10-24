@@ -103,6 +103,9 @@ function assertFixtureTarget() {
     const database = new URL(getTestDatabaseUrl());
     const redis = new URL(process.env.AUTH_TEST_REDIS_URL ?? 'invalid:');
     const namedTarget =
+        (database.port === '55486' &&
+            database.pathname === '/languon_auth_portrait_critical_test' &&
+            redis.port === '56486') ||
         (database.port === '55481' &&
             database.pathname === '/languon_auth_portrait_test' &&
             redis.port === '56381') ||
@@ -119,7 +122,7 @@ function assertFixtureTarget() {
             `${redis.hostname}:${redis.port}/1`
     )
         throw new Error(
-            'Fixture requires the confirmed portrait55481/56381 or assistant55444/56444 named disposable target pair.',
+            'Fixture requires the confirmed portrait55481/56381, critical55486/56486 or assistant55444/56444 named disposable target pair.',
         );
 }
 
@@ -614,10 +617,14 @@ export async function createLearnerPortraitWebFixture(
             // Only identities returned by real synthetic email verification can
             // select these bounded balances; ordinary fixture accounts keep20k.
             const balance =
-                /^portrait-balance-(100|15608)-\d+-\d+@example\.test$/u.exec(
+                /^portrait-balance-(0|100|15608)-\d+-\d+@example\.test$/u.exec(
                     verifiedEmail ?? '',
                 )?.[1];
-            const amount = balance ? BigInt(balance) : 20_000n;
+            const amount = balance === undefined ? 20_000n : BigInt(balance);
+            if (amount === 0n) {
+                credited.add(userId);
+                return;
+            }
             await d.database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: userId,

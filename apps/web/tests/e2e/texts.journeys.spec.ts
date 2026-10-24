@@ -256,7 +256,10 @@ async function responsiveAction(page: Page, name: string) {
         }
         return false;
     });
-    expect(labelVisible).toBe((page.viewportSize()?.width ?? 1440) <= 767);
+    // The library primary New folder action intentionally retains its text label.
+    expect(labelVisible).toBe(
+        name === 'New folder' || (page.viewportSize()?.width ?? 1440) <= 767,
+    );
 }
 async function translated(page: Page, info: TestInfo, role: string) {
     const owner = role === 'owner';
