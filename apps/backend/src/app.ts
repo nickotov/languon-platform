@@ -42,6 +42,7 @@ export function createApp(options?: {
     modelPrices?: OpenAPIHono;
     operational?: AppOperationalOptions;
     textAi?: OpenAPIHono;
+    learnerAiCredits?: OpenAPIHono;
     texts?: OpenAPIHono;
     conversations?: OpenAPIHono;
     learnerPortraits?: OpenAPIHono;
@@ -97,6 +98,7 @@ export function createApp(options?: {
     if (options?.textAi) {
         app.route('/', options.textAi);
     }
+    if (options?.learnerAiCredits) app.route('/', options.learnerAiCredits);
     if (options?.userProfiles) {
         app.route('/', createUserProfileRoutes(options.userProfiles));
     }

@@ -1,6 +1,5 @@
 'use client';
-import { ActionBilling, ActionConsentDialog } from '@/fsd/entities/ai-action';
-import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -193,15 +192,6 @@ export function PortraitInterviewPage() {
                             onReview={review}
                         />
                     </div>
-                    {!session.creditsBypass && (
-                        <ActionBudgetSummary
-                            request={engine.requestWithSession}
-                        />
-                    )}
-                    <ActionBilling
-                        billing={engine.billingProjection.billing}
-                        execution={engine.billingProjection.execution}
-                    />
                     <InterviewComposer
                         clearVersion={session.context.messages.length}
                         disabled={engine.busy}

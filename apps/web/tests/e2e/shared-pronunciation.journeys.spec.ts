@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:c732fe57d13e6a88
+// @user-flow-revision shared-pronunciation-playback sha256:9803b0d1d5f5c89e
 import {
     expect,
     test,
@@ -306,7 +306,7 @@ test.describe.serial('shared pronunciation playback', () => {
         ).toBeVisible();
         await expect(
             dialog.getByText('Available credits: 1,000', { exact: true }),
-        ).toBeVisible();
+        ).toHaveCount(0);
         await first.page.setViewportSize({ width: 390, height: 844 });
         expect(
             await first.page.evaluate(

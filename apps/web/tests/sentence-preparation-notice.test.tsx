@@ -224,12 +224,9 @@ it('requires an explicit new budget after preparation exhausts its parent allowa
             onStart={vi.fn()}
             sourceLanguage='en'
             targetLanguage='es'
-            budgetContent={<p>Paid action maximum: 40</p>}
         />,
     );
-    expect(screen.getByText('Paid action maximum: 40')).toBeVisible();
-    expect(screen.getByText('Remaining output tokens: 0')).toBeVisible();
-    expect(screen.getByText('Charged: 0.2')).toBeVisible();
+    expect(screen.queryByText(/Charged:/)).not.toBeInTheDocument();
     expect(value.continueWithBudget).not.toHaveBeenCalled();
     fireEvent.click(
         screen.getAllByRole('button', {

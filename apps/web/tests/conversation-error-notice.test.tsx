@@ -173,8 +173,8 @@ it.each([
         absent: 'Estimated',
     },
 ])(
-    'labels $status token counts as $label with explicit token and charged-credit units',
-    async ({ estimated, status, label, absent }) => {
+    'keeps $status response feedback without credit or token disclosures',
+    async ({ estimated, status }) => {
         const id = '00000000-0000-4000-8000-000000000001';
         const date = '2026-10-19T10:00:00.000Z';
         const detail = ConversationDetailSchema.parse({
@@ -232,23 +232,22 @@ it.each([
         expect(
             screen.queryByRole('dialog', { name: 'Usage' }),
         ).not.toBeInTheDocument();
-        fireEvent.click(
-            screen.getByRole('button', { name: 'Charged credits: 37' }),
-        );
-        const usage = await screen.findByRole('dialog', { name: 'Usage' });
         expect(
-            within(usage).getByText(label, { exact: true }),
-        ).toBeInTheDocument();
-        expect(
-            within(usage).queryByText(absent, { exact: true }),
+            screen.queryByRole('button', { name: /Charged credits/ }),
         ).not.toBeInTheDocument();
-        expect(
-            within(usage).getByText('Input tokens').nextElementSibling,
-        ).toHaveTextContent('64000');
-        expect(
-            within(usage).getByText('Output tokens').nextElementSibling,
-        ).toHaveTextContent('4096');
-        expect(container).toHaveTextContent('Charged credits: 37');
+        expect(container).toHaveTextContent(
+            'A river bank is land beside a river.',
+        );
+        expect(container).not.toHaveTextContent('64000');
+        expect(container).not.toHaveTextContent('4096');
+        if (status === 'failed')
+            expect(
+                screen.getByRole('button', { name: 'Retry response' }),
+            ).toBeEnabled();
+        else
+            expect(
+                screen.getByRole('button', { name: 'Copy', exact: true }),
+            ).toBeEnabled();
     },
 );
 

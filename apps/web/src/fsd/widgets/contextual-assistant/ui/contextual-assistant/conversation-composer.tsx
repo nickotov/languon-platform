@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { ArrowUp, FileText, Plus, Square, TextSelect } from 'lucide-react';
 import type { ChatPreferences, CopiedAttachment } from '@languon/contracts';
 import { conversationCopy } from '@/fsd/entities/conversation';
-import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useConversationComposerInput } from '../../hooks/use-conversation-composer-input';
 import { ComposerAttachments } from './composer-attachments';
@@ -101,9 +100,6 @@ export function ConversationComposer({
             onSubmit={submit}
             data-workspace={workspace}
         >
-            {portrait && (
-                <ActionBudgetSummary request={portrait.requestWithSession} />
-            )}
             {contextPicker}
             {overLimit && (
                 <p role='alert' className={styles.limitError}>

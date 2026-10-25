@@ -316,6 +316,13 @@ export const ru = {
     'profile.extraCreditsTitle': 'Дополнительные кредиты',
     'profile.extraCreditsEmpty': 'Покупка кредитов пока недоступна.',
     'profile.buyCredits': 'Купить кредиты',
+    'profile.balanceAvailable': 'Доступные кредиты',
+    'profile.balanceExact': 'Точный баланс',
+    'profile.balanceUnlimited': 'Без ограничений',
+    'profile.balanceLoading': 'Загружаем баланс…',
+    'profile.balanceError':
+        'Не удалось загрузить баланс. Нажмите «Обновить», чтобы повторить.',
+    'profile.balanceRefresh': 'Обновить',
     'profile.balanceTitle': 'Баланс кредитов',
     'profile.balanceEmpty': 'Баланс появится здесь после запуска кредитов.',
     'profile.usageTitle': 'На что потрачены кредиты',

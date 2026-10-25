@@ -1,3 +1,4 @@
+import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
 import { seedLegacyActionFixture } from './legacy-action-fixture';
@@ -420,6 +421,10 @@ export async function createContextualAssistantFixture(
                 service: knowledge,
                 policy: authentication.options.policy,
             }),
+            learnerAiCredits: createLearnerAiCreditBalanceModule({
+                ...d,
+                policy: authentication.options.policy,
+            }).routes,
             textAi: createTextAiModule({
                 ...d,
                 policy: authentication.options.policy,

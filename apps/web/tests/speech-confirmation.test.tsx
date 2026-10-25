@@ -15,7 +15,7 @@ const quote: SpeechQuote = {
     provisional: true,
 };
 describe('speech cost confirmation', () => {
-    it('shows the exact whole-text price, balance, provisional status and success-only billing before confirming', () => {
+    it('shows the exact whole-text price, provisional status and success-only billing before confirming', () => {
         const confirm = vi.fn();
         const cancel = vi.fn();
         render(
@@ -28,7 +28,9 @@ describe('speech cost confirmation', () => {
         expect(
             screen.getByText('11 credits', { selector: 'strong' }),
         ).toBeVisible();
-        expect(screen.getAllByText('Available credits: 100')[0]).toBeVisible();
+        expect(
+            screen.queryByText(/Available credits:/),
+        ).not.toBeInTheDocument();
         expect(screen.getByText('Provisional price')).toBeVisible();
         expect(
             screen.getByText(/charged only if audio is saved successfully/),
@@ -86,8 +88,8 @@ describe('speech cost confirmation', () => {
             />,
         );
         expect(
-            screen.getAllByText('Available credits: Unlimited')[0],
-        ).toBeVisible();
+            screen.queryByText(/Available credits:/),
+        ).not.toBeInTheDocument();
         expect(
             screen.getByRole('button', { name: 'Generate', exact: true }),
         ).toBeEnabled();
@@ -108,13 +110,14 @@ describe('decimal speech credit quotes', () => {
             />,
         );
         expect(screen.getByText('0.13 credits')).toBeVisible();
-        expect(screen.getByText('Available credits: 0.12')).toBeVisible();
+        expect(
+            screen.queryByText(/Available credits:/),
+        ).not.toBeInTheDocument();
         expect(
             screen.getByRole('button', { name: 'Generate', exact: true }),
         ).toBeDisabled();
         fireEvent.click(screen.getByText('Exact values'));
         expect(screen.getByText('0.125 credits')).toBeVisible();
-        expect(screen.getByText('Available credits: 0.124')).toBeVisible();
     });
     it('never presents a nonzero tiny price as free and permits an equal exact balance', () => {
         render(

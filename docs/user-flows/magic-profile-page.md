@@ -7,6 +7,9 @@ surfaces:
     - browser
 source_paths:
     - .agent/features/025-magic-profile-page/**
+    - .agent/features/053-settings-credit-balance/**
+    - apps/backend/src/modules/ai-credits/**
+    - packages/contracts/src/learner-ai-credits.ts
     - apps/web/src/app/profile/**
     - apps/web/src/fsd/pages/profile/**
     - apps/web/src/fsd/widgets/site-header/**
@@ -19,6 +22,7 @@ e2e_tests:
     - apps/web/tests/e2e/profile.journeys.spec.ts
 e2e_scenarios:
     - profile-empty-coming-soon-and-header-navigation
+    - settings-credit-balance
 related_features:
     - learner-portrait
     - contextual-language-assistant-and-knowledge
@@ -62,7 +66,8 @@ test database and Redis services.
    link that retains `/profile` as the return destination.
 2. Create and verify a fake local account, returning to `/profile`. Expect the
    account-settings heading, the signed-in email, no invented display name,
-   subscription, payment method, balance, or transaction history.
+   subscription, payment method, or transaction history. Credit balance is read
+   from the authenticated account rather than a placeholder.
 3. Select Account, Security, Billing, and Credits using pointer and keyboard.
    Expect the underline tabs and their panels to remain accessible and the
    content to reflow without horizontal clipping.
@@ -77,7 +82,14 @@ test database and Redis services.
    empty state with a direct Add action, and enrolled rows show only known
    metadata with accessible rename and confirmed revoke. Google, Yandex, and Apple rows are
    visible as coming soon with disabled Connect actions; the email-change request explicitly sends no email.
-5. In Billing, choose **Compare plans**. Expect an informational notification
+5. Open Credits. A new limited account shows its real zero available balance.
+   Grant a synthetic exact balance through the reviewed disposable accounting
+   fixture, reload, and verify the same exact amount from the authenticated
+   endpoint. At320px the balance and label remain readable without overflow.
+   Purchases, usage history and transaction history remain honest placeholders.
+   Insufficient credit warnings and explicit paid-action consent still appear
+   in the relevant journey; passive balance summaries stay in Settings.
+   In Billing, choose **Compare plans**. Expect an informational notification
    that Subscription is coming soon, with no billing request or account change.
 6. Open the pinned account menu and choose Dark. Expect `data-theme` and the
    global `languon-theme` cookie to change while the route remains `/profile`.
@@ -98,6 +110,8 @@ test database and Redis services.
   tabs, exercises a coming-soon action, persists an account-menu theme choice,
   checks the compact navigation drawer, and returns to the welcome heading through the
   shell logo.
+- `settings-credit-balance` verifies real authenticated zero and exact funded
+  balances, reload persistence and narrow Settings Credits rendering.
 
 Detailed tab keyboard semantics and signed-out/loading boundaries remain in
 focused component tests because they do not require another system boundary.
@@ -108,8 +122,10 @@ focused component tests because they do not require another system boundary.
   fabricated profile.
 - Signed-out access does not expose account data and offers sign-in with a safe
   local return path.
-- Missing profile, subscription, payment, credit, and ledger data are rendered
-  as unavailable or coming soon; zeros and fake fixtures are not substituted.
+- Missing profile, subscription, payment and ledger data remain unavailable or
+  coming soon. A failed credit-balance request shows an error and Refresh rather
+  than a fabricated zero. Unlimited policy is explicit rather than an invented
+  finite balance; backend/component tests cover its policy branches.
 - Billing/export placeholder buttons never call APIs. Handle and deletion actions
   are live and need their own explicit confirmations.
 - Password and passkey functionality now lives in the Profile Security tab;

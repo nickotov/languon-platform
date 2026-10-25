@@ -5,7 +5,7 @@ import {
     aiCreditActionAllocationsTable,
 } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { capabilityPolicyRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
-// @user-flow-revision learner-portrait sha256:75f6ddbc5274a8aa
+// @user-flow-revision learner-portrait sha256:4f1dc69b79ea34a7
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 

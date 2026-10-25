@@ -235,12 +235,12 @@ comparison and dark/RTL state checks complement these critical browser journeys.
 The profile AI settings also persist an exact maximum credits per action; its
 save/reload/disclosure and paid tutor confirmation are covered by the
 [AI accounting guide](./ai-accounting.md). Generation/checking retain their
-existing explicit actions and reference review remains Free. Setup and practice
-show the saved maximum before paid generation/checking. A reduced allowance
+existing explicit actions and reference review remains Free. Passive balance,
+maximum and spending summaries stay in Settings rather than setup or practice. A reduced allowance
 requires an explicit Send on the backend quote; the original operation is
 retained. Top up opens credits separately; Keep editing cancels consent without
-automatic retry. Actual job execution and billing appear separately, with exact
-held/charged values and estimated/unknown labels when provided. New paid actions
+automatic retry. Actual job execution and errors remain visible; canonical API
+billing retains exact held/charged values and estimated/unknown measurement. New paid actions
 share at most one safe provider retry and 10,000 total output tokens under their
 pinned maximum. Transport recovery below does not authorize another action.
 Technical/invalid/revoked-authority failure releases the customer hold while
@@ -355,7 +355,7 @@ background, return through the preparation chip, stop after active work settles,
 or explicitly resume a paused run while its parent budget remains active.
 Start authorizes one total maximum and10,000 output tokens across automatic
 children. A settled or exhausted parent pauses instead of obtaining another
-budget. Progress shows remaining output and real parent billing; only
+budget. Progress shows preparation state without passive billing or output-budget totals; only
 **Continue with a new budget** authorizes another parent action. A zero-credit
 Start fails before background work. Review saved has no paid parent budget.
 Ready or partial rounds start using their

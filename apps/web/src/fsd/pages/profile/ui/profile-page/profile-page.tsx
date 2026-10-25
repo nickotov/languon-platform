@@ -48,6 +48,7 @@ import {
     Tabs,
 } from '@/fsd/shared/ui';
 
+import { CreditBalance } from '../credit-balance/credit-balance';
 import styles from './profile-page.module.css';
 
 type ProfileTab = 'account' | 'billing' | 'credits' | 'security';
@@ -232,7 +233,7 @@ function AuthenticatedProfile({
             value: 'billing',
         },
         {
-            content: <CreditsTab onComingSoon={comingSoon} />,
+            content: <CreditsTab />,
             icon: <Coins />,
             label: t('profile.tab.credits'),
             value: 'credits',
@@ -532,18 +533,12 @@ function BillingTab({ onComingSoon }: ComingSoonProps) {
     );
 }
 
-function CreditsTab({ onComingSoon }: ComingSoonProps) {
+function CreditsTab() {
     const { t } = useI18n();
 
     return (
         <div className={styles.sections}>
-            <EmptySettings
-                icon={<Coins className={styles.glyph} />}
-                title={t('profile.balanceTitle')}
-                description={t('profile.balanceEmpty')}
-                button={t('profile.buyCredits')}
-                onClick={() => onComingSoon(t('profile.balanceTitle'))}
-            />
+            <CreditBalance />
             <EmptySettings
                 icon={<WalletCards className={styles.glyph} />}
                 title={t('profile.usageTitle')}

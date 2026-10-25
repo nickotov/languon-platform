@@ -10,7 +10,6 @@ import {
 } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button } from '@/fsd/shared/ui';
-import { TurnUsage } from './turn-usage';
 import { ResponseLimitNotice } from './response-limit-notice';
 import { ResponseActions } from './response-actions';
 import { messagesCopy } from '../../lib/messages-copy';
@@ -112,13 +111,6 @@ export function TutorMessage({
         turn && (turn.status === 'failed' || turn.status === 'cancelled');
     const incomplete = !isUser && failed;
     const failedBeforeAnswer = isUser && failed && !hasAssistant;
-    const showUsage = Boolean(
-        turn &&
-        (complete ||
-            incomplete ||
-            failedBeforeAnswer ||
-            (!isUser && turn.billing !== undefined)),
-    );
     const failureLabel = `${copy.incomplete}: ${question}`;
     function propose() {
         onPropose(message);
@@ -232,17 +224,14 @@ export function TutorMessage({
                         onReviewingProposal={onReviewingProposal}
                     />
                 )}
-                {(complete || showUsage) && (
+                {complete && (
                     <div className={styles.actions}>
-                        {complete && (
-                            <ResponseActions
-                                text={text}
-                                onPropose={propose}
-                                canPropose={!onAcceptWorkspaceProposal}
-                                disabled={active}
-                            />
-                        )}
-                        {showUsage && turn && <TurnUsage turn={turn} />}
+                        <ResponseActions
+                            text={text}
+                            onPropose={propose}
+                            canPropose={!onAcceptWorkspaceProposal}
+                            disabled={active}
+                        />
                     </div>
                 )}
             </div>

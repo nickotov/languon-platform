@@ -1,8 +1,4 @@
-import {
-    ActionBilling,
-    ActionConsentCancelledError,
-} from '@/fsd/entities/ai-action';
-import type { ReactNode } from 'react';
+import { ActionConsentCancelledError } from '@/fsd/entities/ai-action';
 import {
     DictionaryApiError,
     dictionaryErrorMessage,
@@ -15,9 +11,7 @@ import { syncBatchGenerationUrl } from '../../lib/generation-url';
 
 export function EditorBatchSheet({
     model,
-    budget,
 }: {
-    budget?: ReactNode;
     model: Pick<
         EditorViewFields,
         | 't'
@@ -192,11 +186,6 @@ export function EditorBatchSheet({
         if (batchGenerationOpen) {
             return (
                 <>
-                    {budget}
-                    <ActionBilling
-                        billing={batchGenerationJob.data?.job?.billing}
-                        execution={batchGenerationJob.data?.job?.state}
-                    />
                     <DictionaryBatchGenerationPanel
                         available={availableValue}
                         conflict={conflictValue}

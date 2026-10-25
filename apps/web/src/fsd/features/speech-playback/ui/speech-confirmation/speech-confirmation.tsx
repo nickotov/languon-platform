@@ -32,9 +32,6 @@ export function SpeechConfirmation({
         parseCreditMilli(quote.availableCredits) <
             parseCreditMilli(quote.credits);
     const amount = compactCreditAmount(quote.credits, locale);
-    const balance = quote.unlimited
-        ? copy.unlimited
-        : compactCreditAmount(quote.availableCredits, locale);
     const footer = (
         <>
             <Button variant='secondary' onClick={onCancel}>
@@ -59,17 +56,10 @@ export function SpeechConfirmation({
                     {amount} {copy.cost}
                 </strong>
             </p>
-            <p>
-                {copy.balance}: {balance}
-            </p>
             <details>
                 <summary>{copy.exact}</summary>
                 <p>
                     {quote.credits} {copy.cost}
-                </p>
-                <p>
-                    {copy.balance}:{' '}
-                    {quote.unlimited ? copy.unlimited : quote.availableCredits}
                 </p>
             </details>
             {quote.provisional ? <p>{copy.provisional}</p> : null}

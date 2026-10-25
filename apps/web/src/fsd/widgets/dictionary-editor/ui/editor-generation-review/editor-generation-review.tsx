@@ -1,5 +1,4 @@
 import { ActionConsentCancelledError } from '@/fsd/entities/ai-action';
-import type { ReactNode } from 'react';
 import { dictionaryErrorMessage } from '@/fsd/entities/dictionary';
 import { DictionaryGenerationPanel } from '@/fsd/features/dictionary-generation';
 import { BottomSheet, Button, ErrorState, LoadingState } from '@/fsd/shared/ui';
@@ -9,9 +8,7 @@ import { syncGenerationUrl } from '../../lib/generation-url';
 
 export function EditorGenerationReview({
     model,
-    budget,
 }: {
-    budget?: ReactNode;
     model: Pick<
         EditorViewFields,
         | 't'
@@ -195,7 +192,6 @@ export function EditorGenerationReview({
     if (generationTarget) {
         return (
             <DictionaryGenerationPanel
-                budget={budget}
                 available={availableValue}
                 card={generationCard.data?.card}
                 conflict={generationConflict}

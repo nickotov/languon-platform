@@ -1,7 +1,6 @@
 'use client';
 
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
-import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 import { languageDirection, languageLabel } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
@@ -159,14 +158,7 @@ export function DictionaryEditor({
                         <EditorSharingSheet
                             model={view.authoring.sharingSheet}
                         />
-                        <EditorBatchSheet
-                            budget={
-                                <ActionBudgetSummary
-                                    request={requestWithSession}
-                                />
-                            }
-                            model={view.generation.batchSheet}
-                        />
+                        <EditorBatchSheet model={view.generation.batchSheet} />
                         <EditorImportSheet
                             model={view.interchange.importSheet}
                         />
@@ -174,27 +166,10 @@ export function DictionaryEditor({
                             model={view.interchange.exportSheet}
                         />
                         <EditorDocumentSheet
-                            budget={
-                                <ActionBudgetSummary
-                                    request={requestWithSession}
-                                />
-                            }
                             model={view.generation.documentSheet}
                         />
-                        <EditorCardSheet
-                            budget={
-                                <ActionBudgetSummary
-                                    request={requestWithSession}
-                                />
-                            }
-                            model={view.authoring.cardSheet}
-                        />
+                        <EditorCardSheet model={view.authoring.cardSheet} />
                         <EditorGenerationReview
-                            budget={
-                                <ActionBudgetSummary
-                                    request={requestWithSession}
-                                />
-                            }
                             model={view.generation.generationReview}
                         />
                     </>

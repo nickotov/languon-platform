@@ -290,6 +290,13 @@ export const profileFeatureMessages = {
     'profile.extraCreditsTitle': 'Extra credits',
     'profile.extraCreditsEmpty': 'Credit purchases are not available yet.',
     'profile.buyCredits': 'Buy credits',
+    'profile.balanceAvailable': 'Available credits',
+    'profile.balanceExact': 'Exact balance',
+    'profile.balanceUnlimited': 'Unlimited',
+    'profile.balanceLoading': 'Loading your balance…',
+    'profile.balanceError':
+        'Could not load your balance. Use Refresh to try again.',
+    'profile.balanceRefresh': 'Refresh',
     'profile.balanceTitle': 'Credit balance',
     'profile.balanceEmpty':
         'A credit balance will appear here when credits launch.',

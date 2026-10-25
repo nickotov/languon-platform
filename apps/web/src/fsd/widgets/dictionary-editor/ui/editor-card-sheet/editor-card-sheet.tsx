@@ -1,8 +1,4 @@
-import {
-    ActionBilling,
-    ActionConsentCancelledError,
-} from '@/fsd/entities/ai-action';
-import type { ReactNode } from 'react';
+import { ActionConsentCancelledError } from '@/fsd/entities/ai-action';
 import {
     dictionaryErrorMessage,
     languageLabel,
@@ -102,13 +98,7 @@ export function buildAiValue(
     };
 }
 
-export function EditorCardSheet({
-    model,
-    budget,
-}: {
-    model: EditorCardSheetModel;
-    budget?: ReactNode;
-}) {
+export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
     const {
         t,
         locale,
@@ -251,11 +241,6 @@ export function EditorCardSheet({
             title={titleValue}
             description={description}
         >
-            {budget}
-            <ActionBilling
-                billing={(authoringJob.data ?? authoringReviewJob)?.billing}
-                execution={(authoringJob.data ?? authoringReviewJob)?.state}
-            />
             <DictionaryCardForm
                 ai={aiValue}
                 card={cardValue}

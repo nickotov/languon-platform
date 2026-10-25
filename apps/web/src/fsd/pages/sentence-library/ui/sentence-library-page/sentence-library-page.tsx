@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import { useSessionStore } from '@/fsd/entities/session';
-import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
 import { useAuth } from '@/fsd/features/auth';
 import {
     SentenceLibrary,
@@ -183,9 +182,6 @@ export function SentenceLibraryPage({
                     : {})}
             />
             <SentencePreparationSheet
-                budgetContent={
-                    <ActionBudgetSummary request={requestWithSession} />
-                }
                 controller={preparation}
                 open={preparationOpen}
                 onClose={() => setPreparationOpen(false)}

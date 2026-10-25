@@ -1,5 +1,5 @@
 import { BookPlus, Info, X } from 'lucide-react';
-import type { PointerEvent, MouseEvent, ReactNode } from 'react';
+import type { PointerEvent, MouseEvent } from 'react';
 import {
     BottomSheet,
     Button,
@@ -29,10 +29,9 @@ function CurrentCollectionLayer({
     compact,
     onRequireSignIn,
     requestWithSession,
-    budgetContent,
 }: {
     c: CollectController;
-    budgetContent?: ReactNode;
+
     requestWithSession?: RequestWithTextSession | undefined;
     compact: boolean;
     onRequireSignIn?: (() => void) | undefined;
@@ -102,7 +101,6 @@ function CurrentCollectionLayer({
                 onClose={c.close}
                 closeLabel={t('texts.collect.close')}
             >
-                {budgetContent}
                 <CollectPanel
                     requestWithSession={requestWithSession}
                     collect={c}
@@ -143,7 +141,6 @@ function CurrentCollectionLayer({
                                 size='sm'
                             />
                         </div>
-                        {budgetContent}
                         <CollectPanel
                             requestWithSession={requestWithSession}
                             collect={c}

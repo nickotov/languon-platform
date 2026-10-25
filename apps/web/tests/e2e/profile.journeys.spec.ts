@@ -1,6 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { customerBalance } from './support/action-accounting-fixture';
 
-// @user-flow-revision magic-profile-page sha256:dbac6cd8adf1450a
+// @user-flow-revision magic-profile-page sha256:cbe61312f735ae50
 // @user-flow-revision profile-account-controls sha256:81a95391b604fcc4
 
 const password = 'E2e!Profile-password-2026';
@@ -209,5 +210,77 @@ test('saves a unique handle, keeps Security real and email mock honest, then sch
         page.getByRole('heading', { name: 'Account removal scheduled' }),
     ).toBeVisible();
     await expect(page.getByText(/Access has ended/)).toBeVisible();
+    assertNoBrowserErrors();
+});
+
+// @user-flow magic-profile-page/settings-credit-balance
+test('Settings Credits displays the real zero and exact funded available balance after reload', async ({
+    page,
+}, info) => {
+    const assertNoBrowserErrors = captureBrowserErrors(page);
+    await page.goto('/signup?returnTo=%2Fprofile%3Ftab%3Dcredits');
+    await page
+        .getByLabel('Email')
+        .fill(`balance-${runId}-${info.workerIndex}@example.test`);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await page.getByLabel('Verification code').fill('0000');
+    const verified = page.waitForResponse(
+        (response) =>
+            response.url().endsWith('/auth/email-verification/verify') &&
+            response.status() === 200,
+    );
+    const zero = page.waitForResponse(
+        (response) =>
+            new URL(response.url()).pathname.endsWith('/users/me/ai-credits') &&
+            response.status() === 200,
+    );
+    await page.getByRole('button', { name: 'Verify email' }).click();
+    const { user } = await (await verified).json();
+    expect(await (await zero).json()).toEqual({
+        mode: 'limited',
+        availableCredits: '0',
+    });
+    await expect(
+        page.getByRole('heading', { name: 'Credit balance', exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByText('Exact balance: 0', { exact: true }),
+    ).toBeVisible();
+    await customerBalance(user.id, '20.125', 'dictionary-generation');
+    const funded = page.waitForResponse(
+        (response) =>
+            new URL(response.url()).pathname.endsWith('/users/me/ai-credits') &&
+            response.status() === 200,
+    );
+    await page.reload();
+    expect(await (await funded).json()).toEqual({
+        mode: 'limited',
+        availableCredits: '20.125',
+    });
+    await expect(
+        page.getByText('Exact balance: 20.125', { exact: true }),
+    ).toBeVisible();
+    const available = page
+        .locator('dl')
+        .filter({ has: page.getByText('Available credits', { exact: true }) });
+    await expect(available.locator('dd')).toHaveText('20.13');
+    await page.screenshot({
+        path: info.outputPath('settings-credit-balance-desktop.png'),
+        fullPage: true,
+    });
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect(
+        page.getByText('Exact balance: 20.125', { exact: true }),
+    ).toBeVisible();
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
+    await page.screenshot({
+        path: info.outputPath('settings-credit-balance-phone.png'),
+        fullPage: true,
+    });
     assertNoBrowserErrors();
 });

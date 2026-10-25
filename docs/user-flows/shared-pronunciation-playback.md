@@ -116,7 +116,7 @@ confirmation. Never point these checks at staging/production wallets or storage.
    must remain different identities.
 5. Save a source phrase exceeding 10 language-aware words or 100 Unicode code points.
    Play and confirm that the dialog gives a compact credit price and an expandable
-   Exact values disclosure for the price and available balance. Decimal transport
+   Exact values disclosure for the price. Available balance stays in Settings Credits. Decimal transport
    retains 0.001-credit precision; integer milli-credits decide affordability.
    Display rounding never changes admission, and a nonzero price below 0.01
    appears as <0.01 rather than zero. The dialog says payment occurs

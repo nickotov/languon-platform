@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ActionBilling, ActionConsentDialog } from '@/fsd/entities/ai-action';
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { Tabs } from '@/fsd/shared/ui';
 import { ReadingPair } from './reading-pair';
 import { CollectionLayer } from './collection-layer';
@@ -214,23 +214,7 @@ function ReadingSurface(props: TextReadingProps) {
                 onSend={c.actionConsent.confirm}
                 onClose={c.actionConsent.cancel}
             />
-            {c.tasks.map((task) => (
-                <ActionBilling
-                    key={task.body.operationId}
-                    billing={task.billing}
-                    execution={
-                        task.state === 'success'
-                            ? 'completed'
-                            : task.state === 'error'
-                              ? 'failed'
-                              : task.state === 'adding'
-                                ? 'running'
-                                : undefined
-                    }
-                />
-            ))}
             <CollectionLayer
-                budgetContent={props.collectionBudgetContent}
                 requestWithSession={props.requestWithSession}
                 c={c}
                 compact={compact}

@@ -1,8 +1,4 @@
-import {
-    ActionBilling,
-    ActionConsentCancelledError,
-} from '@/fsd/entities/ai-action';
-import type { ReactNode } from 'react';
+import { ActionConsentCancelledError } from '@/fsd/entities/ai-action';
 import {
     DictionaryApiError,
     dictionaryErrorMessage,
@@ -15,9 +11,7 @@ import { syncDocumentGenerationUrl } from '../../lib/generation-url';
 
 export function EditorDocumentSheet({
     model,
-    budget,
 }: {
-    budget?: ReactNode;
     model: Pick<
         EditorViewFields,
         | 't'
@@ -207,11 +201,6 @@ export function EditorDocumentSheet({
         if (documentGenerationOpen) {
             return (
                 <>
-                    {budget}
-                    <ActionBilling
-                        billing={documentGenerationJob.data?.job?.billing}
-                        execution={documentGenerationJob.data?.job?.state}
-                    />
                     <DictionaryDocumentGenerationPanel
                         available={availableValue}
                         conflict={conflictValue}

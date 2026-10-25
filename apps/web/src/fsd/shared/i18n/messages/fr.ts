@@ -251,6 +251,13 @@ export const fr = {
     'profile.extraCreditsEmpty':
         'L’achat de crédits n’est pas encore disponible.',
     'profile.buyCredits': 'Acheter des crédits',
+    'profile.balanceAvailable': 'Crédits disponibles',
+    'profile.balanceExact': 'Solde exact',
+    'profile.balanceUnlimited': 'Illimité',
+    'profile.balanceLoading': 'Chargement du solde…',
+    'profile.balanceError':
+        'Impossible de charger le solde. Réessayez avec Actualiser.',
+    'profile.balanceRefresh': 'Actualiser',
     'profile.balanceTitle': 'Solde de crédits',
     'profile.balanceEmpty':
         'Le solde apparaîtra ici lors du lancement des crédits.',

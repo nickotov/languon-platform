@@ -110,26 +110,6 @@
     outline: var(--size-2) solid var(--border-focus);
     outline-offset: var(--size-2);
 }
-.usagePopover {
-    width: var(--size-288);
-    padding: 0;
-    overflow-y: auto;
-}
-.usageDetails {
-    margin: 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-4) var(--space-16);
-    background: var(--background-subtle);
-    border-radius: var(--radius-12);
-    padding: var(--space-10) var(--space-12);
-    font-size: var(--size-12);
-    line-height: var(--size-20);
-}
-.usageDetails :where(dd) {
-    margin: 0;
-    text-align: end;
-}
 .materials {
     max-width: 100%;
     font-size: var(--size-12);

@@ -1,6 +1,5 @@
 'use client';
-import type { ReactNode } from 'react';
-import { ActionBilling, ActionConsentDialog } from '@/fsd/entities/ai-action';
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import styles from './sentence-preparation-sheet.module.css';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import type { SentencePreparationBatch } from '@languon/contracts';
@@ -13,7 +12,7 @@ import { SentencePreparationProgress } from '../sentence-preparation-progress/se
 
 export function SentencePreparationSheet({
     controller,
-    budgetContent,
+
     open,
     onClose,
     onRestartSetup,
@@ -25,7 +24,7 @@ export function SentencePreparationSheet({
     onOpenAiSettings,
 }: {
     controller: SentencePreparationController;
-    budgetContent?: ReactNode;
+
     open: boolean;
     onClose(): void;
     onRestartSetup(): void;
@@ -148,18 +147,6 @@ export function SentencePreparationSheet({
                 description={dictionaryTitle}
                 footer={footer}
             >
-                {run?.mode !== 'review-only' && (
-                    <>
-                        {budgetContent}
-                        <p>{P('totalBudget')}</p>
-                    </>
-                )}
-                <ActionBilling billing={run?.billing} execution={run?.state} />
-                {run?.remainingOutputTokens != null && (
-                    <p>
-                        {P('remainingOutput', { n: run.remainingOutputTokens })}
-                    </p>
-                )}
                 <SentencePreparationProgress
                     controller={controller}
                     sourceLanguage={sourceLanguage}

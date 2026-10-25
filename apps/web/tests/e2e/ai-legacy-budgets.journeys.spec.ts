@@ -7,7 +7,7 @@ import {
 } from '@playwright/test';
 import { customerBalance } from './support/action-accounting-fixture';
 
-// @user-flow-revision ai-accounting sha256:e65c3d670d67fa18
+// @user-flow-revision ai-accounting sha256:1c4a76dd9129b96d
 async function signup(page: Page, info: TestInfo) {
     await page.goto('/signup?returnTo=%2Fdictionaries');
     await page
@@ -105,21 +105,15 @@ async function quote(page: Page) {
     );
     return dialog;
 }
-async function exactBilling(scope: Locator, amount: string) {
-    await expect(scope.getByText('Completed', { exact: true })).toBeVisible();
-    await expect(
-        scope.getByText(amount === '0' ? 'No charge' : 'Charged: <0.01', {
-            exact: true,
-        }),
-    ).toBeVisible();
-    await scope.getByText('Exact amounts', { exact: true }).click();
-    await expect(
-        scope.getByText(`Charged credits: ${amount}`, { exact: true }),
-    ).toBeVisible();
+async function passiveBillingAbsent(scope: Locator) {
+    await expect(scope.getByText('Exact amounts', { exact: true })).toHaveCount(
+        0,
+    );
+    await expect(scope.getByText(/^Charged:/)).toHaveCount(0);
 }
 
 // @user-flow ai-accounting/legacy-dictionary-quote-and-billing
-test('paid dictionary confirms each reduced allowance and reloads exact billing', async ({
+test('paid dictionary confirms each reduced allowance and retains the completed review after reload', async ({
     page,
 }, info) => {
     const clean = observe(page);
@@ -142,7 +136,7 @@ test('paid dictionary confirms each reduced allowance and reloads exact billing'
     });
     await expect(
         review.getByText('Maximum: 100.00', { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     const requests: {
         body: Record<string, unknown>;
         key: string | undefined;
@@ -193,15 +187,18 @@ test('paid dictionary confirms each reduced allowance and reloads exact billing'
     expect(
         (requests[2]!.body as Record<string, unknown>).confirmedQuoteId,
     ).not.toBe(firstQuote);
-    await exactBilling(review, '0');
+    await passiveBillingAbsent(review);
     await expect(
         review.getByText('Usage unknown', { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await page.reload();
-    await exactBilling(review, '0');
+    await expect(
+        review.getByRole('button', { name: 'Accept and update card' }),
+    ).toBeVisible();
+    await passiveBillingAbsent(review);
     await expect(
         review.getByText('Usage unknown', { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await page.screenshot({
         path: info.outputPath('legacy-dictionary-exact-billing.png'),
     });
@@ -237,7 +234,7 @@ test('paid text preserves the draft and operation while confirming its allowance
     });
     await expect(
         page.getByText('Maximum: 100.00', { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await page
         .getByRole('button', { name: 'Translate via AI', exact: true })
         .filter({ visible: true })
@@ -257,11 +254,11 @@ test('paid text preserves the draft and operation while confirming its allowance
         ...requests[0],
         confirmedQuoteId: expect.any(String),
     });
-    await exactBilling(page.locator('[data-text-workspace]'), '0.004');
+    await passiveBillingAbsent(page.locator('[data-text-workspace]'));
     await page.screenshot({
         path: info.outputPath('legacy-text-exact-billing.png'),
     });
-    // Save/publish normally, then inspect the same budget in the signed-in shared reader's collection panel.
+    // Save/publish normally, then verify collection stays free of passive budget details.
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page).toHaveURL(/\/texts\/[0-9a-f-]+$/);
     await page.getByLabel('Text options', { exact: true }).click();
@@ -308,16 +305,17 @@ test('paid text preserves the draft and operation while confirming its allowance
         name: 'Add “Hello”',
         exact: true,
     });
+    await expect(collection).toBeVisible();
     await expect(
         collection.getByText('Maximum: 100.00', { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await page.screenshot({
         path: info.outputPath('shared-selection-maximum.png'),
     });
     clean();
 });
 
-async function sentenceSetup(page: Page, maximum = '100.00') {
+async function sentenceSetup(page: Page) {
     await page.getByRole('button', { name: 'Train', exact: true }).click();
     await page
         .getByRole('menuitem', { name: 'Sentence practice', exact: true })
@@ -328,13 +326,11 @@ async function sentenceSetup(page: Page, maximum = '100.00') {
     });
     await setup.locator('input[value="source-to-target"]').check();
     await setup.locator('input[value="new-only"]').check();
-    await expect(
-        setup.getByText(`Maximum: ${maximum}`, { exact: true }),
-    ).toBeVisible();
+    await expect(setup.getByText(/^Maximum:/)).toHaveCount(0);
     return setup;
 }
 // @user-flow ai-accounting/legacy-sentence-quote-and-billing
-test('paid sentence generation waits for consent and exposes exact charged metadata', async ({
+test('paid sentence generation waits for consent and keeps billing details out of practice', async ({
     page,
 }, info) => {
     const clean = observe(page);
@@ -371,13 +367,7 @@ test('paid sentence generation waits for consent and exposes exact charged metad
         ...requests[0],
         confirmedQuoteId: expect.any(String),
     });
-    await expect(
-        practice.getByText('Charged: 0.2', { exact: true }),
-    ).toBeVisible();
-    await practice.getByText('Exact amounts', { exact: true }).click();
-    await expect(
-        practice.getByText('Charged credits: 0.2', { exact: true }),
-    ).toBeVisible();
+    await passiveBillingAbsent(practice);
     await page.screenshot({
         path: info.outputPath('legacy-sentence-exact-billing.png'),
     });
@@ -394,7 +384,7 @@ test('sentence preparation spends one total allowance and requires explicit new 
     await budget(page, '400');
     await customerBalance(actor, '400', 'sentence-generation');
     await dictionary(page, 3, ' [budget-output-limit]');
-    const setup = await sentenceSetup(page, '400.00');
+    const setup = await sentenceSetup(page);
     await setup
         .getByRole('switch', { name: /Prepare.*dictionary.*advance/i })
         .check();
@@ -436,13 +426,13 @@ test('sentence preparation spends one total allowance and requires explicit new 
             'Preparation uses one total budget. Continue authorizes a new budget explicitly.',
             { exact: true },
         ),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
         progress.getByText('Remaining output tokens: 0', { exact: true }),
-    ).toBeVisible({ timeout: 50000 });
+    ).toHaveCount(0);
     expect(starts).toHaveLength(1);
     await expect
-        .poll(() => paused)
+        .poll(() => paused, { timeout: 50000 })
         .toMatchObject({
             pauseReason: 'budget',
             remainingOutputTokens: 0,

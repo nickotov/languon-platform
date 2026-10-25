@@ -10,7 +10,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActionAllowanceQuote } from '@languon/contracts';
 import { DictionaryApiError } from '@/fsd/entities/dictionary';
 import {
-    ActionBilling,
     ActionConsentCancelledError,
     ActionConsentDialog,
     useActionConsent,
@@ -130,53 +129,3 @@ describe('paid action consent', () => {
         ).toBeDisabled();
     });
 });
-describe('real action billing presentation', () => {
-    it('separates execution success from unknown usage and no charge', () => {
-        render(
-            <ActionBilling
-                execution='completed'
-                billing={{
-                    state: 'released',
-                    heldCredits: '0.125',
-                    chargedCredits: '0',
-                    measurement: 'unknown',
-                }}
-            />,
-        );
-        expect(screen.getByText('Completed')).toBeVisible();
-        expect(screen.getByText('No charge')).toBeVisible();
-        expect(screen.getByText('Usage unknown')).toBeVisible();
-        fireEvent.click(screen.getByText('Exact amounts'));
-        expect(screen.getByText('Credits held: 0.125')).toBeVisible();
-    });
-    it('does not fabricate a charge without backend billing metadata', () => {
-        render(<ActionBilling execution='failed' />);
-        expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    });
-});
-
-it.each([
-    ['running', 'held', '0.125', null, null, 'Credits held: 0.13'],
-    ['completed', 'charged', '3', '2.145', 'measured', 'Charged: 2.15'],
-    ['stopped', 'charged', '1', '0.001', 'estimated', 'Charged: <0.01'],
-    ['completed', 'free', '0', '0', 'measured', 'Free'],
-] as const)(
-    'projects %s billing state %s without exposing provider currency',
-    (execution, state, heldCredits, chargedCredits, measurement, label) => {
-        render(
-            <ActionBilling
-                execution={execution}
-                billing={{ state, heldCredits, chargedCredits, measurement }}
-            />,
-        );
-        expect(screen.getByText(label)).toBeVisible();
-        expect(
-            screen.queryByText(/USD|dollar|provider cost/i),
-        ).not.toBeInTheDocument();
-        fireEvent.click(screen.getByText('Exact amounts'));
-        if (chargedCredits !== null)
-            expect(
-                screen.getByText(`Charged credits: ${chargedCredits}`),
-            ).toBeVisible();
-    },
-);

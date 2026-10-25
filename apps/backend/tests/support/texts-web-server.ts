@@ -1,3 +1,4 @@
+import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { seedLegacyActionFixture } from './legacy-action-fixture';
 import { createTextAiModule } from '../../src/modules/text-ai/infrastructure/text-ai-composition';
 import { RedisGenerationBurstLimiter } from '../../src/modules/text-ai/infrastructure/generation-burst-limiter';
@@ -344,6 +345,10 @@ async function start() {
         selectionPolicy,
     });
     app = createApp({
+        learnerAiCredits: createLearnerAiCreditBalanceModule({
+            ...d,
+            policy: authentication.options.policy,
+        }).routes,
         textAi: createTextAiModule({
             ...d,
             policy: authentication.options.policy,

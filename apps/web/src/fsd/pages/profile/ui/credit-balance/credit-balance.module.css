@@ -1,0 +1,49 @@
+.card {
+    padding: var(--space-24);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    color: var(--text-secondary);
+}
+
+.title h2 {
+    margin: 0;
+    font-size: var(--size-16);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.balance {
+    margin: var(--space-24) 0 0;
+}
+
+.balance dt,
+.exact {
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+}
+
+.balance dd {
+    margin: var(--space-4) 0 0;
+    font-size: var(--size-32);
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+}
+
+.exact {
+    margin: var(--space-8) 0 0;
+    overflow-wrap: anywhere;
+}

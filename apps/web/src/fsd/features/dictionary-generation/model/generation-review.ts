@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import type {
     DictionaryCard,
     DictionaryGenerationCandidate,
@@ -8,7 +7,6 @@ import type {
 } from '@languon/contracts';
 
 export type GenerationReviewProps = {
-    budget?: ReactNode;
     available: boolean;
     card?: DictionaryCard | undefined;
     conflict?: boolean | undefined;

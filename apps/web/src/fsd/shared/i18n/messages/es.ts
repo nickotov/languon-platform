@@ -250,6 +250,13 @@ export const es = {
     'profile.extraCreditsEmpty':
         'La compra de créditos aún no está disponible.',
     'profile.buyCredits': 'Comprar créditos',
+    'profile.balanceAvailable': 'Créditos disponibles',
+    'profile.balanceExact': 'Saldo exacto',
+    'profile.balanceUnlimited': 'Ilimitado',
+    'profile.balanceLoading': 'Cargando el saldo…',
+    'profile.balanceError':
+        'No se pudo cargar el saldo. Pulsa Actualizar para reintentar.',
+    'profile.balanceRefresh': 'Actualizar',
     'profile.balanceTitle': 'Saldo de créditos',
     'profile.balanceEmpty':
         'El saldo aparecerá aquí cuando se lancen los créditos.',

@@ -1,5 +1,5 @@
-// @user-flow-revision ai-accounting sha256:e65c3d670d67fa18
-// @user-flow-revision learner-portrait sha256:75f6ddbc5274a8aa
+// @user-flow-revision ai-accounting sha256:1c4a76dd9129b96d
+// @user-flow-revision learner-portrait sha256:4f1dc69b79ea34a7
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { customerBalance } from './support/action-accounting-fixture';
 
@@ -464,15 +464,10 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     await expect(
         page.getByText('French travel examples with Russian clarification.'),
     ).toBeVisible();
-    await expect(
-        page.getByText(paid ? 'Charged: 0.14' : 'Free', { exact: true }),
-    ).toBeVisible();
-    await page.getByText('Exact amounts', { exact: true }).click();
-    await expect(
-        page.getByText(paid ? 'Charged credits: 0.14' : 'Charged credits: 0', {
-            exact: true,
-        }),
-    ).toBeVisible();
+    await expect(page.getByText('Exact amounts', { exact: true })).toHaveCount(
+        0,
+    );
+    await expect(page.getByText(/^Charged:/)).toHaveCount(0);
     await page
         .getByRole('button', { name: 'Add to draft', exact: true })
         .click();
@@ -749,12 +744,10 @@ if (process.env.LEARNER_PORTRAIT_TEST_PAID === 'true') {
                     name: 'Interviewer responses now use credits',
                 }),
             ).toHaveCount(0);
-            const alert = page
-                .getByRole('alert')
-                .filter({
-                    hasText:
-                        'Your available credits cannot cover this response’s maximum credit hold.',
-                });
+            const alert = page.getByRole('alert').filter({
+                hasText:
+                    'Your available credits cannot cover this response’s maximum credit hold.',
+            });
             await expect(alert).toBeVisible();
             await expect(alert).toBeFocused();
             const bounds = await alert.boundingBox();

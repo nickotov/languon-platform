@@ -1,3 +1,4 @@
+import { createLearnerAiCreditBalanceModule } from './modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { RedisGenerationBurstLimiter } from './modules/text-ai/infrastructure/generation-burst-limiter';
 import { createLearnerPortraitModule } from './modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createLearnerPortraitRoutes } from './modules/learner-portraits/interface/http/learner-portrait.routes';
@@ -341,6 +342,10 @@ const app = createApp({
         ),
     }),
     textAi: createTextAiModule({
+        ...authentication.productDependencies,
+        policy: authentication.options.policy,
+    }).routes,
+    learnerAiCredits: createLearnerAiCreditBalanceModule({
         ...authentication.productDependencies,
         policy: authentication.options.policy,
     }).routes,

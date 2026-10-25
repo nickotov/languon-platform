@@ -151,12 +151,13 @@ exercise the credit-policy notice and then a separate allowance confirmation.
 A reduced output requires explicit Send, retaining the original answer/version/
 request identity; further reduction returns a new offer requiring another Send.
 Top up preserves the answer in another tab. Actual completed, failed or stopped
-operation billing appears independently, with exact held/charged amounts or
-Free; unknown measurement is not a zero cost. This does not represent the default policy or
+operation status and errors remain visible without passive billing details.
+Canonical API billing retains exact held/charged amounts or Free; unknown
+measurement is not a zero cost. This does not represent the default policy or
 a production environment bypass flag.
 
 The dedicated [AI accounting guide](./ai-accounting.md) covers paid conversation
-allowance confirmation, exact billing details and explicit new-budget Continue.
+allowance confirmation, canonical API billing and explicit new-budget Continue.
 Paid interview policy fixtures remain distinct from default Free interviews.
 
 While a response is running, the composer replaces Send with its sole Stop

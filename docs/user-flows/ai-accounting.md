@@ -59,13 +59,15 @@ related_features:
 
 ## What this verifies
 
-Learners save an exact maximum credits per action in profile AI settings and
-see the saved maximum at the composer. An affordable output allowance that
+Learners save an exact maximum credits per action in Settings AI preferences.
+Passive balances, budgets and spending details stay in Settings; action panels,
+composers, model pickers and completed answers omit these summaries. An affordable output allowance that
 needs confirmation cannot start generation until explicit Send. A limited
-response requires explicit Continue and a new action budget. Canonical turns
-show execution separately from held/charged/released/Free billing, with exact
-credit details and explicit estimated or unknown measurement. Learners see
-credits; USD prices, expenses and financial records belong to administration.
+response requires explicit Continue and a new action budget. Execution status,
+errors, insufficient-credit guidance and paid-action consent remain visible.
+Canonical API turns retain exact held/charged/released/Free billing and explicit
+estimated or unknown measurement. USD prices, expenses and financial records
+belong to administration.
 
 An administrator publishes immutable action/provider limits and records an
 external payment. Recording is bookkeeping for money already received; it does
@@ -128,8 +130,8 @@ production accounts, cash transactions, shared databases or real provider calls.
    the label, control and disclosure remain readable.
 2. For the paid quote fixture, save `60.125` credits/action (the conservative
    serialized text-context bound is larger than the profile-only display example).
-   Create an owned text and open the language tutor. Its composer shows the
-   saved maximum before sending. An expensive model never silently raises it.
+   Create an owned text and open the language tutor. Its composer omits the
+   passive maximum summary. An expensive model never silently raises it.
    In the deterministic fixture, ask `Explain bank — output limit fixture`.
    The real backend returns `409 action_confirmation_required`. The dialog
    shows exact/compact maximum, approximate output-token allowance and expiry.
@@ -141,9 +143,9 @@ production accounts, cash transactions, shared databases or real provider calls.
    A newer reduced offer requires another explicit confirmation.
 4. The deterministic provider finishes with its real `length` finish reason.
    The completed response shows **Response limit reached** and **Continue**.
-   No automatic action starts. Open **Charged** usage: execution is Completed,
-   billing is Charged and the exact settled credits match canonical API detail.
-   Escape closes usage and restores focus.
+   No automatic action starts. Canonical API detail reports Charged with a
+   positive exact settled amount. The answer has no Charged trigger or Usage
+   popover; the response and explicit Continue remain available.
 5. Select **Continue**. This starts a new request ID with the saved maximum and
    no `retryOf`; it can require another budget confirmation. Keep editing to
    decline that offer and verify no second turn was admitted. Capture console,
@@ -161,31 +163,33 @@ the same database or mutate fixture funding while another action is active.
 
 1. Save an explicit `100` maximum. The guarded fixture CLI sets a finite synthetic
    customer balance of `40` credits for dictionary generation. Open a saved card's
-   **Rewrite full card with AI** review. Its maximum is visible before Generate.
+   **Rewrite full card with AI** review. It has no passive maximum summary.
    Generate returns a real allowance quote. Top up preserves the review in another
    tab. Before Send, reduce the synthetic balance to `39` using the reviewed fixture.
    The first Send receives a new offer and requires another Send; neither request
    changes the original content, expected version or idempotency key.
-2. Complete the dictionary review and reload. Execution Completed and billing
-   Released remain separate: the deterministic dictionary review has unknown
-   usage and shows **No charge**, **Usage unknown** and exact zero charged.
+2. Complete the dictionary review and reload. The proposal remains available;
+   no passive billing disclosure or Usage unknown label appears. Canonical
+   accounting retains released zero/unknown usage for this deterministic fixture.
    A successful execution never implies a charge without defensible measurement.
 3. For text translation and sentence generation, seed `20` customer credits under
    the matching capability. Their real actions require Send on the reduced offer.
    Text source and original operation ID stay unchanged; its known usage charges
-   `0.004`, compact `<0.01`, with exact billing in the workspace disclosure. Sentence generation shows the same maximum before Start, freezes
-   its next-operation ID and displays the settled `0.2` credits independently of
-   the exercise. Stored reference review still creates no paid action.
+   `0.004` in canonical accounting. Translation and collection panels omit passive
+   budget and billing details. Sentence generation freezes its next-operation ID
+   and completes the exercise without a passive maximum or spending disclosure. Stored reference review still creates no paid action.
 4. The paid portrait scenario first acknowledges the policy change, then separately
    confirms the actual output allowance. Lowering its balance to `19` before Send
    requires a fresh offer and another Send. The same original interview request is
-   retained, with no repeated notice. Completed projection shows `0.14` charged;
-   the default Free scenario continues to show Free and exact zero charged.
+   retained, with no repeated notice. Completed proposals remain reviewable
+   without passive billing disclosure; paid and Free accounting policies remain
+   unchanged in canonical projections.
 5. Preparation uses three synthetic manual entries whose source contains
    `[budget-output-limit]`, with saved maximum and finite wallet both `400`.
-   Start shows the total maximum and authorizes one parent budget. The guarded
+   Start authorizes one parent budget without a passive maximum summary. The guarded
    provider adapter consumes 8192 + 1808 output tokens across two children, then
-   pauses with zero remaining output and **Continue with a new budget**. No
+   pauses with zero remaining output in canonical API detail and shows
+   **Continue with a new budget**. No
    automatic command or new budget appears. Replenish the synthetic wallet to `400`
    only after the parent has settled (the guarded fixture refuses active holds).
    Explicit Continue creates one new
@@ -234,17 +238,17 @@ the same database or mutate fixture funding while another action is active.
   before consent, same frozen request on confirmation, canonical charged detail,
   provider length limit and explicit new action without automatic continuation.
 - `legacy-dictionary-quote-and-billing`: changed balance requires another explicit
-  Send with the same frozen body/key; released zero/unknown billing survives reload.
+  Send with the same frozen body/key; completed review survives reload without
+  passive billing disclosure.
 - `legacy-text-quote-and-billing`: unsent source and operation ID survive actual
-  allowance confirmation, then server billing renders exact charged credits.
-  Save/share and signed-in selection collection retain the saved maximum before
-  any contextual-card action.
-- `legacy-sentence-quote-and-billing`: saved maximum precedes generation; the
-  frozen operation requires Send and successful job billing remains visible.
+  allowance confirmation, then translated content renders without passive billing.
+  Save/share and signed-in selection collection omit the passive maximum.
+- `legacy-sentence-quote-and-billing`: the frozen operation requires Send and
+  successful generation renders an exercise without passive billing details.
 - `preparation-one-budget-explicit-continue`: a shared 10,000-token output limit pauses
   automatic children and only explicit Continue admits another parent budget.
 - `paid-interview-quote-and-billing`: policy acknowledgment, actual allowance
-  consent, changed-balance reoffer and exact terminal projection stay separate.
+  consent and changed-balance reoffer stay separate from proposal review; no passive billing appears.
 - `admin-budget-and-manual-payment`: real owner settings publication/reload and
   one persisted external payment record with exact USD/credit inputs.
 
@@ -272,8 +276,7 @@ coverage. The browser tests do not emulate financial actions through DOM mocks.
 Run the registered combined journey after migrations and fixture target checks.
 Focused web regression includes `tutor-budget-confirmation.test.tsx`,
 `action-budget.test.ts`, `action-consent.test.tsx`,
-`sentence-training-api.test.ts`, `text-ai-preferences.test.tsx` and
-`tutor-usage-popover.test.tsx`; real backend accounting tests cover money and
+`sentence-training-api.test.ts` and `text-ai-preferences.test.tsx`; real backend accounting tests cover money and
 concurrency. Record actual commands/results in feature 052 evidence.
 
 ## Troubleshooting

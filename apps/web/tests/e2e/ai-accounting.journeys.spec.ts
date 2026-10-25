@@ -1,4 +1,4 @@
-// @user-flow-revision ai-accounting sha256:e65c3d670d67fa18
+// @user-flow-revision ai-accounting sha256:1c4a76dd9129b96d
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import type {
     ConversationDetail,
@@ -159,7 +159,7 @@ test('learner confirms a reduced output allowance and explicitly starts a new ac
     });
     await expect(
         tutor.getByText('Maximum: 60.13', { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     const requests: SubmitConversationTurnRequest[] = [];
     page.on('request', (request) => {
         if (
@@ -213,12 +213,13 @@ test('learner confirms a reduced output allowance and explicitly starts a new ac
     const turn = detail.turns[0]!;
     expect(turn.outputLimitReached).toBe(true);
     expect(turn.billing?.state).toBe('charged');
-    await tutor.getByRole('button', { name: /^Charged:/ }).click();
-    const usage = page.getByRole('dialog', { name: 'Usage', exact: true });
-    await expect(usage).toContainText('ExecutionCompleted');
-    await expect(usage).toContainText('BillingCharged');
-    await expect(usage).toContainText(turn.billing!.chargedCredits!);
-    await page.keyboard.press('Escape');
+    expect(Number(turn.billing!.chargedCredits)).toBeGreaterThan(0);
+    await expect(tutor.getByRole('button', { name: /^Charged:/ })).toHaveCount(
+        0,
+    );
+    await expect(
+        page.getByRole('dialog', { name: 'Usage', exact: true }),
+    ).toHaveCount(0);
     await tutor.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(dialog).toBeVisible();
     expect(requests).toHaveLength(3);

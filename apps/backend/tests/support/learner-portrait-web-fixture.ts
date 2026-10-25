@@ -1,3 +1,4 @@
+import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { seedInterviewAccountingFixture } from './ai-accounting-fixture';
 import type { CapabilityPolicy } from '@languon/contracts';
 import { capabilityPolicyRevisionsTable } from '../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
@@ -598,6 +599,10 @@ export async function createLearnerPortraitWebFixture(
                 service: knowledge,
                 policy: authentication.options.policy,
             }),
+            learnerAiCredits: createLearnerAiCreditBalanceModule({
+                ...d,
+                policy: authentication.options.policy,
+            }).routes,
             textAi: createTextAiModule({
                 ...d,
                 policy: authentication.options.policy,

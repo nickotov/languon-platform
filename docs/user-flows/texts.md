@@ -159,15 +159,15 @@ active AI work and stale versions reject a move without changing membership.
 
 ## Budget confirmation and billing
 
-Translation, detection and contextual-card collection show the saved per-action
-maximum. If only a smaller output is affordable, a real backend quote requires
+Translation, detection and contextual-card collection omit passive credit,
+budget and spending summaries; manage balances in Settings Credits and the
+saved per-action maximum in Settings AI preferences. If only a smaller output is affordable, a real backend quote requires
 explicit **Send**. The original source, selection and operation ID stay frozen
 through confirmation; a changed allowance needs another Send. **Keep editing**
 retains the draft, while **Top up** opens credits in another tab. Completed,
-failed or stopped execution remains distinct from actual held/charged/released/
-Free billing. Exact details disclose integer-thousandth precision; a nonzero
-charge smaller than0.01 displays `<0.01`, never zero. Missing measurement stays
-unknown. See the mapped paid translation case in [AI accounting](./ai-accounting.md).
+failed or stopped execution remains visible without passive billing details.
+Canonical API billing still retains exact decimal credit amounts and unknown
+measurement when appropriate. See the mapped paid translation case in [AI accounting](./ai-accounting.md).
 
 ## Expected failure and edge cases
 

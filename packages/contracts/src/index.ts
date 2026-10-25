@@ -20,3 +20,5 @@ export * from './ai-provider-prices';
 export * from './ai-credit-amount';
 
 export * from './ai-action';
+
+export * from './learner-ai-credits';

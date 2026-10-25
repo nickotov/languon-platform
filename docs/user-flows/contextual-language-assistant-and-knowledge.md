@@ -149,10 +149,9 @@ configuration startup requires its guard and does not own this cleanup.
    visible even when an assistant placeholder is empty. Completed, failed and
    explicitly stopped turns remove the activity indicator. Streamed Markdown
    remains readable while incomplete and settles to the final explanation.
-   Observe material discussed and final usage. Select the billing status to open
-   the usage popover above the answer action; it shows execution separately from
-   held/charged/released/Free billing, exact credits, model, input/output tokens
-   and measured/estimated/unknown accounting. Escape closes the popover and restores focus to its trigger.
+   Observe the material discussed and final response. Passive credit, budget and
+   spending details are available in Settings rather than beside answers; the
+   tutor has no billing trigger or usage popover.
    **Minimize tutor** folds the widget into the lower-right pill while preserving
    the question, attachments, scroll, note edits and running response. **Open language
    tutor** returns to the same conversation. **New conversation** starts separate
@@ -195,9 +194,8 @@ configuration startup requires its guard and does not own this cleanup.
    the linked Knowledge workspace guide.
    It appears above the dictionary action buttons so they cannot cover the chat.
    Its handle and header controls switch between full and partial heights. Repeat fold/reopen at 390px and 320px and explicitly **Stop** a running
-   response. Incomplete output is labeled. Final usage distinguishes reported
-   values from estimates and labels input tokens, output tokens, and charged
-   credits. **Retry response** starts only after
+   response. Incomplete output is labeled without a passive billing badge or
+   usage disclosure. **Retry response** starts only after
    learner action; it retains the original question without duplication.
 7. Confirm **Delete note** and revisit its URL. It is unavailable, together with
    its source-associated conversations. Independently saved other notes remain.
@@ -209,8 +207,9 @@ subscription; this is expected and does not cancel durable work.
 
 ## Action budgets and response limits
 
-The composer shows the learner's saved maximum credits, with expandable exact
-value. Sending authorizes spending within that maximum and available balance.
+The saved maximum is managed in Settings AI preferences; passive balance,
+budget and spending details stay out of the composer and model picker.
+Sending still authorizes spending within that maximum and available balance.
 A reduced allowance returns an explicit Send/Top up/Keep editing offer before
 admission. Reconfirm a newer reduced offer; it cannot silently shrink an already
 reviewed authorization. Response limit reached offers explicit Continue as a new
@@ -218,7 +217,7 @@ action/budget. Disconnecting only unsubscribes: generation continues until it
 finishes or the learner selects Stop. Reconnect replays durable events.
 
 The dedicated [AI accounting guide](./ai-accounting.md) owns the repeatable
-profile, quote, exact billing and Continue browser scenarios. This guide retains
+settings, quote, canonical billing and Continue scenarios. This guide retains
 source access, publication, modes and durable lifecycle coverage.
 
 ## API verification
@@ -290,11 +289,11 @@ accounting behavior have separate real composed HTTP/integration coverage.
   fails visibly without fallback. Capacity/credit failures never silently charge
   an unissued provider call; incurred dispatched work remains accounted.
 - Technical provider failures keep the learner question and incomplete assistant
-  output, release the credit hold, and charge the learner nothing. The billing
-  popover shows **Hold released · no charge** and exact charged credits of zero.
-  Usage is reported, estimated, or **Unknown** according to the available evidence;
-  missing provider usage must not be presented as a measured zero or an estimate
-  without a defensible basis. Provider expense remains an operator accounting
+  output, release the credit hold, and charge the learner nothing. Canonical
+  API detail retains released billing and zero charged credits; the tutor shows
+  the failure and explicit Retry without a billing badge or usage popover.
+  API usage remains reported, estimated, or unknown according to the evidence;
+  missing provider usage must not become a measured zero or an unsupported estimate. Provider expense remains an operator accounting
   concern. Reopening reconnects; retrying always requires explicit learner action.
 - A learner can keep at most eight active assistant event subscriptions. Rapid
   reconnect attempts are also limited to twelve per minute. A busy/rate-limit

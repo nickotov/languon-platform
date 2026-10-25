@@ -584,15 +584,16 @@ there is no unaccounted fallback for new API work. Credits are exact to 0.001, w
 integer thousandths used only inside accounting storage. Public credit amounts
 remain decimal strings; a stored milli-credit is not one displayed credit.
 
-Before each authoring, rewrite, pasted-term or document admission, the saved
-maximum is available in the action panel. A reduced affordable allowance opens
+Authoring, rewrite, pasted-term and document panels omit passive budget and
+spending summaries. The saved maximum remains in Settings AI preferences;
+account balances remain in Settings Credits. A reduced affordable allowance opens
 **Review this action’s budget** with compact/exact maximum, approximate output
 and expiry. Only **Send** authorizes it. **Keep editing** preserves the draft;
 **Top up** opens credits in another tab. Confirmation retries preserve the
 original instruction, version and idempotency key; a further reduction requires
-another Send. Actual job projections show execution separately from held,
-charged, released or Free billing and reveal exact credit amounts. No billing
-state is invented when an older job has no projection.
+another Send. Job execution, errors and results remain visible without passive
+billing details. Canonical API job projections retain held, charged, released or
+Free billing and exact credit amounts; older jobs need no invented projection.
 
 A whole action permits at most one safe automatic retry and 10,000 total output
 tokens across attempts. A failed or ambiguous dispatch cannot bypass that bound.

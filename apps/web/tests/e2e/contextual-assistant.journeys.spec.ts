@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:4aa983c33e115f37
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:a5471c7cee98969c
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -1960,39 +1960,17 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
         .getByRole('button', { name: 'Retry response', exact: true });
     await expect(retry).toBeEnabled();
     const failedArticle = page.locator('article').filter({ has: retry });
-    const usageTrigger = failedArticle.getByRole('button', {
-        name: 'Hold released · no charge',
-        exact: true,
-    });
-    await usageTrigger.click();
-    const usage = page.getByRole('dialog', { name: 'Usage', exact: true });
-    await expect(usage).toBeVisible();
-    await expect(usage.getByText('Unknown', { exact: true })).toBeVisible();
     await expect(
-        usage
-            .getByRole('term')
-            .filter({ hasText: /^Input tokens$/u })
-            .locator('+ dd'),
-    ).toHaveText(String(failed.usage.inputTokens));
+        failedArticle.getByRole('button', {
+            name: 'Hold released · no charge',
+            exact: true,
+        }),
+    ).toHaveCount(0);
     await expect(
-        usage
-            .getByRole('term')
-            .filter({ hasText: /^Output tokens$/u })
-            .locator('+ dd'),
-    ).toHaveText(String(failed.usage.outputTokens));
-    await expect(
-        usage
-            .getByRole('term')
-            .filter({ hasText: /^Charged credits$/u })
-            .locator('+ dd'),
-    ).toHaveText('0');
-    await expect(usageTrigger).toContainText('Hold released · no charge');
-    await usage.scrollIntoViewIfNeeded();
+        page.getByRole('dialog', { name: 'Usage', exact: true }),
+    ).toHaveCount(0);
     await noOverflow(page);
-    await capture(page, info, 'assistant-unknown-usage-no-charge-mobile');
-    await page.keyboard.press('Escape');
-    await expect(usage).toHaveCount(0);
-    await expect(usageTrigger).toBeFocused();
+    await capture(page, info, 'assistant-failure-retry-mobile');
     const retried = page.waitForRequest(
         (request) =>
             request.method() === 'POST' &&

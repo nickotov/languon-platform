@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { ActionBilling, ActionConsentDialog } from '@/fsd/entities/ai-action';
-import { ActionBudgetSummary } from '@/fsd/features/text-ai-preferences';
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import type { MoveTextRequest } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useRouter } from 'next/navigation';
@@ -270,15 +269,6 @@ export function TextWorkspace({
                                 {copy('review')}
                             </Button>
                         )}
-                        <ActionBudgetSummary request={requestWithSession} />
-                        <ActionBilling
-                            billing={ws.translation.job?.billing}
-                            execution={ws.translation.job?.state}
-                        />
-                        <ActionBilling
-                            billing={ws.detection.job?.billing}
-                            execution={ws.detection.job?.state}
-                        />
                         <WorkspaceDocument
                             ws={ws}
                             actorId={actorId}

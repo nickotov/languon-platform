@@ -9,10 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TextAiPreferenceResponse } from '@languon/contracts';
 import { useSessionStore } from '@/fsd/entities/session';
-import {
-    ActionBudgetSummary,
-    ModelPreferenceSection,
-} from '@/fsd/features/text-ai-preferences';
+import { ModelPreferenceSection } from '@/fsd/features/text-ai-preferences';
 import {
     preferencesApi,
     PreferenceApiError,
@@ -85,33 +82,6 @@ afterEach(() => {
     useSessionStore.getState().signOut();
 });
 describe('model preference persistence and concurrent edits', () => {
-    it('shows the backend maximum by the composer with expandable exact authorization', async () => {
-        vi.mocked(preferencesApi.read).mockResolvedValue({
-            ...initial,
-            maxCreditsPerAction: '0.001',
-        });
-        render(
-            <QueryClientProvider
-                client={
-                    new QueryClient({
-                        defaultOptions: { queries: { retry: false } },
-                    })
-                }
-            >
-                <ActionBudgetSummary request={sessionRequest} />
-            </QueryClientProvider>,
-        );
-        const summary = await screen.findByText('Maximum: <0.01');
-        expect(summary.closest('details')).not.toHaveAttribute('open');
-        fireEvent.click(summary);
-        expect(screen.getByText('Exact value: 0.001')).toBeInTheDocument();
-        expect(
-            screen.getByText(/Sending authorizes spending within the maximum/),
-        ).toBeInTheDocument();
-        act(() => useSessionStore.getState().signOut());
-        expect(screen.queryByText('Maximum: <0.01')).not.toBeInTheDocument();
-    });
-
     it('validates precision and saves the exact action budget with the preference version', async () => {
         vi.mocked(preferencesApi.read).mockResolvedValue({
             ...initial,
