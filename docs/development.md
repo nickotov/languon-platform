@@ -11,6 +11,24 @@ Use Node.js 24 and the Corepack-managed pnpm version declared in
 `package.json`. Copy `.env.example` to `.env.local`; never commit the resulting
 file or real credentials.
 
+Backend configuration is exported through `apps/backend/src/config/environment.ts`.
+It exposes separate API, worker, migration, audio/storage and playground loaders;
+imports do not read the environment or require another process's secrets. Load
+configuration at startup and inject the validated values into runtime services.
+Schema defaults produce a warning naming absent settings. Required or invalid
+settings fail validation with an error naming the affected keys; values and
+credentials are never included in these diagnostics. Intentionally optional
+settings without a fallback stay quiet. Conditional requirements still fail when
+the corresponding capability is enabled.
+
+`SENTENCE_AI_TIMEOUT_MS` controls sentence generation and checking;
+`TEXT_AI_TIMEOUT_MS` controls text detection and translation. Both accept integer
+milliseconds from 1000 through 180000. Omitted or empty values warn and use
+180000 ms. Explicit invalid values fail worker startup instead of silently
+falling back. Set them in `.env.local` and restart the dictionary worker (or
+`pnpm dev:all`) to apply changes. Existing jobs already running retain their
+current deadline. No model limits, credit budgets or retry policies are changed.
+
 Start infrastructure separately from application processes:
 
 ```sh

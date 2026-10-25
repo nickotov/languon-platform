@@ -1,3 +1,4 @@
+import { parseEnvironmentSchema } from '../../config/environment-diagnostics';
 import { z } from 'zod';
 
 const playgroundDatabaseNamePattern =
@@ -61,7 +62,7 @@ export class UnsafePlaygroundTargetError extends Error {
 export function loadPlaygroundEnvironment(
     values: NodeJS.ProcessEnv = process.env,
 ): PlaygroundEnvironment {
-    const raw = RawPlaygroundEnvironmentSchema.parse(values);
+    const raw = parseEnvironmentSchema(RawPlaygroundEnvironmentSchema, values);
     const target = parsePostgresUrl(
         raw.MASTRA_PLAYGROUND_DATABASE_URL,
         'MASTRA_PLAYGROUND_DATABASE_URL',

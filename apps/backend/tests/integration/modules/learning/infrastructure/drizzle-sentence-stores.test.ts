@@ -12,6 +12,7 @@ import {
     aiCreditActionQuotesTable as actionQuotes,
 } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { randomUUID } from 'node:crypto';
+import { createSentenceAiProvider } from '../../../../../src/modules/learning/infrastructure/ai/sentence-ai-provider';
 import { validateSentenceGeneration } from '../../../../../src/modules/learning/domain/sentence-content';
 import {
     createDrizzleDatabase,
@@ -19,7 +20,16 @@ import {
     type PostgresJsDatabase,
 } from '@languon/database';
 import { eq, sql, desc } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import { databaseSchema } from '../../../../../src/infrastructure/database/schema';
 import { usersTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import {
@@ -47,6 +57,7 @@ import {
     textAiCapacityObservationId,
 } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { DrizzleDictionaryGenerationStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
+import { DrizzleSentencePreparationStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store';
 import { DrizzleSentencePracticeStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store';
 import { DrizzleSentenceWorkerStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store';
 import {
@@ -128,6 +139,8 @@ run('sentence persistence', () => {
                 supportedFormats: [
                     'sentence-generation:v1',
                     'sentence-generation:v2',
+                    'sentence-preparation:v1',
+                    'sentence-preparation:v2',
                     'sentence-check:v1',
                 ],
                 learningExecutionRevision: 1,
@@ -358,6 +371,7 @@ run('sentence persistence', () => {
         await migrateTestDatabase(client);
         worker = new DrizzleSentenceWorkerStore(db);
     }, 60000);
+    afterEach(() => vi.unstubAllGlobals());
     afterAll(async () => {
         await client?.end();
     });
@@ -459,6 +473,261 @@ run('sentence persistence', () => {
             },
         });
     }, 120000);
+    it.each([
+        { generationPolicyVersion: 1, preparationChild: false },
+        { generationPolicyVersion: 2, preparationChild: false },
+        { generationPolicyVersion: 1, preparationChild: true },
+        { generationPolicyVersion: 2, preparationChild: true },
+    ] as const)(
+        'executes the real provider using the admitted generation v$generationPolicyVersion and check budgets (preparation child: $preparationChild)',
+        async ({ generationPolicyVersion, preparationChild }) => {
+            const [revision] = await db
+                .select()
+                .from(dictionaryAiConfigurationRevisionsTable)
+                .where(
+                    eq(dictionaryAiConfigurationRevisionsTable.id, revisionId),
+                );
+            const snapshot = revision!.catalogSnapshot;
+            store = new DrizzleSentencePracticeStore(db, {
+                generationFormat: `sentence-generation:v${generationPolicyVersion}`,
+                resolveExecution: async () => ({
+                    budget: snapshot.aggregateBudget,
+                    revisionId,
+                    snapshot,
+                    selectionVersion: 1,
+                }),
+            });
+            if (preparationChild) {
+                const preparation = new DrizzleSentencePreparationStore(db, {
+                    authorizeAction: store.preparePreparationAction.bind(store),
+                    admitGeneration:
+                        store.admitPreparationGeneration.bind(store),
+                });
+                const started = await preparation.start(
+                    access(),
+                    {
+                        operationId: randomUUID(),
+                        direction: 'source-to-target',
+                        mode: 'new-only',
+                        initialRoundScope: { type: 'all' },
+                    },
+                    context(),
+                );
+                expect(await preparation.tick(context())).toBe(true);
+                const active = await preparation.get(
+                    access(),
+                    started.id,
+                    context(),
+                );
+                expect(active.activeJobId).not.toBeNull();
+            } else {
+                const submitted = await store.next(access(), next(), context());
+                expect(submitted.kind).toBe('job');
+            }
+            const job = await claim();
+            if (!job || job.kind !== 'sentence-generation')
+                throw new Error('Expected admitted sentence generation');
+            const targetIndex = job.input.candidates.findIndex(
+                (entry) => entry.entryId === job.input.priorityEntryId,
+            );
+            const target = job.input.candidates[targetIndex]!;
+            const alias = `candidate-${targetIndex + 1}`;
+            const requests: { max_tokens?: number }[] = [];
+            let reply: object = {
+                sourceText: `Please ${target.sourceText} now.`,
+                referenceTranslation: `Por favor ${target.targetText} ahora.`,
+                segments: [
+                    {
+                        text: 'Please ',
+                        entryId: null,
+                        ...(generationPolicyVersion === 2
+                            ? {
+                                  contextualHint: {
+                                      normalizedHint: 'por favor',
+                                      hintForm: 'phrase',
+                                  },
+                              }
+                            : {}),
+                    },
+                    {
+                        text: target.sourceText,
+                        entryId: alias,
+                        ...(generationPolicyVersion === 2
+                            ? { contextualHint: null }
+                            : {}),
+                    },
+                    {
+                        text: ' now.',
+                        entryId: null,
+                        ...(generationPolicyVersion === 2
+                            ? { contextualHint: null }
+                            : {}),
+                    },
+                ],
+                targets: [
+                    {
+                        entryId: alias,
+                        normalizedHint: target.targetText,
+                        hintForm: 'lemma',
+                    },
+                ],
+            };
+            // Keep the provider, Mastra, admission and claims real. Only HTTP is fake.
+            vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit) => {
+                expect(String(url)).toBe(
+                    'https://api.deepseek.com/chat/completions',
+                );
+                expect(init?.method).toBe('POST');
+                requests.push(
+                    JSON.parse(String(init?.body)) as {
+                        max_tokens?: number;
+                    },
+                );
+                return new Response(
+                    JSON.stringify({
+                        id: 'synthetic-admitted-sentence',
+                        object: 'chat.completion',
+                        created: 0,
+                        model: 'deepseek-flash',
+                        choices: [
+                            {
+                                index: 0,
+                                message: {
+                                    role: 'assistant',
+                                    content: JSON.stringify(reply),
+                                },
+                                finish_reason: 'stop',
+                            },
+                        ],
+                        usage: {
+                            prompt_tokens: 100,
+                            completion_tokens: 20,
+                            total_tokens: 120,
+                        },
+                    }),
+                    { headers: { 'Content-Type': 'application/json' } },
+                );
+            });
+            const provider = createSentenceAiProvider({
+                credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+            });
+            expect(job.budget.maxInputTokensPerAttempt).toBeLessThan(
+                snapshot.aggregateBudget.maxInputTokensPerAttempt,
+            );
+            expect(await worker.markDispatched(job.lease, context())).toBe(
+                'dispatch',
+            );
+            const insufficientBudget = {
+                ...job.budget,
+                maxInputTokensPerAttempt: 1,
+            };
+            await expect(
+                provider.generate({
+                    input: job.input,
+                    execution: {
+                        ...job.execution,
+                        aggregateBudget: insufficientBudget,
+                    },
+                    budget: insufficientBudget,
+                    idempotencyKey: job.providerIdempotencyKey,
+                    signal: context().signal,
+                }),
+            ).rejects.toMatchObject({ reason: 'input_token_bound' });
+            expect(requests).toHaveLength(0);
+            const generated = await provider.generate({
+                input: job.input,
+                execution: job.execution,
+                budget: job.budget,
+                idempotencyKey: job.providerIdempotencyKey,
+                signal: context().signal,
+            });
+            if (!generated.usage)
+                throw new Error('Expected measured synthetic provider usage');
+            expect(requests).toHaveLength(1);
+            expect(requests[0]?.max_tokens).toBe(
+                Math.min(
+                    job.budget.maxOutputTokensPerAttempt,
+                    job.execution.perCallMaxOutputTokens,
+                ),
+            );
+            expect(
+                await worker.completeGeneration(
+                    job.lease,
+                    {
+                        content: validateSentenceGeneration(
+                            job.input,
+                            generated.draft,
+                        ),
+                        usage: generated.usage,
+                    },
+                    context(),
+                ),
+            ).toBe('committed');
+            if (preparationChild) {
+                // Preparation children publish privately; practice cannot read their jobs.
+                const prepared = await db.select().from(sentenceExercisesTable);
+                expect(prepared).toHaveLength(1);
+                expect(prepared[0]?.generationPolicyVersion).toBe(
+                    generationPolicyVersion,
+                );
+                return;
+            }
+            const saved = await store.getJob(
+                access(),
+                job.lease.jobId,
+                context(),
+            );
+            if (saved.result?.kind !== 'exercise')
+                throw new Error('Expected published sentence');
+            await store.enqueueCheck(
+                access(),
+                saved.result.exercise.id,
+                {
+                    operationId: randomUUID(),
+                    sessionId: randomUUID(),
+                    answer: target.targetText,
+                    explanationLanguage: 'en',
+                    revealedHintIds: [],
+                },
+                context(),
+            );
+            const checking = await claim();
+            if (!checking || checking.kind !== 'sentence-check')
+                throw new Error('Expected admitted sentence check');
+            reply = {
+                proposedPercentage: 100,
+                meaning: 'correct',
+                grammar: 'correct',
+                targets: {
+                    'target-1': {
+                        status: 'used',
+                        explanation: 'Correct target.',
+                    },
+                },
+                issues: [],
+                improvedTranslation: target.targetText,
+                explanation: 'Correct.',
+            };
+            expect(await worker.markDispatched(checking.lease, context())).toBe(
+                'dispatch',
+            );
+            const checked = await provider.check({
+                input: checking.input,
+                execution: checking.execution,
+                budget: checking.budget,
+                idempotencyKey: checking.providerIdempotencyKey,
+                signal: context().signal,
+            });
+            expect(checked.draft.targets[0]?.entryId).toBe(target.entryId);
+            expect(requests).toHaveLength(2);
+            expect(requests[1]?.max_tokens).toBe(
+                Math.min(
+                    checking.budget.maxOutputTokensPerAttempt,
+                    checking.execution.perCallMaxOutputTokens,
+                ),
+            );
+        },
+    );
     it('Feature052 settles a bounded sentence action only after validated publication', async () => {
         const result = await generated();
         const [action] = await db
@@ -477,6 +746,8 @@ run('sentence persistence', () => {
         );
     });
     it('confirms a paid sentence Next quote without changing its allowance', async () => {
+        // Fund the complete prompt/schema envelope while keeping output budget-limited.
+        await seedLegacyActionFixture(db, '40');
         await db
             .update(aiCreditAccountsTable)
             .set({ mode: 'limited' })
@@ -484,7 +755,7 @@ run('sentence persistence', () => {
         await db.transaction((tx) =>
             new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                 ownerId: owner,
-                amount: 20000n,
+                amount: 40000n,
                 createdAt: new Date(),
                 expiresAt: null,
                 source: 'admin',
@@ -535,7 +806,9 @@ run('sentence persistence', () => {
         try {
             await store.next(access(), request, context());
         } catch (error) {
-            offer = error as ActionAllowanceConfirmationRequired;
+            if (!(error instanceof ActionAllowanceConfirmationRequired))
+                throw error;
+            offer = error;
         }
         expect(offer).toBeInstanceOf(ActionAllowanceConfirmationRequired);
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);

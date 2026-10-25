@@ -7,6 +7,7 @@ import {
     selectFlows,
     validateRegistry,
     assertPassingReport,
+    assertPassingBackendReport,
 } from './critical-flows/registry.mjs';
 import {
     execute,
@@ -41,6 +42,26 @@ export function browserCommand(flow) {
         flow.grep,
         '--retries=0',
         '--reporter=list,json',
+    ];
+}
+
+export function backendCommand(flow, report) {
+    validateRegistry([flow]);
+    if (flow.app !== 'backend')
+        throw new Error('Expected backend execution flow');
+    return [
+        '--filter',
+        '@languon/backend',
+        'exec',
+        'vitest',
+        'run',
+        ...flow.files,
+        '--no-file-parallelism',
+        '--retry=0',
+        '--reporter=default',
+        '--reporter=../../scripts/critical-flows/backend-retry-reporter.mjs',
+        '--reporter=json',
+        `--outputFile=${report}`,
     ];
 }
 
@@ -110,17 +131,20 @@ async function runFlow(flow, output, runId) {
         }
         await execute(
             'pnpm',
-            [
-                ...browserCommand(flow),
-                '--output',
-                resolve(output, `${flow.id}-artifacts`),
-            ],
+            flow.app === 'backend'
+                ? backendCommand(flow, report)
+                : [
+                      ...browserCommand(flow),
+                      '--output',
+                      resolve(output, `${flow.id}-artifacts`),
+                  ],
             { env },
         );
-        const count = assertPassingReport(
-            JSON.parse(await readFile(report, 'utf8')),
-            flow,
-        );
+        const count = (
+            flow.app === 'backend'
+                ? assertPassingBackendReport
+                : assertPassingReport
+        )(JSON.parse(await readFile(report, 'utf8')), flow);
         console.log(`[critical] ${flow.id}: ${count} passed, no skips`);
         return { id: flow.id, status: 'passed', tests: count };
     } finally {
@@ -163,7 +187,7 @@ export async function cleanupOwned(
     }
     for (const id of [...ids].reverse()) {
         try {
-            await run('docker', ['rm', '--force', id], {
+            await run('docker', ['rm', '--force', '--volumes', id], {
                 capture: true,
                 cleanup: true,
             });
@@ -185,7 +209,7 @@ export async function main(args = process.argv.slice(2)) {
     if (args.includes('--list')) {
         for (const flow of selected)
             console.log(
-                `${flow.id}\t${flow.prerequisite}\t${flow.file}: ${flow.grep}`,
+                `${flow.id}\t${flow.prerequisite}\t${flow.app === 'backend' ? flow.files.join(', ') : `${flow.file}: ${flow.grep}`}`,
             );
         return;
     }

@@ -1,3 +1,12 @@
+import { resolve } from 'node:path';
+
+export const backendExecutionFiles = Object.freeze([
+    'tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts',
+    'tests/integration/modules/texts/text-selection.test.ts',
+    'tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts',
+    'tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts',
+]);
+
 /** Add future crucial journeys here; every entry runs against fresh owned services. */
 export const flows = [
     {
@@ -35,6 +44,15 @@ export const flows = [
         prerequisite: 'deterministic-web',
     },
     {
+        id: 'sentence-practice',
+        minimumTests: 1,
+        app: 'web',
+        file: 'sentence-practice.journeys.spec.ts',
+        grep: 'checks owner practice and gives a zero-credit reader',
+        prerequisite: 'deterministic-sentence-services',
+        env: { AUTH_E2E_SENTENCE_SERVICES: 'true' },
+    },
+    {
         id: 'text-generation',
         minimumTests: 2,
         app: 'texts',
@@ -67,6 +85,13 @@ export const flows = [
         file: 'learner-portrait.journeys.spec.ts',
         grep: 'interview resumes, uses a deterministic',
         prerequisite: 'deterministic-portrait',
+    },
+    {
+        id: 'ai-execution-contracts',
+        minimumTests: 51,
+        app: 'backend',
+        files: [...backendExecutionFiles],
+        prerequisite: 'disposable-backend-production-execution',
     },
 ];
 
@@ -108,17 +133,28 @@ export function validateRegistry(registry = flows) {
             throw new Error('Invalid or duplicate critical flow id');
         ids.add(flow.id);
         if (
-            !['web', 'admin', 'texts', 'assistant', 'portrait'].includes(
-                flow.app,
-            ) ||
-            !/^[a-z-]+\.journeys\.spec\.ts$/.test(flow.file) ||
-            !flow.grep ||
+            !(flow.app === 'backend'
+                ? flow.id === 'ai-execution-contracts' &&
+                  Array.isArray(flow.files) &&
+                  flow.files.length === backendExecutionFiles.length &&
+                  backendExecutionFiles.every(
+                      (file, index) => flow.files[index] === file,
+                  ) &&
+                  flow.env === undefined &&
+                  flow.grep === undefined &&
+                  flow.file === undefined &&
+                  flow.minimumTests >= 50
+                : ['web', 'admin', 'texts', 'assistant', 'portrait'].includes(
+                      flow.app,
+                  ) &&
+                  /^[a-z-]+\.journeys\.spec\.ts$/.test(flow.file) &&
+                  Boolean(flow.grep)) ||
             !flow.prerequisite ||
             !Number.isSafeInteger(flow.minimumTests) ||
             flow.minimumTests < 1
         )
             throw new Error(`Incomplete critical flow: ${flow.id}`);
-        new RegExp(flow.grep);
+        if (flow.grep) new RegExp(flow.grep);
         validateFeatureFlags(flow.env);
         if (flow.dependsOn !== undefined && !Array.isArray(flow.dependsOn))
             throw new Error(`Invalid dependencies: ${flow.id}`);
@@ -169,6 +205,7 @@ export function assertPassingReport(report, flow = { minimumTests: 1 }) {
 }
 
 const featureFlags = {
+    AUTH_E2E_SENTENCE_SERVICES: ['true'],
     ADMIN_E2E_SETUP_JOURNEY: ['true'],
     ADMIN_E2E_ACCESS_TOKEN_TTL: ['60s'],
     LEARNER_PORTRAIT_TEST_PAID: ['true'],
@@ -184,4 +221,53 @@ export function validateFeatureFlags(flags = {}) {
                 `Unsafe critical flow environment override: ${key}`,
             );
     }
+}
+
+/** Vitest JSON is checked independently of its exit code: skipped DB suites exit zero. */
+export function assertPassingBackendReport(
+    report,
+    flow,
+    backendRoot = resolve('apps/backend'),
+) {
+    const files = report.testResults;
+    const expected = flow.files.map((file) => resolve(backendRoot, file));
+    const assertions = Array.isArray(files)
+        ? files.flatMap((file) => file.assertionResults ?? [])
+        : [];
+    if (
+        report.success !== true ||
+        !Array.isArray(files) ||
+        files.length !== expected.length ||
+        new Set(files.map((file) => file.name)).size !== expected.length ||
+        files.some(
+            (file) =>
+                !expected.includes(file.name) ||
+                file.status !== 'passed' ||
+                file.message ||
+                !file.assertionResults?.length,
+        ) ||
+        !Number.isSafeInteger(report.numTotalTests) ||
+        report.numTotalTests < flow.minimumTests ||
+        report.numTotalTests !== assertions.length ||
+        report.numPassedTests !== assertions.length ||
+        [
+            'numFailedTests',
+            'numPendingTests',
+            'numTodoTests',
+            'numFailedTestSuites',
+            'numPendingTestSuites',
+        ].some((key) => report[key] !== 0) ||
+        assertions.some(
+            (test) =>
+                test.status !== 'passed' ||
+                test.failureMessages?.length ||
+                test.meta?.criticalRetryCount !== 0 ||
+                test.meta?.criticalRepeatCount !== 0 ||
+                test.meta?.criticalExpectedFailure !== false,
+        )
+    )
+        throw new Error(
+            'Critical backend execution contracts did not pass cleanly: missing, unexpected, skipped, flaky, incomplete or failed tests are not accepted.',
+        );
+    return assertions.length;
 }

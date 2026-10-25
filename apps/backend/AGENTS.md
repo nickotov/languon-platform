@@ -58,12 +58,37 @@ When adding or changing module Drizzle persistence implementations:
 - Map domain/application failures to transport failures in interface code.
 - Preserve request cancellation and avoid unbounded model or database work.
 
+## Environment configuration
+
+Expose backend configuration loaders through `src/config/environment.ts`; keep
+process-specific schemas separate and load them only at process startup. Define
+new settings in the owning schema and use `parseEnvironmentSchema` for sanitized
+fallback warnings and required/invalid-setting errors. Inject validated values
+into services instead of reading environment variables in generation code. Treat
+optional values without defaults as quiet; preserve conditional requirements and
+never print supplied values or credentials in diagnostics.
+
 ## AI and prompts
 
 Keep Mastra agents, model providers, tool implementations, and Langfuse clients
 in infrastructure. Resolve prompt identifiers through `@languon/prompts` and
 retain deterministic local fallbacks for development and tests. Treat model
 output as untrusted input and validate structured results before domain use.
+
+### AI execution regression coverage
+
+For AI execution changes, apply the
+[AI execution regression matrix](../../docs/operations/critical-workflows.md#ai-execution-regression-matrix).
+Exercise the production composition and admitted budget, replacing only external
+provider HTTP at that seam. Include reduced allowances, outgoing model limits,
+and unrelated-capability isolation when affected. Worker timing changes require
+slow success, bounded timeout and cancellation evidence using production defaults.
+Keep snapshot validation and fenced settlement real in integration coverage.
+
+Run the registered backend execution stage, not only mocked-agent unit tests or
+browser fixtures. A successful isolated provider call does not establish that the
+reported failing execution path has been repaired. Never make paid calls without
+separate explicit spending authority.
 
 ### Mastra primitive registration
 

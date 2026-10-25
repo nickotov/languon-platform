@@ -11,6 +11,7 @@ import { defaultDictionaryGenerationProviderBudgetPolicy } from '../../../../../
 import {
     CardAuthoringProposalGeneratorExecutionError,
     createMastraCardAuthoringProposalGenerator,
+    createCardAuthoringProposalGenerator,
     DeterministicCardAuthoringProposalGenerator,
     type DictionaryCardAuthoringStructuredAgent,
 } from '../../../../../../src/modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators';
@@ -313,6 +314,103 @@ describe('dictionary card authoring proposal generators', () => {
         ).rejects.toMatchObject({ category: 'invalid_model_output' });
     });
 
+    it('sends the pinned output limit through the real Mastra HTTP adapter', async () => {
+        const fetchProvider = vi.fn(
+            async () =>
+                new Response(
+                    JSON.stringify({
+                        id: 'synthetic-completion',
+                        object: 'chat.completion',
+                        created: 0,
+                        model: 'deepseek-flash',
+                        choices: [
+                            {
+                                index: 0,
+                                message: {
+                                    role: 'assistant',
+                                    content: JSON.stringify({
+                                        suggestions: [
+                                            {
+                                                field: 'translation',
+                                                value: 'banco',
+                                            },
+                                            {
+                                                field: 'definition',
+                                                value: 'Entidad financiera.',
+                                            },
+                                        ],
+                                    }),
+                                },
+                                finish_reason: 'stop',
+                            },
+                        ],
+                        usage: {
+                            prompt_tokens: 100,
+                            completion_tokens: 20,
+                            total_tokens: 120,
+                        },
+                    }),
+                    { headers: { 'Content-Type': 'application/json' } },
+                ),
+        );
+        vi.stubGlobal('fetch', fetchProvider);
+        try {
+            const generator = createCardAuthoringProposalGenerator({
+                mode: 'mastra',
+                model: {
+                    providerId: 'deepseek',
+                    modelId: 'deepseek-flash',
+                    url: 'https://api.deepseek.com',
+                    apiKey: 'synthetic-key',
+                },
+                modelRequestLimits: {
+                    maxInputTokens: 64_000,
+                    maxOutputTokens: 8_192,
+                },
+                providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
+                structuredOutputMode: 'prompt-injection',
+            });
+            await expect(generator.generate(request())).resolves.toMatchObject({
+                usage: { inputTokens: 100, outputTokens: 20 },
+            });
+            expect(fetchProvider).toHaveBeenCalledOnce();
+            const options = fetchProvider.mock.calls[0] as unknown as [
+                unknown,
+                RequestInit,
+            ];
+            const body = JSON.parse(options[1].body as string);
+            expect(body.max_tokens).toBe(8_192);
+            expect(body.response_format).toBeUndefined();
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('reports safe provider failure metadata while preserving public failures', async () => {
+        const onProviderFailure = vi.fn();
+        const error = Object.assign(new Error('private provider response'), {
+            name: 'AI_APICallError',
+            statusCode: 402,
+        });
+        const generator = createMastraCardAuthoringProposalGenerator({
+            agent: { generate: vi.fn().mockRejectedValue(error) },
+            onProviderFailure,
+        });
+        await expect(generator.generate(request())).rejects.toMatchObject({
+            category: 'provider_unavailable',
+        });
+        expect(onProviderFailure).toHaveBeenCalledExactlyOnceWith({
+            errorName: 'AI_APICallError',
+            httpStatus: 402,
+        });
+        onProviderFailure.mockImplementation(() => {
+            throw new Error('diagnostic sink unavailable');
+        });
+        await expect(generator.generate(request())).rejects.toMatchObject({
+            category: 'provider_unavailable',
+        });
+    });
+
     it('dispatches only the provider DTO with tools disabled and hidden traces', async () => {
         const delta = {
             suggestions: [
@@ -345,7 +443,7 @@ describe('dictionary card authoring proposal generators', () => {
         expect(serialized).not.toContain('private inactive field content');
         expect(generate).toHaveBeenCalledWith(expect.any(String), {
             abortSignal: generationRequest.signal,
-            maxOutputTokens: 40_960,
+            modelSettings: { maxOutputTokens: 40_960, maxRetries: 0 },
             runId: 'authoring-request-0001',
             structuredOutput: {
                 jsonPromptInjection: 'inline',

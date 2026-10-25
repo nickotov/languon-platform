@@ -460,6 +460,64 @@ function GeneratingFieldHarness({
 }
 
 describe('dictionary settings and card authoring', () => {
+    it('keeps short field names and icon-only generation actions with accessible hover help', async () => {
+        const user = userEvent.setup();
+        render(
+            <DictionaryCardForm
+                dictionary={{
+                    ...dictionary,
+                    settings: {
+                        ...dictionary.settings,
+                        values: {
+                            ...dictionary.settings.values,
+                            exampleLanguage: 'target',
+                        },
+                    },
+                }}
+                languages={languages}
+                onSave={vi.fn()}
+                onCancel={vi.fn()}
+                pending={false}
+                ai={{
+                    available: true,
+                    format: 'card-authoring:v3',
+                    pending: false,
+                    onAction: vi.fn().mockResolvedValue(undefined),
+                }}
+            />,
+        );
+        const source = screen.getByRole('textbox', {
+            name: 'Source word or phrase',
+        });
+        const translation = screen.getByRole('textbox', {
+            name: 'Translation',
+        });
+        expect(
+            screen.getByRole('textbox', { name: 'Context example (Spanish)' }),
+        ).toHaveAttribute('lang', 'es');
+        expect(source).toHaveAttribute('lang', dictionary.sourceLanguage);
+        expect(translation).toHaveAttribute('lang', dictionary.targetLanguage);
+        const generate = screen.getByRole('button', {
+            name: 'Generate Translation with AI',
+        });
+        expect(generate).toBeDisabled();
+        await user.hover(generate);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+            'Generate Translation with AI',
+        );
+        await user.unhover(generate);
+        await user.type(source, 'atelier');
+        expect(generate.textContent).toBe('');
+        expect(
+            screen.getByRole('button', { name: 'Generate all' }).textContent,
+        ).toBe('');
+        await user.hover(generate);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+            'Generate Translation with AI',
+        );
+        await user.unhover(generate);
+    });
+
     it('saves optional dictionary translation context', async () => {
         const user = userEvent.setup();
         const onSave = vi.fn().mockResolvedValue(undefined);
@@ -680,9 +738,7 @@ describe('dictionary settings and card authoring', () => {
         );
 
         await waitFor(() =>
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
-                'banque',
-            ),
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue('banque'),
         );
         expect(
             screen.queryByText(/source phrase or translation context changed/i),
@@ -700,7 +756,7 @@ describe('dictionary settings and card authoring', () => {
                 name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
-        expect(screen.getByLabelText(/^Source word or phrase \(/)).toHaveValue(
+        expect(screen.getByLabelText(/^Source word or phrase/)).toHaveValue(
             'atelier',
         );
         expect(screen.getByTestId('ai-progress-translation')).toBeVisible();
@@ -709,7 +765,7 @@ describe('dictionary settings and card authoring', () => {
             screen.getByTestId('ai-progress-exampleTranslation'),
         ).toBeVisible();
         expect(
-            screen.queryByRole('textbox', { name: /^Translation \(/ }),
+            screen.queryByRole('textbox', { name: /^Translation/ }),
         ).not.toBeInTheDocument();
         expect(
             screen.queryByRole('textbox', { name: /^Context example \(/ }),
@@ -1005,7 +1061,7 @@ describe('dictionary settings and card authoring', () => {
                 );
             }
             render(<ExpiringForm />);
-            expect(screen.getByLabelText(/Translation \(/)).toBeDisabled();
+            expect(screen.getByLabelText(/^Translation/)).toBeDisabled();
             expect(screen.getByRole('status')).toHaveTextContent(/Generating/);
             await user.click(
                 screen.getByRole('button', { name: 'Expire generation' }),
@@ -1063,7 +1119,7 @@ describe('dictionary settings and card authoring', () => {
         expect(onDirtyChange).toHaveBeenLastCalledWith(true);
         await user.clear(source);
         expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-        const example = screen.getByLabelText(/Context example \(/);
+        const example = screen.getByLabelText(/^Context example \(/);
         await user.type(example, 'Only optional content');
         expect(onDirtyChange).toHaveBeenLastCalledWith(true);
         await user.clear(example);
@@ -1116,7 +1172,7 @@ describe('dictionary settings and card authoring', () => {
             })),
         });
         await waitFor(() =>
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 'translation choice 3',
             ),
         );
@@ -1241,9 +1297,7 @@ describe('dictionary settings and card authoring', () => {
             </I18nProvider>,
         );
         await waitFor(() =>
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
-                'medio',
-            ),
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue('medio'),
         );
         expect(screen.queryByText(/Version 2 of/)).toBeNull();
         expect(onSave).not.toHaveBeenCalled();
@@ -1265,9 +1319,9 @@ describe('dictionary settings and card authoring', () => {
             ],
             { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
         );
-        await user.clear(screen.getByLabelText(/^Translation \(/));
+        await user.clear(screen.getByLabelText(/^Translation/));
         await user.type(
-            screen.getByLabelText(/^Translation \(/),
+            screen.getByLabelText(/^Translation/),
             'manual translation',
         );
         await user.click(
@@ -1304,7 +1358,7 @@ describe('dictionary settings and card authoring', () => {
             ],
         });
         await waitFor(() =>
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 'entorno',
             ),
         );
@@ -1355,7 +1409,7 @@ describe('dictionary settings and card authoring', () => {
                 "s'alarmer",
             ),
         );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+        expect(screen.getByLabelText(/^Translation/)).toHaveValue(
             'to become alarmed',
         );
         expect(screen.queryByText('Review Source first')).toBeNull();
@@ -1407,13 +1461,11 @@ describe('dictionary settings and card authoring', () => {
     it('does not reapply a completed job when polling returns a different proposal object', async () => {
         const form = renderGeneratedForm(authoringProposal);
         await waitFor(() =>
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
-                'medio',
-            ),
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue('medio'),
         );
         await userEvent
             .setup()
-            .type(screen.getByLabelText(/^Translation \(/), ' manual');
+            .type(screen.getByLabelText(/^Translation/), ' manual');
         form.rerender(
             <DictionaryCardForm
                 {...form.props}
@@ -1426,7 +1478,7 @@ describe('dictionary settings and card authoring', () => {
                 }}
             />,
         );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+        expect(screen.getByLabelText(/^Translation/)).toHaveValue(
             'medio manual',
         );
         expect(screen.getByText('Version 2 of 2')).toBeVisible();
@@ -1526,7 +1578,7 @@ describe('dictionary settings and card authoring', () => {
                     },
                 },
             );
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 card.values.translation,
             );
             expect(
@@ -1684,7 +1736,7 @@ describe('dictionary settings and card authoring', () => {
         expect(
             screen.getByText(/AI suggestions are unavailable/i),
         ).toBeVisible();
-        await user.type(screen.getByLabelText(/^Translation \(/), 'manual');
+        await user.type(screen.getByLabelText(/^Translation/), 'manual');
         expect(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         ).toBeEnabled();
@@ -1729,12 +1781,12 @@ describe('dictionary settings and card authoring', () => {
             screen.getByLabelText(/Source word or phrase/),
             'active',
         );
-        await user.type(screen.getByLabelText(/^Translation \(/), 'editable');
+        await user.type(screen.getByLabelText(/^Translation/), 'editable');
         await user.click(
             screen.getByRole('button', { name: 'Cancel generation' }),
         );
         expect(onAction).toHaveBeenCalledWith({ kind: 'cancel' });
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('');
+        expect(screen.getByLabelText(/^Translation/)).toHaveValue('');
     });
 
     it('invalidates generated provenance after the source changes and allows regeneration', async () => {
@@ -2455,15 +2507,15 @@ describe('auto-accepted card generation regression state', () => {
         });
         render(<DictionaryCardForm {...initial} />);
         await waitFor(() =>
-            expect(screen.getByLabelText(/^Translation \(/)).toHaveValue(
+            expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 'x'.repeat(201),
             ),
         );
         expect(onAutoSave).not.toHaveBeenCalled();
         const user = userEvent.setup();
-        await user.clear(screen.getByLabelText(/^Translation \(/));
+        await user.clear(screen.getByLabelText(/^Translation/));
         await user.type(
-            screen.getByLabelText(/^Translation \(/),
+            screen.getByLabelText(/^Translation/),
             'corrected translation',
         );
         await user.click(screen.getByRole('button', { name: 'Save card' }));
@@ -2546,7 +2598,7 @@ describe('auto-accepted card generation regression state', () => {
             'medium',
         );
         await user.type(
-            screen.getByLabelText(/^Translation \(/),
+            screen.getByLabelText(/^Translation/),
             'prior translation',
         );
         function update(ai: ComponentProps<typeof DictionaryCardForm>['ai']) {
@@ -2578,7 +2630,7 @@ describe('auto-accepted card generation regression state', () => {
         await user.click(
             screen.getByRole('button', { name: 'Previous form version' }),
         );
-        expect(screen.getByLabelText(/^Translation \(/)).toHaveValue('medio');
+        expect(screen.getByLabelText(/^Translation/)).toHaveValue('medio');
         await user.click(screen.getByRole('button', { name: 'Create card' }));
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({

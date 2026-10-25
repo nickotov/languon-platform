@@ -79,7 +79,7 @@ export interface DictionaryCardGenerationStructuredAgent {
         message: string,
         options: {
             abortSignal: AbortSignal;
-            maxOutputTokens: number;
+            modelSettings: { maxOutputTokens: number; maxRetries: 0 };
             runId: string;
             structuredOutput: {
                 jsonPromptInjection?: 'inline';
@@ -142,7 +142,10 @@ export function createMastraCardProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens: requestLimits.maxOutputTokens,
+                    modelSettings: {
+                        maxOutputTokens: requestLimits.maxOutputTokens,
+                        maxRetries: 0,
+                    },
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         ...(options.structuredOutputMode === 'prompt-injection'

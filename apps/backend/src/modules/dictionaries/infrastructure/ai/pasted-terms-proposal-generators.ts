@@ -13,10 +13,6 @@ import type {
     PastedTermsProposalGenerator,
     PastedTermsProposalGeneratorRequest,
 } from '../../application/ports/pasted-terms-proposal-generator';
-import {
-    dictionaryPastedTermsGenerationMinimumInputTokensPerAttempt,
-    dictionaryPastedTermsGenerationMinimumOutputTokensPerAttempt,
-} from '../../application/ports/pasted-terms-proposal-generator';
 import { CardProposalGeneratorError } from '../../application/ports/card-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
 import {
@@ -154,7 +150,7 @@ export interface DictionaryPastedTermsGenerationStructuredAgent {
         message: string,
         options: {
             abortSignal: AbortSignal;
-            maxOutputTokens: number;
+            modelSettings: { maxOutputTokens: number; maxRetries: 0 };
             runId: string;
             structuredOutput: {
                 jsonPromptInjection?: 'inline';
@@ -276,7 +272,10 @@ export function createMastraPastedTermsProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens: requestLimits.maxOutputTokens,
+                    modelSettings: {
+                        maxOutputTokens: requestLimits.maxOutputTokens,
+                        maxRetries: 0,
+                    },
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         ...(options.structuredOutputMode === 'prompt-injection'
@@ -505,11 +504,13 @@ export function createPastedTermsProposalGenerator(
     if (options.mode === 'deterministic') {
         return new DeterministicPastedTermsProposalGenerator(options.proposal);
     }
+    // Accounting may admit fewer than five chunks. Require only a single
+    // affordable chunk here; generate() checks its actual input and remaining caps.
     if (
         options.providerBudget.maxInputTokensPerAttempt <
-            dictionaryPastedTermsGenerationMinimumInputTokensPerAttempt ||
+            dictionaryPastedTermsGenerationFixedInputBytes ||
         options.providerBudget.maxOutputTokensPerAttempt <
-            dictionaryPastedTermsGenerationMinimumOutputTokensPerAttempt
+            dictionaryPastedTermsGenerationMinimumOutputTokensPerChunk
     ) {
         throw new PastedTermsProposalGeneratorCapabilityError();
     }

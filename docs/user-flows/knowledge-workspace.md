@@ -13,6 +13,7 @@ source_paths:
     - apps/backend/src/modules/conversations/**
     - apps/backend/drizzle/**
     - apps/backend/src/config/environment.ts
+    - apps/backend/src/config/api-environment.ts
     - apps/web/src/fsd/pages/knowledge/**
     - apps/web/src/fsd/features/knowledge-notes/**
     - apps/web/src/fsd/widgets/contextual-assistant/**

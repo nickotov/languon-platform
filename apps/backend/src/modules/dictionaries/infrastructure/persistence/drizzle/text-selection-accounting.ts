@@ -1,3 +1,4 @@
+import { cardAuthoringInputOverhead } from '../../ai/card-authoring-input-envelope';
 import {
     usesLegacyAction,
     reserveLegacyAction,
@@ -46,7 +47,7 @@ export async function reserveSelectionAttempt(
                 kind: 'text-selection-card',
                 snapshot: job.selectedExecutionSnapshot,
                 inputPayload: job.inputPayload,
-                inputOverheadTokens: 32768,
+                inputOverheadTokens: cardAuthoringInputOverhead,
                 at: now,
             });
 

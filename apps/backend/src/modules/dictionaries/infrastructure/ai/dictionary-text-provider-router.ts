@@ -168,11 +168,26 @@ function createProviderSet(
         model,
         providerBudget: snapshot.aggregateBudget,
     });
+    // Admitted budgets belong to the requested action. Unused providers may
+    // have different envelope requirements and must not block its execution.
+    let card: CardProposalGenerator | undefined;
+    let cardAuthoring: CardAuthoringProposalGenerator | undefined;
+    let importPairs: ImportPairsProposalGenerator | undefined;
+    let pastedTerms: PastedTermsProposalGenerator | undefined;
     return {
-        card: createCardProposalGenerator(shared),
-        cardAuthoring: createCardAuthoringProposalGenerator(shared),
-        importPairs: createImportPairsProposalGenerator(shared),
-        pastedTerms: createPastedTermsProposalGenerator(shared),
+        get card() {
+            return (card ??= createCardProposalGenerator(shared));
+        },
+        get cardAuthoring() {
+            return (cardAuthoring ??=
+                createCardAuthoringProposalGenerator(shared));
+        },
+        get importPairs() {
+            return (importPairs ??= createImportPairsProposalGenerator(shared));
+        },
+        get pastedTerms() {
+            return (pastedTerms ??= createPastedTermsProposalGenerator(shared));
+        },
     };
 }
 

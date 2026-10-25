@@ -1,3 +1,4 @@
+import { parseEnvironmentSchema } from '../../../../config/environment-diagnostics';
 import { z } from 'zod';
 
 const OptionalValueSchema = z.preprocess(
@@ -34,7 +35,10 @@ export function loadDictionaryDocumentS3Environment(
     values: NodeJS.ProcessEnv,
     options: { deployed: boolean; required: boolean; role: 'api' | 'worker' },
 ): DictionaryDocumentS3Environment | undefined {
-    const environment = StorageEnvironmentSchema.parse(values);
+    const environment = parseEnvironmentSchema(
+        StorageEnvironmentSchema,
+        values,
+    );
     if (environment.DICTIONARY_DOCUMENT_STORAGE_MODE === 'unavailable') {
         if (options.required)
             throw new Error(

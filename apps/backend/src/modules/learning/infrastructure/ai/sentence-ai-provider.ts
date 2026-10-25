@@ -1,9 +1,7 @@
 import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { SENTENCE_LIMITS } from '@languon/contracts';
-import { Buffer } from 'node:buffer';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { SentenceProviderInvalidModelOutputError } from '../../application/ports/sentence-ai-provider';
-import { getLocalPrompt } from '@languon/prompts';
 import type {
     SentenceAiProvider,
     SentenceProviderCall,
@@ -24,6 +22,11 @@ import { SentenceInvalidModelOutputError } from '../../domain/sentence-errors';
 import { resolveTextAiProviderOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
 import { textAiRequestLimits } from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 import { createSentenceAgents } from './sentence-agents';
+import {
+    sentenceGenerationProviderSchema,
+    sentenceCheckProviderSchema,
+    sentenceProviderInputTokens,
+} from './sentence-provider-envelope';
 export function createSentenceAiProvider(options: {
     credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;
     fetchProvider?: typeof fetch;
@@ -53,18 +56,8 @@ export function createSentenceAiProvider(options: {
             model: resolved.modelRequestLimits,
         });
         const message = JSON.stringify(providerInput);
-        const prompt =
-            kind === 'generate'
-                ? 'sentence-generation-agent'
-                : 'sentence-check-agent';
         if (
-            Buffer.byteLength(message, 'utf8') +
-                Buffer.byteLength(getLocalPrompt(prompt), 'utf8') +
-                Buffer.byteLength(
-                    JSON.stringify(z.toJSONSchema(schema)),
-                    'utf8',
-                ) +
-                16384 >
+            sentenceProviderInputTokens(kind, schema, providerInput) >
             limits.maxInputTokens
         )
             throw new SentenceInvalidModelOutputError(
@@ -151,28 +144,10 @@ export function createSentenceAiProvider(options: {
                 throw new SentenceInvalidModelOutputError(
                     'Invalid generation candidates',
                 );
-            const alias = z.enum(aliases as [string, ...string[]]);
-            const segmentSchema =
-                SentenceGenerationDraftSchema.shape.segments.element;
-            const providerSegmentSchema =
-                call.input.generationPolicyVersion === 2
-                    ? segmentSchema.extend({
-                          contextualHint:
-                              segmentSchema.shape.contextualHint.unwrap(),
-                      })
-                    : segmentSchema.omit({ contextualHint: true });
-            const schema = SentenceGenerationDraftSchema.extend({
-                segments: providerSegmentSchema
-                    .extend({ entryId: alias.nullable() })
-                    .array()
-                    .min(1)
-                    .max(SENTENCE_LIMITS.segments),
-                targets: SentenceGenerationDraftSchema.shape.targets.element
-                    .extend({ entryId: alias })
-                    .array()
-                    .min(1)
-                    .max(3),
-            });
+            const schema = sentenceGenerationProviderSchema(
+                aliases,
+                call.input.generationPolicyVersion,
+            );
             const input = {
                 generationPolicyVersion: call.input.generationPolicyVersion,
                 direction: call.input.direction,
@@ -215,27 +190,7 @@ export function createSentenceAiProvider(options: {
                     'Invalid check targets',
                     'input_invalid',
                 );
-            const assessmentSchema =
-                SentenceCheckDraftSchema.shape.targets.element.omit({
-                    entryId: true,
-                });
-            const targetShape: Record<string, typeof assessmentSchema> =
-                Object.fromEntries(
-                    aliases.map((alias) => [alias, assessmentSchema]),
-                );
-            const issueSchema = SentenceCheckDraftSchema.shape.issues.element;
-            const schema = SentenceCheckDraftSchema.extend({
-                targets: z.object(targetShape).strict(),
-                issues: issueSchema
-                    .omit({ span: true })
-                    .extend({
-                        quote: issueSchema.shape.span
-                            .unwrap()
-                            .shape.quote.nullable(),
-                    })
-                    .array()
-                    .max(SENTENCE_LIMITS.issues),
-            });
+            const schema = sentenceCheckProviderSchema(aliases);
             const input = {
                 sourceText: call.input.sourceText,
                 referenceTranslation: call.input.referenceTranslation,

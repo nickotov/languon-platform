@@ -45,8 +45,8 @@ async function dictionaryAction(page: Page, name: string, action: string) {
 
 async function addCard(page: Page, source: string, translation: string) {
     await page.getByRole('button', { name: 'Add card' }).click();
-    await page.getByLabel(/^Source word or phrase \(/).fill(source);
-    await page.getByLabel(/^Translation \(/).fill(translation);
+    await page.getByLabel(/^Source word or phrase/).fill(source);
+    await page.getByLabel(/^Translation/).fill(translation);
     await page.getByRole('button', { name: 'Save card' }).click();
     await expect(page.getByText(source, { exact: true })).toBeVisible();
 }

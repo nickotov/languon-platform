@@ -28,9 +28,9 @@ async function createCard(name: string) {
     await page.getByRole('button', { name: 'Add card', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Add card' });
     await editor
-        .getByLabel(/^Source word or phrase \(/u)
+        .getByLabel(/^Source word or phrase/u)
         .fill(`casa ${name} ${runId}`);
-    await editor.getByLabel(/^Translation \(/u).fill('house');
+    await editor.getByLabel(/^Translation/u).fill('house');
     await editor.getByLabel(/^Context example \(/u).fill('La casa es grande.');
     await editor
         .getByLabel(/^Example translation \(/u)
@@ -266,7 +266,7 @@ test.describe.serial('dictionary pronunciation audio', () => {
         await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
         const editor = page.getByRole('dialog', { name: 'Edit card' });
         await editor
-            .getByLabel(/^Source word or phrase \(/u)
+            .getByLabel(/^Source word or phrase/u)
             .fill(`hogar cache ${runId}`);
         await editor.getByRole('button', { name: 'Save card' }).click();
         await expect(

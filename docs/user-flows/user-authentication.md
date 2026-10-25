@@ -21,6 +21,7 @@ source_paths:
     - apps/backend/drizzle/**
     - apps/backend/src/app.ts
     - apps/backend/src/config/environment.ts
+    - apps/backend/src/config/api-environment.ts
     - apps/backend/src/index.ts
     - apps/backend/src/infrastructure/database/**
     - apps/backend/src/modules/authentication/**

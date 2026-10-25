@@ -1,3 +1,7 @@
+import { cardAuthoringProviderInputTokens } from '../../../../src/modules/dictionaries/infrastructure/ai/card-authoring-input-envelope';
+import { DictionaryTextProviderRouter } from '../../../../src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-router';
+import { selectionProviderInput } from '../../../../src/modules/dictionaries/domain/text-selection';
+import { defaultDictionarySettings } from '../../../../src/modules/dictionaries/domain/settings';
 import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
 import {
     aiCreditActionsTable as actions,
@@ -13,7 +17,16 @@ import type { SelectionDatabase } from '../../../../src/modules/dictionaries/inf
 import { randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { eq, sql } from 'drizzle-orm';
-import { beforeAll, beforeEach, afterAll, describe, it, expect } from 'vitest';
+import {
+    beforeAll,
+    beforeEach,
+    afterAll,
+    afterEach,
+    describe,
+    it,
+    expect,
+    vi,
+} from 'vitest';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { DrizzleTextSelectionStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store';
@@ -164,6 +177,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
         };
         store = new DrizzleTextSelectionStore(db, options);
     }, 120000);
+    afterEach(() => vi.unstubAllGlobals());
     afterAll(async () => client?.end());
     function request(): TextSelectionRequest {
         return {
@@ -236,6 +250,134 @@ run('Dictionary vocabulary selection durable persistence', () => {
         expect(lease).not.toBeNull();
         return lease!;
     }
+    it.each([-1, 1])(
+        'matches real provider input limits at the per-call boundary (%i byte)',
+        async (offset) => {
+            const baseSentence = 'Hello .';
+            const model = textAiModelCatalog[0]!;
+            const providerInput = (sentence: string) =>
+                selectionProviderInput(
+                    {
+                        phrase: 'Hello',
+                        sentence,
+                        previousSentence: null,
+                        nextSentence: null,
+                        startOffset: 0,
+                        endOffset: 5,
+                        sourceLanguageTag: 'en',
+                        targetLanguageTag: 'es',
+                    },
+                    defaultDictionarySettings,
+                    null,
+                );
+            const padding =
+                model.perCallMaxInputTokens +
+                offset -
+                cardAuthoringProviderInputTokens(providerInput(baseSentence));
+            // Multibyte context reaches the token ceiling within the text character limit.
+            const context =
+                '界'.repeat(Math.floor(padding / 3)) + 'x'.repeat(padding % 3);
+            const sentence = `Hello ${context}.`;
+            const expectedInput = providerInput(sentence);
+            expect(cardAuthoringProviderInputTokens(expectedInput)).toBe(
+                model.perCallMaxInputTokens + offset,
+            );
+            const longSource = segmentText(sentence, 'en', randomUUID);
+            const longAlignment = validateTranslation(
+                longSource,
+                longSource.map((pair) => ({
+                    pairId: pair.pairId,
+                    text: 'Hola.',
+                })),
+            );
+            store = new DrizzleTextSelectionStore(db, {
+                ...options,
+                proposal: async () => ({
+                    alignment: longAlignment,
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es',
+                }),
+            });
+            const selected = request();
+            selected.selection.pairId = longSource[0]!.pairId;
+            let calls = 0;
+            vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit) => {
+                expect(String(url)).toBe(
+                    'https://api.deepseek.com/chat/completions',
+                );
+                expect(init?.method).toBe('POST');
+                const body = JSON.parse(String(init?.body));
+                expect(body.max_tokens).toBeGreaterThan(0);
+                expect(body.max_tokens).toBeLessThanOrEqual(
+                    model.perCallMaxOutputTokens,
+                );
+                calls++;
+                return new Response(
+                    JSON.stringify({
+                        id: 'synthetic-selection-boundary',
+                        object: 'chat.completion',
+                        created: 0,
+                        model: 'deepseek-flash',
+                        choices: [
+                            {
+                                index: 0,
+                                message: {
+                                    role: 'assistant',
+                                    content: JSON.stringify(delta),
+                                },
+                                finish_reason: 'stop',
+                            },
+                        ],
+                        usage: {
+                            prompt_tokens: 100,
+                            completion_tokens: 20,
+                            total_tokens: 120,
+                        },
+                    }),
+                    { headers: { 'Content-Type': 'application/json' } },
+                );
+            });
+            if (offset > 0) {
+                await expect(
+                    store.enqueue(owner, selected),
+                ).rejects.toMatchObject({ code: 'model_input_too_large' });
+                expect(await db.select().from(jobs)).toHaveLength(0);
+                expect(await db.select().from(actions)).toHaveLength(0);
+                expect(await db.select().from(actionAttempts)).toHaveLength(0);
+                expect(
+                    await db.select().from(aiCreditReservationsTable),
+                ).toHaveLength(0);
+                expect(calls).toBe(0);
+                return;
+            }
+            await store.enqueue(owner, selected);
+            const lease = await claim();
+            expect(lease.input).toEqual(expectedInput);
+            expect(lease.execution).not.toBeNull();
+            expect(await store.dispatch(lease)).toBe(true);
+            const router = new DictionaryTextProviderRouter({
+                credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+            });
+            const result = await router
+                .resolve(lease.execution!, lease.budget)
+                .cardAuthoring.generate({
+                    input: lease.input,
+                    providerBudget: lease.budget,
+                    providerExecution: lease.execution,
+                    idempotencyKey: `text-selection:${lease.id}:${lease.attempt}`,
+                    signal: new AbortController().signal,
+                });
+            expect(calls).toBe(1);
+            expect('delta' in result && result.delta).toEqual(delta);
+            expect(
+                await store.complete(
+                    lease,
+                    'delta' in result ? result.delta : result,
+                    'delta' in result ? result.usage : undefined,
+                ),
+            ).toBe(true);
+        },
+    );
     it('atomically saves a full card/new dictionary/revision once and redacts occurrence context', async () => {
         const input = request();
         const [first, replay] = await Promise.all([

@@ -223,9 +223,11 @@ equal columns; otherwise Source appears above Translation. The desktop dialog
 is capped at 880 px. Context, AI assistance, optional content, and settings follow
 the word pair. Context example and Example translation use equal columns at the
 same form threshold and stack below it; when only one is enabled, it fills the
-row. Definition and Transcription remain full width. Each field keeps its label,
-language, direction, and generation control; keyboard order follows Source then
-Translation.
+row. Definition and Transcription remain full width. Each field keeps its short label, input language/direction metadata and generation
+control; Source and Translation labels omit the redundant language names. Field
+labels and their fixed-size icon actions stay on one row. Long labels truncate
+with an ellipsis; their complete accessible names remain available. Keyboard order
+follows Source then Translation.
 
 Active and archived owner cards use equal Source/Translation columns when their
 list container is at least 40 rem wide, and stack them in narrower containers.
@@ -247,9 +249,10 @@ silently overwrite or replay a stale edit.
 
 1. In an editable dictionary, select **Add card** and enter a valid Source that
    could be normalized, such as a misspelling, an inflected verb, or a noun that
-   conventionally needs an article. Empty fields expose **Generate** with an AI
-   symbol; populated fields expose **Regenerate**, with a field-specific
-   accessible label. Generate Source alone and expect queued, generating, and
+   conventionally needs an article. Empty fields expose an icon-only **Generate**
+   action; populated fields expose an icon-only **Regenerate** action. Each has a
+   field-specific accessible label and desktop hover/keyboard tooltip. Bulk
+   generation uses the same icon-only pattern. Generate Source alone and expect queued, generating, and
    validating progress for Source only, then an automatically filled editable
    input. For an isolated common noun in a language with grammatical gender,
    expect the normalized value to expose gender through its natural article or
@@ -309,8 +312,8 @@ silently overwrite or replay a stale edit.
    persistence; otherwise it avoids a meaningless write. If AI is unavailable,
    manual editing remains available and no raw provider detail is exposed.
 
-At 320 px and 200% text, field/bulk generation and version controls stack without
-horizontal page overflow. Progress, saving, saved, and version status are announced
+At 320 px and 200% text, field labels truncate on one row beside fixed-size AI
+actions, while version controls can stack without horizontal page overflow. Progress, saving, saved, and version status are announced
 politely. Controls remain keyboard reachable and generated values retain their
 resolved language and writing direction.
 

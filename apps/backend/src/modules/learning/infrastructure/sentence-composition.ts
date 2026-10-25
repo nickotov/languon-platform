@@ -5,6 +5,7 @@ import { HmacDictionaryCryptography } from '../../dictionaries/infrastructure/cr
 import { DrizzleDictionaryStore } from '../../dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
 import { SentencePracticeService } from '../application/sentence-practice-service';
 import { SentenceWorkerService } from '../application/sentence-worker-service';
+import { createSentenceWorkerRuntime } from './sentence-worker-runtime';
 import { DrizzleSentencePracticeStore } from './persistence/drizzle/drizzle-sentence-practice-store';
 import { DrizzleSentenceWorkerStore } from './persistence/drizzle/drizzle-sentence-worker-store';
 import { createSentenceRoutes } from '../interface/http/sentence.routes';
@@ -109,5 +110,24 @@ export function createSentenceWorkerComposition(
 ) {
     const store = new DrizzleSentenceWorkerStore(dependencies.database);
     const worker = new SentenceWorkerService({ ...dependencies, store });
+    return { worker, store };
+}
+
+/** Production defaults are exercised directly by the worker runtime regressions. */
+export function createSentenceWorkerRuntimeComposition(
+    dependencies: Pick<
+        SentenceWorkerServiceDependencies,
+        | 'provider'
+        | 'clock'
+        | 'workerId'
+        | 'supportedFormats'
+        | 'onInvalidModelOutput'
+    > & {
+        database: LearningCompositionDependencies['database'];
+        timeoutMs?: number;
+    },
+) {
+    const store = new DrizzleSentenceWorkerStore(dependencies.database);
+    const worker = createSentenceWorkerRuntime({ ...dependencies, store });
     return { worker, store };
 }

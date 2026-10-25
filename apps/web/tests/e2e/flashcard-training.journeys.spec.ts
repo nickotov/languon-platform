@@ -99,8 +99,8 @@ async function createDictionaryWithCard(
     await expect(page.getByRole('heading', { name })).toBeVisible();
 
     await page.getByRole('button', { name: 'Add card' }).click();
-    await page.getByLabel(/^Source word or phrase \(/).fill('work of art');
-    await page.getByLabel(/^Translation \(/).fill('obra de arte');
+    await page.getByLabel(/^Source word or phrase/).fill('work of art');
+    await page.getByLabel(/^Translation/).fill('obra de arte');
     await page.getByRole('button', { name: 'Create card' }).click();
     await expect(page.getByText('work of art', { exact: true })).toBeVisible();
 }
@@ -118,11 +118,9 @@ async function createArabicDictionaryWithLongCard(
     await page.getByRole('button', { name: 'Create dictionary' }).click();
     await expect(page.getByRole('heading', { name })).toBeVisible();
     await page.getByRole('button', { name: 'Add card' }).click();
+    await page.getByLabel(/^Source word or phrase/).fill('العربية '.repeat(45));
     await page
-        .getByLabel(/^Source word or phrase \(/)
-        .fill('العربية '.repeat(45));
-    await page
-        .getByLabel(/^Translation \(/)
+        .getByLabel(/^Translation/)
         .fill('A deliberately long Arabic flashcard.');
     await page.getByRole('button', { name: 'Create card' }).click();
     await expect(page.getByText('Card saved.', { exact: true })).toBeVisible();
@@ -492,8 +490,8 @@ test.describe('flashcard training journeys', () => {
         await page
             .getByRole('button', { name: 'Add card', exact: true })
             .click();
-        await page.getByLabel(/^Source word or phrase \(/).fill('التالي');
-        await page.getByLabel(/^Translation \(/).fill('Next card');
+        await page.getByLabel(/^Source word or phrase/).fill('التالي');
+        await page.getByLabel(/^Translation/).fill('Next card');
         await page.getByRole('button', { name: 'Create card' }).click();
         await expect(
             page.getByRole('dialog', { name: 'Add card' }),

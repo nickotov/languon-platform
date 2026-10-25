@@ -11,7 +11,7 @@ import { DrizzleAccountPurgeStore } from '../../modules/users/infrastructure/per
 import { S3AccountPurgeObjectStorage } from '../../modules/users/infrastructure/persistence/drizzle/s3-account-purge-object-storage';
 import { createDictionaryDocumentS3Client } from '../../modules/dictionaries/infrastructure/document/s3-document-client';
 import { S3PrivateDocumentStorage } from '../../modules/dictionaries/infrastructure/document/s3-dictionary-document-storage';
-import { loadAccountPurgeEnvironment } from './account-purge-environment';
+import { loadAccountPurgeEnvironment } from '../../config/environment';
 
 const localEnvironmentPath = fileURLToPath(
     new URL('../../../../../.env.local', import.meta.url),

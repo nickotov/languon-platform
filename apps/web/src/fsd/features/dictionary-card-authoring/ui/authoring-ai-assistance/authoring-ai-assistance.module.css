@@ -59,3 +59,13 @@
     color: var(--text-on-primary);
     opacity: 0.5;
 }
+
+.primaryAction {
+    background: var(--primary-default);
+    color: var(--text-on-primary);
+    flex-shrink: 0;
+}
+
+.primaryAction:hover:not(:disabled) {
+    background: var(--primary-hover);
+}

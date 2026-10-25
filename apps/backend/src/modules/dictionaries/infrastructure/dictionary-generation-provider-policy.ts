@@ -1,3 +1,7 @@
+import {
+    parseEnvironmentSchema,
+    reportEnvironmentFallbacks,
+} from '../../../config/environment-diagnostics';
 import { z } from 'zod';
 
 import {
@@ -46,7 +50,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
     values: NodeJS.ProcessEnv,
     options: { requireExplicit: boolean },
 ): DictionaryGenerationProviderBudgetPolicy {
-    const raw = ProviderPolicyEnvironmentSchema.parse(values);
+    const raw = parseEnvironmentSchema(ProviderPolicyEnvironmentSchema, values);
     const configuredCount = providerPolicyEnvironmentNames.filter(
         (name) => raw[name] !== undefined,
     ).length;
@@ -62,6 +66,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
         );
     }
     if (configuredCount === 0) {
+        reportEnvironmentFallbacks(values, providerPolicyEnvironmentNames);
         return defaultDictionaryGenerationProviderBudgetPolicy;
     }
 

@@ -31,3 +31,4 @@ BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 | BL-008 | [Increased sentence difficulty](008-increased-sentence-difficulty.md)                                | pending     |
 | BL-009 | [Practice plans for weak areas](009-practice-plans-for-weak-areas.md)                                | pending     |
 | BL-010 | [Saved sentence management and full-dictionary preparation](010-sentence-library-management-done.md) | done        |
+| BL-011 | [Dictionary batch call accounting](011-dictionary-batch-call-accounting.md)                          | pending     |

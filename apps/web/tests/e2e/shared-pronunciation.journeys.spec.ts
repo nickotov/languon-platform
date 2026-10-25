@@ -89,8 +89,8 @@ async function savedWord(
         .click();
     await page.getByRole('button', { name: 'Add card', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Add card' });
-    await editor.getByLabel(/^Source word or phrase \(/u).fill(text);
-    await editor.getByLabel(/^Translation \(/u).fill('Saved translation');
+    await editor.getByLabel(/^Source word or phrase/u).fill(text);
+    await editor.getByLabel(/^Translation/u).fill('Saved translation');
     await editor.getByRole('button', { name: 'Create card' }).click();
     if (sourceLanguage !== 'he')
         await expect(

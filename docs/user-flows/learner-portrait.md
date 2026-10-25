@@ -14,6 +14,7 @@ source_paths:
     - apps/backend/src/modules/text-ai/**
     - apps/backend/src/modules/users/infrastructure/persistence/drizzle/**
     - apps/backend/src/config/environment.ts
+    - apps/backend/src/config/api-environment.ts
     - apps/backend/src/infrastructure/worker/**
     - apps/backend/drizzle/**
     - apps/web/src/app/portrait/**

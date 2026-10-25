@@ -173,7 +173,7 @@ describe('dictionary card proposal generators', () => {
         });
         expect(generate).toHaveBeenCalledWith(JSON.stringify(requestInput), {
             abortSignal: generationRequest.signal,
-            maxOutputTokens: 40_960,
+            modelSettings: { maxOutputTokens: 40_960, maxRetries: 0 },
             runId: 'generation-request-0001',
             structuredOutput: {
                 jsonPromptInjection: 'inline',
@@ -202,7 +202,7 @@ describe('dictionary card proposal generators', () => {
         await generator.generate(request());
 
         expect(generate.mock.calls[0]?.[1]).toMatchObject({
-            maxOutputTokens: 8_192,
+            modelSettings: { maxOutputTokens: 8_192, maxRetries: 0 },
         });
     });
 

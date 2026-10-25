@@ -12,6 +12,7 @@ source_paths:
     - apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store.ts
     - packages/contracts/src/learning
     - apps/backend/src/config/environment.ts
+    - apps/backend/src/config/api-environment.ts
     - apps/backend/src/app.ts
 related_features:
     - flashcard-training-web

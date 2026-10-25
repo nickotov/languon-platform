@@ -1,3 +1,4 @@
+import { sentenceActionInputOverhead } from '../../ai/sentence-provider-envelope';
 import { OperatorBudgetUnavailableError } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
 import {
     usesLegacyAction,
@@ -53,6 +54,9 @@ export async function reserveSentenceAttempt(
                     kind: job.jobKind,
                     snapshot: job.selectedExecutionSnapshot,
                     inputPayload: job.inputPayload,
+                    inputOverheadTokens: sentenceActionInputOverhead(
+                        job.inputPayload,
+                    ),
                     at: now,
                 });
         } catch (error) {

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { aiGenerationEnvironmentShape } from '../../config/ai-generation-environment';
+import { parseEnvironmentSchema } from '../../config/environment-diagnostics';
 
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../modules/dictionaries/application/ports/dictionary-generation-provider-policy';
 import {
@@ -38,6 +40,7 @@ function parseFormats(value: string, name: string): string[] {
 }
 
 const WorkerEnvironmentSchema = z.object({
+    ...aiGenerationEnvironmentShape,
     APP_ENV: z.enum(['development', 'test', 'staging', 'production']),
     DATABASE_URL: optionalUrl,
     DATABASE_MAX_CONNECTIONS: z.coerce.number().int().min(1).max(50).default(4),
@@ -100,6 +103,8 @@ const WorkerEnvironmentSchema = z.object({
 });
 
 export interface DictionaryWorkerEnvironment {
+    sentenceAiTimeoutMs: number;
+    textAiTimeoutMs: number;
     appEnvironment: 'development' | 'test' | 'staging' | 'production';
     concurrency: number;
     databaseMaxConnections: number;
@@ -147,7 +152,7 @@ export interface DictionaryWorkerEnvironment {
 export function loadDictionaryWorkerEnvironment(
     values: NodeJS.ProcessEnv = process.env,
 ): DictionaryWorkerEnvironment {
-    const environment = WorkerEnvironmentSchema.parse(values);
+    const environment = parseEnvironmentSchema(WorkerEnvironmentSchema, values);
     if (
         environment.DICTIONARY_AI_PROVIDER_FIXTURE_MODE === 'deterministic' &&
         environment.APP_ENV !== 'test'
@@ -355,6 +360,8 @@ export function loadDictionaryWorkerEnvironment(
         }
     }
     return {
+        sentenceAiTimeoutMs: environment.SENTENCE_AI_TIMEOUT_MS,
+        textAiTimeoutMs: environment.TEXT_AI_TIMEOUT_MS,
         appEnvironment: environment.APP_ENV,
         concurrency: environment.DICTIONARY_WORKER_CONCURRENCY,
         databaseMaxConnections: environment.DATABASE_MAX_CONNECTIONS,

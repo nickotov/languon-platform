@@ -11,10 +11,6 @@ import type {
     ImportPairsProposalGenerator,
     ImportPairsProposalGeneratorRequest,
 } from '../../application/ports/import-pairs-proposal-generator';
-import {
-    dictionaryImportPairsGenerationMinimumInputTokensPerAttempt,
-    dictionaryImportPairsGenerationMinimumOutputTokensPerAttempt,
-} from '../../application/ports/import-pairs-proposal-generator';
 import { CardProposalGeneratorError } from '../../application/ports/card-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
 import {
@@ -40,7 +36,7 @@ export interface DictionaryImportPairsGenerationStructuredAgent {
         message: string,
         options: {
             abortSignal: AbortSignal;
-            maxOutputTokens: number;
+            modelSettings: { maxOutputTokens: number; maxRetries: 0 };
             runId: string;
             structuredOutput: {
                 jsonPromptInjection?: 'inline';
@@ -184,7 +180,10 @@ export function createMastraImportPairsProposalGenerator(options: {
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens: requestLimits.maxOutputTokens,
+                    modelSettings: {
+                        maxOutputTokens: requestLimits.maxOutputTokens,
+                        maxRetries: 0,
+                    },
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         ...(options.structuredOutputMode === 'prompt-injection'
@@ -381,14 +380,14 @@ export function createImportPairsProposalGenerator(
         return new UnavailableImportPairsProposalGenerator();
     if (options.mode === 'deterministic')
         return new DeterministicImportPairsProposalGenerator(options.proposal);
+    // Accounting may admit fewer than five chunks. Require only a single
+    // affordable chunk here; generate() checks its actual input and remaining caps.
     if (
-        options.providerBudget.maxInputTokensPerAttempt <
-            dictionaryImportPairsGenerationMinimumInputTokensPerAttempt ||
-        options.providerBudget.maxOutputTokensPerAttempt <
-            dictionaryImportPairsGenerationMinimumOutputTokensPerAttempt
+        options.providerBudget.maxInputTokensPerAttempt < 16_384 ||
+        options.providerBudget.maxOutputTokensPerAttempt < 8_192
     )
         throw new Error(
-            'Import-pairs generation requires the bounded 262144 input-token and 40960 output-token envelope.',
+            'Import-pairs generation requires a bounded per-chunk input/output envelope.',
         );
     const agent: DictionaryImportPairsGenerationAgent =
         createDictionaryImportPairsGenerationAgent({ model: options.model });

@@ -1,3 +1,4 @@
+import { parseEnvironmentSchema } from '../../../../config/environment-diagnostics';
 import { z } from 'zod';
 import { findSpeechModel } from '../../domain/speech-models';
 import type { SpeechProfile } from '../../application/ports/speech-synthesis-provider';
@@ -91,7 +92,7 @@ export function loadDictionaryAudioEnvironment(
     values: NodeJS.ProcessEnv,
     options: { deployed: boolean; role?: 'api' | 'worker' },
 ) {
-    const env = schema.parse(values);
+    const env = parseEnvironmentSchema(schema, values);
     let fixtureSupportedLanguages: string[] | undefined;
     if (
         !options.deployed &&

@@ -18,7 +18,7 @@ async function main() {
             applicationEnvironment: z.literal('test'),
             databaseUrl: z.url(),
             ownerId: z.uuid(),
-            action: z.enum(['setup', 'grant', 'summary']),
+            action: z.enum(['setup', 'setup-provider', 'grant', 'summary']),
         })
         .parse({
             optIn: process.env.SPEECH_E2E_CREDIT_FIXTURES,
@@ -45,8 +45,9 @@ async function main() {
     });
     try {
         const database = drizzle(sql, { schema: databaseSchema });
-        if (input.action === 'setup') {
-            await seedLegacyActionFixture(database);
+        if (input.action === 'setup' || input.action === 'setup-provider') {
+            if (input.action === 'setup')
+                await seedLegacyActionFixture(database);
             const at = new Date('2026-01-01T00:00:00.000Z');
             const [customer] = await database
                 .select()

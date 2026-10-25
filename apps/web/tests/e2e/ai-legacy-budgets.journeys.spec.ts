@@ -62,11 +62,9 @@ async function dictionary(page: Page, count = 1, marker = '') {
             .getByRole('button', { name: 'Add card', exact: true })
             .click();
         await page
-            .getByLabel(/^Source word or phrase \(/)
+            .getByLabel(/^Source word or phrase/)
             .fill(`book${i ? ` ${i}` : ''}${marker}`);
-        await page
-            .getByLabel(/^Translation \(/)
-            .fill(`libro${i ? ` ${i}` : ''}`);
+        await page.getByLabel(/^Translation/).fill(`libro${i ? ` ${i}` : ''}`);
         await page
             .getByRole('button', { name: 'Create card', exact: true })
             .click();

@@ -67,7 +67,7 @@ import { createDictionaryComposition } from './modules/dictionaries/infrastructu
 import { createLearningComposition } from './modules/learning/infrastructure/learning-composition';
 import { createTextAiModule } from './modules/text-ai/infrastructure/text-ai-composition';
 import { createDictionaryAudioAdapters } from './modules/speech/infrastructure/audio/dictionary-audio-adapters';
-import { loadDictionaryAudioEnvironment } from './modules/speech/infrastructure/audio/dictionary-audio-environment';
+import { loadDictionaryAudioEnvironment } from './config/environment';
 import { createDictionaryDocumentS3Client } from './modules/dictionaries/infrastructure/document/s3-document-client';
 import { S3DictionaryDocumentUploadStorage } from './modules/dictionaries/infrastructure/document/s3-dictionary-document-storage';
 import { UserProfileService } from './modules/users/application/user-profile-service';
@@ -75,7 +75,7 @@ import { DrizzleUsersUnitOfWork } from './modules/users/infrastructure/persisten
 import { AccountDeletionService } from './modules/users/application/account-deletion-service';
 import { DrizzleAccountDeletionStore } from './modules/users/infrastructure/persistence/drizzle/drizzle-account-deletion-store';
 import { DrizzleOwnerDeletionPreparation } from './modules/users/infrastructure/persistence/drizzle/drizzle-owner-deletion-preparation';
-import { loadAccountDeletionJournalEnvironment } from './modules/users/infrastructure/recovery/account-deletion-journal-environment';
+import { loadAccountDeletionJournalEnvironment } from './config/environment';
 import { InMemoryAccountDeletionRecoveryJournal } from './modules/users/infrastructure/recovery/in-memory-account-deletion-recovery-journal';
 import { S3AccountDeletionRecoveryJournal } from './modules/users/infrastructure/recovery/s3-account-deletion-recovery-journal';
 

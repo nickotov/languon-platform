@@ -1,6 +1,8 @@
 // @user-flow-revision shared-pronunciation-playback sha256:9803b0d1d5f5c89e
 // @user-flow-revision sentence-practice-web sha256:30e6921701e3a8f5
 
+import { speechCreditFixture } from './support/speech-credit-fixture';
+
 import {
     expect,
     test,
@@ -19,6 +21,7 @@ const runId = process.env.AUTH_E2E_RUN_ID!;
 const apiOrigin =
     process.env.AUTH_E2E_BACKEND_ORIGIN ?? 'http://localhost:4000';
 const verifiedOwners = new Set<number>();
+const ownerActorIds = new Map<number, string>();
 function email(info: TestInfo, role: string) {
     return `sentence-e2e-${runId}-${info.workerIndex}-${role}@example.test`;
 }
@@ -120,6 +123,8 @@ async function signup(
     // Production email-send limits permit five signups/client/hour. Reuse a
     // verified synthetic owner through real UI login; dictionary fixtures and
     // the two reader identities remain isolated. No rate-limit policy is changed.
+    const { AuthenticationSuccessResponseSchema } =
+        await import('@languon/contracts');
     const worker = test.info().workerIndex;
     const owner = /-owner@example\.test$/.test(identity);
     if (owner) identity = `sentence-e2e-${runId}-${worker}-owner@example.test`;
@@ -135,7 +140,10 @@ async function signup(
         await page
             .getByRole('button', { name: 'Sign in', exact: true })
             .click();
-        const auth = (await (await loggedIn).json()) as { accessToken: string };
+        const auth = AuthenticationSuccessResponseSchema.parse(
+            await (await loggedIn).json(),
+        );
+        if (owner) ownerActorIds.set(worker, auth.user.id);
         await expect(page).toHaveURL(
             new RegExp(`${returnTo.replaceAll('/', '\\/')}$`),
         );
@@ -153,7 +161,10 @@ async function signup(
             response.status() === 200,
     );
     await page.getByRole('button', { name: 'Verify email' }).click();
-    const auth = (await (await verified).json()) as { accessToken: string };
+    const auth = AuthenticationSuccessResponseSchema.parse(
+        await (await verified).json(),
+    );
+    if (owner) ownerActorIds.set(worker, auth.user.id);
     await expect(page).toHaveURL(
         new RegExp(`${returnTo.replaceAll('/', '\\/')}$`),
     );
@@ -170,7 +181,10 @@ async function createDictionary(
         translation: 'libro',
     },
 ) {
-    await page.getByRole('button', { name: 'New dictionary' }).click();
+    await page
+        .getByRole('main')
+        .getByRole('button', { name: 'New dictionary', exact: true })
+        .click();
     await page.getByLabel('Name').fill(name);
     await page
         .getByLabel('Translate from')
@@ -181,8 +195,8 @@ async function createDictionary(
     await page.getByRole('button', { name: 'Create dictionary' }).click();
     await expect(page.getByRole('heading', { name })).toBeVisible();
     await page.getByRole('button', { name: 'Add card' }).click();
-    await page.getByLabel(/^Source word or phrase \(/).fill(vocabulary.source);
-    await page.getByLabel(/^Translation \(/).fill(vocabulary.translation);
+    await page.getByLabel(/^Source word or phrase/).fill(vocabulary.source);
+    await page.getByLabel(/^Translation/).fill(vocabulary.translation);
     await page.getByRole('button', { name: 'Create card' }).click();
     await expect(
         page.getByText(vocabulary.source, { exact: true }),
@@ -363,6 +377,9 @@ test.describe('sentence practice and model preferences', () => {
         const assertErrors = observeErrors(page);
         await installSpeechAudioProbe(page.context());
         const token = await signup(page, email(info, 'practice-owner'));
+        const ownerActorId = ownerActorIds.get(info.workerIndex);
+        if (!ownerActorId) throw new Error('Missing verified synthetic owner');
+        await speechCreditFixture(ownerActorId, 'setup-provider');
         const name = `Sentence practice ${runId}`;
         const dictionaryId = await createDictionary(page, name);
         await setDarkTheme(page);
@@ -1029,8 +1046,8 @@ test('finishes a five-word Russian to French round and reuses completed examples
         ['voiture', 'машина'],
     ]) {
         await page.getByRole('button', { name: 'Add card' }).click();
-        await page.getByLabel(/^Source word or phrase \(/).fill(source!);
-        await page.getByLabel(/^Translation \(/).fill(translation!);
+        await page.getByLabel(/^Source word or phrase/).fill(source!);
+        await page.getByLabel(/^Translation/).fill(translation!);
         await page.getByRole('button', { name: 'Create card' }).click();
         await expect(page.getByText(source!, { exact: true })).toBeVisible();
     }

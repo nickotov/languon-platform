@@ -201,7 +201,7 @@ describe('pasted-terms proposal generators', () => {
         expect(generate.mock.calls[0]![1]).toEqual(
             expect.objectContaining({
                 abortSignal: generationRequest.signal,
-                maxOutputTokens: 40_960,
+                modelSettings: { maxOutputTokens: 40_960, maxRetries: 0 },
                 runId: 'job/generate/chunk/1-of-1',
                 structuredOutput: {
                     jsonPromptInjection: 'inline',
@@ -246,7 +246,7 @@ describe('pasted-terms proposal generators', () => {
         await generator.generate(request());
 
         expect(generate.mock.calls[0]?.[1]).toMatchObject({
-            maxOutputTokens: 8_192,
+            modelSettings: { maxOutputTokens: 8_192, maxRetries: 0 },
         });
     });
 
@@ -298,7 +298,7 @@ describe('pasted-terms proposal generators', () => {
         expect(generate).toHaveBeenCalledOnce();
     });
 
-    it('fails live capability creation below the full five-chunk envelope and registers the canonical agent', () => {
+    it('fails live capability creation below a bounded chunk envelope and registers the canonical agent', () => {
         expect(() =>
             createPastedTermsProposalGenerator({
                 mode: 'mastra',
@@ -315,7 +315,7 @@ describe('pasted-terms proposal generators', () => {
                 model: 'openai/gpt-4o-mini',
                 providerBudget: {
                     ...defaultDictionaryGenerationProviderBudgetPolicy,
-                    maxInputTokensPerAttempt: 262_143,
+                    maxInputTokensPerAttempt: 1_024,
                 },
             }),
         ).toThrow(PastedTermsProposalGeneratorCapabilityError);

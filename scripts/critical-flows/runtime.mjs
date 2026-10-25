@@ -73,6 +73,7 @@ export async function assertFreePorts(ports) {
 
 export function infrastructure(flow) {
     const fixture = {
+        backend: [55489, 56489, 'languon_auth_execution_critical_test'],
         texts: [55487, 56487, 'languon_auth_texts_ui_web_test', 3335, 4005],
         assistant: [
             55488,

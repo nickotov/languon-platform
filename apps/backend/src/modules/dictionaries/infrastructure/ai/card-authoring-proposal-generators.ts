@@ -1,14 +1,16 @@
+import { cardAuthoringProviderInputTokens } from './card-authoring-input-envelope';
+import {
+    cardAuthoringProviderFailure,
+    type CardAuthoringProviderFailure,
+} from './card-authoring-provider-failure';
 import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
-import { Buffer } from 'node:buffer';
 import { isIP } from 'node:net';
 
-import { getLocalPrompt } from '@languon/prompts';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
 } from '@mastra/core/llm';
 import { Mastra } from '@mastra/core/mastra';
-import { z } from 'zod';
 
 import type {
     CardAuthoringProposalGenerator,
@@ -36,20 +38,7 @@ export const DictionaryCardAuthoringModelInputSchema =
     DictionaryCardAuthoringProviderInputSchema;
 export const DictionaryCardAuthoringModelOutputSchema =
     DictionaryCardAuthoringProviderDeltaSchema;
-export const dictionaryCardAuthoringProviderFramingTokenReserve = 16_384;
-
-const fixedInputBytes =
-    Buffer.byteLength(
-        getLocalPrompt('dictionary-card-authoring-agent'),
-        'utf8',
-    ) +
-    Buffer.byteLength(
-        JSON.stringify(
-            z.toJSONSchema(DictionaryCardAuthoringModelOutputSchema),
-        ),
-        'utf8',
-    ) +
-    dictionaryCardAuthoringProviderFramingTokenReserve;
+export { dictionaryCardAuthoringProviderFramingTokenReserve } from './card-authoring-input-envelope';
 
 export class CardAuthoringProposalGeneratorUnavailableError extends CardAuthoringProposalGeneratorError {
     public constructor() {
@@ -77,7 +66,7 @@ export interface DictionaryCardAuthoringStructuredAgent {
         message: string,
         options: {
             abortSignal: AbortSignal;
-            maxOutputTokens: number;
+            modelSettings: { maxOutputTokens: number; maxRetries: 0 };
             runId: string;
             structuredOutput: {
                 jsonPromptInjection?: 'inline';
@@ -102,6 +91,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
     modelRequestLimits?: DictionaryTextModelRequestLimits;
     providerReadiness?: (signal: AbortSignal) => Promise<void>;
     structuredOutputMode?: DictionaryTextStructuredOutputMode;
+    onProviderFailure?: (event: CardAuthoringProviderFailure) => void;
 }): CardAuthoringProposalGenerator {
     return {
         async generate(request) {
@@ -132,14 +122,17 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                 },
             });
             if (
-                Buffer.byteLength(message, 'utf8') + fixedInputBytes >
+                cardAuthoringProviderInputTokens(input) >
                 requestLimits.maxInputTokens
             )
                 throw failure('invalid_input');
             try {
                 const result = await options.agent.generate(message, {
                     abortSignal: request.signal,
-                    maxOutputTokens: requestLimits.maxOutputTokens,
+                    modelSettings: {
+                        maxOutputTokens: requestLimits.maxOutputTokens,
+                        maxRetries: 0,
+                    },
                     runId: request.idempotencyKey,
                     structuredOutput: {
                         ...(options.structuredOutputMode === 'prompt-injection'
@@ -161,8 +154,14 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         throw failure('invalid_output');
                     }
                 }
-                if (result.error || result.tripwire)
+                if (result.error || result.tripwire) {
+                    reportProviderFailure(
+                        result.error,
+                        request.idempotencyKey,
+                        options.onProviderFailure,
+                    );
                     throw failure('provider_failure');
+                }
                 const delta = validatedOutput(result.object, input);
                 if (!result.usage) return delta;
                 let usage;
@@ -207,6 +206,11 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     CardAuthoringProposalGeneratorExecutionError
                 )
                     throw error;
+                reportProviderFailure(
+                    error,
+                    request.idempotencyKey,
+                    options.onProviderFailure,
+                );
                 throw failure('provider_failure');
             }
         },
@@ -320,6 +324,8 @@ export function createCardAuthoringProposalGenerator(
         );
     return createMastraCardAuthoringProposalGenerator({
         agent: runtime.listAgents().dictionaryCardAuthoringAgent,
+        onProviderFailure: (event) =>
+            console.warn('Card authoring provider request failed.', event),
         ...(options.modelRequestLimits
             ? { modelRequestLimits: options.modelRequestLimits }
             : {}),
@@ -479,4 +485,17 @@ function defaultDeterministicDelta(
 
 function truncateCodePoints(value: string, maximum: number): string {
     return [...value].slice(0, maximum).join('');
+}
+
+function reportProviderFailure(
+    error: unknown,
+    idempotencyKey: string,
+    report: ((event: CardAuthoringProviderFailure) => void) | undefined,
+) {
+    if (!report) return;
+    try {
+        report(cardAuthoringProviderFailure(error, idempotencyKey));
+    } catch {
+        /* Diagnostics must never change generation or settlement behavior. */
+    }
 }

@@ -2,7 +2,7 @@ import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
 import { z } from 'zod';
 
 import { databaseSchema } from '../infrastructure/database/schema';
-import { loadPlaygroundEnvironment } from '../infrastructure/playground/playground-environment';
+import { loadPlaygroundEnvironment } from '../config/environment';
 import { DevelopmentVerificationService } from '../modules/development-harness/application/development-verification-service';
 import { developmentHarnessFixture } from '../modules/development-harness/infrastructure/development-fixture';
 import { DrizzleDevelopmentPrincipalReader } from '../modules/development-harness/infrastructure/persistence/drizzle-development-principal-reader';

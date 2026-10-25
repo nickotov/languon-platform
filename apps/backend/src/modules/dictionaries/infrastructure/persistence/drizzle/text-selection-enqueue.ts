@@ -1,3 +1,4 @@
+import { cardAuthoringProviderInputTokens } from '../../ai/card-authoring-input-envelope';
 import type { TextSelectionRequest } from '@languon/contracts';
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -129,10 +130,13 @@ export async function enqueueSelectionJob(
     }
 
     selected.budget = selected.snapshot.aggregateBudget;
-    // UTF-8 bytes upper-bound tokens for the structured input; include fixed prompt/schema overhead.
+    // Match the provider ceiling before creating a job or reserving its budget.
     if (
-        Buffer.byteLength(JSON.stringify(input), 'utf8') + 4096 >
-        selected.budget.maxInputTokensPerAttempt
+        cardAuthoringProviderInputTokens(input) >
+        Math.min(
+            selected.budget.maxInputTokensPerAttempt,
+            selected.snapshot.perCallMaxInputTokens,
+        )
     )
         throw new TextSelectionError('model_input_too_large');
     const capacity = await readTextAiCapacity(tx, {

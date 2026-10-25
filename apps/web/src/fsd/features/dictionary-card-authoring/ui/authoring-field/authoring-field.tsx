@@ -7,7 +7,7 @@ import {
     languageLabel,
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Field } from '@/fsd/shared/ui';
+import { IconButton, Field } from '@/fsd/shared/ui';
 import type {
     DictionaryCardAuthoringField,
     AuthoringFieldContent,
@@ -37,7 +37,7 @@ export function AuthoringField({
     content: AuthoringFieldContent;
     suggestions: AuthoringFieldSuggestions;
 }) {
-    const { locale, t } = useI18n();
+    const { t, locale } = useI18n();
 
     const { effective, values, setValue } = content;
 
@@ -73,8 +73,6 @@ export function AuthoringField({
 
     const direction = languageDirection(languages, language);
 
-    const languageName = languageLabel(languages, language, locale);
-
     function resolveNotation() {
         if (effective.transcriptionNotation === 'custom') {
             return (
@@ -108,7 +106,9 @@ export function AuthoringField({
             return `${t('dictionary.field.transcription')} (${notation})`;
         }
 
-        return `${fieldName} (${languageName})`;
+        return field === 'source' || field === 'translation'
+            ? fieldName
+            : `${fieldName} (${languageLabel(languages, language, locale)})`;
     }
 
     const label = resolveLabel();
@@ -181,13 +181,11 @@ export function AuthoringField({
         field: actionFieldName,
     });
 
-    const actionLabel = hasValue
-        ? t('dictionary.authoring.regenerateField')
-        : t('dictionary.authoring.generateField');
-
-    const regenerationIcon = hasValue ? (
+    const generationIcon = hasValue ? (
         <RefreshCw aria-hidden size={14} />
-    ) : undefined;
+    ) : (
+        <Sparkles aria-hidden size={14} />
+    );
 
     const sourceSuccess = generatedSourceUnchanged
         ? t('dictionary.authoring.sourceUnchanged')
@@ -238,19 +236,19 @@ export function AuthoringField({
                 error={error}
                 hint={fieldHint}
                 label={label}
+                labelClassName={styles.fieldLabel}
+                labelRowClassName={styles.fieldLabelRow}
                 labelAction={
-                    <Button
-                        aria-label={generateLabel}
+                    <IconButton
+                        showTooltipWhenDisabled
+                        label={generateLabel}
                         disabled={generationDisabled}
-                        leadingIcon={<Sparkles aria-hidden size={14} />}
-                        trailingIcon={regenerationIcon}
+                        icon={generationIcon}
                         onClick={generateField}
                         size='compact'
                         type='button'
                         variant='ghost'
-                    >
-                        {actionLabel}
-                    </Button>
+                    />
                 }
                 required={required}
                 success={sourceSuccess}

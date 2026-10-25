@@ -21,13 +21,13 @@ import { fileURLToPath } from 'node:url';
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
 import {
     createSentencePreparationWorkerComposition,
-    createSentenceWorkerComposition,
+    createSentenceWorkerRuntimeComposition,
 } from '../../modules/learning/infrastructure/sentence-composition';
 import { createSentenceAiProvider } from '../../modules/learning/infrastructure/ai/sentence-ai-provider';
 import type { SentenceAiProvider } from '../../modules/learning/application/ports/sentence-ai-provider';
 import { DictionaryWorkerCoordinator } from '../../modules/dictionaries/application/dictionary-worker-coordinator';
 import { createDictionaryAudioAdapters } from '../../modules/speech/infrastructure/audio/dictionary-audio-adapters';
-import { loadDictionaryAudioEnvironment } from '../../modules/speech/infrastructure/audio/dictionary-audio-environment';
+import { loadDictionaryAudioEnvironment } from '../../config/environment';
 
 import { databaseSchema } from '../database/schema';
 import { createCardProposalGenerator } from '../../modules/dictionaries/infrastructure/ai/card-proposal-generators';
@@ -64,7 +64,7 @@ import { HmacDictionaryCryptography } from '../../modules/dictionaries/infrastru
 import {
     loadDictionaryWorkerEnvironment,
     type DictionaryWorkerEnvironment,
-} from './dictionary-worker-environment';
+} from '../../config/environment';
 import { DictionaryWorkerRuntime } from './dictionary-worker-runtime';
 
 export const dictionaryWorkerLocalEnvironmentFile = new URL(
@@ -407,8 +407,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             database,
             admission: { generationFormat },
         });
-    const { worker: sentenceWorker } = createSentenceWorkerComposition({
+    const { worker: sentenceWorker } = createSentenceWorkerRuntimeComposition({
         database,
+        timeoutMs: environment.sentenceAiTimeoutMs,
         provider: createWorkerSentenceProvider(environment),
         onInvalidModelOutput: (event) => {
             console.warn('Sentence model output rejected.', event);
@@ -440,13 +441,6 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         ),
         clock: { now: () => new Date() },
         workerId,
-        leaseMs: 30_000,
-        heartbeatMs: 10_000,
-        timeoutMs: 20_000,
-        globalConcurrency: 10,
-        learnerConcurrency: 1,
-        maxAttempts: 3,
-        retryDelayMs: 5_000,
     });
     const textsFormats = environment.supportedFormats.filter(
         (
@@ -473,7 +467,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
               leaseMs: 30_000,
               heartbeatMs: 10_000,
               // Whole-text output needs a longer bounded attempt than a card.
-              timeoutMs: 180_000,
+              timeoutMs: environment.textAiTimeoutMs,
               globalConcurrency: 10,
               userConcurrency: 1,
               maxAttempts: 3,

@@ -7,7 +7,7 @@ import {
 } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-// @user-flow-revision dictionary-platform sha256:e6a3d2ee25c55c2d
+// @user-flow-revision dictionary-platform sha256:3f3ad81e929e4d13
 
 const password = 'E2e!Dictionary-password-2026';
 const runId =
@@ -171,8 +171,8 @@ async function addPopulatedCard(
         await expectEditorWordPair(editor, 'stacked');
         await page.setViewportSize({ width: 1280, height: 900 });
     }
-    await page.getByLabel(/^Source word or phrase \(/).fill('work of art');
-    await page.getByLabel(/^Translation \(/).fill('obra de arte');
+    await page.getByLabel(/^Source word or phrase/).fill('work of art');
+    await page.getByLabel(/^Translation/).fill('obra de arte');
     await page
         .getByLabel(/^Definition \(/)
         .fill('An object made for artistic expression.');
@@ -267,17 +267,53 @@ async function expectWordPairGeometry(
         .toBe(true);
 }
 
+async function expectCompactAuthoringRow(input: Locator) {
+    const field = input.locator('xpath=ancestor::div[div/label][1]');
+    const label = field.locator('label').first();
+    const action = field.getByRole('button').first();
+    await expect(action).toHaveText('');
+    const [textBounds, actionBounds] = await Promise.all([
+        label.boundingBox(),
+        action.boundingBox(),
+    ]);
+    expect(textBounds).not.toBeNull();
+    expect(actionBounds).not.toBeNull();
+    expect(actionBounds!.width).toBeGreaterThanOrEqual(32);
+    expect(
+        Math.abs(
+            textBounds!.y +
+                textBounds!.height / 2 -
+                actionBounds!.y -
+                actionBounds!.height / 2,
+        ),
+    ).toBeLessThanOrEqual(2);
+    expect(actionBounds!.x).toBeGreaterThanOrEqual(
+        textBounds!.x + textBounds!.width,
+    );
+    expect(
+        await label.evaluate((element) => ({
+            whiteSpace: getComputedStyle(element).whiteSpace,
+            overflow: getComputedStyle(element).overflow,
+            textOverflow: getComputedStyle(element).textOverflow,
+        })),
+    ).toEqual({
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+    });
+}
+
 async function expectEditorWordPair(
     editor: Locator,
     layout: 'columns' | 'stacked',
 ) {
     const source = editor.getByRole('textbox', {
-        name: /^Source word or phrase \(/,
+        name: /^Source word or phrase/,
     });
     const translation = editor.getByRole('textbox', {
-        name: /^Translation \(/,
+        name: /^Translation/,
     });
-    // Field labels/actions may wrap independently; align the complete fields.
+    // Compare the complete fields; their compact label/action rows do not wrap.
     // Input adds nested spans, so find the nearest Field containing a label row.
     const sourceField = source.locator('xpath=ancestor::div[div/label][1]');
     const translationField = translation.locator(
@@ -528,10 +564,8 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
-        const draftSource = compactEditor.getByLabel(
-            /^Source word or phrase \(/,
-        );
-        const draftTranslation = compactEditor.getByLabel(/^Translation \(/);
+        const draftSource = compactEditor.getByLabel(/^Source word or phrase/);
+        const draftTranslation = compactEditor.getByLabel(/^Translation/);
         await draftSource.fill('s'.repeat(200));
         await draftTranslation.fill('t'.repeat(200));
         await expectEditorWordPair(compactEditor, 'stacked');
@@ -700,7 +734,7 @@ test.describe('dictionary platform journeys', () => {
         await cardEditor
             .getByRole('textbox', { name: /Card context/ })
             .fill('Insurance appraisal of valuable artworks.');
-        await cardEditor.getByLabel(/^Translation \(/).fill('pieza de arte');
+        await cardEditor.getByLabel(/^Translation/).fill('pieza de arte');
         await cardEditor.getByLabel(/^Example translation \(/).fill('');
         let releaseCardSave: (() => void) | undefined;
         const cardSaveGate = new Promise<void>((resolve) => {
@@ -995,7 +1029,7 @@ test.describe('dictionary platform journeys', () => {
         await chooseCardAction(page, 'work of art', 'Edit');
         const staleEditor = page.getByRole('dialog', { name: 'Edit card' });
         await staleEditor
-            .getByLabel(/^Translation \(/)
+            .getByLabel(/^Translation/)
             .fill('edición local obsoleta');
         const manualConcurrentPage = await context.newPage();
         const assertNoManualConcurrentBrowserErrors =
@@ -1006,7 +1040,7 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible();
         await chooseCardAction(manualConcurrentPage, 'work of art', 'Edit');
         await manualConcurrentPage
-            .getByLabel(/^Translation \(/)
+            .getByLabel(/^Translation/)
             .fill('obra de arte actualizada');
         await manualConcurrentPage
             .getByRole('button', { name: 'Save card' })
@@ -1057,7 +1091,7 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible({ timeout: 20_000 });
         await expect(
             review
-                .getByRole('region', { name: /^Translation \(/ })
+                .getByRole('region', { name: /^Translation/ })
                 .getByRole('paragraph')
                 .filter({ hasText: /^obra de arte actualizada$/ }),
         ).toBeVisible();
@@ -1095,7 +1129,7 @@ test.describe('dictionary platform journeys', () => {
         ).toBeVisible();
         await chooseCardAction(concurrentPage, 'work of art', 'Edit');
         await concurrentPage
-            .getByLabel(/^Translation \(/)
+            .getByLabel(/^Translation/)
             .fill('obra artística concurrente');
         await concurrentPage.getByRole('button', { name: 'Save card' }).click();
         await expect(
@@ -1107,7 +1141,7 @@ test.describe('dictionary platform journeys', () => {
         await concurrentPage.close();
 
         const proposedTranslation = review
-            .getByRole('region', { name: /^Translation \(/ })
+            .getByRole('region', { name: /^Translation/ })
             .getByLabel('Proposed replacement');
         await proposedTranslation.fill('obra de arte revisada');
         await review
@@ -1147,7 +1181,7 @@ test.describe('dictionary platform journeys', () => {
             review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
         await review
-            .getByRole('region', { name: /^Translation \(/ })
+            .getByRole('region', { name: /^Translation/ })
             .getByLabel('Proposed replacement')
             .fill('obra de arte final');
         await review
@@ -1731,15 +1765,30 @@ test.describe('dictionary platform journeys', () => {
             editor.getByText(inheritedContext, { exact: true }),
         ).toBeVisible();
         const source = editor.getByRole('textbox', {
-            name: /^Source word or phrase \(/,
+            name: /^Source word or phrase/,
         });
         const translation = editor.getByRole('textbox', {
-            name: /^Translation \(/,
+            name: /^Translation/,
         });
         const definition = editor.getByRole('textbox', {
             name: /^Definition \(/,
         });
         await source.fill('teh atelier');
+        await expectCompactAuthoringRow(source);
+        await expectCompactAuthoringRow(translation);
+        const translationAction = editor.getByRole('button', {
+            name: 'Generate Translation with AI',
+            exact: true,
+        });
+        await translationAction.hover();
+        await expect(page.getByRole('tooltip')).toHaveText(
+            'Generate Translation with AI',
+        );
+        await page.mouse.move(0, 0);
+        await page.screenshot({
+            path: testInfo.outputPath('compact-authoring-wide.png'),
+        });
+
         await editor
             .getByRole('button', { name: 'Regenerate Source', exact: true })
             .click();
@@ -1800,12 +1849,36 @@ test.describe('dictionary platform journeys', () => {
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+        await expectCompactAuthoringRow(source);
+        await expectCompactAuthoringRow(translation);
+        await page.screenshot({
+            path: testInfo.outputPath('compact-authoring-narrow-zoom.png'),
+        });
+
+        const overflowNodes = await page.evaluate(() =>
+            Array.from(document.querySelectorAll('body *'))
+                .filter((element) => {
+                    const bounds = element.getBoundingClientRect();
+                    return (
+                        bounds.width > 0 &&
+                        bounds.right > document.documentElement.clientWidth + 1
+                    );
+                })
+                .slice(0, 12)
+                .map((element) => ({
+                    tag: element.tagName,
+                    className: element.className,
+                    right: element.getBoundingClientRect().right,
+                    width: element.getBoundingClientRect().width,
+                })),
+        );
         expect(
             await page.evaluate(
                 () =>
                     document.documentElement.scrollWidth <=
                     document.documentElement.clientWidth + 1,
             ),
+            JSON.stringify(overflowNodes),
         ).toBe(true);
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
@@ -1835,10 +1908,10 @@ test.describe('dictionary platform journeys', () => {
         await page.getByRole('button', { name: 'Add card' }).click();
         editor = page.getByRole('dialog', { name: 'Add card' });
         const secondSource = editor.getByRole('textbox', {
-            name: /^Source word or phrase \(/,
+            name: /^Source word or phrase/,
         });
         const secondTranslation = editor.getByRole('textbox', {
-            name: /^Translation \(/,
+            name: /^Translation/,
         });
         await secondSource.fill('teh studio');
         await secondTranslation.fill('manual studio');
@@ -1887,7 +1960,7 @@ test.describe('dictionary platform journeys', () => {
         await chooseCardAction(page, 'work of art', 'Edit');
         const editor = page.getByRole('dialog', { name: 'Edit card' });
         const translation = editor.getByRole('textbox', {
-            name: /^Translation \(/,
+            name: /^Translation/,
         });
         const definition = editor.getByRole('textbox', {
             name: /^Definition \(/,
@@ -1903,7 +1976,7 @@ test.describe('dictionary platform journeys', () => {
             .fill(overrideContext);
         // A Source-only success saves unrelated manual values as part of the complete form.
         await editor
-            .getByRole('textbox', { name: /^Source word or phrase \(/ })
+            .getByRole('textbox', { name: /^Source word or phrase/ })
             .fill('teh work of art');
         await editor
             .getByRole('button', { name: 'Regenerate Source', exact: true })
@@ -1915,7 +1988,7 @@ test.describe('dictionary platform journeys', () => {
         await expect(editor.getByText('Version 2 of 2')).toBeVisible();
         await expect(definition).toHaveValue(manualDefinition);
         const normalizedSource = await editor
-            .getByRole('textbox', { name: /^Source word or phrase \(/ })
+            .getByRole('textbox', { name: /^Source word or phrase/ })
             .inputValue();
         const card = page
             .getByRole('listitem')

@@ -23,6 +23,7 @@ export type IconButtonProps = Omit<
     loading?: boolean;
     rounded?: boolean;
     showTooltip?: boolean;
+    showTooltipWhenDisabled?: boolean;
     size?: ControlSize | IconButtonSize;
     tooltipPlacement?: TooltipPlacement;
     variant?: IconButtonVariant;
@@ -55,6 +56,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
             onMouseLeave,
             rounded = false,
             showTooltip = true,
+            showTooltipWhenDisabled = false,
             size = 'md',
             tooltipPlacement = 'top',
             type = 'button',
@@ -82,7 +84,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
             .filter(Boolean)
             .join(' ');
 
-        const tooltipDisabled = !showTooltip || isDisabled;
+        const tooltipDisabled =
+            !showTooltip || (isDisabled && !showTooltipWhenDisabled);
 
         return (
             <Tooltip

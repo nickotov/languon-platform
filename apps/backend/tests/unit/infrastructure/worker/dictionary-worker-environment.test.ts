@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { loadDictionaryWorkerEnvironment } from '../../../../src/infrastructure/worker/dictionary-worker-environment';
 
@@ -15,6 +15,85 @@ const liveProviderBudget = {
     DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '1024',
     DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS: '10000000',
 };
+
+describe('dictionary worker AI timeout configuration', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it.each([undefined, ''])(
+        'warns and uses existing timeouts for absent or blank values (%s)',
+        (value) => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+
+            expect(
+                loadDictionaryWorkerEnvironment({
+                    ...base,
+                    SENTENCE_AI_TIMEOUT_MS: value,
+                    TEXT_AI_TIMEOUT_MS: value,
+                }),
+            ).toMatchObject({
+                sentenceAiTimeoutMs: 180_000,
+                textAiTimeoutMs: 180_000,
+            });
+            expect(warn).toHaveBeenCalledWith(
+                expect.stringContaining('SENTENCE_AI_TIMEOUT_MS'),
+            );
+            expect(warn).toHaveBeenCalledWith(
+                expect.stringContaining('TEXT_AI_TIMEOUT_MS'),
+            );
+            expect(warn.mock.calls.flat().join(' ')).not.toContain(
+                'DEEPSEEK_API_KEY',
+            );
+            expect(error).not.toHaveBeenCalled();
+        },
+    );
+
+    it('preserves explicit independent timeouts without warning about them', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        expect(
+            loadDictionaryWorkerEnvironment({
+                ...base,
+                SENTENCE_AI_TIMEOUT_MS: '45000',
+                TEXT_AI_TIMEOUT_MS: '60000',
+            }),
+        ).toMatchObject({
+            sentenceAiTimeoutMs: 45_000,
+            textAiTimeoutMs: 60_000,
+        });
+        const logged = warn.mock.calls.flat().join(' ');
+        expect(logged).not.toContain('SENTENCE_AI_TIMEOUT_MS');
+        expect(logged).not.toContain('TEXT_AI_TIMEOUT_MS');
+    });
+
+    it.each(['SENTENCE_AI_TIMEOUT_MS', 'TEXT_AI_TIMEOUT_MS'] as const)(
+        'rejects invalid %s rather than silently falling back',
+        (key) => {
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+
+            for (const value of ['0', '1000.5', 'not-a-number', '999999999']) {
+                expect(() =>
+                    loadDictionaryWorkerEnvironment({
+                        ...base,
+                        [key]: value,
+                        DEEPSEEK_API_KEY: 'synthetic-secret-not-to-log',
+                    }),
+                ).toThrow();
+            }
+            expect(error).toHaveBeenCalledTimes(4);
+            for (const [message] of error.mock.calls) {
+                expect(message).toContain(key);
+                expect(message).not.toContain('synthetic-secret-not-to-log');
+                expect(message).not.toContain('not-a-number');
+            }
+        },
+    );
+});
 
 describe('dictionary worker environment', () => {
     it('loads a worker-only bounded configuration', () => {

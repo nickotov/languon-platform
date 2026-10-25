@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { createPostgresClient, runPostgresMigrations } from '@languon/database';
 
-import { loadMigrationDatabaseUrl } from './migration-environment';
+import { loadMigrationDatabaseUrl } from '../../config/environment';
 import { resolveMigrationsFolder } from './migrations-folder';
 
 const localEnvironmentFile = new URL(

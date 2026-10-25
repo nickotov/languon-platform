@@ -20,6 +20,7 @@
 }
 
 .form {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -293,6 +294,9 @@
 }
 
 .footer {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-wrap: anywhere;
     background: var(--background-surface);
     border-top: 1px solid var(--border-default);
     display: grid;
@@ -319,7 +323,9 @@
     color: var(--text-secondary);
     font-size: var(--size-13);
     font-variant-numeric: tabular-nums;
-    min-width: var(--size-72);
+    min-width: 0;
+    flex: 1;
+    overflow-wrap: anywhere;
     text-align: center;
 }
 
@@ -405,4 +411,18 @@
 .fieldCount,
 .overrideDescription {
     line-height: var(--size-16);
+}
+
+.fieldLabelRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    flex-wrap: nowrap;
+}
+
+.fieldLabel {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

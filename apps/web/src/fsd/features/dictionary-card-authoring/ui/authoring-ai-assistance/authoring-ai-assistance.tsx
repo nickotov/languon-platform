@@ -1,6 +1,6 @@
 import { Info, RefreshCw, Sparkles } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, InlineAlert } from '@/fsd/shared/ui';
+import { Button, IconButton, InlineAlert } from '@/fsd/shared/ui';
 import type { DictionaryCardAuthoringAI } from '../../types';
 import styles from './authoring-ai-assistance.module.css';
 
@@ -87,9 +87,11 @@ export function AuthoringAiAssistance({
 
     const actionLabel = hasContent ? labels.regenerateAll : labels.generate;
 
-    const regenerationIcon = hasContent ? (
+    const generationIcon = hasContent ? (
         <RefreshCw aria-hidden size={16} />
-    ) : undefined;
+    ) : (
+        <Sparkles aria-hidden size={16} />
+    );
 
     function cancelGeneration() {
         void ai.onAction({ kind: 'cancel' }).catch(() => undefined);
@@ -103,18 +105,18 @@ export function AuthoringAiAssistance({
                     {labels.aiSection}
                 </strong>
                 <div className={styles.aiButtons}>
-                    <Button
+                    <IconButton
+                        showTooltipWhenDisabled
                         className={styles.primaryAction}
+                        label={actionLabel}
+                        variant='primary'
                         disabled={disabled}
                         loading={loading}
                         onClick={generateAll}
                         type='button'
                         size='compact'
-                        leadingIcon={<Sparkles aria-hidden='true' size={16} />}
-                        trailingIcon={regenerationIcon}
-                    >
-                        {actionLabel}
-                    </Button>
+                        icon={generationIcon}
+                    />
                 </div>
             </div>
             <p className={styles.aiHelp}>{labels.generateHelp}</p>

@@ -43,6 +43,118 @@ function providers(label: string): DictionaryTextProviderSet {
 }
 
 describe('dictionary text provider router', () => {
+    it('runs card authoring within its admitted budget without constructing unrelated batch providers', async () => {
+        const admittedBudget = {
+            ...budget,
+            maxInputTokensPerAttempt: 33_748,
+            maxOutputTokensPerAttempt: 8_192,
+        };
+        const execution = snapshot(0, {
+            aggregateBudget: admittedBudget,
+            supportedFormats: ['card-authoring:v3'],
+        });
+        const fetchProvider = vi.fn(
+            async () =>
+                new Response(
+                    JSON.stringify({
+                        id: 'synthetic-completion',
+                        object: 'chat.completion',
+                        created: 0,
+                        model: 'deepseek-flash',
+                        choices: [
+                            {
+                                index: 0,
+                                message: {
+                                    role: 'assistant',
+                                    content: JSON.stringify({
+                                        suggestions: [
+                                            {
+                                                field: 'translation',
+                                                value: 'Привет',
+                                            },
+                                        ],
+                                    }),
+                                },
+                                finish_reason: 'stop',
+                            },
+                        ],
+                        usage: {
+                            prompt_tokens: 100,
+                            completion_tokens: 20,
+                            total_tokens: 120,
+                        },
+                    }),
+                    { headers: { 'Content-Type': 'application/json' } },
+                ),
+        );
+        vi.stubGlobal('fetch', fetchProvider);
+        try {
+            const router = new DictionaryTextProviderRouter({
+                credentials: { DEEPSEEK_API_KEY: 'synthetic-key' },
+            });
+            const routing = createDictionaryTextProviderRoutingAdapters({
+                legacy: providers('unused'),
+                router,
+            });
+            const result = await routing.cardAuthoring.generate({
+                idempotencyKey: 'synthetic-job',
+                providerBudget: admittedBudget,
+                providerExecution: execution,
+                signal: new AbortController().signal,
+                input: {
+                    sourceLanguage: 'fr',
+                    targetLanguage: 'ru',
+                    source: 'bonjour',
+                    translationContext: null,
+                    effectiveSettings: {
+                        transcriptionCustomLabel: null,
+                        definitionEnabled: false,
+                        definitionLanguage: 'target',
+                        exampleEnabled: false,
+                        exampleLanguage: 'source',
+                        exampleTranslationEnabled: false,
+                        exampleTranslationLanguage: 'target',
+                        transcriptionEnabled: false,
+                        transcriptionNotation: 'ipa',
+                    },
+                    requestedFields: ['translation'],
+                    fieldContext: [
+                        {
+                            field: 'translation',
+                            currentValue: null,
+                            excludedValues: [],
+                        },
+                    ],
+                },
+            });
+            expect(result).toMatchObject({
+                delta: {
+                    suggestions: [{ field: 'translation', value: 'Привет' }],
+                },
+                usage: { inputTokens: 100, outputTokens: 20 },
+            });
+            expect(fetchProvider).toHaveBeenCalledOnce();
+            const options = fetchProvider.mock.calls[0] as unknown as [
+                unknown,
+                RequestInit,
+            ];
+            expect(JSON.parse(options[1].body as string).max_tokens).toBe(
+                8_192,
+            );
+            const resolved = router.resolve(execution, admittedBudget);
+            expect(
+                router.resolve(execution, admittedBudget).cardAuthoring,
+            ).toBe(resolved.cardAuthoring);
+            expect(resolved.card.generate).toBeTypeOf('function');
+            // Reduced admitted budgets can fund a chunk without requiring the
+            // historical five-chunk maximum. Each dispatch still checks its input.
+            expect(resolved.pastedTerms).toBe(resolved.pastedTerms);
+            expect(resolved.importPairs).toBe(resolved.importPairs);
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('uses the legacy provider only for jobs without a pinned execution snapshot', async () => {
         const legacy = providers('legacy');
         const factory = vi.fn(() => providers('pinned'));

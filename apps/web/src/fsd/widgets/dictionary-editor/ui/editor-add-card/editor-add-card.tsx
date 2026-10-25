@@ -1,5 +1,6 @@
 import { Button } from '@/fsd/shared/ui';
 import { Plus } from 'lucide-react';
+import styles from '../dictionary-editor-common.module.css';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 
 export function EditorAddCard({
@@ -11,6 +12,7 @@ export function EditorAddCard({
 
     return (
         <Button
+            className={styles.addCardButton}
             desktopIconOnly
             leadingIcon={<Plus size={20} aria-hidden />}
             disabled={cardMutation.isPending}

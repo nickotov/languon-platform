@@ -306,6 +306,14 @@ product behaviors remain equally plausible, or the specification contradicts
 itself in a behavior-affecting way. Record the blocker and completed work in
 durable state.
 
+When a change can affect AI admission, prompts/schemas, model/provider configuration,
+worker construction, deadlines, cancellation, or settlement, follow the
+[AI execution regression matrix](docs/operations/critical-workflows.md#ai-execution-regression-matrix).
+Record affected seams and required checks before implementation. Retain a faithful
+regression through production composition and run the required critical gate;
+skipped required tests are missing evidence. Internal deterministic AI adapters
+prove journey behavior, not production provider execution.
+
 Use `$testing` for regression strategy, exact scoped commands, and evidence
 validity. Required real browser/device and disposable database/cache evidence
 cannot be replaced by mocks or compilation. Use project-pinned `agent-browser`

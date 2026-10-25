@@ -1,3 +1,4 @@
+import { sentenceActionInputOverhead } from '../../ai/sentence-provider-envelope';
 import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
 import {
     lockTextAiCapacity,
@@ -308,6 +309,9 @@ export async function sentenceWorkerClaimNext(
                       attempt: job.attemptCount + 1,
                       budget,
                       inputPayload: job.inputPayload,
+                      inputOverheadTokens: sentenceActionInputOverhead(
+                          job.inputPayload,
+                      ),
                       at: context.now,
                   })
                 : budget;

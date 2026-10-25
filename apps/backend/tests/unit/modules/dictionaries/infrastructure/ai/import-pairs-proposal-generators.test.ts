@@ -61,7 +61,7 @@ const request = {
 };
 
 describe('deterministic import-pairs provider', () => {
-    it('fails live activation closed below the five-chunk envelope', () => {
+    it('fails live activation closed below a bounded chunk envelope', () => {
         expect(() =>
             createImportPairsProposalGenerator({
                 mode: 'mastra',
@@ -72,10 +72,10 @@ describe('deterministic import-pairs provider', () => {
                 },
                 providerBudget: {
                     ...request.providerBudget,
-                    maxOutputTokensPerAttempt: 40_959,
+                    maxOutputTokensPerAttempt: 8_191,
                 },
             }),
-        ).toThrow(/262144 input-token and 40960 output-token/);
+        ).toThrow(/bounded per-chunk input\/output envelope/);
     });
 
     it('preserves trusted core pairs and enriches only optional fields', async () => {

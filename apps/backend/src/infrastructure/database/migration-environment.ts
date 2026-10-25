@@ -1,3 +1,4 @@
+import { parseEnvironmentSchema } from '../../config/environment-diagnostics';
 import { z } from 'zod';
 
 const PostgresUrlSchema = z
@@ -46,6 +47,9 @@ const MigrationEnvironmentSchema = z
     });
 
 export function loadMigrationDatabaseUrl(values: NodeJS.ProcessEnv): string {
-    const environment = MigrationEnvironmentSchema.parse(values);
+    const environment = parseEnvironmentSchema(
+        MigrationEnvironmentSchema,
+        values,
+    );
     return environment.MIGRATION_DATABASE_URL ?? environment.DATABASE_URL!;
 }

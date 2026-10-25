@@ -1,3 +1,4 @@
+import { cardAuthoringInputOverhead } from '../../ai/card-authoring-input-envelope';
 import { and, eq, lt, or } from 'drizzle-orm';
 import {
     readTextAiCapacity,
@@ -211,7 +212,7 @@ export async function claimSelectionJob(
                   attempt,
                   budget,
                   inputPayload: job.inputPayload,
-                  inputOverheadTokens: 32768,
+                  inputOverheadTokens: cardAuthoringInputOverhead,
                   at: now,
               })
             : budget;
