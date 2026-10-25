@@ -89,6 +89,9 @@ export function createWorkerSentenceProvider(
     }
     return createSentenceAiProvider({
         credentials: environment.providerCredentials,
+        onProviderFailure: (event) => {
+            console.warn('Sentence provider request failed.', event);
+        },
     });
 }
 

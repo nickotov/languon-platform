@@ -1,3 +1,7 @@
+import {
+    sentenceProviderFailure,
+    type SentenceProviderFailure,
+} from './sentence-provider-failure';
 import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { SENTENCE_LIMITS } from '@languon/contracts';
 import type { z } from 'zod';
@@ -18,7 +22,10 @@ import {
     SentenceCheckDraftSchema,
     resolveSentenceIssueSpan,
 } from '../../domain/sentence-feedback';
-import { SentenceInvalidModelOutputError } from '../../domain/sentence-errors';
+import {
+    SentenceModelUnavailableError,
+    SentenceInvalidModelOutputError,
+} from '../../domain/sentence-errors';
 import { resolveTextAiProviderOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
 import { textAiRequestLimits } from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 import { createSentenceAgents } from './sentence-agents';
@@ -30,6 +37,13 @@ import {
 export function createSentenceAiProvider(options: {
     credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;
     fetchProvider?: typeof fetch;
+    onProviderFailure?: (
+        event: SentenceProviderFailure & {
+            providerId: 'deepseek' | 'kie';
+            modelId: string;
+            kind: 'generate' | 'check';
+        },
+    ) => void;
 }): SentenceAiProvider {
     async function run<T extends object>(
         call: SentenceProviderCall<
@@ -105,6 +119,29 @@ export function createSentenceAiProvider(options: {
                         usage,
                     );
                 }
+                const failure = sentenceProviderFailure(
+                    error,
+                    call.execution.providerId,
+                );
+                try {
+                    void Promise.resolve(
+                        options.onProviderFailure?.({
+                            ...failure,
+                            providerId: call.execution.providerId,
+                            modelId: call.execution.modelId,
+                            kind,
+                        }),
+                    ).catch(() => undefined);
+                } catch {
+                    // Diagnostic observers cannot interrupt fenced failure settlement.
+                }
+                if (
+                    failure.reason === 'model_retired' ||
+                    failure.reason === 'model_unavailable'
+                )
+                    throw new SentenceModelUnavailableError(
+                        'Selected model is unavailable.',
+                    );
                 throw error;
             }
         })();

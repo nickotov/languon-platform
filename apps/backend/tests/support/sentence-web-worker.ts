@@ -10,6 +10,7 @@ import {
     createSentencePreparationWorkerComposition,
 } from '../../src/modules/learning/infrastructure/sentence-composition';
 import { DeterministicSentenceAiProvider } from '../../src/modules/learning/infrastructure/ai/sentence-ai-provider';
+import { SentenceModelUnavailableError } from '../../src/modules/learning/domain/sentence-errors';
 import { textAiModelCatalog } from '../../src/modules/text-ai/application/text-ai-provider-catalog';
 import {
     dictionaryAiConfigurationRevisionsTable,
@@ -167,6 +168,9 @@ const fixture = new DeterministicSentenceAiProvider({
     },
     async check(input) {
         await delay(800);
+        if (input.answer === '[fixture-model-unavailable]') {
+            throw new SentenceModelUnavailableError();
+        }
         return {
             proposedPercentage: 100,
             meaning: 'correct',

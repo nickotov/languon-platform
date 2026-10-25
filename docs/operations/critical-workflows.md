@@ -51,8 +51,9 @@ Use `--list` for current entries. The initial registry covers:
 - Password signup/login/session restoration, password reset and virtual passkeys.
 - Admin expiry/refresh and independent recent-sign-in enforcement.
 - Dictionary generation and persisted result recovery.
-- Sentence generation, AI checking and free saved-reference practice for owners
-  and shared readers.
+- Sentence generation, AI checking, unavailable-model guidance with preserved
+  answers and AI preferences, and free saved-reference practice for owners and
+  shared readers.
 - Text generation, saving, reload and independent/folder organization.
 - Chat reconnection, Stop and explicit retry after failure.
 - Zero-credit rejection for paid work, with a visible error and preserved input.

@@ -5,6 +5,29 @@ describe intended behavior; they do not imply that the capabilities exist yet.
 
 ## Language
 
+### AI routing
+
+**AI flow**:
+A distinct learner task performed with AI, such as checking a practice sentence
+or generating a card, with its own requirements for a usable result.
+
+**Flow routing policy**:
+The administrator-approved model selection and ordered fallback choices for an AI
+flow. A flow without an override inherits the application default.
+
+**Model availability check**:
+A bounded test of whether a particular model through a particular provider can
+produce a valid response for a specified task. Its result is evidence from a
+particular time, not a guarantee of future availability or educational quality.
+
+**Flow credit tariff**:
+The published learner credit rates for an AI flow, independent of which approved
+model or fallback performs the work.
+
+**Model route**:
+A model offered through a particular provider or gateway under approved upstream
+processing constraints. The same model through another provider is a different route.
+
 ### AI usage and credits
 
 **Customer credit tariff**:

@@ -30,7 +30,7 @@ test('sentence practice uses the reviewed deterministic sentence worker', () => 
     const [flow] = selectFlows(['--flow', 'sentence-practice']);
     assert.equal(flow.file, 'sentence-practice.journeys.spec.ts');
     assert.equal(flow.env.AUTH_E2E_SENTENCE_SERVICES, 'true');
-    assert.equal(flow.minimumTests, 1);
+    assert.equal(flow.minimumTests, 2);
     assert.deepEqual(browserCommand(flow).slice(-4), [
         '--grep',
         flow.grep,
@@ -238,28 +238,36 @@ test('actual cleanup path survives interruption and recovers an ID lost after co
 });
 
 const backendFlow = flows.find((flow) => flow.app === 'backend');
+const backendSuiteCounts = [29, 15, 2, 8];
+const backendTestTotal = backendSuiteCounts.reduce(
+    (sum, count) => sum + count,
+    0,
+);
 const backendReport = () => ({
     success: true,
-    numTotalTests: 52,
-    numPassedTests: 52,
+    numTotalTests: backendTestTotal,
+    numPassedTests: backendTestTotal,
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,
     numFailedTestSuites: 0,
     numPendingTestSuites: 0,
-    testResults: backendExecutionFiles.map((file) => ({
+    testResults: backendExecutionFiles.map((file, index) => ({
         name: new URL(`../../apps/backend/${file}`, import.meta.url).pathname,
         status: 'passed',
         message: '',
-        assertionResults: Array.from({ length: 13 }, () => ({
-            status: 'passed',
-            failureMessages: [],
-            meta: {
-                criticalRetryCount: 0,
-                criticalRepeatCount: 0,
-                criticalExpectedFailure: false,
-            },
-        })),
+        assertionResults: Array.from(
+            { length: backendSuiteCounts[index] },
+            () => ({
+                status: 'passed',
+                failureMessages: [],
+                meta: {
+                    criticalRetryCount: 0,
+                    criticalRepeatCount: 0,
+                    criticalExpectedFailure: false,
+                },
+            }),
+        ),
     })),
 });
 
@@ -284,8 +292,16 @@ test('backend gate is in the full registry, runs exact real execution suites ser
 });
 
 test('Vitest evidence must contain every exact required suite, no zero, skips, todos, retries or incomplete results', () => {
-    assert.equal(assertPassingBackendReport(backendReport(), backendFlow), 52);
+    assert.equal(
+        assertPassingBackendReport(backendReport(), backendFlow),
+        backendTestTotal,
+    );
     const variants = [
+        (report) => {
+            report.testResults[0].assertionResults.pop();
+            report.numTotalTests--;
+            report.numPassedTests--;
+        },
         (report) => {
             report.testResults = [];
         },

@@ -45,10 +45,10 @@ export const flows = [
     },
     {
         id: 'sentence-practice',
-        minimumTests: 1,
+        minimumTests: 2,
         app: 'web',
         file: 'sentence-practice.journeys.spec.ts',
-        grep: 'checks owner practice and gives a zero-credit reader',
+        grep: 'checks owner practice and gives a zero-credit reader|unavailable provider model keeps the answer',
         prerequisite: 'deterministic-sentence-services',
         env: { AUTH_E2E_SENTENCE_SERVICES: 'true' },
     },
@@ -88,7 +88,7 @@ export const flows = [
     },
     {
         id: 'ai-execution-contracts',
-        minimumTests: 51,
+        minimumTests: 54,
         app: 'backend',
         files: [...backendExecutionFiles],
         prerequisite: 'disposable-backend-production-execution',

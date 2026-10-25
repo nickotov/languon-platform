@@ -745,6 +745,40 @@ run('sentence persistence', () => {
             0,
         );
     });
+    it('persists an unavailable-model failure and settles it without customer charge or retry', async () => {
+        await store.next(access(), next(), context());
+        const job = await claim();
+        if (!job) throw new Error('Missing admitted sentence job');
+        await worker.markDispatched(job.lease, context());
+        expect(
+            await worker.fail(
+                job.lease,
+                { code: 'model_unavailable', retryAt: null },
+                context(),
+            ),
+        ).toBe('committed');
+        const [persisted] = await db
+            .select()
+            .from(sentenceAiJobsTable)
+            .where(eq(sentenceAiJobsTable.id, job.lease.jobId));
+        expect(persisted).toMatchObject({
+            executionState: 'failed',
+            failureCategory: 'model_unavailable',
+            attemptCount: 1,
+            resultExerciseId: null,
+        });
+        const [action] = await db
+            .select()
+            .from(actions)
+            .where(eq(actions.id, job.lease.jobId));
+        expect(action).toMatchObject({
+            state: 'settled',
+            outcome: 'failure',
+            chargedMilli: 0n,
+        });
+        expect(await claim()).toBeNull();
+    });
+
     it('confirms a paid sentence Next quote without changing its allowance', async () => {
         // Fund the complete prompt/schema envelope while keeping output budget-limited.
         await seedLegacyActionFixture(db, '40');

@@ -351,6 +351,18 @@ atomically, so another tab cannot silently consume a confirmed allowance.
 
 ## Troubleshooting
 
+For provider transport failures, worker diagnostics emit `Sentence provider request
+failed.` with only an allowlisted provider/model, operation kind, fixed reason,
+HTTP status, provider error code and safe SDK/network error identifiers when
+available. They never include provider messages, response bodies, prompts,
+answers or credentials. In particular, Kie can return HTTP 200 with an error
+inside JSON: code 410 means the model was retired. This becomes the existing
+terminal `model_unavailable` job failure, releases customer holds, and is not
+retried automatically. The learner sees model-unavailable guidance and can open
+AI preferences. Select a supported model; polling an already failed job does not
+rerun it. A reachable HEAD probe cannot establish that a model still accepts
+completion requests.
+
 For `invalid_model_output` on a check, worker diagnostics now emit only the fixed
 message `Sentence model output rejected.` with allowlisted `kind` and `reason`:
 `input_invalid`, `schema_invalid`, `target_assessments_invalid`,

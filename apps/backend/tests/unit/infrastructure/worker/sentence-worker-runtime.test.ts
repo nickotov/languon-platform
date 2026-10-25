@@ -10,8 +10,15 @@ import { textAiModelCatalog } from '../../../../src/modules/text-ai/application/
 
 const entryId = '00000000-0000-4000-8000-000000000001';
 
-function fixture(timeoutMs?: number) {
-    const model = textAiModelCatalog[0]!;
+function fixture(
+    timeoutMs?: number,
+    providerIndex = 0,
+    observerThrows = false,
+) {
+    const model = textAiModelCatalog[providerIndex]!;
+    const onProviderFailure = vi.fn((_event: unknown) => {
+        if (observerThrows) throw new Error('Observer failed');
+    });
     const job: ClaimedSentenceJob = {
         kind: 'sentence-check',
         format: 'sentence-check:v1',
@@ -83,10 +90,14 @@ function fixture(timeoutMs?: number) {
     // Intentionally ignore abort in this external transport. Late SDK results must
     // still be fenced out by the real provider/worker, without a second request.
     const fetch = vi.fn(async (url: unknown, init?: RequestInit) => {
-        expect(String(url)).toBe('https://api.deepseek.com/chat/completions');
+        expect(String(url)).toBe(
+            model.providerId === 'kie'
+                ? 'https://api.kie.ai/gemini-2.5-pro/v1/chat/completions'
+                : 'https://api.deepseek.com/chat/completions',
+        );
         expect(init?.method).toBe('POST');
         expect(JSON.parse(String(init?.body))).toMatchObject({
-            model: 'deepseek-flash',
+            model: model.id,
             max_tokens: model.perCallMaxOutputTokens,
         });
         transportSignal = init?.signal ?? undefined;
@@ -97,7 +108,11 @@ function fixture(timeoutMs?: number) {
         store,
         ...(timeoutMs !== undefined ? { timeoutMs } : {}),
         provider: createSentenceAiProvider({
-            credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+            credentials: {
+                DEEPSEEK_API_KEY: 'synthetic-test-key',
+                KIE_API_KEY: 'synthetic-kie-key',
+            },
+            onProviderFailure,
         }),
         clock: { now: () => new Date() },
         workerId: 'worker',
@@ -109,43 +124,45 @@ function fixture(timeoutMs?: number) {
         await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     }
 
-    async function respond() {
+    async function respond(payload?: object) {
         resolveHttp(
             new Response(
-                JSON.stringify({
-                    id: 'synthetic-runtime-check',
-                    object: 'chat.completion',
-                    created: 0,
-                    model: model.id,
-                    choices: [
-                        {
-                            index: 0,
-                            message: {
-                                role: 'assistant',
-                                content: JSON.stringify({
-                                    proposedPercentage: 100,
-                                    meaning: 'correct',
-                                    grammar: 'correct',
-                                    targets: {
-                                        'target-1': {
-                                            status: 'used',
-                                            explanation: 'Correct target.',
+                JSON.stringify(
+                    payload ?? {
+                        id: 'synthetic-runtime-check',
+                        object: 'chat.completion',
+                        created: 0,
+                        model: model.id,
+                        choices: [
+                            {
+                                index: 0,
+                                message: {
+                                    role: 'assistant',
+                                    content: JSON.stringify({
+                                        proposedPercentage: 100,
+                                        meaning: 'correct',
+                                        grammar: 'correct',
+                                        targets: {
+                                            'target-1': {
+                                                status: 'used',
+                                                explanation: 'Correct target.',
+                                            },
                                         },
-                                    },
-                                    issues: [],
-                                    improvedTranslation: 'Wir gehen heute.',
-                                    explanation: 'Correct.',
-                                }),
+                                        issues: [],
+                                        improvedTranslation: 'Wir gehen heute.',
+                                        explanation: 'Correct.',
+                                    }),
+                                },
+                                finish_reason: 'stop',
                             },
-                            finish_reason: 'stop',
+                        ],
+                        usage: {
+                            prompt_tokens: 100,
+                            completion_tokens: 20,
+                            total_tokens: 120,
                         },
-                    ],
-                    usage: {
-                        prompt_tokens: 100,
-                        completion_tokens: 20,
-                        total_tokens: 120,
                     },
-                }),
+                ),
                 { headers: { 'Content-Type': 'application/json' } },
             ),
         );
@@ -162,6 +179,7 @@ function fixture(timeoutMs?: number) {
         respond,
         fetch,
         signal: () => transportSignal,
+        onProviderFailure,
     };
 }
 
@@ -212,6 +230,38 @@ describe('production sentence worker execution deadline', () => {
         expect(f.store.fail).not.toHaveBeenCalled();
         expect(f.fetch).toHaveBeenCalledOnce();
     });
+
+    it.each([false, true])(
+        'terminalizes Kie HTTP 200 retirement without retry or late publication (observer throws: %s)',
+        async (observerThrows) => {
+            const f = fixture(undefined, 1, observerThrows);
+            await f.started();
+            await f.respond({
+                code: 410,
+                msg: 'Synthetic retirement notice; private provider payload.',
+            });
+            await f.run;
+            expect(f.store.completeCheck).not.toHaveBeenCalled();
+            expect(f.store.fail).toHaveBeenCalledOnce();
+            expect(f.store.fail.mock.calls[0]?.[1]).toMatchObject({
+                code: 'model_unavailable',
+                retryAt: null,
+            });
+            expect(f.onProviderFailure).toHaveBeenCalledOnce();
+            expect(f.onProviderFailure.mock.calls[0]?.[0]).toMatchObject({
+                providerId: 'kie',
+                modelId: 'gemini-2.5-pro',
+                kind: 'check',
+                reason: 'model_retired',
+                httpStatus: 200,
+                providerCode: 410,
+            });
+            expect(
+                JSON.stringify(f.onProviderFailure.mock.calls),
+            ).not.toContain('private provider payload');
+            expect(f.fetch).toHaveBeenCalledOnce();
+        },
+    );
 
     it('uses the validated environment override in the production runtime', async () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {});

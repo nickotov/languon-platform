@@ -276,6 +276,40 @@ async function shareDictionary(page: Page) {
 }
 
 test.describe('sentence practice and model preferences', () => {
+    test('unavailable provider model keeps the answer and opens AI preferences', async ({
+        page,
+    }, info) => {
+        const assertErrors = observeErrors(page);
+        await signup(page, email(info, 'unavailable-owner'));
+        await createDictionary(page, `Unavailable sentence model ${runId}`);
+        const practice = await startSentence(page);
+        const draft = practice.getByLabel(/^Your translation/);
+        const answer = '[fixture-model-unavailable]';
+        await draft.fill(answer);
+        await practice.getByRole('button', { name: /Check with AI/ }).click();
+        await expect(
+            practice.getByText(
+                'Your selected AI model is unavailable. Choose another model or continue with saved reference answers.',
+                { exact: true },
+            ),
+        ).toBeVisible();
+        await expect(draft).toHaveValue(answer);
+        await expect(draft).toBeEnabled();
+        await capture(page, info, 'sentence-model-unavailable');
+        await practice
+            .getByRole('button', { name: 'AI preferences', exact: true })
+            .click();
+        const preferences = page.getByRole('dialog', { name: 'AI settings' });
+        await expect(
+            preferences.getByRole('group', { name: 'Model for new requests' }),
+        ).toBeVisible();
+        await preferences
+            .getByRole('button', { name: 'Back to practice' })
+            .click();
+        await expect(draft).toHaveValue(answer);
+        assertErrors();
+    });
+
     // @user-flow sentence-practice-web/model-preference-persistence
     test('persists model preference and preserves a stale-tab draft during a real conflict', async ({
         page,

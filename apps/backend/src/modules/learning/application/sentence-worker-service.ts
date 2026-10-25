@@ -11,6 +11,7 @@ import { validateSentenceGeneration } from '../domain/sentence-content';
 import { validateSentenceCheck } from '../domain/sentence-feedback';
 import {
     SentenceInvalidModelOutputError,
+    SentenceModelUnavailableError,
     type SentenceModelOutputReason,
 } from '../domain/sentence-errors';
 export interface SentenceWorkerServiceDependencies {
@@ -175,17 +176,20 @@ export class SentenceWorkerService {
                     }
                 }
                 const code =
-                    error instanceof SentenceInvalidModelOutputError
-                        ? 'invalid_model_output'
-                        : combined.aborted
-                          ? 'provider_timeout'
-                          : 'provider_unavailable';
+                    error instanceof SentenceModelUnavailableError
+                        ? 'model_unavailable'
+                        : error instanceof SentenceInvalidModelOutputError
+                          ? 'invalid_model_output'
+                          : combined.aborted
+                            ? 'provider_timeout'
+                            : 'provider_unavailable';
                 await d.store.fail(
                     job.lease,
                     {
                         code,
                         ...(usage ? { usage } : {}),
                         retryAt:
+                            code === 'model_unavailable' ||
                             (code === 'invalid_model_output' &&
                                 job.kind !== 'sentence-generation') ||
                             controller.signal.aborted ||
