@@ -1,17 +1,32 @@
-import { selectedModel, workerSupports, customerFunded } from './worker.mjs';
+import {
+    selectedModel,
+    workerSupports,
+    customerFunded,
+    probeEvidence,
+} from './worker.mjs';
 // Add future critical AI capabilities here with their current worker formats.
 // This registry describes prerequisites; it never claims a successful generation.
 export const capabilityRequirements = [
     {
         id: 'dictionary',
         criticalFlow: 'dictionary-generation',
-        formats: ['single-card:v2', 'card-authoring:v3'],
+        formats: [
+            'single-card:v2',
+            'card-authoring:v3',
+            'pasted-terms:v2',
+            'import-pairs:v2',
+            'document-terms:v2',
+        ],
     },
     {
         id: 'texts',
         criticalFlow: 'text-generation',
         flag: 'TEXTS_AI_ENABLED',
-        formats: ['text-detection:v2', 'text-translation:v3'],
+        formats: [
+            'text-detection:v2',
+            'text-translation:v3',
+            'text-selection-card:v1',
+        ],
     },
     {
         id: 'conversation',
@@ -30,6 +45,17 @@ export const capabilityRequirements = [
     },
 ];
 
+function capabilityEnabled(capability, env) {
+    if (!capability.flag) return true;
+    const fallback =
+        capability.flag === 'LEARNING_SENTENCES_ENABLED' &&
+        ['development', 'test'].includes(env.APP_ENV);
+    return (
+        env[capability.flag] === 'true' ||
+        (env[capability.flag] === undefined && fallback)
+    );
+}
+
 export function selectCapabilities(
     env,
     requested = [],
@@ -45,7 +71,7 @@ export function selectCapabilities(
     return registry.filter((capability) =>
         ids.length
             ? ids.includes(capability.id)
-            : !capability.flag || env[capability.flag] === 'true',
+            : capabilityEnabled(capability, env),
     );
 }
 
@@ -93,9 +119,20 @@ export function evaluateReadiness(
     if (!grouped) {
         const groups = new Map();
         for (const capability of registry) {
-            const model = selectedModel(snapshot, capability);
-            const key = model?.id ?? 'unknown';
-            groups.set(key, [...(groups.get(key) ?? []), capability]);
+            for (const format of capability.formats) {
+                const flow = format.split(':')[0];
+                const configuration = snapshot.routing?.configuration;
+                const policy =
+                    configuration?.overrides?.[flow] ?? configuration?.default;
+                const routes = policy
+                    ? [policy.primaryRouteId, ...policy.fallbackRouteIds]
+                    : [null];
+                for (const routeId of routes) {
+                    const item = { ...capability, formats: [format], routeId };
+                    const key = `${routeId ?? 'unconfigured'}/${flow}`;
+                    groups.set(key, [...(groups.get(key) ?? []), item]);
+                }
+            }
         }
         return [...groups.entries()].flatMap(([model, capabilities]) =>
             evaluateReadiness(snapshot, env, phase, capabilities, true).map(
@@ -119,38 +156,52 @@ export function evaluateReadiness(
         'Managed AI routing enabled.',
         'Set DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true and restart backend and workers.',
     );
-    const configuration = snapshot.configuration;
+    const configuration = snapshot.routing?.configuration;
     check(
         'model',
-        Boolean(
-            configuration?.modelId &&
-            configuration.enabledModelIds?.includes(configuration.modelId),
-        ),
-        'Default model is enabled.',
-        'Admin → AI settings: enable a model and select an enabled default.',
+        Boolean(configuration),
+        'Admin routing is published.',
+        'Admin → AI routing: publish a default route and flow overrides after successful checks. Legacy learner/default model settings do not authorize new work.',
     );
     const model = selectedModel(snapshot, registry[0]);
     const modelId = model?.id;
     const providerId = model?.providerId;
+    const routeId = model ? `${providerId}/${modelId}` : null;
     check(
         'selected-model',
-        Boolean(model && configuration?.enabledModelIds?.includes(modelId)),
-        'Selected capability model is enabled.',
-        'Admin → AI settings: enable the capability-selected model. Auto conversation/interview uses DeepSeek Flash; explicit learner selection must be enabled.',
+        Boolean(
+            model &&
+            !model.retired &&
+            model.providerId !== 'evolink' &&
+            registry.every((capability) =>
+                capability.formats.every((format) =>
+                    model.supportedFormats.includes(format),
+                ),
+            ) &&
+            configuration?.enabledRouteIds.includes(routeId),
+        ),
+        'Selected flow route is enabled and reviewed.',
+        'Admin → AI routing: enable a reviewed compatible primary/fallback route; retired routes cannot run. EvoLink learner processing remains blocked pending its processing/privacy review.',
     );
-    const credentialFlag =
-        providerId === 'deepseek'
-            ? 'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED'
-            : providerId === 'kie'
-              ? 'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED'
-              : null;
-    if (credentialFlag)
+    if (model)
         check(
-            'credential-advertisement',
-            env[credentialFlag] === 'true',
-            'API advertises provider credentials configured.',
-            `Set ${credentialFlag}=true only after configuring its worker credential or the deterministic test adapter.`,
+            'credential',
+            Boolean(env[model.credentialReference]?.trim()) ||
+                (env.APP_ENV === 'test' &&
+                    env.DICTIONARY_AI_PROVIDER_FIXTURE_MODE ===
+                        'deterministic'),
+            'Provider credential is configured (value hidden).',
+            `Configure ${model.credentialReference} in the ignored backend/worker environment and restart. Never paste keys into reports.`,
         );
+    const evidence = probeEvidence(snapshot, env, registry[0], model);
+    check(
+        'flow-check',
+        evidence.ready,
+        evidence.stale
+            ? 'Unchanged active flow check is aged: dispatch remains allowed; rerun the selected-flow check before any routing publication.'
+            : 'Matching selected-flow check permits dispatch.',
+        'Admin → AI routing: run Test selected flow with this route and current credentials; quick checks alone cannot activate a flow. Review hard failures and rerun before publishing. Transient failures require bounded recovery.',
+    );
     const price = snapshot.prices.find(
         (p) => p.model_id === modelId && p.provider_id === providerId,
     );
@@ -165,11 +216,17 @@ export function evaluateReadiness(
     );
     check(
         'customer-tariff',
-        snapshot.tariffs.some(
-            (p) => p.model_id === modelId && p.provider_id === providerId,
+        registry.every(
+            (capability) =>
+                !customerFunded(snapshot, capability) ||
+                Boolean(
+                    configuration?.flowTariffs?.[
+                        capability.formats[0].split(':')[0]
+                    ],
+                ),
         ),
-        'Customer tariff exists.',
-        'Admin → AI settings: publish a text-token customer tariff for the selected model.',
+        'Paid flow customer tariff exists; free flows need no learner tariff.',
+        'Admin → AI routing: publish a per-flow customer tariff for every paid flow. Model-specific legacy tariffs do not satisfy this requirement.',
     );
     const settings = snapshot.settings;
     check(
@@ -194,7 +251,7 @@ export function evaluateReadiness(
         if (capability.flag)
             check(
                 `${capability.id}:enabled`,
-                env[capability.flag] === 'true',
+                capabilityEnabled(capability, env),
                 'Capability admission enabled.',
                 `Set ${capability.flag}=true to enable the requested capability.`,
             );

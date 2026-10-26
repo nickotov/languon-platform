@@ -23,7 +23,7 @@ export interface TextAiAdmissionParticipant {
 export class TextAiSelectionUnavailableError extends Error {
     public constructor() {
         super(
-            'The selected text AI model is unavailable. Choose another enabled model or Auto.',
+            'AI generation is temporarily unavailable. Please try again later.',
         );
         this.name = 'TextAiSelectionUnavailableError';
     }

@@ -22,9 +22,15 @@ export async function conversationTransaction<T>(
     persistence: ConversationPersistenceContext,
     run: (tx: ConversationsTransaction) => Promise<T>,
     acquireCapacity = true,
+    prepareCapacity?: (
+        tx: ConversationsTransaction,
+    ) => Promise<void> | undefined,
 ) {
     return persistence.dependencies.database.transaction(async (tx) => {
-        if (acquireCapacity) await lockTextAiCapacity(tx);
+        if (acquireCapacity) {
+            await prepareCapacity?.(tx);
+            await lockTextAiCapacity(tx);
+        }
 
         return run(tx);
     });

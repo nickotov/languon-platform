@@ -146,7 +146,7 @@ describe('preparation recovery notices', () => {
         if (original) Object.defineProperty(prototype, 'showModal', original);
         else Reflect.deleteProperty(prototype, 'showModal');
     });
-    it('lets a rejected model admission return to explicit setup after changing preferences', () => {
+    it('lets unavailable AI retry without exposing model settings', () => {
         const value = controller(error('model_unavailable'));
         const restart = vi.fn();
         const settings = vi.fn();
@@ -157,15 +157,15 @@ describe('preparation recovery notices', () => {
                 onOpenAiSettings={settings}
             />,
         );
-        fireEvent.click(
-            screen.getByRole('button', { name: 'Open AI settings' }),
-        );
+        expect(
+            screen.queryByRole('button', { name: 'Open AI settings' }),
+        ).not.toBeInTheDocument();
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Start a new saved-first preparation',
             }),
         );
-        expect(settings).toHaveBeenCalledOnce();
+        expect(settings).not.toHaveBeenCalled();
         expect(restart).toHaveBeenCalledOnce();
         expect(value.refresh).not.toHaveBeenCalled();
         expect(value.resume).not.toHaveBeenCalled();

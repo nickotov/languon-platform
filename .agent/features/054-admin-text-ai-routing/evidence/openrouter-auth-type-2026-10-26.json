@@ -1,0 +1,11 @@
+{
+    "provider": "openrouter",
+    "endpoint": "https://openrouter.ai/api/v1/key",
+    "generation": false,
+    "httpStatus": 200,
+    "managementKey": true,
+    "expired": false,
+    "interpretation": "Management key is valid for administration but cannot run completions. A regular generation key is required.",
+    "credentialValueRecorded": false,
+    "accountDetailsRecorded": false
+}

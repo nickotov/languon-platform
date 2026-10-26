@@ -1,3 +1,7 @@
+import {
+    fixtureRouteFingerprint,
+    seedTextAiRoutingFixture,
+} from '../../../support/text-ai-routing-fixture';
 import { randomUUID } from 'node:crypto';
 import {
     createDrizzleDatabase,
@@ -22,11 +26,7 @@ import {
     type TextAiExecutionSnapshot,
 } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import type { TextAiAdmissionExecution } from '../../../../src/modules/text-ai/application/text-ai-admission-participant';
-import {
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-    dictionaryAiWorkerObservationsTable,
-} from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import { dictionaryAiWorkerObservationsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import {
     conversationExecutionObservationId,
     textAiSelectionObservationId,
@@ -69,7 +69,11 @@ const execution: TextAiAdmissionExecution = {
     revisionId: null,
     selectionVersion: 1,
 };
-const policy = { routingEnabled: true, credentialConfigured: () => true };
+const policy = {
+    routingEnabled: true,
+    credentialConfigured: () => true,
+    routeFingerprint: fixtureRouteFingerprint,
+};
 const call = (
     purpose: TutorCallAdmission['purpose'] = 'answer',
 ): TutorCallAdmission => ({
@@ -178,19 +182,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
         }
-        async function configured(ready = true) {
-            const revision = randomUUID();
-            await db.insert(dictionaryAiConfigurationRevisionsTable).values({
-                id: revision,
-                version: 1,
-                createdByUserId: ownerId,
-                catalogSnapshot: { ...snapshot, modelId: 'deepseek-flash' },
-            });
-            await db.insert(dictionaryAiConfigurationTable).values({
-                id: 'global',
-                version: 1,
-                activeRevisionId: revision,
-            });
+        async function configured(ready = true, selectedModel = model) {
+            await seedTextAiRoutingFixture(db);
             const workerId = 'accounting-worker',
                 now = new Date();
             await db.insert(dictionaryAiWorkerObservationsTable).values({
@@ -198,13 +191,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ? conversationExecutionObservationId
                     : textAiSelectionObservationId)(
                     workerId,
-                    model.providerId,
-                    model.id,
+                    selectedModel.providerId,
+                    selectedModel.id,
                 ),
                 workerId,
-                providerId: model.providerId,
-                modelId: model.id,
-                adapterRevision: model.adapterRevision,
+                providerId: selectedModel.providerId,
+                modelId: selectedModel.id,
+                adapterRevision: selectedModel.adapterRevision,
                 checkedAt: now,
                 expiresAt: new Date(now.getTime() + 120000),
                 status: 'available',
@@ -540,8 +533,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(await rows()).toHaveLength(0);
             expect(await wallet()).toHaveLength(0);
         });
-        it('Auto chooses Flash even with a different global default and requires current chat execution readiness', async () => {
-            await configured();
+        it('server routing ignores a retired learner model preference and requires current chat execution readiness', async () => {
+            const selectedModel = textAiModelCatalog.find(
+                (candidate) =>
+                    candidate.providerId === 'openrouter' &&
+                    candidate.id === 'openai/gpt-6-luna',
+            )!;
+            await seedTextAiRoutingFixture(db, {
+                replace: true,
+                routeId: 'openrouter/openai/gpt-6-luna',
+            });
+            await configured(true, selectedModel);
+            await db.insert(textAiPreferencesTable).values({
+                userId: ownerId,
+                mode: 'explicit',
+                modelId: 'gemini-2.5-pro',
+                version: 1,
+            });
             const admitted = await db.transaction((tx) =>
                 conversationAdmission(policy)(tx, {
                     ownerId,
@@ -550,9 +558,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     inputTokenBound: 200,
                 }),
             );
-            expect((admitted.snapshot as TextAiExecutionSnapshot).modelId).toBe(
-                'deepseek-flash',
-            );
+            expect(admitted.snapshot as TextAiExecutionSnapshot).toMatchObject({
+                providerId: 'openrouter',
+                modelId: 'openai/gpt-6-luna',
+                routingAuthority: { flowId: 'conversation' },
+            });
             await client`update dictionary_ai_worker_observations set checked_at=now()-interval '2 minutes',expires_at=now()-interval '1 second'`;
             await expect(
                 db.transaction((tx) =>
@@ -565,12 +575,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toMatchObject({
                 code: 'model_unavailable',
-                message: expect.stringContaining(
-                    'Choose Auto or DeepSeek Flash',
-                ),
+                message: expect.stringContaining('Try again later'),
             });
         });
-        it('rejects legacy readiness, incompatible explicit choice and zero-credit admission with actionable errors', async () => {
+        it('rejects missing or legacy chat readiness and zero-credit admission with model-neutral errors', async () => {
             await expect(
                 db.transaction((tx) =>
                     conversationAdmission(policy)(tx, {
@@ -610,8 +618,6 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).rejects.toMatchObject({ code: 'model_unavailable' });
             await client`delete from user_text_ai_preferences where user_id=${ownerId}`;
             await client`delete from dictionary_ai_worker_observations`;
-            await client`delete from dictionary_ai_configuration`;
-            await client`delete from dictionary_ai_configuration_revisions`;
             await configured();
             await client`truncate ai_credit_grants cascade`;
             await expect(

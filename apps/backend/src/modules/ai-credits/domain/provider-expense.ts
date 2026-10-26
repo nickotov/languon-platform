@@ -38,10 +38,18 @@ export function providerTextExpenseMicros(
         output * parseFixed(price.outputUsdPerMillionTokens, 6) +
         read * parseFixed(price.cacheReadUsdPerMillionTokens ?? '0', 6) +
         write * parseFixed(price.cacheWriteUsdPerMillionTokens ?? '0', 6);
-    return (numerator + 999999n) / 1000000n;
+    const tokenCost = (numerator + 999999n) / 1000000n;
+    const minimum =
+        input + output > 0n
+            ? parseFixed(price.minimumUsdPerRequest ?? '0', 6)
+            : 0n;
+    return tokenCost > minimum ? tokenCost : minimum;
 }
 export function providerSpeechExpenseMicros(
-    price: Pick<ProviderPrice, 'meter' | 'usdPer1000Characters'> | null,
+    price: Pick<
+        ProviderPrice,
+        'meter' | 'usdPer1000Characters' | 'minimumUsdPerRequest'
+    > | null,
     characters: number,
 ): bigint | null {
     const count = quantity(characters);
@@ -51,5 +59,9 @@ export function providerSpeechExpenseMicros(
         price.usdPer1000Characters === null
     )
         return null;
-    return (count * parseFixed(price.usdPer1000Characters, 6) + 999n) / 1000n;
+    const metered =
+        (count * parseFixed(price.usdPer1000Characters, 6) + 999n) / 1000n;
+    const minimum =
+        count > 0n ? parseFixed(price.minimumUsdPerRequest ?? '0', 6) : 0n;
+    return metered > minimum ? metered : minimum;
 }

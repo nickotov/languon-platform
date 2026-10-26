@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { fixtureRouteFingerprint } from '../../../support/text-ai-routing-fixture';
 import {
     createDrizzleDatabase,
     type PostgresClient,
@@ -22,6 +23,7 @@ import {
 } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { textAiPreferencesTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/schema';
 import { textAiCapacityObservationId } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import { readTextAiCatalog } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
 import { publishTextAiWorkerObservations } from '../../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
 import { DrizzleTextAiAdmissionParticipant } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { TextAiSelectionUnavailableError } from '../../../../src/modules/text-ai/application/text-ai-admission-participant';
@@ -50,6 +52,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 new DrizzleTextAiPreferenceStore(database, {
                     routingEnabled: true,
                     credentialConfigured: () => true,
+                    routeFingerprint: fixtureRouteFingerprint,
                 }),
             );
         });
@@ -109,87 +112,74 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         afterAll(async () => {
             await client?.end();
         });
-        it('defaults to Auto, persists learner-owned preference and rejects stale/parallel updates', async () => {
+        it('persists exact learner budgets and rejects stale parallel writes', async () => {
             await expect(service.get(userId, at)).resolves.toMatchObject({
                 mode: 'auto',
-                version: 0,
                 modelId: null,
+                selectedModel: null,
+                version: 0,
             });
-            const results = await Promise.allSettled([
-                service.update(
-                    userId,
-                    {
-                        mode: 'explicit',
-                        modelId: 'deepseek-flash',
-                        expectedVersion: 0,
-                    },
-                    at,
+            const results = await Promise.allSettled(
+                ['2.145', '3.125'].map((maxCreditsPerAction) =>
+                    service.update(
+                        userId,
+                        {
+                            mode: 'auto',
+                            expectedVersion: 0,
+                            maxCreditsPerAction,
+                        },
+                        at,
+                    ),
                 ),
-                service.update(
-                    userId,
-                    { mode: 'auto', expectedVersion: 0 },
-                    at,
-                ),
-            ]);
-            expect(
-                results.filter((result) => result.status === 'fulfilled'),
-            ).toHaveLength(1);
-            const rejected = results.find(
-                (result) => result.status === 'rejected',
             );
+            expect(
+                results.filter((r) => r.status === 'fulfilled'),
+            ).toHaveLength(1);
+            const rejected = results.find((r) => r.status === 'rejected');
             expect(
                 rejected?.status === 'rejected' &&
                     rejected.reason instanceof TextAiPreferenceConflictError,
             ).toBe(true);
-            await expect(service.get(userId, at)).resolves.toMatchObject({
-                version: 1,
-            });
-            const otherId = randomUUID();
-            await database
-                .insert(usersTable)
-                .values({ id: otherId, status: 'active' });
-            await expect(service.get(otherId, at)).resolves.toMatchObject({
-                mode: 'auto',
-                version: 0,
-            });
+            const saved = await service.get(userId, at);
+            expect(saved.version).toBe(1);
+            expect(['2.145', '3.125']).toContain(saved.maxCreditsPerAction);
         });
-        it('retains disabled stored selection and returns sanitized current rates', async () => {
-            await service.update(
+        it('redacts old stored identities and preserves their budget without rewriting history', async () => {
+            await database.insert(textAiPreferencesTable).values({
                 userId,
-                {
-                    mode: 'explicit',
-                    modelId: 'deepseek-flash',
-                    expectedVersion: 0,
-                },
-                at,
-            );
-            await database.delete(dictionaryAiConfigurationTable);
-            const preference = await service.get(userId, at);
-            expect(preference).toMatchObject({
                 mode: 'explicit',
                 modelId: 'deepseek-flash',
-                version: 1,
-                selectedModel: { availability: 'disabled' },
+                version: 3,
+                maxCreditsPerAction: '2.145',
             });
-            const catalog = await service.models(userId, at);
-            expect(
-                catalog.models[0]!.creditRates.inputCreditsPerMillionTokens,
-            ).toBe(1000000);
-            for (const forbidden of [
-                'credentialReference',
-                'workerId',
-                'adapterRevision',
-                'aggregateBudget',
-                'synthetic readiness',
-            ])
-                expect(JSON.stringify(catalog)).not.toContain(forbidden);
+            await database.delete(dictionaryAiConfigurationTable);
+            await expect(service.get(userId, at)).resolves.toEqual({
+                mode: 'auto',
+                modelId: null,
+                selectedModel: null,
+                version: 3,
+                maxCreditsPerAction: '2.145',
+            });
+            await expect(service.models(userId, at)).resolves.toEqual({
+                defaultModelId: null,
+                models: [],
+            });
+            const [row] = await database.select().from(textAiPreferencesTable);
+            expect(row).toMatchObject({
+                mode: 'explicit',
+                modelId: 'deepseek-flash',
+                version: 3,
+            });
             await expect(
                 service.update(
                     userId,
-                    { mode: 'auto', expectedVersion: 1 },
+                    { mode: 'auto', expectedVersion: 3 },
                     at,
                 ),
-            ).resolves.toMatchObject({ mode: 'auto', version: 2 });
+            ).resolves.toMatchObject({
+                version: 4,
+                maxCreditsPerAction: '2.145',
+            });
         });
         it('rejects a retired default and retired explicit choice without changing history', async () => {
             const model = textAiModelCatalog[0]!;
@@ -217,6 +207,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new DrizzleTextAiAdmissionParticipant(transaction, {
                         routingEnabled: true,
                         credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
                     }).resolve({
                         userId,
                         now: at,
@@ -254,9 +245,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .update(dictionaryAiWorkerObservationsTable)
                     .set(fields);
                 expect(
-                    (await service.models(userId, at)).models.every(
-                        (model) => model.availability === 'unavailable',
-                    ),
+                    (
+                        await readTextAiCatalog(database, at, {
+                            routingEnabled: true,
+                            credentialConfigured: () => true,
+                            routeFingerprint: fixtureRouteFingerprint,
+                        })
+                    ).models.find((model) => model.id === 'deepseek-flash')
+                        ?.availability === 'unavailable',
                 ).toBe(true);
                 await expect(
                     service.update(
@@ -272,35 +268,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             }
             await database.delete(dictionaryAiWorkerObservationsTable);
             expect(
-                (await service.models(userId, at)).models[0]!.availability,
+                (
+                    await readTextAiCatalog(database, at, {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
+                    })
+                ).models[0]!.availability,
             ).toBe('unavailable');
         });
-        it('reports Auto readiness with old workers while explicit choices remain unavailable', async () => {
+        it('keeps action budgets editable without model readiness or worker selection', async () => {
             await database
                 .update(dictionaryAiWorkerObservationsTable)
-                .set({ textAiSelectionRevision: null });
-            await expect(service.get(userId, at)).resolves.toMatchObject({
-                mode: 'auto',
-                selectedModel: {
-                    availability: 'available',
-                    unavailableReason: null,
-                },
-            });
+                .set({ status: 'unavailable', textAiSelectionRevision: null });
             await expect(
                 service.update(
                     userId,
-                    { mode: 'auto', expectedVersion: 0 },
+                    {
+                        mode: 'auto',
+                        expectedVersion: 0,
+                        maxCreditsPerAction: '0.001',
+                    },
                     at,
                 ),
             ).resolves.toMatchObject({
-                mode: 'auto',
-                selectedModel: { availability: 'available' },
+                selectedModel: null,
+                maxCreditsPerAction: '0.001',
             });
-            expect(
-                (await service.models(userId, at)).models.every(
-                    (model) => model.availability === 'unavailable',
-                ),
-            ).toBe(true);
             await expect(
                 service.update(
                     userId,
@@ -312,13 +306,6 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at,
                 ),
             ).rejects.toBeInstanceOf(TextAiModelUnavailableError);
-            await database
-                .update(dictionaryAiWorkerObservationsTable)
-                .set({ status: 'unavailable' });
-            await expect(service.get(userId, at)).resolves.toMatchObject({
-                mode: 'auto',
-                selectedModel: { availability: 'unavailable' },
-            });
         });
         it('does not let a rolled-back legacy publisher refresh capable readiness', async () => {
             await database.delete(dictionaryAiWorkerObservationsTable);
@@ -337,19 +324,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 fetchProvider: async () => new Response('{}', { status: 200 }),
             });
             expect(
-                (await service.models(userId, at)).models.every(
-                    (model) => model.availability === 'available',
-                ),
+                (
+                    await readTextAiCatalog(database, at, {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
+                    })
+                ).models.find((model) => model.id === 'deepseek-flash')
+                    ?.availability === 'available',
             ).toBe(true);
-            await service.update(
+            await database.insert(textAiPreferencesTable).values({
                 userId,
-                {
-                    mode: 'explicit',
-                    modelId: 'deepseek-flash',
-                    expectedVersion: 0,
-                },
-                at,
-            );
+                mode: 'explicit',
+                modelId: 'deepseek-flash',
+                version: 1,
+            });
             const model = textAiModelCatalog[0]!;
             const baseId = `${workerId}/${model.providerId}/${model.id}`;
             // Also prove a pre-fix row carrying a sticky flag is never trusted.
@@ -405,7 +394,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ),
                 )?.expiresAt,
             ).toEqual(new Date(at.getTime() + 60000));
-            const catalog = await service.models(userId, legacyCheckedAt);
+            const catalog = await readTextAiCatalog(database, legacyCheckedAt, {
+                routingEnabled: true,
+                credentialConfigured: () => true,
+                routeFingerprint: fixtureRouteFingerprint,
+            });
             expect(
                 catalog.models.find((candidate) => candidate.id === model.id)
                     ?.availability,
@@ -413,14 +406,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 service.get(userId, legacyCheckedAt),
             ).resolves.toMatchObject({
-                mode: 'explicit',
-                selectedModel: { availability: 'unavailable' },
+                mode: 'auto',
+                selectedModel: null,
             });
             await expect(
                 database.transaction((transaction) =>
                     new DrizzleTextAiAdmissionParticipant(transaction, {
                         routingEnabled: true,
                         credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
                     }).resolve({
                         userId,
                         now: legacyCheckedAt,
@@ -438,7 +432,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 service.get(userId, legacyCheckedAt),
             ).resolves.toMatchObject({
                 mode: 'auto',
-                selectedModel: { availability: 'available' },
+                selectedModel: null,
             });
             await expect(
                 database.transaction((transaction) =>
@@ -449,12 +443,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         legacyBudget: model.aggregateBudget,
                     }),
                 ),
-            ).resolves.toMatchObject({
-                selectionVersion: null,
-                snapshot: { modelId: model.id },
-            });
+            ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
         });
-        it('admits explicit work only in formats advertised by the running worker', async () => {
+        it('does not admit legacy selections without an approved server routing policy', async () => {
             await database.delete(dictionaryAiWorkerObservationsTable);
             await publishTextAiWorkerObservations({
                 database,
@@ -479,21 +470,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         JSON.stringify(['single-card:v1']),
                 ),
             ).toBe(true);
-            await service.update(
+            await database.insert(textAiPreferencesTable).values({
                 userId,
-                {
-                    mode: 'explicit',
-                    modelId: 'deepseek-flash',
-                    expectedVersion: 0,
-                },
-                at,
-            );
+                mode: 'explicit',
+                modelId: 'deepseek-flash',
+                version: 1,
+            });
             const model = textAiModelCatalog[0]!;
             const resolve = (format: string) =>
                 database.transaction((transaction) =>
                     new DrizzleTextAiAdmissionParticipant(transaction, {
                         routingEnabled: true,
                         credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
                     }).resolve({
                         userId,
                         now: at,
@@ -501,9 +490,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         legacyBudget: model.aggregateBudget,
                     }),
                 );
-            await expect(resolve('single-card:v1')).resolves.toMatchObject({
-                selectionVersion: 1,
-            });
+            await expect(resolve('single-card:v1')).rejects.toBeInstanceOf(
+                TextAiSelectionUnavailableError,
+            );
             await expect(resolve('single-card:v2')).rejects.toBeInstanceOf(
                 TextAiSelectionUnavailableError,
             );
@@ -512,16 +501,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { mode: 'auto', expectedVersion: 1 },
                 at,
             );
-            await expect(resolve('single-card:v2')).resolves.toMatchObject({
-                selectionVersion: null,
-            });
+            await expect(resolve('single-card:v2')).rejects.toBeInstanceOf(
+                TextAiSelectionUnavailableError,
+            );
             await database
                 .update(dictionaryAiWorkerObservationsTable)
                 .set({ textAiSupportedFormats: [] });
             expect(
-                (await service.models(userId, at)).models.every(
-                    (choice) => choice.availability === 'unavailable',
-                ),
+                (
+                    await readTextAiCatalog(database, at, {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
+                    })
+                ).models.find((model) => model.id === 'deepseek-flash')
+                    ?.availability === 'unavailable',
             ).toBe(true);
         });
         it('retains bounded HEAD readiness semantics without a paid completion probe', async () => {
@@ -529,9 +523,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(dictionaryAiWorkerObservationsTable)
                 .set({ status: 'unverified' });
             expect(
-                (await service.models(userId, at)).models.every(
-                    (model) => model.availability === 'available',
-                ),
+                (
+                    await readTextAiCatalog(database, at, {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
+                    })
+                ).models.find((model) => model.id === 'deepseek-flash')
+                    ?.availability === 'available',
             ).toBe(true);
         });
         it('disables choices when routing or trusted credentials are unavailable', async () => {
@@ -542,11 +541,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const unavailableService = new TextAiPreferenceService(
                     new DrizzleTextAiPreferenceStore(database, policy),
                 );
-                expect(
-                    (await unavailableService.models(userId, at)).models.every(
-                        (model) => model.availability === 'unavailable',
-                    ),
-                ).toBe(true);
+                expect(await unavailableService.models(userId, at)).toEqual({
+                    defaultModelId: null,
+                    models: [],
+                });
                 await expect(
                     unavailableService.update(
                         userId,

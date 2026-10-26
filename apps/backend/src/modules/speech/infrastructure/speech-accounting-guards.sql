@@ -12,6 +12,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+DROP TRIGGER IF EXISTS speech_accounting_snapshot_guard ON speech_jobs;
 CREATE TRIGGER speech_accounting_snapshot_guard BEFORE UPDATE ON speech_jobs FOR EACH ROW EXECUTE FUNCTION languon_guard_speech_accounting_snapshot();
 
 CREATE OR REPLACE FUNCTION languon_guard_speech_accounting_authority() RETURNS trigger
@@ -42,6 +43,7 @@ BEGIN
   END IF;
   RETURN NULL;
 END $$;
+DROP TRIGGER IF EXISTS speech_accounting_authority_guard ON speech_jobs;
 CREATE CONSTRAINT TRIGGER speech_accounting_authority_guard AFTER INSERT OR UPDATE ON speech_jobs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION languon_guard_speech_accounting_authority();
 
 CREATE OR REPLACE FUNCTION languon_speech_provider_expense_identity(job_value uuid) RETURNS jsonb
@@ -51,7 +53,7 @@ BEGIN
  SELECT * INTO j FROM public.speech_jobs WHERE id=job_value;
  SELECT * INTO p FROM public.ai_provider_price_revisions WHERE id=(j.provider_price_snapshot->>'id')::uuid;
  IF j.id IS NULL OR j.accounting_version<>1 OR j.provider_dispatched_at IS NULL OR j.provider_outcome IS NULL OR p.id IS NULL OR p.provider_id IS DISTINCT FROM j.provider_price_snapshot->>'providerId' OR p.model_id IS DISTINCT FROM j.provider_price_snapshot->>'modelId' OR p.meter<>'speech-characters' OR p.version IS DISTINCT FROM (j.provider_price_snapshot->>'version')::integer OR p.effective_at>j.created_at OR p.data->>'usdPer1000Characters' IS DISTINCT FROM j.provider_price_snapshot->>'usdPer1000Characters' THEN RAISE EXCEPTION 'Speech expense requires its dispatched reviewed provenance' USING ERRCODE='23514'; END IF;
- IF j.provider_outcome='ready' THEN amount_value:=ceil(j.provider_character_count*(p.data->>'usdPer1000Characters')::numeric*1000)::bigint;
+ IF j.provider_outcome='ready' THEN amount_value:=greatest(ceil(j.provider_character_count*(p.data->>'usdPer1000Characters')::numeric*1000)::bigint,ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint);
  ELSIF j.provider_outcome='not_submitted' THEN amount_value:=0;
  ELSIF j.provider_outcome<>'unknown' THEN RAISE EXCEPTION 'Unknown speech provider outcome' USING ERRCODE='23514'; END IF;
  RETURN jsonb_build_object('sourceKind','speech-attempt','attemptReference','speech:'||j.id::text,'actionId',j.id,'providerId',p.provider_id,'modelId',p.model_id,'measurement',CASE j.provider_outcome WHEN 'ready' THEN 'estimated' WHEN 'not_submitted' THEN 'measured' ELSE 'unknown' END,'costSource',CASE WHEN amount_value IS NULL THEN 'unknown' ELSE 'calculated' END,'amountUsdMicros',amount_value::text,'occurredAt',j.provider_dispatched_at);

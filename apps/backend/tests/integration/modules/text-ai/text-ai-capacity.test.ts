@@ -1,3 +1,4 @@
+import { fixtureRouteFingerprint } from '../../../support/text-ai-routing-fixture';
 import { randomUUID } from 'node:crypto';
 import {
     createDrizzleDatabase,
@@ -31,9 +32,7 @@ import {
     dictionaryGenerationProviderUsageArchiveTable,
 } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { sentenceAiJobsTable } from '../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
-import {
-    dictionaryAiConfigurationRevisionsTable,
-} from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import { dictionaryAiConfigurationRevisionsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 import { DrizzleAccountPurgeStore } from '../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
@@ -92,6 +91,80 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
         afterAll(async () => {
             await Promise.all([client.end(), other.end()]);
+        });
+        it('holds the capacity fence and installs transaction-local guards in the same completed command', async () => {
+            let release!: () => void;
+            let signalHeld!: () => void;
+            let signalWaiter!: (pid: number) => void;
+            const held = new Promise<void>((resolve) => {
+                signalHeld = resolve;
+            });
+            const released = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            const waiting = new Promise<number>((resolve) => {
+                signalWaiter = resolve;
+            });
+            const holder = database.transaction(async (tx) => {
+                await lockTextAiCapacity(tx);
+                const guards = await tx.execute(
+                    sql`select current_setting('languon.text_ai_capacity_revision',true) as text_guard,current_setting('languon.texts_capacity_revision',true) as texts_guard,current_setting('languon.conversation_capacity_revision',true) as conversation_guard,current_setting('languon.portrait_capacity_revision',true) as portrait_guard`,
+                );
+                expect(guards[0]).toMatchObject({
+                    text_guard: '1',
+                    texts_guard: '1',
+                    conversation_guard: '1',
+                    portrait_guard: '1',
+                });
+                signalHeld();
+                await released;
+            });
+            let waiter: Promise<void> | undefined;
+            try {
+                await Promise.race([held, holder]);
+                let acquired = false;
+                waiter = otherDatabase.transaction(async (tx) => {
+                    const pid = await tx.execute(
+                        sql`select pg_backend_pid() as pid`,
+                    );
+                    signalWaiter(Number(pid[0]!.pid));
+                    await lockTextAiCapacity(tx);
+                    acquired = true;
+                    const guard = await tx.execute(
+                        sql`select current_setting('languon.text_ai_capacity_revision',true) as value`,
+                    );
+                    expect(guard[0]?.value).toBe('1');
+                });
+                const pid = await Promise.race([
+                    waiting,
+                    waiter.then(() => {
+                        throw new Error(
+                            'Waiter ended before reporting its PostgreSQL identity',
+                        );
+                    }),
+                ]);
+                await expect
+                    .poll(
+                        async () => {
+                            const locks =
+                                await client`select count(*)::integer as waiting from pg_locks where pid=${pid} and locktype='advisory' and not granted`;
+                            return Number(locks[0]?.waiting);
+                        },
+                        { timeout: 2000, interval: 10 },
+                    )
+                    .toBe(1);
+                expect(acquired).toBe(false);
+            } finally {
+                release();
+                await holder;
+                await waiter;
+            }
+            const guard = await otherDatabase.transaction((tx) =>
+                tx.execute(
+                    sql`select current_setting('languon.text_ai_capacity_revision',true) as value`,
+                ),
+            );
+            expect(guard[0]?.value).not.toBe('1');
         });
         async function seedCard(seedOwnerId = ownerId) {
             const dictionary = await dictionaryStore.createDictionary({
@@ -448,6 +521,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     selectionPolicy: {
                         routingEnabled: true,
                         credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
                         pricingAdmissionEnabled: true,
                     },
                 })(

@@ -1,3 +1,5 @@
+import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { lockJob } from './texts-job-admission';
 import {
     TextDetectionResultSchema,
@@ -88,6 +90,28 @@ export async function markDispatched(
 
         const job = locked.job;
         if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+            if (!job.aiCreditProviderDispatchedAt) {
+                try {
+                    await recheckTextAiDispatch(tx, {
+                        actionId: job.id,
+                        jobId: job.id,
+                        now: context.now,
+                    });
+                } catch (error) {
+                    if (!(error instanceof TextAiSelectionUnavailableError))
+                        throw error;
+                    await terminal(
+                        persistence,
+                        tx,
+                        job,
+                        context.now,
+                        'model_unavailable',
+                    );
+
+                    return false;
+                }
+            }
+
             await tx
                 .update(jobs)
                 .set({ aiCreditProviderDispatchedAt: context.now })
@@ -199,7 +223,10 @@ export async function fail(
             job.attemptCount < job.maxAttempts &&
             (!usesLegacyAction(job.selectedExecutionSnapshot) ||
                 !job.aiCreditProviderDispatchedAt ||
-                code === 'provider_rate_limited')
+                code === 'provider_rate_limited' ||
+                (job.selectedExecutionSnapshot.routingAuthority &&
+                    job.attemptCount === 1 &&
+                    input.retryDisposition === 'conclusive-provider-failure'))
                 ? input.retryAt
                 : null;
 

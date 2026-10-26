@@ -92,6 +92,24 @@ function fixture() {
     return { job, store, provider, worker };
 }
 describe('Texts worker', () => {
+    it.each(['rejected', 'ambiguous'])(
+        'preserves provider retry certainty at the persistence boundary (%s)',
+        async (executionOutcome) => {
+            const f = fixture();
+            vi.mocked(f.provider.run).mockRejectedValue(
+                Object.assign(new Error('Synthetic provider HTTP failure'), {
+                    executionOutcome,
+                }),
+            );
+            await f.worker.processNext(new AbortController().signal);
+            const failure = vi.mocked(f.store.fail).mock.calls[0]![1];
+            expect(failure.retryDisposition).toBe(
+                executionOutcome === 'rejected'
+                    ? 'conclusive-provider-failure'
+                    : undefined,
+            );
+        },
+    );
     it('publishes a proposal preserving exact source and ordered linked IDs', async () => {
         const { job, store, provider, worker } = fixture();
         await expect(

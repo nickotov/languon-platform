@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:a5471c7cee98969c
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:8be6ba4653144cd2
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
@@ -197,6 +197,8 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 ),
             ).turn;
             expect(replay.id).toBe(admitted.id);
+            expect(admitted.modelId).toBeNull();
+            expect(replay.modelId).toBeNull();
             // The guarded fixture shares a durable queue with the browser
             // server. A tick may claim another turn; a browser worker may own
             // this one. Completion must be observed for the admitted turn.

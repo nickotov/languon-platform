@@ -105,7 +105,7 @@ export function createTextAiRoutes(
             error instanceof TextAiPreferenceConflictError
                 ? new AuthHttpError(
                       'conflict',
-                      'The preference changed. Reload it and reapply your selection.',
+                      'The preference changed. Reload it and reapply your changes.',
                       409,
                   )
                 : error instanceof TextAiUserUnavailableError
@@ -184,7 +184,7 @@ export function createTextAiRoutes(
             responses: {
                 ...errors,
                 200: {
-                    description: 'Curated text model choices.',
+                    description: 'No learner-selectable models.',
                     content: {
                         'application/json': {
                             schema: TextAiModelsResponseSchema,
@@ -211,7 +211,7 @@ export function createTextAiRoutes(
                 ...errors,
                 200: {
                     description:
-                        'Current preference; missing preferences mean Auto.',
+                        'Current AI action budget; routing is managed by Languon.',
                     content: {
                         'application/json': {
                             schema: TextAiPreferenceResponseSchema,

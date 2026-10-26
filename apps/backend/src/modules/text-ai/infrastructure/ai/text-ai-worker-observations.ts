@@ -11,9 +11,9 @@ import {
 import { lte } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
-import type { databaseSchema } from '../../../../infrastructure/database/schema';
 import {
     textAiModelCatalog,
+    type TextAiProviderCredentials,
     textAiTextsFormats,
 } from '../../application/text-ai-provider-catalog';
 
@@ -22,11 +22,11 @@ import {
     findTextAiModel,
 } from './text-ai-provider-catalog';
 
-type ObservationDatabase = PostgresJsDatabase<typeof databaseSchema>;
+// Publication needs the typed insert builder, not the application's complete
+// relational schema in every worker command declaration.
+type ObservationDatabase = Pick<PostgresJsDatabase, 'insert'>;
 
-export type TextAiWorkerCredentials = Partial<
-    Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>
->;
+export type TextAiWorkerCredentials = TextAiProviderCredentials;
 
 export async function publishTextAiWorkerObservations(options: {
     credentials: TextAiWorkerCredentials;
@@ -77,7 +77,9 @@ export async function publishTextAiWorkerObservations(options: {
         let status: 'available' | 'unavailable' | 'unverified' = 'unavailable';
         let message = 'Provider credential is unavailable in the worker.';
 
-        if (credential) {
+        if (model.retired) {
+            message = 'Provider model is retired and cannot execute.';
+        } else if (credential) {
             try {
                 await createTextAiProviderReadiness({
                     apiKey: credential,

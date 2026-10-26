@@ -1,6 +1,9 @@
+import type { TextAiProviderId } from '../../../application/text-ai-provider-catalog';
+import { loadTextAiProviderCredentials } from '../../../../../config/environment';
+import { createTextAiRouteFingerprint } from '../../../../../infrastructure/text-ai/route-fingerprint';
 import { DrizzleModelPriceParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant';
 import type { AiCreditTransaction } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
-import type { TextAiModelsResponse } from '@languon/contracts';
+import type { TextAiModelsResponse, TextAiFlowId } from '@languon/contracts';
 import { desc, eq, gt } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -14,8 +17,9 @@ import { isTextAiSelectionCapableObservation } from './text-ai-worker-readiness'
 
 export interface TextAiAvailabilityPolicy {
     routingEnabled: boolean;
+    routeFingerprint?(routeId: string, flowId: TextAiFlowId): string | null;
     pricingAdmissionEnabled?: boolean;
-    credentialConfigured(providerId: 'deepseek' | 'kie'): boolean;
+    credentialConfigured(providerId: TextAiProviderId): boolean;
 }
 export function defaultTextAiAvailabilityPolicy(
     environment: Readonly<Record<string, string | undefined>> = process.env,
@@ -26,7 +30,10 @@ export function defaultTextAiAvailabilityPolicy(
             .map((part) => part.trim())
             .includes('1') === true;
 
+    const credentials = loadTextAiProviderCredentials(environment);
+
     return {
+        routeFingerprint: createTextAiRouteFingerprint(credentials),
         pricingAdmissionEnabled:
             !['staging', 'production'].includes(environment.APP_ENV ?? '') ||
             (supportsPriceVersion(
@@ -38,11 +45,17 @@ export function defaultTextAiAvailabilityPolicy(
         routingEnabled:
             environment.DICTIONARY_AI_MANAGED_ROUTING_ENABLED === 'true',
         credentialConfigured: (providerId) =>
-            environment[
-                providerId === 'deepseek'
-                    ? 'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED'
-                    : 'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED'
-            ] === 'true',
+            providerId === 'evolink' || providerId === 'openrouter'
+                ? Boolean(
+                      environment[
+                          providerId === 'evolink'
+                              ? 'EVOLINK_API_KEY'
+                              : 'OPENROUTER_API_KEY'
+                      ],
+                  )
+                : environment[
+                      `DICTIONARY_AI_${providerId.toUpperCase()}_CREDENTIAL_CONFIGURED`
+                  ] === 'true',
     };
 }
 

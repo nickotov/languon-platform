@@ -1,3 +1,18 @@
+import { prepareAdminTextAiRouting } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission';
+import { SentenceWorkerService } from '../../../../../src/modules/learning/application/sentence-worker-service';
+import type { ClaimedSentenceJob } from '../../../../../src/modules/learning/application/ports/sentence-worker-store';
+import { createTextAiProviderRuntime } from '../../../../../src/infrastructure/text-ai/provider-runtime';
+import { withTextAiProviderAttemptWitness } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-provider-attempt-context';
+import { textAiFixtureCredentials } from '../../../../support/text-ai-routing-fixture';
+import { textAiRouteHealthEventsTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
+import { DrizzleTextAiRoutingStore } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store';
+import { textAiRoutingRevisionsTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/routing-schema';
+import { textAiProbesTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/probe-schema';
+import { textAiRouteDispatchesTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/route-dispatch-schema';
+import { aiProviderPriceRevisionsTable } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
+import { aiProviderExpenseRecordsTable } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
+import { pinProviderPrice } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
+import { fixtureRouteFingerprint } from '../../../../support/text-ai-routing-fixture';
 import { aiAccountingSettingsRevisionsTable as accountingSettings } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
 import {
     ActionAllowanceConfirmationRequired,
@@ -56,7 +71,7 @@ import {
     sentenceExecutionObservationId,
     textAiCapacityObservationId,
 } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
-import { DrizzleDictionaryGenerationStore } from '../../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
+import { dictionaryGenerationFormat } from '../../../../../src/modules/dictionaries/domain/generation';
 import { DrizzleSentencePreparationStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store';
 import { DrizzleSentencePracticeStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-practice-store';
 import { DrizzleSentenceWorkerStore } from '../../../../../src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-worker-store';
@@ -262,16 +277,18 @@ run('sentence persistence', () => {
             providerId: model.providerId,
             supportedFormats: [...model.supportedFormats],
         };
+        const [latestRevision] = await db
+            .select({
+                version: dictionaryAiConfigurationRevisionsTable.version,
+            })
+            .from(dictionaryAiConfigurationRevisionsTable)
+            .orderBy(desc(dictionaryAiConfigurationRevisionsTable.version))
+            .limit(1);
         await db.insert(dictionaryAiConfigurationRevisionsTable).values({
             id: capturedRevision,
-            version: 2,
+            version: (latestRevision?.version ?? 0) + 1,
             createdByUserId: actorId,
             catalogSnapshot: snapshot,
-        });
-        await db.insert(dictionaryAiConfigurationTable).values({
-            id: 'global',
-            version: 2,
-            activeRevisionId: capturedRevision,
         });
         await db.insert(dictionaryAiWorkerObservationsTable).values({
             id: textAiCapacityObservationId(
@@ -291,24 +308,52 @@ run('sentence persistence', () => {
             checkedAt: at,
             expiresAt: new Date(at.getTime() + 60000),
         });
-        const result = await new DrizzleDictionaryGenerationStore(db, {
-            generate: randomUUID,
-        }).enqueue({
-            cardId: entryId,
-            dictionaryId: id,
-            ownerId: actorId,
-            expectedCardVersion: 1,
-            expectedDictionaryVersion: 1,
-            expectedSettingsVersion: 1,
-            idempotencyKey: `boundary-${randomUUID()}`,
-            fingerprint: `hmac-sha256:v1:${'Z'.repeat(43)}`,
-            instruction: 'Improve articles',
-            context: context(),
+        // Historical admitted work remains in shared capacity even after its
+        // route is retired. This fixture does not authorize new Kie dispatch.
+        const [job] = await db.transaction(async (tx) => {
+            await lockTextAiCapacity(tx);
+            return tx
+                .insert(dictionaryGenerationJobsTable)
+                .values({
+                    id: randomUUID(),
+                    ownerId: actorId,
+                    dictionaryId: id,
+                    cardId: entryId,
+                    expectedCardVersion: 1,
+                    expectedDictionaryVersion: 1,
+                    expectedSettingsVersion: 1,
+                    kind: 'single-card',
+                    format: dictionaryGenerationFormat,
+                    executionRevisionId: capturedRevision,
+                    selectedExecutionSnapshot: snapshot,
+                    selectedExecutionVersion: 1,
+                    idempotencyKey: `historical-boundary-${randomUUID()}`,
+                    requestFingerprint: `hmac-sha256:v1:${'Z'.repeat(43)}`,
+                    sourceLanguageTag: 'en',
+                    targetLanguageTag: 'es',
+                    providerReservationState: 'active',
+                    providerReservedAttempts: 1,
+                    providerReservedCostMicros:
+                        snapshot.aggregateBudget.maxCostMicrosPerAttempt,
+                    providerReservedInputTokens:
+                        snapshot.aggregateBudget.maxInputTokensPerAttempt,
+                    providerReservedOutputTokens:
+                        snapshot.aggregateBudget.maxOutputTokensPerAttempt,
+                    providerInputCostMicrosPerMillionTokens:
+                        snapshot.aggregateBudget
+                            .inputCostMicrosPerMillionTokens,
+                    providerOutputCostMicrosPerMillionTokens:
+                        snapshot.aggregateBudget
+                            .outputCostMicrosPerMillionTokens,
+                    providerMaxCostMicrosPerAttempt:
+                        snapshot.aggregateBudget.maxCostMicrosPerAttempt,
+                    providerMaxInputTokensPerAttempt:
+                        snapshot.aggregateBudget.maxInputTokensPerAttempt,
+                    providerMaxOutputTokensPerAttempt:
+                        snapshot.aggregateBudget.maxOutputTokensPerAttempt,
+                })
+                .returning();
         });
-        const [job] = await db
-            .select()
-            .from(dictionaryGenerationJobsTable)
-            .where(eq(dictionaryGenerationJobsTable.id, result.id));
         if (!job) throw new Error('No dictionary boundary job');
         return job;
     }
@@ -745,6 +790,164 @@ run('sentence persistence', () => {
             0,
         );
     });
+    it.each([false, true])(
+        'binds runtime health to the actual fenced SDK dispatch (cancelled: %s)',
+        async (cancelled) => {
+            const [source] = await db
+                .select()
+                .from(dictionaryAiConfigurationRevisionsTable)
+                .where(
+                    eq(dictionaryAiConfigurationRevisionsTable.id, revisionId),
+                );
+            const original = source!.catalogSnapshot;
+            const routing = (await new DrizzleTextAiRoutingStore(
+                db,
+                async () => {},
+                () => true,
+            ).current())!;
+            const routeId = `${original.providerId}/${original.modelId}`;
+            const price = await db.transaction((tx) =>
+                pinProviderPrice(tx, {
+                    providerId: original.providerId,
+                    modelId: original.modelId,
+                    meter: 'text-tokens',
+                    at: new Date(),
+                }),
+            );
+            executionOverride = {
+                ...original,
+                routingAuthority: {
+                    revisionId: routing.id,
+                    flowId: 'sentence-generation',
+                    tariffPublished: true,
+                    automaticReattemptLimit: 1,
+                    candidates: [
+                        {
+                            routeId,
+                            fingerprint: fixtureRouteFingerprint(
+                                routeId,
+                                'sentence-generation',
+                            )!,
+                            snapshot: original,
+                            providerPrice: price!,
+                        },
+                    ],
+                },
+            };
+            revisionId = routing.id;
+            await store.next(access(), next(), context());
+            const job = await claim();
+            if (!job || job.kind !== 'sentence-generation')
+                throw new Error('Missing admitted generation');
+            await worker.markDispatched(job.lease, context());
+            const [attempt] = await db
+                .select()
+                .from(actionAttempts)
+                .where(eq(actionAttempts.executionJobId, job.lease.jobId));
+            if (!attempt)
+                throw new Error('Missing dispatched accounting attempt');
+            await expect(
+                db.execute(
+                    sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${attempt.id}::uuid,${job.lease.jobId}::uuid,null,${job.lease.workerId},${job.lease.fencingToken + 1}::bigint,'model_retired')`,
+                ),
+            ).rejects.toThrow();
+            await expect(
+                db.execute(
+                    sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${randomUUID()}::uuid,${job.lease.jobId}::uuid,null,${job.lease.workerId},${job.lease.fencingToken}::bigint,'model_retired')`,
+                ),
+            ).rejects.toThrow();
+            await expect(
+                db.execute(
+                    sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${routeId},${original.providerId},'sentence-generation',${fixtureRouteFingerprint(routeId, 'sentence-generation')!},'model_retired')`,
+                ),
+            ).rejects.toThrow();
+            if (cancelled) {
+                await store.cancelJob(access(), job.lease.jobId, context());
+                await expect(
+                    db.execute(
+                        sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${attempt.id}::uuid,${job.lease.jobId}::uuid,null,${job.lease.workerId},${job.lease.fencingToken}::bigint,'model_retired')`,
+                    ),
+                ).rejects.toThrow();
+                expect(
+                    await db
+                        .select()
+                        .from(textAiRouteHealthEventsTable)
+                        .where(
+                            eq(
+                                textAiRouteHealthEventsTable.attemptId,
+                                attempt.id,
+                            ),
+                        ),
+                ).toHaveLength(0);
+                return;
+            }
+            const providerFetch = vi.fn(async (url: unknown) => {
+                expect(String(url)).toBe(
+                    'https://api.deepseek.com/chat/completions',
+                );
+                return new Response(
+                    JSON.stringify({
+                        error: {
+                            code: 410,
+                            message: 'Synthetic retired route',
+                        },
+                    }),
+                    {
+                        status: 410,
+                        headers: { 'content-type': 'application/json' },
+                    },
+                );
+            });
+            vi.stubGlobal('fetch', providerFetch);
+            const provider = createSentenceAiProvider({
+                credentials: textAiFixtureCredentials,
+                runtime: createTextAiProviderRuntime(
+                    db,
+                    textAiFixtureCredentials,
+                ),
+            });
+            await expect(
+                withTextAiProviderAttemptWitness(
+                    {
+                        attemptId: attempt.id,
+                        jobId: job.lease.jobId,
+                        workerId: job.lease.workerId,
+                        fencingToken: String(job.lease.fencingToken),
+                    },
+                    () =>
+                        provider.generate({
+                            input: job.input,
+                            execution: job.execution,
+                            budget: job.budget,
+                            idempotencyKey: job.providerIdempotencyKey,
+                            signal: new AbortController().signal,
+                        }),
+                ),
+            ).rejects.toThrow();
+            expect(providerFetch).toHaveBeenCalledOnce();
+            const events = await db
+                .select()
+                .from(textAiRouteHealthEventsTable)
+                .where(eq(textAiRouteHealthEventsTable.attemptId, attempt.id));
+            expect(events).toHaveLength(1);
+            expect(events[0]).toMatchObject({
+                routeId,
+                providerId: original.providerId,
+                flowId: 'sentence-generation',
+                reason: 'model_retired',
+            });
+            await worker.fail(
+                job.lease,
+                { code: 'model_unavailable', retryAt: null },
+                context(),
+            );
+            await expect(
+                db.execute(
+                    sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${attempt.id}::uuid,${job.lease.jobId}::uuid,null,${job.lease.workerId},${job.lease.fencingToken}::bigint,'model_retired')`,
+                ),
+            ).rejects.toThrow();
+        },
+    );
     it('persists an unavailable-model failure and settles it without customer charge or retry', async () => {
         await store.next(access(), next(), context());
         const job = await claim();
@@ -778,6 +981,566 @@ run('sentence persistence', () => {
         });
         expect(await claim()).toBeNull();
     });
+
+    it.each([false, true])(
+        'pins the actual fallback expense without rewriting admission (primary disabled before claim: %s)',
+        async (disabledBeforeClaim) => {
+            const [sourceRevision] = await db
+                .select()
+                .from(dictionaryAiConfigurationRevisionsTable)
+                .where(
+                    eq(dictionaryAiConfigurationRevisionsTable.id, revisionId),
+                );
+            const original = sourceRevision!.catalogSnapshot;
+            const fallback = textAiModelCatalog.find(
+                (model) =>
+                    model.providerId === 'openrouter' &&
+                    model.id === 'openai/gpt-6-luna',
+            )!;
+            const [basePrice] = await db
+                .select()
+                .from(aiProviderPriceRevisionsTable)
+                .where(eq(aiProviderPriceRevisionsTable.providerId, 'deepseek'))
+                .limit(1);
+            await db
+                .insert(aiProviderPriceRevisionsTable)
+                .values({
+                    ...basePrice!,
+                    id: randomUUID(),
+                    providerId: fallback.providerId,
+                    modelId: fallback.id,
+                    data: {
+                        ...basePrice!.data,
+                        providerId: fallback.providerId,
+                        modelId: fallback.id,
+                    },
+                })
+                .onConflictDoNothing();
+            const [primaryPrice, secondaryPrice] = await db.transaction(
+                async (tx) => [
+                    await pinProviderPrice(tx, {
+                        providerId: original.providerId,
+                        modelId: original.modelId,
+                        meter: 'text-tokens',
+                        at: new Date(),
+                    }),
+                    await pinProviderPrice(tx, {
+                        providerId: fallback.providerId,
+                        modelId: fallback.id,
+                        meter: 'text-tokens',
+                        at: new Date(),
+                    }),
+                ],
+            );
+            const routingStore = new DrizzleTextAiRoutingStore(
+                db,
+                async () => {},
+                () => true,
+            );
+            const current = (await routingStore.current())!;
+            const [authority] = await db
+                .select()
+                .from(textAiRoutingRevisionsTable)
+                .where(eq(textAiRoutingRevisionsTable.id, current.id));
+            const secondaryId = `${fallback.providerId}/${fallback.id}`;
+            let published = await routingStore.publish(
+                {
+                    expectedVersion: current.version,
+                    configuration: {
+                        ...current.configuration,
+                        enabledRouteIds: [
+                            ...current.configuration.enabledRouteIds,
+                            secondaryId,
+                        ],
+                        overrides: {
+                            ...current.configuration.overrides,
+                            'sentence-generation': {
+                                primaryRouteId: 'deepseek/deepseek-flash',
+                                fallbackRouteIds: [secondaryId],
+                            },
+                        },
+                    },
+                    reason: 'Synthetic fallback accounting verification',
+                },
+                authority!.createdBy,
+                new Date(),
+            );
+            const primaryId = `${original.providerId}/${original.modelId}`;
+            const primaryFingerprint = fixtureRouteFingerprint(
+                primaryId,
+                'sentence-generation',
+            )!;
+            const secondaryFingerprint = fixtureRouteFingerprint(
+                secondaryId,
+                'sentence-generation',
+            )!;
+            const probeAt = new Date();
+            await db.insert(textAiProbesTable).values({
+                id: randomUUID(),
+                routeId: secondaryId,
+                providerId: fallback.providerId,
+                modelId: fallback.id,
+                kind: 'flow',
+                flowId: 'sentence-generation',
+                fingerprint: secondaryFingerprint,
+                state: 'passed',
+                failure: null,
+                evidenceHours: 24,
+                day: probeAt.toISOString().slice(0, 10),
+                maximumMicros: 10000n,
+                costMicros: 1n,
+                price: secondaryPrice!,
+                inputTokens: 1,
+                outputTokens: 1,
+                measurement: 'measured',
+                startedAt: probeAt,
+                completedAt: probeAt,
+                evidenceExpiresAt: new Date(probeAt.getTime() + 86400000),
+            });
+            const readinessAt = new Date();
+            for (const [providerId, modelId, adapterRevision, fresh] of [
+                [
+                    original.providerId,
+                    original.modelId,
+                    original.adapterRevision,
+                    true,
+                ],
+                [
+                    fallback.providerId,
+                    fallback.id,
+                    fallback.adapterRevision,
+                    false,
+                ],
+            ] as const) {
+                await db.insert(dictionaryAiWorkerObservationsTable).values({
+                    id: sentenceExecutionObservationId(
+                        'routing-readiness',
+                        providerId,
+                        modelId,
+                    ),
+                    workerId: 'routing-readiness',
+                    providerId,
+                    modelId,
+                    adapterRevision,
+                    checkedAt: new Date(readinessAt.getTime() - 120000),
+                    expiresAt: new Date(
+                        readinessAt.getTime() + (fresh ? 60000 : -60000),
+                    ),
+                    message: 'Synthetic per-route readiness',
+                    status: 'available',
+                    textAiSelectionRevision: 1,
+                    textAiCapacityRevision: 1,
+                    learningExecutionRevision: 1,
+                    creditSettlementRevision: 1,
+                    textAiSupportedFormats: ['sentence-generation:v1'],
+                });
+            }
+            const resolveWithRealAdmission = () =>
+                db.transaction((tx) =>
+                    new DrizzleTextAiAdmissionParticipant(tx, {
+                        routingEnabled: true,
+                        credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
+                    }).resolve({
+                        userId: owner,
+                        format: 'sentence-generation:v1',
+                        now: readinessAt,
+                        legacyBudget: original.aggregateBudget,
+                    }),
+                );
+            const primaryOnly = await resolveWithRealAdmission();
+            expect(
+                primaryOnly.snapshot?.routingAuthority?.candidates.map(
+                    (item) => item.routeId,
+                ),
+            ).toEqual([primaryId]);
+            await db
+                .update(dictionaryAiWorkerObservationsTable)
+                .set({
+                    expiresAt: new Date(readinessAt.getTime() + 60000),
+                })
+                .where(
+                    eq(
+                        dictionaryAiWorkerObservationsTable.id,
+                        sentenceExecutionObservationId(
+                            'routing-readiness',
+                            fallback.providerId,
+                            fallback.id,
+                        ),
+                    ),
+                );
+            expect(
+                (
+                    await resolveWithRealAdmission()
+                ).snapshot?.routingAuthority?.candidates.map(
+                    (item) => item.routeId,
+                ),
+            ).toEqual([primaryId, secondaryId]);
+            if (!disabledBeforeClaim) {
+                const originalConfiguration = published.configuration;
+                let changed = published;
+                await db.transaction(async (tx) => {
+                    await prepareAdminTextAiRouting(tx, {
+                        format: 'sentence-generation:v1',
+                        now: readinessAt,
+                        credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
+                    });
+                    const locks = await tx.execute(
+                        sql`select count(*)::integer as count from pg_locks where pid=pg_backend_pid() and locktype='advisory'`,
+                    );
+                    expect(locks[0]?.count).toBe(0);
+                    changed = await routingStore.publish(
+                        {
+                            expectedVersion: published.version,
+                            configuration: {
+                                ...originalConfiguration,
+                                overrides: {
+                                    ...originalConfiguration.overrides,
+                                    'sentence-generation': {
+                                        primaryRouteId: secondaryId,
+                                        fallbackRouteIds: [primaryId],
+                                    },
+                                },
+                            },
+                            reason: 'Synthetic publication while route preparation is waiting',
+                        },
+                        authority!.createdBy,
+                        new Date(),
+                    );
+                    await lockTextAiCapacity(tx);
+                    const fresh = await new DrizzleTextAiAdmissionParticipant(
+                        tx,
+                        {
+                            routingEnabled: true,
+                            credentialConfigured: () => true,
+                            routeFingerprint: fixtureRouteFingerprint,
+                        },
+                    ).resolve({
+                        userId: owner,
+                        format: 'sentence-generation:v1',
+                        now: new Date(),
+                        legacyBudget: original.aggregateBudget,
+                    });
+                    expect(fresh.revisionId).toBe(changed.id);
+                    expect(fresh.snapshot?.providerId).toBe('openrouter');
+                });
+                published = await routingStore.publish(
+                    {
+                        expectedVersion: changed.version,
+                        configuration: originalConfiguration,
+                        reason: 'Restore synthetic fallback policy after preparation race',
+                    },
+                    authority!.createdBy,
+                    new Date(),
+                );
+            }
+            const secondarySnapshot: TextAiExecutionSnapshot = {
+                ...original,
+                adapterRevision: fallback.adapterRevision,
+                credentialReference: fallback.credentialReference,
+                modelId: fallback.id,
+                providerId: fallback.providerId,
+                perCallMaxInputTokens: fallback.perCallMaxInputTokens,
+                perCallMaxOutputTokens: fallback.perCallMaxOutputTokens,
+                enabledModelIds: [original.modelId, fallback.id],
+            };
+            executionOverride = {
+                ...original,
+                enabledModelIds: [original.modelId, fallback.id],
+                routingAuthority: {
+                    revisionId: published.id,
+                    flowId: 'sentence-generation',
+                    tariffPublished: true,
+                    automaticReattemptLimit: 1,
+                    candidates: [
+                        {
+                            routeId: primaryId,
+                            fingerprint: primaryFingerprint,
+                            snapshot: original,
+                            providerPrice: primaryPrice!,
+                        },
+                        {
+                            routeId: secondaryId,
+                            fingerprint: secondaryFingerprint,
+                            snapshot: secondarySnapshot,
+                            providerPrice: secondaryPrice!,
+                        },
+                    ],
+                },
+            };
+            revisionId = published.id;
+            await store.next(access(), next(), context());
+            if (disabledBeforeClaim) {
+                await routingStore.disable(
+                    {
+                        expectedVersion: published.version,
+                        routeId: primaryId,
+                        reason: 'Synthetic pre-dispatch disable',
+                    },
+                    authority!.createdBy,
+                    new Date(),
+                );
+            }
+            const first = await claim();
+            if (!first || first.kind !== 'sentence-generation')
+                throw new Error('Missing initial attempt');
+            const priorityIndex = first.input.candidates.findIndex(
+                (candidate) =>
+                    candidate.entryId === first.input.priorityEntryId,
+            );
+            const priority = first.input.candidates[priorityIndex]!;
+            const providerDraft = {
+                sourceText: `I say ${priority.sourceText}`,
+                referenceTranslation: `Yo digo ${priority.targetText}`,
+                segments: [
+                    { text: 'I say ', entryId: null },
+                    {
+                        text: priority.sourceText,
+                        entryId: `candidate-${priorityIndex + 1}`,
+                    },
+                ],
+                targets: [
+                    {
+                        entryId: `candidate-${priorityIndex + 1}`,
+                        normalizedHint: priority.targetText,
+                        hintForm: 'lemma',
+                    },
+                ],
+            };
+            const providerFetch = vi.fn(async (url: unknown) => {
+                if (String(url).startsWith('https://api.deepseek.com/')) {
+                    return new Response(
+                        JSON.stringify({
+                            error: {
+                                message: 'Synthetic rate limit',
+                                code: 429,
+                            },
+                        }),
+                        {
+                            status: 429,
+                            headers: { 'content-type': 'application/json' },
+                        },
+                    );
+                }
+                expect(String(url)).toBe(
+                    'https://openrouter.ai/api/v1/chat/completions',
+                );
+                return new Response(
+                    JSON.stringify({
+                        id: 'synthetic-fallback',
+                        object: 'chat.completion',
+                        created: 1,
+                        model: fallback.id,
+                        choices: [
+                            {
+                                index: 0,
+                                finish_reason: 'stop',
+                                message: {
+                                    role: 'assistant',
+                                    content: JSON.stringify(providerDraft),
+                                },
+                            },
+                        ],
+                        usage: {
+                            prompt_tokens: 100,
+                            completion_tokens: 20,
+                            total_tokens: 120,
+                        },
+                    }),
+                    { headers: { 'content-type': 'application/json' } },
+                );
+            });
+            vi.stubGlobal('fetch', providerFetch);
+            const provider = createSentenceAiProvider({
+                credentials: textAiFixtureCredentials,
+                fetchProvider: providerFetch as typeof fetch,
+                runtime: createTextAiProviderRuntime(
+                    db,
+                    textAiFixtureCredentials,
+                ),
+            });
+            const runClaimed = (job: ClaimedSentenceJob) =>
+                new SentenceWorkerService({
+                    store: {
+                        claimNext: async () => job,
+                        heartbeat: worker.heartbeat.bind(worker),
+                        markDispatched: worker.markDispatched.bind(worker),
+                        completeGeneration:
+                            worker.completeGeneration.bind(worker),
+                        completeCheck: worker.completeCheck.bind(worker),
+                        fail: worker.fail.bind(worker),
+                        releaseWorkerLeases:
+                            worker.releaseWorkerLeases.bind(worker),
+                    },
+                    provider,
+                    clock: { now: () => new Date() },
+                    workerId: job.lease.workerId,
+                    leaseMs: 30000,
+                    heartbeatMs: 10000,
+                    timeoutMs: 3000,
+                    globalConcurrency: 2,
+                    learnerConcurrency: 1,
+                    maxAttempts: 2,
+                    retryDelayMs: 0,
+                }).processNext(new AbortController().signal);
+            if (!disabledBeforeClaim) await runClaimed(first);
+            const second = disabledBeforeClaim ? first : await claim();
+            if (!second || second.kind !== 'sentence-generation')
+                throw new Error('Missing authorized fallback');
+            expect(second.execution.providerId).toBe('openrouter');
+            expect(second.execution.modelId).toBe(fallback.id);
+            await runClaimed(second);
+            expect(providerFetch).toHaveBeenCalledTimes(
+                disabledBeforeClaim ? 1 : 2,
+            );
+            const attempts = await db
+                .select()
+                .from(actionAttempts)
+                .where(eq(actionAttempts.actionId, first.lease.jobId))
+                .orderBy(actionAttempts.ordinal);
+            expect(attempts.map((attempt) => attempt.successful)).toEqual(
+                disabledBeforeClaim ? [1] : [0, 1],
+            );
+            const receipts = await db.select().from(textAiRouteDispatchesTable);
+            expect(receipts.map((receipt) => receipt.routeId).sort()).toEqual(
+                (disabledBeforeClaim
+                    ? [secondaryId]
+                    : [primaryId, secondaryId]
+                ).sort(),
+            );
+            const expenses = await db
+                .select()
+                .from(aiProviderExpenseRecordsTable)
+                .where(
+                    eq(
+                        aiProviderExpenseRecordsTable.actionId,
+                        first.lease.jobId,
+                    ),
+                );
+            expect(
+                expenses.map((expense) => expense.providerId).sort(),
+            ).toEqual(
+                disabledBeforeClaim
+                    ? ['openrouter']
+                    : ['deepseek', 'openrouter'],
+            );
+            if (!disabledBeforeClaim) {
+                const primaryExpense = expenses.find(
+                    (expense) => expense.providerId === 'deepseek',
+                );
+                expect(primaryExpense).toMatchObject({
+                    measurement: 'unknown',
+                    costSource: 'unknown',
+                    amountUsdMicros: null,
+                });
+                expect(attempts[0]).toMatchObject({
+                    inputTokens: null,
+                    outputTokens: null,
+                    actualCostMicros: null,
+                });
+            }
+            const [persisted] = await db
+                .select()
+                .from(sentenceAiJobsTable)
+                .where(eq(sentenceAiJobsTable.id, first.lease.jobId));
+            expect(persisted?.selectedExecutionSnapshot.providerId).toBe(
+                'deepseek',
+            );
+            const [action] = await db
+                .select()
+                .from(actions)
+                .where(eq(actions.id, first.lease.jobId));
+            expect(action?.state).toBe('settled');
+        },
+    );
+
+    it.each([false, true])(
+        'blocks an emergency-disabled route without provider dispatch (already claimed: %s)',
+        async (alreadyClaimed) => {
+            const [source] = await db
+                .select()
+                .from(dictionaryAiConfigurationRevisionsTable)
+                .where(
+                    eq(dictionaryAiConfigurationRevisionsTable.id, revisionId),
+                );
+            const original = source!.catalogSnapshot;
+            const current = (await new DrizzleTextAiRoutingStore(
+                db,
+                async () => {},
+            ).current())!;
+            const [authority] = await db
+                .select()
+                .from(textAiRoutingRevisionsTable)
+                .where(eq(textAiRoutingRevisionsTable.id, current.id));
+            const price = await db.transaction((tx) =>
+                pinProviderPrice(tx, {
+                    providerId: original.providerId,
+                    modelId: original.modelId,
+                    meter: 'text-tokens',
+                    at: new Date(),
+                }),
+            );
+            const routeId = `${original.providerId}/${original.modelId}`;
+            executionOverride = {
+                ...original,
+                routingAuthority: {
+                    revisionId: current.id,
+                    flowId: 'sentence-generation',
+                    automaticReattemptLimit: 1,
+                    tariffPublished: true,
+                    candidates: [
+                        {
+                            routeId,
+                            fingerprint: fixtureRouteFingerprint(
+                                routeId,
+                                'sentence-generation',
+                            )!,
+                            snapshot: original,
+                            providerPrice: price!,
+                        },
+                    ],
+                },
+            };
+            const submitted = await store.next(access(), next(), context());
+            if (submitted.kind !== 'job') throw new Error('Missing queued job');
+            const running = alreadyClaimed ? await claim() : null;
+            await new DrizzleTextAiRoutingStore(db, async () => {}).disable(
+                {
+                    expectedVersion: current.version,
+                    routeId,
+                    reason: 'Synthetic emergency disable before dispatch',
+                },
+                authority!.createdBy,
+                new Date(),
+            );
+            if (alreadyClaimed) {
+                if (!running) throw new Error('Missing claimed action');
+                expect(
+                    await worker.markDispatched(running.lease, context()),
+                ).toBe('terminalized');
+            } else expect(await claim()).toBeNull();
+            const [job] = await db
+                .select()
+                .from(sentenceAiJobsTable)
+                .where(eq(sentenceAiJobsTable.id, submitted.job.id));
+            expect(job?.executionState).toBe('failed');
+            expect(job?.failureCategory).toBe('model_unavailable');
+            expect(job?.aiCreditProviderDispatchedAt).toBeNull();
+            expect(
+                await db.select().from(textAiRouteDispatchesTable),
+            ).toHaveLength(alreadyClaimed ? 1 : 0);
+            const [action] = await db
+                .select()
+                .from(actions)
+                .where(eq(actions.id, submitted.job.id));
+            expect(action).toMatchObject({
+                state: 'settled',
+                outcome: 'failure',
+                chargedMilli: 0n,
+            });
+        },
+    );
 
     it('confirms a paid sentence Next quote without changing its allowance', async () => {
         // Fund the complete prompt/schema envelope while keeping output budget-limited.
@@ -828,6 +1591,7 @@ run('sentence persistence', () => {
                 new DrizzleTextAiAdmissionParticipant(tx, {
                     routingEnabled: true,
                     credentialConfigured: () => true,
+                    routeFingerprint: fixtureRouteFingerprint,
                 }).resolve({
                     userId,
                     format,

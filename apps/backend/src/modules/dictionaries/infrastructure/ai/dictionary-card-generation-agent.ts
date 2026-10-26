@@ -2,11 +2,13 @@ import { Agent } from '@mastra/core/agent';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
 
 export interface DictionaryCardGenerationAgentOptions {
-    model: ModelRouterModelId | OpenAICompatibleConfig;
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }
 
 export function createDictionaryCardGenerationAgent(

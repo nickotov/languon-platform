@@ -47,7 +47,17 @@ function fixture() {
         submit: {
             mutateAsync: vi
                 .fn<(request: unknown) => Promise<{ turn: { id: string } }>>()
-                .mockResolvedValue({ turn: { id: 'turn-one' } }),
+                .mockImplementation(async (request) => {
+                    const turn = { id: 'turn-one' };
+                    // Production submission invokes onAccepted after durable admission.
+                    // Preserve that contract so passage cleanup is exercised here.
+                    (
+                        request as {
+                            onAccepted?: (turn: { id: string }) => void;
+                        }
+                    ).onAccepted?.(turn);
+                    return { turn };
+                }),
             isPending: false,
         },
         stream: { unavailable: false },

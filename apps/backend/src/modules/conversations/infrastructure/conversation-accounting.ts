@@ -1,3 +1,5 @@
+import { prepareAdminTextAiRouting } from '../../text-ai/infrastructure/persistence/drizzle/routing-admission';
+import { defaultTextAiAvailabilityPolicy } from '../../text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
 import {
     reviewedTextProviderBudget,
     ProviderCostAdmissionUnavailableError,
@@ -62,7 +64,8 @@ import { conversationProviderCallsTable as calls } from './persistence/drizzle/c
 type Database = PostgresJsDatabase<typeof databaseSchema>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
-    return async (
+    const availability = policy ?? defaultTextAiAvailabilityPolicy();
+    const admit = async (
         tx: Transaction,
         input: {
             ownerId: string;
@@ -78,7 +81,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         const now = new Date();
         const execution = await new DrizzleTextAiAdmissionParticipant(
             tx,
-            policy,
+            availability,
         )
             .resolve({
                 userId: input.ownerId,
@@ -90,23 +93,31 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 if (error instanceof TextAiSelectionUnavailableError)
                     throw new ConversationError(
                         'model_unavailable',
-                        'The selected model is unavailable for conversations. Choose Auto or DeepSeek Flash and try again.',
+                        'AI is unavailable right now. Your messages are kept. Try again later.',
                     );
                 throw error;
             });
         if (
             !execution.snapshot?.creditPricing ||
-            execution.snapshot.modelId !== 'deepseek-flash'
+            !execution.snapshot.supportedFormats.includes('conversation:v1')
         )
             throw new ConversationError(
                 'model_unavailable',
-                'The selected model does not support conversations. Choose Auto or DeepSeek Flash.',
+                'AI is unavailable right now. Your messages are kept. Try again later.',
             );
         const account = await new DrizzleAiCreditTransactionParticipant(
             tx,
         ).accountSummary(input.ownerId, now);
         const capability = new DrizzleCapabilityPolicyParticipant(tx);
         const charging = await capability.current('conversation');
+        if (
+            charging.funding !== 'operator' &&
+            execution.snapshot.routingAuthority?.tariffPublished === false
+        )
+            throw new ConversationError(
+                'model_unavailable',
+                'AI is not configured for this action. Try again later.',
+            );
         const funding =
             charging.funding === 'operator'
                 ? 'operator'
@@ -134,12 +145,21 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 'action_budget_unconfigured',
                 'An AI action budget must be configured before sending.',
             );
-        const providerPrice = await pinProviderPrice(tx, {
-            providerId: execution.snapshot.providerId,
-            modelId: execution.snapshot.modelId,
-            meter: 'text-tokens',
-            at: now,
-        });
+        const pinnedCandidate =
+            execution.snapshot.routingAuthority?.candidates.find(
+                (candidate) =>
+                    candidate.snapshot.providerId ===
+                        execution.snapshot.providerId &&
+                    candidate.snapshot.modelId === execution.snapshot.modelId,
+            );
+        const providerPrice =
+            pinnedCandidate?.providerPrice ??
+            (await pinProviderPrice(tx, {
+                providerId: execution.snapshot.providerId,
+                modelId: execution.snapshot.modelId,
+                meter: 'text-tokens',
+                at: now,
+            }));
         try {
             execution.budget = reviewedTextProviderBudget(
                 providerPrice,
@@ -207,7 +227,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         )
             throw new ConversationError(
                 'capacity_unavailable',
-                'The selected model exceeds the available execution allowance. Choose another model or try again later.',
+                'The AI request exceeds the available execution allowance. Try again later.',
             );
         const tariff = {
             ...(execution.snapshot.creditPricing
@@ -439,6 +459,23 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             funding: action.funding,
         };
     };
+    return Object.assign(admit, {
+        prepare: async (tx: Transaction) => {
+            if (
+                !availability.routingEnabled ||
+                availability.pricingAdmissionEnabled === false
+            )
+                return;
+            await prepareAdminTextAiRouting(tx, {
+                format: 'conversation:v1',
+                now: new Date(),
+                credentialConfigured: availability.credentialConfigured,
+                ...(availability.routeFingerprint
+                    ? { routeFingerprint: availability.routeFingerprint }
+                    : {}),
+            });
+        },
+    });
 }
 
 /** The operation fence surrounds dispatch; numerical settlement survives content deletion. */
@@ -457,7 +494,10 @@ export function createConversationAccounting(input: {
             withTransaction: (work) => input.database.transaction(work),
         });
     const snapshot = input.execution.snapshot;
-    if (!snapshot?.creditPricing || snapshot.modelId !== 'deepseek-flash')
+    if (
+        !snapshot?.creditPricing ||
+        !snapshot.supportedFormats.includes('conversation:v1')
+    )
         throw new Error('Conversation execution is unavailable.');
     const selected: TextAiExecutionSnapshot = snapshot;
     const pricing = snapshot.creditPricing;

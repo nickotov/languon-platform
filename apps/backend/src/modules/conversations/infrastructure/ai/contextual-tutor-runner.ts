@@ -1,3 +1,5 @@
+import type { TextAiProviderAttemptWitness } from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context.js';
+import { ProviderExecutionError } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
 import {
     tutorContextInstructions,
     tutorReservedInputBytes,
@@ -10,6 +12,7 @@ import {
     type MastraModelConfig,
     type ModelRouterModelId,
     type OpenAICompatibleConfig,
+    type ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { MastraCompositeStore } from '@mastra/core/storage';
 import { Memory } from '@mastra/memory';
@@ -42,7 +45,7 @@ export function tutorMemoryThresholds(
         available < 4096
     )
         throw new Error(
-            'The selected model has insufficient context for this conversation.',
+            'This conversation is too long for an AI response. Start a fresh chat.',
         );
     return {
         // The dispatch gate conservatively budgets UTF-8 bytes as tokens. Keep
@@ -79,9 +82,15 @@ export function createContextualTutorAgent(options: {
 }
 
 export function createContextualTutorRunner(options: {
-    model: ModelRouterModelId | OpenAICompatibleConfig | TutorProviderModel;
+    model:
+        | ModelRouterModelId
+        | OpenAICompatibleConfig
+        | ModelRouterLanguageModel
+        | TutorProviderModel;
     accounting: TutorAccountingPort;
+    attemptWitness?: Omit<TextAiProviderAttemptWitness, 'attemptId'>;
     maxInputTokens: number;
+    providerId?: string;
     /** Tests inject a deterministic model and small thresholds without paid provider access. */
     memoryThresholds?: ReturnType<typeof tutorMemoryThresholds>;
 }): TutorRunner {
@@ -94,10 +103,13 @@ export function createContextualTutorRunner(options: {
                     : await resolveModelConfig(options.model);
             if (resolved.specificationVersion !== 'v2')
                 throw new Error(
-                    'The selected model is unavailable for this conversation.',
+                    'AI is unavailable right now. Your messages are kept. Try again later.',
                 );
             const gate = createTutorModelGate({
                 accounting: options.accounting,
+                ...(options.attemptWitness
+                    ? { attemptWitness: options.attemptWitness }
+                    : {}),
                 signal: input.signal,
                 maxInputTokens: options.maxInputTokens,
             });
@@ -256,6 +268,11 @@ export function createContextualTutorRunner(options: {
                     throw new ConversationError(
                         'context_too_large',
                         'The complete editor, references and conversation exceed the model input limit after compaction. Reduce the editor text or references and try again.',
+                    );
+                if (gate.providerFailure && options.providerId)
+                    throw new ProviderExecutionError(
+                        gate.providerFailure.error,
+                        options.providerId,
                     );
                 throw error;
             }

@@ -77,7 +77,12 @@ export const aiProviderExpenseRecordsTable = pgTable(
         id: uuid('id').primaryKey(),
         attemptReference: text('attempt_reference').notNull().unique(),
         sourceKind: text('source_kind')
-            .$type<'text-attempt' | 'speech-attempt' | 'legacy-unverified'>()
+            .$type<
+                | 'text-attempt'
+                | 'speech-attempt'
+                | 'admin-probe'
+                | 'legacy-unverified'
+            >()
             .notNull()
             .default('legacy-unverified'),
         attemptId: uuid('attempt_id')
@@ -99,7 +104,7 @@ export const aiProviderExpenseRecordsTable = pgTable(
     (t) => [
         check(
             'ai_provider_expense_source_kind',
-            sql`${t.sourceKind} in ('text-attempt','speech-attempt','legacy-unverified')`,
+            sql`${t.sourceKind} in ('text-attempt','speech-attempt','admin-probe','legacy-unverified')`,
         ),
         check(
             'ai_provider_expense_cost_source',

@@ -1,5 +1,5 @@
 // @user-flow-revision ai-accounting sha256:1c4a76dd9129b96d
-// @user-flow-revision learner-portrait sha256:4f1dc69b79ea34a7
+// @user-flow-revision learner-portrait sha256:ab89017ff9742d4b
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { customerBalance } from './support/action-accounting-fixture';
 
@@ -332,7 +332,7 @@ test('interview resumes, uses a deterministic queued response, and keeps proposa
     await expect(
         page.getByText(
             paid
-                ? 'AI responses use credits under your current model and usage settings. Reviewing, editing and saving by hand are free.'
+                ? 'AI responses use credits within your action budget. Reviewing, editing and saving by hand are free.'
                 : 'This interview is currently free; it won’t use your credits.',
         ),
     ).toBeVisible();
@@ -583,6 +583,7 @@ for (const action of ['continue', 'chat'] as const) {
     });
 }
 
+// This fixture has no approved fallback. SDK regressions cover eligible alternatives.
 // @user-flow learner-portrait/invalid-model-output-preserves-interview
 test('invalid structured output keeps the answer and does not submit another response automatically', async ({
     page,

@@ -97,32 +97,15 @@ export async function configure({
             'deterministic-demo requires the same isolated test runtime environment: APP_ENV=test and DICTIONARY_AI_PROVIDER_FIXTURE_MODE=deterministic. The CLI does not switch server adapters.',
         );
     }
-    const [ai, accounting, tariffs, prices] = await Promise.all([
-        request('/admin/ai-settings', c.AdminAiSettingsResponseSchema),
+    const [accounting, prices] = await Promise.all([
         request('/admin/ai/accounting-settings', c.AiAccountingSettingsSchema),
-        request('/admin/ai/model-prices', c.ModelPricesResponseSchema),
         request(
             '/admin/ai/accounting/provider-prices',
             c.ProviderPricesResponseSchema,
         ),
     ]);
     const reason = `Local development setup: ${profileName}`;
-    const model = profile.tariff.modelId;
-    const desiredAi = {
-        activeProvider: profile.tariff.providerId,
-        defaultModel: model,
-        enabledModels: [...new Set([...ai.settings.enabledModels, model])],
-    };
-    const sameAi =
-        ai.settings.activeProvider === desiredAi.activeProvider &&
-        ai.settings.defaultModel === model &&
-        ai.settings.enabledModels.includes(model);
-    const tariff = tariffs.prices.find(
-        (item) =>
-            item.modelId === model &&
-            item.providerId === profile.tariff.providerId &&
-            item.meter === profile.tariff.meter,
-    );
+    const model = profile.providerPrice.modelId;
     const price = prices.prices.find(
         (item) =>
             item.modelId === model &&
@@ -144,19 +127,6 @@ export async function configure({
             },
         },
         {
-            name: 'Customer tariff',
-            unchanged: matches(tariff, profile.tariff),
-            path: '/admin/ai/model-prices',
-            method: 'POST',
-            input: c.ModelPricePublishRequestSchema,
-            output: c.ModelPriceSchema,
-            body: {
-                ...profile.tariff,
-                expectedVersion: tariff?.version ?? 0,
-                reason,
-            },
-        },
-        {
             name: 'Provider USD prices',
             unchanged:
                 matches(price, profile.providerPrice) &&
@@ -169,19 +139,6 @@ export async function configure({
                 ...profile.providerPrice,
                 expectedVersion: price?.version ?? 0,
                 effectiveAt: new Date().toISOString(),
-                reason,
-            },
-        },
-        {
-            name: 'Default model (preserve other enabled models)',
-            unchanged: sameAi,
-            path: '/admin/ai-settings',
-            method: 'PATCH',
-            input: c.AdminAiSettingsMutationRequestSchema,
-            output: c.AdminAiSettingsResponseSchema,
-            body: {
-                ...desiredAi,
-                expectedVersion: ai.settings.version,
                 reason,
             },
         },
@@ -204,5 +161,8 @@ export async function configure({
                 );
         }
     }
+    log(
+        'Activation requires Admin → AI routing: reviewed per-flow tariffs, successful route/flow checks and explicit routing publication. This profile never changes routes or runs paid probes.',
+    );
     return operations.filter((operation) => !operation.unchanged).length;
 }

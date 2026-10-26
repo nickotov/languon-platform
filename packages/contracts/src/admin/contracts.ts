@@ -43,6 +43,15 @@ export const AdminErrorCodeSchema = z.enum([
     'deletion_cancellation_unavailable',
     'self_disable_forbidden',
     'last_owner_forbidden',
+    'probe_limit_reached',
+    'probe_budget_insufficient',
+    'probe_limit_changed',
+    'probe_recovery_required',
+    'probe_busy',
+    'probe_cooldown',
+    'probe_prices_missing',
+    'probe_route_unavailable',
+    'probe_check_required',
     'invalid_request',
     'service_unavailable',
     'internal_error',
@@ -145,13 +154,16 @@ export const AdminAiModelSchema = z
             .strict(),
         supportedFormats: z.array(z.string().trim().min(1).max(160)).min(1),
         available: z.boolean(),
+        retired: z.boolean().optional(),
+        processingControlsRevision: z.string().max(160).nullable().optional(),
+        processingApprovalRequired: z.boolean().optional(),
         unavailableReason: z.string().trim().min(1).max(300).nullable(),
     })
     .strict();
 
 export const AdminAiProviderSchema = z
     .object({
-        id: z.enum(['deepseek', 'kie']),
+        id: z.enum(['deepseek', 'kie', 'evolink', 'openrouter']),
         label: z.string().trim().min(1).max(80),
         credentialStatus: z.enum(['configured', 'missing']),
         health: AdminAiHealthSchema,
@@ -162,7 +174,9 @@ export const AdminAiProviderSchema = z
 export const AdminAiSettingsSchema = z
     .object({
         version: z.number().int().nonnegative(),
-        activeProvider: z.enum(['deepseek', 'kie']).nullable(),
+        activeProvider: z
+            .enum(['deepseek', 'kie', 'evolink', 'openrouter'])
+            .nullable(),
         defaultModel: z.string().trim().min(1).max(160).nullable(),
         enabledModels: z.array(z.string().trim().min(1).max(160)),
         updatedAt: z.string().datetime().nullable(),
@@ -179,7 +193,7 @@ export const AdminAiSettingsResponseSchema = z
 export const AdminAiSettingsMutationRequestSchema = z
     .object({
         expectedVersion: z.number().int().nonnegative(),
-        activeProvider: z.enum(['deepseek', 'kie']),
+        activeProvider: z.enum(['deepseek', 'kie', 'evolink', 'openrouter']),
         defaultModel: z.string().trim().min(1).max(160),
         enabledModels: z
             .array(z.string().trim().min(1).max(160))

@@ -216,6 +216,12 @@ describe('DictionaryGenerationWorkerService', () => {
             },
             providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
             providerExecution: null,
+            providerAttempt: {
+                jobId: '00000000-0000-4000-8000-000000000004',
+                attempt: 1,
+                workerId: 'worker-a',
+                fencingToken: '1',
+            },
             signal: expect.any(AbortSignal),
         });
         expect(generationStore.complete).toHaveBeenCalledWith(
@@ -285,8 +291,11 @@ describe('DictionaryGenerationWorkerService', () => {
             {
                 cardAuthoringProvider: {
                     generate: vi.fn(async () => {
-                        throw new CardAuthoringProposalGeneratorError(
-                            'provider_rate_limited',
+                        throw Object.assign(
+                            new CardAuthoringProposalGeneratorError(
+                                'provider_rate_limited',
+                            ),
+                            { executionOutcome: 'rejected' },
                         );
                     }),
                 },
@@ -308,6 +317,7 @@ describe('DictionaryGenerationWorkerService', () => {
         expect(providerFailureStore.fail).toHaveBeenCalledWith(
             expect.objectContaining({
                 failureCategory: 'provider_rate_limited',
+                retryDisposition: 'conclusive-provider-failure',
                 retryAt: expect.any(Date),
             }),
         );
@@ -725,8 +735,11 @@ describe('DictionaryGenerationWorkerService', () => {
                 clock: { now: () => new Date('2026-08-21T12:00:00.000Z') },
                 provider: {
                     generate: async () => {
-                        throw new CardProposalGeneratorError(
-                            'provider_rate_limited',
+                        throw Object.assign(
+                            new CardProposalGeneratorError(
+                                'provider_rate_limited',
+                            ),
+                            { executionOutcome: 'rejected' },
                         );
                     },
                 },
@@ -746,6 +759,7 @@ describe('DictionaryGenerationWorkerService', () => {
         expect(providerFailureStore.fail).toHaveBeenCalledWith(
             expect.objectContaining({
                 failureCategory: 'provider_rate_limited',
+                retryDisposition: 'conclusive-provider-failure',
                 retryAt: expect.any(Date),
             }),
         );

@@ -238,7 +238,10 @@ test('actual cleanup path survives interruption and recovers an ID lost after co
 });
 
 const backendFlow = flows.find((flow) => flow.app === 'backend');
-const backendSuiteCounts = [29, 15, 2, 8];
+const backendSuiteCounts = [
+    35, 18, 2, 8, 12, 4, 25, 4, 8, 12, 5, 4, 6, 4, 5, 15, 9, 20, 14, 20, 7, 10,
+    9,
+];
 const backendTestTotal = backendSuiteCounts.reduce(
     (sum, count) => sum + count,
     0,
@@ -299,8 +302,6 @@ test('Vitest evidence must contain every exact required suite, no zero, skips, t
     const variants = [
         (report) => {
             report.testResults[0].assertionResults.pop();
-            report.numTotalTests--;
-            report.numPassedTests--;
         },
         (report) => {
             report.testResults = [];

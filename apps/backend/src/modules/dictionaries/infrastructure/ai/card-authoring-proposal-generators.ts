@@ -1,3 +1,5 @@
+import { withQueuedTextAiProviderAttempt } from '../../../text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt';
+import { withProviderExecutionOutcome } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
 import { cardAuthoringProviderInputTokens } from './card-authoring-input-envelope';
 import {
     cardAuthoringProviderFailure,
@@ -9,6 +11,7 @@ import { isIP } from 'node:net';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { Mastra } from '@mastra/core/mastra';
 
@@ -95,6 +98,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
 }): CardAuthoringProposalGenerator {
     return {
         async generate(request) {
+            let outputReceived = false;
             let meteredUsage:
                 ReturnType<typeof readProviderTokenUsage> | undefined;
             const failure = (
@@ -106,6 +110,10 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     reason,
                 );
                 if (meteredUsage) result.usage = meteredUsage;
+                result.executionOutcome =
+                    outputReceived && result.category === 'invalid_model_output'
+                        ? 'completed'
+                        : 'ambiguous';
                 return result;
             };
 
@@ -127,22 +135,32 @@ export function createMastraCardAuthoringProposalGenerator(options: {
             )
                 throw failure('invalid_input');
             try {
-                const result = await options.agent.generate(message, {
-                    abortSignal: request.signal,
-                    modelSettings: {
-                        maxOutputTokens: requestLimits.maxOutputTokens,
-                        maxRetries: 0,
-                    },
-                    runId: request.idempotencyKey,
-                    structuredOutput: {
-                        ...(options.structuredOutputMode === 'prompt-injection'
-                            ? { jsonPromptInjection: 'inline' as const }
-                            : {}),
-                        schema: DictionaryCardAuthoringModelOutputSchema,
-                    },
-                    toolChoice: 'none',
-                    tracingOptions: { hideInput: true, hideOutput: true },
-                });
+                const result = await withQueuedTextAiProviderAttempt(
+                    request.providerAttempt,
+                    Boolean(request.providerExecution?.routingAuthority),
+                    () =>
+                        options.agent.generate(message, {
+                            abortSignal: request.signal,
+                            modelSettings: {
+                                maxOutputTokens: requestLimits.maxOutputTokens,
+                                maxRetries: 0,
+                            },
+                            runId: request.idempotencyKey,
+                            structuredOutput: {
+                                ...(options.structuredOutputMode ===
+                                'prompt-injection'
+                                    ? { jsonPromptInjection: 'inline' as const }
+                                    : {}),
+                                schema: DictionaryCardAuthoringModelOutputSchema,
+                            },
+                            toolChoice: 'none',
+                            tracingOptions: {
+                                hideInput: true,
+                                hideOutput: true,
+                            },
+                        }),
+                );
+                outputReceived = true;
                 request.signal.throwIfAborted();
                 if (result.usage) {
                     try {
@@ -160,7 +178,11 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         request.idempotencyKey,
                         options.onProviderFailure,
                     );
-                    throw failure('provider_failure');
+                    throw withProviderExecutionOutcome(
+                        failure('provider_failure'),
+                        result.error,
+                        request.providerExecution?.providerId ?? 'unknown',
+                    );
                 }
                 const delta = validatedOutput(result.object, input);
                 if (!result.usage) return delta;
@@ -202,6 +224,12 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         new DOMException('Aborted', 'AbortError')
                     );
                 if (
+                    outputReceived &&
+                    error instanceof CardAuthoringProposalGeneratorError &&
+                    error.category === 'invalid_model_output'
+                )
+                    error.executionOutcome = 'completed';
+                if (
                     error instanceof
                     CardAuthoringProposalGeneratorExecutionError
                 )
@@ -211,7 +239,11 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                     request.idempotencyKey,
                     options.onProviderFailure,
                 );
-                throw failure('provider_failure');
+                throw withProviderExecutionOutcome(
+                    failure('provider_failure'),
+                    error,
+                    request.providerExecution?.providerId ?? 'unknown',
+                );
             }
         },
         readiness(signal) {
@@ -293,7 +325,10 @@ export type CardAuthoringProposalGeneratorFactoryOptions =
       }
     | {
           mode: 'mastra';
-          model: ModelRouterModelId | OpenAICompatibleConfig;
+          model:
+              | ModelRouterModelId
+              | OpenAICompatibleConfig
+              | ModelRouterLanguageModel;
           modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerProbeFetch?: typeof fetch;
@@ -337,10 +372,16 @@ export function createCardAuthoringProposalGenerator(
 }
 
 function openAICompatibleProviderReadiness(
-    model: ModelRouterModelId | OpenAICompatibleConfig,
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel,
     fetchProvider: typeof fetch,
 ): ((signal: AbortSignal) => Promise<void>) | undefined {
-    if (typeof model === 'string' || !model.url || !model.apiKey)
+    if (
+        typeof model === 'string' ||
+        !('url' in model) ||
+        !model.url ||
+        !model.apiKey
+    )
         return undefined;
     const baseUrl = new URL(model.url);
     const hostname = baseUrl.hostname.replace(/^\[|\]$/g, '').toLowerCase();

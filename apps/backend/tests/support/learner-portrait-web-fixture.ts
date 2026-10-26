@@ -1,3 +1,4 @@
+import { fixtureRouteFingerprint } from './text-ai-routing-fixture';
 import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { seedInterviewAccountingFixture } from './ai-accounting-fixture';
 import type { CapabilityPolicy } from '@languon/contracts';
@@ -445,6 +446,7 @@ export async function createLearnerPortraitWebFixture(
             admitTurn: conversationAdmission({
                 routingEnabled: true,
                 credentialConfigured: () => true,
+                routeFingerprint: fixtureRouteFingerprint,
                 pricingAdmissionEnabled: true,
             }),
             readPortrait: readApprovedPortraitForConversation,
@@ -510,6 +512,7 @@ export async function createLearnerPortraitWebFixture(
             selectionPolicy: {
                 routingEnabled: true,
                 credentialConfigured: () => true,
+                routeFingerprint: fixtureRouteFingerprint,
                 pricingAdmissionEnabled: true,
             },
         });

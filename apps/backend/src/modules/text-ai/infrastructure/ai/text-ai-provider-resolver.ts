@@ -1,3 +1,4 @@
+import type { TextAiProviderRuntimeOptions } from './text-ai-provider-runtime-observer';
 import { parseCreditMilli } from '../../../ai-credits/domain/exact-credit-amount';
 import {
     createTextAiMastraGeneratorOptions,
@@ -7,6 +8,7 @@ import {
     findTextAiModel,
     textAiExecutionLimits,
     type TextAiExecutionSnapshot,
+    type TextAiProviderCredentials,
     type TextAiProviderBudgetPolicy,
 } from '../../application/text-ai-provider-catalog';
 
@@ -20,6 +22,7 @@ export function resolveTextAiExecutionSnapshot(
         : null;
     if (
         !model ||
+        model.retired === true ||
         !limits ||
         snapshot.adapterRevision !== model.adapterRevision ||
         snapshot.credentialReference !== model.credentialReference ||
@@ -32,7 +35,7 @@ export function resolveTextAiExecutionSnapshot(
                 !Number.isSafeInteger(
                     snapshot.creditPricing.maxCreditsPerAttempt,
                 ) ||
-                snapshot.creditPricing.maxCreditsPerAttempt <= 0 ||
+                snapshot.creditPricing.maxCreditsPerAttempt < 0 ||
                 ![
                     snapshot.creditPricing.inputCreditsPerMillionTokens,
                     snapshot.creditPricing.outputCreditsPerMillionTokens,
@@ -86,12 +89,14 @@ function isStringSubset(
 }
 
 /** Resolves trusted adapters only; capability modules retain their own prompts and orchestration. */
-export function resolveTextAiProviderOptions(input: {
-    snapshot: TextAiExecutionSnapshot;
-    budget: TextAiProviderBudgetPolicy;
-    credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;
-    fetchProvider?: typeof fetch;
-}) {
+export function resolveTextAiProviderOptions(
+    input: TextAiProviderRuntimeOptions & {
+        snapshot: TextAiExecutionSnapshot;
+        budget: TextAiProviderBudgetPolicy;
+        credentials: TextAiProviderCredentials;
+        fetchProvider?: typeof fetch;
+    },
+) {
     const curated = resolveTextAiExecutionSnapshot(
         input.snapshot,
         input.budget,
@@ -102,6 +107,10 @@ export function resolveTextAiProviderOptions(input: {
     const credential = input.credentials[input.snapshot.credentialReference];
     if (!model || !credential)
         throw new Error('Text AI provider credential is unavailable.');
+    const candidate = validateTextAiRouteRuntimeIdentity(input.snapshot, input);
+    const providerPrice = candidate?.providerPrice;
+    if (curated.providerId === 'openrouter' && !providerPrice)
+        throw new Error('Pinned gateway pricing is required before dispatch.');
     return createTextAiMastraGeneratorOptions({
         apiKey: credential,
         model: {
@@ -112,6 +121,44 @@ export function resolveTextAiProviderOptions(input: {
             },
         },
         providerBudget: input.budget,
+        ...(providerPrice ? { providerPrice } : {}),
+        ...(candidate && input.onProviderFailure
+            ? {
+                  onProviderFailure: async (failure) => {
+                      await input.onProviderFailure!({
+                          routeId: candidate.routeId,
+                          flowId: input.snapshot.routingAuthority!.flowId,
+                          fingerprint: candidate.fingerprint,
+                          reason: failure.reason,
+                          failure,
+                      });
+                  },
+              }
+            : {}),
         ...(input.fetchProvider ? { fetchProvider: input.fetchProvider } : {}),
     });
+}
+
+/** Never execute admitted work with rotated credentials or a changed flow contract. */
+export function validateTextAiRouteRuntimeIdentity(
+    snapshot: TextAiExecutionSnapshot,
+    options: TextAiProviderRuntimeOptions,
+) {
+    const authority = snapshot.routingAuthority;
+    if (!authority) return undefined;
+    const candidate = authority.candidates.find(
+        (candidate) =>
+            candidate.snapshot.providerId === snapshot.providerId &&
+            candidate.snapshot.modelId === snapshot.modelId,
+    );
+    if (
+        !candidate ||
+        !options.currentFingerprint ||
+        options.currentFingerprint(candidate.routeId, authority.flowId) !==
+            candidate.fingerprint
+    )
+        throw new Error(
+            'Approved provider route identity has changed. A matching check is required.',
+        );
+    return candidate;
 }

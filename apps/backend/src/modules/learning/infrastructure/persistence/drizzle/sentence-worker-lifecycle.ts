@@ -1,3 +1,5 @@
+import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import type { SentenceJobFailure } from '@languon/contracts';
 import { and, eq } from 'drizzle-orm';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
@@ -83,6 +85,31 @@ export async function sentenceWorkerMarkDispatched(
             return 'terminalized';
         }
 
+        if (
+            usesLegacyAction(job.selectedExecutionSnapshot) &&
+            !job.aiCreditProviderDispatchedAt
+        ) {
+            try {
+                await recheckTextAiDispatch(tx, {
+                    actionId:
+                        job.selectedExecutionSnapshot.actionParentId ?? job.id,
+                    jobId: job.id,
+                    now: context.now,
+                });
+            } catch (error) {
+                if (!(error instanceof TextAiSelectionUnavailableError))
+                    throw error;
+                await sentenceWorkerTerminal(
+                    tx,
+                    job,
+                    context.now,
+                    'model_unavailable',
+                );
+
+                return 'terminalized';
+            }
+        }
+
         if (!job.aiCreditProviderDispatchedAt) {
             if (job.aiCreditAccounted && job.aiCreditReservationId)
                 await new DrizzleAiCreditTransactionParticipant(
@@ -111,6 +138,7 @@ export async function sentenceWorkerFail(
     failure: {
         code: SentenceJobFailure;
         retryAt: Date | null;
+        retryDisposition?: 'conclusive-provider-failure';
         usage?: SentenceTokenUsage;
     },
     context: SentenceContext,
@@ -160,6 +188,10 @@ export async function sentenceWorkerFail(
             (!usesLegacyAction(job.selectedExecutionSnapshot) ||
                 !job.aiCreditProviderDispatchedAt ||
                 failure.code === 'provider_rate_limited' ||
+                (job.selectedExecutionSnapshot.routingAuthority &&
+                    job.attemptCount === 1 &&
+                    failure.retryDisposition ===
+                        'conclusive-provider-failure') ||
                 completedInvalidWithUsage);
 
         await settleSentenceAttempt(

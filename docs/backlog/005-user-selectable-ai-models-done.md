@@ -4,7 +4,7 @@ id: BL-005
 title: 'User-selectable AI models'
 status: done
 created: 2026-10-01
-updated: 2026-10-05
+updated: 2026-10-26
 original_tasks: '8'
 evidence:
     - .agent/features/035-user-ai-model-preferences-backend/EVIDENCE.md
@@ -13,6 +13,16 @@ evidence:
 ---
 
 # BL-005 — User-selectable AI models — Done
+
+## Subsequent product decision — 2026-10-26
+
+The original delivery below remains historical. The user subsequently chose
+admin-owned routing and removed learner model selection in
+[feature 054](../../.agent/features/054-admin-text-ai-routing/FEATURE.md).
+[ADR-0046](../adr/0046-admin-owned-text-ai-routing.md) and the
+[current routing guide](../user-flows/admin-text-ai-routing.md) define the new
+behavior. Learners retain language, tone, explanation and spending controls;
+model identities and routing are administered by the application.
 
 ## Completed delivery — 2026-10-05
 

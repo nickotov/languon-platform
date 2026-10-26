@@ -385,7 +385,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ]);
             expect(first.id).toBe(replay.id);
             expect(admitted).toHaveBeenCalledTimes(1);
-            expect(first.modelId).toBe('deepseek-flash');
+            expect(first.modelId).toBeNull();
+            const [storedExecution] =
+                await client`select execution from conversation_turns where id=${first.id}`;
+            expect(storedExecution!.execution.snapshot.modelId).toBe(
+                'deepseek-flash',
+            );
             await expect(
                 store.submit(access(), chat.id, {
                     ...input,
@@ -1098,6 +1103,36 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client`select id from knowledge_notes where id=${independent.id}`,
             ).toHaveLength(1);
         });
+        it.each([false, true])(
+            'rejects an inactive dictionary source owner even when the active actor differs (%s)',
+            async (shared) => {
+                const locator = randomUUID();
+                await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${cryptography.shareDigest('key', 1)},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
+                const actor = shared
+                    ? { ownerId: learner, shareKey: 'key' }
+                    : access();
+                const chat = await store.create(actor, {
+                    source: {
+                        kind: 'dictionary',
+                        id: dictionary,
+                        ...(shared ? { shareLocator: locator } : {}),
+                    },
+                });
+                await client`update users set status='deletion_pending' where id=${owner}`;
+                await expect(
+                    store.detail(actor, chat.id),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
+                await expect(
+                    store.submit(actor, chat.id, submit()),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
+                if (shared)
+                    expect(
+                        (
+                            await client`select status from users where id=${learner}`
+                        )[0]?.status,
+                    ).toBe('active');
+            },
+        );
         it('respects text folder shares, saved translation changes and active owner status', async () => {
             const folder = randomUUID(),
                 text = randomUUID(),
@@ -1145,10 +1180,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 code: 'conversation_not_found',
             });
             await client`update text_folders set lifecycle='active' where id=${folder}`;
+            const ownedChat = await store.create(access(), {
+                source: { kind: 'text', id: text },
+            });
             await client`update users set status='deletion_pending' where id=${owner}`;
             await expect(store.detail(actor, chat.id)).rejects.toMatchObject({
                 code: 'conversation_not_found',
             });
+            await expect(
+                store.detail(access(), ownedChat.id),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
         });
         it('freezes a long saved translation as complete ordered passages and runs bounded initial and surrounding retrieval context', async () => {
             const folder = randomUUID(),
@@ -1553,8 +1594,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         await store.append(turn, 'Still streaming');
                         await store.heartbeat(turn);
                         expect(
-                            (await store.stop(access(), turn.conversationId, turn.id))
-                                .status,
+                            (
+                                await store.stop(
+                                    access(),
+                                    turn.conversationId,
+                                    turn.id,
+                                )
+                            ).status,
                         ).toBe('running');
                     })(),
                 );
@@ -1591,9 +1637,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             try {
                 const claim = store.claim();
                 await actorLocked.promise;
-                const stopping = store.stop(access(), chat.id, (await client`
+                const stopping = store.stop(
+                    access(),
+                    chat.id,
+                    (
+                        await client`
                     select id from conversation_turns where conversation_id=${chat.id} and status='queued'
-                `)[0]!.id);
+                `
+                    )[0]!.id,
+                );
                 const stoppedBeforeClaimContinues = await completes(stopping);
                 releaseClaim.release();
                 const claimed = await completes(claim);

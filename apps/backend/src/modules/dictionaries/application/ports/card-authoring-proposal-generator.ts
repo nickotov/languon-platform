@@ -1,3 +1,4 @@
+import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
 import type {
     DictionaryCardAuthoringProviderDelta,
     DictionaryCardAuthoringProviderInput,
@@ -6,6 +7,7 @@ import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-gene
 import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../text-ai/application/text-ai-provider-catalog';
 
 export interface CardAuthoringProposalGeneratorRequest {
+    providerAttempt?: TextAiProviderLeaseContext;
     idempotencyKey: string;
     input: DictionaryCardAuthoringProviderInput;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
@@ -34,6 +36,7 @@ export interface CardAuthoringProposalGenerator {
 }
 
 export class CardAuthoringProposalGeneratorError extends Error {
+    public executionOutcome?: 'rejected' | 'completed' | 'ambiguous';
     public usage?: {
         inputTokens: number;
         outputTokens: number;

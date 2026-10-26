@@ -42,6 +42,8 @@ export interface TutorCallAdmission {
     maxOutputTokens: number;
     /** Actual provider finish reason, retained even when numerical usage is unavailable. */
     outputLimitReached?: boolean;
+    /** Positive provider finish witness; refusals and unknown/error finishes are false. */
+    providerCompleted?: boolean;
 }
 
 export interface TutorCallUsage {

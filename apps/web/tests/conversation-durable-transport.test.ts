@@ -37,7 +37,7 @@ const initial = ConversationDetailSchema.parse({
 const turn = {
     id: turnId,
     conversationId,
-    modelId: 'deepseek/flash',
+    modelId: null,
     status: 'queued' as const,
     failureCode: null,
     usage: {

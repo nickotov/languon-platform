@@ -1,3 +1,6 @@
+import type { TextsAiProvider } from '../../modules/texts/application/ports/texts-ai-provider';
+import { createTextAiProviderRuntime } from '../text-ai/provider-runtime';
+import type { TextAiProviderRuntimeOptions } from '../../modules/text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
 import { UnavailableGenerationBurstLimiter } from '../../modules/text-ai/application/generation-burst-limiter';
 import { expireLearnerPortraitInterviews } from '../../modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-interview-store';
 import { createLearnerPortraitWorkerComposition } from '../../modules/learner-portraits/infrastructure/learner-portrait-composition';
@@ -80,6 +83,7 @@ export function createWorkerSentenceProvider(
         DictionaryWorkerEnvironment,
         'providerFixtureMode' | 'providerCredentials'
     >,
+    runtime: TextAiProviderRuntimeOptions = {},
 ): SentenceAiProvider {
     if (environment.providerFixtureMode === 'deterministic') {
         const unavailable = async (): Promise<never> => {
@@ -88,6 +92,7 @@ export function createWorkerSentenceProvider(
         return { generate: unavailable, check: unavailable };
     }
     return createSentenceAiProvider({
+        runtime,
         credentials: environment.providerCredentials,
         onProviderFailure: (event) => {
             console.warn('Sentence provider request failed.', event);
@@ -101,7 +106,8 @@ export function createWorkerTextsProvider(
         DictionaryWorkerEnvironment,
         'providerFixtureMode' | 'providerCredentials'
     >,
-) {
+    runtime: TextAiProviderRuntimeOptions = {},
+): TextsAiProvider {
     return environment.providerFixtureMode === 'deterministic'
         ? new DeterministicTextsAiProvider((input) => ({
               draft:
@@ -116,6 +122,7 @@ export function createWorkerTextsProvider(
               usage: { inputTokens: 1, outputTokens: 1 },
           }))
         : createTextsAiProvider({
+              runtime,
               credentials: environment.providerCredentials,
           });
 }
@@ -131,7 +138,7 @@ export function publishWorkerTextAiObservations(
     >,
     database: Parameters<typeof publishTextAiWorkerObservations>[0]['database'],
     workerId: string,
-) {
+): Promise<void> {
     return publishTextAiWorkerObservations({
         conversationCapacityEnabled: true,
         portraitInterviewExecutionEnabled:
@@ -197,6 +204,10 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         maxConnections: environment.databaseMaxConnections,
     });
     const database = createDrizzleDatabase(sql, databaseSchema);
+    const providerRuntime = createTextAiProviderRuntime(
+        database,
+        environment.providerCredentials,
+    );
     const audioDeployed = ['staging', 'production'].includes(
         process.env.APP_ENV ?? 'development',
     );
@@ -289,6 +300,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             pastedTerms: pastedTermsProvider,
         },
         router: new DictionaryTextProviderRouter({
+            ...providerRuntime,
             credentials: environment.providerCredentials,
             ...(environment.providerFixtureMode === 'deterministic'
                 ? {
@@ -413,7 +425,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const { worker: sentenceWorker } = createSentenceWorkerRuntimeComposition({
         database,
         timeoutMs: environment.sentenceAiTimeoutMs,
-        provider: createWorkerSentenceProvider(environment),
+        provider: createWorkerSentenceProvider(environment, providerRuntime),
         onInvalidModelOutput: (event) => {
             console.warn('Sentence model output rejected.', event);
         },
@@ -463,7 +475,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const textsWorker = textsFormats.length
         ? createTextsWorkerComposition({
               database,
-              provider: createWorkerTextsProvider(environment),
+              provider: createWorkerTextsProvider(environment, providerRuntime),
               supportedFormats: textsFormats,
               clock: { now: () => new Date() },
               workerId,

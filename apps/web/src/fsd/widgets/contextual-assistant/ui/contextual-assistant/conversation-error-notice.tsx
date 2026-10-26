@@ -34,11 +34,6 @@ export function ConversationErrorNotice({
     );
     if (failureCode === 'model_unavailable') {
         message = copy.modelUnavailable;
-        action = (
-            <ButtonLink variant='secondary' href={href('/profile')}>
-                {copy.chooseModel}
-            </ButtonLink>
-        );
     }
     if (failureCode === 'credits_exhausted') {
         message = copy.creditsExhausted;

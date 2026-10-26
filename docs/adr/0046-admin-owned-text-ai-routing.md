@@ -2,9 +2,9 @@
 type: adr
 id: ADR-0046
 title: Admin-owned text AI routing and verified model routes
-status: proposed
+status: accepted
 date: 2026-10-25
-supersedes: 'Proposed partial replacement of ADR-0026 learner model selection, ADR-0037 contextual Auto/Flash-only routing, ADR-0021 no-fallback routing and ADR-0045 model-oriented customer tariff selection; other guarantees remain active'
+supersedes: 'Partial replacement of ADR-0026 learner model selection, ADR-0037 contextual Auto/Flash-only routing, ADR-0021 no-fallback routing and ADR-0045 model-oriented customer tariff selection; other guarantees remain active'
 ---
 
 # ADR-0046: Admin-owned text AI routing and verified model routes
@@ -17,8 +17,9 @@ assign models per flow and remove learner model selection. Multiple backend
 models must not make learner pricing unpredictable or bypass existing funding,
 privacy, worker compatibility and immutable admission guarantees.
 
-This record is proposed pending final shared-understanding confirmation. It is
-not implementation evidence or authorization to activate routes or spend money.
+The user confirmed the design and explicitly authorized feature implementation on
+2026-10-25. Acceptance is not implementation evidence or authorization to activate
+routes or spend money.
 
 ## Decision
 
@@ -58,8 +59,8 @@ bounded transient circuits may recover without paid checks on every submission.
 Quick response does not certify language quality or unrelated flow compatibility.
 
 The detailed [design](../text-ai-routing-design.md) records scope, checks, limits,
-rollout and verification. On acceptance, update relationship metadata of affected
-accepted ADRs without rewriting their historical decisions.
+rollout and verification. Affected ADR relationship metadata records this partial supersession without
+rewriting historical decisions.
 
 ## Alternatives considered
 

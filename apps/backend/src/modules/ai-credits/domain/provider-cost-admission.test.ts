@@ -63,6 +63,59 @@ describe('reviewed provider execution admission', () => {
             }),
         ).toBe(0);
     });
+    it('rejects a request below its minimum without adding that minimum to token costs', () => {
+        const budget = reviewedTextProviderBudget(
+            { ...price, minimumUsdPerRequest: '0.000006' },
+            configured,
+        );
+        expect(
+            providerAffordableOutputTokens({
+                inputTokens: 0,
+                outputLimit: 1000,
+                spentCostMicros: 5,
+                budget,
+            }),
+        ).toBe(0);
+        expect(
+            providerAffordableOutputTokens({
+                inputTokens: 0,
+                outputLimit: 1000,
+                spentCostMicros: 4,
+                budget,
+            }),
+        ).toBe(3);
+        expect(
+            providerAffordableOutputTokens({
+                inputTokens: 1,
+                outputLimit: 1000,
+                budget,
+            }),
+        ).toBe(3);
+    });
+    it('requires an explicit positive reviewed minimum for EvoLink only', () => {
+        expect(() =>
+            reviewedTextProviderBudget(
+                { ...price, providerId: 'evolink' },
+                configured,
+            ),
+        ).toThrow('minimum');
+        expect(() =>
+            reviewedTextProviderBudget(
+                { ...price, providerId: 'evolink', minimumUsdPerRequest: '0' },
+                configured,
+            ),
+        ).toThrow('minimum');
+        expect(() =>
+            reviewedTextProviderBudget(
+                {
+                    ...price,
+                    providerId: 'evolink',
+                    minimumUsdPerRequest: '0.000150',
+                },
+                configured,
+            ),
+        ).not.toThrow();
+    });
     it('requires reviewed rates for all declared meters and rejects unsupported numeric rates', () => {
         expect(() => reviewedTextProviderBudget(null, configured)).toThrow();
         expect(() =>

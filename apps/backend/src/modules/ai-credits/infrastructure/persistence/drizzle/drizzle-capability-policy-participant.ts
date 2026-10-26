@@ -1,3 +1,4 @@
+import { admissionPolicyReads } from './admission-policy-read-cache';
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { z } from 'zod';
@@ -20,6 +21,20 @@ export class CapabilityPolicyConflictError extends Error {}
 export class DrizzleCapabilityPolicyParticipant {
     constructor(private readonly tx: AiCreditTransaction) {}
     async current(
+        capability: CapabilityPolicy['capability'],
+    ): Promise<CapabilityPolicy> {
+        const cached = admissionPolicyReads(this.tx);
+        if (!cached) return this.readCurrent(capability);
+        let policy = cached.policies.get(capability);
+        if (!policy) {
+            policy = this.readCurrent(capability);
+            cached.policies.set(capability, policy);
+        }
+
+        return policy;
+    }
+
+    private async readCurrent(
         capability: CapabilityPolicy['capability'],
     ): Promise<CapabilityPolicy> {
         const [row] = await this.tx
@@ -95,6 +110,16 @@ export class DrizzleCapabilityPolicyParticipant {
     }
 
     async settings(): Promise<z.infer<typeof AiAccountingSettingsSchema>> {
+        const cached = admissionPolicyReads(this.tx);
+        if (!cached) return this.readSettings();
+        cached.settings ??= this.readSettings();
+
+        return cached.settings;
+    }
+
+    private async readSettings(): Promise<
+        z.infer<typeof AiAccountingSettingsSchema>
+    > {
         const [row] = await this.tx
             .select()
             .from(aiAccountingSettingsRevisionsTable)
@@ -161,6 +186,8 @@ export class DrizzleCapabilityPolicyParticipant {
             reason: input.reason,
         });
 
+        const cached = admissionPolicyReads(this.tx);
+        if (cached) delete cached.settings;
         const result = await this.settings();
         await this.tx.insert(adminAuditEventsTable).values({
             id: randomUUID(),
@@ -234,6 +261,7 @@ export class DrizzleCapabilityPolicyParticipant {
             reason: input.reason,
         });
 
+        admissionPolicyReads(this.tx)?.policies.delete(input.capability);
         const result = await this.current(input.capability);
         await this.tx.insert(adminAuditEventsTable).values({
             id: randomUUID(),

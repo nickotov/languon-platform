@@ -1,0 +1,151 @@
+{
+    "results": [
+        {
+            "routeId": "evolink/gpt-6-luna",
+            "kind": "quick",
+            "state": "passed",
+            "failure": null,
+            "elapsedMs": 2280,
+            "firstOutputMs": null,
+            "inputTokens": 29,
+            "outputTokens": 4,
+            "measurement": "measured",
+            "calculatedProviderCostUsd": "0.000150",
+            "maximumCostUsd": "0.010000",
+            "minimumUsdPerRequest": "0.000150",
+            "diagnostics": [
+                {
+                    "status": 200,
+                    "modelId": "gpt-6-luna",
+                    "maxOutputTokens": 128,
+                    "streaming": false,
+                    "rejectionClass": null
+                }
+            ]
+        },
+        {
+            "routeId": "openrouter/openai/gpt-6-luna",
+            "kind": "quick",
+            "state": "failed",
+            "failure": "authorization_failed",
+            "elapsedMs": 844,
+            "firstOutputMs": null,
+            "inputTokens": null,
+            "outputTokens": null,
+            "measurement": "unknown",
+            "calculatedProviderCostUsd": null,
+            "maximumCostUsd": "0.010000",
+            "minimumUsdPerRequest": null,
+            "diagnostics": [
+                {
+                    "status": 401,
+                    "modelId": "openai/gpt-6-luna",
+                    "maxOutputTokens": 128,
+                    "streaming": false,
+                    "providerCode": 401,
+                    "rejectionClass": null
+                }
+            ]
+        },
+        {
+            "routeId": "openrouter/qwen/qwen3.5-flash-02-23",
+            "kind": "quick",
+            "state": "failed",
+            "failure": "authorization_failed",
+            "elapsedMs": 177,
+            "firstOutputMs": null,
+            "inputTokens": null,
+            "outputTokens": null,
+            "measurement": "unknown",
+            "calculatedProviderCostUsd": null,
+            "maximumCostUsd": "0.010000",
+            "minimumUsdPerRequest": null,
+            "diagnostics": [
+                {
+                    "status": 401,
+                    "modelId": "qwen/qwen3.5-flash-02-23",
+                    "maxOutputTokens": 128,
+                    "streaming": false,
+                    "providerCode": 401,
+                    "rejectionClass": null
+                }
+            ]
+        },
+        {
+            "routeId": "openrouter/google/gemini-3.1-flash-lite",
+            "kind": "quick",
+            "state": "failed",
+            "failure": "authorization_failed",
+            "elapsedMs": 193,
+            "firstOutputMs": null,
+            "inputTokens": null,
+            "outputTokens": null,
+            "measurement": "unknown",
+            "calculatedProviderCostUsd": null,
+            "maximumCostUsd": "0.010000",
+            "minimumUsdPerRequest": null,
+            "diagnostics": [
+                {
+                    "status": 401,
+                    "modelId": "google/gemini-3.1-flash-lite",
+                    "maxOutputTokens": 128,
+                    "streaming": false,
+                    "providerCode": 401,
+                    "rejectionClass": null
+                }
+            ]
+        },
+        {
+            "routeId": "evolink/gpt-6-luna",
+            "kind": "flow",
+            "flowId": "card-authoring",
+            "state": "passed",
+            "failure": null,
+            "elapsedMs": 2696,
+            "firstOutputMs": null,
+            "inputTokens": 973,
+            "outputTokens": 78,
+            "measurement": "measured",
+            "calculatedProviderCostUsd": "0.000150",
+            "maximumCostUsd": "0.010000",
+            "minimumUsdPerRequest": "0.000150",
+            "diagnostics": [
+                {
+                    "status": 200,
+                    "modelId": "gpt-6-luna",
+                    "maxOutputTokens": 2048,
+                    "streaming": false,
+                    "rejectionClass": null
+                }
+            ]
+        },
+        {
+            "routeId": "openrouter/openai/gpt-6-luna",
+            "kind": "flow",
+            "flowId": "sentence-check",
+            "skipped": "route_quick_check_failed_no_retry"
+        },
+        {
+            "routeId": "openrouter/qwen/qwen3.5-flash-02-23",
+            "kind": "flow",
+            "flowId": "sentence-check",
+            "skipped": "route_quick_check_failed_no_retry"
+        },
+        {
+            "routeId": "openrouter/google/gemini-3.1-flash-lite",
+            "kind": "flow",
+            "flowId": "conversation",
+            "skipped": "route_quick_check_failed_no_retry"
+        }
+    ],
+    "actualRequests": 5,
+    "maximumRequests": 8,
+    "maximumAuthorizedUsd": "0.080000",
+    "expenses": {
+        "records": 5,
+        "calculated_usd_micros": "300",
+        "unknown_records": 3
+    },
+    "learnerHolds": 0,
+    "sourceFreeze": "sourcefreeze-feature054-20261025"
+}

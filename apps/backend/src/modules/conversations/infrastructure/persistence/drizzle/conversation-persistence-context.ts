@@ -37,7 +37,19 @@ export const chatView = (r: ChatRow) => ({
     updatedAt: r.updatedAt.toISOString(),
 });
 
-export const turnView = (r: TurnRow) => ({
+/** Learner projection deliberately has no access to private execution metadata. */
+type PublicTurnRow = Pick<
+    TurnRow,
+    | 'id'
+    | 'conversationId'
+    | 'status'
+    | 'failureCode'
+    | 'usage'
+    | 'billing'
+    | 'createdAt'
+    | 'updatedAt'
+>;
+export const turnView = (r: PublicTurnRow) => ({
     id: r.id,
     conversationId: r.conversationId,
     status: r.status,
@@ -50,11 +62,7 @@ export const turnView = (r: TurnRow) => ({
     },
     outputLimitReached: r.usage.outputLimitReached ?? false,
     ...(r.billing ? { billing: r.billing } : {}),
-    modelId:
-        typeof (r.execution.snapshot as Record<string, unknown> | undefined)
-            ?.modelId === 'string'
-            ? (r.execution.snapshot as { modelId: string }).modelId
-            : null,
+    modelId: null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
 });
@@ -113,7 +121,7 @@ export interface ConversationPersistenceDependencies {
         title: string,
     ) => Promise<void>;
     now?: () => Date;
-    admitTurn: (
+    admitTurn: ((
         tx: ConversationsTransaction,
         input: {
             ownerId: string;
@@ -124,7 +132,9 @@ export interface ConversationPersistenceDependencies {
             confirmedQuoteId?: string;
             inputTokenBound?: number;
         },
-    ) => Promise<Record<string, unknown>>;
+    ) => Promise<Record<string, unknown>>) & {
+        prepare?: (tx: ConversationsTransaction) => Promise<void>;
+    };
     publishNote: (
         tx: ConversationsTransaction,
         ownerId: string,

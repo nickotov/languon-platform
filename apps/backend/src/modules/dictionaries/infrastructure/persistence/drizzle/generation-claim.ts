@@ -1,7 +1,9 @@
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { dictionaryActionInputOverhead } from './legacy-generation-input-limit';
 import {
     usesLegacyAction,
     admitLegacyAttempt,
+    admittedLegacyExecution,
 } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import {
@@ -323,6 +325,7 @@ export async function claim(
 
         if (!claimed) return null;
         if (usesLegacyAction(candidate.selectedExecutionSnapshot)) {
+            let routeUnavailable = false;
             const admitted = await admitLegacyAttempt(tx, {
                 id: candidate.id,
                 ownerId: candidate.ownerId,
@@ -335,6 +338,14 @@ export async function claim(
                     candidate.inputPayload,
                 ),
                 at: input.context.now,
+            }).catch((error: unknown) => {
+                if (error instanceof TextAiSelectionUnavailableError) {
+                    routeUnavailable = true;
+
+                    return null;
+                }
+
+                throw error;
             });
 
             if (!admitted) {
@@ -347,7 +358,9 @@ export async function claim(
                     .set({
                         completedAt: input.context.now,
                         executionState: 'failed',
-                        failureCategory: 'ai_credits_exhausted',
+                        failureCategory: routeUnavailable
+                            ? 'provider_unavailable'
+                            : 'ai_credits_exhausted',
                         heartbeatAt: null,
                         inputPayload: null,
                         leaseDeadline: null,
@@ -410,7 +423,12 @@ export async function claim(
                 claimed.selectedExecutionSnapshot,
             )
                 ? {
-                      ...claimed.selectedExecutionSnapshot,
+                      ...(await admittedLegacyExecution(
+                          tx,
+                          claimed.selectedExecutionSnapshot,
+                          claimed.id,
+                          claimed.attemptCount,
+                      )),
                       aggregateBudget: candidateProviderBudget,
                   }
                 : (claimed.selectedExecutionSnapshot ??

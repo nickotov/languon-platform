@@ -1,5 +1,10 @@
 import type { TextAiExecutionSnapshot as DictionaryAiExecutionSnapshot } from '../../../text-ai/application/text-ai-provider-catalog';
-import { resolveTextAiExecutionSnapshot } from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
+import {
+    resolveTextAiExecutionSnapshot,
+    resolveTextAiProviderOptions,
+    validateTextAiRouteRuntimeIdentity,
+} from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
+import type { TextAiProviderRuntimeOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
 import type { CardAuthoringProposalGenerator } from '../../application/ports/card-authoring-proposal-generator';
 import type { CardProposalGenerator } from '../../application/ports/card-proposal-generator';
 import type { DictionaryGenerationProviderBudgetPolicy } from '../../application/ports/dictionary-generation-provider-policy';
@@ -7,10 +12,6 @@ import type { ImportPairsProposalGenerator } from '../../application/ports/impor
 import type { PastedTermsProposalGenerator } from '../../application/ports/pasted-terms-proposal-generator';
 import { createCardAuthoringProposalGenerator } from './card-authoring-proposal-generators';
 import { createCardProposalGenerator } from './card-proposal-generators';
-import {
-    createTextAiMastraGeneratorOptions as createDictionaryTextMastraGeneratorOptions,
-    findTextAiModel as findDictionaryTextModel,
-} from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 import { createImportPairsProposalGenerator } from './import-pairs-proposal-generators';
 import { createPastedTermsProposalGenerator } from './pasted-terms-proposal-generators';
 
@@ -22,10 +23,16 @@ export interface DictionaryTextProviderSet {
 }
 
 export type DictionaryTextProviderCredentials = Partial<
-    Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>
+    Record<
+        | 'DEEPSEEK_API_KEY'
+        | 'KIE_API_KEY'
+        | 'EVOLINK_API_KEY'
+        | 'OPENROUTER_API_KEY',
+        string
+    >
 >;
 
-export interface DictionaryTextProviderRouterOptions {
+export interface DictionaryTextProviderRouterOptions extends TextAiProviderRuntimeOptions {
     credentials: DictionaryTextProviderCredentials;
     factory?: (
         snapshot: DictionaryAiExecutionSnapshot,
@@ -57,7 +64,8 @@ export class DictionaryTextProviderRouter {
         snapshot: DictionaryAiExecutionSnapshot,
         budget: DictionaryGenerationProviderBudgetPolicy,
     ): DictionaryTextProviderSet {
-        const catalogModel = resolveTextAiExecutionSnapshot(snapshot, budget);
+        resolveTextAiExecutionSnapshot(snapshot, budget);
+        validateTextAiRouteRuntimeIdentity(snapshot, this.options);
         const credential =
             this.options.credentials[snapshot.credentialReference];
         if (!credential)
@@ -73,7 +81,7 @@ export class DictionaryTextProviderRouter {
         }
         const providers = this.options.factory
             ? this.options.factory(snapshot, credential)
-            : createProviderSet(catalogModel.id, snapshot, credential);
+            : createProviderSet(snapshot, credential, this.options);
         this.cache.set(key, providers);
         while (this.cache.size > this.maximumCachedConfigurations) {
             const oldestKey = this.cache.keys().next().value as
@@ -154,19 +162,15 @@ export function createDictionaryTextProviderRoutingAdapters(options: {
 }
 
 function createProviderSet(
-    catalogIdentity: string,
     snapshot: DictionaryAiExecutionSnapshot,
     credential: string,
+    options: TextAiProviderRuntimeOptions,
 ): DictionaryTextProviderSet {
-    const model = findDictionaryTextModel(
-        `${snapshot.providerId}/${catalogIdentity}`,
-    );
-    if (!model)
-        throw new Error('Dictionary text provider model is unsupported.');
-    const shared = createDictionaryTextMastraGeneratorOptions({
-        apiKey: credential,
-        model,
-        providerBudget: snapshot.aggregateBudget,
+    const shared = resolveTextAiProviderOptions({
+        snapshot,
+        budget: snapshot.aggregateBudget,
+        credentials: { [snapshot.credentialReference]: credential },
+        ...options,
     });
     // Admitted budgets belong to the requested action. Unused providers may
     // have different envelope requirements and must not block its execution.
@@ -202,5 +206,18 @@ function stableSnapshotKey(snapshot: DictionaryAiExecutionSnapshot): string {
         perCallMaxOutputTokens: snapshot.perCallMaxOutputTokens,
         providerId: snapshot.providerId,
         supportedFormats: [...snapshot.supportedFormats].sort(),
+        routingAuthority: snapshot.routingAuthority
+            ? {
+                  revisionId: snapshot.routingAuthority.revisionId,
+                  flowId: snapshot.routingAuthority.flowId,
+                  candidates: snapshot.routingAuthority.candidates.map(
+                      (candidate) => ({
+                          routeId: candidate.routeId,
+                          fingerprint: candidate.fingerprint,
+                          providerPrice: candidate.providerPrice,
+                      }),
+                  ),
+              }
+            : null,
     });
 }

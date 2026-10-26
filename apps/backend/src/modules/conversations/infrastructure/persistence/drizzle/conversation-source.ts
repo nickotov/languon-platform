@@ -123,7 +123,10 @@ export class ConversationSourceResolver {
                 .where(eq(dictionariesTable.id, source.id));
 
             if (!candidate) throw conversationUnavailable();
-            await this.owner(tx, candidate.ownerId, lockRows);
+            // resolve() verified this actor already; shared resources still need
+            // their separate source owner's lifecycle check and lock.
+            if (candidate.ownerId !== ownerId)
+                await this.owner(tx, candidate.ownerId, lockRows);
             const dictionaryQuery = tx
                 .select()
                 .from(dictionariesTable)
@@ -339,7 +342,8 @@ export class ConversationSourceResolver {
             .where(eq(textsTable.id, source.id));
 
         if (!candidate) throw conversationUnavailable();
-        await this.owner(tx, candidate.ownerId, lockRows);
+        if (candidate.ownerId !== ownerId)
+            await this.owner(tx, candidate.ownerId, lockRows);
         const folderQuery =
             candidate.folderId === null
                 ? undefined

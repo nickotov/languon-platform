@@ -1,3 +1,4 @@
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { parseCreditMilli } from '../../../domain/exact-credit-amount';
 import {
     DrizzleOperatorBudgetParticipant,
@@ -244,6 +245,15 @@ export class DrizzleActionAccountingParticipant {
                 'message' in cause
             ) {
                 if (
+                    typeof cause.message === 'string' &&
+                    [
+                        'Route disabled before dispatch',
+                        'Route excluded before dispatch',
+                        'Fallback cannot reduce confirmed allowance',
+                    ].includes(cause.message)
+                )
+                    throw new TextAiSelectionUnavailableError();
+                if (
                     cause.message ===
                     'Action affordable output allowance exhausted'
                 )
@@ -252,6 +262,7 @@ export class DrizzleActionAccountingParticipant {
                     typeof cause.message === 'string' &&
                     [
                         'Provider operational capacity is unavailable',
+                        'Provider request minimum exceeds operator allowance',
                         'Action execution allowance is unavailable',
                         'Action input execution allowance exceeded',
                     ].includes(cause.message)

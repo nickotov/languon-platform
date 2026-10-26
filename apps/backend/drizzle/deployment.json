@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
-    "reviewedThrough": "0106_accounting_scheduled_speech_cancellation",
-    "reviewedMigrationsSha256": "d97395b6d040c505e3c39c46c9a4fa0ea0f20ce35124eb1bb99a90affba65c83",
-    "compatibility": "contract",
-    "rationale": "Feature052 is a development-only fresh-database credit-unit and charging-policy cutover. Stop all old APIs/workers and preserve the old database. Migration0089 rejects nonempty ledgers and active legacy work; no in-place conversion or blue/green production rollout is authorized. See docs/operations/ai-accounting.md and ADR-0045. Fresh forward migration and old-ledger rejection are verified on isolated databases."
+    "reviewedThrough": "0108_admin_routing_execution_authority",
+    "reviewedMigrationsSha256": "47a17a7a94b9b9a3fb91475d41340277c91bba4bcd8c9ce1e89433dea501911f",
+    "compatibility": "migrate",
+    "rationale": "Feature054 adds routing, immutable dispatch receipts, bounded probe and health tables and updates financial dispatch functions without resetting balances or historical execution. Apply migrations with old APIs/workers stopped, then deploy matching code; mixed-version routing authority is not supported. Prior Feature052 fresh-database cutover restrictions still apply when upgrading databases predating0089. Fresh forward migration, worker role guards and financial settlement are verified on disposable databases."
 }

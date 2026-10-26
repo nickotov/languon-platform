@@ -5,7 +5,7 @@ title: 'Dictionary AI provider routing'
 status: accepted
 date: 2026-09-23
 supersedes: 'None'
-superseded_in_part_by: 'ADR-0026 configuration ownership and global-only selection; ADR-0038 retired DeepSeek Chat/arbitrary legacy model execution'
+superseded_in_part_by: 'ADR-0026 configuration ownership and global-only selection; ADR-0038 retired DeepSeek Chat/arbitrary legacy model execution; ADR-0046 administrator-owned default/per-flow selection and approved bounded fallback'
 ---
 
 # ADR-0021: Dictionary AI provider routing

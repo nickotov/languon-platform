@@ -10,12 +10,12 @@ source_paths:
 
 # Text AI providers, model checks and flow routing
 
-The twenty interview decisions are settled. The consolidated design awaits final
-confirmation; research and individual answers do not authorize implementation.
-Existing uncommitted Kie error-handling work remains separate.
+The twenty interview decisions and consolidated design are confirmed. Feature 054
+is implementing them after the prior Kie diagnostics were committed separately.
+The learner also authorized bounded synthetic requests to real providers for verification.
 
 See the [consolidated design](../text-ai-routing-design.md) and
-[proposed ADR-0046](../adr/0046-admin-owned-text-ai-routing.md).
+[accepted ADR-0046](../adr/0046-admin-owned-text-ai-routing.md).
 
 ## Confirmed requirements
 

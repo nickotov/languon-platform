@@ -30,9 +30,7 @@ export function InterviewErrorNotice({
         return () => cancelAnimationFrame(frame);
     }, [error]);
     const { href } = useI18n();
-    const modelUnavailable = error === 'model_unavailable';
     const creditsUnavailable = error === 'credits_exhausted';
-    const modelSettingsLabel = `${interviewText(locale, 'modelSettings')} (${interviewText(locale, 'opensNewTab')})`;
     const creditsLabel = `${interviewText(locale, 'credits')} (${interviewText(locale, 'opensNewTab')})`;
     const limitReached = error === 'resource_limit';
     return (
@@ -52,18 +50,6 @@ export function InterviewErrorNotice({
                     >
                         {interviewText(locale, 'manual')}
                     </Button>
-                    {modelUnavailable ? (
-                        <ButtonLink
-                            size='compact'
-                            variant='ghost'
-                            href={href('/profile?tab=account')}
-                            target='_blank'
-                            rel='noopener noreferrer'
-                            aria-label={modelSettingsLabel}
-                        >
-                            {interviewText(locale, 'modelSettings')}
-                        </ButtonLink>
-                    ) : null}
                     {creditsUnavailable ? (
                         <ButtonLink
                             size='compact'

@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:a5471c7cee98969c
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:8be6ba4653144cd2
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -1443,21 +1443,19 @@ test('two copied dictionary cards retain typed labels, language directions and i
     await send(page, 'Show the unavailable model guidance.');
     await expect(
         panel.getByText(
-            'This model cannot run the assistant. Choose Automatic or DeepSeek Flash in Profile.',
+            'AI is unavailable right now. Your messages are kept. Try again later.',
             { exact: true },
         ),
     ).toBeVisible();
     await expect(
         panel.getByRole('link', { name: 'Change AI model', exact: true }),
-    ).toHaveAttribute('href', '/profile');
+    ).toHaveCount(0);
     await expect(
         panel.getByText('Synthetic model capability unavailable.', {
             exact: true,
         }),
     ).toHaveCount(0);
-    await panel
-        .getByRole('link', { name: 'Change AI model', exact: true })
-        .scrollIntoViewIfNeeded();
+    await panel.getByRole('alert').last().scrollIntoViewIfNeeded();
     await capture(page, info, 'assistant-model-guidance-controlled');
     await page.unroute(admissionPattern);
     await send(page, 'Explain the difference between these two copied cards.');

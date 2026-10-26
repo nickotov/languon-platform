@@ -9,9 +9,6 @@ import {
     type SessionRequest,
 } from '../api/preferences-api';
 
-export function choiceOf(preference: TextAiPreferenceResponse): string {
-    return preference.mode === 'auto' ? 'auto' : preference.modelId!;
-}
 export function useModelPreference(requestWithSession: SessionRequest) {
     const actor = useSessionStore((state) => state.user?.id ?? null);
     const authenticated = useSessionStore(
@@ -21,7 +18,6 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     const actorRef = useRef(actor);
     actorRef.current = actor;
     const [base, setBase] = useState<TextAiPreferenceResponse | null>(null);
-    const [draft, setDraft] = useState<string | null>(null);
     const [budgetDraft, setBudgetDraft] = useState('');
     const [saveState, setSaveState] = useState<
         'idle' | 'saving' | 'saved' | 'error' | 'rejected' | 'conflict'
@@ -37,17 +33,8 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         gcTime: 0,
         refetchOnWindowFocus: false,
     });
-    const catalog = useQuery({
-        queryKey: ['text-ai-catalog', actor],
-        queryFn: () => requestWithSession(preferencesApi.catalog),
-        enabled: authenticated && actor !== null,
-        retry: false,
-        gcTime: 0,
-        refetchOnWindowFocus: false,
-    });
     useEffect(() => {
         setBase(null);
-        setDraft(null);
         setBudgetDraft('');
         setLatest(null);
         setSaveState('idle');
@@ -65,7 +52,6 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     useEffect(() => {
         if (pref.data && !base && authenticated) {
             setBase(pref.data);
-            setDraft(choiceOf(pref.data));
             setBudgetDraft(pref.data.maxCreditsPerAction ?? '');
         }
     }, [pref.data, base, authenticated]);
@@ -85,26 +71,15 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     const dirty =
         authenticated &&
         base !== null &&
-        (draft !== choiceOf(base) ||
-            budgetDraft !== (base.maxCreditsPerAction ?? ''));
-    const draftModel = catalog.data?.models.find((model) => model.id === draft);
-    const available =
-        draft === 'auto' || draftModel?.availability === 'available';
+        budgetDraft !== (base.maxCreditsPerAction ?? '');
     const saveAllowed =
         dirty &&
         budgetValid &&
         online &&
-        available &&
         saveState !== 'saving' &&
         saveState !== 'conflict';
-    function select(value: string) {
-        if (savingRef.current) return;
-        setDraft(value);
-        if (saveState !== 'conflict') setSaveState('idle');
-    }
     function cancel() {
         if (!base || savingRef.current) return;
-        setDraft(choiceOf(base));
         setBudgetDraft(base.maxCreditsPerAction ?? '');
         setLatest(null);
         setSaveState('idle');
@@ -125,48 +100,26 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             /* The query exposes its failure for retry. */
         }
     }
-    async function save(overwrite = false, selectedChoice?: string) {
+    async function save(overwrite = false) {
         const expected = overwrite ? latest : base;
-        const choice = selectedChoice ?? draft;
-        const choiceAvailable =
-            choice === 'auto' ||
-            catalog.data?.models.some(
-                (model) =>
-                    model.id === choice && model.availability === 'available',
-            ) === true;
         if (
             !authenticated ||
             !expected ||
-            !choice ||
             !online ||
-            !choiceAvailable ||
             !budgetValid ||
             savingRef.current
         )
             return;
         if (!overwrite && saveState === 'conflict') return;
         const owner = actor;
-        setDraft(choice);
         savingRef.current = true;
         setSaveState('saving');
         try {
-            const body =
-                choice === 'auto'
-                    ? {
-                          mode: 'auto' as const,
-                          expectedVersion: expected.version,
-                          ...(budgetDraft
-                              ? { maxCreditsPerAction: budgetDraft }
-                              : {}),
-                      }
-                    : {
-                          mode: 'explicit' as const,
-                          modelId: choice,
-                          expectedVersion: expected.version,
-                          ...(budgetDraft
-                              ? { maxCreditsPerAction: budgetDraft }
-                              : {}),
-                      };
+            const body = {
+                mode: 'auto' as const,
+                expectedVersion: expected.version,
+                ...(budgetDraft ? { maxCreditsPerAction: budgetDraft } : {}),
+            };
             const saved = await requestWithSession((token) =>
                 preferencesApi.save(token, body),
             );
@@ -177,7 +130,6 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             )
                 return;
             setBase(saved);
-            setDraft(choiceOf(saved));
             setBudgetDraft(saved.maxCreditsPerAction ?? '');
             setLatest(null);
             setSaveState('saved');
@@ -195,12 +147,6 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             ) {
                 setSaveState('conflict');
                 await reloadLatest();
-            } else if (
-                error instanceof PreferenceApiError &&
-                error.code === 'model_unavailable'
-            ) {
-                setSaveState('rejected');
-                void catalog.refetch();
             } else setSaveState('error');
         } finally {
             if (actorRef.current === owner) savingRef.current = false;
@@ -209,15 +155,12 @@ export function useModelPreference(requestWithSession: SessionRequest) {
     function useLatest() {
         if (!latest) return;
         setBase(latest);
-        setDraft(choiceOf(latest));
         setBudgetDraft(latest.maxCreditsPerAction ?? '');
         setLatest(null);
         setSaveState('idle');
     }
     return {
         base: authenticated ? base : null,
-        draft: authenticated ? draft : null,
-        catalog,
         pref,
         dirty,
         saveState,
@@ -231,7 +174,6 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             setBudgetDraft(value);
             if (saveState !== 'conflict') setSaveState('idle');
         },
-        select,
         cancel,
         save,
         reloadLatest,

@@ -1,3 +1,4 @@
+import { TextAiProbeUnavailableError } from '../../../text-ai/application/ports/text-ai-probe-store';
 import { SentenceLibraryDeletionBusyError } from '../../../learning/application/ports/sentence-library-store';
 import {
     SentenceConflictError,
@@ -27,6 +28,31 @@ export function mapAdministrationHttpError(
     error: Error,
 ): AdministrationHttpError {
     if (error instanceof AdministrationHttpError) return error;
+    if (error instanceof TextAiProbeUnavailableError) {
+        const messages = {
+            probe_recovery_required:
+                'An earlier check has uncertain execution. Confirm upstream work has stopped and record recovery before another check.',
+            probe_limit_changed:
+                'The model-check maximum changed. Refresh and confirm the current maximum.',
+            probe_budget_insufficient:
+                'The approved per-check budget cannot fund this route. Review its request minimum and spending limit.',
+            probe_limit_reached:
+                'The daily model-check spending limit has been reached.',
+            probe_busy: 'Another model check is running for this provider.',
+            probe_cooldown: 'Wait briefly before checking this route again.',
+            probe_prices_missing:
+                'Publish reviewed provider prices before running this check.',
+            probe_route_unavailable:
+                'This reviewed route or flow is not available for checks.',
+            probe_check_required:
+                'Run a matching successful flow check before activation.',
+        };
+        return new AdministrationHttpError(
+            error.code,
+            messages[error.code],
+            error.code === 'probe_limit_reached' ? 429 : 409,
+        );
+    }
     if (error instanceof SentenceLibraryDeletionBusyError)
         return new AdministrationHttpError(
             'sentence_library_deletion_busy',

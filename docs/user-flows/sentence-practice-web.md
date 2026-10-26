@@ -1,6 +1,6 @@
 ---
 feature: sentence-practice-web
-title: Sentence Practice and Model Preferences Web
+title: Sentence Practice and AI Budget Preferences Web
 status: current
 last_verified: 2026-10-08
 surfaces:
@@ -43,11 +43,11 @@ related_features:
     - user-authentication
 ---
 
-# Sentence Practice and Model Preferences Web
+# Sentence Practice and AI Budget Preferences Web
 
 ## What this verifies
 
-Account text-AI model preferences and sentence training against the completed
+Account text-AI budget preferences and sentence training against the completed
 backend. Saved sentences are reused before generation, AI checks remain the
 default, and explicit reference reveal records a separate personal manual review.
 A round covers each selected word once by appearance. Saved first includes
@@ -102,8 +102,8 @@ and model revision. Verification never changes the user's configuration/data.
 ## Browser verification
 
 1. Sign up with a synthetic account and verify locally. Open Profile → Account.
-   Select an available curated model and save. Reload and confirm it remains
-   selected. A second tab with an older version must preserve its draft on a
+   Set the maximum credits per action and save. Reload and confirm the exact
+   budget remains. No learner model selector or provider name is shown. A second tab with an older version must preserve its draft on a
    save conflict and offer explicit recovery.
 2. Create an English-to-Spanish dictionary and a manual `book` / `libro` card.
    Train → Sentence practice opens setup. Choose direction, explanation language, all
@@ -111,7 +111,7 @@ and model revision. Verification never changes the user's configuration/data.
    is initially selected; the other direction remains selectable.
 3. Start in a viewport-filling dialog or fullscreen. Close practice stays reachable
    in the sticky header. AI settings opens within the same dialog with a Back
-   control; returning preserves the answer draft and guards unsaved model choices.
+   control; returning preserves the answer draft and guards unsaved AI budget changes.
    Required source vocabulary uses solid hint styling; supporting contextual
    content words and whole idioms/phrases use dashed styling and a labelled legend.
    Keyboard/touch activation opens one hint at its active occurrence, including
@@ -199,7 +199,7 @@ and model revision. Verification never changes the user's configuration/data.
   background recovery and prepared practice without implicit generation.
 
 - `model-preference-persistence`: real authenticated two-tab optimistic conflict,
-  preserved selection, explicit recovery and reloaded server persistence.
+  preserved budget draft, explicit recovery and reloaded server persistence.
 - `owner-reader-reference-practice`: real manual card, generated exercise, hints,
   draft presentation continuity, default AI check, sharing, shared secondary-menu/library navigation with retained
   capability and history close focus, zero-credit AI-check denial and saved
@@ -250,8 +250,8 @@ milli-credit storage must not be presented as whole customer credits.
 
 ## Expected failure and edge cases
 
-Model unavailability and optimistic conflicts never silently replace the saved
-choice. Save errors keep the draft. Empty or exhausted review mode never generates
+AI unavailability preserves the answer and offers retry without model selection.
+Optimistic conflicts never silently replace the saved budget. Save errors keep the draft. Empty or exhausted review mode never generates
 sentences. Credit shortages do not reveal the reference automatically. Stored
 reference review needs no available model or credits. Cancelled or unconfirmed
 jobs preserve replay identity; Retry cannot create duplicate paid work. Leaving

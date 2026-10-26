@@ -19,9 +19,14 @@ const transportCodes = new Set([
     'CERT_HAS_EXPIRED',
     'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
 ]);
-const kieErrorEnvelope = z.object({ code: z.number().int().min(400).max(599) });
+const providerErrorCode = z.number().int().min(400).max(599);
+const providerErrorEnvelope = z.union([
+    z.object({ code: providerErrorCode }),
+    z.object({ error: z.object({ code: providerErrorCode }) }),
+]);
 
 export type SentenceProviderFailureReason =
+    | 'schema_incompatible'
     | 'model_retired'
     | 'model_unavailable'
     | 'authorization_failed'
@@ -54,14 +59,37 @@ function status(value: unknown): number | undefined {
         : undefined;
 }
 
-function kieCode(body: unknown): number | undefined {
+function envelopeCode(body: unknown): number | undefined {
     if (typeof body !== 'string' || body.length > 16_384) return undefined;
 
     try {
-        const envelope = kieErrorEnvelope.safeParse(JSON.parse(body));
-        return envelope.success ? envelope.data.code : undefined;
+        const envelope = providerErrorEnvelope.safeParse(JSON.parse(body));
+        return envelope.success
+            ? 'code' in envelope.data
+                ? envelope.data.code
+                : envelope.data.error.code
+            : undefined;
     } catch {
         return undefined;
+    }
+}
+
+function isSchemaIncompatible(body: unknown): boolean {
+    if (typeof body !== 'string' || body.length > 16_384) return false;
+    try {
+        return z
+            .object({
+                error: z.object({
+                    code: z.literal('invalid_json_schema'),
+                    param: z.enum([
+                        'response_format',
+                        'response_format.json_schema',
+                    ]),
+                }),
+            })
+            .safeParse(JSON.parse(body)).success;
+    } catch {
+        return false;
     }
 }
 
@@ -72,7 +100,6 @@ function reason(code: number | undefined): SentenceProviderFailureReason {
         case 404:
             return 'model_unavailable';
         case 401:
-        case 403:
             return 'authorization_failed';
         case 402:
             return 'provider_credits_exhausted';
@@ -90,6 +117,7 @@ export function sentenceProviderFailure(
 ): SentenceProviderFailure {
     const result: SentenceProviderFailure = { reason: 'provider_unavailable' };
     let current = error;
+    let schemaIncompatible = false;
 
     for (let depth = 0; depth < 3; depth += 1) {
         if (!current || typeof current !== 'object') break;
@@ -110,8 +138,19 @@ export function sentenceProviderFailure(
         if (typeof code === 'string' && transportCodes.has(code))
             result.transportCode ??= code;
 
-        if (providerId === 'kie') {
-            const providerCode = kieCode(field(current, 'responseBody'));
+        if (
+            providerId === 'kie' ||
+            providerId === 'openrouter' ||
+            providerId === 'evolink'
+        ) {
+            const responseBody = field(current, 'responseBody');
+            schemaIncompatible ||= isSchemaIncompatible(responseBody);
+            const directCode = status(field(current, 'code'));
+            const providerCode =
+                envelopeCode(responseBody) ??
+                (directCode !== undefined && directCode >= 400
+                    ? directCode
+                    : undefined);
             if (providerCode !== undefined)
                 result.providerCode ??= providerCode;
         }
@@ -119,6 +158,9 @@ export function sentenceProviderFailure(
         current = field(current, 'cause');
     }
 
-    result.reason = reason(result.providerCode ?? result.httpStatus);
+    result.reason =
+        schemaIncompatible && result.httpStatus === 400
+            ? 'schema_incompatible'
+            : reason(result.providerCode ?? result.httpStatus);
     return result;
 }

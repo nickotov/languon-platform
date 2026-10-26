@@ -3,7 +3,6 @@ import { budgetCopy } from '../../lib/action-budget';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { ModelPreferenceController } from '../../hooks/use-model-preference';
 import type { preferenceCopy } from '../../lib/copy';
-import { modelLabel } from './model-option';
 import styles from './model-preference-section.module.css';
 export function PreferenceAlerts({
     controller,
@@ -16,25 +15,9 @@ export function PreferenceAlerts({
 }) {
     const { locale } = useI18n();
     const budget = budgetCopy(locale);
-    const { saveState, latest, catalog, draft } = controller;
-    const models = catalog.data?.models ?? [];
-    const currentSaved =
-        latest?.mode === 'auto' ? 'auto' : (latest?.modelId ?? null);
-    const selected = controller.base?.selectedModel;
-    let savedUnavailable = false;
-    if (controller.base?.mode === 'explicit') {
-        const current = catalog.data?.models.find(
-            (model) => model.id === controller.base?.modelId,
-        );
-        savedUnavailable = catalog.isSuccess
-            ? current?.availability !== 'available'
-            : selected === null || selected?.availability !== 'available';
-    }
+    const { saveState, latest } = controller;
     function retrySave() {
         void controller.save();
-    }
-    function chooseAuto() {
-        controller.select('auto');
     }
     function overwrite() {
         void controller.save(true);
@@ -65,23 +48,6 @@ export function PreferenceAlerts({
                     {copy.saveError}
                 </InlineAlert>
             ) : null}
-            {saveState === 'rejected' || savedUnavailable ? (
-                <InlineAlert
-                    tone='warning'
-                    actions={
-                        <Button
-                            disabled={saveState === 'saving'}
-                            onClick={chooseAuto}
-                            size='compact'
-                            variant='secondary'
-                        >
-                            {copy.chooseAuto}
-                        </Button>
-                    }
-                >
-                    {copy.rejected}
-                </InlineAlert>
-            ) : null}
             {saveState === 'conflict' ? (
                 <InlineAlert tone='warning' title={copy.conflict}>
                     {latest ? (
@@ -89,15 +55,11 @@ export function PreferenceAlerts({
                             <p>
                                 <strong>{copy.latest}</strong>
                                 <br />
-                                {modelLabel(currentSaved, models, copy)}
-                                <br />
                                 {budget.maximum}:{' '}
                                 {latest.maxCreditsPerAction ?? budget.unset}
                             </p>
                             <p>
                                 <strong>{copy.draft}</strong>
-                                <br />
-                                {modelLabel(draft, models, copy)}
                                 <br />
                                 {budget.maximum}:{' '}
                                 {controller.budgetDraft || budget.unset}
@@ -117,13 +79,7 @@ export function PreferenceAlerts({
                             disabled={
                                 !latest ||
                                 !controller.online ||
-                                !controller.budgetValid ||
-                                (draft !== 'auto' &&
-                                    !models.some(
-                                        (model) =>
-                                            model.id === draft &&
-                                            model.availability === 'available',
-                                    ))
+                                !controller.budgetValid
                             }
                             onClick={overwrite}
                             size='compact'

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import type { ChatPreferences, Conversation } from '@languon/contracts';
 import {
@@ -27,7 +26,6 @@ export function ComposerPreferences({
     onChange,
     onDefaults,
     disabled,
-    modelControl,
     defaultsSaved = false,
     portrait,
 }: {
@@ -36,7 +34,6 @@ export function ComposerPreferences({
     onDefaults(): void;
     disabled: boolean;
     workspace?: boolean;
-    modelControl?: ReactNode;
     defaultsSaved?: boolean;
     portrait?:
         | {
@@ -110,7 +107,6 @@ export function ComposerPreferences({
                     />
                     <p>{copy.precedence}</p>
                 </section>
-                {modelControl}
                 <Button
                     variant='secondary'
                     size='compact'

@@ -1,3 +1,4 @@
+import { fixtureRouteFingerprint } from './text-ai-routing-fixture';
 import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
@@ -327,6 +328,7 @@ export async function createContextualAssistantFixture(
             admitTurn: conversationAdmission({
                 routingEnabled: true,
                 credentialConfigured: () => true,
+                routeFingerprint: fixtureRouteFingerprint,
                 pricingAdmissionEnabled: true,
             }),
             settleInterrupted: settleInterruptedConversationCalls,

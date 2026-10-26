@@ -107,6 +107,12 @@ function ProviderRates({ price }: { price: ProviderPrice }) {
     return (
         <>
             <Typography.Paragraph>{label}</Typography.Paragraph>
+            <Typography.Paragraph type='secondary'>
+                {t('accounting.usdMinimumRequestValue', {
+                    minimum:
+                        price.minimumUsdPerRequest ?? t('accounting.unknown'),
+                })}
+            </Typography.Paragraph>
             <Typography.Text type='secondary'>{cache}</Typography.Text>
         </>
     );

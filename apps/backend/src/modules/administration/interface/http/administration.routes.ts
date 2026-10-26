@@ -1,3 +1,5 @@
+import type { TextAiProbeService } from '../../../text-ai/application/text-ai-probe-service';
+import { registerAdminTextAiProbeRoutes } from './admin-text-ai-probe.routes';
 import { randomUUID } from 'node:crypto';
 
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
@@ -71,6 +73,7 @@ const bearerSecurity = [{ bearerAuth: [] as string[] }];
 
 export interface AdministrationRouteDependencies {
     administration: AdministrationService;
+    textAiProbes?: TextAiProbeService;
     authentication: AuthenticationHttpOperations;
     passkeys: PasskeyHttpOperations;
     policy: AuthHttpPolicy;
@@ -353,6 +356,7 @@ export function createAdministrationRoutes(
     );
 
     registerResourceRoutes(app, dependencies, bearer);
+    registerAdminTextAiProbeRoutes(app, dependencies);
     return app;
 }
 

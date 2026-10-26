@@ -2,6 +2,7 @@ import type { ProviderPrice } from '@languon/contracts';
 import { parseFixed } from './accounting';
 
 export interface ProviderExecutionBudget {
+    minimumCostMicrosPerRequest?: number;
     inputCostMicrosPerMillionTokens: number;
     outputCostMicrosPerMillionTokens: number;
     maxCostMicrosPerAttempt: number;
@@ -53,6 +54,14 @@ export function reviewedTextProviderBudget<T extends ProviderExecutionBudget>(
         throw new ProviderCostAdmissionUnavailableError(
             'Reviewed rates are required for every enabled cache meter.',
         );
+    const minimum =
+        price.minimumUsdPerRequest == null
+            ? 0n
+            : rate(price.minimumUsdPerRequest);
+    if (price.providerId === 'evolink' && minimum <= 0n)
+        throw new ProviderCostAdmissionUnavailableError(
+            'Reviewed provider minimum per request is required.',
+        );
     count(configured.maxCostMicrosPerAttempt);
     count(configured.maxInputTokensPerAttempt);
     count(configured.maxOutputTokensPerAttempt);
@@ -69,6 +78,9 @@ export function reviewedTextProviderBudget<T extends ProviderExecutionBudget>(
     );
     return {
         ...configured,
+        ...(price.minimumUsdPerRequest == null
+            ? {}
+            : { minimumCostMicrosPerRequest: Number(minimum) }),
         inputCostMicrosPerMillionTokens: Number(maximumInputRate),
         outputCostMicrosPerMillionTokens: Number(
             rate(price.outputUsdPerMillionTokens),
@@ -88,6 +100,11 @@ export function providerAffordableOutputTokens(input: {
     const inputRate = count(input.budget.inputCostMicrosPerMillionTokens);
     const outputRate = count(input.budget.outputCostMicrosPerMillionTokens);
     const inputCost = (inputTokens * inputRate + MILLION - 1n) / MILLION;
+    const remainingBudget =
+        count(input.budget.maxCostMicrosPerAttempt) -
+        count(input.spentCostMicros ?? 0);
+    if (remainingBudget < count(input.budget.minimumCostMicrosPerRequest ?? 0))
+        return 0;
     const remaining =
         count(input.budget.maxCostMicrosPerAttempt) -
         count(input.spentCostMicros ?? 0) -

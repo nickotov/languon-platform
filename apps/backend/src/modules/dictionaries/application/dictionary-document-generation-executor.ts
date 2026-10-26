@@ -69,6 +69,12 @@ export class DictionaryDocumentGenerationExecutor implements DictionaryGeneratio
             object,
             providerBudget: request.providerBudget,
             providerExecution: request.providerExecution ?? null,
+            providerAttempt: {
+                jobId: request.jobId,
+                attempt: request.attempt,
+                workerId: request.workerId,
+                fencingToken: String(request.fencingToken),
+            },
             ...(request.reportStage
                 ? { reportStage: request.reportStage }
                 : {}),

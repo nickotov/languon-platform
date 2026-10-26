@@ -11,7 +11,7 @@ const en = {
     chargedCredits: 'Charged credits',
 
     modelUnavailable:
-        'This model cannot run the assistant. Choose Automatic or DeepSeek Flash in Profile.',
+        'AI is unavailable right now. Your messages are kept. Try again later.',
     chooseModel: 'Change AI model',
     creditsExhausted:
         'Your AI credits are exhausted. Check your balance before trying again.',
@@ -110,7 +110,7 @@ const ru: Copy = {
     chargedCredits: 'Списано кредитов',
 
     modelUnavailable:
-        'Эта модель недоступна для помощника. Выберите «Автоматически» или DeepSeek Flash в профиле.',
+        'ИИ сейчас недоступен. Сообщения сохранены. Повторите позже.',
     chooseModel: 'Изменить модель ИИ',
     creditsExhausted:
         'Кредиты ИИ закончились. Проверьте баланс перед повторной попыткой.',
@@ -207,7 +207,7 @@ const es: Copy = {
     chargedCredits: 'Créditos cobrados',
 
     modelUnavailable:
-        'Este modelo no está disponible para el asistente. Elige Automático o DeepSeek Flash en Perfil.',
+        'La IA no está disponible. Tus mensajes se conservan. Reinténtalo más tarde.',
     chooseModel: 'Cambiar modelo de IA',
     creditsExhausted:
         'Tus créditos de IA se han agotado. Comprueba tu saldo antes de reintentarlo.',
@@ -306,7 +306,7 @@ const fr: Copy = {
     chargedCredits: 'Crédits facturés',
 
     modelUnavailable:
-        'Ce modèle est indisponible pour l’assistant. Choisissez Automatique ou DeepSeek Flash dans le profil.',
+        'L’IA est indisponible. Vos messages sont conservés. Réessayez plus tard.',
     chooseModel: 'Changer de modèle IA',
     creditsExhausted:
         'Vos crédits IA sont épuisés. Vérifiez votre solde avant de réessayer.',

@@ -227,16 +227,20 @@ describe('dictionary text provider router', () => {
 
     it('routes pinned jobs by immutable snapshot and caches bounded configurations', async () => {
         const deepseek = providers('deepseek');
-        const kie = providers('kie');
+        const reduced = providers('reduced-budget');
+        const reducedBudget = {
+            ...budget,
+            maxCostMicrosPerAttempt: budget.maxCostMicrosPerAttempt - 1,
+        };
+        const reducedSnapshot = snapshot(0, { aggregateBudget: reducedBudget });
         const factory = vi
             .fn()
             .mockReturnValueOnce(deepseek)
-            .mockReturnValueOnce(kie)
+            .mockReturnValueOnce(reduced)
             .mockReturnValueOnce(deepseek);
         const router = new DictionaryTextProviderRouter({
             credentials: {
                 DEEPSEEK_API_KEY: 'deepseek-test-key',
-                KIE_API_KEY: 'kie-test-key',
             },
             factory,
             maximumCachedConfigurations: 1,
@@ -245,17 +249,12 @@ describe('dictionary text provider router', () => {
         expect(router.resolve(snapshot(0), budget)).toBe(deepseek);
         expect(router.resolve(snapshot(0), budget)).toBe(deepseek);
         expect(factory).toHaveBeenCalledTimes(1);
-        expect(
-            router.resolve(
-                snapshot(1),
-                dictionaryAiModelCatalog[1]!.aggregateBudget,
-            ),
-        ).toBe(kie);
+        expect(router.resolve(reducedSnapshot, reducedBudget)).toBe(reduced);
         expect(router.cachedConfigurationCount).toBe(1);
         expect(router.resolve(snapshot(0), budget)).toBe(deepseek);
         expect(factory).toHaveBeenCalledTimes(3);
         expect(factory.mock.calls[0]?.[1]).toBe('deepseek-test-key');
-        expect(factory.mock.calls[1]?.[1]).toBe('kie-test-key');
+        expect(factory.mock.calls[1]?.[1]).toBe('deepseek-test-key');
     });
 
     it('rejects unsupported revisions, altered caps, mismatched budgets, and missing credentials', () => {
@@ -265,6 +264,7 @@ describe('dictionary text provider router', () => {
         });
         for (const invalid of [
             snapshot(0, { adapterRevision: 'openai-compatible:v2' }),
+            snapshot(1),
             snapshot(0, { perCallMaxOutputTokens: 40_960 }),
             snapshot(0, { enabledModelIds: [] }),
             snapshot(0, {
@@ -286,10 +286,10 @@ describe('dictionary text provider router', () => {
             /snapshot is unsupported/i,
         );
         expect(() =>
-            router.resolve(
-                snapshot(1),
-                dictionaryAiModelCatalog[1]!.aggregateBudget,
-            ),
+            new DictionaryTextProviderRouter({
+                credentials: {},
+                factory: vi.fn(() => providers('unused')),
+            }).resolve(snapshot(0), budget),
         ).toThrow(/credential is unavailable/i);
     });
 });

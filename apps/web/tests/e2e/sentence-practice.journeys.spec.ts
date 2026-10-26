@@ -1,5 +1,5 @@
 // @user-flow-revision shared-pronunciation-playback sha256:9803b0d1d5f5c89e
-// @user-flow-revision sentence-practice-web sha256:30e6921701e3a8f5
+// @user-flow-revision sentence-practice-web sha256:6f128098b7270ebb
 
 import { speechCreditFixture } from './support/speech-credit-fixture';
 
@@ -289,23 +289,22 @@ test.describe('sentence practice and model preferences', () => {
         await practice.getByRole('button', { name: /Check with AI/ }).click();
         await expect(
             practice.getByText(
-                'Your selected AI model is unavailable. Choose another model or continue with saved reference answers.',
+                'AI is unavailable right now. Try again later or continue with saved reference answers.',
                 { exact: true },
             ),
         ).toBeVisible();
         await expect(draft).toHaveValue(answer);
         await expect(draft).toBeEnabled();
         await capture(page, info, 'sentence-model-unavailable');
-        await practice
-            .getByRole('button', { name: 'AI preferences', exact: true })
-            .click();
-        const preferences = page.getByRole('dialog', { name: 'AI settings' });
         await expect(
-            preferences.getByRole('group', { name: 'Model for new requests' }),
+            practice.getByRole('button', {
+                name: 'AI preferences',
+                exact: true,
+            }),
+        ).toHaveCount(0);
+        await expect(
+            practice.getByRole('button', { name: 'Try again', exact: true }),
         ).toBeVisible();
-        await preferences
-            .getByRole('button', { name: 'Back to practice' })
-            .click();
         await expect(draft).toHaveValue(answer);
         assertErrors();
     });
@@ -320,63 +319,51 @@ test.describe('sentence practice and model preferences', () => {
         await page.setViewportSize({ width: 1280, height: 1600 });
         await page.goto('/profile');
         const modelCard = page
-            .getByRole('heading', { name: 'AI model', exact: true })
+            .getByRole('heading', { name: 'AI preferences', exact: true })
             .locator('..')
             .locator('..');
-        const explicit = page.getByRole('radio', { name: /^DeepSeek/ }).first();
-        await expect(explicit).toBeEnabled();
-        await page
-            .getByRole('group', { name: 'Model for new requests' })
-            .scrollIntoViewIfNeeded();
-        await capture(page, info, 'profile-model-auto', modelCard);
+        const budget = page.getByRole('textbox', {
+            name: 'Maximum credits per action',
+        });
+        await expect(budget).toBeVisible();
+        await expect(modelCard.getByRole('radio')).toHaveCount(0);
+        await capture(page, info, 'profile-budget-initial', modelCard);
         const other = await context.newPage();
-        await other.setViewportSize({ width: 1280, height: 1600 });
         await other.goto('/profile');
-        await expect(other.getByRole('radio', { name: /^Auto/ })).toBeChecked();
-        await explicit.check();
-        await page.getByRole('button', { name: /Save preference/ }).click();
+        const otherBudget = other.getByRole('textbox', {
+            name: 'Maximum credits per action',
+        });
+        await expect(otherBudget).toBeVisible();
+        await budget.fill('2.145');
+        await page
+            .getByRole('button', { name: 'Save preference', exact: true })
+            .click();
         await expect(page.getByText(/Preference saved/)).toBeVisible();
-        await capture(page, info, 'profile-model-saved', modelCard);
-        await other
-            .getByRole('radio', { name: /^DeepSeek/ })
-            .first()
-            .check();
+        await otherBudget.fill('3.125');
         const conflict = other.waitForResponse(
             (response) =>
                 response.url().endsWith('/users/me/ai-model-preference') &&
                 response.status() === 409,
         );
-        await other.getByRole('button', { name: /Save preference/ }).click();
+        await other
+            .getByRole('button', { name: 'Save preference', exact: true })
+            .click();
         await conflict;
-        await expect(
-            other.getByRole('radio', { name: /^DeepSeek/ }).first(),
-        ).toBeChecked();
+        await expect(otherBudget).toHaveValue('3.125');
         await expect(
             other.getByText(/Your saved preference changed/),
         ).toBeVisible();
-        await capture(
-            other,
-            info,
-            'profile-model-conflict',
-            other
-                .getByRole('heading', { name: 'AI model', exact: true })
-                .locator('..')
-                .locator('..'),
-        );
-        await other.getByRole('button', { name: /Use latest/ }).click();
+        await other
+            .getByRole('button', { name: 'Use latest', exact: true })
+            .click();
+        await expect(otherBudget).toHaveValue('2.145');
         await page.reload();
-        await expect(
-            page.getByRole('radio', { name: /^DeepSeek/ }).first(),
-        ).toBeChecked();
+        await expect(budget).toHaveValue('2.145');
         await setDarkTheme(page);
-        await capture(page, info, 'profile-model-dark', modelCard);
+        await capture(page, info, 'profile-budget-dark', modelCard);
         await page.setViewportSize({ width: 390, height: 844 });
-        await page
-            .getByRole('heading', { name: 'AI model', exact: true })
-            .scrollIntoViewIfNeeded();
-        await capture(page, info, 'profile-model-mobile-dark');
-        await page.getByRole('radio', { name: /^Auto/ }).check();
-        await expect(page.getByRole('radio', { name: /^Auto/ })).toBeFocused();
+        await budget.scrollIntoViewIfNeeded();
+        await budget.fill('4.125');
         const saveMobile = page.getByRole('button', {
             name: 'Save preference',
             exact: true,
@@ -384,10 +371,11 @@ test.describe('sentence practice and model preferences', () => {
         await saveMobile.scrollIntoViewIfNeeded();
         await expect(saveMobile).toBeEnabled();
         await expect(saveMobile).toBeInViewport();
-        await capture(page, info, 'profile-model-mobile-actions-dark');
+        await capture(page, info, 'profile-budget-mobile-dark');
         await page
             .getByRole('button', { name: 'Cancel changes', exact: true })
             .click();
+        await expect(budget).toHaveValue('2.145');
         await expect
             .poll(() =>
                 page.evaluate(
@@ -508,20 +496,17 @@ test.describe('sentence practice and model preferences', () => {
             preferences.getByRole('button', { name: 'Back to practice' }),
         ).toBeVisible();
         await capture(page, info, 'sentence-inline-ai-preferences-mobile');
-        const auto = preferences.getByRole('radio', { name: /^Auto/ });
-        const explicit = preferences
-            .getByRole('radio', { name: /^DeepSeek/ })
-            .first();
-        await expect(
-            preferences.getByText('Saved preference', { exact: true }),
-        ).toBeVisible();
-        if (await auto.isChecked()) await explicit.check();
-        else await auto.check();
+        const budget = preferences.getByRole('textbox', {
+            name: 'Maximum credits per action',
+        });
+        await expect(budget).toBeVisible();
+        await expect(preferences.getByRole('radio')).toHaveCount(0);
+        await budget.fill('2.145');
         await preferences
             .getByRole('button', { name: 'Back to practice' })
             .click();
         const dirtyChoice = page.getByRole('dialog', {
-            name: 'Discard your unsaved model choice?',
+            name: 'Discard your unsaved AI preferences?',
         });
         await expect(dirtyChoice).toBeVisible();
         await dirtyChoice.getByRole('button', { name: 'Keep editing' }).click();
@@ -543,11 +528,8 @@ test.describe('sentence practice and model preferences', () => {
         await page.setViewportSize(desktopViewport);
         await expect(preferenceButtons).toHaveCount(1);
         await preferenceButtons.click();
-        await expect(
-            preferences.getByText('Saved preference', { exact: true }),
-        ).toBeVisible();
-        if (await auto.isChecked()) await explicit.check();
-        else await auto.check();
+        await expect(budget).toBeVisible();
+        await budget.fill('3.125');
         await preferences
             .getByRole('button', { name: 'Close practice', exact: true })
             .click();
@@ -1616,29 +1598,21 @@ test('keeps dirty model preferences across Back without the Navigation API', asy
     await page.getByRole('button', { name: /^Account menu,/ }).click();
     await page.getByRole('link', { name: 'Profile', exact: true }).click();
     await expect(page).toHaveURL(/\/profile$/);
-    const automatic = page.getByRole('radio', { name: /^Auto/ });
-    await expect(
-        page.getByText('Saved preference', { exact: true }),
-    ).toBeVisible();
-    await expect(automatic).toBeEnabled();
-    if (!(await automatic.isChecked())) {
-        await automatic.check();
-        await page
-            .getByRole('button', { name: 'Save preference', exact: true })
-            .click();
-        await expect(page.getByText(/Preference saved/)).toBeVisible();
-    }
-    const explicit = page.getByRole('radio', { name: /^DeepSeek/ }).first();
+    const budget = page.getByRole('textbox', {
+        name: 'Maximum credits per action',
+    });
+    await expect(budget).toBeVisible();
+    const savedBudget = await budget.inputValue();
     const length = await page.evaluate(() => history.length);
-    await explicit.check();
+    await budget.fill('2.145');
     // Immediate traversal must not race passive dirty-state propagation.
     await page.evaluate(() => history.back());
     const guard = page.getByRole('alertdialog', {
-        name: 'Discard unsaved model preference?',
+        name: 'Discard unsaved AI preferences?',
     });
     await expect(guard).toBeVisible();
     await expect(page).toHaveURL(/\/profile$/);
-    await expect(explicit).toBeChecked();
+    await expect(budget).toHaveValue('2.145');
     await capture(page, info, 'profile-back-fallback-keep-draft');
     await guard
         .getByRole('button', { name: 'Keep editing', exact: true })
@@ -1653,7 +1627,7 @@ test('keeps dirty model preferences across Back without the Navigation API', asy
     await expect(page).toHaveURL(/\/dictionaries$/);
     await page.evaluate(() => history.forward());
     await expect(page).toHaveURL(/\/profile$/);
-    await expect(page.getByRole('radio', { name: /^Auto/ })).toBeChecked();
+    await expect(budget).toHaveValue(savedBudget);
     expect(await page.evaluate(() => history.length)).toBe(length);
     assertErrors();
 });
@@ -2288,7 +2262,7 @@ test('reconnects to background preparation and practises the saved batch without
             key: 'model',
             state: 'paused',
             pauseReason: 'model',
-            title: 'Your selected AI model is unavailable',
+            title: 'AI is unavailable right now',
         },
         {
             key: 'stale',
@@ -2355,7 +2329,7 @@ test('reconnects to background preparation and practises the saved batch without
                     name: 'Open AI settings',
                     exact: true,
                 }),
-            ).toBeVisible();
+            ).toHaveCount(0);
         await capture(
             page,
             info,

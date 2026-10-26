@@ -1,3 +1,4 @@
+import { currentTextAiProviderAttemptWitness } from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context';
 import { describe, expect, it, vi } from 'vitest';
 import { createTutorModelGate } from './accounted-tutor-model.js';
 import {
@@ -15,6 +16,56 @@ const input = {
 };
 
 describe('accounted tutor model', () => {
+    it('keeps concurrent SDK dispatch witnesses bound to their admitted calls and clears them afterwards', async () => {
+        let releaseStarted!: () => void;
+        const bothStarted = new Promise<void>((resolve) => {
+            releaseStarted = resolve;
+        });
+        let started = 0;
+        const run = async (jobId: string) => {
+            const provider = scriptedTutorModel(['Synthetic answer']);
+            const original = provider.model.doGenerate.bind(provider.model);
+            const accounting = tutorAccountingFixture();
+            const observations: { jobId: string; attemptId: string }[] = [];
+            provider.model.doGenerate = async (options) => {
+                const before = currentTextAiProviderAttemptWitness();
+                expect(before).toMatchObject({
+                    jobId,
+                    leaseToken: `lease-${jobId}`,
+                });
+                observations.push({
+                    jobId: before!.jobId,
+                    attemptId: before!.attemptId,
+                });
+                started += 1;
+                if (started === 2) releaseStarted();
+                await bothStarted;
+                await Promise.resolve();
+                expect(currentTextAiProviderAttemptWitness()).toEqual(before);
+                return original(options);
+            };
+            const gate = createTutorModelGate({
+                accounting,
+                signal: new AbortController().signal,
+                maxInputTokens: 64000,
+                attemptWitness: { jobId, leaseToken: `lease-${jobId}` },
+            });
+            await gate.wrap(provider.model, 'answer').doGenerate(input);
+            expect(observations).toEqual([
+                { jobId, attemptId: accounting.admit.mock.calls[0]![0].callId },
+            ]);
+            expect(accounting.settle).toHaveBeenCalledOnce();
+            return observations[0]!.attemptId;
+        };
+        expect(currentTextAiProviderAttemptWitness()).toBeUndefined();
+        const attempts = await Promise.all([
+            run('00000000-0000-4000-8000-000000000001'),
+            run('00000000-0000-4000-8000-000000000002'),
+        ]);
+        expect(new Set(attempts).size).toBe(2);
+        expect(currentTextAiProviderAttemptWitness()).toBeUndefined();
+    });
+
     it('awaits durable admission before dispatch and usage settlement before returning', async () => {
         let admit!: () => void;
         let settle!: () => void;

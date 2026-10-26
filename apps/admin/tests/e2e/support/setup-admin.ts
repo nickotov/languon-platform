@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Locator } from '@playwright/test';
 
 /** Real admin forms: deliberately no configuration database fixtures. */
 export async function calibrateAccounting(page: Page) {
@@ -46,45 +46,162 @@ export async function calibrateAccounting(page: Page) {
     await expect(dialog).not.toBeVisible();
 }
 
-export async function configureModel(page: Page) {
+export const routingFlows = [
+    'single-card',
+    'card-authoring',
+    'pasted-terms',
+    'import-pairs',
+    'document-terms',
+    'sentence-generation',
+    'sentence-check',
+    'text-detection',
+    'text-translation',
+    'text-selection-card',
+    'conversation',
+    'portrait-interview',
+];
+
+export async function selectAdminOption(
+    page: Page,
+    control: Locator,
+    name: string | RegExp,
+) {
+    await control.scrollIntoViewIfNeeded();
+    await control.press('ArrowDown', { timeout: 10_000 });
+    if (
+        typeof name === 'string' &&
+        (await control.getAttribute('readonly')) === null
+    )
+        await control.fill(name);
+    const popupId = await control.getAttribute('aria-controls');
+    if (!popupId)
+        throw new Error(
+            'The select did not expose its controlled option list.',
+        );
+    await page
+        .locator(`[id=${JSON.stringify(popupId)}]`)
+        .getByRole('option', { name, exact: typeof name === 'string' })
+        .click({ timeout: 10_000 });
+}
+
+/** Publishes through real admin controls; synthetic probe execution is owned by
+ * the dedicated local fixture runtime, never a public provider. */
+export async function configureModel(
+    page: Page,
+    options: {
+        inputRate?: string;
+        outputRate?: string;
+        reason?: string;
+        checkFlows?: boolean;
+    } = {},
+) {
     await page.getByRole('menuitem', { name: 'AI settings' }).click();
-    await page
-        .locator('label.ant-radio-button-wrapper')
-        .filter({ hasText: 'DeepSeek' })
-        .click();
-    await page.getByRole('checkbox', { name: /DeepSeek Flash/ }).check();
-    const defaultModel = page.getByLabel('Default model');
-    await defaultModel.press('ArrowDown');
-    await defaultModel.press('Home');
-    await defaultModel.press('Enter');
-    await page
-        .getByLabel('Reason for change')
-        .fill('Enable deterministic DeepSeek testing');
-    await page.getByRole('button', { name: 'Save configuration' }).click();
-    await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
-    const prices = page.locator('.ant-card').filter({
-        has: page.getByText('Model credit pricing', { exact: true }),
+    const routing = page.getByRole('region', { name: 'Text AI routes' });
+    await expect(
+        routing.getByText('Synthetic provider checks', { exact: true }),
+    ).toBeVisible();
+    if (options.checkFlows !== false) {
+        const checks = page.locator('.ant-card').filter({
+            has: page.getByText('Synthetic provider checks', {
+                exact: true,
+            }),
+        });
+        await selectAdminOption(
+            page,
+            checks.getByLabel('Provider / model route', { exact: true }),
+            /deepseek.*DeepSeek Flash/,
+        );
+        await selectAdminOption(
+            page,
+            checks.getByLabel('Check type', { exact: true }),
+            'Test selected flow',
+        );
+        for (const flow of routingFlows) {
+            await selectAdminOption(
+                page,
+                checks.getByLabel('AI flow', { exact: true }),
+                flow,
+            );
+            await checks
+                .getByRole('checkbox', {
+                    name: 'I approve this operator expense up to the displayed maximum.',
+                })
+                .check();
+            const responsePromise = page.waitForResponse(
+                (response) =>
+                    response.request().method() === 'POST' &&
+                    response.url().endsWith('/admin/ai-settings/probes'),
+            );
+            await checks
+                .getByRole('button', { name: 'Run check', exact: true })
+                .click();
+            const response = await responsePromise;
+            expect(response.status(), `synthetic ${flow} probe status`).toBe(
+                200,
+            );
+            expect(
+                (await response.json()).state,
+                `synthetic ${flow} response contract`,
+            ).toBe('passed');
+        }
+    }
+    const config = page.locator('.ant-card').filter({
+        has: page.getByText('Routing and flow tariffs', { exact: true }),
     });
-    await prices
-        .getByRole('row')
-        .filter({ hasText: 'deepseek-flash' })
-        .first()
-        .getByRole('button', { name: 'Edit price', exact: true })
+    const enabled = config.getByLabel('Enabled routes', { exact: true });
+    const deepSeekTag = config
+        .locator('.ant-select')
+        .filter({ has: enabled })
+        .locator('.ant-select-selection-item')
+        .filter({ hasText: /deepseek.*DeepSeek Flash/ });
+    if ((await deepSeekTag.count()) === 0)
+        await selectAdminOption(page, enabled, /deepseek.*DeepSeek Flash/);
+    await enabled.press('Escape');
+    await selectAdminOption(
+        page,
+        config.getByLabel('Primary route', { exact: true }).first(),
+        /deepseek.*DeepSeek Flash/,
+    );
+    for (const flow of routingFlows.filter(
+        (value) => value !== 'portrait-interview',
+    )) {
+        const section = config
+            .locator('.ant-collapse-item')
+            .filter({ has: page.getByText(flow, { exact: true }) });
+        const header = section.getByRole('button').first();
+        if ((await header.getAttribute('aria-expanded')) !== 'true')
+            await header.click();
+        await section
+            .getByLabel('Input credits per million tokens', { exact: true })
+            .fill(options.inputRate ?? '100');
+        await section
+            .getByLabel('Output credits per million tokens', { exact: true })
+            .fill(options.outputRate ?? '300');
+        await header.click();
+    }
+    await config
+        .getByLabel('Reason for change', { exact: true })
+        .fill(
+            options.reason ??
+                'Publish reviewed deterministic text routing and flow tariffs',
+        );
+    const publication = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith('/admin/ai/routing'),
+    );
+    await config
+        .getByRole('button', { name: 'Publish routing', exact: true })
         .click();
-    const dialog = page.getByRole('dialog', { name: 'Publish model price' });
-    await dialog
-        .getByLabel('Credits per million input tokens', { exact: true })
-        .fill('100');
-    await dialog
-        .getByLabel('Credits per million output tokens', { exact: true })
-        .fill('300');
-    await dialog
-        .getByLabel('Reason', { exact: true })
-        .fill('Synthetic customer tariff for critical journey');
-    await dialog
-        .getByRole('button', { name: 'Publish price revision' })
-        .click();
-    await expect(dialog).not.toBeVisible();
+    const response = await publication;
+    expect(response.status()).toBe(200);
+    const revision = (await response.json()).revision;
+    await expect(
+        config.getByText(`Configuration version ${revision.version}`, {
+            exact: true,
+        }),
+    ).toBeVisible();
+    return revision as { id: string; version: number };
 }
 
 export async function grantCredits(page: Page, learnerId: string) {

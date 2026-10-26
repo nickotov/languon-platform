@@ -5,17 +5,6 @@ const accounting = {
     maxProviderCostUsdPerAccountDay: '1',
     maxProviderCostUsdPerDay: '5',
 };
-const tariff = {
-    providerId: 'deepseek',
-    modelId: 'deepseek-flash',
-    meter: 'text-tokens',
-    creditsPer1000Characters: null,
-    minimumCredits: null,
-    inputCreditsPerMillionTokens: 100,
-    outputCreditsPerMillionTokens: 300,
-    cachedInputCreditsPerMillionTokens: 100,
-    provisional: true,
-};
 const providerPrice = {
     providerId: 'deepseek',
     modelId: 'deepseek-flash',
@@ -33,14 +22,12 @@ export const setupProfiles = {
         description:
             'Conservative local testing estimates; review current provider rates before real usage.',
         accounting,
-        tariff,
         providerPrice,
     },
     'deterministic-demo': {
         description:
             'Synthetic economics for the disposable deterministic test runtime only.',
         accounting,
-        tariff,
         providerPrice: {
             ...providerPrice,
             sourceReference: 'synthetic-deterministic-demo',
@@ -66,11 +53,6 @@ export function validateProfile(profile, contracts) {
         expectedVersion: 0,
         reason,
     });
-    contracts.ModelPricePublishRequestSchema.parse({
-        ...profile.tariff,
-        expectedVersion: 0,
-        reason,
-    });
     contracts.ProviderPricePublishRequestSchema.parse({
         ...profile.providerPrice,
         expectedVersion: 0,
@@ -88,11 +70,6 @@ export function renderProfileDocumentation() {
                     'Accounting',
                     '/admin/ai/accounting-settings',
                     profile.accounting,
-                ],
-                [
-                    'AI settings → customer tariffs',
-                    '/admin/ai/model-prices',
-                    profile.tariff,
                 ],
                 [
                     'Accounting → provider prices',

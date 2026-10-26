@@ -48,7 +48,7 @@ const webPort = new URL(webOrigin).port || '3333';
 const reuseExistingServer = process.env.ADMIN_E2E_REUSE_SERVERS === 'true';
 const generationFormats =
     process.env.ADMIN_E2E_SETUP_JOURNEY === 'true'
-        ? 'single-card:v2,text-detection:v2,text-translation:v3'
+        ? 'single-card:v2,text-detection:v2,text-translation:v3,text-selection-card:v1'
         : 'single-card:v2';
 
 export default defineConfig({
@@ -73,6 +73,11 @@ export default defineConfig({
                 'pnpm --filter @languon/backend db:migrate && pnpm --filter @languon/backend exec tsx src/index.ts',
             env: {
                 ADMIN_BASE_URL: adminOrigin,
+                ADMIN_E2E_SYNTHETIC_PROBES: 'true',
+                DEEPSEEK_API_KEY: 'synthetic-test-key',
+                OPENROUTER_API_KEY: '',
+                EVOLINK_API_KEY: '',
+                KIE_API_KEY: '',
                 APP_ENV: 'development',
                 AUTH_ALLOWED_ORIGINS: `${adminOrigin},${webOrigin}`,
                 AUTH_CODE_HMAC_SECRET: `admin-e2e-code-secret-do-not-use-outside-local-tests-${e2eRateLimitNamespace}`,

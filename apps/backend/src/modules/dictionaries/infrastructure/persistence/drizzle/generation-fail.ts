@@ -43,7 +43,10 @@ export async function fail(
             job.attemptCount < job.maxAttempts &&
             (!usesLegacyAction(job.selectedExecutionSnapshot) ||
                 !job.aiCreditProviderDispatchedAt ||
-                input.failureCategory === 'provider_rate_limited');
+                input.failureCategory === 'provider_rate_limited' ||
+                (job.selectedExecutionSnapshot.routingAuthority &&
+                    job.attemptCount === 1 &&
+                    input.retryDisposition === 'conclusive-provider-failure'));
         const jobProviderBudget = persistedProviderBudget(job);
         if (
             input.providerUsage &&

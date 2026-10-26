@@ -89,6 +89,18 @@ export async function updateAiSettings(
         );
     }
 
+    if (
+        enabledModels.some((id) => {
+            const model = catalogById.get(id);
+
+            return model?.retired || model?.processingControlsRevision;
+        })
+    ) {
+        throw new AdminAiSettingsUnavailableError(
+            'Retired routes cannot be enabled. New gateway routes require verified text AI routing publication.',
+        );
+    }
+
     const selected = findDictionaryAiModel(
         input.activeProvider,
         input.defaultModel,
@@ -277,79 +289,102 @@ export function aiSettingsResponse(
         process.env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED === 'true';
 
     return {
-        providers: (['deepseek', 'kie'] as const).map((providerId) => {
-            const models = dictionaryAiModelCatalog.filter(
-                (model) => model.providerId === providerId,
-            );
-            const configured = isDictionaryAiCredentialConfigured(providerId);
-            const observedModelId =
-                row?.snapshot?.providerId === providerId
-                    ? row.snapshot.modelId
-                    : models[0]?.id;
-            const modelObservations = observations.filter(
-                (candidate) =>
-                    candidate.providerId === providerId &&
-                    candidate.modelId === observedModelId,
-            );
-            const currentObservations = modelObservations.filter(
-                (observation) => observation.expiresAt.getTime() > Date.now(),
-            );
-            const currentObservation =
-                currentObservations.find(
-                    (observation) => observation.status === 'unavailable',
-                ) ??
-                currentObservations.find(
-                    (observation) => observation.status === 'available',
-                ) ??
-                currentObservations[0];
-            const latestObservation = modelObservations[0];
-            const health = !configured
-                ? {
-                      checkedAt:
-                          latestObservation?.checkedAt.toISOString() ?? null,
-                      message: 'Provider credential is missing.',
-                      status: 'unverified' as const,
-                  }
-                : currentObservation
-                  ? {
-                        checkedAt: currentObservation.checkedAt.toISOString(),
-                        message: currentObservation.message,
-                        status: currentObservation.status as
-                            'available' | 'unavailable' | 'unverified',
-                    }
-                  : {
-                        checkedAt:
-                            latestObservation?.checkedAt.toISOString() ?? null,
-                        message: latestObservation
-                            ? 'The latest worker readiness observation is stale.'
-                            : 'Credential configured; worker readiness has not been observed.',
-                        status: 'unverified' as const,
-                    };
+        providers: (['deepseek', 'kie', 'evolink', 'openrouter'] as const).map(
+            (providerId) => {
+                const models = dictionaryAiModelCatalog.filter(
+                    (model) => model.providerId === providerId,
+                );
+                const configured =
+                    isDictionaryAiCredentialConfigured(providerId);
+                const observedModelId =
+                    row?.snapshot?.providerId === providerId
+                        ? row.snapshot.modelId
+                        : models[0]?.id;
+                const modelObservations = observations.filter(
+                    (candidate) =>
+                        candidate.providerId === providerId &&
+                        candidate.modelId === observedModelId,
+                );
+                const currentObservations = modelObservations.filter(
+                    (observation) =>
+                        observation.expiresAt.getTime() > Date.now(),
+                );
+                const currentObservation =
+                    currentObservations.find(
+                        (observation) => observation.status === 'unavailable',
+                    ) ??
+                    currentObservations.find(
+                        (observation) => observation.status === 'available',
+                    ) ??
+                    currentObservations[0];
+                const latestObservation = modelObservations[0];
+                const health = !configured
+                    ? {
+                          checkedAt:
+                              latestObservation?.checkedAt.toISOString() ??
+                              null,
+                          message: 'Provider credential is missing.',
+                          status: 'unverified' as const,
+                      }
+                    : currentObservation
+                      ? {
+                            checkedAt:
+                                currentObservation.checkedAt.toISOString(),
+                            message: currentObservation.message,
+                            status: currentObservation.status as
+                                'available' | 'unavailable' | 'unverified',
+                        }
+                      : {
+                            checkedAt:
+                                latestObservation?.checkedAt.toISOString() ??
+                                null,
+                            message: latestObservation
+                                ? 'The latest worker readiness observation is stale.'
+                                : 'Credential configured; worker readiness has not been observed.',
+                            status: 'unverified' as const,
+                        };
 
-            return {
-                credentialStatus: configured ? 'configured' : 'missing',
-                health,
-                id: providerId,
-                label: providerId === 'deepseek' ? 'DeepSeek' : 'Kie',
-                models: models.map((model) => ({
-                    available:
-                        configured &&
-                        routingEnabled &&
-                        health.status !== 'unavailable',
-                    creditPricing: model.creditPricing,
-                    id: model.id,
-                    label: model.label,
-                    supportedFormats: [...model.supportedFormats],
-                    unavailableReason: !routingEnabled
-                        ? 'Managed AI routing is not active for this deployment.'
-                        : configured && health.status === 'unavailable'
-                          ? health.message
-                          : configured
-                            ? null
-                            : 'Provider credential is missing.',
-                })),
-            };
-        }),
+                return {
+                    credentialStatus: configured ? 'configured' : 'missing',
+                    health,
+                    id: providerId,
+                    label: {
+                        deepseek: 'DeepSeek',
+                        kie: 'Kie',
+                        evolink: 'EvoLink',
+                        openrouter: 'OpenRouter',
+                    }[providerId],
+                    models: models.map((model) => ({
+                        available:
+                            !model.retired &&
+                            !model.processingControlsRevision &&
+                            configured &&
+                            routingEnabled &&
+                            health.status !== 'unavailable',
+                        creditPricing: model.creditPricing,
+                        id: model.id,
+                        label: model.label,
+                        supportedFormats: [...model.supportedFormats],
+                        retired: model.retired ?? false,
+                        processingControlsRevision:
+                            model.processingControlsRevision ?? null,
+                        processingApprovalRequired:
+                            model.providerId === 'evolink',
+                        unavailableReason: model.retired
+                            ? 'Provider model is retired.'
+                            : model.processingControlsRevision
+                              ? 'Configure and verify this route in text AI routing.'
+                              : !routingEnabled
+                                ? 'Managed AI routing is not active for this deployment.'
+                                : configured && health.status === 'unavailable'
+                                  ? health.message
+                                  : configured
+                                    ? null
+                                    : 'Provider credential is missing.',
+                    })),
+                };
+            },
+        ),
         settings: {
             activeProvider: row?.snapshot?.providerId ?? null,
             defaultModel: row?.snapshot?.modelId ?? null,

@@ -3,11 +3,13 @@ import { noopLogger } from '@mastra/core/logger';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
 /** Runtime-only primitives: user content requires authenticated durable jobs and accounting. */
 export function createTextsAgents(options: {
-    model: ModelRouterModelId | OpenAICompatibleConfig;
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }) {
     const create = (id: 'text-translation-agent' | 'text-detection-agent') => {
         const agent = new Agent({

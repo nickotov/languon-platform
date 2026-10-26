@@ -3,10 +3,12 @@ import { noopLogger } from '@mastra/core/logger';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
 export function createSentenceAgents(options: {
-    model: ModelRouterModelId | OpenAICompatibleConfig;
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }) {
     const create = (
         id: 'sentence-generation-agent' | 'sentence-check-agent',

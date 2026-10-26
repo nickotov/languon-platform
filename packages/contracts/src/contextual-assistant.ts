@@ -828,7 +828,8 @@ export const ConversationBillingSchema = z
 export type ConversationBilling = z.infer<typeof ConversationBillingSchema>;
 export const ConversationTurnSchema = z
     .object({
-        modelId: z.string().min(1).max(200).nullable(),
+        // Compatibility field only. Provider identities remain server-side.
+        modelId: z.null(),
         id: z.uuid(),
         conversationId: z.uuid(),
         status: z.enum([

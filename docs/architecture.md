@@ -210,15 +210,34 @@ separate from database backups. [ADR-0012](./adr/0012-dictionary-worker-and-docu
 and the [operations design](./operations/dictionary-jobs-and-documents.md) define
 the execution and trust boundaries.
 
-## Shared text AI selection
+## Shared text AI routing
 
-The backend `text-ai` module owns curated text model selection and learner
-Auto/explicit preferences. Dictionary and learning modules own their task agents,
-jobs and results; shared selection resolves inside admission transactions and
-pins immutable execution/pricing. Existing admin configuration and audit stay
-privileged, and no public arbitrary-provider or generic-prompt endpoint exists.
-Worker capability checks protect mixed releases. See
-[ADR-0026](adr/0026-shared-text-ai-selection-and-user-preferences.md).
+The backend `text-ai` module owns a code-reviewed provider/model catalog and
+administrator-owned default/per-flow routing revisions. Learners cannot choose
+models; learning preferences and action budgets remain independent. Dictionary,
+learning, texts, conversations and portraits own their typed agents, jobs and
+result validation. Admission pins compatible candidates, processing fingerprints,
+provider prices and separate flow tariffs inside the existing financial transaction.
+A bounded candidate query and transaction-only immutable policy reads avoid
+repeated round trips; no cross-request cache stores financial authorization.
+
+Manual admin probes use the production prompt/schema/adapter with synthetic data,
+operator spending limits and append-only expense records. Matching flow checks gate
+activation; current runtime health is separate from configured state. Runtime health
+observations derive identity from an admitted dispatch receipt and live typed
+lease/fence. Learner policy refusals and local cancellation cannot suppress a
+shared route. No learner request triggers a paid readiness check.
+
+One approved fallback can run only within the original action allowances after
+conclusive rejection/completion and before conflicting publication. Queued claims
+return the actual selected receipt; dispatch rechecks emergency disable immediately
+before HTTP. Inline runners bind their selected candidate to the corresponding
+receipt. Technical failures do not add learner charges; unknown provider expense
+stays unknown. Credential/adapter/flow changes fail closed and require a matching
+check and explicit new action. No arbitrary-provider or generic-prompt API exists.
+See [ADR-0046](adr/0046-admin-owned-text-ai-routing.md), the
+[confirmed design](text-ai-routing-design.md) and
+[admin flow](user-flows/admin-text-ai-routing.md).
 
 ## Sentence learning backend
 
@@ -417,9 +436,8 @@ draft/excerpt behavior.
 Mastra Memory1.26.0/Core1.57.0 use an application-owned transactional adapter.
 Observation, reflection and actor calls share bounded per-turn execution and
 credit settlement. The existing worker pool executes conversation turns and
-numerical usage remains in combined capacity after content deletion. The initial
-chat capability supports DeepSeek Flash; chat Auto selects Flash, while other
-text tasks retain their existing default-selection policy.
+numerical usage remains in combined capacity after content deletion. Chat and supporting memory calls use the same administrator-owned flow route
+and pinned candidates as other text work; learners do not choose their model.
 
 Web chat uses Vercel AI SDK UI with a custom transport projecting durable events
 into typed message/tool parts. Disconnecting a subscription leaves worker work
@@ -433,7 +451,6 @@ work/tool/writing activity stays visible before text and during pauses. See
 [feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
 and [feature047](../.agent/features/047-knowledge-workspace/FEATURE.md)
 for decisions and implementation evidence.
-
 
 ## Learner portraits and guided interviews
 
@@ -469,7 +486,6 @@ server-owned unfinished interview, never a new browser storage archive.
 See [ADR-0044](adr/0044-learner-portrait-approval-and-use-boundaries.md),
 [the verified journey](user-flows/learner-portrait.md), and
 [feature051 evidence](../.agent/features/051-learner-portrait/EVIDENCE.md).
-
 
 ## Action accounting and provider expenses
 

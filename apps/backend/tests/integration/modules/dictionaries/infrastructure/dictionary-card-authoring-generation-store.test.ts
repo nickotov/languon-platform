@@ -1,9 +1,12 @@
+import {
+    seedTextAiRoutingFixture,
+    textAiFixtureCredentials,
+    fixtureRouteFingerprint,
+} from '../../../../support/text-ai-routing-fixture';
+import { textAiSelectionObservationId } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { seedLegacyActionFixture } from '../../../../support/legacy-action-fixture';
 import { aiCreditActionsTable as actions } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
-import {
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-} from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import { dictionaryAiWorkerObservationsTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { randomUUID } from 'node:crypto';
 
 import {
@@ -14,6 +17,7 @@ import {
 import { eq, sql } from 'drizzle-orm';
 import {
     afterAll,
+    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -96,7 +100,43 @@ run('card-authoring generation persistence', () => {
         });
     });
 
+    async function readyWorker(model = dictionaryAiModelCatalog[0]!) {
+        const workerId = `authoring-fixture-${model.providerId}`;
+        await database.insert(dictionaryAiWorkerObservationsTable).values({
+            id: textAiSelectionObservationId(
+                workerId,
+                model.providerId,
+                model.id,
+            ),
+            workerId,
+            providerId: model.providerId,
+            modelId: model.id,
+            adapterRevision: model.adapterRevision,
+            checkedAt: instant(),
+            expiresAt: instant(120000),
+            status: 'available',
+            message: 'Synthetic reviewed authoring worker',
+            textAiSelectionRevision: 1,
+            textAiCapacityRevision: 1,
+            textsCapacityRevision: 1,
+            conversationCapacityRevision: 1,
+            creditSettlementRevision: 1,
+            textAiSupportedFormats: [...model.supportedFormats],
+        });
+    }
     beforeEach(async () => {
+        vi.stubEnv('APP_ENV', 'test');
+        vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
+        vi.stubEnv('DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', 'true');
+        vi.stubEnv(
+            'DEEPSEEK_API_KEY',
+            textAiFixtureCredentials.DEEPSEEK_API_KEY,
+        );
+        vi.stubEnv(
+            'OPENROUTER_API_KEY',
+            textAiFixtureCredentials.OPENROUTER_API_KEY,
+        );
+
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
         instantOrigin = Date.now();
@@ -108,11 +148,15 @@ run('card-authoring generation persistence', () => {
             updatedAt: instant(),
         });
         await seedLegacyActionFixture(database);
+        instantOrigin = Date.now();
+        await readyWorker();
     });
 
+    afterEach(() => vi.unstubAllEnvs());
     afterAll(async () => client.end());
 
     it('rejects new accounted admissions without a managed execution snapshot', async () => {
+        vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'false');
         const dictionary = await dictionaryStore.createDictionary({
             context: context(),
             fingerprint: fingerprint('Z'),
@@ -306,36 +350,12 @@ run('card-authoring generation persistence', () => {
             },
         });
         const deepSeek = dictionaryAiModelCatalog[0]!;
-        const kie = dictionaryAiModelCatalog[1]!;
-        const revisionOne = randomUUID();
-        const revisionTwo = randomUUID();
-        const snapshot = (
-            model: (typeof dictionaryAiModelCatalog)[number],
-        ) => ({
-            adapterRevision: model.adapterRevision,
-            aggregateBudget: model.aggregateBudget,
-            credentialReference: model.credentialReference,
-            creditPricing: model.creditPricing,
-            enabledModelIds: [model.id],
-            modelId: model.id,
-            perCallMaxInputTokens: model.perCallMaxInputTokens,
-            perCallMaxOutputTokens: model.perCallMaxOutputTokens,
-            providerId: model.providerId,
-            supportedFormats: [...model.supportedFormats],
-        });
-        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
-            catalogSnapshot: snapshot(deepSeek),
-            createdAt: instant(2),
-            createdByUserId: ownerId,
-            id: revisionOne,
-            version: 1,
-        });
-        await database.insert(dictionaryAiConfigurationTable).values({
-            activeRevisionId: revisionOne,
-            id: 'global',
-            updatedAt: instant(2),
-            version: 1,
-        });
+        const nextModel = dictionaryAiModelCatalog.find(
+            (model) =>
+                model.providerId === 'openrouter' &&
+                model.id === 'openai/gpt-6-luna',
+        )!;
+        const revisionOne = (await seedTextAiRoutingFixture(database)).id;
         const request = {
             cardId: card.card.id,
             context: context(3),
@@ -359,21 +379,18 @@ run('card-authoring generation persistence', () => {
             outputLimit: 10000,
         });
 
-        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
-            catalogSnapshot: snapshot(kie),
-            createdAt: instant(4),
-            createdByUserId: ownerId,
-            id: revisionTwo,
-            version: 2,
-        });
-        await database
-            .update(dictionaryAiConfigurationTable)
-            .set({
-                activeRevisionId: revisionTwo,
-                updatedAt: instant(4),
-                version: 2,
+        const revisionTwo = (
+            await seedTextAiRoutingFixture(database, {
+                replace: true,
+                routeId: 'openrouter/openai/gpt-6-luna',
+                enabledRouteIds: [
+                    'deepseek/deepseek-flash',
+                    'openrouter/openai/gpt-6-luna',
+                ],
+                at: instant(4),
             })
-            .where(eq(dictionaryAiConfigurationTable.id, 'global'));
+        ).id;
+        await readyWorker(nextModel);
 
         const replay = await creditedStore.enqueue({
             ...request,
@@ -503,7 +520,8 @@ run('card-authoring generation persistence', () => {
             pastedTerms: { generate: unusedGenerate },
         };
         const router = new DictionaryTextProviderRouter({
-            credentials: { DEEPSEEK_API_KEY: 'integration-secret' },
+            credentials: textAiFixtureCredentials,
+            currentFingerprint: fixtureRouteFingerprint,
             factory: () => providers,
         });
         const routed = router.resolve(
@@ -574,31 +592,7 @@ run('card-authoring generation persistence', () => {
             },
         });
         const model = dictionaryAiModelCatalog[0]!;
-        const revisionId = randomUUID();
-        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
-            catalogSnapshot: {
-                adapterRevision: model.adapterRevision,
-                aggregateBudget: model.aggregateBudget,
-                credentialReference: model.credentialReference,
-                creditPricing: model.creditPricing,
-                enabledModelIds: [model.id],
-                modelId: model.id,
-                perCallMaxInputTokens: model.perCallMaxInputTokens,
-                perCallMaxOutputTokens: model.perCallMaxOutputTokens,
-                providerId: model.providerId,
-                supportedFormats: [...model.supportedFormats],
-            },
-            createdAt: instant(1),
-            createdByUserId: ownerId,
-            id: revisionId,
-            version: 1,
-        });
-        await database.insert(dictionaryAiConfigurationTable).values({
-            activeRevisionId: revisionId,
-            id: 'global',
-            updatedAt: instant(1),
-            version: 1,
-        });
+        await seedTextAiRoutingFixture(database);
         await database.transaction(async (transaction) => {
             await new DrizzleAiCreditTransactionParticipant(
                 transaction,
@@ -800,6 +794,9 @@ run('card-authoring generation persistence', () => {
             state: 'queued',
         });
         const firstClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(2),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -918,6 +915,9 @@ run('card-authoring generation persistence', () => {
             source: 'hello',
         });
         const conflictClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(6),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1007,6 +1007,9 @@ run('card-authoring generation persistence', () => {
             source: 'hello',
         });
         const successorClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(6),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1079,6 +1082,9 @@ run('card-authoring generation persistence', () => {
             source: 'hello',
         });
         const secondClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(10),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1134,6 +1140,9 @@ run('card-authoring generation persistence', () => {
             source: 'hello',
         });
         const thirdClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(12),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1269,6 +1278,9 @@ run('card-authoring generation persistence', () => {
             ownerId,
         });
         const singleClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(16),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1345,6 +1357,9 @@ run('card-authoring generation persistence', () => {
             source: 'seed source',
         });
         const manualClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(20),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1476,6 +1491,9 @@ run('card-authoring generation persistence', () => {
             },
         });
         const claim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(3),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1540,6 +1558,9 @@ run('card-authoring generation persistence', () => {
             },
         });
         const successorClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(7),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1748,6 +1769,9 @@ run('card-authoring generation persistence', () => {
             },
         });
         const claim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(3),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -1908,6 +1932,9 @@ run('card-authoring generation persistence', () => {
             target: { kind: 'create' },
         });
         const inheritedClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(3),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,
@@ -2051,6 +2078,9 @@ run('card-authoring generation persistence', () => {
             target: { kind: 'create' },
         });
         const overriddenClaim = await generationStore.claim({
+            managedRoutingRevision: 1,
+            textAiSelectionRevision: 1,
+            creditSettlementRevision: 1,
             context: context(9),
             globalConcurrency: 2,
             leaseDurationMs: 1_000,

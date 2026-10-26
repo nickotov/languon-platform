@@ -1,3 +1,6 @@
+import { withQueuedTextAiProviderAttempt } from '../../../text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt';
+import type { TextAiProviderRuntimeOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
+import { ProviderExecutionError } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
 import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { z } from 'zod';
 import { SUPPORTED_LANGUAGE_TAGS } from '@languon/languages';
@@ -23,7 +26,7 @@ import type {
 import { resolveTextAiProviderOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-resolver';
 import { textAiRequestLimits } from '../../../text-ai/infrastructure/ai/text-ai-provider-catalog';
 import { createTextsAgents } from './texts-agents';
-const translationSchema = z
+export const TextTranslationProviderOutputSchema = z
     .object({
         translation: z.array(TextTranslationSegmentSchema).min(1).max(20_000),
     })
@@ -49,7 +52,7 @@ export function preflightTextsRequest(
 ) {
     const schema =
         input.kind === 'text-translation'
-            ? translationSchema
+            ? TextTranslationProviderOutputSchema
             : TextDetectionResultSchema;
     const prompt = getLocalPrompt(
         input.kind === 'text-translation'
@@ -92,7 +95,7 @@ export function preflightTextsRequest(
     )
         throw new TextsAiError(
             'model_capacity_exceeded',
-            'This model cannot safely translate the complete text. Choose a model with larger limits or shorten the text.',
+            'This text is too long to translate in one action. Shorten the text and try again.',
         );
 }
 function usageOf(
@@ -107,7 +110,16 @@ function usageOf(
     }
 }
 export function createTextsAiProvider(options: {
-    credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;
+    runtime?: TextAiProviderRuntimeOptions;
+    credentials: Partial<
+        Record<
+            | 'DEEPSEEK_API_KEY'
+            | 'KIE_API_KEY'
+            | 'EVOLINK_API_KEY'
+            | 'OPENROUTER_API_KEY',
+            string
+        >
+    >;
     fetchProvider?: typeof fetch;
 }): TextsAiProvider {
     return {
@@ -115,6 +127,7 @@ export function createTextsAiProvider(options: {
             call.signal.throwIfAborted();
             preflightTextsRequest(call.input, call.execution, call.budget);
             const resolved = resolveTextAiProviderOptions({
+                ...options.runtime,
                 snapshot: call.execution,
                 budget: call.budget,
                 ...options,
@@ -130,40 +143,45 @@ export function createTextsAiProvider(options: {
                     : agents.textDetectionAgent;
             const schema =
                 call.input.kind === 'text-translation'
-                    ? translationSchema
+                    ? TextTranslationProviderOutputSchema
                     : TextDetectionResultSchema;
             let result;
             try {
-                result = await agent.generate(
-                    JSON.stringify(request(call.input)),
-                    {
-                        abortSignal: call.signal,
-                        maxSteps: 1,
-                        modelSettings: {
-                            maxOutputTokens: limits.maxOutputTokens,
-                            maxRetries: 0,
-                        },
-                        ...(call.execution.providerId === 'deepseek' &&
-                        call.execution.modelId === 'deepseek-flash'
-                            ? {
-                                  providerOptions: {
-                                      openaiCompatible: {
-                                          reasoningEffort: 'none',
+                result = await withQueuedTextAiProviderAttempt(
+                    call.providerAttempt,
+                    Boolean(call.execution.routingAuthority),
+                    () =>
+                        agent.generate(JSON.stringify(request(call.input)), {
+                            abortSignal: call.signal,
+                            maxSteps: 1,
+                            modelSettings: {
+                                maxOutputTokens: limits.maxOutputTokens,
+                                maxRetries: 0,
+                            },
+                            ...(call.execution.providerId === 'deepseek' &&
+                            call.execution.modelId === 'deepseek-flash'
+                                ? {
+                                      providerOptions: {
+                                          openaiCompatible: {
+                                              reasoningEffort: 'none',
+                                          },
                                       },
-                                  },
-                              }
-                            : {}),
-                        structuredOutput: {
-                            schema,
-                            ...(resolved.structuredOutputMode ===
-                            'prompt-injection'
-                                ? { jsonPromptInjection: 'inline' as const }
+                                  }
                                 : {}),
-                        },
-                        runId: call.idempotencyKey,
-                        toolChoice: 'none',
-                        tracingOptions: { hideInput: true, hideOutput: true },
-                    },
+                            structuredOutput: {
+                                schema,
+                                ...(resolved.structuredOutputMode ===
+                                'prompt-injection'
+                                    ? { jsonPromptInjection: 'inline' as const }
+                                    : {}),
+                            },
+                            runId: call.idempotencyKey,
+                            toolChoice: 'none',
+                            tracingOptions: {
+                                hideInput: true,
+                                hideOutput: true,
+                            },
+                        }),
                 );
             } catch (error) {
                 if (
@@ -177,15 +195,24 @@ export function createTextsAiProvider(options: {
                             ? usageOf(error.usage, limits)
                             : undefined,
                     );
-                throw error;
+                throw new ProviderExecutionError(
+                    error,
+                    call.execution.providerId,
+                );
             }
             call.signal.throwIfAborted();
             const usage = usageOf(result.usage, limits);
             if (
-                result.error ||
-                result.tripwire ||
-                result.finishReason === 'length'
+                result.tripwire &&
+                result.tripwire.processorId !== 'structured-output'
             )
+                throw new TextsAiError('provider_policy_rejected');
+            if (result.error)
+                throw new ProviderExecutionError(
+                    result.error,
+                    call.execution.providerId,
+                );
+            if (result.tripwire || result.finishReason === 'length')
                 throw new TextsProviderInvalidOutputError(usage);
             const parsed = schema.safeParse(result.object);
             if (!parsed.success)

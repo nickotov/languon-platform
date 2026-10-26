@@ -198,7 +198,9 @@ it('exposes a paid admission failure outside the closed notice and preserves the
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Your available credits cannot cover this response’s maximum credit hold');
+    expect(alert).toHaveTextContent(
+        'Your available credits cannot cover this response’s maximum credit hold',
+    );
     expect(
         within(alert).getByRole('link', {
             name: 'Credit settings (opens in a new tab)',
@@ -731,28 +733,17 @@ it('keeps retry controls usable and explains unavailable interview models after 
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
     await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
     expect(
-        await screen.findByText(
-            /The selected model is unavailable for interviews/,
-        ),
-    ).toHaveTextContent('Auto or DeepSeek Flash');
+        await screen.findByText(/AI is unavailable right now/),
+    ).toHaveTextContent('Your answer and draft are kept');
     expect(
-        screen.getByRole('link', {
-            name: 'Model settings (opens in a new tab)',
-        }),
-    ).toHaveAttribute('href', '/profile?tab=account');
-    expect(
-        screen.getByRole('link', {
-            name: 'Model settings (opens in a new tab)',
-        }),
-    ).toHaveAttribute('target', '_blank');
+        screen.queryByRole('link', { name: /Model settings/ }),
+    ).not.toBeInTheDocument();
     expect(input).toHaveValue('What does this question mean?');
     expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
     await waitFor(() =>
         expect(
-            screen.queryByText(
-                /The selected model is unavailable for interviews/,
-            ),
+            screen.queryByText(/AI is unavailable right now/),
         ).not.toBeInTheDocument(),
     );
     expect(input).toHaveValue('What does this question mean?');

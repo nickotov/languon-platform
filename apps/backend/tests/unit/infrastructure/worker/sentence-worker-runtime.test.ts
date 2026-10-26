@@ -232,14 +232,9 @@ describe('production sentence worker execution deadline', () => {
     });
 
     it.each([false, true])(
-        'terminalizes Kie HTTP 200 retirement without retry or late publication (observer throws: %s)',
+        'rejects retired Kie before SDK dispatch (observer throws: %s)',
         async (observerThrows) => {
             const f = fixture(undefined, 1, observerThrows);
-            await f.started();
-            await f.respond({
-                code: 410,
-                msg: 'Synthetic retirement notice; private provider payload.',
-            });
             await f.run;
             expect(f.store.completeCheck).not.toHaveBeenCalled();
             expect(f.store.fail).toHaveBeenCalledOnce();
@@ -247,19 +242,8 @@ describe('production sentence worker execution deadline', () => {
                 code: 'model_unavailable',
                 retryAt: null,
             });
-            expect(f.onProviderFailure).toHaveBeenCalledOnce();
-            expect(f.onProviderFailure.mock.calls[0]?.[0]).toMatchObject({
-                providerId: 'kie',
-                modelId: 'gemini-2.5-pro',
-                kind: 'check',
-                reason: 'model_retired',
-                httpStatus: 200,
-                providerCode: 410,
-            });
-            expect(
-                JSON.stringify(f.onProviderFailure.mock.calls),
-            ).not.toContain('private provider payload');
-            expect(f.fetch).toHaveBeenCalledOnce();
+            expect(f.onProviderFailure).not.toHaveBeenCalled();
+            expect(f.fetch).not.toHaveBeenCalled();
         },
     );
 

@@ -1,3 +1,4 @@
+import { fixtureRouteFingerprint } from './text-ai-routing-fixture';
 import { UnavailableGenerationBurstLimiter } from '../../src/modules/text-ai/application/generation-burst-limiter';
 /** Test-only provider fixture. Uses production admission, persistence and worker
  * validation; never imports provider SDKs or loads development credentials. */
@@ -220,6 +221,7 @@ const { preparation } = createSentencePreparationWorkerComposition({
     textAiPolicy: {
         routingEnabled: true,
         credentialConfigured: () => true,
+        routeFingerprint: fixtureRouteFingerprint,
     },
 });
 const { worker } = createSentenceWorkerComposition({

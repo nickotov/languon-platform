@@ -9,7 +9,6 @@ export function SentencePreparationNotice({
     controller,
     onStartAgain,
     onOpenLibrary,
-    onOpenAiSettings,
 }: {
     controller: SentencePreparationController;
     onStartAgain(): void;
@@ -66,20 +65,6 @@ export function SentencePreparationNotice({
         <Button size='compact' disabled={retryBlocked} onClick={onStartAgain}>
             {P('startAgain')}
         </Button>
-    );
-    const modelActions = (
-        <div className={styles.actions}>
-            {run ? resumeButton : admissionRecovery}
-            {onOpenAiSettings ? (
-                <Button
-                    size='compact'
-                    variant='secondary'
-                    onClick={onOpenAiSettings}
-                >
-                    {P('openAiSettings')}
-                </Button>
-            ) : null}
-        </div>
     );
     if (controller.uncertain && !run)
         return (
@@ -155,13 +140,7 @@ export function SentencePreparationNotice({
             <InlineAlert
                 tone={tone}
                 title={P(title)}
-                actions={
-                    code === 'model_unavailable'
-                        ? modelActions
-                        : run
-                          ? retry
-                          : admissionRecovery
-                }
+                actions={run ? retry : admissionRecovery}
             >
                 {P(body)}
             </InlineAlert>
@@ -203,9 +182,7 @@ export function SentencePreparationNotice({
                           : 'warning'
                 }
                 title={P(title)}
-                actions={
-                    run.pauseReason === 'model' ? modelActions : resumeButton
-                }
+                actions={resumeButton}
             >
                 {P(body)}
             </InlineAlert>

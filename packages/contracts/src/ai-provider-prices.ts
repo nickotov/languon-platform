@@ -11,6 +11,7 @@ const fields = {
     cacheReadUsdPerMillionTokens: AccountingUsdSchema.nullable(),
     cacheWriteUsdPerMillionTokens: AccountingUsdSchema.nullable(),
     usdPer1000Characters: AccountingUsdSchema.nullable(),
+    minimumUsdPerRequest: AccountingUsdSchema.nullable().optional(),
     effectiveAt: z.string().datetime({ offset: true }),
     sourceReference: identifier,
     sourceUrl: z

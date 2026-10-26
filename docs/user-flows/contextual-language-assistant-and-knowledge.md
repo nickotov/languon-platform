@@ -208,7 +208,7 @@ subscription; this is expected and does not cancel durable work.
 ## Action budgets and response limits
 
 The saved maximum is managed in Settings AI preferences; passive balance,
-budget and spending details stay out of the composer and model picker.
+budget, provider names and model selection stay out of the composer.
 Sending still authorizes spending within that maximum and available balance.
 A reduced allowance returns an explicit Send/Top up/Keep editing offer before
 admission. Reconfirm a newer reduced offer; it cannot silently shrink an already
@@ -285,8 +285,9 @@ accounting behavior have separate real composed HTTP/integration coverage.
   and drafts. Permanent primary deletion removes associated conversation data.
 - A stale note or draft version returns conflict and preserves learner edits.
   A deleted target cannot be implicitly recreated by publishing an update.
-- Auto chat uses DeepSeek Flash. An explicit incompatible/unavailable model
-  fails visibly without fallback. Capacity/credit failures never silently charge
+- Administration chooses compatible routes and approved bounded fallbacks.
+  Learners never see or choose a model. Exhausted routes show a neutral error
+  with explicit Retry; questions remain. Capacity/credit failures never silently charge
   an unissued provider call; incurred dispatched work remains accounted.
 - Technical provider failures keep the learner question and incomplete assistant
   output, release the credit hold, and charge the learner nothing. Canonical

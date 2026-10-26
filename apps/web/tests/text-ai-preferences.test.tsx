@@ -54,8 +54,11 @@ function mount() {
     );
 }
 async function selectExplicit() {
-    fireEvent.click(
-        await screen.findByRole('radio', { name: /Curated model/ }),
+    fireEvent.change(
+        await screen.findByRole('textbox', {
+            name: 'Maximum credits per action',
+        }),
+        { target: { value: '2.145' } },
     );
 }
 beforeEach(() => {
@@ -138,16 +141,16 @@ describe('model preference persistence and concurrent edits', () => {
         );
         await screen.findByText(/Your preference was not saved/);
         expect(
-            screen.getByRole('radio', { name: /Curated model/ }),
-        ).toBeChecked();
+            screen.getByRole('textbox', { name: 'Maximum credits per action' }),
+        ).toHaveValue('2.145');
         fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
         fireEvent.click(
             screen.getByRole('button', { name: 'Save preference' }),
         );
         expect(save).toHaveBeenCalledTimes(2);
         expect(save.mock.calls[1]?.[1]).toEqual({
-            mode: 'explicit',
-            modelId: model.id,
+            mode: 'auto',
+            maxCreditsPerAction: '2.145',
             expectedVersion: 1,
         });
         await act(async () =>
@@ -190,33 +193,25 @@ describe('model preference persistence and concurrent edits', () => {
         await waitFor(() => expect(overwrite).toBeEnabled());
         expect(save).toHaveBeenCalledTimes(1);
         expect(
-            screen.getByRole('radio', { name: /Curated model/ }),
-        ).toBeChecked();
+            screen.getByRole('textbox', { name: 'Maximum credits per action' }),
+        ).toHaveValue('2.145');
         fireEvent.click(overwrite);
         await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
         expect(save.mock.calls[1]?.[1]).toEqual({
-            mode: 'explicit',
-            modelId: model.id,
+            mode: 'auto',
+            maxCreditsPerAction: '2.145',
             expectedVersion: 7,
         });
     });
-    it('allows Auto with a failed catalog and does not invent zero credits', async () => {
-        vi.mocked(preferencesApi.read).mockResolvedValue({
-            mode: 'explicit',
-            modelId: model.id,
-            selectedModel: model,
-            version: 3,
-        });
-        vi.mocked(preferencesApi.catalog).mockRejectedValue(
-            new Error('catalog unavailable'),
-        );
+    it('never requests a learner model catalog and exposes only the action budget', async () => {
         mount();
-        await screen.findByText(/Could not load available models/);
-        fireEvent.click(screen.getByRole('radio', { name: /Auto —/ }));
+        await selectExplicit();
+        expect(preferencesApi.catalog).not.toHaveBeenCalled();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+        expect(screen.queryByText(model.label)).not.toBeInTheDocument();
         expect(
             screen.getByRole('button', { name: 'Save preference' }),
         ).toBeEnabled();
-        expect(screen.queryByText(/0 credits/)).not.toBeInTheDocument();
     });
     it('clears protected settings immediately when the session ends', async () => {
         mount();
@@ -224,9 +219,7 @@ describe('model preference persistence and concurrent edits', () => {
         act(() => useSessionStore.getState().signOut());
         expect(screen.queryByRole('radio')).not.toBeInTheDocument();
         expect(
-            screen.getByText(
-                'Sign in to view and change your AI model preference.',
-            ),
+            screen.getByText('Sign in to view and change your AI preferences.'),
         ).toBeInTheDocument();
     });
     it('keeps a conflict draft and disables overwrite when the latest read fails', async () => {
@@ -249,29 +242,27 @@ describe('model preference persistence and concurrent edits', () => {
             screen.getByRole('button', { name: 'Save my choice instead' }),
         ).toBeDisabled();
         expect(
-            screen.getByRole('radio', { name: /Curated model/ }),
-        ).toBeChecked();
+            screen.getByRole('textbox', { name: 'Maximum credits per action' }),
+        ).toHaveValue('2.145');
         expect(
             screen.getByRole('button', { name: 'Reload latest preference' }),
         ).toBeEnabled();
     });
-    it('retains an unavailable explicit identity until Auto is deliberately saved', async () => {
+    it('does not reveal an old explicit identity while preserving its budget', async () => {
         vi.mocked(preferencesApi.read).mockResolvedValue({
+            ...initial,
             mode: 'explicit',
             modelId: 'retired-model',
-            selectedModel: null,
-            version: 3,
+            maxCreditsPerAction: '2.145',
         });
         mount();
-        await screen.findByText(/retired-model: Your saved model/);
-        expect(screen.getByRole('radio', { name: /Auto —/ })).not.toBeChecked();
-        fireEvent.click(screen.getByRole('button', { name: 'Choose Auto' }));
-        expect(screen.getByRole('radio', { name: /Auto —/ })).toBeChecked();
         expect(
-            screen.getByRole('button', { name: 'Save preference' }),
-        ).toBeEnabled();
-        fireEvent.click(screen.getByRole('button', { name: 'Cancel changes' }));
-        expect(screen.getByRole('radio', { name: /Auto —/ })).not.toBeChecked();
+            await screen.findByRole('textbox', {
+                name: 'Maximum credits per action',
+            }),
+        ).toHaveValue('2.145');
+        expect(screen.queryByText(/retired-model/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     });
 });
 

@@ -1,3 +1,4 @@
+import { seedTextAiRoutingFixture } from './text-ai-routing-fixture';
 import { and, desc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -113,4 +114,5 @@ export async function seedInterviewAccountingFixture(
                 },
             })
             .onConflictDoNothing();
+    await seedTextAiRoutingFixture(database);
 }

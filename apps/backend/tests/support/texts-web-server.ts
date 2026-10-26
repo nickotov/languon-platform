@@ -1,3 +1,4 @@
+import { fixtureRouteFingerprint } from './text-ai-routing-fixture';
 import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { seedLegacyActionFixture } from './legacy-action-fixture';
 import { createTextAiModule } from '../../src/modules/text-ai/infrastructure/text-ai-composition';
@@ -93,6 +94,7 @@ const signal = controller.signal;
 const selectionPolicy = {
     routingEnabled: true,
     credentialConfigured: () => true,
+    routeFingerprint: fixtureRouteFingerprint,
     pricingAdmissionEnabled: true,
 };
 let authentication!: AuthenticationComposition;

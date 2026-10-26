@@ -65,61 +65,49 @@ afterEach(() => {
     vi.restoreAllMocks();
     useSessionStore.getState().signOut();
 });
-it('saves the clicked model atomically rather than the previous rendered draft', async () => {
+it('saves only the exact budget and server-managed mode without requesting a model catalog', async () => {
     const save = vi.spyOn(preferencesApi, 'save').mockResolvedValue({
-        mode: 'explicit',
-        modelId: flash.id,
-        selectedModel: flash,
+        ...initial,
+        maxCreditsPerAction: '2.145',
         version: 4,
     });
     const { result } = mount();
-    await waitFor(() =>
-        expect(
-            result.current.catalog.isSuccess && result.current.base,
-        ).toBeTruthy(),
-    );
-    expect(result.current.draft).toBe('auto');
+    await waitFor(() => expect(result.current.base).toBeTruthy());
+    act(() => result.current.selectBudget('2.145'));
     await act(async () => {
-        await result.current.save(false, flash.id);
+        await result.current.save();
     });
     expect(save).toHaveBeenCalledWith('test-token', {
-        mode: 'explicit',
-        modelId: flash.id,
+        mode: 'auto',
         expectedVersion: 3,
+        maxCreditsPerAction: '2.145',
     });
-    expect(result.current.base?.modelId).toBe(flash.id);
+    expect(preferencesApi.catalog).not.toHaveBeenCalled();
 });
-it('keeps the clicked draft on a version conflict and prevents another implicit overwrite', async () => {
+it('keeps a conflicting budget draft and prevents an implicit overwrite', async () => {
     const save = vi
         .spyOn(preferencesApi, 'save')
         .mockRejectedValue(new PreferenceApiError('conflict', 409));
     const { result } = mount();
-    await waitFor(() =>
-        expect(
-            result.current.catalog.isSuccess && result.current.base,
-        ).toBeTruthy(),
-    );
+    await waitFor(() => expect(result.current.base).toBeTruthy());
+    act(() => result.current.selectBudget('2.145'));
     await act(async () => {
-        await result.current.save(false, flash.id);
+        await result.current.save();
     });
     expect(result.current.saveState).toBe('conflict');
-    expect(result.current.draft).toBe(flash.id);
+    expect(result.current.budgetDraft).toBe('2.145');
     await act(async () => {
-        await result.current.save(false, 'auto');
+        await result.current.save();
     });
     expect(save).toHaveBeenCalledTimes(1);
-    expect(result.current.base?.mode).toBe('auto');
 });
-it('does not send unavailable choices to the preference endpoint', async () => {
+it('does not submit an invalid budget', async () => {
     const save = vi.spyOn(preferencesApi, 'save');
     const { result } = mount();
-    await waitFor(() =>
-        expect(
-            result.current.catalog.isSuccess && result.current.base,
-        ).toBeTruthy(),
-    );
+    await waitFor(() => expect(result.current.base).toBeTruthy());
+    act(() => result.current.selectBudget('0.0001'));
     await act(async () => {
-        await result.current.save(false, 'unlisted-model');
+        await result.current.save();
     });
     expect(save).not.toHaveBeenCalled();
 });

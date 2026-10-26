@@ -67,6 +67,24 @@ function setup(timeoutMs = 2000) {
     return { store, provider, service, job, onInvalidModelOutput };
 }
 describe('sentence worker fencing and failure publication', () => {
+    it.each(['rejected', 'ambiguous'])(
+        'forwards only conclusive provider retry evidence (%s)',
+        async (executionOutcome) => {
+            const f = setup();
+            f.provider.generate.mockRejectedValue(
+                Object.assign(new Error('Synthetic provider HTTP failure'), {
+                    executionOutcome,
+                }),
+            );
+            await f.service.processNext(new AbortController().signal);
+            const failure = f.store.fail.mock.calls[0]![1];
+            expect(failure.retryDisposition).toBe(
+                executionOutcome === 'rejected'
+                    ? 'conclusive-provider-failure'
+                    : undefined,
+            );
+        },
+    );
     it('releases a slot when a provider ignores the abort signal', async () => {
         const f = setup(20);
         f.provider.generate.mockImplementation(() => new Promise(() => {}));

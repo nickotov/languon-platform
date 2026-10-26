@@ -182,3 +182,11 @@ TO :"dictionary_worker_role";
 
 -- Checked speech dispatch owns the immutable provider timestamp and operator attempt.
 GRANT SELECT ON TABLE speech_daily_admission_counters TO :"dictionary_worker_role";
+
+-- Routing admissions and exact per-call receipts are immutable worker reads.
+-- Activation, probes and emergency disable stay with authenticated admin code.
+GRANT SELECT ON TABLE text_ai_routing_state, text_ai_routing_revisions,
+    text_ai_probes, text_ai_route_dispatches TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION languon_text_ai_route_dispatch_allowed(text,text,text,timestamptz),
+    languon_record_text_ai_route_health(uuid,uuid,uuid,text,text,bigint,text)
+    TO :"dictionary_worker_role";

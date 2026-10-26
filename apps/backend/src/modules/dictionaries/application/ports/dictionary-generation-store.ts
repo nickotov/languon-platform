@@ -330,6 +330,7 @@ export interface DictionaryGenerationStore {
                 cacheWriteTokens?: number;
             };
             retryAt: Date | null;
+            retryDisposition?: 'conclusive-provider-failure';
         },
     ): Promise<boolean>;
     heartbeat(

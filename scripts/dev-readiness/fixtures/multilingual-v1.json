@@ -1,0 +1,490 @@
+{
+    "version": "text-ai-multilingual:v1",
+    "review": {
+        "kind": "engineering-authored synthetic reference",
+        "date": "2026-10-25",
+        "scope": "Simple language-learning examples checked for internal consistency; not a native-speaker certification or evidence that any model passes. Translation variants and explanations need semantic review, not exact string grading."
+    },
+    "cases": [
+        {
+            "id": "ru-learning-001",
+            "language": "ru",
+            "sentenceCheck": {
+                "valid": "Я изучаю русский язык.",
+                "invalid": "Я изучает русский язык.",
+                "expectedCorrection": "Я изучаю русский язык.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Я изучаю русский язык.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Russian.",
+                    "I study Russian."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Russian",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Russian sentence in simple English: Я изучает русский язык.",
+                "mustAddress": [
+                    "изучаю",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "en-learning-001",
+            "language": "en",
+            "sentenceCheck": {
+                "valid": "I am learning English.",
+                "invalid": "I is learning English.",
+                "expectedCorrection": "I am learning English.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "I am learning English.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning English.",
+                    "I study English."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying English",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this English sentence in simple English: I is learning English.",
+                "mustAddress": [
+                    "am",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "fr-learning-001",
+            "language": "fr",
+            "sentenceCheck": {
+                "valid": "J’apprends le français.",
+                "invalid": "J’apprend le français.",
+                "expectedCorrection": "J’apprends le français.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "J’apprends le français.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning French.",
+                    "I study French."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying French",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this French sentence in simple English: J’apprend le français.",
+                "mustAddress": [
+                    "apprends",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "es-learning-001",
+            "language": "es",
+            "sentenceCheck": {
+                "valid": "Estoy aprendiendo español.",
+                "invalid": "Yo está aprendiendo español.",
+                "expectedCorrection": "Estoy aprendiendo español.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Estoy aprendiendo español.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Spanish.",
+                    "I study Spanish."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Spanish",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Spanish sentence in simple English: Yo está aprendiendo español.",
+                "mustAddress": [
+                    "Estoy",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "de-learning-001",
+            "language": "de",
+            "sentenceCheck": {
+                "valid": "Ich lerne Deutsch.",
+                "invalid": "Ich lernen Deutsch.",
+                "expectedCorrection": "Ich lerne Deutsch.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Ich lerne Deutsch.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning German.",
+                    "I study German."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying German",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this German sentence in simple English: Ich lernen Deutsch.",
+                "mustAddress": [
+                    "lerne",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "sr-learning-001",
+            "language": "sr",
+            "sentenceCheck": {
+                "valid": "Учим српски језик.",
+                "invalid": "Ја учи српски језик.",
+                "expectedCorrection": "Учим српски језик.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Учим српски језик.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Serbian.",
+                    "I study Serbian."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Serbian",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Serbian sentence in simple English: Ја учи српски језик.",
+                "mustAddress": [
+                    "Учим",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "pl-learning-001",
+            "language": "pl",
+            "sentenceCheck": {
+                "valid": "Uczę się polskiego.",
+                "invalid": "Ja uczy się polskiego.",
+                "expectedCorrection": "Uczę się polskiego.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Uczę się polskiego.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Polish.",
+                    "I study Polish."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Polish",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Polish sentence in simple English: Ja uczy się polskiego.",
+                "mustAddress": [
+                    "Uczę",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "tr-learning-001",
+            "language": "tr",
+            "sentenceCheck": {
+                "valid": "Türkçe öğreniyorum.",
+                "invalid": "Ben Türkçe öğreniyor.",
+                "expectedCorrection": "Türkçe öğreniyorum.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Türkçe öğreniyorum.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Turkish.",
+                    "I study Turkish."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Turkish",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Turkish sentence in simple English: Ben Türkçe öğreniyor.",
+                "mustAddress": [
+                    "öğreniyorum",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "hu-learning-001",
+            "language": "hu",
+            "sentenceCheck": {
+                "valid": "Magyarul tanulok.",
+                "invalid": "Én magyarul tanul.",
+                "expectedCorrection": "Magyarul tanulok.",
+                "expectedReason": "Restore the first-person present form."
+            },
+            "translation": {
+                "source": "Magyarul tanulok.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Hungarian.",
+                    "I study Hungarian."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Hungarian",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Hungarian sentence in simple English: Én magyarul tanul.",
+                "mustAddress": [
+                    "tanulok",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "zh-learning-001",
+            "language": "zh",
+            "sentenceCheck": {
+                "valid": "我正在学习中文。",
+                "invalid": "我正在中文学习。",
+                "expectedCorrection": "我正在学习中文。",
+                "expectedReason": "Place 学习 before its object 中文."
+            },
+            "translation": {
+                "source": "我正在学习中文。",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Chinese.",
+                    "I study Chinese."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Chinese",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Chinese sentence in simple English: 我正在中文学习。",
+                "mustAddress": [
+                    "学习中文",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "ja-learning-001",
+            "language": "ja",
+            "sentenceCheck": {
+                "valid": "私は日本語を勉強しています。",
+                "invalid": "私は日本語が勉強しています。",
+                "expectedCorrection": "私は日本語を勉強しています。",
+                "expectedReason": "Use the object particle を with 勉強する."
+            },
+            "translation": {
+                "source": "私は日本語を勉強しています。",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Japanese.",
+                    "I study Japanese."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Japanese",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Japanese sentence in simple English: 私は日本語が勉強しています。",
+                "mustAddress": [
+                    "を",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        },
+        {
+            "id": "ko-learning-001",
+            "language": "ko",
+            "sentenceCheck": {
+                "valid": "저는 한국어를 공부하고 있어요.",
+                "invalid": "저는 한국어가 공부하고 있어요.",
+                "expectedCorrection": "저는 한국어를 공부하고 있어요.",
+                "expectedReason": "Use the object particle 를 with 공부하다."
+            },
+            "translation": {
+                "source": "저는 한국어를 공부하고 있어요.",
+                "targetLanguage": "en",
+                "acceptableMeanings": [
+                    "I am learning Korean.",
+                    "I study Korean."
+                ],
+                "mustPreserve": [
+                    "first-person singular",
+                    "learning or studying Korean",
+                    "present or ongoing activity"
+                ],
+                "mustNotAdd": [
+                    "assessed proficiency",
+                    "diagnosis",
+                    "unrequested personal facts"
+                ]
+            },
+            "explanation": {
+                "request": "Explain the correction of this Korean sentence in simple English: 저는 한국어가 공부하고 있어요.",
+                "mustAddress": [
+                    "를",
+                    "the grammatical difference between the original and correction"
+                ],
+                "mustAvoid": [
+                    "unrelated correction",
+                    "claim of assessed proficiency"
+                ],
+                "maximumSentences": 3
+            }
+        }
+    ]
+}

@@ -1,3 +1,4 @@
+import { textAiProviderEnvironmentShape } from '../../config/text-ai-provider-environment';
 import { z } from 'zod';
 import { aiGenerationEnvironmentShape } from '../../config/ai-generation-environment';
 import { parseEnvironmentSchema } from '../../config/environment-diagnostics';
@@ -68,8 +69,7 @@ const WorkerEnvironmentSchema = z.object({
     DICTIONARY_GENERATION_MODEL_API_KEY: optionalValue,
     DICTIONARY_GENERATION_MODEL_BASE_URL: optionalValue,
     DICTIONARY_GENERATION_MODEL_ID: optionalValue,
-    DEEPSEEK_API_KEY: optionalValue,
-    KIE_API_KEY: optionalValue,
+    ...textAiProviderEnvironmentShape,
     DICTIONARY_GENERATION_PROVIDER_MODE: z
         .enum(['unavailable', 'deterministic', 'mastra'])
         .default('unavailable'),
@@ -114,7 +114,13 @@ export interface DictionaryWorkerEnvironment {
     pollIntervalMs: number;
     providerFixtureMode: 'off' | 'deterministic';
     providerCredentials: Partial<
-        Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>
+        Record<
+            | 'DEEPSEEK_API_KEY'
+            | 'KIE_API_KEY'
+            | 'EVOLINK_API_KEY'
+            | 'OPENROUTER_API_KEY',
+            string
+        >
     >;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;
     document:
@@ -372,6 +378,12 @@ export function loadDictionaryWorkerEnvironment(
         pollIntervalMs: environment.DICTIONARY_WORKER_POLL_INTERVAL_MS,
         providerFixtureMode: environment.DICTIONARY_AI_PROVIDER_FIXTURE_MODE,
         providerCredentials: {
+            ...(environment.EVOLINK_API_KEY
+                ? { EVOLINK_API_KEY: environment.EVOLINK_API_KEY }
+                : {}),
+            ...(environment.OPENROUTER_API_KEY
+                ? { OPENROUTER_API_KEY: environment.OPENROUTER_API_KEY }
+                : {}),
             ...(environment.DEEPSEEK_API_KEY
                 ? { DEEPSEEK_API_KEY: environment.DEEPSEEK_API_KEY }
                 : {}),

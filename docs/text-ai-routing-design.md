@@ -1,7 +1,7 @@
 ---
 type: design
 title: Admin-owned text AI routing and verified model routes
-status: proposed
+status: accepted
 date: 2026-10-25
 source_paths:
     - apps/backend/src/modules/text-ai
@@ -12,10 +12,10 @@ source_paths:
 
 # Admin-owned text AI routing and verified model routes
 
-This consolidates the user's twenty confirmed interview decisions. It awaits final
-shared-understanding confirmation and subsequent feature implementation authority.
-No runtime change, paid evaluation, configuration publication or deployment is
-authorized by this document alone.
+This consolidates the user's twenty confirmed interview decisions. The user
+confirmed shared understanding and authorized implementation on 2026-10-25 in
+[Feature054](../.agent/features/054-admin-text-ai-routing/FEATURE.md). Paid
+evaluation, configuration publication and deployment need their own authority.
 
 ## Outcome and scope
 

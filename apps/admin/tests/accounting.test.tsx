@@ -100,6 +100,7 @@ describe('accounting administration', () => {
             Model: 'model',
             'USD per million input tokens': '0.000123',
             'USD per million output tokens': '1.234567',
+            'Minimum USD per request (optional)': '0.000150',
             'Price source reference': 'Verified provider pricing 2026-10-22',
             'Reason for change': 'Calibrate measured provider expense',
         };
@@ -118,6 +119,7 @@ describe('accounting administration', () => {
             meter: 'text-tokens',
             inputUsdPerMillionTokens: '0.000123',
             outputUsdPerMillionTokens: '1.234567',
+            minimumUsdPerRequest: '0.000150',
             usdPer1000Characters: null,
             cacheReadUsdPerMillionTokens: null,
             cacheWriteUsdPerMillionTokens: null,

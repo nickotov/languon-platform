@@ -1,4 +1,6 @@
+import type { TextAiRoutingAuthority } from './text-ai-routing-authority';
 export interface TextAiProviderBudgetPolicy {
+    minimumCostMicrosPerRequest?: number;
     inputCostMicrosPerMillionTokens: number;
     maxCostMicrosPerAttempt: number;
     maxInputTokensPerAttempt: number;
@@ -82,7 +84,21 @@ export const textAiSentenceFormats = [
     'sentence-check:v1',
 ] as const;
 
-export type TextAiProviderId = 'deepseek' | 'kie';
+export const textAiProviderIds = [
+    'deepseek',
+    'kie',
+    'evolink',
+    'openrouter',
+] as const;
+export type TextAiProviderId = (typeof textAiProviderIds)[number];
+export type TextAiCredentialReference =
+    | 'DEEPSEEK_API_KEY'
+    | 'KIE_API_KEY'
+    | 'EVOLINK_API_KEY'
+    | 'OPENROUTER_API_KEY';
+export type TextAiProviderCredentials = Partial<
+    Record<TextAiCredentialReference, string>
+>;
 
 export interface TextAiCreditPricing {
     cachedInputCreditsPerMillionTokens?: number | null;
@@ -97,8 +113,11 @@ export interface TextAiModelDefinition {
     adapterRevision: 'openai-compatible:v1';
     aggregateBudget: TextAiProviderBudgetPolicy;
     creditPricing: TextAiCreditPricing;
-    credentialReference: 'DEEPSEEK_API_KEY' | 'KIE_API_KEY';
+    credentialReference: TextAiCredentialReference;
     id: string;
+    /** Historical identities remain readable; retired routes cannot dispatch. */
+    retired?: boolean;
+    processingControlsRevision?: string;
     label: string;
     perCallMaxInputTokens: number;
     perCallMaxOutputTokens: number;
@@ -108,9 +127,10 @@ export interface TextAiModelDefinition {
 }
 
 export interface TextAiExecutionSnapshot {
+    routingAuthority?: TextAiRoutingAuthority;
     adapterRevision: string;
     aggregateBudget: TextAiProviderBudgetPolicy;
-    credentialReference: 'DEEPSEEK_API_KEY' | 'KIE_API_KEY';
+    credentialReference: TextAiCredentialReference;
     /** Missing only on immutable revisions created before AI-credit support. */
     creditPricing?: TextAiCreditPricing;
     enabledModelIds: string[];
@@ -166,6 +186,7 @@ export const textAiModelCatalog: readonly TextAiModelDefinition[] = [
         },
         credentialReference: 'KIE_API_KEY',
         id: 'gemini-2.5-pro',
+        retired: true,
         label: 'Gemini 2.5 Pro via Kie',
         perCallMaxInputTokens: 64_000,
         perCallMaxOutputTokens: 8_192,
@@ -173,7 +194,71 @@ export const textAiModelCatalog: readonly TextAiModelDefinition[] = [
         supportedCapabilities: ['structured-text'],
         supportedFormats: textAiTextFormats,
     },
+    ...gatewayModels(),
 ] as const;
+
+function gatewayModels(): TextAiModelDefinition[] {
+    const routes: Array<
+        Pick<
+            TextAiModelDefinition,
+            | 'providerId'
+            | 'id'
+            | 'label'
+            | 'credentialReference'
+            | 'processingControlsRevision'
+        >
+    > = [
+        {
+            providerId: 'evolink',
+            id: 'gpt-6-luna',
+            label: 'Luna via EvoLink',
+            credentialReference: 'EVOLINK_API_KEY',
+            processingControlsRevision: 'evolink-processing-review-required:v1',
+        },
+        {
+            providerId: 'openrouter',
+            id: 'openai/gpt-6-luna',
+            label: 'Luna via OpenRouter',
+            credentialReference: 'OPENROUTER_API_KEY',
+            processingControlsRevision: 'openrouter-restricted:v1',
+        },
+        {
+            providerId: 'openrouter',
+            id: 'qwen/qwen3.5-flash-02-23',
+            label: 'Qwen3.5 Flash via OpenRouter',
+            credentialReference: 'OPENROUTER_API_KEY',
+            processingControlsRevision: 'openrouter-restricted:v1',
+        },
+        {
+            providerId: 'openrouter',
+            id: 'google/gemini-3.1-flash-lite',
+            label: 'Gemini 3.1 Flash Lite via OpenRouter',
+            credentialReference: 'OPENROUTER_API_KEY',
+            processingControlsRevision: 'openrouter-restricted:v1',
+        },
+    ];
+    return routes.map((route) => ({
+        ...route,
+        adapterRevision: 'openai-compatible:v1',
+        aggregateBudget: {
+            ...commonAggregateBudget,
+            inputCostMicrosPerMillionTokens: 1_000_000,
+            outputCostMicrosPerMillionTokens: 3_000_000,
+            maxCostMicrosPerAttempt: 400_000,
+        },
+        // Legacy snapshot shape only. Published per-flow tariffs govern new work.
+        creditPricing: {
+            inputCreditsPerMillionTokens: 1_000_000,
+            outputCreditsPerMillionTokens: 3_000_000,
+            maxCreditsPerAttempt: 400_000,
+            revision: 1,
+        },
+        perCallMaxInputTokens: 64_000,
+        perCallMaxOutputTokens: 10_000,
+        supportedCapabilities: ['structured-text'],
+        supportedFormats: [...textAiTextFormats, ...textAiConversationFormats],
+    }));
+}
 
 export function findTextAiModel(
     providerId: TextAiProviderId,

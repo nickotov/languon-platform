@@ -1,3 +1,4 @@
+import { hasConclusiveTextAiFailure } from '../../text-ai/application/text-ai-routing-execution';
 import type {
     SentenceTokenUsage,
     SentenceAiProvider,
@@ -109,6 +110,10 @@ export class SentenceWorkerService {
             const call = {
                 input: job.input,
                 execution: job.execution,
+                providerAttempt: {
+                    ...job.lease,
+                    fencingToken: String(job.lease.fencingToken),
+                },
                 budget: job.budget,
                 idempotencyKey: job.providerIdempotencyKey,
                 signal: combined,
@@ -188,16 +193,30 @@ export class SentenceWorkerService {
                     {
                         code,
                         ...(usage ? { usage } : {}),
-                        retryAt:
-                            code === 'model_unavailable' ||
-                            (code === 'invalid_model_output' &&
-                                job.kind !== 'sentence-generation') ||
-                            controller.signal.aborted ||
-                            job.lease.attempt >= d.maxAttempts
-                                ? null
-                                : new Date(
+                        ...(hasConclusiveTextAiFailure(error) &&
+                        !combined.aborted
+                            ? {
+                                  retryDisposition:
+                                      'conclusive-provider-failure' as const,
+                              }
+                            : {}),
+                        retryAt: job.execution.routingAuthority
+                            ? hasConclusiveTextAiFailure(error) &&
+                              !combined.aborted &&
+                              job.lease.attempt === 1
+                                ? new Date(
                                       d.clock.now().getTime() + d.retryDelayMs,
-                                  ),
+                                  )
+                                : null
+                            : code === 'model_unavailable' ||
+                                (code === 'invalid_model_output' &&
+                                    job.kind !== 'sentence-generation') ||
+                                controller.signal.aborted ||
+                                job.lease.attempt >= d.maxAttempts
+                              ? null
+                              : new Date(
+                                    d.clock.now().getTime() + d.retryDelayMs,
+                                ),
                     },
                     context(),
                 );

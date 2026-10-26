@@ -1,3 +1,4 @@
+import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
 import { usesLegacyAction } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { modelPricingTransaction } from '../../../../ai-credits/infrastructure/price-aware-transaction';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
@@ -49,6 +50,12 @@ export async function markProviderDispatch(
 
         if (!job) return false;
         if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+            if (!job.aiCreditProviderDispatchedAt)
+                await recheckTextAiDispatch(tx, {
+                    actionId: job.id,
+                    jobId: job.id,
+                    now: input.context.now,
+                });
             await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({ aiCreditProviderDispatchedAt: input.context.now })

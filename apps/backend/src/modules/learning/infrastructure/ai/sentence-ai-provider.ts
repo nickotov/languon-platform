@@ -1,3 +1,10 @@
+import { withQueuedTextAiProviderAttempt } from '../../../text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt';
+import type { TextAiProviderRuntimeOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
+import {
+    ProviderExecutionError,
+    withProviderExecutionOutcome,
+} from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
+import { findTextAiModel } from '../../../text-ai/application/text-ai-provider-catalog';
 import {
     sentenceProviderFailure,
     type SentenceProviderFailure,
@@ -35,11 +42,20 @@ import {
     sentenceProviderInputTokens,
 } from './sentence-provider-envelope';
 export function createSentenceAiProvider(options: {
-    credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;
+    runtime?: TextAiProviderRuntimeOptions;
+    credentials: Partial<
+        Record<
+            | 'DEEPSEEK_API_KEY'
+            | 'KIE_API_KEY'
+            | 'EVOLINK_API_KEY'
+            | 'OPENROUTER_API_KEY',
+            string
+        >
+    >;
     fetchProvider?: typeof fetch;
     onProviderFailure?: (
         event: SentenceProviderFailure & {
-            providerId: 'deepseek' | 'kie';
+            providerId: 'deepseek' | 'kie' | 'evolink' | 'openrouter';
             modelId: string;
             kind: 'generate' | 'check';
         },
@@ -57,7 +73,15 @@ export function createSentenceAiProvider(options: {
         usage?: { inputTokens: number; outputTokens: number };
     }> {
         call.signal.throwIfAborted();
+        if (
+            findTextAiModel(call.execution.providerId, call.execution.modelId)
+                ?.retired
+        )
+            throw new SentenceModelUnavailableError(
+                'Selected model is unavailable.',
+            );
         const resolved = resolveTextAiProviderOptions({
+            ...options.runtime,
             snapshot: call.execution,
             budget: call.budget,
             credentials: options.credentials,
@@ -85,22 +109,31 @@ export function createSentenceAiProvider(options: {
                 : agents.sentenceCheckAgent;
         const result = await (async () => {
             try {
-                return await agent.generate(message, {
-                    abortSignal: call.signal,
-                    modelSettings: {
-                        maxOutputTokens: limits.maxOutputTokens,
-                        maxRetries: 0,
-                    },
-                    runId: call.idempotencyKey,
-                    structuredOutput: {
-                        schema,
-                        ...(resolved.structuredOutputMode === 'prompt-injection'
-                            ? { jsonPromptInjection: 'inline' as const }
-                            : {}),
-                    },
-                    toolChoice: 'none',
-                    tracingOptions: { hideInput: true, hideOutput: true },
-                });
+                return await withQueuedTextAiProviderAttempt(
+                    call.providerAttempt,
+                    Boolean(call.execution.routingAuthority),
+                    () =>
+                        agent.generate(message, {
+                            abortSignal: call.signal,
+                            modelSettings: {
+                                maxOutputTokens: limits.maxOutputTokens,
+                                maxRetries: 0,
+                            },
+                            runId: call.idempotencyKey,
+                            structuredOutput: {
+                                schema,
+                                ...(resolved.structuredOutputMode ===
+                                'prompt-injection'
+                                    ? { jsonPromptInjection: 'inline' as const }
+                                    : {}),
+                            },
+                            toolChoice: 'none',
+                            tracingOptions: {
+                                hideInput: true,
+                                hideOutput: true,
+                            },
+                        }),
+                );
             } catch (error) {
                 // The SDK's native schema failure carries usage as well as raw text.
                 // Read only its stable discriminator and bounded usage, never its payload.
@@ -139,10 +172,22 @@ export function createSentenceAiProvider(options: {
                     failure.reason === 'model_retired' ||
                     failure.reason === 'model_unavailable'
                 )
-                    throw new SentenceModelUnavailableError(
-                        'Selected model is unavailable.',
+                    throw withProviderExecutionOutcome(
+                        new SentenceModelUnavailableError(
+                            'Selected model is unavailable.',
+                        ),
+                        error,
+                        call.execution.providerId,
                     );
-                throw error;
+                if (
+                    failure.httpStatus === undefined &&
+                    failure.providerCode === undefined
+                )
+                    throw error;
+                throw new ProviderExecutionError(
+                    error,
+                    call.execution.providerId,
+                );
             }
         })();
         call.signal.throwIfAborted();

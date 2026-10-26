@@ -1,3 +1,10 @@
+import {
+    fixtureRouteFingerprint,
+    seedTextAiRoutingFixture,
+} from '../../../support/text-ai-routing-fixture';
+import { aiProviderExpenseRecordsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
+import { DrizzleTextAiRoutingStore } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store';
+import { textAiRoutingRevisionsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/routing-schema';
 import { cardAuthoringProviderInputTokens } from '../../../../src/modules/dictionaries/infrastructure/ai/card-authoring-input-envelope';
 import { DictionaryTextProviderRouter } from '../../../../src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-router';
 import { selectionProviderInput } from '../../../../src/modules/dictionaries/domain/text-selection';
@@ -155,6 +162,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             selectionPolicy: {
                 routingEnabled: true,
                 credentialConfigured: () => true,
+                routeFingerprint: fixtureRouteFingerprint,
             },
             globalConcurrency: 10,
             ownerConcurrency: 2,
@@ -357,6 +365,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             expect(await store.dispatch(lease)).toBe(true);
             const router = new DictionaryTextProviderRouter({
                 credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+                currentFingerprint: fixtureRouteFingerprint,
             });
             const result = await router
                 .resolve(lease.execution!, lease.budget)
@@ -376,6 +385,49 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     'delta' in result ? result.usage : undefined,
                 ),
             ).toBe(true);
+        },
+    );
+    it.each([false, true])(
+        'does not dispatch a disabled route or charge the learner (claimed: %s)',
+        async (alreadyClaimed) => {
+            const job = await store.enqueue(owner, request());
+            const lease = alreadyClaimed ? await claim() : null;
+            const routing = new DrizzleTextAiRoutingStore(
+                db,
+                async () => {},
+                () => true,
+            );
+            const current = (await routing.current())!;
+            const [revision] = await db
+                .select()
+                .from(textAiRoutingRevisionsTable)
+                .where(eq(textAiRoutingRevisionsTable.id, current.id));
+            await routing.disable(
+                {
+                    expectedVersion: current.version,
+                    routeId: 'deepseek/deepseek-flash',
+                    reason: 'Synthetic emergency disable before HTTP',
+                },
+                revision!.createdBy,
+                now,
+            );
+            if (lease) expect(await store.dispatch(lease)).toBe(false);
+            else expect(await store.claim('selection-test')).toBeNull();
+            const [persisted] = await db
+                .select()
+                .from(jobs)
+                .where(eq(jobs.id, job.id));
+            expect(persisted?.executionState).toBe('failed');
+            expect(persisted?.aiCreditProviderDispatchedAt).toBeNull();
+            const [settled] = await db
+                .select()
+                .from(actions)
+                .where(eq(actions.id, job.id));
+            expect(settled).toMatchObject({
+                state: 'settled',
+                outcome: 'failure',
+                chargedMilli: 0n,
+            });
         },
     );
     it('atomically saves a full card/new dictionary/revision once and redacts occurrence context', async () => {
@@ -609,7 +661,112 @@ run('Dictionary vocabulary selection durable persistence', () => {
         ).not.toBe('active');
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
-    it('retries a known rate-limit rejection once with one action hold and a fenced attempt', async () => {
+    it('retains unknown expense for a rejected selection attempt while using only its approved fallback', async () => {
+        const fallback = textAiModelCatalog.find(
+            (model) =>
+                model.providerId === 'openrouter' &&
+                model.id === 'openai/gpt-6-luna',
+        )!;
+        const fallbackId = `${fallback.providerId}/${fallback.id}`;
+        const revision = await seedTextAiRoutingFixture(db, {
+            routeId: fallbackId,
+            replace: true,
+            at: now,
+        });
+        const [authority] = await db
+            .select()
+            .from(textAiRoutingRevisionsTable)
+            .where(eq(textAiRoutingRevisionsTable.id, revision.id));
+        await new DrizzleTextAiRoutingStore(
+            db,
+            async () => {},
+            () => true,
+        ).publish(
+            {
+                expectedVersion: revision.version,
+                configuration: {
+                    ...revision.configuration,
+                    default: {
+                        primaryRouteId: 'deepseek/deepseek-flash',
+                        fallbackRouteIds: [fallbackId],
+                    },
+                    enabledRouteIds: ['deepseek/deepseek-flash', fallbackId],
+                },
+                reason: 'Synthetic selection fallback authorization',
+            },
+            authority!.createdBy,
+            now,
+        );
+        await db.insert(dictionaryAiWorkerObservationsTable).values({
+            id: textsExecutionObservationId(
+                'selection-test',
+                fallback.providerId,
+                fallback.id,
+            ),
+            workerId: 'selection-test',
+            providerId: fallback.providerId,
+            modelId: fallback.id,
+            adapterRevision: fallback.adapterRevision,
+            textAiSelectionRevision: 1,
+            textAiCapacityRevision: 1,
+            textsExecutionRevision: 1,
+            textsCapacityRevision: 1,
+            creditSettlementRevision: 1,
+            textAiSupportedFormats: [...fallback.supportedFormats],
+            status: 'available',
+            message: 'Synthetic fallback worker',
+            checkedAt: now,
+            expiresAt: new Date(now.getTime() + 3600000),
+        });
+        const job = await store.enqueue(owner, request());
+        const first = await claim();
+        expect(await store.dispatch(first)).toBe(true);
+        const [attempt] = await db
+            .select()
+            .from(actionAttempts)
+            .where(eq(actionAttempts.actionId, job.id));
+        await db.execute(
+            sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${attempt!.id}::uuid,${first.id}::uuid,null,${first.workerId},${first.fencingToken}::bigint,'rate_limited')`,
+        );
+        await store.fail(
+            first,
+            'provider_failure',
+            undefined,
+            'conclusive-provider-failure',
+        );
+        const [failedExpense] = await db
+            .select()
+            .from(aiProviderExpenseRecordsTable)
+            .where(eq(aiProviderExpenseRecordsTable.attemptId, attempt!.id));
+        expect(failedExpense).toMatchObject({
+            measurement: 'unknown',
+            costSource: 'unknown',
+            amountUsdMicros: null,
+        });
+        now = new Date(now.getTime() + 1001);
+        const second = await claim();
+        expect(second.execution?.providerId).toBe('openrouter');
+        expect(await store.dispatch(second)).toBe(true);
+        expect(
+            await store.complete(second, delta, {
+                inputTokens: 100,
+                outputTokens: 40,
+            }),
+        ).toBe(true);
+        const [settled] = await db
+            .select()
+            .from(actions)
+            .where(eq(actions.id, job.id));
+        expect(settled?.outcome).toBe('success');
+        const persistedAttempts = await db
+            .select()
+            .from(actionAttempts)
+            .where(eq(actionAttempts.actionId, job.id));
+        expect(persistedAttempts.map((item) => item.successful).sort()).toEqual(
+            [0, 1],
+        );
+    });
+    it('does not repeat a rejected route when no fallback was authorized; retains one hold', async () => {
         await store.enqueue(owner, request());
         const first = await claim();
         await store.dispatch(first);
@@ -617,19 +774,20 @@ run('Dictionary vocabulary selection durable persistence', () => {
         expect((await store.read(owner, first.id)).state).toBe('queued');
         expect(await store.claim('early')).toBeNull();
         now = new Date(now.getTime() + 1001);
-        const second = await claim();
-        expect(second.attempt).toBe(2);
-        expect(second.fencingToken).toBeGreaterThan(first.fencingToken);
+        expect(await store.claim('after-delay')).toBeNull();
         expect(await store.complete(first, delta)).toBe(false);
-        await store.dispatch(second);
-        await store.fail(second, 'provider_rate_limited');
         expect((await store.read(owner, first.id)).state).toBe('failed');
         expect(await store.claim('later')).toBeNull();
         expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
             0,
         );
-        expect(await db.select().from(actions)).toHaveLength(1);
-        expect(await db.select().from(actionAttempts)).toHaveLength(2);
+        const settled = await db.select().from(actions);
+        expect(settled).toHaveLength(1);
+        expect(settled[0]).toMatchObject({
+            state: 'settled',
+            chargedMilli: 0n,
+        });
+        expect(await db.select().from(actionAttempts)).toHaveLength(1);
     });
     it('rechecks the source before commit and leaves no dictionary after revocation', async () => {
         await store.enqueue(owner, request());

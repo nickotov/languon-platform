@@ -27,7 +27,6 @@ export function ConversationComposer({
     onStop,
     busy,
     active,
-    modelControl,
     contextPicker,
     onSelectFromPage,
     contextOpen = false,
@@ -54,7 +53,6 @@ export function ConversationComposer({
     hasDraft: boolean;
     useDraft: boolean;
     onUseDraft(value: boolean): void;
-    modelControl?: ReactNode;
     contextPicker?: ReactNode;
     onSelectFromPage?: (() => void) | undefined;
     contextOpen?: boolean;
@@ -193,7 +191,6 @@ export function ConversationComposer({
                             defaultsSaved={defaultsSaved}
                             disabled={busy}
                             workspace
-                            modelControl={modelControl}
                         />
                     )}
                     <span className={styles.actionSpacer} />
@@ -237,7 +234,6 @@ export function ConversationComposer({
                         onDefaults={onDefaults}
                         disabled={busy}
                     />
-                    {modelControl}
                 </div>
             )}
         </form>

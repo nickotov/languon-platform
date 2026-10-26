@@ -11,13 +11,13 @@ const { textAiModelCatalog } = await tsImport(
 );
 
 export function selectedModel(snapshot, capability) {
-    const id =
-        snapshot.learner?.mode === 'explicit'
-            ? snapshot.learner.model_id
-            : ['conversation', 'interview'].includes(capability.id)
-              ? 'deepseek-flash'
-              : snapshot.configuration?.modelId;
-    return textAiModelCatalog.find((model) => model.id === id);
+    const configuration = snapshot.routing?.configuration;
+    const flow = capability.formats[0]?.split(':')[0];
+    const policy = configuration?.overrides?.[flow] ?? configuration?.default;
+    const route = capability.routeId ?? policy?.primaryRouteId;
+    return textAiModelCatalog.find(
+        (model) => `${model.providerId}/${model.id}` === route,
+    );
 }
 
 export function workerSupports(worker, model, capability, format) {
@@ -26,7 +26,7 @@ export function workerSupports(worker, model, capability, format) {
         worker.model_id !== model.id ||
         worker.provider_id !== model.providerId ||
         worker.adapter_revision !== model.adapterRevision ||
-        worker.status !== 'available'
+        !['available', 'unverified'].includes(worker.status)
     )
         return false;
     const observation = Object.fromEntries(
@@ -60,4 +60,44 @@ export function customerFunded(snapshot, capability) {
             (name === 'portrait-interview' ? 'operator' : 'customer')) ===
         'customer'
     );
+}
+
+const { createTextAiRouteFingerprint } = await tsImport(
+    '../../apps/backend/src/infrastructure/text-ai/route-fingerprint.ts',
+    import.meta.url,
+);
+
+export function probeEvidence(
+    snapshot,
+    env,
+    capability,
+    model,
+    now = Date.now(),
+) {
+    const routeId = model ? `${model.providerId}/${model.id}` : null;
+    const flowId = capability.formats[0]?.split(':')[0];
+    let fingerprint;
+    try {
+        fingerprint = createTextAiRouteFingerprint(env)(routeId, flowId);
+    } catch {
+        return { ready: false, stale: false };
+    }
+    const evidence = snapshot.probes?.find(
+        (probe) =>
+            probe.route_id === routeId &&
+            probe.flow_id === flowId &&
+            probe.kind === 'flow' &&
+            probe.fingerprint === fingerprint,
+    );
+    // The database function is the same authority used for real dispatch. It
+    // retains prior matching successes and provider/route-wide hard failures;
+    // elapsed time alone must never create activation evidence.
+    if (!evidence || evidence.dispatch_allowed !== true)
+        return { ready: false, stale: false };
+    return {
+        ready: true,
+        stale:
+            !evidence.evidence_expires_at ||
+            new Date(evidence.evidence_expires_at).getTime() < now,
+    };
 }

@@ -8,9 +8,9 @@ describe('transaction-scoped capacity fence', () => {
         const tx = { execute } as unknown as Transaction;
         await Promise.all([lockTextAiCapacity(tx), lockTextAiCapacity(tx)]);
         await lockTextAiCapacity(tx);
-        expect(execute).toHaveBeenCalledTimes(2);
+        expect(execute).toHaveBeenCalledTimes(1);
         await lockTextAiCapacity({ execute } as unknown as Transaction);
-        expect(execute).toHaveBeenCalledTimes(4);
+        expect(execute).toHaveBeenCalledTimes(2);
     });
     it('does not retain a failed acquisition', async () => {
         const execute = vi
@@ -19,6 +19,6 @@ describe('transaction-scoped capacity fence', () => {
         const tx = { execute } as unknown as Transaction;
         await expect(lockTextAiCapacity(tx)).rejects.toThrow('Unavailable');
         await lockTextAiCapacity(tx);
-        expect(execute).toHaveBeenCalledTimes(3);
+        expect(execute).toHaveBeenCalledTimes(2);
     });
 });

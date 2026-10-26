@@ -82,7 +82,12 @@ export interface TextsWorkerStore {
     ): Promise<boolean>;
     fail(
         lease: TextsLease,
-        input: { code: string; retryAt: Date | null; usage?: TextsTokenUsage },
+        input: {
+            code: string;
+            retryAt: Date | null;
+            retryDisposition?: 'conclusive-provider-failure';
+            usage?: TextsTokenUsage;
+        },
         context: TextJobContext,
     ): Promise<boolean>;
     releaseWorkerLeases(

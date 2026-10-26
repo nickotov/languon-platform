@@ -115,17 +115,27 @@ export function createInterviewAdmission(options: {
                 if (error instanceof TextAiSelectionUnavailableError)
                     throw new InterviewAccountingError(
                         'model_unavailable',
-                        'The selected model is unavailable for interviews. Choose Auto or DeepSeek Flash and try again.',
+                        'AI is unavailable right now. Try again later or edit your draft manually.',
                     );
                 throw error;
             });
         if (
             !execution.snapshot?.creditPricing ||
-            execution.snapshot.modelId !== 'deepseek-flash'
+            !execution.snapshot.supportedFormats.includes(
+                'portrait-interview:v1',
+            )
         )
             throw new InterviewAccountingError(
                 'model_unavailable',
-                'The selected model does not support interviews. Choose Auto or DeepSeek Flash.',
+                'AI is unavailable right now. Try again later or edit your draft manually.',
+            );
+        if (
+            !operatorFunded &&
+            execution.snapshot.routingAuthority?.tariffPublished === false
+        )
+            throw new InterviewAccountingError(
+                'model_unavailable',
+                'AI is not configured for this action. Try again later.',
             );
         if (
             execution.snapshot.perCallMaxOutputTokens <
@@ -133,7 +143,7 @@ export function createInterviewAdmission(options: {
         )
             throw new InterviewAccountingError(
                 'model_unavailable',
-                'The selected model cannot provide a useful interview response.',
+                'AI cannot complete this interview response. Your draft is kept; try again later or edit manually.',
             );
         const account = operatorFunded
             ? null
@@ -169,12 +179,21 @@ export function createInterviewAdmission(options: {
                 'action_budget_unconfigured',
                 'Configure an AI action budget before starting paid work.',
             );
-        const providerPrice = await pinProviderPrice(tx, {
-            providerId: execution.snapshot.providerId,
-            modelId: execution.snapshot.modelId,
-            meter: 'text-tokens',
-            at: now,
-        });
+        const pinnedCandidate =
+            execution.snapshot.routingAuthority?.candidates.find(
+                (candidate) =>
+                    candidate.snapshot.providerId ===
+                        execution.snapshot.providerId &&
+                    candidate.snapshot.modelId === execution.snapshot.modelId,
+            );
+        const providerPrice =
+            pinnedCandidate?.providerPrice ??
+            (await pinProviderPrice(tx, {
+                providerId: execution.snapshot.providerId,
+                modelId: execution.snapshot.modelId,
+                meter: 'text-tokens',
+                at: now,
+            }));
         try {
             execution.budget = reviewedTextProviderBudget(
                 providerPrice,
@@ -340,7 +359,7 @@ export function createInterviewAdmission(options: {
         if (outputTokenLimit < 1)
             throw new InterviewAccountingError(
                 'capacity_unavailable',
-                'The selected model exceeds the available execution allowance. Try another model or try again later.',
+                'The AI request exceeds the available execution allowance. Try again later.',
             );
         const capacity = await readTextAiCapacity(tx, {
             actorId: input.ownerId,
@@ -389,7 +408,10 @@ export function createInterviewAccounting(input: {
             withTransaction: (work) => input.database.transaction(work),
         });
     const snapshot = input.execution.snapshot;
-    if (!snapshot?.creditPricing || snapshot.modelId !== 'deepseek-flash')
+    if (
+        !snapshot?.creditPricing ||
+        !snapshot.supportedFormats.includes('portrait-interview:v1')
+    )
         throw new Error('Interview execution is unavailable.');
     const selected: TextAiExecutionSnapshot = snapshot;
     const pricing = snapshot.creditPricing;

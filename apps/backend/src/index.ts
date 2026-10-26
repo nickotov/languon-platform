@@ -1,3 +1,9 @@
+import { createAdminTextAiRoutingComposition } from './infrastructure/text-ai/admin-routing-composition';
+import {
+    loadTextAiProviderCredentials,
+    loadTextAiProbeEnvironment,
+    adminProbeFixtureEnabled,
+} from './config/environment';
 import { createLearnerAiCreditBalanceModule } from './modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { RedisGenerationBurstLimiter } from './modules/text-ai/infrastructure/generation-burst-limiter';
 import { createLearnerPortraitModule } from './modules/learner-portraits/infrastructure/learner-portrait-composition';
@@ -142,6 +148,20 @@ const administration = createAdministrationComposition(
         createSentenceLibraryAdministrationHooks(),
     ),
 );
+const textAiProbeEnvironment = loadTextAiProbeEnvironment(process.env);
+const syntheticAdminProbes = adminProbeFixtureEnabled(process.env);
+const textAiRouting = createAdminTextAiRoutingComposition({
+    database: authentication.productDependencies.database,
+    administration: administration.administration,
+    policy: administration.policy,
+    credentials: loadTextAiProviderCredentials(process.env),
+    ...textAiProbeEnvironment,
+    syntheticFixture: syntheticAdminProbes,
+    limits: syntheticAdminProbes
+        ? { ...textAiProbeEnvironment.limits, cooldownSeconds: 0 }
+        : textAiProbeEnvironment.limits,
+});
+administration.textAiProbes = textAiRouting.probes;
 const dictionaryDocumentS3Client =
     environment.DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED &&
     environment.DICTIONARY_DOCUMENT_STORAGE
@@ -341,6 +361,7 @@ const app = createApp({
             authentication.productDependencies.rateLimiter,
         ),
     }),
+    textAiRouting: textAiRouting.routes,
     textAi: createTextAiModule({
         ...authentication.productDependencies,
         policy: authentication.options.policy,

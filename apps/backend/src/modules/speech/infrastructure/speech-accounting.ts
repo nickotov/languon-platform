@@ -66,6 +66,9 @@ export async function authorizeSpeechAccounting(
         modelId: price.modelId,
         meter: price.meter,
         usdPer1000Characters: price.usdPer1000Characters,
+        ...(price.minimumUsdPerRequest == null
+            ? {}
+            : { minimumUsdPerRequest: price.minimumUsdPerRequest }),
         effectiveAt: price.effectiveAt,
     };
 }

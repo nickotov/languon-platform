@@ -90,6 +90,7 @@ export class DrizzleSentenceWorkerStore implements SentenceWorkerStore {
         failure: {
             code: SentenceJobFailure;
             retryAt: Date | null;
+            retryDisposition?: 'conclusive-provider-failure';
             usage?: SentenceTokenUsage;
         },
         context: SentenceContext,

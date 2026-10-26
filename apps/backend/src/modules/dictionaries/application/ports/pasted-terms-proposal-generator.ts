@@ -1,3 +1,4 @@
+import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
 import type { DictionaryBatchGenerationProposalPayload } from '../../domain/batch-generation';
 import type { DictionaryPastedTermsGenerationInputPayload } from '../../domain/generation';
 import type { DictionaryGenerationProviderBudgetPolicy } from './dictionary-generation-provider-policy';
@@ -10,6 +11,7 @@ export const dictionaryPastedTermsGenerationMinimumInputTokensPerAttempt = 262_1
 export const dictionaryPastedTermsGenerationMinimumOutputTokensPerAttempt = 40_960;
 
 export interface PastedTermsProposalGeneratorRequest {
+    providerAttempt?: TextAiProviderLeaseContext;
     idempotencyKey: string;
     input: DictionaryPastedTermsGenerationInputPayload;
     providerBudget: DictionaryGenerationProviderBudgetPolicy;

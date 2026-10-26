@@ -28,7 +28,7 @@ pnpm dev:doctor -- --env-file /path/to/local-test.env --phase configuration
 ```
 
 The env file is authoritative for standalone checks. The doctor reads local
-PostgreSQL in a read-only transaction, checks migration history, model selection,
+PostgreSQL in a read-only transaction, checks migration history, admin-owned routing for each flow and approved fallback,
 required worker formats, effective customer/provider prices and operator limits.
 Runtime checks include fresh worker evidence. Explicit capability selection also
 checks its enable flag; disabled optional capabilities are omitted by default.
@@ -45,8 +45,12 @@ critical journey after prerequisites are ready.
    runtime with `APP_ENV=test` and `DICTIONARY_AI_PROVIDER_FIXTURE_MODE=deterministic`.
    The CLI does not switch server adapters or set credentials.
 2. Sign in to admin recently. **Accounting** owns application/operator budgets
-   and provider USD prices. **AI settings** owns enabled/default model and customer
-   credit tariffs. Both prices are required, even for an operator-funded interview.
+   and provider USD prices. **AI routing** owns the default, per-flow overrides,
+   enabled routes and customer tariffs. Paid flows require a per-flow tariff;
+   free interviews do not require one. All routes still require provider prices
+   and operator limits. The CLI only publishes the reviewed accounting/provider
+   price sample; it never changes routes, invents gateway prices, publishes
+   customer tariffs, or runs billable probes.
 3. Use the backend origin (default port 4000), not the web proxy. Preview using a recent admin token supplied in `LANGUON_DEV_ADMIN_TOKEN` through
    the environment, never as a command argument or in captured output:
 
@@ -76,17 +80,67 @@ critical journey after prerequisites are ready.
 6. Rerun preview: settings should already match. Run the doctor and the intended
    [critical workflow](./critical-workflows.md). Do not infer success from setup alone.
 
-In the admin UI, choose **DeepSeek Flash** as default and enable it. Publish the
-values below, set provider effective date to the publication time, and enter a
-reason identifying the selected local profile. Existing learner action budgets
-are not raised when the application default changes; edit the synthetic learner's
-AI settings explicitly if its saved budget needs to differ.
+## Activate a real provider route
+
+1. Set its credential in the ignored backend/worker environment. Reviewed gateway
+   routes use `EVOLINK_API_KEY` or `OPENROUTER_API_KEY`; the doctor reports only
+   presence, never values. Restart backend and workers after changes.
+2. In **Accounting → Provider prices**, publish the chosen provider/model's
+   reviewed current USD input/output rates, applicable cache rates and any
+   per-request USD minimum with a
+   source and effective date. Existing DeepSeek samples are not gateway prices.
+   No EvoLink/OpenRouter production rate is supplied by the setup profiles.
+   EvoLink checks require an explicit reviewed per-request minimum. This floor
+   applies to operator cost only; it does not create a minimum learner charge.
+3. In **AI routing**, choose the default and optional flow overrides/fallbacks.
+   Enter approved customer input/output credits per million tokens for each paid
+   flow. These are independent of provider USD costs. Review operator probe caps
+   before running any checks: checks spend operator funds and need explicit
+   authorization when operated by an agent.
+4. Use **Quick response** for basic connectivity, then **Test selected flow** for
+   every route/flow to be activated. A quick response is insufficient to activate
+   structured work. Successful matching checks are required within 24 hours when
+   publishing a route. Credentials, schema or adapter changes invalidate checks.
+5. Publish explicitly. EvoLink remains unavailable for learner dispatch until its
+   processing/privacy controls are reviewed; possessing its key or passing a
+   synthetic probe does not approve processing learner content. Retired Kie
+   Gemini 2.5 Pro cannot be activated.
+6. Run `pnpm dev:doctor -- --capability texts` (substitute the intended capability),
+   then the registered deterministic critical flows. The doctor inspects primary
+   and fallback prerequisites and never performs a live probe. An unchanged
+   active route with aged evidence reports a warning in its successful check:
+   dispatch remains allowed, but publication needs fresh evidence. Hard failures
+   block readiness until rechecked; transient failures use bounded recovery.
+
+Learners cannot select models. Existing model preferences are ignored for new
+work; language, tone, explanation preferences and saved action budgets remain.
+The application default action budget does not raise existing learners' budgets.
+Edit a synthetic learner's maximum explicitly when necessary.
 
 The backend/worker environment must enable the intended capability. In particular,
 `TEXTS_AI_ENABLED=true` requires worker formats `text-detection:v2` and
 `text-translation:v3` for folderless work, alongside supported older formats.
 Configure the provider credential in the ignored environment, and advertise it
 only when actually present. Never paste credentials into this guide or evidence.
+
+## Multilingual reference evaluation
+
+The versioned synthetic corpus is
+[`multilingual-v1.json`](../../scripts/dev-readiness/fixtures/multilingual-v1.json).
+It includes Russian, English, French, Spanish, German, Serbian, Polish, Turkish,
+Hungarian, Chinese, Japanese and Korean. Each case contains a correct sentence,
+a deliberately incorrect sentence with its correction/reason, acceptable English
+translation meanings and a short explanation rubric. Add new languages as new
+versioned cases rather than silently changing an existing evaluation baseline.
+
+`node --test scripts/dev-readiness/multilingual-fixtures.test.mjs` validates the
+reference structure and coverage offline. It makes no provider calls and proves
+no model's linguistic quality. References are engineering-authored examples,
+not native-speaker certification. Any separately authorized live evaluation
+must retain route/adapter, corpus version, usage, expense and human-reviewed
+semantic results. Do not grade translation variants by exact string equality or
+report an unevaluated route/language as passing. Probe connectivity and structured
+schema checks also do not establish multilingual quality.
 
 ## Reviewed profile values
 
@@ -106,20 +160,6 @@ Conservative local testing estimates; review current provider rates before real 
 | maxProviderCostUsdPerAction     | 0.10  |
 | maxProviderCostUsdPerAccountDay | 1     |
 | maxProviderCostUsdPerDay        | 5     |
-
-**AI settings → customer tariffs** (API: `/admin/ai/model-prices`)
-
-| Field                              | Value          |
-| ---------------------------------- | -------------- |
-| providerId                         | deepseek       |
-| modelId                            | deepseek-flash |
-| meter                              | text-tokens    |
-| creditsPer1000Characters           | Leave empty    |
-| minimumCredits                     | Leave empty    |
-| inputCreditsPerMillionTokens       | 100            |
-| outputCreditsPerMillionTokens      | 300            |
-| cachedInputCreditsPerMillionTokens | 100            |
-| provisional                        | true           |
 
 **Accounting → provider prices** (API: `/admin/ai/accounting/provider-prices`)
 
@@ -149,20 +189,6 @@ Synthetic economics for the disposable deterministic test runtime only.
 | maxProviderCostUsdPerAccountDay | 1     |
 | maxProviderCostUsdPerDay        | 5     |
 
-**AI settings → customer tariffs** (API: `/admin/ai/model-prices`)
-
-| Field                              | Value          |
-| ---------------------------------- | -------------- |
-| providerId                         | deepseek       |
-| modelId                            | deepseek-flash |
-| meter                              | text-tokens    |
-| creditsPer1000Characters           | Leave empty    |
-| minimumCredits                     | Leave empty    |
-| inputCreditsPerMillionTokens       | 100            |
-| outputCreditsPerMillionTokens      | 300            |
-| cachedInputCreditsPerMillionTokens | 100            |
-| provisional                        | true           |
-
 **Accounting → provider prices** (API: `/admin/ai/accounting/provider-prices`)
 
 | Field                         | Value                        |
@@ -177,3 +203,14 @@ Synthetic economics for the disposable deterministic test runtime only.
 | usdPer1000Characters          | Leave empty                  |
 | sourceReference               | synthetic-deterministic-demo |
 | sourceUrl                     | Leave empty                  |
+
+### OpenRouter authorization troubleshooting
+
+`OPENROUTER_API_KEY` must contain a regular generation API key. A management
+key can authenticate for administration while completion requests return401;
+account credit balance does not change that restriction. Replace it in the
+ignored server environment, restart the affected API/worker processes, and run
+fresh matching flow checks before activation. Never paste credentials into
+reports or a learner chat. See OpenRouter's
+[management-key documentation](https://openrouter.ai/blog/tutorials/team-spend-controls-setup/)
+and [current-key endpoint](https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key).

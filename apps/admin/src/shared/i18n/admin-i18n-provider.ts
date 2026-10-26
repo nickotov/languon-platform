@@ -1,6 +1,117 @@
 import type { I18nProvider } from '@refinedev/core';
 
 export const adminMessages = {
+    'routing.processing': 'Processing eligibility',
+    'routing.retired': 'Retired',
+    'routing.processingEligible': 'Reviewed controls',
+    'routing.processingBlocked': 'Processing approval required',
+    'routing.actions': 'Actions',
+    'routing.disable': 'Emergency disable',
+    'routing.disableTitle': 'Disable this route?',
+    'routing.disableConfirm': 'Disable route',
+    'routing.disableHelp':
+        'Blocks new dispatches, including queued actions. Running requests continue. Queued work may use only an already approved compatible fallback; otherwise it fails without a learner charge. Disabling the last route stops new AI work.',
+    'routing.recoveryWarning':
+        'This check has not reported a trustworthy completion. Provider checks remain blocked until an operator confirms recovery.',
+    'routing.recoveryExpense':
+        'The original maximum USD {maximum} remains counted as unknown provider expense. Recovery releases execution capacity and does not retry, erase expense or change learner credits.',
+    'routing.recoveryReason': 'Reason for recovery',
+    'routing.recoveryConfirm':
+        'I checked the provider and confirm this upstream request has stopped.',
+    'routing.recovered': 'Operator recovery confirmed',
+    'routing.recover': 'Confirm provider recovery',
+    'routing.title': 'Text AI routes',
+    'routing.summary':
+        'Choose reviewed provider routes, test their response contracts, and publish server-owned routing for each text flow.',
+    'routing.configuration': 'Routing and flow tariffs',
+    'routing.primary': 'Primary route',
+    'routing.fallbacks': 'Ordered fallback routes',
+    'routing.fallbackHelp':
+        'Select in priority order. Remove and add a route again to change its position.',
+    'routing.fallbackOrder':
+        'Only approved routes may be tried, within the original action budget. Ambiguous upstream requests are not automatically retried.',
+    'routing.selectPrimary': 'Select a primary route.',
+    'routing.inherit':
+        'Leave the primary route empty to inherit the application default. A flow override replaces the complete default policy.',
+    'routing.freeInterview':
+        'Interviews remain Free for learners. Provider expenses and operator limits still apply.',
+    'routing.inputRate': 'Input credits per million tokens',
+    'routing.outputRate': 'Output credits per million tokens',
+    'routing.cacheRate': 'Cached input credits per million tokens (optional)',
+    'routing.activationNotice':
+        'New or changed routes require matching successful flow checks from the last 24 hours. Server validation also checks compatibility, credentials and provider prices.',
+    'routing.enabled': 'Enabled routes',
+    'routing.flows': 'Per-flow overrides and credit tariffs',
+    'routing.tariffHelp':
+        'Learner tariffs belong to the flow, independently of provider USD costs. Publish reviewed values for every paid flow. Existing transactions retain their original rates.',
+    'routing.publish': 'Publish routing',
+    'routing.savedPolicy':
+        'Changes affect new work; already admitted work keeps its policy.',
+    'routing.invalid':
+        'Review the primary route, unique fallback order and required flow tariffs.',
+    'routing.route': 'Provider / model route',
+    'routing.configured': 'Configuration',
+    'routing.enabledState': 'Enabled',
+    'routing.disabledState': 'Disabled',
+    'routing.runtimeFailure': 'Runtime failure',
+    'routing.runtimeObservedAt': 'Runtime observed at',
+    'routing.noRuntimeObservation': 'No runtime observation',
+    'routing.failure.schema_incompatible':
+        'The provider rejected the required response schema. Recheck this flow after updating the adapter.',
+    'routing.failure.request_rejected':
+        'The provider rejected this request. Review the route configuration and run a new check.',
+    'routing.failure.model_unavailable':
+        'This model is unavailable at the provider. Run a check before using it again.',
+    'routing.runtimeHealth': 'Observed worker readiness',
+    'routing.evidence': 'Flow check evidence',
+    'routing.checked': 'Checked at',
+    'routing.separateStates':
+        'Configured routes, flow-check evidence and runtime observations are separate signals. A quick response does not establish flow compatibility.',
+    'routing.evidence.none': 'Not verified',
+    'routing.evidence.fresh': 'Within evidence window',
+    'routing.evidence.stale': 'Stale — recheck before changing',
+    'routing.checks': 'Synthetic provider checks',
+    'routing.checkHelp':
+        'Quick response tests basic connectivity. Test selected flow validates its application response contract. These checks do not prove multilingual educational quality.',
+    'routing.probeBudget':
+        'Maximum USD {maximum} per check; USD {daily} per UTC day across admins. Route cooldown: {cooldown} seconds.',
+    'routing.operatorExpense':
+        'Uses synthetic content and real provider usage. Languon pays; no learner credits are reserved or charged. A check starts only after explicit cost approval.',
+    'routing.quick': 'Quick response',
+    'routing.testFlow': 'Test selected flow',
+    'routing.checkType': 'Check type',
+    'routing.flow': 'AI flow',
+    'routing.approveCost':
+        'I approve this operator expense up to the displayed maximum.',
+    'routing.runCheck': 'Run check',
+    'routing.checkState': 'Check result',
+    'routing.elapsed': 'Total elapsed',
+    'routing.firstOutput': 'First visible output',
+    'routing.tokens': 'Input / output tokens',
+    'routing.cost': 'Provider expense (USD)',
+    'routing.failure': 'Failure reason',
+    'routing.unknown': 'Unknown',
+    'routing.failure.budget_insufficient':
+        'The approved probe budget cannot fund this flow. Adjust reviewed limits or choose a cheaper route.',
+    'routing.failure.model_retired':
+        'The provider has retired this model. Select a supported route.',
+    'routing.failure.authorization_failed':
+        'Provider authentication failed. Check its server credentials and run a new check.',
+    'routing.failure.provider_credits_exhausted':
+        'The provider account has insufficient funds.',
+    'routing.failure.rate_limited':
+        'The provider rate limit was reached. Wait before checking again.',
+    'routing.failure.timeout':
+        'The provider did not finish before the deadline. This does not permanently disable the route.',
+    'routing.failure.invalid_output':
+        'The response did not satisfy the selected flow contract.',
+    'routing.failure.provider_unavailable':
+        'The provider could not complete this request.',
+    'routing.failure.execution_unknown':
+        'Execution is uncertain. Do not blindly repeat the request.',
+    'routing.errorHelp':
+        'Your draft is preserved. For a conflict, reload and review the latest revision. If recent sign-in is required, sign in again. Otherwise correct the reported prerequisite and retry.',
+
     'sentences.title': 'Sentence library',
     'sentences.heading': 'Saved examples, under control.',
     'sentences.description':
@@ -439,6 +550,10 @@ export const adminMessages = {
         'USD per million cache write tokens (optional)',
     'accounting.tokenMeter': 'Text tokens',
     'accounting.characterMeter': 'Speech characters',
+    'accounting.usdMinimumRequestField': 'Minimum USD per request (optional)',
+    'accounting.usdMinimumRequestHelp':
+        'Publish a reviewed request minimum where applicable. EvoLink requires an explicit value before activation. This is provider expense, independent of learner credit tariffs.',
+    'accounting.usdMinimumRequestValue': 'Minimum per request: USD {minimum}',
     'accounting.title': 'AI accounting',
     'accounting.description':
         'Manual cash records and usage economics in USD. Reports refresh every 30 seconds. Reporting periods use UTC; the end date is exclusive.',
@@ -522,9 +637,10 @@ export const adminMessages = {
     'accounting.reloadPolicies': 'Reload latest policies',
     'accounting.originalCurrency': 'Original currency (optional, ISO code)',
     'accounting.originalAmount': 'Original amount (optional)',
+    'pricing.historicalText': 'Historical text tariff — read-only',
     'pricing.title': 'Model credit pricing',
     'pricing.description':
-        'Publish credit rates for approved text and speech models. Provider credentials, models and voices remain managed in server configuration.',
+        'Speech model tariffs remain editable here. Historical text tariffs are read-only and do not price new work: use the per-flow tariffs above. Provider USD costs are managed separately in AI accounting.',
     'pricing.meter': 'Meter',
     'pricing.rates': 'Credit rates',
     'pricing.revision': 'Revision',

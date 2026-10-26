@@ -1223,13 +1223,24 @@ test.describe('dictionary platform journeys', () => {
         await batch.getByLabel('Terms or phrases').fill('canvas\nbank');
         const admitted = page.waitForResponse(
             (response) =>
-                response.url().endsWith('/batch-generations') &&
-                response.status() === 202,
+                response.request().method() === 'POST' &&
+                response.url().endsWith('/batch-generations'),
         );
         await batch
             .getByRole('button', { name: 'Generate cards', exact: true })
             .click();
-        await admitted;
+        const admission = await admitted;
+        const body: unknown = await admission.json();
+        const { DictionaryErrorResponseSchema } =
+            await import('@languon/contracts');
+        const failure = DictionaryErrorResponseSchema.safeParse(body);
+        const safeError = failure.success
+            ? {
+                  code: failure.data.error.code,
+                  message: failure.data.error.message,
+              }
+            : null;
+        expect(admission.status(), JSON.stringify(safeError)).toBe(202);
         await expect(
             batch.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });

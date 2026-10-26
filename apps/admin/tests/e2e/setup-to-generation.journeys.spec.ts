@@ -81,6 +81,8 @@ test('empty database admin setup enables paid learner text generation and durabl
     try {
         // Fail rather than silently accepting accounting seeded by other suites.
         for (const table of [
+            'text_ai_routing_state',
+            'text_ai_probes',
             'dictionary_ai_configuration',
             'ai_provider_price_revisions',
             'ai_accounting_settings_revisions',
@@ -110,7 +112,7 @@ test('empty database admin setup enables paid learner text generation and durabl
         expect(unconfigured.ready).toBe(false);
         expect(unconfigured.checks).toContainEqual(
             expect.objectContaining({
-                id: 'provider-price',
+                id: expect.stringMatching(/(^|\/)model$/),
                 status: 'blocked',
             }),
         );
@@ -124,7 +126,7 @@ test('empty database admin setup enables paid learner text generation and durabl
         ).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    id: 'provider-price',
+                    id: expect.stringMatching(/(^|\/)provider-price$/),
                     status: 'pass',
                 }),
             ]),
@@ -218,6 +220,8 @@ test('empty database admin setup enables paid learner text generation and durabl
         await applyDemoProfile(accessToken, profileLearnerId);
         const snapshot = async () => {
             const tables = [
+                'text_ai_routing_revisions',
+                'text_ai_probes',
                 'dictionary_ai_configuration_revisions',
                 'ai_provider_price_revisions',
                 'ai_accounting_settings_revisions',

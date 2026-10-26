@@ -72,20 +72,22 @@ DICTIONARY_JOB_API_ENQUEUED_FORMATS=card-authoring:v1,card-authoring:v2,card-aut
 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS=card-authoring:v1,card-authoring:v2,card-authoring:v3
 ```
 
-Use `DICTIONARY_GENERATION_MODEL_ID=kie/gemini-2.5-pro` with `KIE_API_KEY` and
-`DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED=true` to use Kie's text endpoint.
-`DICTIONARY_AUDIO_KIE_API_KEY` remains a separate TTS credential. The safe
-`*_CREDENTIAL_CONFIGURED` flags tell the API which worker credentials are
-deployed without exposing those credentials to the API process. Curated
-providers use fixed reviewed URLs, model IDs, request caps, structured-output
-handling, and non-billable readiness probes. DeepSeek's authenticated
-`GET /models` can report available; Kie's route-only `HEAD` probe remains
-unverified because it does not prove the credential or structured output. The admin AI settings page can
-enable catalog models and choose the global default; it never reads or writes
-credentials. Active learners can read/save Auto or an explicit curated model
-through the [model preference backend](docs/user-flows/user-ai-model-preferences-backend.md);
-new jobs resolve that choice and existing jobs retain their pinned execution.
-The profile picker is deferred to the external-design continuation.
+Text AI routes are configured in **Admin → AI routing** using the reviewed
+provider/model catalog. Direct DeepSeek remains supported; OpenRouter and EvoLink
+credentials use `OPENROUTER_API_KEY` and `EVOLINK_API_KEY` in ignored server
+environment files. The retired Kie Gemini route is unavailable; historical jobs
+and the separate `DICTIONARY_AUDIO_KIE_API_KEY` speech credential remain distinct.
+Fixed URLs, request controls, current worker observations, reviewed provider prices
+and matching synthetic flow checks gate activation. A HEAD/readiness response is
+not proof that a model generates valid results. EvoLink learner dispatch also
+requires processing approval; OpenRouter's current live authorization must pass.
+
+Administrators publish a default, per-flow overrides, ordered approved fallbacks
+and independent learner tariffs. Learners control learning preferences and budgets,
+not provider/model selection. Admission pins the policy, candidate identities,
+prices and budget; existing work never obtains a new tariff or unapproved route.
+See [routing verification](docs/user-flows/admin-text-ai-routing.md) and
+[local testing prerequisites](docs/operations/local-testing-setup.md).
 
 `DICTIONARY_AI_MANAGED_ROUTING_ENABLED` is the expand/activate safety gate. For a
 deployed environment, enable it only after every active and rollback-floor worker
@@ -216,7 +218,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm test:e2e:diagrams`                      | Verify the real diagram viewer in Chromium                                          |
 | `pnpm dev:doctor`                             | Inspect local capability, worker, pricing and budget readiness without mutations    |
 | `pnpm dev:configure -- --help`                | Preview/apply reviewed local setup profiles through admin APIs                      |
-| `pnpm test:e2e:critical`                      | Run critical browser and backend AI execution checks on owned disposable infra         |
+| `pnpm test:e2e:critical`                      | Run critical browser and backend AI execution checks on owned disposable infra      |
 | `pnpm critical-flows:check`                   | Validate the extensible critical workflow registry                                  |
 | `pnpm check:setup-docs`                       | Check documented setup values against reviewed profile definitions                  |
 | `pnpm browser:install`                        | Install Chrome for agent-led browser checks                                         |
@@ -257,6 +259,10 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm user-flow:e2e -- check [slug]`          | Validate guide-to-E2E scenario traceability                                         |
 | `node scripts/run-flashcard-training-e2e.mjs` | Run backend flashcard HTTP journeys in owned ephemeral PostgreSQL/Redis containers  |
 | `pnpm feature:new -- <slug> "<title>"`        | Create the next numbered feature evidence workspace                                 |
+
+The backend build gives the TypeScript declaration compiler a 6 GB heap ceiling.
+This is a build-time limit; application and worker runtime commands are unchanged.
+Build hosts need additional memory for Node overhead and concurrent workspace builds.
 
 The contextual assistant journey uses exclusive disposable PostgreSQL/Redis
 targets and a deterministic model. Follow its
@@ -359,7 +365,7 @@ provides decision probes and repair-inclusive quality/cost measurements.
 Frontend component and state work uses the project-local
 `$frontend-development` skill.
 
-### Verify learner model preferences
+### Verify learner AI budgets and selection restrictions
 
 `pnpm test:e2e:user-ai-model-preferences-backend` runs the authenticated API and
 pinned dictionary-admission journey on explicitly confirmed disposable

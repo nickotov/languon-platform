@@ -16,7 +16,8 @@ export const webOrigin =
 export const password = 'Critical!Local-password-2026';
 export const databaseUrl = process.env.ADMIN_E2E_DATABASE_URL!;
 const root = resolve(import.meta.dirname, '../../../../..');
-const formats = 'single-card:v2,text-detection:v2,text-translation:v3';
+const formats =
+    'single-card:v2,text-detection:v2,text-translation:v3,text-selection-card:v1';
 
 function environment() {
     return {
@@ -43,6 +44,7 @@ export async function inspectReadiness() {
         APP_ENV: 'development',
         DATABASE_URL: databaseUrl,
         DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
+        DEEPSEEK_API_KEY: 'synthetic-test-key',
         DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
         DICTIONARY_AI_CREDIT_ENFORCEMENT_ENABLED: 'true',
         TEXTS_AI_ENABLED: 'true',
@@ -193,8 +195,8 @@ export async function startWorker() {
             env: {
                 ...environment(),
                 APP_ENV: 'test',
-                DEEPSEEK_API_KEY: 'synthetic-local-key',
-                KIE_API_KEY: 'synthetic-local-key',
+                DEEPSEEK_API_KEY: 'synthetic-test-key',
+                KIE_API_KEY: 'synthetic-test-key',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
                 DICTIONARY_JOB_API_ENQUEUED_FORMATS: formats,

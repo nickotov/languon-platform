@@ -34,6 +34,10 @@ import { aiProviderPriceRevisionsTable } from '../../src/modules/ai-credits/infr
 import { aiAccountingSettingsRevisionsTable } from '../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
 import { usersTable } from '../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import {
+    fixtureRouteFingerprint,
+    seedTextAiRoutingFixture,
+} from '../support/text-ai-routing-fixture';
+import {
     percentile,
     validatePerformanceTargets,
 } from './accounting-load-metrics';
@@ -148,6 +152,18 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
             ...(await hashes('packages/contracts/src')),
             ...(await hashes('packages/database/src')),
             ...(await hashes('apps/backend/tests/performance')),
+            'apps/backend/tests/support/text-ai-routing-fixture.ts': createHash(
+                'sha256',
+            )
+                .update(
+                    await readFile(
+                        resolve(
+                            root,
+                            'apps/backend/tests/support/text-ai-routing-fixture.ts',
+                        ),
+                    ),
+                )
+                .digest('hex'),
         };
         try {
             await redis.connect();
@@ -273,6 +289,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     reason: 'Synthetic no-provider load fixture',
                 },
             });
+            await seedTextAiRoutingFixture(db, { at: now });
             function makeStore() {
                 return new DrizzleConversationStore({
                     database: db,
@@ -288,6 +305,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     admitTurn: conversationAdmission({
                         routingEnabled: true,
                         credentialConfigured: () => true,
+                        routeFingerprint: fixtureRouteFingerprint,
                     }),
                     publishNote: async () => {
                         throw new Error('No publishing in load fixture');
@@ -640,6 +658,17 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 ...(await hashes('packages/contracts/src')),
                 ...(await hashes('packages/database/src')),
                 ...(await hashes('apps/backend/tests/performance')),
+                'apps/backend/tests/support/text-ai-routing-fixture.ts':
+                    createHash('sha256')
+                        .update(
+                            await readFile(
+                                resolve(
+                                    root,
+                                    'apps/backend/tests/support/text-ai-routing-fixture.ts',
+                                ),
+                            ),
+                        )
+                        .digest('hex'),
             };
             const evidence = {
                 runId,

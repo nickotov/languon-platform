@@ -46,12 +46,17 @@ export function migrationStatus(applied, expected) {
 }
 
 export async function readSnapshot(sql, learnerEmail) {
-    const [configuration] =
-        await sql`select r.catalog_snapshot as snapshot from dictionary_ai_configuration c join dictionary_ai_configuration_revisions r on r.id=c.active_revision_id`;
+    const [routing] =
+        await sql`select r.configuration,r.id,r.version from text_ai_routing_state s join text_ai_routing_revisions r on r.id=s.active_revision_id`;
+    const probes = await sql`with latest as (
+            select distinct on (route_id,flow_id,kind,fingerprint)
+                route_id,flow_id,kind,fingerprint,state,failure,evidence_expires_at,completed_at,started_at
+            from text_ai_probes order by route_id,flow_id,kind,fingerprint,started_at desc
+        ) select latest.*,
+            case when kind='flow' then languon_text_ai_route_dispatch_allowed(route_id,flow_id,fingerprint,now()) else false end as dispatch_allowed
+        from latest order by started_at desc`;
     const prices =
         await sql`select distinct on (provider_id,model_id) provider_id,model_id,data from ai_provider_price_revisions where meter='text-tokens' and effective_at<=now() order by provider_id,model_id,effective_at desc,version desc`;
-    const tariffs =
-        await sql`select distinct on (provider_id,model_id) provider_id,model_id,rates from model_price_revisions where meter='text-tokens' order by provider_id,model_id,version desc`;
     const [settings] =
         await sql`select default_max_credits_per_action,max_provider_cost_usd_per_action,max_provider_cost_usd_per_account_day,max_provider_cost_usd_per_day from ai_accounting_settings_revisions order by version desc limit 1`;
     const workers =
@@ -67,9 +72,9 @@ export async function readSnapshot(sql, learnerEmail) {
             left join ai_credit_accounts a on a.user_id=e.user_id where e.canonical_email=${learnerEmail.trim().toLowerCase()} and e.is_primary`;
     }
     return {
-        configuration: configuration?.snapshot,
+        routing,
+        probes,
         prices,
-        tariffs,
         settings,
         workers,
         policies,

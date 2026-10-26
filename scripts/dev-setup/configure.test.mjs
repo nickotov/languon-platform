@@ -58,22 +58,29 @@ test('preview makes no writes; apply converges and repeats publish no revisions'
         request: f.request,
         log: silent,
     };
-    assert.equal(await configure(options), 4);
+    assert.equal(await configure(options), 2);
     assert.equal(f.writes.length, 0);
-    assert.equal(await configure({ ...options, apply: true }), 4);
-    assert.equal(f.writes.length, 4);
+    assert.equal(await configure({ ...options, apply: true }), 2);
+    assert.equal(f.writes.length, 2);
+    assert.deepEqual(f.state['/admin/ai-settings'].settings.enabledModels, [
+        'other-enabled-model',
+    ]);
     assert.ok(
-        f.state['/admin/ai-settings'].settings.enabledModels.includes(
-            'other-enabled-model',
+        f.writes.every(
+            (write) =>
+                ![
+                    '/admin/ai-settings',
+                    '/admin/ai/model-prices',
+                    '/admin/ai/text-routing',
+                    '/admin/ai/text-probes',
+                ].includes(write.path),
         ),
     );
     // Database decimal normalization does not create a new revision.
     f.state['/admin/ai/accounting-settings'].maxProviderCostUsdPerAction =
         '0.100000';
-    f.state['/admin/ai/model-prices'].prices[0].inputCreditsPerMillionTokens =
-        '100';
     assert.equal(await configure({ ...options, apply: true }), 0);
-    assert.equal(f.writes.length, 4);
+    assert.equal(f.writes.length, 2);
 });
 test('future provider revision cannot masquerade as currently usable calibration', async () => {
     const f = fixture();

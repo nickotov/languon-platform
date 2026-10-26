@@ -113,5 +113,7 @@ function EditPriceButton({
 }) {
     const t = useTranslate();
     const handleEdit = () => onEdit(price);
+    if (price.meter === 'text-tokens')
+        return <Tag>{t('pricing.historicalText')}</Tag>;
     return <Button onClick={handleEdit}>{t('pricing.edit')}</Button>;
 }

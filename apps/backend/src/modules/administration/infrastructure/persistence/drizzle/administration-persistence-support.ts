@@ -1,3 +1,4 @@
+import { loadTextAiProviderCredentials } from '../../../../../config/environment';
 import type { AdminAuditEvent, AdminUserDetail } from '@languon/contracts';
 import { sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -36,8 +37,20 @@ export const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function isDictionaryAiCredentialConfigured(
-    providerId: 'deepseek' | 'kie',
+    providerId: 'deepseek' | 'kie' | 'evolink' | 'openrouter',
 ) {
+    if (providerId === 'evolink' || providerId === 'openrouter') {
+        const credentials = loadTextAiProviderCredentials();
+
+        return Boolean(
+            credentials[
+                providerId === 'evolink'
+                    ? 'EVOLINK_API_KEY'
+                    : 'OPENROUTER_API_KEY'
+            ],
+        );
+    }
+
     const variable =
         providerId === 'deepseek'
             ? 'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED'

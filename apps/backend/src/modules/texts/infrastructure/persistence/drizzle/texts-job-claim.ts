@@ -1,3 +1,4 @@
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { and, asc, eq, inArray, isNotNull, lte, or } from 'drizzle-orm';
 import {
     readTextAiCapacity,
@@ -6,6 +7,7 @@ import {
 import { isTextAiCircuitOpen } from '../../../../../infrastructure/text-ai/text-ai-circuit';
 import {
     admitLegacyAttempt,
+    admittedLegacyExecution,
     usesLegacyAction,
 } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { TextsCreditsExhaustedError } from '../../../application/ports/texts-ai-provider';
@@ -224,6 +226,7 @@ export async function claimNext(
                 })
                 .where(eq(jobs.id, job.id));
 
+            let routeUnavailable = false;
             const actionBudget = usesLegacyAction(job.selectedExecutionSnapshot)
                 ? await admitLegacyAttempt(tx, {
                       id: job.id,
@@ -234,6 +237,14 @@ export async function claimNext(
                       budget,
                       inputPayload: job.inputPayload,
                       at: context.now,
+                  }).catch((error: unknown) => {
+                      if (error instanceof TextAiSelectionUnavailableError) {
+                          routeUnavailable = true;
+
+                          return null;
+                      }
+
+                      throw error;
                   })
                 : budget;
 
@@ -243,7 +254,9 @@ export async function claimNext(
                     tx,
                     job,
                     context.now,
-                    'ai_credits_exhausted',
+                    routeUnavailable
+                        ? 'model_unavailable'
+                        : 'ai_credits_exhausted',
                 );
 
                 continue;
@@ -259,7 +272,12 @@ export async function claimNext(
                 input: job.inputPayload!,
                 execution: usesLegacyAction(job.selectedExecutionSnapshot)
                     ? {
-                          ...job.selectedExecutionSnapshot,
+                          ...(await admittedLegacyExecution(
+                              tx,
+                              job.selectedExecutionSnapshot,
+                              job.id,
+                              job.attemptCount + 1,
+                          )),
                           aggregateBudget: actionBudget,
                       }
                     : job.selectedExecutionSnapshot,

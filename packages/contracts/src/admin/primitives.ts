@@ -46,7 +46,12 @@ export const AdminAiCreditModeSchema = z.enum(['limited', 'unlimited']);
 export const AdminAiCreditAmountSchema = CreditAmountNumberSchema;
 export const AdminAiCreditSignedAmountSchema = SignedCreditAmountNumberSchema;
 
-export const AdminAiProviderIdSchema = z.enum(['deepseek', 'kie']);
+export const AdminAiProviderIdSchema = z.enum([
+    'deepseek',
+    'kie',
+    'evolink',
+    'openrouter',
+]);
 export const AdminAiModelIdSchema = z.string().trim().min(1).max(160);
 
 export const AdminReasonSchema = z

@@ -65,7 +65,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0044](./0044-learner-portrait-approval-and-use-boundaries.md)        | Learner portrait approval and use boundaries          | Accepted               |
 
 | [ADR-0045](./0045-action-accounting-and-provider-expenses.md) | Bounded action accounting and independent provider expenses | Accepted |
-| [ADR-0046](./0046-admin-owned-text-ai-routing.md) | Admin-owned text AI routing and verified model routes | Proposed |
+| [ADR-0046](./0046-admin-owned-text-ai-routing.md) | Admin-owned text AI routing and verified model routes | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

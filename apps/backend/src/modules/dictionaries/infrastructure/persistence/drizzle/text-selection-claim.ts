@@ -1,3 +1,4 @@
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { cardAuthoringInputOverhead } from '../../ai/card-authoring-input-envelope';
 import { and, eq, lt, or } from 'drizzle-orm';
 import {
@@ -7,6 +8,7 @@ import {
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import {
     admitLegacyAttempt,
+    admittedLegacyExecution,
     usesLegacyAction,
 } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { dictionaryTextSelectionJobsTable as jobs } from './selection-card-schema';
@@ -203,6 +205,7 @@ export async function claimSelectionJob(
             })
             .where(eq(jobs.id, job.id));
 
+        let routeUnavailable = false;
         const actionBudget = usesLegacyAction(job.selectedExecutionSnapshot)
             ? await admitLegacyAttempt(tx, {
                   id: job.id,
@@ -214,6 +217,12 @@ export async function claimSelectionJob(
                   inputPayload: job.inputPayload,
                   inputOverheadTokens: cardAuthoringInputOverhead,
                   at: now,
+              }).catch((error: unknown) => {
+                  if (!(error instanceof TextAiSelectionUnavailableError))
+                      throw error;
+                  routeUnavailable = true;
+
+                  return null;
               })
             : budget;
 
@@ -222,7 +231,7 @@ export async function claimSelectionJob(
                 tx,
                 job,
                 'failed',
-                'ai_credits_exhausted',
+                routeUnavailable ? 'model_unavailable' : 'ai_credits_exhausted',
                 now,
             );
 
@@ -241,7 +250,12 @@ export async function claimSelectionJob(
             budget: actionBudget,
             execution: usesLegacyAction(job.selectedExecutionSnapshot)
                 ? {
-                      ...job.selectedExecutionSnapshot,
+                      ...(await admittedLegacyExecution(
+                          tx,
+                          job.selectedExecutionSnapshot,
+                          job.id,
+                          attempt,
+                      )),
                       aggregateBudget: actionBudget,
                   }
                 : job.selectedExecutionSnapshot,

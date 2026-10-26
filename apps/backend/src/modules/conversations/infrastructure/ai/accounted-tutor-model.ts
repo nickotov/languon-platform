@@ -1,3 +1,7 @@
+import {
+    withTextAiProviderAttemptWitness,
+    type TextAiProviderAttemptWitness,
+} from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context.js';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { ConversationError } from '../../domain/conversation.js';
@@ -75,6 +79,7 @@ function readFailureUsage(error: unknown): TutorCallUsage | undefined {
 /** One shared gate for the actor, observer and reflector of a single admitted operation. */
 export function createTutorModelGate(options: {
     accounting: TutorAccountingPort;
+    attemptWitness?: Omit<TextAiProviderAttemptWitness, 'attemptId'>;
     signal: AbortSignal;
     maxInputTokens: number;
     maxCalls?: number;
@@ -94,6 +99,8 @@ export function createTutorModelGate(options: {
     // Reservations include concurrent calls and unknown failed usage.
     let allocatedOutputTokens = 0;
     let contextExceeded = false;
+    let providerFailure: { error: unknown; purpose: TutorCallPurpose } | null =
+        null;
     const maxCalls = options.maxCalls ?? 5;
     const maxMemoryCalls = options.maxMemoryCalls ?? 2;
 
@@ -217,8 +224,9 @@ export function createTutorModelGate(options: {
                         const prepared = await prepare(input);
                         let settled = false;
                         try {
-                            const result = await target.doGenerate(
-                                prepared.input,
+                            const result = await invokeAdmitted(
+                                prepared.call,
+                                () => target.doGenerate(prepared.input),
                             );
                             if ('stream' in result)
                                 return trackStream(
@@ -226,6 +234,9 @@ export function createTutorModelGate(options: {
                                     prepared.call,
                                     prepared.input.abortSignal,
                                 );
+                            prepared.call.providerCompleted =
+                                result.finishReason === 'stop' ||
+                                result.finishReason === 'length';
                             if (result.finishReason === 'length')
                                 prepared.call.outputLimitReached = true;
                             const usage = readUsage(result.usage);
@@ -243,6 +254,7 @@ export function createTutorModelGate(options: {
                             settled = true;
                             return result;
                         } catch (error) {
+                            providerFailure = { error, purpose };
                             if (!settled)
                                 await fail(
                                     prepared.call,
@@ -259,11 +271,14 @@ export function createTutorModelGate(options: {
                         const prepared = await prepare(input);
                         try {
                             return trackStream(
-                                await target.doStream(prepared.input),
+                                await invokeAdmitted(prepared.call, () =>
+                                    target.doStream(prepared.input),
+                                ),
                                 prepared.call,
                                 prepared.input.abortSignal,
                             );
                         } catch (error) {
+                            providerFailure = { error, purpose };
                             await fail(
                                 prepared.call,
                                 signal.aborted ? 'aborted' : 'provider-error',
@@ -276,6 +291,18 @@ export function createTutorModelGate(options: {
                 return typeof value === 'function' ? value.bind(target) : value;
             },
         });
+
+        function invokeAdmitted<T>(
+            call: TutorCallAdmission,
+            invoke: () => T,
+        ): T {
+            return options.attemptWitness
+                ? withTextAiProviderAttemptWitness(
+                      { ...options.attemptWitness, attemptId: call.callId },
+                      invoke,
+                  )
+                : invoke();
+        }
 
         async function settleUsage(
             call: TutorCallAdmission,
@@ -322,6 +349,7 @@ export function createTutorModelGate(options: {
                     const pendingRead = reader
                         .read()
                         .catch((error: unknown) => {
+                            providerFailure = { error, purpose };
                             lastFailureUsage = readFailureUsage(error);
                             throw error;
                         });
@@ -343,6 +371,10 @@ export function createTutorModelGate(options: {
                                 return;
                             }
                             if (next.value.type === 'error') {
+                                providerFailure = {
+                                    error: next.value.error,
+                                    purpose,
+                                };
                                 await failOnce(
                                     'provider-error',
                                     readFailureUsage(next.value.error),
@@ -352,6 +384,9 @@ export function createTutorModelGate(options: {
                                 );
                             }
                             if (next.value.type === 'finish') {
+                                call.providerCompleted =
+                                    next.value.finishReason === 'stop' ||
+                                    next.value.finishReason === 'length';
                                 if (next.value.finishReason === 'length')
                                     call.outputLimitReached = true;
                                 const usage = readUsage(next.value.usage);
@@ -392,6 +427,9 @@ export function createTutorModelGate(options: {
         wrap,
         signal,
         abort: (reason?: unknown) => controller.abort(reason),
+        get providerFailure() {
+            return providerFailure;
+        },
         get contextExceeded() {
             return contextExceeded;
         },

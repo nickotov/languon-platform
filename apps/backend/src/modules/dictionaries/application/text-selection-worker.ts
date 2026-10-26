@@ -1,3 +1,4 @@
+import { hasConclusiveTextAiFailure } from '../../text-ai/application/text-ai-routing-execution';
 import {
     CardAuthoringProposalGeneratorError,
     type CardAuthoringProposalGenerator,
@@ -64,6 +65,12 @@ export class TextSelectionWorker {
                 this.generator.generate({
                     input: lease.input,
                     providerBudget: lease.budget,
+                    providerAttempt: {
+                        jobId: lease.id,
+                        attempt: lease.attempt,
+                        workerId: lease.workerId,
+                        fencingToken: String(lease.fencingToken),
+                    },
                     idempotencyKey: `text-selection:${lease.id}:${lease.attempt}`,
                     signal: controller.signal,
                     ...(lease.execution
@@ -86,6 +93,7 @@ export class TextSelectionWorker {
                           'provider_timeout',
                       )
                     : error,
+                !controller.signal.aborted,
             );
         } finally {
             clearInterval(timer);
@@ -96,14 +104,23 @@ export class TextSelectionWorker {
         }
         return true;
     }
-    private fail(lease: SelectionLease, error: unknown) {
+    private fail(lease: SelectionLease, error: unknown, allowRetry = false) {
         const code =
             error instanceof TextSelectionError
                 ? error.code
                 : error instanceof CardAuthoringProposalGeneratorError
                   ? error.category
                   : 'provider_failure';
-        return this.store.fail(lease, code, undefined);
+        return this.store.fail(
+            lease,
+            code,
+            error instanceof CardAuthoringProposalGeneratorError
+                ? error.usage
+                : undefined,
+            allowRetry && hasConclusiveTextAiFailure(error)
+                ? 'conclusive-provider-failure'
+                : undefined,
+        );
     }
     async releaseWorkerLeases() {
         await this.store.releaseWorkerLeases(this.workerId);

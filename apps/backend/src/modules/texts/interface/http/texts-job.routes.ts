@@ -172,7 +172,8 @@ export function createTextsJobRoutes({
                 {
                     error: {
                         code: 'generation_not_available',
-                        message: 'Choose another available AI model.',
+                        message:
+                            'AI is unavailable right now. Try again later.',
                         correlationId: randomUUID(),
                     },
                 },

@@ -31,10 +31,9 @@ export async function lockTextAiCapacity(tx: Transaction): Promise<void> {
     if (!acquired) {
         acquired = (async () => {
             await tx.execute(
-                sql`select pg_advisory_xact_lock(${textAiCapacityLock})`,
-            );
-            await tx.execute(
-                sql`select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true), set_config('languon.portrait_capacity_revision', '1', true)`,
+                sql`with capacity_fence as materialized (select pg_advisory_xact_lock(${textAiCapacityLock}))
+                    select set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.texts_capacity_revision', '1', true), set_config('languon.conversation_capacity_revision', '1', true), set_config('languon.portrait_capacity_revision', '1', true)
+                    from capacity_fence`,
             );
         })();
         acquiredFences.set(tx, acquired);

@@ -26,11 +26,13 @@ import {
 import { DeterministicImportPairsProposalGenerator } from '../../../../../src/modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators';
 import { DeterministicPastedTermsProposalGenerator } from '../../../../../src/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators';
 import { textAiModelCatalog } from '../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
-import {
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-} from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import { dictionaryAiWorkerObservationsTable } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { usersTable } from '../../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
+import { textAiSelectionObservationId } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import {
+    textAiFixtureCredentials,
+    fixtureRouteFingerprint,
+} from '../../../../support/text-ai-routing-fixture';
 import { seedLegacyActionFixture } from '../../../../support/legacy-action-fixture';
 import {
     createTestPostgresClient,
@@ -55,6 +57,13 @@ run('accounted batch admission through the production provider router', () => {
         database = createDrizzleDatabase(client, databaseSchema);
     });
     beforeEach(async () => {
+        vi.stubEnv('APP_ENV', 'test');
+        vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
+        vi.stubEnv('DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', 'true');
+        vi.stubEnv(
+            'DEEPSEEK_API_KEY',
+            textAiFixtureCredentials.DEEPSEEK_API_KEY,
+        );
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
         now = new Date();
@@ -74,33 +83,33 @@ run('accounted batch admission through the production provider router', () => {
             updatedAt: now,
         });
         const model = textAiModelCatalog[0]!;
-        const revisionId = randomUUID();
-        await database.insert(dictionaryAiConfigurationRevisionsTable).values({
-            id: revisionId,
-            version: 1,
-            createdAt: now,
-            createdByUserId: ownerId,
-            catalogSnapshot: {
-                adapterRevision: model.adapterRevision,
-                aggregateBudget: model.aggregateBudget,
-                credentialReference: model.credentialReference,
-                creditPricing: model.creditPricing,
-                enabledModelIds: [model.id],
-                modelId: model.id,
-                perCallMaxInputTokens: model.perCallMaxInputTokens,
-                perCallMaxOutputTokens: model.perCallMaxOutputTokens,
-                providerId: model.providerId,
-                supportedFormats: [...model.supportedFormats],
-            },
-        });
-        await database.insert(dictionaryAiConfigurationTable).values({
-            id: 'global',
-            version: 1,
-            activeRevisionId: revisionId,
-            updatedAt: now,
+        const workerId = 'synthetic-batch-worker';
+        await database.insert(dictionaryAiWorkerObservationsTable).values({
+            id: textAiSelectionObservationId(
+                workerId,
+                model.providerId,
+                model.id,
+            ),
+            workerId,
+            providerId: model.providerId,
+            modelId: model.id,
+            adapterRevision: model.adapterRevision,
+            checkedAt: now,
+            expiresAt: new Date(now.getTime() + 120000),
+            status: 'available',
+            message: 'Synthetic reviewed batch execution worker',
+            textAiSelectionRevision: 1,
+            textAiSupportedFormats: [...model.supportedFormats],
+            creditSettlementRevision: 1,
+            textAiCapacityRevision: 1,
+            textsCapacityRevision: 1,
+            conversationCapacityRevision: 1,
         });
     });
-    afterEach(() => vi.unstubAllGlobals());
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.unstubAllEnvs();
+    });
     afterAll(async () => client.end());
 
     it.each([
@@ -264,7 +273,8 @@ run('accounted batch admission through the production provider router', () => {
                     pastedTerms: unexpected,
                 },
                 router: new DictionaryTextProviderRouter({
-                    credentials: { DEEPSEEK_API_KEY: 'synthetic-key' },
+                    credentials: textAiFixtureCredentials,
+                    currentFingerprint: fixtureRouteFingerprint,
                 }),
             });
             const worker = new DictionaryGenerationWorkerService({

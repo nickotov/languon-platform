@@ -18,7 +18,7 @@ function error(code: string) {
     });
 }
 
-it('directs an unavailable explicit model to selecting Auto or Flash in Profile', () => {
+it('offers a safe retry without revealing a model or sending learners to model selection', () => {
     render(
         <ConversationErrorNotice
             error={error('model_unavailable')}
@@ -26,11 +26,12 @@ it('directs an unavailable explicit model to selecting Auto or Flash in Profile'
         />,
     );
     expect(screen.getByRole('alert')).toHaveTextContent(
-        'Choose Automatic or DeepSeek Flash',
+        'AI is unavailable right now',
     );
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(
-        screen.getByRole('link', { name: 'Change AI model' }),
-    ).toHaveAttribute('href', '/profile');
+        screen.getByRole('button', { name: 'Retry response' }),
+    ).toBeEnabled();
     expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
 });
 
@@ -206,7 +207,7 @@ it.each([
                 {
                     id,
                     conversationId: id,
-                    modelId: 'deepseek-flash',
+                    modelId: null,
                     status,
                     failureCode: null,
                     usage: {

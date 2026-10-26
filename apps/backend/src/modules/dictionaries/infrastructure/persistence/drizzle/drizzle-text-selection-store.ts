@@ -1,3 +1,5 @@
+import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
+import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import type { TextSelectionRequest } from '@languon/contracts';
 import { EnqueueTextSelectionRequestSchema } from '@languon/contracts';
 import { and, eq } from 'drizzle-orm';
@@ -222,6 +224,28 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 job!.confirmDuplicate,
             );
 
+            if (usesLegacyAction(job!.selectedExecutionSnapshot)) {
+                try {
+                    await recheckTextAiDispatch(tx, {
+                        actionId: job!.id,
+                        jobId: job!.id,
+                        now,
+                    });
+                } catch (error) {
+                    if (!(error instanceof TextAiSelectionUnavailableError))
+                        throw error;
+                    await finishSelectionJob(
+                        tx,
+                        job!,
+                        'failed',
+                        'model_unavailable',
+                        now,
+                    );
+
+                    return false;
+                }
+            }
+
             if (!usesLegacyAction(job!.selectedExecutionSnapshot))
                 await new DrizzleAiCreditTransactionParticipant(
                     tx,
@@ -338,6 +362,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
         lease: SelectionLease,
         code: string,
         usage?: { inputTokens: number; outputTokens: number },
+        retryDisposition?: 'conclusive-provider-failure',
     ) {
         await modelPricingTransaction(this.db, async (tx) => {
             await beginSelectionTransaction(tx);
@@ -357,7 +382,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
             if (
                 ownerActive &&
                 !job!.cancellationRequestedAt &&
-                code === 'provider_rate_limited' &&
+                (code === 'provider_rate_limited' ||
+                    (job!.selectedExecutionSnapshot?.routingAuthority &&
+                        job!.attemptCount === 1 &&
+                        retryDisposition === 'conclusive-provider-failure')) &&
                 job!.attemptCount < job!.maxAttempts &&
                 job!.expiresAt > now
             ) {
@@ -367,7 +395,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     tx,
                     job!,
                     now,
-                    usage ?? { inputTokens: 0, outputTokens: 0 },
+                    usage,
                     'failure',
                     false,
                 );

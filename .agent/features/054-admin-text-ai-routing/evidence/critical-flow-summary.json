@@ -1,0 +1,78 @@
+{
+    "selected": [
+        "setup-to-generation",
+        "admin-text-ai-routing",
+        "authentication",
+        "admin-session-refresh",
+        "dictionary-generation",
+        "sentence-practice",
+        "text-generation",
+        "chat-lifecycle",
+        "insufficient-credits",
+        "free-interview",
+        "ai-execution-contracts"
+    ],
+    "results": [
+        {
+            "id": "setup-to-generation",
+            "status": "passed",
+            "tests": 1
+        },
+        {
+            "id": "admin-text-ai-routing",
+            "status": "passed",
+            "tests": 1
+        },
+        {
+            "id": "authentication",
+            "status": "passed",
+            "tests": 3
+        },
+        {
+            "id": "admin-session-refresh",
+            "status": "passed",
+            "tests": 3
+        },
+        {
+            "id": "dictionary-generation",
+            "status": "passed",
+            "tests": 1
+        },
+        {
+            "id": "sentence-practice",
+            "status": "passed",
+            "tests": 2
+        },
+        {
+            "id": "text-generation",
+            "status": "passed",
+            "tests": 2
+        },
+        {
+            "id": "chat-lifecycle",
+            "status": "passed",
+            "tests": 1
+        },
+        {
+            "id": "insufficient-credits",
+            "status": "passed",
+            "tests": 1
+        },
+        {
+            "id": "free-interview",
+            "status": "passed",
+            "tests": 1
+        },
+        {
+            "id": "ai-execution-contracts",
+            "status": "passed",
+            "tests": 255
+        }
+    ],
+    "environment": {
+        "postgres": "17-alpine; owned 1GiB tmpfs data directory",
+        "redis": "7-alpine; owned disposable container",
+        "providers": "deterministic fixtures; no paid requests",
+        "performanceEvidence": "separate disk-backed run328125b4"
+    }
+}

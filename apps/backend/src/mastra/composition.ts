@@ -24,6 +24,8 @@ import {
 } from './development-server-policy';
 
 export interface CanonicalMastraOptions {
+    /** Admin-bound operator-funded synthetic checks; excluded from default Studio. */
+    administrativeProbe?: Agent;
     /** Operation-bound only: Studio deliberately has no learner identity or execution route. */
     learnerInterviewer?: Agent;
     /** Only operation-bound production instances; no default learner identity in Studio. */
@@ -54,7 +56,9 @@ export function createCanonicalMastra(
     },
 ): ReturnType<typeof createDevelopmentMastra>;
 export function createCanonicalMastra(options?: CanonicalMastraOptions): Mastra;
-export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
+export function createCanonicalMastra(
+    options: CanonicalMastraOptions = {},
+): Mastra {
     const textsAgents = options.textsAi
         ? createTextsAgents(options.textsAi)
         : undefined;
@@ -96,6 +100,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 
     if (
         !development &&
+        !options.administrativeProbe &&
         !options.contextualTutor &&
         !options.learnerInterviewer &&
         !textsAgents &&
@@ -111,6 +116,9 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
         return new Mastra({
             tools: options.contextualTutor?.tools ?? {},
             agents: {
+                ...(options.administrativeProbe
+                    ? { administrativeProbe: options.administrativeProbe }
+                    : {}),
                 ...(options.learnerInterviewer
                     ? { learnerInterviewer: options.learnerInterviewer }
                     : {}),
@@ -144,6 +152,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
             ? { contextualTutor: options.contextualTutor }
             : {}),
         development,
+        administrativeProbe: options.administrativeProbe,
         textsAgents,
         dictionaryCardAuthoringAgent,
         dictionaryCardGenerationAgent,
@@ -154,6 +163,7 @@ export function createCanonicalMastra(options: CanonicalMastraOptions = {}) {
 }
 
 function createDevelopmentMastra(options: {
+    administrativeProbe?: Agent | undefined;
     learnerInterviewer?: Agent;
     contextualTutor?: NonNullable<CanonicalMastraOptions['contextualTutor']>;
     textsAgents: ReturnType<typeof createTextsAgents> | undefined;
@@ -183,6 +193,9 @@ function createDevelopmentMastra(options: {
     return new Mastra({
         tools: options.contextualTutor?.tools ?? {},
         agents: {
+            ...(options.administrativeProbe
+                ? { administrativeProbe: options.administrativeProbe }
+                : {}),
             ...(options.learnerInterviewer
                 ? { learnerInterviewer: options.learnerInterviewer }
                 : {}),

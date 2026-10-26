@@ -29,14 +29,14 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 - [Global App Shell](./global-app-shell.md) — session-aware navigation, guest settings, preference persistence, responsive drawer focus, and the portrait home entry.
 
-- [Sentence Practice and Model Preferences Web](./sentence-practice-web.md) —
-  model persistence, real sentence jobs and personal free reference review.
+- [Sentence Practice and AI Budget Preferences Web](./sentence-practice-web.md) —
+  budget persistence, real sentence jobs and personal free reference review.
 
 - [Sentence practice backend](./sentence-practice-backend.md) — generated exercises,
   personal AI checks, free manual reference reviews and shared-reader privacy.
 
-- [Learner AI model preferences backend](./user-ai-model-preferences-backend.md) —
-  authenticated Auto/explicit settings and immutable dictionary execution.
+- [Learner AI budgets backend](./user-ai-model-preferences-backend.md) —
+  authenticated budget settings, hidden model identities and server-owned dictionary execution.
 
 - [Flashcard Training Web](./flashcard-training-web.md) — training setup, learning
   sessions, Undo and independent personal progress; existing previews unchanged.
@@ -72,8 +72,10 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Admin User Management](./admin-user-management.md) — owner authentication,
   user inspection, safe disable/restore operations, audit history, and guarded
   membership commands.
+- [Admin-owned text AI routing](./admin-text-ai-routing.md) — reviewed per-flow
+  routes, explicit operator checks, flow tariffs and emergency disabling.
 - [AI Provider and Model Management](./ai-provider-management.md) — curated
-  DeepSeek/Kie selection, immutable job routing, credentials, and admin audit.
+  server-owned routing, immutable job snapshots, credentials, and admin audit.
 - [AI accounting and action budgets](./ai-accounting.md) — exact learner budgets, explicit affordable-output consent, canonical billing states and owner financial records.
 - [AI Credit Wallet](./ai-credit-wallet.md) — owner-managed user credit
   policies, ledger adjustments, and dictionary-generation consumption.

@@ -30,7 +30,9 @@ export class SentenceConflictError extends Error {
         super(reason);
     }
 }
-export class SentenceModelUnavailableError extends Error {}
+export class SentenceModelUnavailableError extends Error {
+    executionOutcome?: 'rejected' | 'completed' | 'ambiguous';
+}
 export class SentenceCreditsExhaustedError extends Error {}
 
 /** Temporary admission pressure; no exercise or job identity is missing. */

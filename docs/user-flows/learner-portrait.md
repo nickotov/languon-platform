@@ -164,9 +164,12 @@ Paid interview policy fixtures remain distinct from default Free interviews.
 While a response is running, the composer replaces Send with its sole Stop
 button. Stop works with an empty or oversized unsent message, does not submit
 that message, and retains its text. Cancellation leaves the interview resumable.
-If the model returns invalid structured output, the interview shows a specific
-recoverable error and retains the answer and editable draft. Reloading does not
-automatically retry or incur another provider call.
+If a completed response fails local validation, the worker may try one already
+approved, pinned alternative within the original action budget before showing
+an error. The malformed attempt is recorded as unsuccessful, retaining provider
+expense without adding a learner charge. If there is no eligible alternative,
+or the alternative also fails, the interview shows a recoverable error and keeps
+the answer and editable draft. Reloading never starts another generation.
 
 ## E2E coverage
 
@@ -200,13 +203,21 @@ traffic; it does not establish generated wording quality or browser behavior.
 - Model failure preserves editable unfinished work until expiry. An unrelated
   interview request receives the bounded `/knowledge` redirect; it cannot become
   new portrait data without explicit review.
-- Invalid structured model output returns `invalid_model_output`. The interviewer
-  requests and validates its complete output contract in the original provider
-  call; it performs no automatic paid repair or fallback call. A learner may
-  explicitly retry or edit the portrait manually.
+- Completed invalid JSON, schema or portrait-item output may use one previously
+  approved fallback before publication. Positive provider completion evidence
+  and durable unsuccessful settlement are required first. The failed usage
+  remains a provider expense and contributes nothing to the learner charge.
+  The alternative shares the original token, credit and operator-cost ceilings;
+  it gets no new allowance. There is no automatic repair call, third attempt,
+  retry around a refusal, or retry after an ambiguous failure or Stop.
+- If no eligible alternative exists or it also returns invalid output, the
+  result is `invalid_model_output`; the learner may explicitly retry or edit
+  manually. The mapped browser fixture deliberately has no alternative and
+  retains that terminal-error behavior. Real SDK regressions separately verify
+  malformed-then-valid fallback and unsuccessful first-attempt settlement.
 - Admission errors after credit confirmation close the notice and focus the
   persistent error; question scrolling must not move away from it. No error
-  automatically retries a paid request or clears the learner's answer.
+  resubmits a terminal action or clears the learner's answer.
 
 ## Automated regression checks
 
@@ -227,7 +238,8 @@ development database or a paid model call for this deterministic journey.
 If the test is skipped, verify the disposable PostgreSQL and Redis gates rather
 than relaxing them. A `model_unavailable` response normally means the dedicated
 portrait-interview capability observation is absent, expired, or does not match
-the configured model. A paid `credits_exhausted` response needs a synthetic
+the approved server route. Learners cannot choose an interview model; they
+can retry later or edit manually, retaining their answer and draft. A paid `credits_exhausted` response needs a synthetic
 grant and explicit paid capability policy in the disposable fixture. Policy
 changes affect only newly admitted interview operations. A `409` requires reloading the current portrait state and
 reviewing changes; never replay with a different body under the same operation

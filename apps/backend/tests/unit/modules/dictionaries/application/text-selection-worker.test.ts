@@ -51,6 +51,26 @@ function fixture() {
 }
 describe('text selection worker cancellation and bounded provider execution', () => {
     afterEach(() => vi.useRealTimers());
+    it.each(['rejected', 'ambiguous'])(
+        'keeps conclusive fallback evidence separate from generic failure text (%s)',
+        async (executionOutcome) => {
+            const f = fixture();
+            f.generate.mockRejectedValue(
+                Object.assign(new Error('Synthetic provider HTTP failure'), {
+                    executionOutcome,
+                }),
+            );
+            await f.worker.processNext(new AbortController().signal);
+            expect(f.store.fail).toHaveBeenCalledWith(
+                lease,
+                'provider_failure',
+                undefined,
+                executionOutcome === 'rejected'
+                    ? 'conclusive-provider-failure'
+                    : undefined,
+            );
+        },
+    );
     it('does not dispatch when shutdown races the claim result', async () => {
         const { store, generate, worker } = fixture();
         const abort = new AbortController();
@@ -79,6 +99,7 @@ describe('text selection worker cancellation and bounded provider execution', ()
         expect(store.fail).toHaveBeenCalledWith(
             lease,
             'provider_timeout',
+            undefined,
             undefined,
         );
         finish({ suggestions: [] });

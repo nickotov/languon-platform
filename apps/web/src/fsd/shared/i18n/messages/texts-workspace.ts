@@ -70,7 +70,7 @@ export const textsWorkspaceEn = {
         'The translation didn’t finish. Your text is still here.',
     'texts.workspace.retry': 'Try again',
     'texts.workspace.capacity':
-        'This passage is too long for the current AI model. Choose a larger model in Preferences or shorten the text.',
+        'This passage is too long. Shorten the text and try again.',
     'texts.workspace.preferences': 'Preferences',
     'texts.workspace.credits':
         'You’re out of AI credits. Add credits in Preferences, then try again.',
@@ -197,7 +197,7 @@ export const textsWorkspaceRu = {
         'Перевод не завершён. Текст остался в редакторе.',
     'texts.workspace.retry': 'Повторить',
     'texts.workspace.capacity':
-        'Текст превышает возможности модели. Выберите более вместительную модель в настройках или сократите текст.',
+        'Текст слишком длинный. Сократите его и повторите попытку.',
     'texts.workspace.preferences': 'Настройки',
     'texts.workspace.credits':
         'Закончились кредиты ИИ. Пополните их в настройках и повторите попытку.',
@@ -322,7 +322,7 @@ export const textsWorkspaceEs = {
         'La traducción no terminó. Tu texto sigue aquí.',
     'texts.workspace.retry': 'Reintentar',
     'texts.workspace.capacity':
-        'Este texto supera la capacidad del modelo. Elige un modelo más grande en Preferencias o acorta el texto.',
+        'Este texto es demasiado largo. Acórtalo y vuelve a intentarlo.',
     'texts.workspace.preferences': 'Preferencias',
     'texts.workspace.credits':
         'No tienes créditos de IA. Añade créditos en Preferencias y reinténtalo.',
@@ -449,7 +449,7 @@ export const textsWorkspaceFr = {
         'La traduction n’a pas abouti. Votre texte est conservé.',
     'texts.workspace.retry': 'Réessayer',
     'texts.workspace.capacity':
-        'Ce texte dépasse la capacité du modèle. Choisissez un modèle plus grand dans Préférences ou raccourcissez-le.',
+        'Ce texte est trop long. Raccourcissez-le et réessayez.',
     'texts.workspace.preferences': 'Préférences',
     'texts.workspace.credits':
         'Vos crédits IA sont épuisés. Ajoutez-en dans Préférences, puis réessayez.',

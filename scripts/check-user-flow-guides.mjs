@@ -27,6 +27,10 @@ export const e2eCommands = new Map([
     ],
     ['ai-credit-wallet', 'pnpm test:e2e:ai-credit-wallet'],
     ['ai-provider-management', 'pnpm test:e2e:ai-provider-management'],
+    [
+        'admin-text-ai-routing',
+        'pnpm --filter @languon/admin exec playwright test tests/e2e/text-ai-routing.journeys.spec.ts',
+    ],
     ['admin-user-management', 'pnpm test:e2e:admin-user-management'],
     [
         'deployment-local-rehearsal',

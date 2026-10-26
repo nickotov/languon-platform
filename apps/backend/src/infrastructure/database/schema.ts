@@ -1,3 +1,11 @@
+import * as textAiRouteHealthSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
+export * from '../../modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
+import * as textAiRoutingSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/routing-schema';
+import * as textAiProbeSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/probe-schema';
+import * as textAiRouteDispatchSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/route-dispatch-schema';
+export * from '../../modules/text-ai/infrastructure/persistence/drizzle/routing-schema';
+export * from '../../modules/text-ai/infrastructure/persistence/drizzle/probe-schema';
+export * from '../../modules/text-ai/infrastructure/persistence/drizzle/route-dispatch-schema';
 import * as portraitCallSchema from '../../modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema';
 import * as accountingSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
 import * as actionAccountingSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
@@ -150,6 +158,10 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    ...textAiRouteHealthSchema,
+    ...textAiRoutingSchema,
+    ...textAiProbeSchema,
+    ...textAiRouteDispatchSchema,
     ...accountingSchema,
     ...actionAccountingSchema,
     ...operatorBudgetSchema,

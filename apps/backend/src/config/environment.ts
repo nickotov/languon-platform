@@ -21,3 +21,7 @@ export { loadDictionaryDocumentS3Environment } from '../modules/dictionaries/inf
 export { defaultAiGenerationTimeoutMs } from './ai-generation-environment';
 export { type EnvironmentDiagnostics } from './environment-diagnostics';
 export { loadDictionaryGenerationProviderBudgetPolicy } from '../modules/dictionaries/infrastructure/dictionary-generation-provider-policy';
+
+export { loadTextAiProviderCredentials } from './text-ai-provider-environment';
+export { loadTextAiProbeEnvironment } from './text-ai-probe-environment';
+export { adminProbeFixtureEnabled } from './admin-probe-fixture-environment';

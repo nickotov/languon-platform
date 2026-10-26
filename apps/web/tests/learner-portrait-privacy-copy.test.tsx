@@ -23,7 +23,7 @@ const cases = [
     {
         locale: 'en',
         provider:
-            /current interview and any approved portrait.*selected model provider/,
+            /current interview and any approved portrait.*provider it chooses.*approved fallback.*same answers and context/,
         active: /transcript and draft from active Languon application data/,
         boundary: /do not guarantee erasure.*model providers or in backups/,
         owner: /private to your account within Languon/,
@@ -31,7 +31,7 @@ const cases = [
     {
         locale: 'ru',
         provider:
-            /текущее интервью и утверждённый портрет.*выбранному поставщику модели/,
+            /текущее интервью и утверждённый портрет.*выбранному приложением поставщику ИИ.*резервный сервис.*те же ответы и контекст/,
         active: /переписку интервью и черновик из активных данных приложения Languon/,
         boundary:
             /не гарантирует стирание.*поставщиков моделей или в резервных копиях/,
@@ -40,7 +40,7 @@ const cases = [
     {
         locale: 'fr',
         provider:
-            /l’entretien en cours et tout portrait approuvé.*fournisseur du modèle sélectionné/,
+            /l’entretien en cours et tout portrait approuvé.*choisi par l’application.*secours approuvé.*mêmes réponses et le même contexte/,
         active: /transcription et le brouillon des données actives de l’application Languon/,
         boundary:
             /ne garantissent pas l’effacement.*fournisseurs de modèles ou dans les sauvegardes/,
@@ -49,7 +49,7 @@ const cases = [
     {
         locale: 'es',
         provider:
-            /la entrevista actual y cualquier perfil aprobado.*proveedor del modelo seleccionado/,
+            /la entrevista actual y cualquier perfil aprobado.*elegido por la aplicación.*alternativo aprobado.*mismas respuestas y el mismo contexto/,
         active: /transcripción y el borrador de los datos activos de la aplicación Languon/,
         boundary:
             /no garantizan el borrado.*proveedores de modelos ni en copias de seguridad/,

@@ -306,10 +306,10 @@ const strings = {
         'Esta entrevista opcional dura unos 3–5 minutos. Puedes omitir preguntas, pausar o revisar tu perfil antes de terminar.',
     ],
     introScope: [
-        'We’ll ask about your languages, goals, and learning preferences — not diagnose conditions or test your ability. You review everything before saving, and choose separately whether chats use your portrait. For AI replies, the current interview and any approved portrait used as context are sent to the selected model provider.',
-        'Мы спросим о языках, целях и предпочтениях в учёбе, без диагностики и проверки способностей. Перед сохранением вы всё проверите, а использование в чатах включите отдельно. Для ответов ИИ текущее интервью и утверждённый портрет, используемый как контекст, передаются выбранному поставщику модели.',
-        'Nous parlerons de vos langues, objectifs et préférences, sans diagnostic ni évaluation. Vous vérifiez tout avant d’enregistrer et choisissez séparément l’utilisation dans les chats. Pour les réponses IA, l’entretien en cours et tout portrait approuvé utilisé comme contexte sont envoyés au fournisseur du modèle sélectionné.',
-        'Preguntaremos por idiomas, objetivos y preferencias, sin diagnosticar ni evaluar tu capacidad. Revisas todo antes de guardar y eliges aparte si los chats usan el perfil. Para las respuestas de IA, la entrevista actual y cualquier perfil aprobado usado como contexto se envían al proveedor del modelo seleccionado.',
+        'We’ll ask about your languages, goals, and learning preferences — not diagnose conditions or test your ability. You review everything before saving, and choose separately whether chats use your portrait. For AI replies, Languon sends the current interview and any approved portrait used as context to an AI provider it chooses. If an approved fallback is needed, another provider may receive the same answers and context.',
+        'Мы спросим о языках, целях и предпочтениях в учёбе, без диагностики и проверки способностей. Перед сохранением вы всё проверите, а использование в чатах включите отдельно. Для ответов ИИ Languon передаёт текущее интервью и утверждённый портрет, используемый как контекст, выбранному приложением поставщику ИИ. При переходе на разрешённый резервный сервис те же ответы и контекст могут быть переданы другому поставщику.',
+        'Nous parlerons de vos langues, objectifs et préférences, sans diagnostic ni évaluation. Vous vérifiez tout avant d’enregistrer et choisissez séparément l’utilisation dans les chats. Pour les réponses IA, Languon envoie l’entretien en cours et tout portrait approuvé utilisé comme contexte à un fournisseur IA choisi par l’application. Si un service de secours approuvé est nécessaire, un autre fournisseur peut recevoir les mêmes réponses et le même contexte.',
+        'Preguntaremos por idiomas, objetivos y preferencias, sin diagnosticar ni evaluar tu capacidad. Revisas todo antes de guardar y eliges aparte si los chats usan el perfil. Para las respuestas de IA, Languon envía la entrevista actual y cualquier perfil aprobado usado como contexto a un proveedor de IA elegido por la aplicación. Si hace falta un servicio alternativo aprobado, otro proveedor puede recibir las mismas respuestas y el mismo contexto.',
     ],
     readApproved: [
         'Starting this update lets the interviewer read your approved portrait, even when chat personalization is off. It cannot approve changes or enable use for you.',
@@ -324,8 +324,8 @@ const strings = {
         'Esta entrevista es gratuita actualmente y no usa tus créditos.',
     ],
     paid: [
-        'AI responses use credits under your current model and usage settings. Reviewing, editing and saving by hand are free.',
-        'Ответы ИИ расходуют кредиты согласно вашим настройкам модели и использования. Проверка, ручные правки и сохранение бесплатны.',
+        'AI responses use credits within your action budget. Reviewing, editing and saving by hand are free.',
+        'Ответы ИИ расходуют кредиты в пределах вашего бюджета на действие. Проверка, ручные правки и сохранение бесплатны.',
         'Les réponses IA utilisent des crédits selon vos réglages. La vérification, la modification manuelle et l’enregistrement sont gratuits.',
         'Las respuestas de IA usan créditos según tus ajustes. Revisar, editar y guardar manualmente es gratuito.',
     ],
@@ -563,7 +563,7 @@ export function portraitCopy(locale: Locale, key: PortraitCopyKey): string {
 export const dataUsePoints: Record<Locale, string[]> = {
     en: [
         'The interviewer uses this interview, your manual edits, and any portrait you have already approved.',
-        'For AI replies, the current interview and any approved portrait used as context are sent to the selected model provider.',
+        'For AI replies, Languon sends the current interview and any approved portrait used as context to an AI provider it chooses. If an approved fallback is needed, another provider may receive the same answers and context.',
         'Deletion controls remove active application data; they do not guarantee erasure of copies held by model providers or in backups.',
         'It does not look at your other chats, documents, or learning activity.',
         'You review and approve everything it proposes. Nothing is approved automatically.',
@@ -575,7 +575,7 @@ export const dataUsePoints: Record<Locale, string[]> = {
     ],
     ru: [
         'Интервьюер использует это интервью, ваши ручные правки и ранее утверждённый портрет.',
-        'Для ответов ИИ текущее интервью и утверждённый портрет, используемый как контекст, передаются выбранному поставщику модели.',
+        'Для ответов ИИ Languon передаёт текущее интервью и утверждённый портрет, используемый как контекст, выбранному приложением поставщику ИИ. При переходе на разрешённый резервный сервис те же ответы и контекст могут быть переданы другому поставщику.',
         'Удаление действует на активные данные приложения; оно не гарантирует стирание копий у поставщиков моделей или в резервных копиях.',
         'Он не просматривает другие чаты, документы и учебную активность.',
         'Вы проверяете и утверждаете предложения. Ничто не утверждается автоматически.',
@@ -587,7 +587,7 @@ export const dataUsePoints: Record<Locale, string[]> = {
     ],
     fr: [
         'L’intervieweur utilise cet entretien, vos modifications manuelles et votre portrait déjà approuvé.',
-        'Pour les réponses IA, l’entretien en cours et tout portrait approuvé utilisé comme contexte sont envoyés au fournisseur du modèle sélectionné.',
+        'Pour les réponses IA, Languon envoie l’entretien en cours et tout portrait approuvé utilisé comme contexte à un fournisseur IA choisi par l’application. Si un service de secours approuvé est nécessaire, un autre fournisseur peut recevoir les mêmes réponses et le même contexte.',
         'Les commandes de suppression retirent les données actives de l’application ; elles ne garantissent pas l’effacement des copies chez les fournisseurs de modèles ou dans les sauvegardes.',
         'Il ne consulte pas vos autres chats, documents ou activités d’apprentissage.',
         'Vous vérifiez et approuvez toutes les propositions. Rien n’est approuvé automatiquement.',
@@ -599,7 +599,7 @@ export const dataUsePoints: Record<Locale, string[]> = {
     ],
     es: [
         'El entrevistador usa esta entrevista, tus cambios manuales y el perfil que ya aprobaste.',
-        'Para las respuestas de IA, la entrevista actual y cualquier perfil aprobado usado como contexto se envían al proveedor del modelo seleccionado.',
+        'Para las respuestas de IA, Languon envía la entrevista actual y cualquier perfil aprobado usado como contexto a un proveedor de IA elegido por la aplicación. Si hace falta un servicio alternativo aprobado, otro proveedor puede recibir las mismas respuestas y el mismo contexto.',
         'Los controles de eliminación borran los datos activos de la aplicación; no garantizan el borrado de copias en proveedores de modelos ni en copias de seguridad.',
         'No consulta otros chats, documentos ni actividad de aprendizaje.',
         'Tú revisas y apruebas las propuestas. Nada se aprueba automáticamente.',

@@ -16,7 +16,7 @@ const messages: Record<string, string> = {
     stale_content:
         'These dictionary entries changed. Reload practice to use current sentences.',
     model_unavailable:
-        'Your selected AI model is unavailable. Choose another model or continue with saved reference answers.',
+        'AI is unavailable right now. Try again later or continue with saved reference answers.',
     capacity_unavailable:
         'AI tasks are at capacity. Wait a moment and try again.',
     ai_credits_exhausted:
@@ -31,7 +31,6 @@ const messages: Record<string, string> = {
 export function SentenceErrorNotice({
     error,
     onRetry,
-    onOpenPreferences,
 }: {
     error: ApiError;
     onRetry?: (() => void) | undefined;
@@ -72,15 +71,6 @@ export function SentenceErrorNotice({
                                       String(remaining),
                                   )
                                 : t('Try again')}
-                        </Button>
-                    ) : null}
-                    {error.code === 'model_unavailable' && onOpenPreferences ? (
-                        <Button
-                            size='compact'
-                            variant='secondary'
-                            onClick={onOpenPreferences}
-                        >
-                            {t('AI preferences')}
                         </Button>
                     ) : null}
                 </div>

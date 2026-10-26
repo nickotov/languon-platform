@@ -3,10 +3,12 @@ import { Agent } from '@mastra/core/agent';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 
 export function createDictionaryImportPairsGenerationAgent(options: {
-    model: ModelRouterModelId | OpenAICompatibleConfig;
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }) {
     return new Agent({
         defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },

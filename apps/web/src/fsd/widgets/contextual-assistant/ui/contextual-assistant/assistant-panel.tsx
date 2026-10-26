@@ -11,7 +11,6 @@ import { ContextPicker } from './context-picker';
 import { WorkspaceReferencePicker } from './workspace-reference-picker';
 import { PublishedNoteNotice } from './published-note-notice';
 import { KnowledgeDraftCard } from './knowledge-draft-card';
-import { ConversationModel } from './conversation-model';
 import { ConversationErrorNotice } from './conversation-error-notice';
 import { tutorModeCopy } from './tutor-mode-copy';
 import { ConversationHistory } from './conversation-history';
@@ -84,13 +83,6 @@ export function AssistantPanel(
         origins: detail?.conversation.preferenceOrigins,
         onFreshChat: panel.createWithoutPortrait,
     };
-    const modelControl = (
-        <ConversationModel
-            actorId={props.actorId}
-            request={panel.requestWithSession}
-            embedded={Boolean(props.workspace)}
-        />
-    );
     const contextPicker =
         panel.picker && chat.id ? (
             props.workspace ? (
@@ -292,7 +284,6 @@ export function AssistantPanel(
                                 hasDraft={Boolean(props.currentDraft)}
                                 useDraft={chat.useDraft}
                                 onUseDraft={chat.setUseDraft}
-                                modelControl={modelControl}
                                 contextPicker={contextPicker}
                                 contextOpen={panel.picker}
                                 onSelectFromPage={selectionAction}

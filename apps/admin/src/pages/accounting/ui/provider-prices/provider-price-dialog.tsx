@@ -65,6 +65,9 @@ export function ProviderPriceDialog({
             cacheReadUsdPerMillionTokens,
             cacheWriteUsdPerMillionTokens,
             usdPer1000Characters,
+            minimumUsdPerRequest: speech
+                ? null
+                : values.minimumUsdPerRequest || null,
         });
     };
     return (
@@ -140,6 +143,13 @@ export function ProviderPriceDialog({
                             label={t('accounting.usdOutputField')}
                             required
                         />
+                        <UsdRateField
+                            name='minimumUsdPerRequest'
+                            label={t('accounting.usdMinimumRequestField')}
+                        />
+                        <Typography.Paragraph type='secondary'>
+                            {t('accounting.usdMinimumRequestHelp')}
+                        </Typography.Paragraph>
                         <UsdRateField
                             name='cacheReadUsdPerMillionTokens'
                             label={t('accounting.usdCacheReadField')}

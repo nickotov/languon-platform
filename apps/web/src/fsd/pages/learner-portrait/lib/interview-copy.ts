@@ -507,10 +507,10 @@ const errors: Record<string, string[]> = {
         'No se pudo utilizar la respuesta del entrevistador. Tu respuesta y borrador se conservan. Reintenta cuando quieras o edita tu retrato a mano.',
     ],
     model_unavailable: [
-        'The selected model is unavailable for interviews. Choose Auto or DeepSeek Flash in model settings, then try again. Your answer and draft are kept.',
-        'Выбранная модель недоступна для интервью. Выберите «Авто» или DeepSeek Flash в настройках модели и повторите попытку. Ответ и черновик сохранены.',
-        'Le modèle sélectionné est indisponible pour les entretiens. Choisissez Auto ou DeepSeek Flash dans les paramètres, puis réessayez. Votre réponse et votre brouillon sont conservés.',
-        'El modelo seleccionado no está disponible para entrevistas. Elige Auto o DeepSeek Flash en los ajustes y vuelve a intentarlo. Tu respuesta y borrador se conservan.',
+        'AI is unavailable right now. Try again later or edit manually. Your answer and draft are kept.',
+        'ИИ сейчас недоступен. Повторите позже или отредактируйте вручную. Ответ и черновик сохранены.',
+        'L’IA est indisponible. Réessayez plus tard ou modifiez manuellement. Votre réponse et votre brouillon sont conservés.',
+        'La IA no está disponible. Reinténtalo más tarde o edita manualmente. Tu respuesta y borrador se conservan.',
     ],
     capacity_unavailable: [
         'The interviewer is busy. Your answer is kept; try again shortly or edit your draft by hand.',

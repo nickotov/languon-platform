@@ -1,3 +1,4 @@
+import { textAiRouteDispatchesTable as routeDispatches } from '../../../../text-ai/infrastructure/persistence/drizzle/route-dispatch-schema';
 import { authorizeActionAllowance } from '../../action-allowance-consent';
 import {
     readProviderTokenUsage,
@@ -72,6 +73,14 @@ export async function prepareLegacyAction(
             : account.policy.effectiveMode === 'unlimited'
               ? 'unlimited'
               : 'customer';
+
+    if (
+        funding === 'customer' &&
+        snapshot.routingAuthority?.tariffPublished === false
+    )
+        throw new ProviderCostAdmissionUnavailableError(
+            'A reviewed flow tariff is required for paid generation.',
+        );
     const preference = await ensureActionBudgetDefault(tx, ownerId, at);
     const settings = await capability.settings();
     const budget = preference?.maxCreditsPerAction ?? null;
@@ -96,12 +105,18 @@ export async function prepareLegacyAction(
         throw new OperatorBudgetUnavailableError(
             'An action budget must be configured.',
         );
-    const price = await pinProviderPrice(tx, {
-        providerId: snapshot.providerId,
-        modelId: snapshot.modelId,
-        meter: 'text-tokens',
-        at,
-    });
+    const pinnedCandidate = snapshot.routingAuthority?.candidates.find(
+        (candidate) =>
+            candidate.routeId === `${snapshot.providerId}/${snapshot.modelId}`,
+    );
+    const price =
+        pinnedCandidate?.providerPrice ??
+        (await pinProviderPrice(tx, {
+            providerId: snapshot.providerId,
+            modelId: snapshot.modelId,
+            meter: 'text-tokens',
+            at,
+        }));
 
     if (!price)
         throw new ProviderCostAdmissionUnavailableError(
@@ -243,7 +258,7 @@ export async function reserveLegacyAction(
     });
 }
 
-function attemptId(id: string, attempt: number) {
+export function legacyProviderAttemptId(id: string, attempt: number) {
     const hash = createHash('sha256')
         .update(`legacy-action:${id}:${attempt}`)
         .digest('hex');
@@ -275,7 +290,7 @@ export async function admitLegacyAttempt(
         Buffer.byteLength(JSON.stringify(input.inputPayload) ?? '', 'utf8') +
             (input.inputOverheadTokens ?? 8192),
     );
-    const callId = attemptId(input.id, input.attempt);
+    const callId = legacyProviderAttemptId(input.id, input.attempt);
     const [previous] = await tx
         .select()
         .from(attempts)
@@ -311,7 +326,7 @@ export async function admitLegacyAttempt(
         });
 
         return {
-            ...input.budget,
+            ...attempt.budget,
             maxInputTokensPerAttempt: inputLimit,
             maxOutputTokensPerAttempt: attempt.outputLimit,
         };
@@ -351,7 +366,7 @@ export async function recordLegacyAttempt(
         at: Date;
     },
 ) {
-    const callId = attemptId(input.id, input.attempt);
+    const callId = legacyProviderAttemptId(input.id, input.attempt);
     const [attempt] = await tx
         .select()
         .from(attempts)
@@ -382,11 +397,18 @@ export async function recordLegacyAttempt(
         }
     }
 
+    const [dispatch] = await tx
+        .select()
+        .from(routeDispatches)
+        .where(eq(routeDispatches.attemptId, callId));
+    const actualSnapshot = dispatch?.snapshot ?? input.snapshot;
+    const actualPrice =
+        dispatch?.providerPrice ?? input.snapshot.actionProviderPrice;
     const measured = usage !== undefined;
     const expense = !input.dispatched
         ? 0n
         : measured && usage
-          ? providerTextExpenseMicros(input.snapshot.actionProviderPrice, usage)
+          ? providerTextExpenseMicros(actualPrice, usage)
           : null;
 
     await new DrizzleActionAccountingParticipant(tx).recordAttempt({
@@ -403,8 +425,8 @@ export async function recordLegacyAttempt(
         attemptReference: `legacy:${callId}`,
         attemptId: callId,
         actionId: input.snapshot.actionParentId ?? input.id,
-        providerId: input.snapshot.providerId,
-        modelId: input.snapshot.modelId,
+        providerId: actualSnapshot.providerId,
+        modelId: actualSnapshot.modelId,
         measurement: measured ? 'measured' : 'unknown',
         costSource: expense === null ? 'unknown' : 'calculated',
         amountUsdMicros: expense,
@@ -427,4 +449,34 @@ export async function settleLegacyAction(
         outcome: input.outcome,
         at: input.at,
     });
+}
+
+/** Actual immutable dispatch receipt is authoritative when a queued primary was disabled. */
+export async function admittedLegacyExecution<
+    T extends TextAiExecutionSnapshot,
+>(
+    tx: AiCreditTransaction,
+    snapshot: T,
+    jobId: string,
+    attempt: number,
+): Promise<T> {
+    const [receipt] = await tx
+        .select()
+        .from(routeDispatches)
+        .where(
+            eq(
+                routeDispatches.attemptId,
+                legacyProviderAttemptId(jobId, attempt),
+            ),
+        );
+
+    if (!receipt) throw new Error('Admitted provider receipt is missing.');
+
+    return {
+        ...snapshot,
+        ...receipt.snapshot,
+        ...('actionProviderPrice' in snapshot
+            ? { actionProviderPrice: receipt.providerPrice }
+            : {}),
+    };
 }

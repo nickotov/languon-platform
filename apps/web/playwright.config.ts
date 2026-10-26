@@ -165,6 +165,8 @@ export default defineConfig({
                     ? 'sentence-generation:v2'
                     : 'sentence-generation:v1',
                 DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
+                // Match the reviewed synthetic routing fingerprint seeded by startup.
+                DEEPSEEK_API_KEY: 'synthetic-test-key',
                 SPEECH_PLAYBACK_ENABLED: 'true',
                 SPEECH_GENERATION_ENABLED: 'true',
                 DICTIONARY_AUDIO_PROVIDER: 'fixture',
@@ -217,7 +219,7 @@ export default defineConfig({
                 DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'deterministic',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
-                DEEPSEEK_API_KEY: 'synthetic-browser-provider-key',
+                DEEPSEEK_API_KEY: 'synthetic-test-key',
                 DICTIONARY_GENERATION_MODEL_ID: '',
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_DOCUMENT_OCR_MODE: documentServicesEnabled

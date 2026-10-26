@@ -67,6 +67,7 @@ export interface TextSelectionStore {
             cacheReadTokens?: number;
             cacheWriteTokens?: number;
         },
+        retryDisposition?: 'conclusive-provider-failure',
     ): Promise<void>;
     releaseWorkerLeases(workerId: string): Promise<void>;
 }

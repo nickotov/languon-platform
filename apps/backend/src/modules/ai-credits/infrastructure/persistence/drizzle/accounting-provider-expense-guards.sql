@@ -18,6 +18,9 @@ BEGIN
   END CASE;
   snapshot_value:=coalesce(execution_value->'snapshot',execution_value);
   price_value:=coalesce(execution_value->'providerPrice',execution_value->'actionProviderPrice');
+  IF EXISTS(SELECT 1 FROM public.text_ai_route_dispatches WHERE attempt_id=attempt_value) THEN
+    SELECT snapshot,provider_price INTO snapshot_value,price_value FROM public.text_ai_route_dispatches WHERE attempt_id=attempt_value;
+  END IF;
   provider_value:=snapshot_value->>'providerId'; model_value:=snapshot_value->>'modelId';
   SELECT * INTO p FROM public.ai_provider_price_revisions WHERE id=(price_value->>'id')::uuid;
   IF execution_value->>'actionAccountingVersion' IS DISTINCT FROM '1' OR p.id IS NULL OR p.provider_id IS DISTINCT FROM provider_value OR p.model_id IS DISTINCT FROM model_value OR p.meter<>'text-tokens' OR p.version IS DISTINCT FROM (price_value->>'version')::integer OR p.effective_at>a.created_at THEN
@@ -32,7 +35,7 @@ BEGIN
         +a.output_tokens*(p.data->>'outputUsdPerMillionTokens')::numeric
         +coalesce(a.cache_read_tokens,0)*coalesce((p.data->>'cacheReadUsdPerMillionTokens')::numeric,0)
         +coalesce(a.cache_write_tokens,0)*coalesce((p.data->>'cacheWriteUsdPerMillionTokens')::numeric,0);
-      amount_value:=ceil(numerator)::bigint; -- USD/token-million * micro-USD/USD cancels exactly.
+      amount_value:=greatest(ceil(numerator)::bigint,CASE WHEN a.input_tokens+a.output_tokens>0 THEN ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint ELSE 0 END); -- USD/token-million * micro-USD/USD cancels exactly.
     END IF;
   END IF;
   RETURN jsonb_build_object('attemptId',a.id,'actionId',a.action_id,'attemptReference',ref||a.id::text,'sourceKind','text-attempt','providerId',provider_value,'modelId',model_value,'measurement',CASE WHEN a.input_tokens IS NOT NULL AND a.output_tokens IS NOT NULL THEN 'measured' ELSE 'unknown' END,'costSource',CASE WHEN amount_value IS NULL THEN 'unknown' ELSE 'calculated' END,'amountUsdMicros',amount_value::text,'occurredAt',a.created_at);
@@ -98,6 +101,7 @@ BEGIN
   IF TG_OP='INSERT' THEN
     IF NEW.source_kind='text-attempt' AND NEW.attempt_id IS NOT NULL THEN e:=public.languon_text_provider_expense_identity(NEW.attempt_id);
     ELSIF NEW.source_kind='speech-attempt' AND NEW.attempt_id IS NULL THEN e:=public.languon_speech_provider_expense_identity(NEW.action_id);
+    ELSIF NEW.source_kind='admin-probe' AND NEW.attempt_id IS NULL THEN e:=public.languon_probe_provider_expense_identity(NEW.action_id);
     ELSE RAISE EXCEPTION 'Unbound provider expense facts are forbidden' USING ERRCODE='23514'; END IF;
     IF NEW.action_id IS DISTINCT FROM (e->>'actionId')::uuid OR NEW.attempt_reference IS DISTINCT FROM e->>'attemptReference' OR NEW.provider_id IS DISTINCT FROM e->>'providerId' OR NEW.model_id IS DISTINCT FROM e->>'modelId' OR NEW.measurement IS DISTINCT FROM e->>'measurement' OR NEW.cost_source IS DISTINCT FROM e->>'costSource' OR NEW.amount_usd_micros IS DISTINCT FROM (e->>'amountUsdMicros')::bigint OR NEW.occurred_at IS DISTINCT FROM (e->>'occurredAt')::timestamptz THEN RAISE EXCEPTION 'Provider expense does not match authoritative provenance' USING ERRCODE='23514'; END IF;
     RETURN NEW;

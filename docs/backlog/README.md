@@ -2,7 +2,7 @@
 type: reference
 title: Product backlog context and lifecycle
 created: 2026-10-01
-updated: 2026-10-19
+updated: 2026-10-26
 ---
 
 # Product backlog
@@ -155,8 +155,9 @@ that delivery under the root workflow; this backlog does not waive feature
 authorization or preapprove new architecture, migrations, billing, or deployment.
 
 [BL-003](003-personal-learning-progress.md) supplies durable personal progress for flashcards, sentence practice, and
-grammar exercises. [BL-005](005-user-selectable-ai-models-done.md) supplies the preference required by reader-generated
-sentence exercises and future text AI. [BL-007](007-manual-exercise-creation-and-editing.md) builds on the exercise formats
+grammar exercises. [BL-005](005-user-selectable-ai-models-done.md) records the historical model preference;
+[feature 054](../../.agent/features/054-admin-text-ai-routing/FEATURE.md) subsequently replaces learner selection
+with admin-owned routing for text AI. [BL-007](007-manual-exercise-creation-and-editing.md) builds on the exercise formats
 introduced by the relevant practice modes. [BL-008](008-increased-sentence-difficulty.md) and [BL-009](009-practice-plans-for-weak-areas.md) follow baseline
 sentence practice. Coordinate these dependencies when selecting a task; do not
 present a temporary implementation as satisfying persisted progress or shared

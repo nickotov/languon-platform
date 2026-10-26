@@ -1,3 +1,8 @@
+import {
+    textAiModelCatalog,
+    type TextAiExecutionSnapshot,
+} from '../../../text-ai/application/text-ai-provider-catalog';
+import { runPinnedFallback } from '../../../text-ai/infrastructure/ai/run-pinned-fallback';
 import { describe, expect, it, vi } from 'vitest';
 import type { TutorRunInput } from '../../application/ports/tutor-runner.js';
 import { createContextualTutorRunner } from './contextual-tutor-runner.js';
@@ -38,6 +43,41 @@ function runInput(memory = tutorMemoryFixture()): TutorRunInput {
 }
 
 describe('contextual tutor with the real pinned Mastra SDK', () => {
+    it.each([429, 503])(
+        'retains answer rejection evidence through the real SDK without publishing output (%s)',
+        async (statusCode) => {
+            const provider = scriptedTutorModel([]);
+            const rejection = Object.assign(new Error('Synthetic rejection'), {
+                statusCode,
+            });
+            provider.model.doGenerate = async () => {
+                throw rejection;
+            };
+            provider.model.doStream = async () => {
+                throw rejection;
+            };
+            const accounting = tutorAccountingFixture();
+            const input = runInput();
+            input.onDelta = vi.fn();
+            input.onDraft = vi.fn();
+            await expect(
+                createContextualTutorRunner({
+                    model: provider.model,
+                    providerId: 'openrouter',
+                    accounting,
+                    maxInputTokens: 64000,
+                }).run(input),
+            ).rejects.toMatchObject({
+                name: 'ProviderExecutionError',
+                executionOutcome: statusCode === 429 ? 'rejected' : 'ambiguous',
+            });
+            expect(input.onDelta).not.toHaveBeenCalled();
+            expect(input.onDraft).not.toHaveBeenCalled();
+            expect(accounting.fail).toHaveBeenCalledOnce();
+            expect(accounting.settle).not.toHaveBeenCalled();
+        },
+    );
+
     it.each([undefined, { instructions: 'PORTRAIT_SECRET' }])(
         'omits absent or malformed portrait data from dispatch',
         async (portraitContext) => {
@@ -211,6 +251,213 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
             ),
         ).toBe(true);
     });
+
+    it.each(['observation', 'reflection'] as const)(
+        'uses the already-pinned fallback after a pre-answer %s rejection within the shared action budget',
+        async (rejectedPurpose) => {
+            const oldText =
+                'Earlier example: definite articles and casa. '.repeat(60);
+            const memory = tutorMemoryFixture([
+                {
+                    id: 'old-user',
+                    role: 'user',
+                    content: oldText,
+                    createdAt: '2026-10-19T00:01:00.000Z',
+                },
+            ]);
+            const observation =
+                '<observations>\n- The learner studies articles and casa. ' +
+                'Clear article examples matter. '.repeat(30) +
+                '\n</observations>';
+            const primary = scriptedTutorModel([observation]);
+            const primaryGenerate = primary.model.doGenerate.bind(
+                primary.model,
+            );
+            const primaryStream = primary.model.doStream.bind(primary.model);
+            let primaryCalls = 0;
+            primary.model.doGenerate = vi.fn(async (options) => {
+                if (rejectedPurpose === 'reflection' && primaryCalls++ === 0)
+                    return primaryGenerate(options);
+                throw Object.assign(new Error('PRIMARY_ATTEMPT_SECRET'), {
+                    statusCode: 429,
+                });
+            });
+            primary.model.doStream = vi.fn(async (options) => {
+                if (rejectedPurpose === 'reflection' && primaryCalls++ === 0)
+                    return primaryStream(options);
+                throw Object.assign(new Error('PRIMARY_ATTEMPT_SECRET'), {
+                    statusCode: 429,
+                });
+            });
+            const fallback = scriptedTutorModel(
+                rejectedPurpose === 'reflection'
+                    ? [
+                          observation,
+                          '<observations>\n- The learner studies articles and casa.\n</observations>',
+                          'The article la agrees with casa.',
+                      ]
+                    : [
+                          '<observations>\n- The learner studies articles and casa.\n</observations>',
+                          'The article la agrees with casa.',
+                      ],
+            );
+            const accounting = tutorAccountingFixture();
+            let allocated = 0;
+            let peak = 0;
+            accounting.admit.mockImplementation(async (call) => {
+                allocated += call.maxOutputTokens;
+                peak = Math.max(peak, allocated);
+                expect(allocated).toBeLessThanOrEqual(10000);
+            });
+            accounting.settle.mockImplementation(async (call, usage) => {
+                allocated -= call.maxOutputTokens - usage.outputTokens;
+            });
+            const input = runInput(memory);
+            input.onDelta = vi.fn();
+            input.onDraft = vi.fn();
+            const primaryModel = textAiModelCatalog.find(
+                (model) => model.id === 'deepseek-flash',
+            )!;
+            const fallbackModel = textAiModelCatalog.find(
+                (model) => model.id === 'qwen/qwen3.5-flash-02-23',
+            )!;
+            const primarySnapshot: TextAiExecutionSnapshot = {
+                ...primaryModel,
+                modelId: primaryModel.id,
+                supportedFormats: [...primaryModel.supportedFormats],
+                enabledModelIds: [primaryModel.id, fallbackModel.id],
+            };
+            const fallbackSnapshot: TextAiExecutionSnapshot = {
+                ...fallbackModel,
+                modelId: fallbackModel.id,
+                supportedFormats: [...fallbackModel.supportedFormats],
+                enabledModelIds: [primaryModel.id, fallbackModel.id],
+            };
+            const price = {
+                id: '00000000-0000-4000-8000-000000000001',
+                providerId: 'deepseek',
+                modelId: primaryModel.id,
+                meter: 'text-tokens' as const,
+                inputUsdPerMillionTokens: '0.1',
+                outputUsdPerMillionTokens: '0.5',
+                cacheReadUsdPerMillionTokens: null,
+                cacheWriteUsdPerMillionTokens: null,
+                usdPer1000Characters: null,
+                effectiveAt: '2026-01-01T00:00:00.000Z',
+                createdAt: '2026-01-01T00:00:00.000Z',
+                createdBy: null,
+                version: 1,
+                sourceReference: 'synthetic',
+                sourceUrl: null,
+                reason: 'Synthetic regression price',
+            };
+            const snapshot: TextAiExecutionSnapshot = {
+                ...primarySnapshot,
+                routingAuthority: {
+                    revisionId: '00000000-0000-4000-8000-000000000002',
+                    flowId: 'conversation',
+                    automaticReattemptLimit: 1,
+                    tariffPublished: true,
+                    candidates: [
+                        {
+                            routeId: 'deepseek/deepseek-flash',
+                            fingerprint: 'primary',
+                            snapshot: primarySnapshot,
+                            providerPrice: price,
+                        },
+                        {
+                            routeId: 'openrouter/qwen/qwen3.5-flash-02-23',
+                            fingerprint: 'fallback',
+                            snapshot: fallbackSnapshot,
+                            providerPrice: {
+                                ...price,
+                                providerId: 'openrouter',
+                                modelId: fallbackModel.id,
+                            },
+                        },
+                    ],
+                },
+            };
+            const selected: string[] = [];
+            const result = await runPinnedFallback({
+                snapshot,
+                signal: input.signal,
+                hasPublished: () =>
+                    vi.mocked(input.onDelta).mock.calls.length > 0,
+                execute: async (selectedSnapshot, attempt) => {
+                    selected.push(selectedSnapshot.modelId);
+                    if (attempt === 2) {
+                        expect(input.onDelta).not.toHaveBeenCalled();
+                        expect(input.onDraft).not.toHaveBeenCalled();
+                        expect(
+                            accounting.admit.mock.calls.map(
+                                ([call]) => call.purpose,
+                            ),
+                        ).toEqual(
+                            rejectedPurpose === 'reflection'
+                                ? ['observation', 'reflection']
+                                : ['observation'],
+                        );
+                        expect(
+                            JSON.stringify([...memory.state.values()]),
+                        ).not.toContain('PRIMARY_ATTEMPT_SECRET');
+                        expect(
+                            [...memory.messages.values()].filter(
+                                (message) => message.role === 'assistant',
+                            ),
+                        ).toHaveLength(0);
+                    }
+                    return createContextualTutorRunner({
+                        model: attempt === 1 ? primary.model : fallback.model,
+                        providerId: selectedSnapshot.providerId,
+                        accounting,
+                        maxInputTokens: 64000,
+                        memoryThresholds: {
+                            messageTokens: 100,
+                            observationTokens:
+                                rejectedPurpose === 'reflection' ? 100 : 10000,
+                            maxTokensPerBatch: 4000,
+                        },
+                    }).run(input);
+                },
+            });
+            expect(result.text).toContain('la agrees with casa');
+            expect(selected).toEqual([primaryModel.id, fallbackModel.id]);
+            expect(
+                accounting.admit.mock.calls.map(([call]) => call.purpose),
+            ).toEqual(
+                rejectedPurpose === 'reflection'
+                    ? [
+                          'observation',
+                          'reflection',
+                          'reflection',
+                          'reflection',
+                          'answer',
+                      ]
+                    : ['observation', 'observation', 'answer'],
+            );
+            // The SDK reuses the completed primary observation. A still-long fallback
+            // reflection requires one more reflection, exercising all four support
+            // slots plus the answer without resetting the shared action allowance.
+            expect(accounting.fail).toHaveBeenCalledOnce();
+            expect(accounting.settle).toHaveBeenCalledTimes(
+                rejectedPurpose === 'reflection' ? 4 : 2,
+            );
+            expect(
+                vi.mocked(primary.model.doGenerate).mock.calls.length +
+                    vi.mocked(primary.model.doStream).mock.calls.length,
+            ).toBe(rejectedPurpose === 'reflection' ? 2 : 1);
+            expect(peak).toBeLessThanOrEqual(10000);
+            expect(allocated).toBeLessThanOrEqual(10000);
+            expect(memory.messages.get('old-user')?.content).toBe(oldText);
+            expect(fallback.requests).toHaveLength(
+                rejectedPurpose === 'reflection' ? 3 : 2,
+            );
+            expect(JSON.stringify([...memory.state.values()])).not.toContain(
+                'PRIMARY_ATTEMPT_SECRET',
+            );
+        },
+    );
 
     it('observes and reflects synchronously before answering while preserving raw history', async () => {
         const oldText =

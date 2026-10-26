@@ -1,3 +1,4 @@
+import type { TextAiProviderLeaseContext } from '../../text-ai/application/ports/text-ai-provider-lease-context';
 import { CardProposalGeneratorError } from './ports/card-proposal-generator';
 import {
     chunkDictionaryBatchGenerationRows,
@@ -66,6 +67,7 @@ export interface DictionaryDocumentScanAttestation {
 }
 
 export interface DictionaryDocumentGenerationProcessorRequest {
+    providerAttempt?: TextAiProviderLeaseContext;
     idempotencyKey: string;
     input: DictionaryDocumentTermsGenerationInputPayload;
     markProviderDispatch?: () => Promise<void>;
@@ -511,6 +513,9 @@ export class DictionaryDocumentGenerationProcessor {
                                 : { format: 'pasted-terms:v1' as const }),
                         },
                         providerBudget,
+                        ...(request.providerAttempt
+                            ? { providerAttempt: request.providerAttempt }
+                            : {}),
                         providerExecution:
                             request.providerExecution &&
                             'actionAccountingVersion' in

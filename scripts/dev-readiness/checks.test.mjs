@@ -4,16 +4,28 @@ import test from 'node:test';
 import {
     capabilityRequirements,
     selectCapabilities,
-    evaluateReadiness,
+    evaluateReadiness as evaluateRaw,
     validateLocalEnvironment,
 } from './checks.mjs';
+import { tsImport } from 'tsx/esm/api';
+const { createTextAiRouteFingerprint } = await tsImport(
+    '../../apps/backend/src/infrastructure/text-ai/route-fingerprint.ts',
+    import.meta.url,
+);
 import { migrationStatus } from './database.mjs';
+
+const evaluateReadiness = (...args) =>
+    evaluateRaw(...args).map((check) => ({
+        ...check,
+        id: check.id.split('/').at(-1),
+    }));
 
 const env = {
     APP_ENV: 'development',
     DATABASE_URL: 'postgres://local:secret@127.0.0.1:55444/local_test',
     DICTIONARY_AI_MANAGED_ROUTING_ENABLED: 'true',
     DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED: 'true',
+    DEEPSEEK_API_KEY: 'synthetic-private-key',
     TEXTS_AI_ENABLED: 'true',
     DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: capabilityRequirements
         .flatMap((c) => c.formats)
@@ -21,6 +33,45 @@ const env = {
 };
 function snapshot() {
     return {
+        routing: {
+            configuration: {
+                default: {
+                    primaryRouteId: 'deepseek/deepseek-flash',
+                    fallbackRouteIds: [],
+                },
+                overrides: {},
+                enabledRouteIds: ['deepseek/deepseek-flash'],
+                flowTariffs: Object.fromEntries(
+                    capabilityRequirements.flatMap((c) =>
+                        c.formats.map((format) => [
+                            format.split(':')[0],
+                            {
+                                inputCreditsPerMillionTokens: 100,
+                                outputCreditsPerMillionTokens: 300,
+                            },
+                        ]),
+                    ),
+                ),
+            },
+        },
+        probes: [
+            ...new Set(
+                capabilityRequirements.flatMap((c) =>
+                    c.formats.map((format) => format.split(':')[0]),
+                ),
+            ),
+        ].map((flow_id) => ({
+            route_id: 'deepseek/deepseek-flash',
+            flow_id,
+            kind: 'flow',
+            state: 'passed',
+            dispatch_allowed: true,
+            fingerprint: createTextAiRouteFingerprint(env)(
+                'deepseek/deepseek-flash',
+                flow_id,
+            ),
+            evidence_expires_at: '2099-01-01T00:00:00.000Z',
+        })),
         configuration: {
             modelId: 'deepseek-flash',
             providerId: 'deepseek',
@@ -122,7 +173,10 @@ test('reproduces old formats and absent prices with precise remediation', () => 
         /text-detection:v2/,
     );
     assert.match(
-        result.find((c) => c.id === 'texts:environment').message,
+        result
+            .filter((c) => c.id === 'texts:environment')
+            .map((c) => c.message)
+            .join(' '),
         /text-translation:v3/,
     );
     assert.equal(
@@ -266,4 +320,155 @@ test('legacy and mismatched worker identities cannot claim execution readiness',
             'blocked',
         );
     }
+});
+
+test('new routing is mandatory and stale learner choices cannot override admin routes', () => {
+    const value = snapshot();
+    value.learner = { mode: 'explicit', model_id: 'gemini-2.5-pro' };
+    assert.ok(
+        evaluateReadiness(value, env, 'configuration').every(
+            (check) => check.status === 'pass',
+        ),
+    );
+    delete value.routing;
+    assert.equal(
+        evaluateReadiness(value, env, 'configuration').find(
+            (check) => check.id === 'model',
+        ).status,
+        'blocked',
+    );
+});
+
+test('all primary and fallback routes and per-flow tariffs are inspected', () => {
+    const value = snapshot();
+    value.routing.configuration.overrides['text-translation'] = {
+        primaryRouteId: 'openrouter/openai/gpt-6-luna',
+        fallbackRouteIds: ['deepseek/deepseek-flash'],
+    };
+    value.routing.configuration.enabledRouteIds.push(
+        'openrouter/openai/gpt-6-luna',
+    );
+    delete value.routing.configuration.flowTariffs['text-translation'];
+    const result = evaluateRaw(
+        value,
+        env,
+        'configuration',
+        selectCapabilities(env, ['texts']),
+    );
+    assert.ok(
+        result.some(
+            (check) =>
+                check.id.startsWith(
+                    'openrouter/openai/gpt-6-luna/text-translation/',
+                ) &&
+                check.id.endsWith('credential') &&
+                check.status === 'blocked',
+        ),
+    );
+    assert.ok(
+        result.some(
+            (check) =>
+                check.id.startsWith(
+                    'deepseek/deepseek-flash/text-translation/',
+                ) &&
+                check.id.endsWith('customer-tariff') &&
+                check.status === 'blocked',
+        ),
+    );
+    assert.ok(!JSON.stringify(result).includes('synthetic-private-key'));
+});
+
+test('quick-only, changed credential and hard failures cannot establish flow readiness; unchanged aged success warns', () => {
+    const registry = selectCapabilities(env, ['interview']);
+    for (const change of [
+        (probe) => ({ ...probe, kind: 'quick' }),
+        (probe) => ({ ...probe, fingerprint: 'stale' }),
+        (probe) => ({
+            ...probe,
+            state: 'failed',
+            failure: 'model_retired',
+            dispatch_allowed: false,
+            completed_at: '2020-01-01T00:00:00Z',
+        }),
+    ]) {
+        const value = snapshot();
+        value.probes = value.probes.map(change);
+        assert.equal(
+            evaluateReadiness(value, env, 'configuration', registry).find(
+                (check) => check.id === 'flow-check',
+            ).status,
+            'blocked',
+        );
+    }
+    const value = snapshot();
+    value.probes.forEach(
+        (probe) => (probe.evidence_expires_at = '2020-01-01T00:00:00Z'),
+    );
+    assert.match(
+        evaluateReadiness(value, env, 'configuration', registry).find(
+            (check) => check.id === 'flow-check',
+        ).message,
+        /aged/,
+    );
+    assert.equal(
+        evaluateReadiness(
+            value,
+            { ...env, DEEPSEEK_API_KEY: 'changed-key' },
+            'configuration',
+            registry,
+        ).find((check) => check.id === 'flow-check').status,
+        'blocked',
+    );
+});
+
+test('EvoLink credential and routing alone cannot approve learner data processing', () => {
+    const value = snapshot();
+    value.routing.configuration.default.primaryRouteId = 'evolink/gpt-6-luna';
+    value.routing.configuration.enabledRouteIds = ['evolink/gpt-6-luna'];
+    const check = evaluateReadiness(
+        value,
+        { ...env, EVOLINK_API_KEY: 'synthetic-evolink' },
+        'configuration',
+        selectCapabilities(env, ['conversation']),
+    ).find((check) => check.id === 'selected-model');
+    assert.equal(check.status, 'blocked');
+    assert.match(check.message, /processing\/privacy/);
+});
+
+test('only database-authorized recovery with a prior matching pass can restore readiness', () => {
+    const registry = selectCapabilities(env, ['interview']);
+    const check = (value) =>
+        evaluateReadiness(value, env, 'configuration', registry).find(
+            (item) => item.id === 'flow-check',
+        ).status;
+    const failedOnly = snapshot();
+    failedOnly.probes = failedOnly.probes.map((probe) => ({
+        ...probe,
+        state: 'failed',
+        failure: 'timeout',
+        completed_at: '2020-01-01T00:00:00Z',
+        dispatch_allowed: false,
+    }));
+    assert.equal(check(failedOnly), 'blocked');
+    const recovered = snapshot();
+    recovered.probes = recovered.probes.map((probe) => ({
+        ...probe,
+        state: 'failed',
+        failure: 'timeout',
+        completed_at: '2020-01-01T00:00:00Z',
+        dispatch_allowed: true,
+    }));
+    assert.equal(check(recovered), 'pass');
+    const hardThenTimeout = snapshot();
+    hardThenTimeout.probes = hardThenTimeout.probes.map((probe) => ({
+        ...probe,
+        state: 'failed',
+        failure: 'timeout',
+        completed_at: '2020-01-01T00:00:00Z',
+        dispatch_allowed: false,
+    }));
+    assert.equal(check(hardThenTimeout), 'blocked');
+    const legacySnapshot = snapshot();
+    legacySnapshot.probes.forEach((probe) => delete probe.dispatch_allowed);
+    assert.equal(check(legacySnapshot), 'blocked');
 });

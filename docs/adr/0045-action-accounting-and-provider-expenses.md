@@ -5,6 +5,7 @@ title: 'Bounded action accounting and independent provider expenses'
 status: accepted
 date: 2026-10-22
 supersedes: 'ADR-0022 whole-credit units, per-attempt customer funding and conservative full-hold failure charges; ADR-0027 history-union admission accounting; ADR-0032 text failure semantics; ADR-0044 interview-specific charging bypass'
+superseded_in_part_by: 'ADR-0046 stable per-flow customer tariffs independent of provider/model prices'
 ---
 
 # ADR-0045: Bounded action accounting and independent provider expenses

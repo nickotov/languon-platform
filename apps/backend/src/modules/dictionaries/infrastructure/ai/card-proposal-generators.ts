@@ -1,3 +1,5 @@
+import { withQueuedTextAiProviderAttempt } from '../../../text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt';
+import { withProviderExecutionOutcome } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
 import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import { Buffer } from 'node:buffer';
 import { isIP } from 'node:net';
@@ -6,6 +8,7 @@ import { getLocalPrompt } from '@languon/prompts';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { Mastra } from '@mastra/core/mastra';
 import { z } from 'zod';
@@ -107,6 +110,7 @@ export function createMastraCardProposalGenerator(options: {
 }): CardProposalGenerator {
     return {
         async generate(request) {
+            let outputReceived = false;
             let meteredUsage:
                 ReturnType<typeof readProviderTokenUsage> | undefined;
             const failure = (
@@ -116,6 +120,10 @@ export function createMastraCardProposalGenerator(options: {
             ) => {
                 const result = new CardProposalGeneratorExecutionError(reason);
                 if (meteredUsage) result.usage = meteredUsage;
+                result.executionOutcome =
+                    outputReceived && result.category === 'invalid_model_output'
+                        ? 'completed'
+                        : 'ambiguous';
                 return result;
             };
 
@@ -140,25 +148,32 @@ export function createMastraCardProposalGenerator(options: {
             }
 
             try {
-                const result = await options.agent.generate(message, {
-                    abortSignal: request.signal,
-                    modelSettings: {
-                        maxOutputTokens: requestLimits.maxOutputTokens,
-                        maxRetries: 0,
-                    },
-                    runId: request.idempotencyKey,
-                    structuredOutput: {
-                        ...(options.structuredOutputMode === 'prompt-injection'
-                            ? { jsonPromptInjection: 'inline' as const }
-                            : {}),
-                        schema: DictionaryCardGenerationModelOutputSchema,
-                    },
-                    toolChoice: 'none',
-                    tracingOptions: {
-                        hideInput: true,
-                        hideOutput: true,
-                    },
-                });
+                const result = await withQueuedTextAiProviderAttempt(
+                    request.providerAttempt,
+                    Boolean(request.providerExecution?.routingAuthority),
+                    () =>
+                        options.agent.generate(message, {
+                            abortSignal: request.signal,
+                            modelSettings: {
+                                maxOutputTokens: requestLimits.maxOutputTokens,
+                                maxRetries: 0,
+                            },
+                            runId: request.idempotencyKey,
+                            structuredOutput: {
+                                ...(options.structuredOutputMode ===
+                                'prompt-injection'
+                                    ? { jsonPromptInjection: 'inline' as const }
+                                    : {}),
+                                schema: DictionaryCardGenerationModelOutputSchema,
+                            },
+                            toolChoice: 'none',
+                            tracingOptions: {
+                                hideInput: true,
+                                hideOutput: true,
+                            },
+                        }),
+                );
+                outputReceived = true;
                 request.signal.throwIfAborted();
 
                 if (result.usage) {
@@ -172,7 +187,11 @@ export function createMastraCardProposalGenerator(options: {
                     }
                 }
                 if (result.error || result.tripwire) {
-                    throw failure('provider_failure');
+                    throw withProviderExecutionOutcome(
+                        failure('provider_failure'),
+                        result.error,
+                        request.providerExecution?.providerId ?? 'unknown',
+                    );
                 }
 
                 const proposal = validatedOutput(result.object);
@@ -212,10 +231,20 @@ export function createMastraCardProposalGenerator(options: {
                         new DOMException('Aborted', 'AbortError')
                     );
                 }
+                if (
+                    outputReceived &&
+                    error instanceof CardProposalGeneratorError &&
+                    error.category === 'invalid_model_output'
+                )
+                    error.executionOutcome = 'completed';
                 if (error instanceof CardProposalGeneratorExecutionError) {
                     throw error;
                 }
-                throw failure('provider_failure');
+                throw withProviderExecutionOutcome(
+                    failure('provider_failure'),
+                    error,
+                    request.providerExecution?.providerId ?? 'unknown',
+                );
             }
         },
         readiness(signal) {
@@ -294,7 +323,10 @@ export type CardProposalGeneratorFactoryOptions =
       }
     | {
           mode: 'mastra';
-          model: ModelRouterModelId | OpenAICompatibleConfig;
+          model:
+              | ModelRouterModelId
+              | OpenAICompatibleConfig
+              | ModelRouterLanguageModel;
           modelRequestLimits?: DictionaryTextModelRequestLimits;
           providerBudget: DictionaryGenerationProviderBudgetPolicy;
           providerProbeFetch?: typeof fetch;
@@ -337,10 +369,16 @@ export function createCardProposalGenerator(
 }
 
 function openAICompatibleProviderReadiness(
-    model: ModelRouterModelId | OpenAICompatibleConfig,
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel,
     fetchProvider: typeof fetch,
 ): ((signal: AbortSignal) => Promise<void>) | undefined {
-    if (typeof model === 'string' || !model.url || !model.apiKey)
+    if (
+        typeof model === 'string' ||
+        !('url' in model) ||
+        !model.url ||
+        !model.apiKey
+    )
         return undefined;
     const baseUrl = new URL(model.url);
     const hostname = baseUrl.hostname.replace(/^\[|\]$/g, '').toLowerCase();

@@ -26,7 +26,7 @@ describe('sentenceProviderFailure', () => {
 
     it.each([
         [401, 'authorization_failed'],
-        [403, 'authorization_failed'],
+        [403, 'provider_unavailable'],
         [402, 'provider_credits_exhausted'],
         [404, 'model_unavailable'],
         [410, 'model_retired'],
@@ -43,7 +43,7 @@ describe('sentenceProviderFailure', () => {
 
     it.each([
         [401, 'authorization_failed'],
-        [403, 'authorization_failed'],
+        [403, 'provider_unavailable'],
         [402, 'provider_credits_exhausted'],
         [429, 'rate_limited'],
     ])('classifies Kie envelope code %i', (code, reason) => {
@@ -76,10 +76,10 @@ describe('sentenceProviderFailure', () => {
     it('prefers an actual nested HTTP failure over an outer successful status', () => {
         expect(
             sentenceProviderFailure(
-                { statusCode: 200, cause: { statusCode: 403 } },
+                { statusCode: 200, cause: { statusCode: 401 } },
                 'kie',
             ),
-        ).toEqual({ reason: 'authorization_failed', httpStatus: 403 });
+        ).toEqual({ reason: 'authorization_failed', httpStatus: 401 });
     });
 
     it('does not interpret other providers as Kie envelopes', () => {
@@ -186,5 +186,122 @@ describe('sentenceProviderFailure', () => {
                 'kie',
             ),
         ).toEqual({ reason: 'provider_unavailable' });
+    });
+});
+
+describe('reviewed gateway error envelopes', () => {
+    it.each(['openrouter', 'evolink'])(
+        'classifies numeric nested retirement safely for %s',
+        (providerId) => {
+            const result = sentenceProviderFailure(
+                {
+                    name: 'AI_APICallError',
+                    statusCode: 200,
+                    responseBody: JSON.stringify({
+                        error: {
+                            code: 410,
+                            message: 'synthetic-secret-never-log',
+                        },
+                    }),
+                },
+                providerId,
+            );
+            expect(result).toEqual({
+                reason: 'model_retired',
+                errorName: 'AI_APICallError',
+                httpStatus: 200,
+                providerCode: 410,
+            });
+            expect(JSON.stringify(result)).not.toContain('synthetic-secret');
+        },
+    );
+});
+
+describe('bounded schema rejection diagnostics', () => {
+    it('recognizes only an explicit schema machine code and field on HTTP 400', () => {
+        expect(
+            sentenceProviderFailure(
+                {
+                    statusCode: 400,
+                    responseBody: JSON.stringify({
+                        error: {
+                            code: 'invalid_json_schema',
+                            param: 'response_format',
+                            message: 'private schema text',
+                        },
+                    }),
+                },
+                'openrouter',
+            ),
+        ).toMatchObject({ reason: 'schema_incompatible', httpStatus: 400 });
+        expect(
+            sentenceProviderFailure(
+                {
+                    statusCode: 400,
+                    responseBody: JSON.stringify({
+                        error: {
+                            code: 'invalid_request',
+                            param: 'response_format',
+                        },
+                    }),
+                },
+                'openrouter',
+            ).reason,
+        ).toBe('provider_unavailable');
+        expect(
+            sentenceProviderFailure(
+                {
+                    statusCode: 400,
+                    responseBody: JSON.stringify({
+                        error: {
+                            code: 'invalid_json_schema',
+                            param: 'messages',
+                        },
+                    }),
+                },
+                'openrouter',
+            ).reason,
+        ).toBe('provider_unavailable');
+    });
+    it('classifies numeric streamed error codes without exposing their messages', () => {
+        expect(
+            sentenceProviderFailure(
+                { code: 401, message: 'private stream detail' },
+                'openrouter',
+            ),
+        ).toEqual({ reason: 'authorization_failed', providerCode: 401 });
+    });
+});
+
+describe('policy refusal isolation', () => {
+    it('does not label generic HTTP403 as invalid shared credentials', () => {
+        expect(
+            sentenceProviderFailure(
+                {
+                    statusCode: 403,
+                    responseBody: JSON.stringify({
+                        error: {
+                            code: 403,
+                            message: 'Synthetic policy refusal',
+                        },
+                    }),
+                },
+                'openrouter',
+            ),
+        ).toMatchObject({ reason: 'provider_unavailable', httpStatus: 403 });
+        expect(
+            sentenceProviderFailure(
+                {
+                    statusCode: 403,
+                    responseBody: JSON.stringify({
+                        error: {
+                            code: 401,
+                            message: 'Synthetic credential rejection',
+                        },
+                    }),
+                },
+                'openrouter',
+            ),
+        ).toMatchObject({ reason: 'authorization_failed', providerCode: 401 });
     });
 });

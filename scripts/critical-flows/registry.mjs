@@ -5,6 +5,25 @@ export const backendExecutionFiles = Object.freeze([
     'tests/integration/modules/texts/text-selection.test.ts',
     'tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts',
     'tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts',
+    'tests/integration/modules/text-ai/text-ai-probes.test.ts',
+    'tests/integration/modules/text-ai/text-ai-routing.test.ts',
+    'tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts',
+    'tests/unit/infrastructure/probe-flow-registry.test.ts',
+    'tests/unit/modules/text-ai/text-ai-probe-service.test.ts',
+    'tests/unit/modules/text-ai/text-ai-probe-executor.test.ts',
+    'tests/unit/modules/administration/interface/http/admin-text-ai-probe.routes.test.ts',
+    'tests/unit/config/text-ai-probe-environment.test.ts',
+    'tests/unit/modules/text-ai/infrastructure/dictionary-router-gateway-runtime.test.ts',
+    'tests/unit/modules/text-ai/infrastructure/provider-runtime-observer.test.ts',
+    'tests/integration/database/provider-minimum-cost.test.ts',
+    'tests/integration/modules/conversations/conversation-accounting.test.ts',
+    'tests/integration/database/dictionary-worker-accounting-role.test.ts',
+    'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
+    'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
+    'src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts',
+    'src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.test.ts',
+    'tests/unit/modules/text-ai/run-pinned-fallback.test.ts',
+    'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
 ]);
 
 /** Add future crucial journeys here; every entry runs against fresh owned services. */
@@ -17,6 +36,15 @@ export const flows = [
         grep: '.',
         prerequisite: 'empty-admin-database',
         env: { ADMIN_E2E_SETUP_JOURNEY: 'true' },
+    },
+    {
+        id: 'admin-text-ai-routing',
+        minimumTests: 1,
+        app: 'admin',
+        file: 'text-ai-routing.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'empty-admin-database',
+        env: { ADMIN_E2E_SYNTHETIC_PROBES: 'true' },
     },
     {
         id: 'authentication',
@@ -88,7 +116,7 @@ export const flows = [
     },
     {
         id: 'ai-execution-contracts',
-        minimumTests: 54,
+        minimumTests: 200,
         app: 'backend',
         files: [...backendExecutionFiles],
         prerequisite: 'disposable-backend-production-execution',
@@ -207,6 +235,7 @@ export function assertPassingReport(report, flow = { minimumTests: 1 }) {
 const featureFlags = {
     AUTH_E2E_SENTENCE_SERVICES: ['true'],
     ADMIN_E2E_SETUP_JOURNEY: ['true'],
+    ADMIN_E2E_SYNTHETIC_PROBES: ['true'],
     ADMIN_E2E_ACCESS_TOKEN_TTL: ['60s'],
     LEARNER_PORTRAIT_TEST_PAID: ['true'],
 };

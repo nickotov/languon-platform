@@ -1,3 +1,5 @@
+import { createTextAiProviderRuntime } from '../../../infrastructure/text-ai/provider-runtime';
+import { runPinnedFallback } from '../../text-ai/infrastructure/ai/run-pinned-fallback';
 import { randomBytes } from 'node:crypto';
 import { ConversationWorkerService } from '../application/conversation-worker-service';
 import { DrizzleConversationStore } from './persistence/drizzle/drizzle-conversation-store';
@@ -21,8 +23,20 @@ import { createContextualTutorRunner } from './ai/contextual-tutor-runner';
 export function createConversationWorkerComposition(input: {
     database: ConversationsDatabase;
     dictionaryHmacSecret: string;
-    credentials: Partial<Record<'DEEPSEEK_API_KEY' | 'KIE_API_KEY', string>>;
+    credentials: Partial<
+        Record<
+            | 'DEEPSEEK_API_KEY'
+            | 'KIE_API_KEY'
+            | 'EVOLINK_API_KEY'
+            | 'OPENROUTER_API_KEY',
+            string
+        >
+    >;
 }) {
+    const providerRuntime = createTextAiProviderRuntime(
+        input.database,
+        input.credentials,
+    );
     const dictionary = new HmacDictionaryCryptography({
         secret: input.dictionaryHmacSecret,
         entropy: { randomBytes },
@@ -64,30 +78,87 @@ export function createConversationWorkerComposition(input: {
                 throw new Error(
                     'Conversation execution snapshot is unavailable.',
                 );
-            const provider = resolveTextAiProviderOptions({
-                snapshot: execution.snapshot,
-                budget: execution.budget,
-                credentials: input.credentials,
-            });
-            const accounting = createConversationAccounting({
-                database: input.database,
-                withOperation: (work) => store.withOperation(turn, work),
-                ownerId: turn.ownerId,
-                turnId: turn.id,
-                leaseToken: turn.leaseToken,
-                execution,
-            });
-            return createContextualTutorRunner({
-                model: provider.model,
-                accounting,
-                maxInputTokens:
-                    typeof turn.execution.admittedMaxInputTokens === 'number'
-                        ? Math.min(
-                              execution.snapshot.perCallMaxInputTokens,
-                              turn.execution.admittedMaxInputTokens,
-                          )
-                        : execution.snapshot.perCallMaxInputTokens,
-            });
+            const snapshot = execution.snapshot;
+            return {
+                run: async (runInput) => {
+                    let published = false;
+                    return runPinnedFallback({
+                        snapshot,
+                        signal: runInput.signal,
+                        hasPublished: () => published,
+                        execute: async (snapshot, attempt) => {
+                            const selectedExecution = {
+                                ...execution,
+                                snapshot,
+                                budget: {
+                                    ...execution.budget,
+                                    inputCostMicrosPerMillionTokens:
+                                        snapshot.aggregateBudget
+                                            .inputCostMicrosPerMillionTokens,
+                                    outputCostMicrosPerMillionTokens:
+                                        snapshot.aggregateBudget
+                                            .outputCostMicrosPerMillionTokens,
+                                },
+                                ...(attempt === 2
+                                    ? {
+                                          providerPrice:
+                                              snapshot.routingAuthority!
+                                                  .candidates[1]!.providerPrice,
+                                      }
+                                    : {}),
+                            };
+                            const provider = resolveTextAiProviderOptions({
+                                ...providerRuntime,
+                                snapshot,
+                                budget: selectedExecution.budget,
+                                credentials: input.credentials,
+                            });
+                            const accounting = createConversationAccounting({
+                                database: input.database,
+                                withOperation: (work) =>
+                                    store.withOperation(turn, work),
+                                ownerId: turn.ownerId,
+                                turnId: turn.id,
+                                leaseToken: turn.leaseToken,
+                                execution: selectedExecution,
+                            });
+                            const runner = createContextualTutorRunner({
+                                model: provider.model,
+                                providerId: snapshot.providerId,
+                                accounting,
+                                attemptWitness: {
+                                    jobId: turn.id,
+                                    leaseToken: turn.leaseToken,
+                                },
+                                maxInputTokens:
+                                    typeof turn.execution
+                                        .admittedMaxInputTokens === 'number'
+                                        ? Math.min(
+                                              snapshot.perCallMaxInputTokens,
+                                              turn.execution
+                                                  .admittedMaxInputTokens,
+                                          )
+                                        : snapshot.perCallMaxInputTokens,
+                            });
+                            return runner.run({
+                                ...runInput,
+                                onDelta: async (delta) => {
+                                    published = true;
+                                    await runInput.onDelta(delta);
+                                },
+                                onTool: async (call) => {
+                                    published = true;
+                                    await runInput.onTool?.(call);
+                                },
+                                onDraft: async (content) => {
+                                    published = true;
+                                    return runInput.onDraft(content);
+                                },
+                            });
+                        },
+                    });
+                },
+            };
         },
     });
     return {

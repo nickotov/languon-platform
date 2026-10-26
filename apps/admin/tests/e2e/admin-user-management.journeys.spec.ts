@@ -14,9 +14,10 @@ import {
     type Page,
 } from '@playwright/test';
 import postgres from 'postgres';
+import { configureModel } from './support/setup-admin';
 
 // @user-flow-revision admin-user-management sha256:4329a23dfacbe067
-// @user-flow-revision ai-provider-management sha256:9d0a0f62b235f0b2
+// @user-flow-revision ai-provider-management sha256:71297ff216a3dad3
 // @user-flow-revision ai-credit-wallet sha256:99b7d70e3e3a8ddb
 
 const execFileAsync = promisify(execFile);
@@ -1171,7 +1172,7 @@ test.describe.serial('admin user management journeys', () => {
         assertNoBrowserErrors();
     });
 
-    test('refreshes expired admin access before a single pricing write', async ({
+    test('refreshes expired admin access before a single speech tariff write', async ({
         page,
     }) => {
         test.skip(
@@ -1192,21 +1193,26 @@ test.describe.serial('admin user management journeys', () => {
             await loginResponse
         ).json()) as { accessTokenExpiresAt: string };
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
-        const row = page.getByRole('row').filter({ hasText: 'deepseek-flash' });
-        await row.getByRole('button', { name: 'Edit price' }).click();
+        const speechTariff = page
+            .getByRole('row')
+            .filter({ hasText: 'speech-characters' })
+            .first();
+        await speechTariff
+            .getByRole('button', { name: 'Edit price', exact: true })
+            .click();
         const dialog = page.getByRole('dialog', {
             name: 'Publish model price',
         });
         await dialog
-            .getByLabel('Credits per million input tokens', { exact: true })
-            .fill('100');
+            .getByLabel('Credits per 1,000 characters', { exact: true })
+            .fill('1.125');
         await dialog
-            .getByLabel('Credits per million output tokens', { exact: true })
-            .fill('300');
+            .getByLabel('Minimum credits per recording', { exact: true })
+            .fill('0.001');
         await dialog
             .getByLabel('Reason', { exact: true })
             .fill(
-                'Verify expired access refresh before one explicit price publication',
+                'Verify one explicit speech tariff publication after token refresh',
             );
         let refreshes = 0;
         let publications = 0;
@@ -1222,6 +1228,11 @@ test.describe.serial('admin user management journeys', () => {
         await page.waitForTimeout(
             Math.max(0, Date.parse(accessTokenExpiresAt) - Date.now() + 1500),
         );
+        expect(
+            refreshes,
+            'no background request may refresh the expired token before the write',
+        ).toBe(0);
+        expect(publications).toBe(0);
         const published = page.waitForResponse(
             (response) =>
                 response.request().method() === 'POST' &&
@@ -1230,7 +1241,13 @@ test.describe.serial('admin user management journeys', () => {
         await dialog
             .getByRole('button', { name: 'Publish price revision' })
             .click();
-        expect((await published).status()).toBe(200);
+        const response = await published;
+        expect(response.status()).toBe(200);
+        expect(await response.json()).toMatchObject({
+            meter: 'speech-characters',
+            creditsPer1000Characters: 1.125,
+            minimumCredits: 0.001,
+        });
         await expect(dialog).not.toBeVisible();
         await expect(
             page.getByRole('heading', { name: 'AI providers', exact: true }),
@@ -1312,32 +1329,7 @@ test.describe.serial('admin user management journeys', () => {
             },
         );
 
-        await page.getByRole('menuitem', { name: 'AI settings' }).click();
-        await expect(
-            page.getByRole('heading', { name: 'AI providers' }),
-        ).toBeVisible();
-        await page
-            .locator('label.ant-radio-button-wrapper')
-            .filter({ hasText: 'DeepSeek' })
-            .click();
-        await page
-            .getByRole('checkbox', { name: /DeepSeek Flash/ })
-            .evaluate((element: HTMLInputElement) => {
-                // A preceding sentence journey may already have enabled this model.
-                if (!element.checked) element.click();
-            });
-        const defaultModel = page.getByLabel('Default model');
-        await defaultModel.press('ArrowDown');
-        await defaultModel.press('Home');
-        await defaultModel.press('Enter');
-        await expect(
-            page.locator('.ant-select').filter({ has: defaultModel }),
-        ).toContainText('DeepSeek Flash');
-        await page
-            .getByLabel('Reason for change')
-            .fill('Configure priced managed generation for credit E2E');
-        await page.getByRole('button', { name: 'Save configuration' }).click();
-        await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
+        await configureModel(page);
 
         await page.goto(`/users/${targetId}`);
         await expect(
@@ -1532,7 +1524,7 @@ test.describe.serial('admin user management journeys', () => {
     });
 
     // @user-flow ai-provider-management/admin-configures-dictionary-ai-default
-    test('owner configures providers and queued jobs retain their selected revisions', async ({
+    test('owner publishes routing tariffs and queued jobs retain their selected revisions', async ({
         page,
         request,
     }) => {
@@ -1549,6 +1541,8 @@ test.describe.serial('admin user management journeys', () => {
                 request.method() === 'GET' &&
                 request.failure()?.errorText === 'net::ERR_ABORTED' &&
                 (path === '/api/admin/ai/model-prices' ||
+                    path === '/api/admin/ai/routing' ||
+                    path === '/api/admin/ai-settings/probes' ||
                     /^\/api\/admin\/users\/[^/]+\/ai-credits$/.test(path))
             )
                 return;
@@ -1557,49 +1551,17 @@ test.describe.serial('admin user management journeys', () => {
             );
         });
         await passwordLogin(page);
-        await page.getByRole('menuitem', { name: 'AI settings' }).click();
-        await expect(
-            page.getByRole('heading', { name: 'AI providers' }),
-        ).toBeVisible();
-        await expect(
-            page.getByRole('checkbox', { name: /DeepSeek Chat/ }),
-        ).toHaveCount(0);
-        await expect(
-            page.getByRole('checkbox', { name: /DeepSeek Flash/ }),
-        ).toBeVisible();
+        const firstRouting = await configureModel(page, {
+            inputRate: '100',
+            outputRate: '300',
+            reason: 'Establish reviewed baseline for pinned routing regression',
+        });
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(
-            page.getByRole('checkbox', { name: /DeepSeek Flash/ }),
+            page.getByRole('button', { name: 'Publish routing', exact: true }),
         ).toBeVisible();
         await page.setViewportSize({ width: 1280, height: 720 });
-        // Establish the first revision on every run: this owned fixture can retain
-        // a Kie default from a previous successful run or the credit-wallet case.
-        await page
-            .locator('label.ant-radio-button-wrapper')
-            .filter({ hasText: 'DeepSeek' })
-            .click();
-        const deepSeekCheckbox = page.getByRole('checkbox', {
-            name: /DeepSeek Flash/,
-        });
-        if (!(await deepSeekCheckbox.isChecked())) {
-            await deepSeekCheckbox.evaluate((element: HTMLInputElement) =>
-                element.click(),
-            );
-        }
-        const defaultModel = page.getByLabel('Default model');
-        await defaultModel.press('ArrowDown');
-        await defaultModel.press('Home');
-        await defaultModel.press('Enter');
-        await expect(
-            page.locator('.ant-select').filter({ has: defaultModel }),
-        ).toContainText('DeepSeek Flash');
-        await page
-            .getByLabel('Reason for change')
-            .fill('Establish DeepSeek baseline for pinned revision regression');
-        await page.getByRole('button', { name: 'Save configuration' }).click();
-        await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
-
-        // Reserve both models full three-attempt ceilings (up to 4M per attempt).
+        // Fund both immutable tariff revisions before admitting the jobs.
         // Fund through the owner UI rather than depending on another test case.
         await page.goto(`/users/${targetId}`);
         await expect(
@@ -1697,7 +1659,7 @@ test.describe.serial('admin user management journeys', () => {
             return payload.card;
         };
         const deepSeekCard = await createCard('canvas', 'toile');
-        const kieCard = await createCard('studio', 'atelier');
+        const nextTariffCard = await createCard('studio', 'atelier');
 
         const enqueue = async (card: { id: string; version: number }) => {
             const response = await request.post(
@@ -1726,30 +1688,14 @@ test.describe.serial('admin user management journeys', () => {
             worker = await startDictionaryWorker();
             const deepSeekJobId = await enqueue(deepSeekCard);
 
-            await page
-                .locator('label.ant-radio-button-wrapper')
-                .filter({ hasText: 'Kie' })
-                .click();
-            const kieCheckbox = page.getByRole('checkbox', {
-                name: /Gemini 2\.5 Pro via Kie/,
+            const secondRouting = await configureModel(page, {
+                inputRate: '200',
+                outputRate: '600',
+                checkFlows: false,
+                reason: 'Change future flow tariffs while preserving admitted snapshots',
             });
-            if (!(await kieCheckbox.isChecked())) {
-                await kieCheckbox.evaluate((element: HTMLInputElement) =>
-                    element.click(),
-                );
-            }
-            await page.getByLabel('Default model').press('ArrowDown');
-            await page.getByLabel('Default model').press('Enter');
-            await page
-                .getByLabel('Reason for change')
-                .fill('Switch new dictionary jobs to the curated Kie model');
-            await page
-                .getByRole('button', { name: 'Save configuration' })
-                .click();
-            await expect(
-                page.getByText(/Configuration version \d+/i),
-            ).toBeVisible();
-            const kieJobId = await enqueue(kieCard);
+            expect(secondRouting.id).not.toBe(firstRouting.id);
+            const nextTariffJobId = await enqueue(nextTariffCard);
 
             const database = postgres(databaseUrl, { max: 1 });
             try {
@@ -1759,33 +1705,36 @@ test.describe.serial('admin user management journeys', () => {
                         modelId: string;
                         providerId: string;
                         revisionId: string;
+                        inputRate: string;
                     }>
                 >`
                 select
                     jobs.id as "jobId",
                     jobs.execution_revision_id as "revisionId",
                     revisions.catalog_snapshot ->> 'modelId' as "modelId",
-                    revisions.catalog_snapshot ->> 'providerId' as "providerId"
+                    revisions.catalog_snapshot ->> 'providerId' as "providerId",
+                    jobs.selected_execution_snapshot -> 'creditPricing' ->> 'inputCreditsPerMillionTokens' as "inputRate"
                 from dictionary_generation_jobs jobs
                 join dictionary_ai_configuration_revisions revisions
                   on revisions.id = jobs.execution_revision_id
-                where jobs.id in (${deepSeekJobId}, ${kieJobId})
+                where jobs.id in (${deepSeekJobId}, ${nextTariffJobId})
                 order by jobs.id
             `;
                 expect(pinned).toHaveLength(2);
                 expect(new Set(pinned.map((row) => row.revisionId)).size).toBe(
                     2,
                 );
-                expect(
-                    pinned.map(({ modelId, providerId }) => ({
-                        modelId,
-                        providerId,
-                    })),
-                ).toEqual(
-                    expect.arrayContaining([
-                        { modelId: 'deepseek-flash', providerId: 'deepseek' },
-                        { modelId: 'gemini-2.5-pro', providerId: 'kie' },
-                    ]),
+                expect(new Set(pinned.map((row) => row.modelId))).toEqual(
+                    new Set(['deepseek-flash']),
+                );
+                expect(new Set(pinned.map((row) => row.providerId))).toEqual(
+                    new Set(['deepseek']),
+                );
+                expect(new Set(pinned.map((row) => row.inputRate))).toEqual(
+                    new Set(['100', '200']),
+                );
+                expect(new Set(pinned.map((row) => row.revisionId))).toEqual(
+                    new Set([firstRouting.id, secondRouting.id]),
                 );
             } finally {
                 await database.end();
@@ -1796,7 +1745,11 @@ test.describe.serial('admin user management journeys', () => {
                 accessToken,
                 deepSeekJobId,
             );
-            await waitForGenerationReview(request, accessToken, kieJobId);
+            await waitForGenerationReview(
+                request,
+                accessToken,
+                nextTariffJobId,
+            );
             const accepted = await request.post(
                 `${backendOrigin}/dictionary-generation-jobs/${deepSeekJobId}/accept`,
                 {
@@ -1814,10 +1767,9 @@ test.describe.serial('admin user management journeys', () => {
         }
 
         await page.reload();
-        await expect(page.getByRole('radio', { name: 'Kie' })).toBeChecked();
         await expect(
-            page.getByRole('checkbox', { name: /Gemini 2\.5 Pro via Kie/ }),
-        ).toBeChecked();
+            page.getByRole('region', { name: 'Text AI routes' }),
+        ).toBeVisible();
         await expect(
             page.getByText(/Configuration version \d+/i),
         ).toBeVisible();

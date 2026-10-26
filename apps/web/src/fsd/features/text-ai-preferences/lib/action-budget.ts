@@ -18,7 +18,7 @@ export function budgetCopy(locale: string) {
     if (locale === 'ru')
         return {
             label: 'Максимум кредитов на действие',
-            help: 'Отправка разрешает расход в пределах этого максимума и доступного баланса. Дорогая модель не повышает максимум.',
+            help: 'Отправка разрешает расход в пределах этого максимума и доступного баланса. Максимум не повышается автоматически.',
             invalid:
                 'Введите положительное число с точностью до 0,001 кредита.',
             exact: 'Точное значение',
@@ -30,7 +30,7 @@ export function budgetCopy(locale: string) {
     if (locale === 'fr')
         return {
             label: 'Crédits maximum par action',
-            help: 'L’envoi autorise une dépense dans cette limite et le solde disponible. Un modèle plus cher ne relève pas la limite.',
+            help: 'L’envoi autorise une dépense dans cette limite et le solde disponible. La limite n’augmente jamais automatiquement.',
             invalid:
                 'Saisissez un nombre positif avec au plus trois décimales.',
             unset: 'Définissez un maximum avant une action payante.',
@@ -42,7 +42,7 @@ export function budgetCopy(locale: string) {
     if (locale === 'es')
         return {
             label: 'Créditos máximos por acción',
-            help: 'Enviar autoriza el gasto dentro de este máximo y el saldo disponible. Un modelo más caro no aumenta el máximo.',
+            help: 'Enviar autoriza el gasto dentro de este máximo y el saldo disponible. El máximo nunca aumenta automáticamente.',
             invalid: 'Introduce un número positivo con hasta tres decimales.',
             unset: 'Establece un máximo antes de una acción de pago.',
             exact: 'Valor exacto',
@@ -52,7 +52,7 @@ export function budgetCopy(locale: string) {
         };
     return {
         label: 'Maximum credits per action',
-        help: 'Sending authorizes spending within this maximum and your available balance. An expensive model does not raise the maximum.',
+        help: 'Sending authorizes spending within this maximum and your available balance. The maximum never increases automatically.',
         invalid: 'Enter a positive number with up to three decimal places.',
         unset: 'Set a maximum before a paid action.',
         exact: 'Exact value',

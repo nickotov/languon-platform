@@ -1,3 +1,4 @@
+import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
 import type {
     EnqueueTextDetectionRequest,
     EnqueueTextTranslationRequest,
@@ -25,6 +26,7 @@ export interface TextsTokenUsage {
     cacheWriteTokens?: number;
 }
 export interface TextsProviderCall {
+    providerAttempt?: TextAiProviderLeaseContext;
     input: TextJobInput;
     execution: TextAiExecutionSnapshot;
     budget: TextAiProviderBudgetPolicy;
@@ -38,6 +40,7 @@ export interface TextsAiProvider {
     }>;
 }
 export class TextsAiError extends Error {
+    executionOutcome?: 'rejected' | 'completed' | 'ambiguous';
     constructor(
         readonly code: string,
         message: string = code,
@@ -52,6 +55,7 @@ export class TextsCreditsExhaustedError extends TextsAiError {
     }
 }
 export class TextsProviderInvalidOutputError extends TextsAiError {
+    override executionOutcome = 'completed' as const;
     constructor(readonly usage?: TextsTokenUsage) {
         super('invalid_model_output');
     }

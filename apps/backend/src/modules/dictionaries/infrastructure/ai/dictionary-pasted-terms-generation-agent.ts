@@ -3,10 +3,12 @@ import { Agent } from '@mastra/core/agent';
 import type {
     ModelRouterModelId,
     OpenAICompatibleConfig,
+    ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 
 export interface DictionaryPastedTermsGenerationAgentOptions {
-    model: ModelRouterModelId | OpenAICompatibleConfig;
+    model:
+        ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }
 
 export function createDictionaryPastedTermsGenerationAgent(

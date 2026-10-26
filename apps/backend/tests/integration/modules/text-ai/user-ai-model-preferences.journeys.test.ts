@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision user-ai-model-preferences-backend sha256:843d32439e34d5ad
+// @user-flow-revision user-ai-model-preferences-backend sha256:73f31c71e6640ceb
 import {
     AuthenticationSuccessResponseSchema,
     DictionaryCardResponseSchema,
@@ -20,15 +20,9 @@ import {
     type AuthenticationComposition,
 } from '../../../../src/modules/authentication/infrastructure/authentication-composition';
 import { createTextAiModule } from '../../../../src/modules/text-ai/infrastructure/text-ai-composition';
-import { textAiModelCatalog } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import { createDictionaryComposition } from '../../../../src/modules/dictionaries/infrastructure/dictionary-composition';
 import { dictionaryGenerationFormat } from '../../../../src/modules/dictionaries/domain/generation';
 import { DrizzleDictionaryGenerationStore } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store';
-import {
-    dictionaryAiConfigurationRevisionsTable,
-    dictionaryAiConfigurationTable,
-    dictionaryAiWorkerObservationsTable,
-} from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { dictionaryGenerationJobsTable } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import {
@@ -45,6 +39,10 @@ import {
     uniqueAuthRedisNamespace,
 } from '../../support/test-redis';
 
+import { seedDictionaryAccountingFixture } from '../../../support/dictionary-accounting-fixture';
+import { seedTextAiRoutingFixture } from '../../../support/text-ai-routing-fixture';
+import { publishTextAiWorkerObservations } from '../../../../src/modules/text-ai/infrastructure/ai/text-ai-worker-observations';
+
 const run = describe.runIf(
     isDatabaseIntegrationEnabled() && redisIntegrationEnabled,
 );
@@ -59,6 +57,7 @@ run('real composed text-AI preference HTTP journey', () => {
     let authentication: AuthenticationComposition;
     const priorEnvironment = {
         deepseek: process.env.DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED,
+        deepseekKey: process.env.DEEPSEEK_API_KEY,
         kie: process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED,
         routing: process.env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED,
     };
@@ -69,6 +68,7 @@ run('real composed text-AI preference HTTP journey', () => {
         // no provider client or external call is created by this journey.
         process.env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED = 'true';
         process.env.DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED = 'true';
+        process.env.DEEPSEEK_API_KEY = 'synthetic-test-key';
         process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED = 'true';
 
         const redis = createTestRedisClient();
@@ -130,6 +130,7 @@ run('real composed text-AI preference HTTP journey', () => {
             'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED',
             priorEnvironment.deepseek,
         );
+        restoreEnvironment('DEEPSEEK_API_KEY', priorEnvironment.deepseekKey);
         restoreEnvironment(
             'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED',
             priorEnvironment.kie,
@@ -243,60 +244,22 @@ run('real composed text-AI preference HTTP journey', () => {
 
     // @user-flow user-ai-model-preferences-backend/learner-preference-pins-dictionary-execution
     it(
-        'returns Auto, persists an explicit selection and rejects stale, unavailable and inactive writes through real auth and PostgreSQL',
+        'hides model identities, persists exact budgets, rejects selection and pins server-owned execution through real auth and PostgreSQL',
         async () => {
             const learner = await signup('text-ai-learner');
-            const defaultModel = textAiModelCatalog[0]!;
-            const configurationRevisionId = randomUUID();
-            await authentication.productDependencies.database
-                .insert(dictionaryAiConfigurationRevisionsTable)
-                .values({
-                    catalogSnapshot: {
-                        adapterRevision: defaultModel.adapterRevision,
-                        aggregateBudget: defaultModel.aggregateBudget,
-                        credentialReference: defaultModel.credentialReference,
-                        creditPricing: defaultModel.creditPricing,
-                        enabledModelIds: textAiModelCatalog.map(
-                            (model) => model.id,
-                        ),
-                        modelId: defaultModel.id,
-                        perCallMaxInputTokens:
-                            defaultModel.perCallMaxInputTokens,
-                        perCallMaxOutputTokens:
-                            defaultModel.perCallMaxOutputTokens,
-                        providerId: defaultModel.providerId,
-                        supportedFormats: [...defaultModel.supportedFormats],
-                    },
-                    createdByUserId: learner.userId,
-                    id: configurationRevisionId,
-                    version: 1,
-                });
-            await authentication.productDependencies.database
-                .insert(dictionaryAiConfigurationTable)
-                .values({
-                    activeRevisionId: configurationRevisionId,
-                    id: 'global',
-                    version: 1,
-                });
-            const observationNow = new Date();
-            await authentication.productDependencies.database
-                .insert(dictionaryAiWorkerObservationsTable)
-                .values(
-                    textAiModelCatalog.map((model) => ({
-                        adapterRevision: model.adapterRevision,
-                        checkedAt: observationNow,
-                        expiresAt: new Date(observationNow.getTime() + 60_000),
-                        id: `text-ai-journey-worker/${model.providerId}/${model.id}/text-ai-selection:v1`,
-                        message:
-                            'Deterministic test worker supports learner selection.',
-                        modelId: model.id,
-                        providerId: model.providerId,
-                        status: 'available' as const,
-                        textAiSelectionRevision: 1,
-                        textAiSupportedFormats: [...model.supportedFormats],
-                        workerId: 'text-ai-journey-worker',
-                    })),
-                );
+            const db = authentication.productDependencies.database;
+            await seedDictionaryAccountingFixture(db);
+            const routing = await seedTextAiRoutingFixture(db);
+            await publishTextAiWorkerObservations({
+                database: db,
+                workerId: 'text-ai-journey-worker',
+                now: new Date(),
+                ttlMs: 60000,
+                readinessTimeoutMs: 1000,
+                supportedFormats: [dictionaryGenerationFormat],
+                credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+                fetchProvider: async () => new Response('{}', { status: 200 }),
+            });
             const models = await request('/text-ai/models', {
                 token: learner.token,
             });
@@ -304,22 +267,7 @@ run('real composed text-AI preference HTTP journey', () => {
             const catalog = TextAiModelsResponseSchema.parse(
                 await models.json(),
             );
-            expect(catalog.models).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        availability: 'available',
-                        enabled: true,
-                        id: 'deepseek-flash',
-                        label: 'DeepSeek Flash',
-                    }),
-                    expect.objectContaining({
-                        availability: 'available',
-                        enabled: true,
-                        id: 'gemini-2.5-pro',
-                        label: 'Gemini 2.5 Pro via Kie',
-                    }),
-                ]),
-            );
+            expect(catalog).toEqual({ defaultModelId: null, models: [] });
             expect(JSON.stringify(catalog)).not.toMatch(
                 /credential|endpoint|api[_-]?key/i,
             );
@@ -333,17 +281,16 @@ run('real composed text-AI preference HTTP journey', () => {
             ).toMatchObject({
                 mode: 'auto',
                 modelId: null,
-                selectedModel: { id: 'deepseek-flash' },
-                version: 0,
+                selectedModel: null,
+                version: 1,
             });
 
             const saved = await request('/users/me/ai-model-preference', {
                 method: 'PUT',
                 token: learner.token,
                 body: {
-                    expectedVersion: 0,
-                    mode: 'explicit',
-                    modelId: 'gemini-2.5-pro',
+                    expectedVersion: 1,
+                    mode: 'auto',
                     maxCreditsPerAction: '20.125',
                 },
             });
@@ -351,10 +298,10 @@ run('real composed text-AI preference HTTP journey', () => {
             expect(
                 TextAiPreferenceResponseSchema.parse(await saved.json()),
             ).toMatchObject({
-                mode: 'explicit',
-                modelId: 'gemini-2.5-pro',
-                selectedModel: { id: 'gemini-2.5-pro' },
-                version: 1,
+                mode: 'auto',
+                modelId: null,
+                selectedModel: null,
+                version: 2,
                 maxCreditsPerAction: '20.125',
             });
             const reloaded = await request('/users/me/ai-model-preference', {
@@ -363,9 +310,9 @@ run('real composed text-AI preference HTTP journey', () => {
             expect(
                 TextAiPreferenceResponseSchema.parse(await reloaded.json()),
             ).toMatchObject({
-                mode: 'explicit',
-                modelId: 'gemini-2.5-pro',
-                version: 1,
+                mode: 'auto',
+                modelId: null,
+                version: 2,
                 maxCreditsPerAction: '20.125',
             });
 
@@ -381,19 +328,18 @@ run('real composed text-AI preference HTTP journey', () => {
                 error: { code: 'conflict' },
             });
 
-            process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED = 'false';
-            const unavailable = await request('/users/me/ai-model-preference', {
+            const denied = await request('/users/me/ai-model-preference', {
                 method: 'PUT',
                 token: learner.token,
                 body: {
-                    expectedVersion: 1,
+                    expectedVersion: 2,
                     mode: 'explicit',
                     modelId: 'gemini-2.5-pro',
                 },
             });
-            expect(unavailable.status).toBe(409);
+            expect(denied.status).toBe(409);
             expect(
-                TextAiErrorResponseSchema.parse(await unavailable.json()),
+                TextAiErrorResponseSchema.parse(await denied.json()),
             ).toMatchObject({ error: { code: 'model_unavailable' } });
             const retained = await request('/users/me/ai-model-preference', {
                 token: learner.token,
@@ -401,16 +347,12 @@ run('real composed text-AI preference HTTP journey', () => {
             expect(
                 TextAiPreferenceResponseSchema.parse(await retained.json()),
             ).toMatchObject({
-                mode: 'explicit',
-                modelId: 'gemini-2.5-pro',
-                selectedModel: { availability: 'unavailable' },
-                version: 1,
+                mode: 'auto',
+                modelId: null,
+                selectedModel: null,
+                version: 2,
+                maxCreditsPerAction: '20.125',
             });
-            process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED = 'true';
-
-            const kie = textAiModelCatalog.find(
-                (model) => model.id === 'gemini-2.5-pro',
-            )!;
             const generatedFor = await dictionary(learner.token);
             const replayKey = randomUUID();
             const selected = await enqueue(
@@ -445,7 +387,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 );
             expect(kieJob).toMatchObject({
                 id: selectedBody.job.id,
-                selectedExecutionSnapshot: { modelId: kie.id },
+                selectedExecutionSnapshot: { modelId: 'deepseek-flash' },
                 selectedExecutionVersion: 1,
             });
             expect(kieJob?.id).toBe(selectedBody.job.id);
@@ -453,12 +395,20 @@ run('real composed text-AI preference HTTP journey', () => {
             const auto = await request('/users/me/ai-model-preference', {
                 method: 'PUT',
                 token: learner.token,
-                body: { expectedVersion: 1, mode: 'auto' },
+                body: {
+                    expectedVersion: 2,
+                    mode: 'auto',
+                    maxCreditsPerAction: '30.125',
+                },
             });
             expect(auto.status).toBe(200);
             expect(
                 TextAiPreferenceResponseSchema.parse(await auto.json()),
-            ).toMatchObject({ mode: 'auto', version: 2 });
+            ).toMatchObject({
+                mode: 'auto',
+                version: 3,
+                maxCreditsPerAction: '30.125',
+            });
 
             const generationStore = new DrizzleDictionaryGenerationStore(
                 authentication.productDependencies.database,
@@ -494,7 +444,7 @@ run('real composed text-AI preference HTTP journey', () => {
             });
             expect(claim).toMatchObject({
                 id: selectedBody.job.id,
-                providerExecution: { modelId: kie.id },
+                providerExecution: { modelId: 'deepseek-flash' },
             });
             const defaulted = await enqueue(
                 learner.token,
@@ -521,36 +471,21 @@ run('real composed text-AI preference HTTP journey', () => {
                         ),
                     );
             expect(deepSeekJob).toMatchObject({
-                executionRevisionId: configurationRevisionId,
-                selectedExecutionSnapshot: null,
+                executionRevisionId: routing.id,
+                selectedExecutionSnapshot: { modelId: 'deepseek-flash' },
             });
 
-            const explicitAgain = await request(
-                '/users/me/ai-model-preference',
-                {
-                    method: 'PUT',
-                    token: learner.token,
-                    body: {
-                        expectedVersion: 2,
-                        mode: 'explicit',
-                        modelId: kie.id,
-                    },
-                },
-            );
-            expect(explicitAgain.status).toBe(200);
-            process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED = 'false';
-            const rejectedAdmission = await enqueue(
+            const replayAfterBudget = await enqueue(
                 learner.token,
                 generatedFor,
-                randomUUID(),
+                replayKey,
             );
-            expect(rejectedAdmission.status).toBe(503);
-            const jobCount = await authentication.productDependencies.database
+            expect(replayAfterBudget.status).toBe(202);
+            expect(await replayAfterBudget.json()).toEqual(selectedBody);
+            const jobCount = await db
                 .select({ id: dictionaryGenerationJobsTable.id })
                 .from(dictionaryGenerationJobsTable);
             expect(jobCount).toHaveLength(2);
-            process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED = 'true';
-
             await authentication.productDependencies.database
                 .update(usersTable)
                 .set({ status: 'disabled' })

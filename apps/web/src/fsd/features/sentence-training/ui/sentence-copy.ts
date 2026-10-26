@@ -779,11 +779,11 @@ const translations: Record<string, [string, string, string]> = {
             'Ces entrées ont changé. Rechargez la pratique pour obtenir des phrases actuelles.',
             'Estas entradas han cambiado. Recarga la práctica para usar frases actuales.',
         ],
-    'Your selected AI model is unavailable. Choose another model or continue with saved reference answers.':
+    'AI is unavailable right now. Try again later or continue with saved reference answers.':
         [
-            'Выбранная модель ИИ недоступна. Выберите другую или используйте сохранённые эталоны.',
-            'Le modèle IA choisi est indisponible. Choisissez-en un autre ou utilisez les références enregistrées.',
-            'El modelo de IA elegido no está disponible. Elige otro o usa referencias guardadas.',
+            'ИИ сейчас недоступен. Повторите позже или используйте сохранённые эталоны.',
+            'L’IA est indisponible. Réessayez plus tard ou utilisez les références enregistrées.',
+            'La IA no está disponible. Reinténtalo más tarde o usa referencias guardadas.',
         ],
     'AI tasks are at capacity. Wait a moment and try again.': [
         'Достигнут предел задач ИИ. Подождите и повторите.',

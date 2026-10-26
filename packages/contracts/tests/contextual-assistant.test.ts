@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     ChatPreferencesSchema,
+    ConversationTurnSchema,
     KnowledgeBodySchema,
     KnowledgeDraftSchema,
     KnowledgeLinkSchema,
@@ -32,6 +33,38 @@ const content = {
     explanationLanguage: 'en',
 };
 describe('contextual assistant rich content contracts', () => {
+    it('permits only a redacted model identity in learner turn responses', () => {
+        const turn = {
+            id: '00000000-0000-4000-8000-000000000001',
+            conversationId: '00000000-0000-4000-8000-000000000002',
+            modelId: null,
+            status: 'queued',
+            failureCode: null,
+            usage: {
+                inputTokens: 0,
+                outputTokens: 0,
+                chargedCredits: '0',
+                estimated: false,
+            },
+            createdAt: '2026-10-25T00:00:00.000Z',
+            updatedAt: '2026-10-25T00:00:00.000Z',
+        };
+        expect(ConversationTurnSchema.parse(turn).modelId).toBeNull();
+        for (const modelId of [
+            'deepseek-flash',
+            'openai/gpt-6-luna',
+            'gemini-2.5-pro',
+        ])
+            expect(
+                ConversationTurnSchema.safeParse({ ...turn, modelId }).success,
+            ).toBe(false);
+        expect(
+            ConversationTurnSchema.safeParse({
+                ...turn,
+                providerId: 'openrouter',
+            }).success,
+        ).toBe(false);
+    });
     it('defaults omitted tutor modes and validates only the four supported modes', () => {
         expect(ChatPreferencesSchema.parse({}).mode).toBe('auto');
         for (const mode of ['auto', 'explain', 'correct', 'practice'])

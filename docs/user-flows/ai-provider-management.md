@@ -18,12 +18,16 @@ source_paths:
     - apps/backend/src/modules/dictionaries/infrastructure/**
     - packages/contracts/src/admin/**
     - infra/deploy/**
+    - apps/backend/src/infrastructure/text-ai/**
+    - packages/contracts/src/text-ai-routing.ts
+    - packages/contracts/src/routing-probes.ts
 e2e_command: ai-provider-management
 e2e_tests:
     - apps/admin/tests/e2e/admin-user-management.journeys.spec.ts
 e2e_scenarios:
     - admin-configures-dictionary-ai-default
 related_features:
+    - admin-text-ai-routing
     - shared-pronunciation-playback
     - user-ai-model-preferences-backend
     - admin-user-management
@@ -35,123 +39,97 @@ related_features:
 
 ## What this verifies
 
-This guide verifies that an owner can select a curated DeepSeek or Kie text model
-for Mastra-backed dictionary generation. Configuration is versioned and audited;
-credentials remain server-side; text and pronunciation-audio settings remain
-separate. Editable character/token prices and speech inventory are documented in
-[Shared pronunciation playback](shared-pronunciation-playback.md). Curated speech
-model/voice setup remains code/configuration work rather than arbitrary endpoint
-administration. A saved default applies to new Auto jobs; an enabled compatible explicit learner
-preference selects that model for new work instead. An admitted job retains its
-provider, model, adapter revision, and budget.
+An owner publishes server-owned routes and independent per-flow customer tariffs.
+New jobs use the effective default or flow override; existing learner model choices
+have no authority. Already-admitted jobs keep their immutable routing revision,
+provider/model candidates, tariff, provider prices and execution limits.
 
-The journey does not perform a paid model request. It starts the real dictionary
-worker with a test-only deterministic provider transport, so admission, pinned
-routing, worker dispatch, proposal review, and acceptance still cross the real
-application and persistence boundaries. Separate wire fixtures cover each
-provider's OpenAI-compatible request and structured response mapping.
-The learner preference backend is verified separately in
-[User AI model preferences backend](./user-ai-model-preferences-backend.md).
-It preserves curated models and immutable admitted execution; this admin journey
-does not implement the deferred profile picker or per-user allowance changes.
+Text and speech configuration remain separate. See
+[Admin-owned text AI routing](./admin-text-ai-routing.md) for synthetic checks,
+activation evidence, provider processing controls and emergency disabling, and
+[Shared pronunciation playback](./shared-pronunciation-playback.md) for speech.
+
+The mapped journey uses a guarded deterministic provider transport and synthetic
+probe executor. It verifies real administration, admission, PostgreSQL snapshots,
+worker dispatch, review and acceptance without claiming live vendor availability.
+The guide's changed journey awaits final feature execution evidence; its previous
+verification date remains historical until that run passes.
 
 ## Start the development environment
 
-Use the disposable admin E2E PostgreSQL and Redis services described in
-[Admin User Management](./admin-user-management.md). The mapped command starts
-the backend and admin app with a synthetic sanitized DeepSeek capability flag
-and the local managed-routing activation gate. It never provisions or sends a
-provider credential.
-
-For manual local verification, configure `DEEPSEEK_API_KEY` or `KIE_API_KEY` in
-the worker and set the matching sanitized API capability flag,
-`DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED=true` or
-`DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED=true`. Set
-`DICTIONARY_GENERATION_PROVIDER_MODE=mastra`, enable the six applicable job
-lifecycle lists, and set `DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true` only after
-the API and dictionary worker run the same compatible release. Apply migrations,
-then restart the API and worker once. Later admin default changes need no restart.
+Use disposable admin E2E PostgreSQL and Redis services from
+[Admin user management](./admin-user-management.md). The mapped command requires
+its explicit synthetic-probe test configuration. No real provider credentials or
+paid services belong in these tests. Follow
+[local testing setup](../operations/local-testing-setup.md) for real manual setup.
 
 ## Browser verification
 
-1. Sign in to the admin app as an active owner and open **AI settings**.
-2. Confirm each provider shows credential and readiness separately. A configured
-   key with no fresh worker observation reads as unverified. DeepSeek may report
-   available after its authenticated model-list probe. Kie's route-only probe
-   remains unverified because it does not prove the key or structured output.
-3. Select an enabled provider, enable at least one selectable model, choose an
-   enabled default, review its effective input/output credit rates and maximum
-   attempt reservation, enter a reason, and save. Price editing publishes a separate
-   immutable tariff revision through the pricing controls; it does not rewrite this
-   provider configuration or admitted work.
-4. Reload the page. Confirm the saved provider/model and incremented version
-   remain selected. Check keyboard focus, a narrow viewport, and light/dark modes.
-
-Expected result: no key, base URL, raw prompt, or provider response appears in
-the page or browser requests. Saving does not call a billable generation route.
+1. Sign in as an active owner, configure reviewed operator limits and provider
+   USD rates through **AI accounting**, then open **AI settings**.
+2. Complete matching selected-flow checks for the intended route, with explicit
+   operator expense approval. Inspect configured credentials, processing
+   eligibility, worker readiness and observed check evidence separately.
+3. Publish enabled routes, default/overrides and approved per-flow input/output
+   customer tariffs with a reason. All rates use per-million tokens; provider
+   USD costs and customer credit tariffs are separate.
+4. Verify **Publish routing** remains reachable at a narrow viewport. Reload and
+   inspect the saved revision. No credential values or arbitrary base URL appear.
 
 ## Admin verification
 
-Confirm only curated providers and model identifiers appear. Missing credentials
-and an inactive routing gate disable models with an actionable explanation.
-Open Audit after a save and confirm the event records the actor, configuration
-target, reason, outcome, versions, correlation reference, and one-year expiry.
+Review owner-only configuration publication and its reason/version. Default
+changes affect newly admitted work; existing jobs retain their original snapshot.
+Learners cannot change this policy or select models. Presentation preferences and
+saved spending limits remain learner-controlled.
 
 ## API verification
 
-With a short-lived synthetic owner token, GET `/api/admin/ai-settings`. PATCH the
-same path with `expectedVersion`, `activeProvider`, `defaultModel`,
-`enabledModels`, and a 5–500 character reason. Confirm a stale version returns
-`ai_settings_conflict`, a non-owner is denied, arbitrary model IDs are rejected,
-and the response never includes a credential value or configurable URL.
-
-Admit a DeepSeek job, change the default to Kie while it remains queued, then
-admit a Kie job. Inspect the disposable database and confirm the jobs reference
-different immutable revisions. Start the real worker with the deterministic
-test transport, confirm both jobs reach review through their pinned snapshots,
-and accept one proposal through the public API. Separate database integration
-coverage confirms an old-worker claim without the managed-routing transaction
-capability cannot move pinned work to running.
+GET and POST `/api/admin/ai/routing` read/publish with an optimistic
+`expectedVersion`. Legacy `/api/admin/ai-settings` no longer authorizes new
+learner routing. Admit a job, publish a new routing/tariff revision and admit
+another job. Inspect their distinct immutable configuration references and pinned
+flow tariffs in the disposable database. Start the real worker with its guarded
+deterministic provider transport, obtain reviewable proposals and accept one.
 
 ## Expected failure and edge cases
 
-- Missing credentials, disabled routing, unsupported models, altered snapshots,
-  or unsupported adapter revisions fail closed without provider fallback.
-- Duplicate idempotent admission returns the original job after a default change.
-- Concurrent settings writes allow one version and return a conflict for the
-  stale writer without creating a second active revision.
-- Document upload authorization pins routing before upload completion.
-- Provider token counts are attributed to the job owner. Conservative settlement
-  remains distinguishable from provider-reported usage before future allowances.
-
-## Automated regression checks
-
-Run the mapped admin Playwright command, backend unit and disposable database
-integration suites, provider-router contract tests, contracts/admin typechecks,
-`pnpm db:check`, `pnpm test:release-deployment`, and the affected builds. Live
-provider smoke tests are optional, bounded, and separately authorized; fixture
-tests do not claim live vendor readiness.
+- Missing routing, credentials, effective provider rates, required flow tariffs,
+  processing approval or matching flow evidence fail closed.
+- Retired Kie Gemini 2.5 Pro cannot be activated. EvoLink credentials or synthetic
+  probes do not override its pending learner-processing review.
+- Duplicate idempotent admission returns the original job after policy changes.
+- Stale configuration versions conflict; expired recent sign-in requires a fresh
+  owner decision. Neither mutation is automatically replayed.
+- Old or incompatible workers cannot claim admitted execution.
+- Technical failure produces no learner charge. Successful usage and explicit
+  Stop keep the admitted charging policy; provider expenses remain attributable.
 
 ## Troubleshooting
 
-If all models are disabled, confirm the provider-specific text key exists in the
-backend/worker environment and the managed-routing gate is active. If saving asks
-for recent authentication, sign in again and make a fresh decision; the UI does
-not replay the mutation. On a conflict, reload the latest configuration before
-editing. A worker failure for a queued job should be investigated against that
-job's pinned revision rather than the current admin default.
+Check the job's pinned revision rather than only today's default. A configured
+credential or successful quick response does not establish structured-flow
+compatibility. Inspect safe diagnostic codes and selected-flow evidence; never
+paste provider keys, raw learner prompts or response bodies into reports.
+
+## Automated regression checks
+
+Run the registered command shown by `pnpm user-flow:e2e -- inspect ai-provider-management` against its guarded disposable infrastructure. Run the full critical gate for
+shared routing/accounting changes and the production-adapter contract/database
+checks described in feature evidence. Live provider checks are separate,
+bounded and explicitly authorized; deterministic execution never claims live
+readiness or linguistic quality.
 
 ## Cleanup
 
-Stop the E2E processes and disposable PostgreSQL/Redis services. Remove only the
-synthetic test database/container created for this journey. Leave persisted
-configuration revisions in any shared environment untouched; revert a default
-through a new audited revision instead of deleting history.
+Stop only owned E2E processes and remove only their disposable PostgreSQL/Redis
+resources. Preserve shared accounts, content and financial history. Restore a
+real route through an audited revision rather than deleting configuration.
 
 ## E2E coverage
 
-- `admin-configures-dictionary-ai-default` proves an owner can save DeepSeek,
-  admit work, switch to Kie while that work remains queued, admit more work,
-  verify both immutable revisions in PostgreSQL, process both jobs with the real
-  worker and deterministic provider transport, accept a proposal, then reload
-  the admin page and observe Kie as version 2.
+- `admin-configures-dictionary-ai-default` proves that owner-published flow tariff
+  revisions affect new jobs while queued work retains its selected revision.
+  It funds the synthetic learner through admin controls, inspects immutable job
+  snapshots in PostgreSQL, processes pinned jobs through the real worker using
+  deterministic transport, accepts a proposal and reloads saved configuration.

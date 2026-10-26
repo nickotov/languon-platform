@@ -258,7 +258,7 @@ export function createSentenceRoutes({
                 context,
                 'model_unavailable',
                 503,
-                'The selected model is unavailable.',
+                'AI is unavailable right now. Try again later.',
             );
         if (error instanceof SentenceCreditsExhaustedError)
             return failure(

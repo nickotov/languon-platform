@@ -1,3 +1,4 @@
+import { hasConclusiveTextAiFailure } from '../../text-ai/application/text-ai-routing-execution';
 import {
     TextDetectionResultSchema,
     TextTranslationProposalSchema,
@@ -69,6 +70,10 @@ export class TextsWorkerService {
                 d.provider.run({
                     input: job.input,
                     execution: job.execution,
+                    providerAttempt: {
+                        ...job.lease,
+                        fencingToken: String(job.lease.fencingToken),
+                    },
                     budget: job.budget,
                     idempotencyKey: job.providerIdempotencyKey,
                     signal: combined,
@@ -120,18 +125,32 @@ export class TextsWorkerService {
                     {
                         code,
                         ...(usage ? { usage } : {}),
-                        retryAt:
-                            controller.signal.aborted ||
-                            job.lease.attempt >= d.maxAttempts ||
-                            ![
-                                'provider_timeout',
-                                'provider_unavailable',
-                                'invalid_model_output',
-                            ].includes(code)
-                                ? null
-                                : new Date(
+                        ...(hasConclusiveTextAiFailure(error) &&
+                        !combined.aborted
+                            ? {
+                                  retryDisposition:
+                                      'conclusive-provider-failure' as const,
+                              }
+                            : {}),
+                        retryAt: job.execution.routingAuthority
+                            ? hasConclusiveTextAiFailure(error) &&
+                              !combined.aborted &&
+                              job.lease.attempt === 1
+                                ? new Date(
                                       d.clock.now().getTime() + d.retryDelayMs,
-                                  ),
+                                  )
+                                : null
+                            : controller.signal.aborted ||
+                                job.lease.attempt >= d.maxAttempts ||
+                                ![
+                                    'provider_timeout',
+                                    'provider_unavailable',
+                                    'invalid_model_output',
+                                ].includes(code)
+                              ? null
+                              : new Date(
+                                    d.clock.now().getTime() + d.retryDelayMs,
+                                ),
                     },
                     context(),
                 );

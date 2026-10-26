@@ -4,6 +4,17 @@ import {
     isAuthenticationRequiredError,
 } from '@languon/browser-auth';
 import {
+    TextAiRoutingDisableRequestSchema,
+    type TextAiRoutingDisableRequest,
+    TextAiRoutingResponseSchema,
+    TextAiRoutingPublishRequestSchema,
+    TextAiProbesResponseSchema,
+    TextAiProbeRecoveryRequestSchema,
+    type TextAiProbeRecoveryRequest,
+    TextAiProbeRequestSchema,
+    TextAiProbeSchema,
+    type TextAiRoutingPublishRequest,
+    type TextAiProbeRequest,
     ProviderPricesResponseSchema,
     ProviderPriceSchema,
     ProviderPricePublishRequestSchema,
@@ -268,6 +279,46 @@ export const adminApi = {
             `/admin/audit-events?${queryString(query)}`,
             AdminAuditEventsResponseSchema,
             signal,
+        ),
+    textAiRouting: (signal?: AbortSignal) =>
+        authorized('/admin/ai/routing', TextAiRoutingResponseSchema, signal),
+    disableTextAiRoute: (body: TextAiRoutingDisableRequest) =>
+        authorizedRequest(
+            '/admin/ai/routing/disable',
+            body,
+            TextAiRoutingDisableRequestSchema,
+            TextAiRoutingResponseSchema,
+            'POST',
+        ),
+    publishTextAiRouting: (body: TextAiRoutingPublishRequest) =>
+        authorizedRequest(
+            '/admin/ai/routing',
+            body,
+            TextAiRoutingPublishRequestSchema,
+            TextAiRoutingResponseSchema,
+            'POST',
+        ),
+    textAiProbes: (signal?: AbortSignal) =>
+        authorized(
+            '/admin/ai-settings/probes',
+            TextAiProbesResponseSchema,
+            signal,
+        ),
+    recoverTextAiProbe: (probeId: string, body: TextAiProbeRecoveryRequest) =>
+        authorizedRequest(
+            `/admin/ai-settings/probes/${encodeURIComponent(probeId)}/recover`,
+            body,
+            TextAiProbeRecoveryRequestSchema,
+            TextAiProbeSchema,
+            'POST',
+        ),
+    runTextAiProbe: (body: TextAiProbeRequest) =>
+        authorizedRequest(
+            '/admin/ai-settings/probes',
+            body,
+            TextAiProbeRequestSchema,
+            TextAiProbeSchema,
+            'POST',
         ),
     aiSettings: (signal?: AbortSignal) =>
         authorized('/admin/ai-settings', AdminAiSettingsResponseSchema, signal),

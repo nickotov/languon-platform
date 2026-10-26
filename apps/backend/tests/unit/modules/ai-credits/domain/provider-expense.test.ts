@@ -44,6 +44,48 @@ describe('pinned exact provider expense', () => {
             ),
         ).toBe(9999999n);
     });
+    it('applies a reviewed per-request minimum after combined token rounding', () => {
+        const minimumPrice = { ...price, minimumUsdPerRequest: '0.000150' };
+        expect(
+            providerTextExpenseMicros(minimumPrice, {
+                inputTokens: 1,
+                outputTokens: 1,
+            }),
+        ).toBe(150n);
+        expect(
+            providerTextExpenseMicros(
+                { ...minimumPrice, inputUsdPerMillionTokens: '0.2' },
+                {
+                    inputTokens: 1000000,
+                    outputTokens: 0,
+                },
+            ),
+        ).toBe(200000n);
+        expect(
+            providerTextExpenseMicros(minimumPrice, {
+                inputTokens: 0,
+                outputTokens: 0,
+            }),
+        ).toBe(0n);
+        expect(
+            providerTextExpenseMicros(
+                { ...minimumPrice, cacheReadUsdPerMillionTokens: null },
+                { inputTokens: 1, outputTokens: 1, cacheReadTokens: 1 },
+            ),
+        ).toBeNull();
+    });
+    it('applies the same reviewed minimum to a speech request', () => {
+        expect(
+            providerSpeechExpenseMicros(
+                {
+                    meter: 'speech-characters',
+                    usdPer1000Characters: '0.000001',
+                    minimumUsdPerRequest: '0.000150',
+                },
+                1,
+            ),
+        ).toBe(150n);
+    });
     it('keeps missing tariffs and missing cache rates unknown', () => {
         expect(
             providerTextExpenseMicros(null, {

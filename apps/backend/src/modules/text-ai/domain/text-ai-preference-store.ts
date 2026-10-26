@@ -27,7 +27,7 @@ export class TextAiPreferenceConflictError extends Error {}
 export class TextAiModelUnavailableError extends Error {
     public constructor() {
         super(
-            'This model is unavailable. Choose another enabled model or Auto.',
+            'AI routing is managed by Languon. You can update your action budget.',
         );
     }
 }

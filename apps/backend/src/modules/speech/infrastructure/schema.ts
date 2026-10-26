@@ -36,6 +36,7 @@ export type SpeechProviderPriceSnapshot = Pick<
     | 'modelId'
     | 'meter'
     | 'usdPer1000Characters'
+    | 'minimumUsdPerRequest'
     | 'effectiveAt'
 >;
 

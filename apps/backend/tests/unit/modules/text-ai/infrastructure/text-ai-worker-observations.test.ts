@@ -44,6 +44,22 @@ const formats = [
     'unknown:v1',
 ];
 const now = new Date('2026-10-05T15:00:00Z');
+const allRouteIds = [
+    'deepseek/deepseek-flash',
+    'kie/gemini-2.5-pro',
+    'evolink/gpt-6-luna',
+    'openrouter/openai/gpt-6-luna',
+    'openrouter/qwen/qwen3.5-flash-02-23',
+    'openrouter/google/gemini-3.1-flash-lite',
+];
+const executableChatRouteIds = allRouteIds.filter(
+    (id) => !id.startsWith('kie/'),
+);
+function routeIds(rows: Observation[]) {
+    return [
+        ...new Set(rows.map((row) => `${row.providerId}/${row.modelId}`)),
+    ].sort();
+}
 describe('shared worker capability publication', () => {
     it('publishes only dictionary capacity namespace by default without claiming learning capability', async () => {
         const f = fixture();
@@ -55,7 +71,9 @@ describe('shared worker capability publication', () => {
             supportedFormats: formats,
             workerId: 'worker',
         });
-        expect(f.rows).toHaveLength(2);
+        expect(f.rows).toHaveLength(6);
+        expect(routeIds(f.rows)).toEqual([...allRouteIds].sort());
+        expect(f.rows.every((row) => row.status === 'unavailable')).toBe(true);
         for (const row of f.rows) {
             expect(
                 isTextAiCapacityCapableObservation(row, 'single-card:v1'),
@@ -88,6 +106,8 @@ describe('shared worker capability publication', () => {
             credentials: {
                 DEEPSEEK_API_KEY: 'synthetic',
                 KIE_API_KEY: 'synthetic',
+                EVOLINK_API_KEY: 'synthetic',
+                OPENROUTER_API_KEY: 'synthetic',
             },
             fetchProvider,
             now,
@@ -96,11 +116,12 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
-        expect(f.rows).toHaveLength(4);
+        expect(f.rows).toHaveLength(12);
         const learning = f.rows.filter((row) =>
             isSentenceExecutionCapableObservation(row, 'sentence-check:v1'),
         );
-        expect(learning).toHaveLength(2);
+        expect(learning).toHaveLength(6);
+        expect(routeIds(learning)).toEqual([...allRouteIds].sort());
         for (const row of learning) {
             expect(row.textAiSupportedFormats).toEqual([
                 'sentence-generation:v1',
@@ -113,13 +134,17 @@ describe('shared worker capability publication', () => {
                 isTextAiCapacityCapableObservation(row, 'single-card:v1'),
             ).toBe(false);
         }
-        expect(fetchProvider).toHaveBeenCalledTimes(2);
+        expect(fetchProvider).toHaveBeenCalledTimes(5);
         expect(f.rows.filter((row) => row.status === 'available')).toHaveLength(
             2,
         );
         expect(
             f.rows.filter((row) => row.status === 'unverified'),
-        ).toHaveLength(2);
+        ).toHaveLength(8);
+        const retired = f.rows.filter((row) => row.providerId === 'kie');
+        expect(retired).toHaveLength(2);
+        expect(retired.every((row) => row.status === 'unavailable')).toBe(true);
+        expect(JSON.stringify(retired)).toContain('retired');
     });
     it('advertises preparation only when the new executor explicitly opts in', async () => {
         for (const enabled of [false, true]) {
@@ -134,7 +159,7 @@ describe('shared worker capability publication', () => {
                 learningExecutionEnabled: true,
                 sentencePreparationExecutionEnabled: enabled,
             });
-            expect(f.rows).toHaveLength(2);
+            expect(f.rows).toHaveLength(6);
             for (const row of f.rows) {
                 expect(
                     isSentenceExecutionCapableObservation(
@@ -283,15 +308,17 @@ describe('shared worker capability publication', () => {
             textsCapacityEnabled: true,
             textsExecutionEnabled: true,
         });
-        expect(f.rows).toHaveLength(6);
+        expect(f.rows).toHaveLength(18);
         const execution = f.rows.filter((row) =>
             row.id.startsWith('texts-execution:'),
         );
         const capacity = f.rows.filter((row) =>
             row.id.startsWith('texts-capacity:'),
         );
-        expect(execution).toHaveLength(2);
-        expect(capacity).toHaveLength(2);
+        expect(execution).toHaveLength(6);
+        expect(routeIds(execution)).toEqual([...allRouteIds].sort());
+        expect(capacity).toHaveLength(6);
+        expect(routeIds(capacity)).toEqual([...allRouteIds].sort());
         for (const row of execution) {
             expect(
                 isTextsExecutionCapableObservation(row, 'text-translation:v2'),
@@ -376,7 +403,7 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
-        expect(f.rows).toHaveLength(4);
+        expect(f.rows).toHaveLength(12);
         expect(f.rows.every((row) => row.status === 'unavailable')).toBe(true);
         expect(JSON.stringify(f.rows)).not.toContain(
             'private transport details',
@@ -385,7 +412,7 @@ describe('shared worker capability publication', () => {
 });
 
 describe('conversation worker capabilities', () => {
-    it('advertises Flash chat only with execution and combined-capacity opt-in', async () => {
+    it('advertises reviewed chat routes only with execution and combined-capacity opt-in', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({
             database: f.database,
@@ -408,13 +435,15 @@ describe('conversation worker capabilities', () => {
         const chat = f.rows.filter((row) =>
             isConversationExecutionCapableObservation(row),
         );
-        expect(chat).toHaveLength(1);
-        expect(chat[0]?.modelId).toBe('deepseek-flash');
+        expect(chat).toHaveLength(5);
+        expect(routeIds(chat)).toEqual([...executableChatRouteIds].sort());
+        expect(chat.every((row) => row.status === 'unavailable')).toBe(true);
         expect(chat[0]?.textAiSupportedFormats).toEqual(['conversation:v1']);
         const capacity = f.rows.filter((row) =>
             isConversationCapacityCapableObservation(row, 'single-card:v1'),
         );
-        expect(capacity).toHaveLength(2);
+        expect(capacity).toHaveLength(6);
+        expect(routeIds(capacity)).toEqual([...allRouteIds].sort());
         for (const row of capacity) {
             expect(
                 isSentenceExecutionCapableObservation(
@@ -522,7 +551,7 @@ describe('portrait interview worker capabilities', () => {
             expect(f.rows).toEqual([]);
         },
     );
-    it('advertises Flash interview in an isolated namespace and rejects borrowed chat identity', async () => {
+    it('advertises reviewed interview routes in isolated namespaces and rejects borrowed chat identities', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({
             database: f.database,
@@ -542,64 +571,73 @@ describe('portrait interview worker capabilities', () => {
                 'portrait-interview:v1',
             ),
         );
-        expect(interviews).toHaveLength(1);
-        const interview = interviews[0]!;
-        expect(interview.modelId).toBe('deepseek-flash');
-        expect(interview.id).toBe(
-            portraitInterviewExecutionObservationId(
+        expect(interviews).toHaveLength(5);
+        expect(routeIds(interviews)).toEqual(
+            [...executableChatRouteIds].sort(),
+        );
+        expect(interviews.every((row) => row.status === 'unavailable')).toBe(
+            true,
+        );
+        for (const interview of interviews) {
+            expect(interview.id).toBe(
+                portraitInterviewExecutionObservationId(
+                    interview.workerId,
+                    interview.providerId,
+                    interview.modelId,
+                ),
+            );
+            expect(interview.textAiSupportedFormats).toEqual([
+                'portrait-interview:v1',
+            ]);
+            expect(isConversationExecutionCapableObservation(interview)).toBe(
+                false,
+            );
+            expect(
+                isConversationCapacityCapableObservation(
+                    interview,
+                    'portrait-interview:v1',
+                ),
+            ).toBe(true);
+            expect(
+                isTextsCapacityCapableObservation(
+                    interview,
+                    'portrait-interview:v1',
+                ),
+            ).toBe(true);
+            const chatId = conversationExecutionObservationId(
                 interview.workerId,
                 interview.providerId,
                 interview.modelId,
-            ),
-        );
-        expect(interview.textAiSupportedFormats).toEqual([
-            'portrait-interview:v1',
-        ]);
-        expect(isConversationExecutionCapableObservation(interview)).toBe(
-            false,
-        );
-        expect(
-            isConversationCapacityCapableObservation(
-                interview,
-                'portrait-interview:v1',
-            ),
-        ).toBe(true);
-        expect(
-            isTextsCapacityCapableObservation(
-                interview,
-                'portrait-interview:v1',
-            ),
-        ).toBe(true);
-        const chatId = conversationExecutionObservationId(
-            interview.workerId,
-            interview.providerId,
-            interview.modelId,
-        );
-        expect(
-            isConversationExecutionCapableObservation(
-                { ...interview, id: chatId },
-                'portrait-interview:v1',
-            ),
-        ).toBe(false);
-        expect(
-            isConversationExecutionCapableObservation(
-                { ...interview, textAiSupportedFormats: ['conversation:v1'] },
-                'conversation:v1',
-            ),
-        ).toBe(false);
-        for (const missing of [
-            'textAiCapacityRevision',
-            'textsCapacityRevision',
-            'conversationCapacityRevision',
-            'conversationExecutionRevision',
-            'creditSettlementRevision',
-        ] as const) {
+            );
             expect(
                 isConversationExecutionCapableObservation(
-                    { ...interview, [missing]: null },
+                    { ...interview, id: chatId },
                     'portrait-interview:v1',
                 ),
             ).toBe(false);
+            expect(
+                isConversationExecutionCapableObservation(
+                    {
+                        ...interview,
+                        textAiSupportedFormats: ['conversation:v1'],
+                    },
+                    'conversation:v1',
+                ),
+            ).toBe(false);
+            for (const missing of [
+                'textAiCapacityRevision',
+                'textsCapacityRevision',
+                'conversationCapacityRevision',
+                'conversationExecutionRevision',
+                'creditSettlementRevision',
+            ] as const) {
+                expect(
+                    isConversationExecutionCapableObservation(
+                        { ...interview, [missing]: null },
+                        'portrait-interview:v1',
+                    ),
+                ).toBe(false);
+            }
         }
     });
 });

@@ -1,3 +1,4 @@
+import { hasConclusiveTextAiFailure } from '../../text-ai/application/text-ai-routing-execution';
 import {
     CardProposalGeneratorError,
     type CardProposalGenerator,
@@ -214,6 +215,12 @@ async function generatePastedTermsProposal(input: {
             idempotencyKey: `${input.claim.id}/generate/chunk/${chunkIndex + 1}-of-${chunks.length}`,
             input: { ...claimedInput, rows },
             providerBudget,
+            providerAttempt: {
+                jobId: input.claim.id,
+                attempt: input.claim.attempt,
+                workerId: input.claim.workerId,
+                fencingToken: String(input.claim.fencingToken),
+            },
             providerExecution:
                 input.claim.providerExecution &&
                 'actionAccountingVersion' in input.claim.providerExecution
@@ -325,6 +332,12 @@ async function generateImportPairsProposal(input: {
             idempotencyKey: `${input.claim.id}/generate/import-chunk/${chunkIndex + 1}-of-${chunks.length}`,
             input: { ...claimedInput, rows },
             providerBudget,
+            providerAttempt: {
+                jobId: input.claim.id,
+                attempt: input.claim.attempt,
+                workerId: input.claim.workerId,
+                fencingToken: String(input.claim.fencingToken),
+            },
             providerExecution:
                 input.claim.providerExecution &&
                 'actionAccountingVersion' in input.claim.providerExecution
@@ -641,6 +654,14 @@ export class DictionaryGenerationWorkerService {
                                       idempotencyKey: `${claim.id}/generate`,
                                       input: providerInput,
                                       providerBudget: claim.providerBudget,
+                                      providerAttempt: {
+                                          jobId: claim.id,
+                                          attempt: claim.attempt,
+                                          workerId: claim.workerId,
+                                          fencingToken: String(
+                                              claim.fencingToken,
+                                          ),
+                                      },
                                       providerExecution:
                                           claim.providerExecution ?? null,
                                       signal: providerAbort.signal,
@@ -712,6 +733,14 @@ export class DictionaryGenerationWorkerService {
                                     idempotencyKey: `${claim.id}/generate`,
                                     input: providerInput,
                                     providerBudget: claim.providerBudget,
+                                    providerAttempt: {
+                                        jobId: claim.id,
+                                        attempt: claim.attempt,
+                                        workerId: claim.workerId,
+                                        fencingToken: String(
+                                            claim.fencingToken,
+                                        ),
+                                    },
                                     providerExecution:
                                         claim.providerExecution ?? null,
                                     signal: providerAbort.signal,
@@ -735,6 +764,7 @@ export class DictionaryGenerationWorkerService {
                               leaseDeadline: claim.leaseDeadline,
                               markProviderDispatch,
                               providerBudget: claim.providerBudget,
+
                               providerExecution:
                                   claim.providerExecution ?? null,
                               reportStage: (stage, percent) => {
@@ -933,6 +963,13 @@ export class DictionaryGenerationWorkerService {
             await this.dependencies.store.fail({
                 context: { now: failureNow, signal: internalSignal },
                 failureCategory: category,
+                ...(hasConclusiveTextAiFailure(error) &&
+                !providerAbort.signal.aborted
+                    ? {
+                          retryDisposition:
+                              'conclusive-provider-failure' as const,
+                      }
+                    : {}),
                 fencingToken: claim.fencingToken,
                 jobId: claim.id,
                 leaseDeadline,
@@ -940,15 +977,22 @@ export class DictionaryGenerationWorkerService {
                 ...(returnedProviderUsage
                     ? { providerUsage: returnedProviderUsage }
                     : {}),
-                retryAt:
-                    category === 'generation_conflict' ||
-                    category === 'invalid_model_output' ||
-                    (error instanceof DictionaryDocumentGenerationError &&
-                        !error.retryable)
-                        ? null
-                        : new Date(
+                retryAt: claim.providerExecution?.routingAuthority
+                    ? hasConclusiveTextAiFailure(error) &&
+                      !(error instanceof InvalidDictionarySettingsError) &&
+                      claim.attempt === 1
+                        ? new Date(
                               failureNow.getTime() + this.settings.retryDelayMs,
-                          ),
+                          )
+                        : null
+                    : category === 'generation_conflict' ||
+                        category === 'invalid_model_output' ||
+                        (error instanceof DictionaryDocumentGenerationError &&
+                            !error.retryable)
+                      ? null
+                      : new Date(
+                            failureNow.getTime() + this.settings.retryDelayMs,
+                        ),
                 workerId: claim.workerId,
             });
         } finally {

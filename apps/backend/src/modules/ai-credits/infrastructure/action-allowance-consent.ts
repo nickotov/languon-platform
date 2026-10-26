@@ -1,3 +1,4 @@
+import { OperatorBudgetUnavailableError } from './persistence/drizzle/drizzle-operator-budget-participant';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -214,6 +215,13 @@ export async function authorizeActionAllowance(
             : input.budgetMilli;
     const held =
         maximum < account.availableCredits ? maximum : account.availableCredits;
+    if (
+        (input.providerBudget.minimumCostMicrosPerRequest ?? 0) >
+        input.providerBudget.maxCostMicrosPerAttempt
+    )
+        throw new OperatorBudgetUnavailableError(
+            'Provider request minimum exceeds operator allowance.',
+        );
     const allowance = providerAffordableOutputTokens({
         inputTokens: input.inputTokens,
         outputLimit: affordableActionOutput({
