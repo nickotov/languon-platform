@@ -93,6 +93,7 @@ export async function configureModel(
         outputRate?: string;
         reason?: string;
         checkFlows?: boolean;
+        includeTariffs?: boolean;
     } = {},
 ) {
     await page.getByRole('menuitem', { name: 'AI settings' }).click();
@@ -162,9 +163,10 @@ export async function configureModel(
         config.getByLabel('Primary route', { exact: true }).first(),
         /deepseek.*DeepSeek Flash/,
     );
-    for (const flow of routingFlows.filter(
+    const pricedFlows = routingFlows.filter(
         (value) => value !== 'portrait-interview',
-    )) {
+    );
+    for (const flow of options.includeTariffs === false ? [] : pricedFlows) {
         const section = config
             .locator('.ant-collapse-item')
             .filter({ has: page.getByText(flow, { exact: true }) });

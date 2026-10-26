@@ -10,6 +10,7 @@ import { EmergencyDisableDialog } from '../src/pages/ai-settings/ui/text-ai-rout
 import { ProbeControls } from '../src/pages/ai-settings/ui/text-ai-routing/probe-controls';
 import { ProbeRecovery } from '../src/pages/ai-settings/ui/text-ai-routing/probe-recovery';
 import { ProbeResult } from '../src/pages/ai-settings/ui/text-ai-routing/probe-result';
+import { RoutingConfigurationForm } from '../src/pages/ai-settings/ui/text-ai-routing/routing-configuration-form';
 import {
     probeEvidenceAge,
     reviewedRouteOptions,
@@ -18,7 +19,7 @@ import {
 import { adminI18nProvider } from '../src/shared/i18n/admin-i18n-provider';
 import { adminApi } from '../src/shared/api/admin-api';
 import { accessTokenStore } from '../src/shared/auth/access-token-store';
-import type { TextAiProbe } from '@languon/contracts';
+import type { TextAiProbe, TextAiRoutingRevision } from '@languon/contracts';
 
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
@@ -79,6 +80,21 @@ const limits = {
     evidenceHours: 24,
 };
 
+const freeRoutingRevision: TextAiRoutingRevision = {
+    id: '00000000-0000-4000-8000-000000000002',
+    version: 1,
+    createdAt: '2026-10-26T00:00:00.000Z',
+    configuration: {
+        enabledRouteIds: [probe.routeId],
+        default: {
+            primaryRouteId: probe.routeId,
+            fallbackRouteIds: [],
+        },
+        overrides: {},
+        flowTariffs: {},
+    },
+};
+
 function validToken() {
     accessTokenStore.set(
         'test-token',
@@ -93,6 +109,57 @@ function json(body: unknown, status = 200) {
 }
 
 describe('admin routing safety and API boundary', () => {
+    it('submits routing with omitted tariffs instead of inventing prices for free flows', async () => {
+        const publish = vi.fn().mockResolvedValue(undefined);
+        render(
+            <RoutingConfigurationForm
+                revision={freeRoutingRevision}
+                catalog={catalog}
+                pending={false}
+                onPublish={publish}
+            />,
+        );
+        fireEvent.change(screen.getByLabelText('Reason for change'), {
+            target: { value: 'Preserve operator-funded free capabilities' },
+        });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Publish routing' }),
+        );
+
+        await waitFor(() => expect(publish).toHaveBeenCalledOnce());
+        expect(publish.mock.calls[0]![0]).toMatchObject({
+            expectedVersion: 1,
+            configuration: { flowTariffs: {} },
+        });
+    });
+
+    it('shows incomplete tariffs as an actionable configuration error', async () => {
+        const publish = vi.fn().mockResolvedValue(undefined);
+        render(
+            <RoutingConfigurationForm
+                revision={freeRoutingRevision}
+                catalog={catalog}
+                pending={false}
+                onPublish={publish}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button', { name: /single-card/ }));
+        fireEvent.change(
+            screen.getAllByLabelText('Input credits per million tokens')[0]!,
+            { target: { value: '100' } },
+        );
+        fireEvent.change(screen.getByLabelText('Reason for change'), {
+            target: { value: 'Incomplete tariff must not publish' },
+        });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Publish routing' }),
+        );
+        await waitFor(() =>
+            expect(screen.getByRole('alert')).toBeInTheDocument(),
+        );
+        expect(publish).not.toHaveBeenCalled();
+    });
+
     it('keeps setup empty rather than inventing a route or tariffs', () => {
         expect(routingInitialValues(null)).toEqual({
             reason: '',

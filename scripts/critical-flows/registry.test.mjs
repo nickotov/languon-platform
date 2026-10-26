@@ -7,6 +7,7 @@ import {
     assertPassingReport,
     assertPassingBackendReport,
     backendExecutionFiles,
+    requiredBackendScenarios,
 } from './registry.mjs';
 import { infrastructure, assertFreePorts, execute } from './runtime.mjs';
 import { browserCommand, backendCommand } from '../run-critical-flows.mjs';
@@ -261,7 +262,11 @@ const backendReport = () => ({
         message: '',
         assertionResults: Array.from(
             { length: backendSuiteCounts[index] },
-            () => ({
+            (_, testIndex) => ({
+                title:
+                    requiredBackendScenarios.find(
+                        (scenario) => scenario.file === file,
+                    )?.titles[testIndex] ?? `synthetic-test-${testIndex}`,
                 status: 'passed',
                 failureMessages: [],
                 meta: {
@@ -371,4 +376,17 @@ test('retry reporter preserves real retry metadata for the JSON gate', async () 
         criticalRepeatCount: 0,
         criticalExpectedFailure: true,
     });
+});
+
+test('backend gate rejects a removed completion regression despite a passing aggregate count', () => {
+    const report = backendReport();
+    const required = requiredBackendScenarios[0];
+    const result = report.testResults.find((entry) =>
+        entry.name.endsWith(required.file),
+    );
+    result.assertionResults[0].title = 'unrelated passing admission test';
+    assert.throws(
+        () => assertPassingBackendReport(report, backendFlow),
+        /did not pass cleanly/,
+    );
 });

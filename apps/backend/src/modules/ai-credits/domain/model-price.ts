@@ -66,7 +66,8 @@ export function maximumTextPrice(
             },
         ),
     );
-    if (amount <= 0n || amount > maximumAiCreditAmount)
+    // Operator-funded flows can legitimately have no customer tariff.
+    if (amount < 0n || amount > maximumAiCreditAmount)
         throw new AiCreditInvalidAmountError();
     return Number(amount);
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "dictionary_generation_provider_circuit" DROP CONSTRAINT "dictionary_generation_provider_circuit_format";--> statement-breakpoint
+ALTER TABLE "dictionary_generation_provider_circuit" ADD CONSTRAINT "dictionary_generation_provider_circuit_format" CHECK (char_length("dictionary_generation_provider_circuit"."id") between 3 and 192 and "dictionary_generation_provider_circuit"."id" ~ '^([a-z][a-z0-9-]*/([a-z0-9][a-z0-9._-]*/)+)?[a-z][a-z0-9-]*:v[1-9][0-9]*$');

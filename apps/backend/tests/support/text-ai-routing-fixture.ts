@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import {
     TextAiFlowIdSchema,
+    type TextAiFlowId,
     type TextAiFlowTariffSchema,
 } from '@languon/contracts';
 import { textAiProbeIdentity } from '../../src/modules/text-ai/infrastructure/ai/text-ai-probe-identity';
@@ -25,6 +26,7 @@ export async function seedTextAiRoutingFixture(
         tariff?: z.infer<typeof TextAiFlowTariffSchema>;
         at?: Date;
         replace?: boolean;
+        omittedTariffFlows?: TextAiFlowId[];
     } = {},
 ) {
     const store = new DrizzleTextAiRoutingStore(
@@ -65,7 +67,12 @@ export async function seedTextAiRoutingFixture(
                 overrides: {},
                 enabledRouteIds: options.enabledRouteIds ?? [routeId],
                 flowTariffs: Object.fromEntries(
-                    TextAiFlowIdSchema.options.map((flow) => [flow, tariff]),
+                    TextAiFlowIdSchema.options
+                        .filter(
+                            (flow) =>
+                                !options.omittedTariffFlows?.includes(flow),
+                        )
+                        .map((flow) => [flow, tariff]),
                 ),
             },
             reason: 'Synthetic disposable deterministic routing fixture',

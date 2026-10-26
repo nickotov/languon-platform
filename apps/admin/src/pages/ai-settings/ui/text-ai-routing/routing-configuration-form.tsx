@@ -51,6 +51,15 @@ export function RoutingConfigurationForm({
     const versionText = t('aiSettings.version', { version });
 
     const handleFinish = async (values: Values) => {
+        // Ant Design registers fields in collapsed sections as empty objects.
+        // Omit untouched tariffs; the server requires them only for paid flows.
+        const flowTariffs = Object.fromEntries(
+            Object.entries(values.flowTariffs ?? {}).filter(([, tariff]) =>
+                Object.values(tariff ?? {}).some(
+                    (value) => value !== undefined && value !== null,
+                ),
+            ),
+        );
         const overrides = Object.fromEntries(
             Object.entries(values.overrides ?? {}).filter(
                 ([, value]) => value?.primaryRouteId,
@@ -74,7 +83,7 @@ export function RoutingConfigurationForm({
                         },
                     ]),
                 ),
-                flowTariffs: values.flowTariffs ?? {},
+                flowTariffs,
             },
         });
         if (!parsed.success) {

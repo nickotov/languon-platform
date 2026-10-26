@@ -764,6 +764,13 @@
       "when": 1792961013171,
       "tag": "0108_admin_routing_execution_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1793041733881,
+      "tag": "0109_namespaced_provider_circuit",
+      "breakpoints": true
     }
   ]
 }

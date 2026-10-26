@@ -26,6 +26,22 @@ export const backendExecutionFiles = Object.freeze([
     'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
 ]);
 
+/** Required incident regressions cannot disappear behind an aggregate passing count. */
+export const requiredBackendScenarios = Object.freeze([
+    {
+        file: 'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
+        titles: [
+            ...['operator', 'customer'].flatMap((funding) =>
+                ['success', 'transport failure'].map(
+                    (outcome) =>
+                        `settles namespaced card authoring through the production SDK: ${funding} / ${outcome}`,
+                ),
+            ),
+            'accepts circuit keys for every catalog model while preserving legacy keys and malformed-key guards',
+        ],
+    },
+]);
+
 /** Add future crucial journeys here; every entry runs against fresh owned services. */
 export const flows = [
     {
@@ -264,6 +280,18 @@ export function assertPassingBackendReport(
         ? files.flatMap((file) => file.assertionResults ?? [])
         : [];
     if (
+        requiredBackendScenarios.some(({ file, titles }) => {
+            const result = files?.find(
+                (entry) => entry.name === resolve(backendRoot, file),
+            );
+            return titles.some(
+                (title) =>
+                    !result?.assertionResults?.some(
+                        (test) =>
+                            test.title === title && test.status === 'passed',
+                    ),
+            );
+        }) ||
         report.success !== true ||
         !Array.isArray(files) ||
         files.length !== expected.length ||

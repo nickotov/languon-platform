@@ -2,7 +2,7 @@
 feature: admin-text-ai-routing
 title: Admin-owned Text AI Routing
 status: current
-last_verified: 2026-10-25
+last_verified: 2026-10-26
 surfaces:
     - browser
     - admin
@@ -36,7 +36,8 @@ synthetic provider check, publish flow routing/tariffs and emergency-disable a
 route. Learners see neither model names nor model selectors. Their language,
 tone, explanation and maximum-spend preferences remain independent.
 
-This guide is draft until its mapped browser journey passes in feature evidence.
+The mapped browser journey passed in the
+[final feature verification](../../.agent/features/054-admin-text-ai-routing/EVIDENCE.md).
 Deterministic probes prove application behavior, not live provider availability,
 model quality or multilingual accuracy.
 
@@ -69,8 +70,11 @@ A key alone never authorizes an agent to spend money.
 
 Publish an enabled primary route, optional ordered fallbacks and per-flow
 customer tariffs through **Routing and flow tariffs** after successful matching
-checks for every route/flow. Free interviews need no learner charge, but still
-need provider expense limits. Tariffs are credits per million tokens and remain
+checks for every route/flow. Operator-funded Free flows need no learner tariff;
+leave their tariff fields blank. They still need provider prices and expense
+limits. If a tariff is entered, provide both input and output rates; an incomplete
+tariff shows a configuration error. The server requires tariffs for paid flows.
+Tariffs are credits per million tokens and remain
 independent of provider USD prices. New flows inherit the default policy.
 
 Use **Emergency disable**, enter a reason and confirm. The route becomes disabled
@@ -130,5 +134,6 @@ revision; never reset accounts or financial history to repair a route.
 
 - `admin-checks-and-disables-reviewed-route` verifies explicit operator expense
   approval, quick and selected-flow checks, evidence display, desktop/narrow
-  controls, audited emergency disable and explicit restoration through real
+  controls, publication with omitted tariffs for Free flows, audited emergency
+  disable and explicit restoration through real
   admin controls with a guarded deterministic probe executor.

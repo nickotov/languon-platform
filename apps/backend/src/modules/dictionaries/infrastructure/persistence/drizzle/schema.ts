@@ -692,7 +692,7 @@ export const dictionaryGenerationProviderCircuitTable = pgTable(
     (table) => [
         check(
             'dictionary_generation_provider_circuit_format',
-            sql`char_length(${table.id}) between 3 and 192 and ${table.id} ~ '^([a-z][a-z0-9-]*/[a-z][a-z0-9.-]*/)?[a-z][a-z0-9-]*:v[1-9][0-9]*$'`,
+            sql`char_length(${table.id}) between 3 and 192 and ${table.id} ~ '^([a-z][a-z0-9-]*/([a-z0-9][a-z0-9._-]*/)+)?[a-z][a-z0-9-]*:v[1-9][0-9]*$'`,
         ),
         check(
             'dictionary_generation_provider_circuit_failures',

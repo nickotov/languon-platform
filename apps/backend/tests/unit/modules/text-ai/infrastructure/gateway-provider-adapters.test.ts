@@ -12,6 +12,7 @@ import {
 import { resolveTextAiExecutionSnapshot } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-provider-resolver';
 import { textAiModelCatalog } from '../../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import { loadTextAiProviderCredentials } from '../../../../../src/config/environment';
+import { createTextAiSyntheticFlows } from '../../../../../src/infrastructure/text-ai/probe-flow-registry';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -86,6 +87,44 @@ function completion(content = '{"ok":true}') {
 }
 
 describe('reviewed gateway production adapters', () => {
+    it.each(['pasted-terms', 'document-terms'] as const)(
+        'sends an empty-only warnings array with legal wire items for %s',
+        async (flowId) => {
+            const schema = createTextAiSyntheticFlows()[flowId]!.schema!;
+            const empty = { candidates: [], failures: [], warnings: [] };
+            expect(schema.safeParse(empty).success).toBe(true);
+            expect(
+                schema.safeParse({ ...empty, warnings: ['unexpected'] })
+                    .success,
+            ).toBe(false);
+
+            const providerFetch = vi.fn(
+                async (_url: unknown, init?: RequestInit) => {
+                    const body = JSON.parse(String(init?.body));
+                    const warnings =
+                        body.response_format.json_schema.schema.properties
+                            .warnings;
+                    expect(warnings.items).toEqual({ type: 'string' });
+                    expect(warnings.maxItems).toBe(0);
+                    return completion(JSON.stringify(empty));
+                },
+            );
+            vi.stubGlobal('fetch', providerFetch);
+
+            const result = await agent('openrouter/openai/gpt-6-luna').generate(
+                'Synthetic empty-array schema check.',
+                {
+                    modelSettings: { maxOutputTokens: 128, maxRetries: 0 },
+                    structuredOutput: { schema },
+                    toolChoice: 'none',
+                },
+            );
+
+            expect(result.object).toEqual(empty);
+            expect(providerFetch).toHaveBeenCalledOnce();
+        },
+    );
+
     it('bounds request-priced gateway endpoints by the pinned reviewed minimum', async () => {
         const providerFetch = vi.fn(
             async (_url: unknown, init?: RequestInit) => {

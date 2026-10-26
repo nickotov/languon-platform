@@ -61,6 +61,44 @@ function routeIds(rows: Observation[]) {
     ].sort();
 }
 describe('shared worker capability publication', () => {
+    it('uses the non-generating OpenRouter catalog when the completion route rejects HEAD', async () => {
+        const f = fixture();
+        const fetchProvider = vi.fn<typeof fetch>(async (input, init) => {
+            expect(init?.method).toBe('HEAD');
+            const url = String(input);
+            expect(new URL(url).origin).toBe('https://openrouter.ai');
+            return new Response(null, {
+                status:
+                    url === 'https://openrouter.ai/api/v1/models' ? 200 : 404,
+            });
+        });
+
+        await publishTextAiWorkerObservations({
+            database: f.database,
+            credentials: { OPENROUTER_API_KEY: 'synthetic' },
+            fetchProvider,
+            now,
+            readinessTimeoutMs: 100,
+            supportedFormats: ['single-card:v1', 'sentence-check:v1'],
+            workerId: 'worker',
+            learningExecutionEnabled: true,
+        });
+
+        const observations = f.rows.filter(
+            (row) => row.providerId === 'openrouter',
+        );
+        expect(observations).toHaveLength(6);
+        expect(observations.every((row) => row.status === 'unverified')).toBe(
+            true,
+        );
+        expect(fetchProvider).toHaveBeenCalledTimes(3);
+        expect(
+            f.rows
+                .filter((row) => row.providerId !== 'openrouter')
+                .every((row) => row.status === 'unavailable'),
+        ).toBe(true);
+    });
+
     it('publishes only dictionary capacity namespace by default without claiming learning capability', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({

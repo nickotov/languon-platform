@@ -48,7 +48,6 @@ export function FlowRoutingFields({
                                     flow,
                                     'inputCreditsPerMillionTokens',
                                 ]}
-                                rules={[{ required: true }]}
                             >
                                 <InputNumber min={0} step={0.001} />
                             </Form.Item>
@@ -59,7 +58,6 @@ export function FlowRoutingFields({
                                     flow,
                                     'outputCreditsPerMillionTokens',
                                 ]}
-                                rules={[{ required: true }]}
                             >
                                 <InputNumber min={0} step={0.001} />
                             </Form.Item>

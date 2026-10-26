@@ -83,6 +83,19 @@ provider call. Use controlled clocks/delays rather than shortening a test-only
 production deadline. Database tests retain real fencing and settlement; timing
 unit tests can use a store port fixture to control cancellation and lease loss.
 
+For routing, provider or shared generation configuration changes, retain a
+submit-to-result regression for each changed provider family. Use the selected
+production configuration shape and actual catalog model IDs, including namespaced
+IDs such as OpenRouter's `vendor/model`. Cover Free policy without a customer
+tariff and Paid policy with its published tariff wherever affected. In disposable
+infrastructure, exercise normal submission, admission, queue/claim, the real
+worker/router/provider SDK with only external HTTP replaced, persisted usable
+review/result readback and final settlement. Assert both provider success and
+controlled failure through real persistence, including circuit-breaker health
+writes and hold release/no learner charge on technical failure. An admin probe,
+doctor pass, admitted action or queued job alone is not end-to-end evidence;
+provider response success can still fail during completion writes.
+
 `ai-execution-contracts` runs full retained sentence-store, text-selection and
 dictionary-admission integration suites, plus production sentence-worker runtime
 regressions. The runner owns a separate disposable database and rejects missing
@@ -146,3 +159,14 @@ Use [local testing setup](./local-testing-setup.md) for the doctor and idempoten
 admin configuration. Deterministic passing tests prove application behavior under
 controlled provider output; they do not establish live provider availability or
 model quality. Real-provider calls require separate explicit spending authority.
+
+Prefer reviewed idempotent admin setup profiles and existing admin controls for
+prerequisites. Do not create another setup CLI/MCP or invent commands to close an
+evidence gap. When live spending is explicitly authorized, smoke-test each
+affected flow as a synthetic learner through normal public APIs or the browser,
+using the selected configuration and a bounded authorized cost. Follow the job
+through persisted usable review/result readback and settlement; record the route,
+funding policy, outcome and observed cost or unknown expense. A successful model
+probe or enqueue does not complete this smoke. Without that authority or live
+credentials, record live evidence as missing; keep the deterministic gate runnable
+without live credentials or paid calls and report its result separately.

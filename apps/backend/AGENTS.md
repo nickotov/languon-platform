@@ -84,11 +84,20 @@ provider HTTP at that seam. Include reduced allowances, outgoing model limits,
 and unrelated-capability isolation when affected. Worker timing changes require
 slow success, bounded timeout and cancellation evidence using production defaults.
 Keep snapshot validation and fenced settlement real in integration coverage.
+For routing/provider/configuration changes, retain submission through real worker,
+router and SDK to persisted usable result/review readback and settlement for each
+changed provider family. Use selected production configuration and actual model
+IDs, including namespaced IDs; cover Free without a customer tariff and Paid with
+its tariff where affected. Verify success and failure persistence, including
+circuit-breaker writes, against disposable infrastructure as the matrix requires.
 
 Run the registered backend execution stage, not only mocked-agent unit tests or
 browser fixtures. A successful isolated provider call does not establish that the
-reported failing execution path has been repaired. Never make paid calls without
-separate explicit spending authority.
+reported failing execution path has been repaired. Admin probes, doctor readiness
+and admission/enqueue alone do not prove completion. Follow the matrix's live
+smoke rule when spending is explicitly authorized; otherwise record missing live
+evidence separately from deterministic results. Never require live credentials or
+paid calls for the deterministic gate.
 
 ### Mastra primitive registration
 

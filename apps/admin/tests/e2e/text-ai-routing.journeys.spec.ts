@@ -1,4 +1,4 @@
-// @user-flow-revision admin-text-ai-routing sha256:955b70054dcef38f
+// @user-flow-revision admin-text-ai-routing sha256:86900ede05e932e9
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve } from 'node:path';
@@ -13,6 +13,8 @@ import {
     createUser,
     databaseUrl,
     password,
+    backendOrigin,
+    adminOrigin,
 } from './support/setup-runtime';
 
 // @user-flow admin-text-ai-routing/admin-checks-and-disables-reviewed-route
@@ -151,7 +153,48 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     });
     expect(probePosts).toBe(2);
     await page.setViewportSize({ width: 1280, height: 900 });
-    await configureModel(page);
+    // Exercise the real form with no learner tariffs for operator-funded flows.
+    // The backend still validates funding, checks, prices and every publication.
+    const login = await request.post(
+        `${backendOrigin}/admin/auth/login/password`,
+        { data: { email, password }, headers: { Origin: adminOrigin } },
+    );
+    expect(login.status()).toBe(200);
+    const { accessToken } = await login.json();
+    const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        Origin: adminOrigin,
+    };
+    const policyResponse = await request.get(
+        `${backendOrigin}/admin/ai/capability-policies`,
+        { headers },
+    );
+    expect(policyResponse.status()).toBe(200);
+    const { policies } = await policyResponse.json();
+    for (const policy of policies) {
+        if (policy.funding === 'operator') continue;
+        const changed = await request.post(
+            `${backendOrigin}/admin/ai/capability-policies`,
+            {
+                headers,
+                data: {
+                    capability: policy.capability,
+                    expectedVersion: policy.version,
+                    funding: 'operator',
+                    reason: 'Verify Free routing without invented customer tariffs',
+                },
+            },
+        );
+        expect(changed.status()).toBe(200);
+    }
+    await configureModel(page, { includeTariffs: false });
+    const freeRouting = await request.get(`${backendOrigin}/admin/ai/routing`, {
+        headers,
+    });
+    expect(freeRouting.status()).toBe(200);
+    expect(
+        (await freeRouting.json()).revision.configuration.flowTariffs,
+    ).toEqual({});
     const activeRow = routing
         .getByRole('row')
         .filter({ hasText: 'deepseek · DeepSeek Flash' });

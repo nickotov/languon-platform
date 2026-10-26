@@ -82,6 +82,43 @@ critical journey after prerequisites are ready.
 
 ## Activate a real provider route
 
+For a field-by-field admin walkthrough, concrete provider prices, test credit
+tariffs and routing examples, use the
+[admin routing cookbook](admin-text-ai-routing-cookbook.md).
+
+### Environment settings
+
+For `pnpm dev:all`, update the ignored repository-root `.env.local`. Keep the
+existing EvoLink key and use a regular OpenRouter inference key, not a management
+key. The placeholders below are examples, not usable credentials:
+
+```dotenv
+EVOLINK_API_KEY=your_existing_evolink_key
+OPENROUTER_API_KEY=your_regular_openrouter_inference_key
+
+AI_ADMIN_PROBE_MAX_COST_MICROS=10000
+AI_ADMIN_PROBE_DAILY_MAX_COST_MICROS=100000
+AI_ADMIN_PROBE_COOLDOWN_SECONDS=10
+AI_ADMIN_PROBE_EVIDENCE_HOURS=24
+AI_ADMIN_PROBE_TIMEOUT_MS=30000
+```
+
+The five probe settings are optional and show the implemented fallback values:
+USD 0.01 per check, USD 0.10 total per UTC day, a 10-second cooldown, a 24-hour
+activation evidence window and a 30-second check timeout. Omitted settings log
+fallback warnings; invalid values fail validation. These limits govern admin
+checks, not ordinary learner generation timeouts or learner credit budgets.
+
+Restart the API and workers after credential changes. Restarting `pnpm dev:all`
+also applies checked-in database migrations before starting application processes;
+it does not publish provider prices, flow tariffs or routing. Models, prices,
+default/override/fallback choices and activation belong in admin. Credentials
+alone do not activate a route, and there is no environment bypass for EvoLink's
+learner-processing eligibility gate. See [.env.example](../../.env.example) for
+the complete sanitized environment reference.
+
+### Admin activation
+
 1. Set its credential in the ignored backend/worker environment. Reviewed gateway
    routes use `EVOLINK_API_KEY` or `OPENROUTER_API_KEY`; the doctor reports only
    presence, never values. Restart backend and workers after changes.

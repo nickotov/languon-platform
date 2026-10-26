@@ -196,7 +196,12 @@ function gatewayCatalogEntry(
         readiness: {
             acceptedStatuses: [200, 204, 405],
             method: 'HEAD',
-            url: `${apiBaseUrl}/chat/completions`,
+            // OpenRouter rejects HEAD on completions with 404. Catalog HEAD
+            // checks reachability only; matching admin flow checks still gate use.
+            url:
+                providerId === 'openrouter'
+                    ? `${apiBaseUrl}/models`
+                    : `${apiBaseUrl}/chat/completions`,
         },
         requestLimits: {
             maxInputTokens: model.perCallMaxInputTokens,

@@ -5,6 +5,21 @@ import {
 } from '../../../../../src/modules/ai-credits/domain/model-price';
 import { AiCreditInvalidAmountError } from '../../../../../src/modules/ai-credits/domain/ai-credit';
 describe('immutable model tariff arithmetic', () => {
+    it('returns zero for a Free flow while retaining its execution allowance', () => {
+        expect(
+            maximumTextPrice(
+                {
+                    maxInputTokensPerAttempt: 65536,
+                    maxOutputTokensPerAttempt: 10000,
+                },
+                {
+                    inputCreditsPerMillionTokens: 0,
+                    outputCreditsPerMillionTokens: 0,
+                },
+            ),
+        ).toBe(0);
+    });
+
     it.each([
         [0.1, 1000],
         [2.5, 2500],

@@ -98,7 +98,9 @@ export const DictionaryPastedTermsChunkModelOutputSchema = z
                     .strict(),
             )
             .max(dictionaryBatchGenerationLimits.chunkRows),
-        warnings: z.tuple([]).optional(),
+        // Empty tuples become `items: []` in the provider SDK's JSON schema.
+        // Preserve empty-only validation with an item schema gateways accept.
+        warnings: z.array(z.string()).length(0).optional(),
     })
     .strict();
 
