@@ -197,115 +197,123 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
     ): Promise<TextAiRoutingRevision> {
         const input = TextAiRoutingPublishRequestSchema.parse(raw);
 
-        return this.database.transaction(async (tx) => {
-            // Only writers contend. Admission reads one compact immutable revision.
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(hashtextextended('text-ai-routing-publication',0))`,
-            );
+        return this.database.transaction((tx) =>
+            this.publishInTransaction(tx, input, actorId, at, correlationId),
+        );
+    }
 
-            await assertRoutingOwner(tx, actorId);
-            const current = await currentTextAiRouting(tx);
-            if ((current?.version ?? 0) !== input.expectedVersion)
-                throw new TextAiRoutingConflictError(
-                    'Routing revision changed.',
-                );
-            if (
-                input.configuration.enabledRouteIds.some((routeId) =>
-                    routeId.startsWith('evolink/'),
-                )
+    /** Reuses route validation and readiness inside delegated atomic writes. */
+    async publishInTransaction(
+        tx: TextAiRoutingTransaction,
+        raw: TextAiRoutingPublishRequest,
+        actorId: string,
+        at: Date,
+        correlationId: string,
+    ): Promise<TextAiRoutingRevision> {
+        const input = TextAiRoutingPublishRequestSchema.parse(raw);
+        // Only writers contend. Admission reads one compact immutable revision.
+        await tx.execute(
+            sql`select pg_advisory_xact_lock(hashtextextended('text-ai-routing-publication',0))`,
+        );
+
+        await assertRoutingOwner(tx, actorId);
+        const current = await currentTextAiRouting(tx);
+        if ((current?.version ?? 0) !== input.expectedVersion)
+            throw new TextAiRoutingConflictError('Routing revision changed.');
+        if (
+            input.configuration.enabledRouteIds.some((routeId) =>
+                routeId.startsWith('evolink/'),
             )
-                throw new TextAiRoutingInvalidError(
-                    'EvoLink processing controls require review before activation.',
-                );
-            validateTextAiRouting(
-                input.configuration,
-                textAiModelCatalog.map((model) => ({
-                    routeId: `${model.providerId}/${model.id}`,
-                    formats: model.supportedFormats,
-                    retired: model.retired === true,
-                })),
+        )
+            throw new TextAiRoutingInvalidError(
+                'EvoLink processing controls require review before activation.',
             );
+        validateTextAiRouting(
+            input.configuration,
+            textAiModelCatalog.map((model) => ({
+                routeId: `${model.providerId}/${model.id}`,
+                formats: model.supportedFormats,
+                retired: model.retired === true,
+            })),
+        );
 
-            for (const flowId of TextAiFlowIdSchema.options) {
-                const tariff = input.configuration.flowTariffs[flowId];
-                const policy = await new DrizzleCapabilityPolicyParticipant(
-                    tx,
-                ).current(textAiCapabilityForFlow(flowId));
+        for (const flowId of TextAiFlowIdSchema.options) {
+            const tariff = input.configuration.flowTariffs[flowId];
+            const policy = await new DrizzleCapabilityPolicyParticipant(
+                tx,
+            ).current(textAiCapabilityForFlow(flowId));
 
-                if (policy.funding === 'customer' && !tariff)
-                    throw new TextAiRoutingInvalidError(
-                        `A reviewed flow tariff is required for ${flowId}.`,
-                    );
-                const nextRoutes = effectiveTextAiRouteIds(
-                    input.configuration,
-                    flowId,
+            if (policy.funding === 'customer' && !tariff)
+                throw new TextAiRoutingInvalidError(
+                    `A reviewed flow tariff is required for ${flowId}.`,
                 );
-                const routePolicyChanged =
-                    !current ||
-                    JSON.stringify(
-                        effectiveTextAiRouteIds(current.configuration, flowId),
-                    ) !== JSON.stringify(nextRoutes);
+            const nextRoutes = effectiveTextAiRouteIds(
+                input.configuration,
+                flowId,
+            );
+            const routePolicyChanged =
+                !current ||
+                JSON.stringify(
+                    effectiveTextAiRouteIds(current.configuration, flowId),
+                ) !== JSON.stringify(nextRoutes);
 
-                for (const routeId of nextRoutes) {
-                    if (
-                        routePolicyChanged ||
-                        !current?.configuration.enabledRouteIds.includes(
-                            routeId,
-                        )
-                    )
-                        await this.requireReady(tx, {
-                            routeId,
-                            flowId,
-                            now: at,
-                        });
-                }
+            for (const routeId of nextRoutes) {
+                if (
+                    routePolicyChanged ||
+                    !current?.configuration.enabledRouteIds.includes(routeId)
+                )
+                    await this.requireReady(tx, {
+                        routeId,
+                        flowId,
+                        now: at,
+                    });
             }
+        }
 
-            const [saved] = await tx
-                .insert(revisions)
-                .values({
-                    id: randomUUID(),
-                    version: input.expectedVersion + 1,
-                    configuration: input.configuration,
-                    createdAt: at,
-                    createdBy: actorId,
-                    reason: input.reason,
-                })
-                .returning();
-
-            if (!saved) throw new Error('Routing publication failed.');
-            await insertLegacyBridge(tx, saved, actorId, at);
-            await tx
-                .insert(state)
-                .values({
-                    id: 'global',
-                    activeRevisionId: saved.id,
-                    updatedAt: at,
-                })
-                .onConflictDoUpdate({
-                    target: state.id,
-                    set: { activeRevisionId: saved.id, updatedAt: at },
-                });
-
-            await tx.insert(adminAuditEventsTable).values({
+        const [saved] = await tx
+            .insert(revisions)
+            .values({
                 id: randomUUID(),
-                actorUserId: actorId,
-                action: 'ai_settings_updated',
-                outcome: 'success',
+                version: input.expectedVersion + 1,
+                configuration: input.configuration,
+                createdAt: at,
+                createdBy: actorId,
                 reason: input.reason,
-                correlationId,
-                occurredAt: at,
-                expiresAt: new Date(at.getTime() + 365 * 86400_000),
-                beforeVersion: current?.version ?? 0,
-                afterVersion: saved.version,
-                metadata: {
-                    routingRevisionId: saved.id,
-                    enabledRouteIds: input.configuration.enabledRouteIds,
-                },
+            })
+            .returning();
+
+        if (!saved) throw new Error('Routing publication failed.');
+        await insertLegacyBridge(tx, saved, actorId, at);
+        await tx
+            .insert(state)
+            .values({
+                id: 'global',
+                activeRevisionId: saved.id,
+                updatedAt: at,
+            })
+            .onConflictDoUpdate({
+                target: state.id,
+                set: { activeRevisionId: saved.id, updatedAt: at },
             });
 
-            return dto(saved);
+        await tx.insert(adminAuditEventsTable).values({
+            id: randomUUID(),
+            actorUserId: actorId,
+            action: 'ai_settings_updated',
+            outcome: 'success',
+            reason: input.reason,
+            correlationId,
+            occurredAt: at,
+            expiresAt: new Date(at.getTime() + 365 * 86400_000),
+            beforeVersion: current?.version ?? 0,
+            afterVersion: saved.version,
+            metadata: {
+                routingRevisionId: saved.id,
+                enabledRouteIds: input.configuration.enabledRouteIds,
+            },
         });
+
+        return dto(saved);
     }
 }
 

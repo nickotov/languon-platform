@@ -103,3 +103,51 @@ test('runs HTTP journeys before browser selection and stops on a failing HTTP ph
         }
     }
 });
+
+test('file preservation rejects concurrent wrappers and releases the lock after success or failure', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'mcp-preservation-lock-'));
+    const path = join(directory, 'next-env.d.ts');
+    await writeFile(path, 'canonical');
+    let release;
+    const held = new Promise((resolve) => {
+        release = resolve;
+    });
+    let started;
+    const ready = new Promise((resolve) => {
+        started = resolve;
+    });
+    const first = withPreservedFile(path, async () => {
+        await writeFile(path, 'temporary-types');
+        started();
+        await held;
+    });
+    try {
+        await ready;
+        let secondRan = false;
+        await assert.rejects(
+            withPreservedFile(path, async () => {
+                secondRan = true;
+            }),
+            /Another verification runner/,
+        );
+        assert.equal(secondRan, false);
+        assert.equal(await readFile(path, 'utf8'), 'temporary-types');
+        release();
+        await first;
+        assert.equal(await readFile(path, 'utf8'), 'canonical');
+        await assert.rejects(
+            withPreservedFile(path, async () => {
+                throw Error('intentional failure');
+            }),
+            /intentional failure/,
+        );
+        await withPreservedFile(path, async () => {
+            await writeFile(path, 'another-run');
+        });
+        assert.equal(await readFile(path, 'utf8'), 'canonical');
+    } finally {
+        release();
+        await first;
+        await rm(directory, { recursive: true, force: true });
+    }
+});

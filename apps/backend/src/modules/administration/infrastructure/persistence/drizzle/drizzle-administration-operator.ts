@@ -1,3 +1,4 @@
+import { adminMcpAuditTable } from '../../../../admin-mcp/infrastructure/persistence/drizzle/schema';
 import { randomUUID } from 'node:crypto';
 
 import { and, count, eq, isNull, lte, sql } from 'drizzle-orm';
@@ -249,13 +250,21 @@ export class DrizzleAdministrationOperator {
                 .where(lte(adminAuditEventsTable.expiresAt, input.now))
                 .returning({ id: adminAuditEventsTable.id });
 
+            const mcpRemoved = await transaction
+                .delete(adminMcpAuditTable)
+                .where(lte(adminMcpAuditTable.expiresAt, input.now))
+                .returning({ id: adminMcpAuditTable.id });
+
             await transaction.insert(adminAuditEventsTable).values({
                 action: 'audit_pruned',
                 actorUserId: actor.id,
                 correlationId: randomUUID(),
                 expiresAt: auditExpiry(input.now),
                 id: randomUUID(),
-                metadata: { removedCount: removed.length },
+                metadata: {
+                    removedCount: removed.length,
+                    mcpRemovedCount: mcpRemoved.length,
+                },
                 occurredAt: input.now,
                 outcome: 'success',
                 reason: input.reason,
@@ -264,6 +273,7 @@ export class DrizzleAdministrationOperator {
             return {
                 prunedAt: input.now.toISOString(),
                 removed: removed.length,
+                mcpRemoved: mcpRemoved.length,
             };
         });
     }

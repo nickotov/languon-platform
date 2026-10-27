@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import { withPreservedFile } from './run-contextual-assistant-e2e.mjs';
 
 const testFile =
     'tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts';
@@ -11,9 +11,10 @@ const testFile =
  */
 export async function runLearnerPortraitE2e(run = execute) {
     assertDisposableEnvironment(process.env);
-    const browserArgs = process.argv.slice(2).at(0) === '--'
-        ? process.argv.slice(3)
-        : process.argv.slice(2);
+    const browserArgs =
+        process.argv.slice(2).at(0) === '--'
+            ? process.argv.slice(3)
+            : process.argv.slice(2);
     await withPreservedFile(
         fileURLToPath(new URL('../apps/web/next-env.d.ts', import.meta.url)),
         async () => {
@@ -39,21 +40,6 @@ export async function runLearnerPortraitE2e(run = execute) {
             ]);
         },
     );
-}
-
-async function withPreservedFile(path, work) {
-    let original;
-    try {
-        original = await readFile(path);
-    } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
-    }
-    try {
-        return await work();
-    } finally {
-        if (original === undefined) await rm(path, { force: true });
-        else await writeFile(path, original);
-    }
 }
 
 export function assertDisposableEnvironment(environment) {

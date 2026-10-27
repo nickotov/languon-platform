@@ -66,6 +66,7 @@ constraints, while feature-local decisions belong in the feature's
 
 | [ADR-0045](./0045-action-accounting-and-provider-expenses.md) | Bounded action accounting and independent provider expenses | Accepted |
 | [ADR-0046](./0046-admin-owned-text-ai-routing.md) | Admin-owned text AI routing and verified model routes | Accepted |
+| [ADR-0047](./0047-delegated-local-admin-mcp.md) | Delegated local administration through defined MCP operations | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

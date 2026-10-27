@@ -117,7 +117,7 @@ const client = createBrowserApiClient<AdminApiErrorDetail>({
         'The administration service is unavailable. Check your connection and retry.',
 });
 
-async function authorized<TResponse>(
+export async function authorized<TResponse>(
     path: string,
     responseSchema: { parse(value: unknown): TResponse },
     signal?: AbortSignal,
@@ -604,7 +604,7 @@ function queryString(values: object): string {
 }
 
 // Security-state changes must be reviewed again after reauthentication; never replay them.
-async function authorizedSingleRequest<TBody, TResponse>(
+export async function authorizedSingleRequest<TBody, TResponse>(
     path: string,
     body: TBody,
     bodySchema: { parse(value: unknown): TBody },

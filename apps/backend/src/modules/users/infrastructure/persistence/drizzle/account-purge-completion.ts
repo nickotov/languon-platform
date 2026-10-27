@@ -1,3 +1,4 @@
+import { purgeAdminMcpForOwner } from '../../../../admin-mcp/infrastructure/persistence/drizzle/admin-mcp-deletion-participant';
 import { and, eq, gt, inArray, or, sql } from 'drizzle-orm';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
 import {
@@ -288,6 +289,8 @@ export async function finish(
             .update(authSecurityEventsTable)
             .set({ metadata: {} })
             .where(eq(authSecurityEventsTable.userId, input.userId));
+
+        await purgeAdminMcpForOwner(tx, input.userId, input.now);
 
         await tx
             .update(adminAuditEventsTable)

@@ -50,6 +50,8 @@ Use `--list` for current entries. The initial registry covers:
   learner detects/translates a folderless text, saves and reloads it.
 - Password signup/login/session restoration, password reset and virtual passkeys.
 - Admin expiry/refresh and independent recent-sign-in enforcement.
+- Admin MCP token issuance, scoped discovery, client instructions, narrow-screen
+  revocation and bounded idempotent credit adjustment through real HTTP.
 - Dictionary generation and persisted result recovery.
 - Sentence generation, AI checking, unavailable-model guidance with preserved
   answers and AI preferences, and free saved-reference practice for owners and

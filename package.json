@@ -89,7 +89,8 @@
         "test:e2e:critical": "node scripts/run-critical-flows.mjs",
         "test:critical-tooling": "pnpm exec turbo run build --filter=@languon/contracts && node --test scripts/dev-all.test.mjs scripts/dev-readiness/*.test.mjs scripts/dev-setup/*.test.mjs scripts/critical-flows/*.test.mjs",
         "check:setup-docs": "node scripts/dev-configure.mjs --check-docs docs/operations/local-testing-setup.md",
-        "critical-flows:check": "node scripts/check-critical-flows.mjs"
+        "critical-flows:check": "node scripts/check-critical-flows.mjs",
+        "dev:admin-mcp": "pnpm --filter @languon/backend admin:mcp"
     },
     "devDependencies": {
         "@ast-grep/cli": "0.45.3",

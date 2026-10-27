@@ -6,7 +6,7 @@
     "scripts": {
         "admin:membership": "tsx src/infrastructure/administration/admin-command.ts",
         "admin:membership:built": "node dist/infrastructure/administration/admin-command.js",
-        "build": "NODE_OPTIONS=--max-old-space-size=6144 tsup src/index.ts src/infrastructure/database/migrate-command.ts src/infrastructure/administration/admin-command.ts src/infrastructure/playground/playground-command.ts src/infrastructure/worker/dictionary-worker-command.ts src/infrastructure/worker/dictionary-document-parser-command.ts src/infrastructure/worker/account-purge-command.ts src/modules/users/infrastructure/recovery/account-recovery-gate-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
+        "build": "NODE_OPTIONS=--max-old-space-size=6144 tsup src/index.ts src/infrastructure/admin-mcp/admin-mcp-command.ts src/infrastructure/database/migrate-command.ts src/infrastructure/administration/admin-command.ts src/infrastructure/playground/playground-command.ts src/infrastructure/worker/dictionary-worker-command.ts src/infrastructure/worker/dictionary-document-parser-command.ts src/infrastructure/worker/account-purge-command.ts src/modules/users/infrastructure/recovery/account-recovery-gate-command.ts --format esm --dts --clean && node ../../scripts/copy-directory.mjs drizzle dist/drizzle",
         "db:check": "drizzle-kit check",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "tsx src/infrastructure/database/migrate-command.ts",
@@ -28,7 +28,8 @@
         "start": "node dist/index.js",
         "test": "vitest run",
         "test:coverage": "vitest run --coverage",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "admin:mcp": "tsx src/infrastructure/admin-mcp/admin-mcp-command.ts"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.1118.0",
@@ -41,6 +42,7 @@
         "@languon/prompts": "workspace:*",
         "@mastra/core": "1.57.0",
         "@mastra/memory": "1.26.0",
+        "@modelcontextprotocol/server": "^2.4.0",
         "@napi-rs/canvas": "^1.0.8",
         "@node-rs/argon2": "^2.0.2",
         "@simplewebauthn/server": "^13.3.2",

@@ -1,0 +1,2 @@
+ALTER TABLE "admin_mcp_reservations" ADD COLUMN "dispatch_authorized_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "admin_mcp_tokens" ADD COLUMN "allowed_actions" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -1,3 +1,6 @@
+import { createAdminMcpTokenRoutes } from './modules/admin-mcp/interface/http/admin-mcp-token.routes';
+import { AdminMcpCredentialService } from './modules/admin-mcp/application/admin-mcp-credential-service';
+import { DrizzleAdminMcpStore } from './modules/admin-mcp/infrastructure/persistence/drizzle/drizzle-admin-mcp-store';
 import { createAdminTextAiRoutingComposition } from './infrastructure/text-ai/admin-routing-composition';
 import {
     loadTextAiProviderCredentials,
@@ -335,6 +338,16 @@ const conversations = createConversationsComposition({
     settleInterrupted: settleInterruptedConversationCalls,
 });
 const app = createApp({
+    adminMcpTokens: createAdminMcpTokenRoutes({
+        appEnvironment: environment.APP_ENV,
+        administration: administration.administration,
+        policy: administration.policy,
+        credentials: new AdminMcpCredentialService(
+            new DrizzleAdminMcpStore(
+                authentication.productDependencies.database,
+            ),
+        ),
+    }),
     learnerPortraits: createLearnerPortraitRoutes({
         portraits: learnerPortraits.portraits,
         interviews: learnerPortraits.interviews,

@@ -17,10 +17,18 @@ export class TextAiProbeService {
         private readonly timeoutMs = 30_000,
     ) {}
 
-    async run(actorId: string, request: TextAiProbeRequest) {
+    async run(
+        actorId: string,
+        request: TextAiProbeRequest,
+        externalSignal?: AbortSignal,
+        beforeDispatch?: () => Promise<void>,
+        maximumCostMicros: bigint = this.limits.maximumCostMicros,
+    ) {
+        externalSignal?.throwIfAborted();
         if (
-            parseFixed(request.approvedMaximumCostUsd, 6) !==
-            this.limits.maximumCostMicros
+            maximumCostMicros <= 0n ||
+            maximumCostMicros > this.limits.maximumCostMicros ||
+            parseFixed(request.approvedMaximumCostUsd, 6) !== maximumCostMicros
         )
             throw new TextAiProbeUnavailableError('probe_limit_changed');
         const identity = this.executor.identity(request);
@@ -29,15 +37,26 @@ export class TextAiProbeService {
             identity,
             request,
             at: this.now(),
-            limits: this.limits,
+            limits: { ...this.limits, maximumCostMicros },
         });
         const started = performance.now();
-        const signal = AbortSignal.timeout(this.timeoutMs);
+        const timeout = AbortSignal.timeout(this.timeoutMs);
+        const signal = externalSignal
+            ? AbortSignal.any([timeout, externalSignal])
+            : timeout;
         let result;
+        let dispatchStarted = false;
         try {
+            // Revocation can arrive while reserve() is waiting on its database lock.
+            signal.throwIfAborted();
+            await beforeDispatch?.();
+            signal.throwIfAborted();
+            dispatchStarted = true;
             result = await this.executor.execute(reservation, signal);
         } catch (error) {
-            const notDispatched = error instanceof TextAiProbeUnavailableError;
+            const notDispatched =
+                !dispatchStarted ||
+                error instanceof TextAiProbeUnavailableError;
             // No raw provider object crosses this boundary. Unknown usage is never zero.
             result = {
                 valid: false,

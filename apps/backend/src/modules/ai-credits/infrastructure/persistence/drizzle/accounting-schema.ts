@@ -118,6 +118,11 @@ export const aiProviderExpenseRecordsTable = pgTable(
             t.providerId,
             t.occurredAt,
         ),
+        index('ai_provider_expense_action_time_idx').on(
+            t.actionId,
+            t.occurredAt,
+            t.id,
+        ),
     ],
 );
 

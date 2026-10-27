@@ -61,6 +61,107 @@ const result: TextAiProbeResult = {
 };
 
 describe('operator-only model checks', () => {
+    it('does not dispatch when delegation is revoked while reservation is waiting', async () => {
+        const controller = new AbortController();
+        const store = {
+            reserve: vi.fn(async () => {
+                controller.abort();
+                return reservation;
+            }),
+            finish: vi.fn(async () => ({ id: reservation.id })),
+        } as unknown as TextAiProbeStore;
+        const executor: TextAiProbeExecutor = {
+            identity: () => reservation.identity,
+            execute: vi.fn(),
+        };
+        await new TextAiProbeService(store, executor, limits).run(
+            'admin-id',
+            reservation.request,
+            controller.signal,
+        );
+        expect(executor.execute).not.toHaveBeenCalled();
+        expect(store.finish).toHaveBeenCalledWith(
+            reservation,
+            expect.objectContaining({
+                valid: false,
+                measurement: 'measured',
+                inputTokens: 0,
+                outputTokens: 0,
+            }),
+            expect.any(Date),
+        );
+    });
+    it('checks live dispatch authority after reserve and persists a known zero expense when authorization fails', async () => {
+        const order: string[] = [];
+        const store = {
+            reserve: vi.fn(async () => {
+                order.push('reserve');
+                return reservation;
+            }),
+            finish: vi.fn(async () => ({ id: reservation.id })),
+        } as unknown as TextAiProbeStore;
+        const executor: TextAiProbeExecutor = {
+            identity: () => reservation.identity,
+            execute: vi.fn(),
+        };
+        const authorize = vi.fn(async () => {
+            order.push('authorize');
+            throw new Error('Delegation revoked');
+        });
+        await new TextAiProbeService(store, executor, limits).run(
+            'admin-id',
+            reservation.request,
+            undefined,
+            authorize,
+        );
+        expect(order).toEqual(['reserve', 'authorize']);
+        expect(executor.execute).not.toHaveBeenCalled();
+        expect(store.finish).toHaveBeenCalledWith(
+            reservation,
+            expect.objectContaining({
+                valid: false,
+                measurement: 'measured',
+                inputTokens: 0,
+                outputTokens: 0,
+                failure: 'budget_insufficient',
+            }),
+            expect.any(Date),
+        );
+    });
+    it('refuses revoked delegation before reservation and propagates revocation after dispatch', async () => {
+        const finish = vi.fn(async () => ({ id: reservation.id }));
+        const reserve = vi.fn(async () => reservation);
+        const store = { reserve, finish } as unknown as TextAiProbeStore;
+        const revoked = new AbortController();
+        revoked.abort();
+        const executor: TextAiProbeExecutor = {
+            identity: () => reservation.identity,
+            execute: vi.fn(),
+        };
+        const service = new TextAiProbeService(store, executor, limits);
+        await expect(
+            service.run('admin-id', reservation.request, revoked.signal),
+        ).rejects.toThrow();
+        expect(reserve).not.toHaveBeenCalled();
+
+        const active = new AbortController();
+        executor.execute = async (_reservation, signal) => {
+            active.abort();
+            signal.throwIfAborted();
+            return result;
+        };
+        await service.run('admin-id', reservation.request, active.signal);
+        expect(finish).toHaveBeenCalledWith(
+            reservation,
+            expect.objectContaining({
+                valid: false,
+                measurement: 'unknown',
+                inputTokens: null,
+                outputTokens: null,
+            }),
+            expect.any(Date),
+        );
+    });
     it('requires an explicit selected flow and rejects arbitrary fields', () => {
         expect(
             TextAiProbeRequestSchema.safeParse({
@@ -129,6 +230,48 @@ describe('operator-only model checks', () => {
         ).rejects.toThrow('probe_limit_changed');
         expect(reserve).not.toHaveBeenCalled();
         expect(execute).not.toHaveBeenCalled();
+    });
+    it('accepts a lower approved maximum and reserves that exact operator budget for one deterministic probe', async () => {
+        const reducedMaximum = 5_000n;
+        const reserve = vi.fn(
+            async (input: Parameters<TextAiProbeStore['reserve']>[0]) => ({
+                ...reservation,
+                request: input.request,
+                maximumCostMicros: input.limits.maximumCostMicros,
+            }),
+        );
+        const execute = vi.fn(async (accepted: TextAiProbeReservation) => {
+            expect(accepted.maximumCostMicros).toBe(reducedMaximum);
+            return result;
+        });
+        const store = {
+            reserve,
+            finish: vi.fn(async () => ({ id: reservation.id })),
+            list: vi.fn(async () => []),
+            recover: vi.fn(),
+        } as unknown as TextAiProbeStore;
+
+        await new TextAiProbeService(
+            store,
+            { identity: () => reservation.identity, execute },
+            limits,
+        ).run(
+            'admin-id',
+            { ...reservation.request, approvedMaximumCostUsd: '0.005' },
+            undefined,
+            undefined,
+            reducedMaximum,
+        );
+
+        expect(reserve).toHaveBeenCalledWith(
+            expect.objectContaining({
+                actorId: 'admin-id',
+                limits: expect.objectContaining({
+                    maximumCostMicros: reducedMaximum,
+                }),
+            }),
+        );
+        expect(execute).toHaveBeenCalledTimes(1);
     });
     it('never calls a provider when the atomic reservation rejects', async () => {
         const execute = vi.fn();

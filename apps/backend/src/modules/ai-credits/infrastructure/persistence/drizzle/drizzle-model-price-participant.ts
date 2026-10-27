@@ -161,11 +161,76 @@ export class DrizzleModelPriceParticipant {
         );
     }
 
+    public async currentPublished(input: {
+        providerId: string;
+        modelId: string;
+        meter: ModelPrice['meter'];
+    }): Promise<ModelPrice | null> {
+        this.seed(input); // Validates the curated identity without persisting a bootstrap revision.
+        const t = modelPriceRevisionsTable;
+        const [row] = await this.transaction
+            .select()
+            .from(t)
+            .where(
+                and(
+                    eq(t.providerId, input.providerId),
+                    eq(t.modelId, input.modelId),
+                    eq(t.meter, input.meter),
+                ),
+            )
+            .orderBy(desc(t.version))
+            .limit(1);
+
+        return row
+            ? {
+                  providerId: row.providerId,
+                  modelId: row.modelId,
+                  meter: input.meter,
+                  version: row.version,
+                  rateRevisionId: row.id,
+                  ...row.rates,
+                  cachedInputCreditsPerMillionTokens:
+                      row.rates.cachedInputCreditsPerMillionTokens ?? null,
+                  updatedAt: row.createdAt.toISOString(),
+              }
+            : null;
+    }
+
+    /** Inspection must never bootstrap missing billing revisions. */
+    public async listPublished(): Promise<ModelPrice[]> {
+        const rows = await this.transaction
+            .selectDistinctOn([
+                modelPriceRevisionsTable.providerId,
+                modelPriceRevisionsTable.modelId,
+                modelPriceRevisionsTable.meter,
+            ])
+            .from(modelPriceRevisionsTable)
+            .orderBy(
+                modelPriceRevisionsTable.providerId,
+                modelPriceRevisionsTable.modelId,
+                modelPriceRevisionsTable.meter,
+                desc(modelPriceRevisionsTable.version),
+            );
+
+        return rows.map((row) => ({
+            providerId: row.providerId,
+            modelId: row.modelId,
+            meter: row.meter as ModelPrice['meter'],
+            version: row.version,
+            rateRevisionId: row.id,
+            ...row.rates,
+            cachedInputCreditsPerMillionTokens:
+                row.rates.cachedInputCreditsPerMillionTokens ?? null,
+            updatedAt: row.createdAt.toISOString(),
+        }));
+    }
+
     public async publish(
         input: Publish,
         actorId: string,
         at: Date,
         correlationId: string = randomUUID(),
+        options: { initializeMissing?: boolean } = {},
     ): Promise<ModelPrice> {
         input = ModelPricePublishRequestSchema.parse(input);
         const [membership] = await this.transaction
@@ -191,8 +256,12 @@ export class DrizzleModelPriceParticipant {
             sql`select pg_advisory_xact_lock(hashtextextended(${input.providerId + '/' + input.modelId}, 1920424382))`,
         );
 
-        const current = await this.current(input);
-        if (current.version !== input.expectedVersion)
+        const current =
+            options.initializeMissing === false
+                ? await this.currentPublished(input)
+                : await this.current(input);
+        const currentVersion = current?.version ?? 0;
+        if (currentVersion !== input.expectedVersion)
             throw new ModelPriceConflictError();
         const rates = {
             creditsPer1000Characters: input.creditsPer1000Characters,
@@ -226,7 +295,7 @@ export class DrizzleModelPriceParticipant {
             providerId: input.providerId,
             modelId: input.modelId,
             meter: input.meter,
-            version: current.version + 1,
+            version: currentVersion + 1,
             rates,
             createdAt: at,
             createdBy: actorId,
@@ -243,7 +312,7 @@ export class DrizzleModelPriceParticipant {
             correlationId,
             occurredAt: at,
             expiresAt: new Date(at.getTime() + 365 * 24 * 60 * 60 * 1000),
-            beforeVersion: current.version,
+            beforeVersion: currentVersion,
             afterVersion: result.version,
             metadata: {
                 providerId: input.providerId,

@@ -5,6 +5,21 @@ describe intended behavior; they do not imply that the capabilities exist yet.
 
 ## Language
 
+### Administration
+
+**Administrative operation**:
+An authorized inspection or change of Languon's operational state, attributed to
+an administrator and subject to the operation's business rules.
+
+**Admin delegation**:
+An administrator's revocable grant of defined administrative permissions to one
+automation client acting on their behalf. Delegating access does not transfer
+ownership of the administrator's identity.
+
+**Admin access token**:
+A revocable credential representing one automation client's time-limited admin
+delegation, linked to the administrator on whose behalf it acts.
+
 ### AI routing
 
 **AI flow**:

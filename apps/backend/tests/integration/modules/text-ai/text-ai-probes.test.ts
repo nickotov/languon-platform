@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import { probeExpenseId } from '../../../../src/modules/admin-mcp/infrastructure/admin-mcp-probe-expense';
 import { textAiRouteHealthEventsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
 import { randomUUID } from 'node:crypto';
 import {
@@ -244,6 +245,10 @@ run('atomic operator model probes and immutable evidence', () => {
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.actionId, reservation.id));
         expect(expense).toHaveLength(1);
+        expect(await probeExpenseId(database, reservation.id)).toBe(
+            expense[0]?.id,
+        );
+        expect(await probeExpenseId(database, randomUUID())).toBeNull();
         expect(expense[0]).toMatchObject({
             sourceKind: 'admin-probe',
             amountUsdMicros: 42n,

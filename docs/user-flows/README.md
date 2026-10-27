@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Delegated local admin MCP](./admin-mcp.md) — expiring owner credentials,
+  bounded agent operations and connection instructions.
+
 - [Sidebar navigation](./sidebar-navigation.md) — whole-library title search,
   synced recents/pins, contextual flyouts and responsive navigation.
 

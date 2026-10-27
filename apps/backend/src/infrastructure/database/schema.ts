@@ -1,3 +1,5 @@
+import * as adminMcpSchema from '../../modules/admin-mcp/infrastructure/persistence/drizzle/schema';
+export * from '../../modules/admin-mcp/infrastructure/persistence/drizzle/schema';
 import * as textAiRouteHealthSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
 export * from '../../modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
 import * as textAiRoutingSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/routing-schema';
@@ -158,6 +160,7 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    ...adminMcpSchema,
     ...textAiRouteHealthSchema,
     ...textAiRoutingSchema,
     ...textAiProbeSchema,

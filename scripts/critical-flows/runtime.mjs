@@ -101,7 +101,10 @@ export function infrastructure(flow) {
     const databaseUrl = `postgres://critical:critical_test_only@127.0.0.1:${pg}/${database}`;
     const redisUrl = `redis://127.0.0.1:${redis}/1`;
     return {
-        ports: fixture.filter((value) => typeof value === 'number'),
+        ports: [
+            ...fixture.filter((value) => typeof value === 'number'),
+            ...(flow.env?.ADMIN_E2E_MCP === 'true' ? [3437] : []),
+        ],
         pg,
         redis,
         database,
@@ -122,6 +125,7 @@ export function infrastructure(flow) {
             ADMIN_E2E_WEB_ORIGIN: `http://localhost:${web}`,
             ADMIN_E2E_BACKEND_ORIGIN: `http://localhost:${backend}`,
             ADMIN_E2E_ADMIN_ORIGIN: `http://localhost:${admin ?? web}`,
+            ADMIN_E2E_MCP_ORIGIN: 'http://localhost:3437',
             AUTH_E2E_REUSE_SERVERS: 'false',
             ADMIN_E2E_REUSE_SERVERS: 'false',
             TEXTS_WEB_REUSE_SERVERS: 'false',

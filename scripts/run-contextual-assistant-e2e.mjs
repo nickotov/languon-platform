@@ -1,20 +1,40 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readFile, writeFile, rm } from 'node:fs/promises';
+import { readFile, writeFile, rm, mkdir } from 'node:fs/promises';
+import { dirname, basename, join, resolve } from 'node:path';
 
 /** Next type generation may rewrite this tracked file even with an isolated distDir. */
 export async function withPreservedFile(path, work) {
-    let original;
+    const canonical = resolve(path);
+    const lock = join(
+        dirname(canonical),
+        `.next-preserve-${basename(canonical)}.lock`,
+    );
     try {
-        original = await readFile(path);
+        await mkdir(lock);
     } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
+        if (error.code === 'EEXIST')
+            throw new Error(
+                'Another verification runner is preserving this generated file. Wait for it to finish; inspect ownership before removing a stale preservation lock.',
+                { cause: error },
+            );
+        throw error;
     }
     try {
-        return await work();
+        let original;
+        try {
+            original = await readFile(canonical);
+        } catch (error) {
+            if (error.code !== 'ENOENT') throw error;
+        }
+        try {
+            return await work();
+        } finally {
+            if (original === undefined) await rm(canonical, { force: true });
+            else await writeFile(canonical, original);
+        }
     } finally {
-        if (original === undefined) await rm(path, { force: true });
-        else await writeFile(path, original);
+        await rm(lock, { recursive: true });
     }
 }
 

@@ -210,6 +210,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm dev:mastra`                             | Provision and run isolated Mastra Studio                                            |
 | `pnpm dev:backend`                            | Run only the backend                                                                |
 | `pnpm dev:web`                                | Run only the user-facing web application                                            |
+| `pnpm dev:admin-mcp`                          | Run the opt-in localhost admin MCP server ([guide](docs/user-flows/admin-mcp.md))   |
 | `pnpm dev:admin`                              | Run only the administration application                                             |
 | `pnpm dev:mobile`                             | Run only the Expo development server                                                |
 | `pnpm dev:panel`                              | Run the local reviewed-command web panel                                            |

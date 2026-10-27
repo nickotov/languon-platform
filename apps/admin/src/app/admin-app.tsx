@@ -5,12 +5,21 @@ import routerProvider from '@refinedev/react-router';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router';
 
+import { adminMcpEnabled } from '@/shared/config/admin-capabilities';
 import { adminAccessProvider } from '@/shared/access/admin-access-provider';
 import { adminDataProvider } from '@/shared/api/admin-data-provider';
 import { adminAuthProvider } from '@/shared/auth/admin-auth-provider';
 import { adminI18nProvider } from '@/shared/i18n/admin-i18n-provider';
 import { AdminThemeProvider } from '@/shared/theme/admin-theme-provider';
 import { AdminLayout } from '@/widgets/admin-layout/admin-layout';
+
+const AdminMcpPage = adminMcpEnabled
+    ? lazy(() =>
+          import('@/pages/admin-mcp').then((module) => ({
+              default: module.AdminMcpPage,
+          })),
+      )
+    : null;
 
 const AccountingPage = lazy(() =>
     import('@/pages/accounting').then((module) => ({
@@ -67,6 +76,16 @@ export function AdminApp() {
 
 function RefineApplication() {
     const notificationProvider = useNotificationProvider();
+    const resources = [
+        { name: 'dashboard', list: '/' },
+        { name: 'users', list: '/users', show: '/users/:id' },
+        { name: 'audit-events', list: '/audit' },
+        { name: 'ai-settings', list: '/ai-settings' },
+        { name: 'accounting', list: '/accounting' },
+        { name: 'speech-recordings', list: '/speech-recordings' },
+    ];
+    if (adminMcpEnabled)
+        resources.push({ name: 'admin-mcp', list: '/admin-mcp' });
     return (
         <Refine
             accessControlProvider={adminAccessProvider}
@@ -74,14 +93,7 @@ function RefineApplication() {
             dataProvider={adminDataProvider}
             i18nProvider={adminI18nProvider}
             notificationProvider={notificationProvider}
-            resources={[
-                { name: 'dashboard', list: '/' },
-                { name: 'users', list: '/users', show: '/users/:id' },
-                { name: 'audit-events', list: '/audit' },
-                { name: 'ai-settings', list: '/ai-settings' },
-                { name: 'accounting', list: '/accounting' },
-                { name: 'speech-recordings', list: '/speech-recordings' },
-            ]}
+            resources={resources}
             routerProvider={routerProvider}
             options={{
                 disableTelemetry: true,
@@ -107,6 +119,12 @@ function RefineApplication() {
                         <Route path='users' element={<UsersPage />} />
                         <Route path='users/:id' element={<UserDetailPage />} />
                         <Route path='audit' element={<AuditPage />} />
+                        {AdminMcpPage ? (
+                            <Route
+                                path='admin-mcp'
+                                element={<AdminMcpPage />}
+                            />
+                        ) : null}
                         <Route path='accounting' element={<AccountingPage />} />
                         <Route
                             path='speech-recordings'

@@ -1,5 +1,6 @@
 import {
     AuditOutlined,
+    ApiOutlined,
     DollarOutlined,
     CloudServerOutlined,
     SoundOutlined,
@@ -26,6 +27,7 @@ import {
     useAdminTheme,
     type ThemePreference,
 } from '@/shared/theme/admin-theme-provider';
+import { adminMcpEnabled } from '@/shared/config/admin-capabilities';
 import styles from './admin-layout.module.css';
 
 export function AdminLayout({ children }: { children: ReactNode }) {
@@ -43,6 +45,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             '/audit',
             '/ai-settings',
             '/accounting',
+            '/admin-mcp',
         ]) {
             if (location.pathname.startsWith(path)) return path;
         }
@@ -80,6 +83,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             label: translate('speech.title'),
         },
     ];
+    if (adminMcpEnabled)
+        navigationItems.push({
+            icon: <ApiOutlined />,
+            key: '/admin-mcp',
+            label: translate('mcp.title'),
+        });
     const navigation = (closeAfterNavigate = false) => (
         <>
             <Link

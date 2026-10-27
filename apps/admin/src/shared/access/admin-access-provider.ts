@@ -1,4 +1,5 @@
 import type { AccessControlProvider } from '@refinedev/core';
+import { adminMcpEnabled } from '../config/admin-capabilities';
 
 export const adminAccessProvider: AccessControlProvider = {
     can: async ({ action, resource }) => ({
@@ -9,9 +10,11 @@ export const adminAccessProvider: AccessControlProvider = {
                 'audit-events',
                 'ai-settings',
                 'accounting',
+                'admin-mcp',
                 'speech-recordings',
             ].includes(resource ?? '') &&
-            !['create', 'delete'].includes(action),
+            !['create', 'delete'].includes(action) &&
+            (resource !== 'admin-mcp' || adminMcpEnabled),
         reason: 'Owner membership is required.',
     }),
     options: {

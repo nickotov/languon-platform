@@ -23,8 +23,14 @@ const dto = (row: typeof prices.$inferSelect): ProviderPrice => ({
 export class DrizzleProviderPriceStore {
     constructor(private readonly database: Database) {}
     async list(): Promise<ProviderPrice[]> {
+        return this.listInTransaction(this.database);
+    }
+
+    async listInTransaction(
+        tx: Pick<Transaction, 'selectDistinctOn'>,
+    ): Promise<ProviderPrice[]> {
         // Latest publication per provider/model/meter, including scheduled revisions; admission resolves effectiveAt independently.
-        const rows = await this.database
+        const rows = await tx
             .selectDistinctOn([prices.providerId, prices.modelId, prices.meter])
             .from(prices)
             .orderBy(
@@ -42,48 +48,58 @@ export class DrizzleProviderPriceStore {
         actorId: string,
         at: Date,
     ): Promise<ProviderPrice> {
-        return this.database.transaction(async (tx) => {
-            await tx.execute(
-                sql`select pg_advisory_xact_lock(hashtextextended(${`provider-price:${input.providerId}:${input.modelId}:${input.meter}`},0))`,
+        return this.database.transaction((tx) =>
+            this.publishInTransaction(tx, input, actorId, at),
+        );
+    }
+
+    /** Participates in an authorized caller's transaction and replay boundary. */
+    async publishInTransaction(
+        tx: Transaction,
+        input: ProviderPricePublishRequest,
+        actorId: string,
+        at: Date,
+    ): Promise<ProviderPrice> {
+        await tx.execute(
+            sql`select pg_advisory_xact_lock(hashtextextended(${`provider-price:${input.providerId}:${input.modelId}:${input.meter}`},0))`,
+        );
+
+        const [latest] = await tx
+            .select()
+            .from(prices)
+            .where(
+                and(
+                    eq(prices.providerId, input.providerId),
+                    eq(prices.modelId, input.modelId),
+                    eq(prices.meter, input.meter),
+                ),
+            )
+            .orderBy(desc(prices.version))
+            .limit(1);
+
+        if ((latest?.version ?? 0) !== input.expectedVersion)
+            throw new AccountingConflictError(
+                'Provider price revision changed.',
             );
+        const { expectedVersion, ...data } = input;
+        const [saved] = await tx
+            .insert(prices)
+            .values({
+                id: randomUUID(),
+                providerId: input.providerId,
+                modelId: input.modelId,
+                meter: input.meter,
+                version: expectedVersion + 1,
+                effectiveAt: new Date(input.effectiveAt),
+                createdAt: at,
+                createdBy: actorId,
+                data,
+            })
+            .returning();
 
-            const [latest] = await tx
-                .select()
-                .from(prices)
-                .where(
-                    and(
-                        eq(prices.providerId, input.providerId),
-                        eq(prices.modelId, input.modelId),
-                        eq(prices.meter, input.meter),
-                    ),
-                )
-                .orderBy(desc(prices.version))
-                .limit(1);
+        if (!saved) throw new Error('Provider price publication failed.');
 
-            if ((latest?.version ?? 0) !== input.expectedVersion)
-                throw new AccountingConflictError(
-                    'Provider price revision changed.',
-                );
-            const { expectedVersion, ...data } = input;
-            const [saved] = await tx
-                .insert(prices)
-                .values({
-                    id: randomUUID(),
-                    providerId: input.providerId,
-                    modelId: input.modelId,
-                    meter: input.meter,
-                    version: expectedVersion + 1,
-                    effectiveAt: new Date(input.effectiveAt),
-                    createdAt: at,
-                    createdBy: actorId,
-                    data,
-                })
-                .returning();
-
-            if (!saved) throw new Error('Provider price publication failed.');
-
-            return dto(saved);
-        });
+        return dto(saved);
     }
 }
 

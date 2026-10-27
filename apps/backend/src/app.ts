@@ -34,6 +34,7 @@ export interface AppOperationalOptions {
 
 export function createApp(options?: {
     administration?: AppAdministrationOptions;
+    adminMcpTokens?: OpenAPIHono;
     authentication?: AppAuthenticationOptions;
     dictionaries?: OpenAPIHono;
     learning?: OpenAPIHono;
@@ -76,6 +77,7 @@ export function createApp(options?: {
     if (options?.administration) {
         app.route('/', createAdministrationRoutes(options.administration));
     }
+    if (options?.adminMcpTokens) app.route('/', options.adminMcpTokens);
     if (options?.textAiRouting) app.route('/', options.textAiRouting);
     if (options?.conversations) app.route('/', options.conversations);
     if (options?.learnerPortraits) app.route('/', options.learnerPortraits);

@@ -159,6 +159,15 @@ export const flows = [
         dependsOn: ['ai-execution-contracts'],
     },
     {
+        id: 'admin-mcp',
+        minimumTests: 2,
+        app: 'admin',
+        file: 'admin-mcp.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'empty-admin-database',
+        env: { ADMIN_E2E_MCP: 'true' },
+    },
+    {
         id: 'ai-execution-contracts',
         minimumTests: 300,
         app: 'backend',
@@ -277,6 +286,7 @@ export function assertPassingReport(report, flow = { minimumTests: 1 }) {
 }
 
 const featureFlags = {
+    ADMIN_E2E_MCP: ['true'],
     AUTH_E2E_SENTENCE_SERVICES: ['true'],
     ADMIN_E2E_SETUP_JOURNEY: ['true'],
     ADMIN_E2E_SYNTHETIC_PROBES: ['true'],

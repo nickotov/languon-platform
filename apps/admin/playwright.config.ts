@@ -5,6 +5,8 @@ const adminOrigin =
 const webOrigin = process.env.ADMIN_E2E_WEB_ORIGIN ?? 'http://localhost:3333';
 const backendOrigin =
     process.env.ADMIN_E2E_BACKEND_ORIGIN ?? 'http://localhost:4000';
+const mcpOrigin = process.env.ADMIN_E2E_MCP_ORIGIN ?? 'http://localhost:3002';
+const mcpEnabled = process.env.ADMIN_E2E_MCP === 'true';
 const databaseUrl = process.env.ADMIN_E2E_DATABASE_URL;
 const redisUrl = process.env.ADMIN_E2E_REDIS_URL;
 const e2eRateLimitNamespace = `${Date.now()}-${process.pid}`;
@@ -21,6 +23,7 @@ if (!databaseUrl || !redisUrl) {
 }
 for (const [name, value] of [
     ['ADMIN_E2E_ADMIN_ORIGIN', adminOrigin],
+    ['ADMIN_E2E_MCP_ORIGIN', mcpOrigin],
     ['ADMIN_E2E_WEB_ORIGIN', webOrigin],
     ['ADMIN_E2E_BACKEND_ORIGIN', backendOrigin],
     ['ADMIN_E2E_DATABASE_URL', databaseUrl],
@@ -60,6 +63,7 @@ export default defineConfig({
     reporter: [['list']],
     retries: process.env.CI ? 2 : 0,
     testDir: './tests/e2e',
+    testIgnore: mcpEnabled ? [] : ['**/admin-mcp.journeys.spec.ts'],
     timeout: 60_000,
     use: {
         baseURL: adminOrigin,
@@ -79,6 +83,7 @@ export default defineConfig({
                 EVOLINK_API_KEY: '',
                 KIE_API_KEY: '',
                 APP_ENV: 'development',
+                AUTH_REDIS_NAMESPACE: `admin-e2e:${e2eRateLimitNamespace}`,
                 AUTH_ALLOWED_ORIGINS: `${adminOrigin},${webOrigin}`,
                 AUTH_CODE_HMAC_SECRET: `admin-e2e-code-secret-do-not-use-outside-local-tests-${e2eRateLimitNamespace}`,
                 AUTH_JWT_SECRET:
@@ -113,6 +118,37 @@ export default defineConfig({
             timeout: 120_000,
             url: `${backendOrigin}/livez`,
         },
+        ...(mcpEnabled
+            ? [
+                  {
+                      command: `until curl --fail --silent ${backendOrigin}/livez >/dev/null; do sleep 0.1; done; pnpm --dir ../.. dev:admin-mcp`,
+                      env: {
+                          APP_ENV: 'development',
+                          DATABASE_URL: databaseUrl,
+                          REDIS_URL: redisUrl,
+                          ADMIN_BASE_URL: adminOrigin,
+                          ADMIN_MCP_PORT: new URL(mcpOrigin).port || '3002',
+                          AUTH_ALLOWED_ORIGINS: `${adminOrigin},${webOrigin}`,
+                          AUTH_CODE_HMAC_SECRET:
+                              'admin-e2e-code-secret-do-not-use-outside-local-tests',
+                          AUTH_JWT_SECRET:
+                              'admin-e2e-jwt-secret-do-not-use-outside-local-tests',
+                          DICTIONARY_HMAC_SECRET:
+                              'admin-e2e-dictionary-secret-do-not-use-outside-local-tests',
+                          DEEPSEEK_API_KEY: '',
+                          OPENROUTER_API_KEY: '',
+                          EVOLINK_API_KEY: '',
+                          KIE_API_KEY: '',
+                          ADMIN_E2E_SYNTHETIC_PROBES: 'true',
+                      },
+                      reuseExistingServer: false,
+                      stderr: 'pipe' as const,
+                      stdout: 'pipe' as const,
+                      timeout: 120_000,
+                      url: `${mcpOrigin}/healthz`,
+                  },
+              ]
+            : []),
         ...(sentenceServicesEnabled
             ? [
                   {
