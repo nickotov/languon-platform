@@ -1029,7 +1029,10 @@ export class DrizzleSpeechStore implements SpeechStore {
         return this.workerTransaction(async (tx, now) => {
             const [row] = await tx
                 .update(jobs)
-                .set({ state: 'storing' })
+                .set({
+                    state: 'storing',
+                    leaseExpiresAt: new Date(now.getTime() + 60_000),
+                })
                 .where(
                     and(
                         eq(jobs.id, job.id),

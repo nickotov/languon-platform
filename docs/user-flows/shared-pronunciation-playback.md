@@ -2,13 +2,14 @@
 feature: shared-pronunciation-playback
 title: Shared pronunciation playback and model prices
 status: current
-last_verified: 2026-10-19
+last_verified: 2026-10-27
 surfaces:
     - browser
     - admin
     - api
     - system
 source_paths:
+    - scripts/dev-all.mjs
     - apps/web/next.config.mjs
     - apps/web/src/fsd/shared/api/api-url.ts
     - apps/backend/src/modules/speech/**
@@ -38,6 +39,7 @@ e2e_scenarios:
     - admin-library-filters
     - admin-model-price-publication
 related_features:
+    - openrouter-speech
     - dictionary-pronunciation-audio
     - sentence-practice-backend
     - sentence-practice-web
@@ -68,7 +70,7 @@ admin journeys passed on 2026-10-13. Desktop and 390-pixel layouts were exercise
 Native clients, unsaved drafts, hidden references, unchecked answers and live
 provider pronunciation quality are outside these local journeys. Deterministic
 fixture sound proves storage/playback, not correct spoken pronunciation.
-Fixture and real pronunciation caches are isolated: switching to Kie never reuses
+Fixture and real pronunciation caches are isolated: switching to a live provider never reuses
 a test tone, including older retained recordings and in-flight fixture jobs.
 
 ## Start the development environment
@@ -81,8 +83,8 @@ Use synthetic accounts and dictionaries only.
 In ignored local settings, enable `SPEECH_PLAYBACK_ENABLED=true` and
 `SPEECH_GENERATION_ENABLED=true` consistently for backend/worker. Retain
 `DICTIONARY_AUDIO_PROVIDER=fixture`, S3 storage, the local MinIO endpoint and
-bucket-scoped application credentials from `.env.example`. This requires no Kie
-key or paid calls. MinIO initialization must exit successfully; console/API are
+bucket-scoped application credentials from `.env.example`. This requires no live
+provider key or paid calls. MinIO initialization must exit successfully; console/API are
 loopback-only and the bucket is private/versioned. See
 [storage operations](../shared-pronunciation-operations.md).
 
@@ -92,6 +94,24 @@ endpoint appropriate to each process. Create verified synthetic learner accounts
 and one existing owner administrator through the established auth/admin guides.
 Set a finite test wallet and provisional fixture speech tariff for long-text
 confirmation. Never point these checks at staging/production wallets or storage.
+
+For the separately authorized OpenRouter activation, follow
+[the existing operations reference](../shared-pronunciation-operations.md#real-pronunciation-in-development).
+Use `DICTIONARY_AUDIO_PROVIDER=openrouter`, existing worker-only
+`OPENROUTER_API_KEY`, configuration `openrouter-eleven-george-v1`, model
+`elevenlabs/eleven-v4-turbo`, preset `george` and settings revision
+`eleven-v4-turbo-pronunciation-1`. Preserve the existing 15 language mappings;
+reviewed Ukrainian capability does not enable its mapping automatically. Request
+timeout defaults/maxes at 45000 milliseconds, below the 60000-millisecond worker
+lease. Retain old Kie configuration/credentials/hosts before switching so known
+Kie tasks continue on Kie. Approved real recordings remain reusable across live
+provider changes; fixture recordings remain isolated.
+
+Publish provider USD pricing (USD 0.04/1,000 characters as checked 2026-10-26)
+separately from the provisional customer tariff (100 app credits/1,000 characters,
+minimum one). Preserve operator-funded Free policy and existing budgets. Provider
+selection remains server-owned; the admin pricing screen does not select a voice,
+model route or credentials. No automatic fallback or paid resubmission is enabled.
 
 ## Browser verification
 
@@ -176,6 +196,17 @@ under its pinned task identity after account removal; actor associations and hol
 are removed, and no late debit is permitted. A late valid recording can remain
 reusable without granting the deleted actor access.
 
+Configuration alone does not verify live synthesis. The retained deterministic
+OpenRouter adapter and real PostgreSQL execution tests use synthetic provider HTTP
+responses to prove Free/Paid settlement, validated publication, safe failure and
+reuse. The mapped browser tests below continue using fixture audio; they prove
+playback behavior, rather than live OpenRouter pronunciation. A live check needs
+separate authorization and a bounded synthetic saved-source request through the
+public API, persisted validated audio and protected playback. Record provider
+expense and any listening observation separately in
+[feature 055 evidence](../../.agent/features/055-openrouter-speech/EVIDENCE.md).
+This guide's existing verification date does not certify that active feature.
+
 ## E2E coverage
 
 - `visible-flashcard-playback`: real authenticated flashcard browser journey in
@@ -244,7 +275,10 @@ remain complementary evidence, not substituted E2E coverage.
 
 Focused persistence tests live in
 `apps/backend/tests/integration/modules/speech/shared-speech-store.test.ts` and
-`shared-speech-sources.test.ts`; pricing persistence coverage is in
+`shared-speech-sources.test.ts`. OpenRouter execution and accounting coverage is in
+`apps/backend/tests/integration/modules/speech/openrouter-speech-execution.test.ts`;
+external provider HTTP is deterministic, while service, worker, storage and
+settlement use real PostgreSQL. Pricing persistence coverage is in
 `apps/backend/tests/integration/database/model-price-participant.test.ts`.
 Use the backend package's existing disposable integration harness with these files.
 
@@ -264,7 +298,13 @@ Missing controls: inspect flags, current source access, language/voice mapping a
 cached availability. Host MinIO uses localhost; containers use service name
 `minio`. Wrong endpoint/credentials or failed initialization makes storage fail.
 
-Persistent loading: check worker readiness and known task status before retrying;
+Persistent loading in the storage stage: verify MinIO is running at its configured
+endpoint and the private bucket initializer succeeded. `pnpm dev:all` starts both
+before applications; provider responses cannot publish while storage is offline.
+An older pending Kie request retains its original provider and can finish after
+storage recovers.
+
+For other persistent loading, check worker readiness and known task status before retrying;
 restart/recovery is not permission for a duplicate paid submission. Ready Play
 usually means another browser user gesture is needed. Stale quote/conflict means
 content, profile, tariff or inventory version changed; reload confirmation.
@@ -279,10 +319,12 @@ in-app reason/impact confirmation. Never use shared/staging/production storage f
 test resets or delete retained successful audio as ordinary age-based cleanup.
 
 Provider failure diagnostics: a failed request with `speech_provider_unavailable`
-means the provider reported a terminal temporary/internal error, not missing S3
-bytes. `speech_generation_failed` is another terminal generation failure. Failed
+means a classified provider availability failure; it does not by itself establish
+a missing S3 object or a safe opportunity to retry. `speech_generation_failed` is another terminal generation failure. Failed
 inventory cleanup preserves these safe outcomes. `speech_recording_unavailable`
 continues to mean an otherwise usable recording was removed/unavailable. The UI
 never displays vendor fail messages or task/result URLs; operators can inspect an
 already known provider task without resubmitting it. No automatic fallback or paid
-resubmission occurs. Successful live Kie pronunciation depends on provider health.
+resubmission occurs. Successful live pronunciation depends on provider health and separately recorded
+live evidence. OpenRouter timeouts or lost submission responses can leave an
+unknown submission outcome; inspect reconciliation state rather than resubmitting.

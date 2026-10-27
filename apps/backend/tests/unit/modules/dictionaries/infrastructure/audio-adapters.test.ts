@@ -368,53 +368,58 @@ describe('audio configuration', () => {
             adapters.close();
         }
     });
-    it('drains an original task using retained credentials after switching defaults', async () => {
-        const environment = loadDictionaryAudioEnvironment(
-            {
-                DICTIONARY_AUDIO_PROVIDER: 'kie',
-                DICTIONARY_AUDIO_CONFIGURATION_ID: 'kie-new',
-                DICTIONARY_AUDIO_KIE_API_KEY: 'new-secret',
-                DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS: JSON.stringify([
-                    {
-                        configurationId: 'kie-v1',
-                        apiKey: 'original-secret',
-                        allowedDownloadHosts: ['old.example.com'],
-                    },
-                ]),
-            },
-            { deployed: false },
-        );
-        const adapters = createDictionaryAudioAdapters({
-            environment,
-            database: { execute: vi.fn() } as never,
-        });
-        const fetcher = vi.fn().mockResolvedValue(
-            response({
-                code: 200,
-                data: {
-                    taskId: 'old-task',
-                    model: profile.model,
-                    state: 'generating',
+    it.each(['kie', 'openrouter'])(
+        'drains an original Kie task using retained credentials after switching defaults to %s',
+        async (primary) => {
+            const environment = loadDictionaryAudioEnvironment(
+                {
+                    DICTIONARY_AUDIO_PROVIDER: primary,
+                    OPENROUTER_API_KEY: 'new-openrouter-secret',
+                    DICTIONARY_AUDIO_CONFIGURATION_ID: 'kie-new',
+                    DICTIONARY_AUDIO_KIE_API_KEY: 'new-secret',
+                    DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS:
+                        JSON.stringify([
+                            {
+                                configurationId: 'kie-v1',
+                                apiKey: 'original-secret',
+                                allowedDownloadHosts: ['old.example.com'],
+                            },
+                        ]),
                 },
-            }),
-        );
-        vi.stubGlobal('fetch', fetcher);
-        try {
-            expect(adapters.provider.configurationId).toBe('kie-new');
-            const retained = adapters.providers.get('kie-v1')!;
-            expect(retained.supports('en')).toBeNull();
-            expect(
-                await retained.poll({ taskId: 'old-task', profile }),
-            ).toMatchObject({ taskId: 'old-task', state: 'pending' });
-            expect(fetcher.mock.calls[0]![1].headers.authorization).toBe(
-                'Bearer original-secret',
+                { deployed: false },
             );
-            expect(fetcher.mock.calls[0]![0]).toContain('old-task');
-        } finally {
-            vi.unstubAllGlobals();
-            adapters.close();
-        }
-    });
+            const adapters = createDictionaryAudioAdapters({
+                environment,
+                database: { execute: vi.fn() } as never,
+            });
+            const fetcher = vi.fn().mockResolvedValue(
+                response({
+                    code: 200,
+                    data: {
+                        taskId: 'old-task',
+                        model: profile.model,
+                        state: 'generating',
+                    },
+                }),
+            );
+            vi.stubGlobal('fetch', fetcher);
+            try {
+                expect(adapters.provider.configurationId).toBe('kie-new');
+                const retained = adapters.providers.get('kie-v1')!;
+                expect(retained.supports('en')).toBeNull();
+                expect(
+                    await retained.poll({ taskId: 'old-task', profile }),
+                ).toMatchObject({ taskId: 'old-task', state: 'pending' });
+                expect(fetcher.mock.calls[0]![1].headers.authorization).toBe(
+                    'Bearer original-secret',
+                );
+                expect(fetcher.mock.calls[0]![0]).toContain('old-task');
+            } finally {
+                vi.unstubAllGlobals();
+                adapters.close();
+            }
+        },
+    );
     it('rejects duplicate retained configuration identities', () => {
         expect(() =>
             loadDictionaryAudioEnvironment(

@@ -45,6 +45,24 @@ test('guards reject remote, deployed, mismatched and overridden database targets
 test('fixed commands wait for infrastructure and preserve Turbo build prerequisites', () => {
     assert.ok(developmentCommands.infrastructure.includes('--wait'));
     assert.ok(developmentCommands.infrastructure.includes('--env-file'));
+    assert.deepEqual(developmentCommands.infrastructure.slice(-3), [
+        'postgres',
+        'redis',
+        'minio',
+    ]);
+    // Keep the successful one-shot initializer outside `up --wait`.
+    assert.deepEqual(developmentCommands.storageInitialization, [
+        'docker',
+        'compose',
+        '--file',
+        'compose.yaml',
+        '--env-file',
+        '.env.local',
+        'run',
+        '--rm',
+        '--no-deps',
+        'minio-init',
+    ]);
     assert.ok(
         developmentCommands.dependencies.includes(
             '--filter=@languon/backend^...',
@@ -117,14 +135,27 @@ test('missing local environment produces actionable failure', async () => {
 
 test('setup runs in order, then all services stop on command stop', async (t) => {
     const options = await fixture(t);
+    const messages = [];
+    options.log = (message) => messages.push(message);
     const running = runDevelopment(options);
-    await waitFor(async () => (await options.events()).length === 7);
+    await waitFor(async () => (await options.events()).length === 8);
     options.signals.emit('SIGTERM');
     assert.equal(await running, 130);
     const events = await options.events();
     assert.deepEqual(
-        events.slice(0, 3).map((line) => line.split(':')[0]),
-        ['infrastructure', 'dependencies', 'migrations'],
+        events.slice(0, 5).map((line) => line.split(':')[0]),
+        [
+            'infrastructure',
+            'storageInitialization',
+            'dependencies',
+            'migrations',
+            'readiness',
+        ],
+    );
+    assert.ok(
+        messages.some((message) =>
+            message.includes('PostgreSQL, Redis and MinIO remain running.'),
+        ),
     );
     for (const line of events)
         assert.throws(() => process.kill(Number(line.split(':')[1]), 0), {
@@ -138,7 +169,7 @@ test('missing AI readiness does not prevent configuring the running app', async 
     const messages = [];
     options.log = (message) => messages.push(message);
     const running = runDevelopment(options);
-    await waitFor(async () => (await options.events()).length === 7);
+    await waitFor(async () => (await options.events()).length === 8);
     assert.ok(
         messages.some((message) =>
             message.includes('Applications will still start'),
@@ -148,7 +179,12 @@ test('missing AI readiness does not prevent configuring the running app', async 
     assert.equal(await running, 130);
 });
 
-for (const name of ['infrastructure', 'dependencies', 'migrations']) {
+for (const name of [
+    'infrastructure',
+    'storageInitialization',
+    'dependencies',
+    'migrations',
+]) {
     test(`failure in ${name} never launches later services`, async (t) => {
         const options = await fixture(t, name);
         await assert.rejects(
@@ -170,6 +206,38 @@ test('stop during setup prevents migrations and application startup', async (t) 
     options.signals.emit('SIGINT');
     assert.equal(await running, 130);
     assert.equal((await options.events()).length, 1);
+});
+
+test('stop during bucket initialization prevents migrations and application startup', async (t) => {
+    const options = await fixture(t, undefined, 'storageInitialization');
+    const running = runDevelopment(options);
+    await waitFor(async () => (await options.events()).length === 2);
+    options.signals.emit('SIGINT');
+    assert.equal(await running, 130);
+    assert.deepEqual(
+        (await options.events()).map((line) => line.split(':')[0]),
+        ['infrastructure', 'storageInitialization'],
+    );
+});
+
+test('bucket initialization timeout stops owned processes without launching later stages', async (t) => {
+    const options = await fixture(t, undefined, 'storageInitialization');
+    options.storageInitializationTimeoutMs = 250;
+    await assert.rejects(
+        runDevelopment(options),
+        /storageInitialization timed out; check local MinIO readiness/,
+    );
+    const events = await options.events();
+    assert.deepEqual(
+        events.map((line) => line.split(':')[0]),
+        ['infrastructure', 'storageInitialization'],
+    );
+    for (const line of events)
+        assert.throws(() => process.kill(Number(line.split(':')[1]), 0), {
+            code: 'ESRCH',
+        });
+    assert.equal(options.signals.listenerCount('SIGINT'), 0);
+    assert.equal(options.signals.listenerCount('SIGTERM'), 0);
 });
 
 test('unexpected service failure stops its siblings', async (t) => {

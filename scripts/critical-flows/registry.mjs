@@ -24,6 +24,12 @@ export const backendExecutionFiles = Object.freeze([
     'src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.test.ts',
     'tests/unit/modules/text-ai/run-pinned-fallback.test.ts',
     'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
+    'tests/integration/modules/speech/openrouter-speech-execution.test.ts',
+    'tests/unit/modules/speech/openrouter-speech-provider.test.ts',
+    'tests/unit/modules/speech/openrouter-speech-configuration.test.ts',
+    'tests/unit/modules/dictionaries/infrastructure/audio-adapters.test.ts',
+    'tests/integration/modules/speech/speech-accounting.test.ts',
+    'tests/unit/modules/speech/speech-worker.test.ts',
 ]);
 
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
@@ -38,6 +44,19 @@ export const requiredBackendScenarios = Object.freeze([
                 ),
             ),
             'accepts circuit keys for every catalog model while preserving legacy keys and malformed-key guards',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/speech/openrouter-speech-execution.test.ts',
+        titles: [
+            'completes Free operator-funded French speech through production composition without a customer tariff',
+            'completes Paid customer-funded French speech and settles the exact held tariff once',
+            'persists ambiguous transport failure with unknown provider expense and releases the Paid learner hold',
+            'persists definitive HTTP rejection without charging the Paid learner or inventing provider spend',
+            'persists Free operator-funded speech failure without a customer hold or charge',
+            'renews the fenced storage lease after slow OpenRouter synthesis and publishes once across the original expiry',
+            'rejects a expired storage owner before renewing or publishing',
+            'rejects a replaced storage owner before renewing or publishing',
         ],
     },
 ]);
@@ -131,8 +150,17 @@ export const flows = [
         prerequisite: 'deterministic-portrait',
     },
     {
+        id: 'speech-playback',
+        minimumTests: 4,
+        app: 'web',
+        file: 'shared-pronunciation.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'deterministic-speech-services',
+        dependsOn: ['ai-execution-contracts'],
+    },
+    {
         id: 'ai-execution-contracts',
-        minimumTests: 200,
+        minimumTests: 300,
         app: 'backend',
         files: [...backendExecutionFiles],
         prerequisite: 'disposable-backend-production-execution',

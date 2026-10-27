@@ -24,7 +24,8 @@ pnpm dev:all
 
 Alternatively, start `pnpm dev:panel`, open its printed URL, and choose
 **Development → Start whole app → Start**. Docker must already be running.
-This waits for PostgreSQL/Redis, builds shared dependencies, applies migrations
+This starts PostgreSQL, Redis and MinIO, initializes private audio storage,
+builds shared dependencies, applies migrations
 and starts backend, web, admin and dictionary worker. Stop/Ctrl+C
 ends app processes and leaves infrastructure/data intact.
 

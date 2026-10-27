@@ -2,8 +2,10 @@
  * Guarded to disposable local administration E2E databases; never calls Kie. */
 import { randomUUID, randomBytes } from 'node:crypto';
 import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
-import { eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type { SpeechSource } from '@languon/contracts';
+import { aiAccountingSettingsRevisionsTable as accountingSettings } from '../../src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema';
+import { aiProviderPriceRevisionsTable as providerPrices } from '../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
 import { databaseSchema } from '../../src/infrastructure/database/schema';
 import { DrizzleDictionaryStore } from '../../src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store';
 import { HmacDictionaryCryptography } from '../../src/modules/dictionaries/infrastructure/crypto/dictionary-cryptography';
@@ -64,6 +66,74 @@ const service = new SpeechService({
     storage,
     burstLimiter: { consume: async () => ({ allowed: true }) },
 });
+/** Seed only the operator prerequisites for this synthetic Free fixture. */
+async function seedSpeechAccounting() {
+    await database.transaction(async (tx) => {
+        await tx.execute(
+            sql`select pg_advisory_xact_lock(hashtextextended('admin-speech-fixture-accounting',0))`,
+        );
+        const at = new Date('2026-01-01T00:00:00.000Z');
+        const [settings] = await tx
+            .select()
+            .from(accountingSettings)
+            .orderBy(desc(accountingSettings.version))
+            .limit(1);
+        if (
+            !settings?.maxProviderCostUsdPerAction ||
+            !settings.maxProviderCostUsdPerAccountDay ||
+            !settings.maxProviderCostUsdPerDay
+        ) {
+            await tx.insert(accountingSettings).values({
+                id: randomUUID(),
+                version: (settings?.version ?? 0) + 1,
+                defaultMaxCreditsPerAction:
+                    settings?.defaultMaxCreditsPerAction ?? null,
+                maxProviderCostUsdPerAction: '1',
+                maxProviderCostUsdPerAccountDay: '1000',
+                maxProviderCostUsdPerDay: '10000',
+                createdAt: at,
+                reason: 'Synthetic admin speech operator allowances',
+            });
+        }
+        const [price] = await tx
+            .select()
+            .from(providerPrices)
+            .where(
+                and(
+                    eq(providerPrices.providerId, 'fixture'),
+                    eq(providerPrices.modelId, 'tone-v1'),
+                    eq(providerPrices.meter, 'speech-characters'),
+                ),
+            )
+            .orderBy(desc(providerPrices.version))
+            .limit(1);
+        if (!price)
+            await tx.insert(providerPrices).values({
+                id: randomUUID(),
+                providerId: 'fixture',
+                modelId: 'tone-v1',
+                meter: 'speech-characters',
+                version: 1,
+                effectiveAt: at,
+                createdAt: at,
+                data: {
+                    providerId: 'fixture',
+                    modelId: 'tone-v1',
+                    meter: 'speech-characters',
+                    inputUsdPerMillionTokens: null,
+                    outputUsdPerMillionTokens: null,
+                    cacheReadUsdPerMillionTokens: null,
+                    cacheWriteUsdPerMillionTokens: null,
+                    usdPer1000Characters: '0.001',
+                    effectiveAt: at.toISOString(),
+                    sourceReference: 'synthetic-pronunciation-provider-price',
+                    sourceUrl: null,
+                    reason: 'Synthetic reviewed pronunciation provider price',
+                },
+            });
+    });
+}
+
 async function createSavedSource(text: string, label: string) {
     const now = new Date();
     const context = { now, signal: new AbortController().signal };
@@ -123,6 +193,7 @@ try {
     if (mode === 'seed') {
         if (!value || !/^[a-zA-Z0-9-]{1,80}$/.test(value))
             throw new Error('Synthetic fixture run ID is required.');
+        await seedSpeechAccounting();
         const text = `bonjour ${value}`;
         const { dictionary, created, source } = await createSavedSource(
             text,

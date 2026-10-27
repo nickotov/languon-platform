@@ -241,7 +241,7 @@ test('actual cleanup path survives interruption and recovers an ID lost after co
 const backendFlow = flows.find((flow) => flow.app === 'backend');
 const backendSuiteCounts = [
     35, 18, 2, 8, 12, 4, 25, 4, 8, 12, 5, 4, 6, 4, 5, 15, 9, 20, 14, 20, 7, 10,
-    9,
+    9, 8, 73, 8, 44, 10, 12,
 ];
 const backendTestTotal = backendSuiteCounts.reduce(
     (sum, count) => sum + count,
@@ -385,6 +385,29 @@ test('backend gate rejects a removed completion regression despite a passing agg
         entry.name.endsWith(required.file),
     );
     result.assertionResults[0].title = 'unrelated passing admission test';
+    assert.throws(
+        () => assertPassingBackendReport(report, backendFlow),
+        /did not pass cleanly/,
+    );
+});
+
+test('speech playback requires real backend speech execution, not browser fixtures alone', () => {
+    const selected = selectFlows(['--flow', 'speech-playback']);
+    assert.deepEqual(
+        selected.map((flow) => flow.id),
+        ['ai-execution-contracts', 'speech-playback'],
+    );
+    assert.equal(selected[1].minimumTests, 4);
+    assert.ok(
+        backendExecutionFiles.includes(
+            'tests/integration/modules/speech/openrouter-speech-execution.test.ts',
+        ),
+    );
+    const report = backendReport();
+    const speech = report.testResults.find((file) =>
+        file.name.endsWith('openrouter-speech-execution.test.ts'),
+    );
+    speech.assertionResults[0].title = 'only queues a speech job';
     assert.throws(
         () => assertPassingBackendReport(report, backendFlow),
         /did not pass cleanly/,

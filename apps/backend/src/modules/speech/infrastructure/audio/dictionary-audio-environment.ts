@@ -12,13 +12,17 @@ const schema = z.object({
     SPEECH_PLAYBACK_ENABLED: z.enum(['true', 'false']).default('false'),
     SPEECH_GENERATION_ENABLED: z.enum(['true', 'false']).default('false'),
     DICTIONARY_AUDIO_STORAGE: z.enum(['postgres', 's3']).default('postgres'),
-    DICTIONARY_AUDIO_PROVIDER: z.enum(['fixture', 'kie']).default('fixture'),
+    DICTIONARY_AUDIO_PROVIDER: z
+        .enum(['fixture', 'kie', 'openrouter'])
+        .default('fixture'),
     DICTIONARY_AUDIO_CONFIGURATION_ID: z
         .string()
         .min(1)
         .max(128)
         .default('kie-v1'),
     DICTIONARY_AUDIO_KIE_API_KEY: optional,
+    OPENROUTER_API_KEY: optional,
+    DICTIONARY_AUDIO_OPENROUTER_TIMEOUT_MS: positive.max(45000).default(45000),
     DICTIONARY_AUDIO_VOICE_MAP: optional,
     DICTIONARY_AUDIO_DOWNLOAD_HOSTS: optional,
     DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS: optional,
@@ -202,6 +206,17 @@ export function loadDictionaryAudioEnvironment(
         throw new Error(
             'Live audio requires explicit credentials, voices, download hosts, and spend budgets.',
         );
+    if (
+        generationEnabled &&
+        env.DICTIONARY_AUDIO_PROVIDER === 'openrouter' &&
+        ((role === 'worker' && !env.OPENROUTER_API_KEY) ||
+            !Object.keys(profiles).length ||
+            !env.DICTIONARY_AUDIO_OWNER_BUDGET_UNITS ||
+            !env.DICTIONARY_AUDIO_GLOBAL_BUDGET_UNITS)
+    )
+        throw new Error(
+            'Live OpenRouter audio requires explicit credentials, voices and spend budgets.',
+        );
     let s3:
         | {
               endpoint: string;
@@ -281,7 +296,12 @@ export function loadDictionaryAudioEnvironment(
         storage: env.DICTIONARY_AUDIO_STORAGE,
         configurationId: env.DICTIONARY_AUDIO_CONFIGURATION_ID,
         apiKey:
-            role === 'worker' ? env.DICTIONARY_AUDIO_KIE_API_KEY : undefined,
+            role === 'worker'
+                ? env.DICTIONARY_AUDIO_PROVIDER === 'openrouter'
+                    ? env.OPENROUTER_API_KEY
+                    : env.DICTIONARY_AUDIO_KIE_API_KEY
+                : undefined,
+        requestTimeoutMs: env.DICTIONARY_AUDIO_OPENROUTER_TIMEOUT_MS,
         profiles,
         allowedDownloadHosts,
         retainedConfigurations,

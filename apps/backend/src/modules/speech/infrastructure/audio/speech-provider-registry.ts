@@ -1,3 +1,4 @@
+import { OpenRouterSpeechProvider } from './openrouter-speech-provider';
 import type { SpeechSynthesisProvider } from '../../application/ports/speech-synthesis-provider';
 import type { DictionaryAudioEnvironment } from './dictionary-audio-environment';
 import {
@@ -37,6 +38,20 @@ const providers: Readonly<Record<string, ProviderDefinition>> = Object.freeze({
                 poll: fixture.poll.bind(fixture),
             };
         },
+    },
+    openrouter: {
+        resolve: (env) => ({
+            configurationId: env.configurationId,
+            supports: (language) =>
+                findConfiguredSpeechProfile(env.profiles, language),
+        }),
+        create: (env) =>
+            new OpenRouterSpeechProvider({
+                configurationId: env.configurationId,
+                apiKey: env.apiKey ?? '',
+                profiles: env.profiles,
+                timeoutMs: env.requestTimeoutMs,
+            }),
     },
     kie: {
         resolve: (env) => ({

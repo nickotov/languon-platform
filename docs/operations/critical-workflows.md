@@ -58,6 +58,9 @@ Use `--list` for current entries. The initial registry covers:
 - Chat reconnection, Stop and explicit retry after failure.
 - Zero-credit rejection for paid work, with a visible error and preserved input.
 - Free interview completion with zero learner credits.
+- Shared speech playback, Free/Paid confirmation and cache reuse. Its browser
+  entry requires the backend execution stage, including OpenRouter speech
+  service/worker/storage settlement and fenced publication regressions.
 
 Setup fixtures are appropriate for focused journeys. The empty-database journey
 must configure the relevant settings through admin rather than seed those rows.
@@ -98,7 +101,9 @@ provider response success can still fail during completion writes.
 
 `ai-execution-contracts` runs full retained sentence-store, text-selection and
 dictionary-admission integration suites, plus production sentence-worker runtime
-regressions. The runner owns a separate disposable database and rejects missing
+regressions and speech provider/configuration/accounting/worker suites. Speech
+execution uses real saved-source resolution and private storage; only provider
+HTTP is synthetic. The runner owns a separate disposable database and rejects missing
 suites, too few tests, skipped/todo/expected-failure tests, retries and incomplete
 reports. CI already executes this entry through `pnpm test:e2e:critical`; required
 checks must not rely on opt-in environment variables silently skipping tests.

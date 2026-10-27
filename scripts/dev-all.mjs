@@ -26,6 +26,19 @@ export const developmentCommands = {
         '120',
         'postgres',
         'redis',
+        'minio',
+    ],
+    storageInitialization: [
+        'docker',
+        'compose',
+        '--file',
+        'compose.yaml',
+        '--env-file',
+        '.env.local',
+        'run',
+        '--rm',
+        '--no-deps',
+        'minio-init',
     ],
     dependencies: [
         'pnpm',
@@ -163,6 +176,7 @@ export async function runDevelopment({
     commands = developmentCommands,
     signals = process,
     graceMs = 1500,
+    storageInitializationTimeoutMs = 120_000,
     stdout = process.stdout,
     stderr = process.stderr,
     log = (message) => console.log(`[dev:all] ${message}`),
@@ -295,10 +309,37 @@ export async function runDevelopment({
     }
 
     try {
-        for (const name of ['infrastructure', 'dependencies', 'migrations']) {
+        for (const name of [
+            'infrastructure',
+            'storageInitialization',
+            'dependencies',
+            'migrations',
+        ]) {
             const done = start(name);
             if (!done) break;
-            const result = await done;
+            let result;
+            let initializationTimer;
+            try {
+                result =
+                    name === 'storageInitialization'
+                        ? await Promise.race([
+                              done,
+                              new Promise((_resolve, reject) => {
+                                  initializationTimer = setTimeout(
+                                      () =>
+                                          reject(
+                                              new Error(
+                                                  'storageInitialization timed out; check local MinIO readiness. No app processes were started.',
+                                              ),
+                                          ),
+                                      storageInitializationTimeoutMs,
+                                  );
+                              }),
+                          ])
+                        : await done;
+            } finally {
+                clearTimeout(initializationTimer);
+            }
             if (stopping) break;
             if (result.code !== 0)
                 throw new Error(
@@ -323,7 +364,7 @@ export async function runDevelopment({
                 });
             }
             log(
-                'Applications and dictionary worker launched; wait for their ready messages. Stop this command to stop them. PostgreSQL and Redis remain running.',
+                'Applications and dictionary worker launched; wait for their ready messages. Stop this command to stop them. PostgreSQL, Redis and MinIO remain running.',
             );
             const result = await Promise.race(running);
             if (!stopping)

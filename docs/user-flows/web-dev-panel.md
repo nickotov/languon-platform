@@ -64,9 +64,10 @@ merely for testing.
 
 Install dependencies, start Docker with a local daemon/context and configure root `.env.local` from
 `.env.example`. Choose **Development → Start whole app → Start** (`pnpm dev:all`).
-This waits for healthy PostgreSQL/Redis, builds shared dependencies and applies
-migrations before running backend, web, admin, dictionary
-worker. Only local development DB/cache targets are accepted. Expand **Running
+This waits for PostgreSQL/Redis/MinIO, runs the idempotent private audio bucket
+initializer, builds shared dependencies and applies migrations before running
+backend, web, admin and dictionary worker. A failed initializer prevents app
+startup. Stopping the command leaves PostgreSQL, Redis and MinIO running. Only local development DB/cache targets are accepted. Expand **Running
 service URLs** to open the public web, admin, or backend API in a new tab. The
 table is driven by the same server snapshot as the process cards, appears only
 for active panel-owned commands, and removes rows after they stop. The reviewed

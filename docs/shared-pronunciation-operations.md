@@ -2,9 +2,12 @@
 type: reference
 title: Shared pronunciation storage and activation operations
 source_paths:
+    - scripts/dev-all.mjs
     - compose.yaml
     - infra/dev/speech-storage-policy.json
     - .env.example
+    - apps/backend/src/modules/speech/infrastructure/audio/**
+    - apps/backend/src/modules/speech/domain/speech-models.ts
     - infra/deploy/lib/shared-speech.mjs
 ---
 
@@ -12,7 +15,9 @@ source_paths:
 
 ## Local storage
 
-`pnpm dev:infra` starts PostgreSQL, Redis, a separate persistent MinIO service and
+`pnpm dev:all` starts PostgreSQL, Redis and MinIO, then runs the idempotent bucket
+initializer before applications. It leaves infrastructure running on shutdown.
+`pnpm dev:infra` also starts PostgreSQL, Redis, a separate persistent MinIO service and
 an idempotent bucket initializer. The API binds to `127.0.0.1:9000`; the console
 binds to `127.0.0.1:9001`. Port overrides use `SPEECH_DEV_MINIO_PORT` and
 `SPEECH_DEV_MINIO_CONSOLE_PORT`. The private, versioned bucket is
@@ -31,7 +36,7 @@ Shared playback/admission flags are `SPEECH_PLAYBACK_ENABLED` and
 `SPEECH_GENERATION_ENABLED`; both default false. Existing `DICTIONARY_AUDIO_*`
 provider/storage settings remain adapter configuration. Local provider `fixture`
 produces a clearly labelled tone; it validates plumbing, not pronunciation.
-Changing an environment example does not activate live Kie.
+Changing an environment example does not activate a live provider.
 
 Use the README migration, backend, web and dictionary-worker commands after
 starting infrastructure. Inspect container status and initializer completion
@@ -44,19 +49,90 @@ speech development storage.
 ## Real pronunciation in development
 
 A beep with `DICTIONARY_AUDIO_PROVIDER=fixture` is intentional test audio: no model
-is called. Set the following in ignored `.env.local`, consistently for API and worker:
+is called. Live provider selection stays in server configuration, while customer
+tariffs and provider USD prices are separate immutable admin-owned records.
 
-- `DICTIONARY_AUDIO_PROVIDER=kie` and `DICTIONARY_AUDIO_KIE_API_KEY`.
-- A new immutable `DICTIONARY_AUDIO_CONFIGURATION_ID` for the voice/model settings.
-- `DICTIONARY_AUDIO_VOICE_MAP`: JSON entries keyed by configured app language with
-  `model`, `voice`, `estimatedCostUnitsPerCharacter` and `settingsVersion`.
-- `DICTIONARY_AUDIO_DOWNLOAD_HOSTS`: a comma-separated allowlist of trusted provider
-  result hosts; unrestricted URLs are rejected. The provisional local allowlist is
-  `tempfile.aiquickdraw.com,file.aiquickdraw.com`; validate the actual result host
-  through the guarded adapter, never allow a host merely because a task returns it.
-- Keep `SPEECH_PLAYBACK_ENABLED=true` and `SPEECH_GENERATION_ENABLED=true`, private
-  S3/MinIO storage and spend budgets. Paid-length synthesis also requires a valid
-  speech tariff; its quote/confirmation behavior is unchanged.
+The OpenRouter local activation profile uses these ignored environment settings:
+
+- `DICTIONARY_AUDIO_PROVIDER=openrouter` and the existing `OPENROUTER_API_KEY`.
+  Only worker execution receives the key; API metadata resolution needs no key.
+- `DICTIONARY_AUDIO_CONFIGURATION_ID=openrouter-eleven-george-v1`.
+- `DICTIONARY_AUDIO_VOICE_MAP`: JSON entries using
+  `model=elevenlabs/eleven-v4-turbo`, `voice=george`,
+  `settingsVersion=eleven-v4-turbo-pronunciation-1` and
+  `estimatedCostUnitsPerCharacter=0.04`.
+- Preserve the 15 currently enabled language mappings:
+  `ar,de,en,es,fr,he,hi,it,ja,ko,pl,pt,ru,tr,zh-Hans`. The reviewed model supports all
+  16 current app languages, including `uk`; capability support does not enable a
+  new local mapping. George is one of the 21 curated preset voices.
+- `DICTIONARY_AUDIO_OPENROUTER_TIMEOUT_MS` defaults to 45000 when absent, with a
+  sanitized fallback warning. Invalid values fail startup validation; the supported
+  range is 1–45000 milliseconds.
+  This bounds dispatch/body reads below the existing 60000-millisecond speech
+  lease. Entering storage renews the fenced lease for publication; the provider
+  and storage timeouts must not be added against the original lease.
+- Keep `SPEECH_PLAYBACK_ENABLED=true`, `SPEECH_GENERATION_ENABLED=true`, private
+  S3/MinIO storage and all existing operational and USD budgets. Chargeable speech
+  also requires an effective customer tariff.
+
+Eleven v4 interprets square-bracket tags as audio instructions. This adapter
+rejects paired square brackets before sending text, including unknown tags;
+ordinary pronunciation does not permit sound-effect instructions.
+
+The request sets `provider.zdr=true` and `data_collection=deny`. These routing
+preferences do not establish OpenRouter account-wide privacy. Before sending
+learner content, verify that account input/output logging, response caching and
+observability integrations match the application's data policy. A synthetic
+connectivity check cannot verify those account settings or pronunciation quality.
+
+Example voice-map entry; repeat for the existing supported local mappings:
+
+```json
+{
+    "fr": {
+        "model": "elevenlabs/eleven-v4-turbo",
+        "voice": "george",
+        "settingsVersion": "eleven-v4-turbo-pronunciation-1",
+        "estimatedCostUnitsPerCharacter": 0.04
+    }
+}
+```
+
+The adapter sends explicit MP3 requests to the fixed
+`POST https://openrouter.ai/api/v1/audio/speech` endpoint, with the language hint
+under `provider.options.elevenlabs.language_code`, `zdr=true` and
+`data_collection=deny`. It validates bounded complete MP3 bytes before private
+storage. No arbitrary endpoint, automatic provider fallback or paid retry is
+configured. A lost/ambiguous submission response remains unknown for reconciliation.
+[OpenRouter TTS contract](https://openrouter.ai/docs/guides/overview/multimodal/tts).
+
+The public model catalog checked on 2026-10-26 lists USD 0.04 per 1,000 characters
+(USD 0.00004 per character). The October 19 launch promotion has expired; do not
+use its discount for calibration.
+[Current provider pricing](https://openrouter.ai/elevenlabs/eleven-v4-turbo/providers).
+Publish that provider rate separately from the copied provisional customer tariff
+of 100 app credits per 1,000 characters, minimum one credit. Preserve the existing
+operator-funded Free policy and budgets. Profile `estimatedCostUnitsPerCharacter`
+uses the legacy operational unit of USD 0.001 for this OpenRouter profile:
+`0.04` units/character equals USD 0.00004/character. Existing Kie profiles retain
+their original units; this is no conversion or repricing of historical jobs.
+Canonical ai-credits USD budget authorization remains authoritative.
+
+Before switching, preserve the old Kie configuration ID, credential and exact
+trusted result hosts in ignored `DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS`.
+The registry continues to resolve these configurations while OpenRouter is active;
+pending Kie jobs poll Kie under their pinned profiles. Never rewrite or delete
+pending jobs, recordings, tariffs or financial history to switch providers.
+Retain the original Kie secret while those jobs require recovery. API and worker
+must load the same metadata; worker execution retains access to required secrets.
+
+Kie remains a retained/alternative adapter. To select it explicitly, use
+`DICTIONARY_AUDIO_PROVIDER=kie`, `DICTIONARY_AUDIO_KIE_API_KEY`, a distinct
+configuration ID and its reviewed voice map. `DICTIONARY_AUDIO_DOWNLOAD_HOSTS`
+contains exact trusted result hosts; unrestricted URLs are rejected. The
+provisional local allowlist is `tempfile.aiquickdraw.com,file.aiquickdraw.com`.
+Validate a result host through the guarded adapter, never allow it merely because
+a task returns it.
 
 For an initial evaluation, Kie lists Bella (`hpp4J3VqNfWAUOO0d1Us`) as a warm,
 professional voice for the currently curated `elevenlabs/text-to-speech-turbo-2-5`.
@@ -138,6 +214,20 @@ the new model cannot generate that language. Existing quotes may require refresh
 A new catalog model receives an immutable provisional tariff on first discovery;
 old revisions and admitted charges are not rewritten.
 
+## Evidence boundaries
+
+Configuration and tariff publication establish readiness only. Deterministic
+OpenRouter HTTP adapter tests plus real disposable PostgreSQL execution/settlement
+tests prove request construction, storage, cache reuse and Free/Paid accounting
+without calling a live provider. The existing browser journeys use fixture audio
+and prove authorized playback/UI behavior. Neither proves live pronunciation.
+A live proof requires a separately authorized, bounded synthetic saved-source
+request through the public API, persisted validated audio, protected playable bytes,
+provider expense classified as calculated or unknown, and an actual listening
+observation before claiming pronunciation quality. Record each layer separately in
+[feature 055 evidence](../.agent/features/055-openrouter-speech/EVIDENCE.md);
+that active record owns completion and remaining gaps.
+
 ## Retention and administration
 
 Successful normalized text and audio remain indefinitely, even after originating
@@ -156,8 +246,9 @@ making audio available again.
 This reference describes required evidence, not a claim that production has been
 provisioned or tested. Keep admission disabled until the feature evidence records:
 
-- Exact Kie model/route, configured application-language and voice mappings,
-  output limits, trusted download hosts and retained profile identities.
+- Exact provider/model route, configured application-language and voice mappings,
+  output limits, trusted Kie download hosts when applicable, retained profile
+  identities and immutable provider/customer price revisions.
 - Deployment-environment provider connectivity, terms/caching permission,
   reviewed real pronunciation samples and bounded measured cost/latency.
 - Selectel private bucket/prefix and scoped runtime/cleanup credentials; isolated
@@ -282,7 +373,7 @@ preserves the request's safe cause and caller-specific billing: refunded payer
 sees `released_no_charge`, joining actors see `free`.
 
 Inspect only the already-known task when diagnosing; do not create a replacement
-paid task or change model/voice blindly. Current Turbo/Bella/French request matches
-the documented contract. Successful Kie generation remains externally blocked by
-its terminal internal error in the verified request. Another model/provider needs
+paid task or change model/voice blindly. The previously verified Turbo/Bella/French request matched
+the documented contract. That request did not prove successful Kie pronunciation because of
+its terminal internal error. Another model/provider needs
 separate capability, voice, price and pronunciation evidence before activation.

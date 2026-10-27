@@ -130,6 +130,8 @@ run('card-authoring generation persistence', () => {
             textAiSupportedFormats: [...model.supportedFormats],
         });
     }
+    // Rebuild all migrations and seed legacy routing before each independent case.
+    // This is setup capacity; generation/assertion deadlines remain unchanged.
     beforeEach(async () => {
         vi.stubEnv('APP_ENV', 'test');
         vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
@@ -156,7 +158,7 @@ run('card-authoring generation persistence', () => {
         await seedLegacyActionFixture(database);
         instantOrigin = Date.now();
         await readyWorker();
-    });
+    }, 30_000);
 
     afterEach(() => {
         vi.unstubAllEnvs();

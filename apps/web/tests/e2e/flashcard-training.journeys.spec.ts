@@ -1,4 +1,4 @@
-// @user-flow-revision shared-pronunciation-playback sha256:9803b0d1d5f5c89e
+// @user-flow-revision shared-pronunciation-playback sha256:4432d47d2e2be1db
 import {
     expect,
     test,
@@ -88,7 +88,10 @@ async function createDictionaryWithCard(
     name: string,
 ): Promise<void> {
     await page.goto('/dictionaries');
-    await page.getByRole('button', { name: 'New dictionary' }).click();
+    await page
+        .getByRole('main')
+        .getByRole('button', { name: 'New dictionary', exact: true })
+        .click();
     await page.getByLabel('Name').fill(name);
     await page
         .getByLabel('Description')
@@ -110,7 +113,10 @@ async function createArabicDictionaryWithLongCard(
     name: string,
 ): Promise<void> {
     await page.goto('/dictionaries');
-    await page.getByRole('button', { name: 'New dictionary' }).click();
+    await page
+        .getByRole('main')
+        .getByRole('button', { name: 'New dictionary', exact: true })
+        .click();
     await page.getByLabel('Name').fill(name);
     await page.getByLabel('Description').fill('Synthetic RTL card data.');
     await page.getByLabel('Translate from').selectOption('ar');

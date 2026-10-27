@@ -57,6 +57,35 @@ export const GEMINI_TUTOR_VOICES = Object.freeze([
     'Zephyr',
 ]);
 
+export const OPENROUTER_ELEVEN_TURBO_MODEL =
+    'elevenlabs/eleven-v4-turbo' as const;
+export const OPENROUTER_ELEVEN_SETTINGS_VERSION =
+    'eleven-v4-turbo-pronunciation-1' as const;
+/** OpenRouter models API supported_voices, reviewed 2026-10-26. No cloning voices. */
+export const OPENROUTER_ELEVEN_VOICES = Object.freeze([
+    'george',
+    'sarah',
+    'adam',
+    'alice',
+    'bella',
+    'bill',
+    'brian',
+    'callum',
+    'charlie',
+    'chris',
+    'daniel',
+    'eric',
+    'harry',
+    'jessica',
+    'laura',
+    'liam',
+    'lily',
+    'matilda',
+    'river',
+    'roger',
+    'will',
+]);
+
 export interface SpeechModelDefinition {
     readonly providerId: string;
     readonly modelId: string;
@@ -70,6 +99,36 @@ export interface SpeechModelDefinition {
 /** Closed reviewed definitions shared by configuration and customer tariff discovery. */
 export const SPEECH_MODEL_CATALOG: readonly SpeechModelDefinition[] =
     Object.freeze([
+        Object.freeze({
+            providerId: 'openrouter',
+            modelId: OPENROUTER_ELEVEN_TURBO_MODEL,
+            // Exact intersection of current app languages and Eleven v4 family.
+            // https://elevenlabs.io/docs/overview/models
+            languageCodes: Object.freeze({
+                ar: 'ar',
+                de: 'de',
+                en: 'en',
+                es: 'es',
+                fr: 'fr',
+                he: 'he',
+                hi: 'hi',
+                it: 'it',
+                ja: 'ja',
+                ko: 'ko',
+                pl: 'pl',
+                pt: 'pt',
+                ru: 'ru',
+                tr: 'tr',
+                uk: 'uk',
+                'zh-Hans': 'zh',
+            }),
+            voices: OPENROUTER_ELEVEN_VOICES,
+            settingsVersions: Object.freeze([
+                OPENROUTER_ELEVEN_SETTINGS_VERSION,
+            ]),
+            defaultSettingsVersion: OPENROUTER_ELEVEN_SETTINGS_VERSION,
+            maxCharacters: 2000,
+        }),
         Object.freeze({
             providerId: 'fixture',
             modelId: 'tone-v1',
