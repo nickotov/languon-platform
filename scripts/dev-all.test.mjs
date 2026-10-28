@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createDevelopmentOutput } from './dev-all-output.mjs';
 import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -6,6 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import {
     developmentCommands,
+    parseDevelopmentArguments,
     runDevelopment,
     validateDevelopmentEnvironment,
 } from './dev-all.mjs';
@@ -16,6 +18,15 @@ const environment = {
     DATABASE_URL: 'postgres://fixture:fixture@localhost:5432/languon',
     REDIS_URL: 'redis://localhost:6379',
 };
+
+test('CLI accepts quiet defaults and verbose with direct or pnpm separator syntax', () => {
+    assert.equal(parseDevelopmentArguments([]).verbose, false);
+    assert.equal(parseDevelopmentArguments(['--verbose']).verbose, true);
+    assert.equal(parseDevelopmentArguments(['--', '--verbose']).verbose, true);
+    assert.equal(parseDevelopmentArguments(['--help']).help, true);
+    assert.throws(() => parseDevelopmentArguments(['--unknown']));
+    assert.throws(() => parseDevelopmentArguments(['unexpected']));
+});
 
 test('guards reject remote, deployed, mismatched and overridden database targets', () => {
     validateDevelopmentEnvironment(environment);
@@ -254,6 +265,7 @@ test('unexpected service failure stops its siblings', async (t) => {
 
 test('runner redacts secrets loaded from its own file across output chunks', async (t) => {
     const options = await fixture(t);
+    options.verbose = true;
     const secret = 'fixture-secret-not-in-parent';
     await writeFile(
         join(options.cwd, '.env.local'),
@@ -275,6 +287,45 @@ test('runner redacts secrets loaded from its own file across output chunks', asy
     };
     await assert.rejects(runDevelopment(options), /dependencies failed/);
     assert.equal(output, '[REDACTED]\n');
+});
+
+test('quiet startup hides successful output and flushes redacted opaque failure details', async (t) => {
+    const options = await fixture(t);
+    const secret = 'fixture-failure-secret';
+    await writeFile(
+        join(options.cwd, '.env.local'),
+        Object.entries({ ...environment, PROVIDER_API_KEY: secret })
+            .map(([key, value]) => `${key}=${value}`)
+            .join('\n'),
+    );
+    options.commands.infrastructure = [
+        process.execPath,
+        '-e',
+        "console.log('successful build output')",
+    ];
+    options.commands.storageInitialization = [
+        process.execPath,
+        '-e',
+        `process.stderr.write('opaque detail ${secret.slice(0, 10)}'); setTimeout(() => { process.stderr.write('${secret.slice(10)}'); process.exitCode = 7; }, 20);`,
+    ];
+    let output = '';
+    options.stdout = {
+        write: (text) => {
+            output += text;
+        },
+    };
+    options.stderr = {
+        write: (text) => {
+            output += text;
+        },
+    };
+    await assert.rejects(
+        runDevelopment(options),
+        /storageInitialization failed/,
+    );
+    assert.doesNotMatch(output, /successful build output/);
+    assert.doesNotMatch(output, new RegExp(secret));
+    assert.match(output, /opaque detail \[REDACTED\]/);
 });
 
 test('stop cleans a synthetic nested service process as well as its launcher', async (t) => {
@@ -319,4 +370,140 @@ test('stop cleans a synthetic nested service process as well as its launcher', a
             return error.code === 'ESRCH';
         }
     });
+});
+
+function outputFixture(verbose = false) {
+    let stdout = '';
+    let stderr = '';
+    const output = createDevelopmentOutput({
+        verbose,
+        stdout: { write: (text) => (stdout += text) },
+        stderr: { write: (text) => (stderr += text) },
+    });
+    return { output, stdout: () => stdout, stderr: () => stderr };
+}
+
+test('quiet output suppresses routine logs but preserves readiness and diagnostics', () => {
+    const f = outputFixture();
+    f.output.write('stdout', 'cache hit\nPASS model: enabled\n');
+    f.output.write(
+        'stderr',
+        'Environment settings absent; using configured fallbacks: OPTIONAL.\n',
+    );
+    f.output.write('stdout', 'backend listening on http://127.0.0.1:4000\n');
+    f.output.write('stderr', 'Warning: port unavailable\n');
+    f.output.write('stdout', 'BLOCKED flow: Missing price\n');
+    f.output.write('stderr', 'Error: connection refused\n');
+    f.output.write('stderr', 'TypeError: invalid runtime value\n');
+    f.output.end();
+    assert.equal(f.stdout(), 'backend listening on http://127.0.0.1:4000\n');
+    assert.match(f.stderr(), /Warning: port unavailable/);
+    assert.match(f.stderr(), /BLOCKED flow: Missing price/);
+    assert.match(f.stderr(), /Error: connection refused/);
+    assert.match(f.stderr(), /TypeError: invalid runtime value/);
+    assert.doesNotMatch(f.stderr(), /configured fallbacks/);
+});
+
+test('verbose output preserves exact already-redacted chunks without duplicate failure output', () => {
+    const f = outputFixture(true);
+    f.output.write('stdout', 'cache hit\npartial');
+    f.output.write('stderr', '[REDACTED]\n');
+    f.output.end();
+    f.output.failure();
+    assert.equal(f.stdout(), 'cache hit\npartial');
+    assert.equal(f.stderr(), '[REDACTED]\n');
+});
+
+test('failed readiness shows blocked checks without dumping successful checks', () => {
+    const f = outputFixture();
+    f.output.write(
+        'stdout',
+        'BLOCKED model: configure price\nPASS many other checks\n',
+    );
+    f.output.end();
+    f.output.failure({ onlyIfSilent: true });
+    assert.equal(f.stderr(), 'BLOCKED model: configure price\n');
+});
+
+test('quiet mode retains bounded failure context including incomplete lines and stack traces', () => {
+    const f = outputFixture();
+    for (let i = 0; i < 500; i++) f.output.write('stdout', `routine ${i}\n`);
+    f.output.write(
+        'stderr',
+        'opaque failure detail\n    at fixture:1\ntrailing',
+    );
+    f.output.end();
+    f.output.failure();
+    assert.doesNotMatch(f.stderr(), /routine 0\n/);
+    assert.match(f.stderr(), /routine 499/);
+    assert.match(
+        f.stderr(),
+        /opaque failure detail\n {4}at fixture:1\ntrailing/,
+    );
+    assert.ok(f.stderr().length < 65536);
+});
+
+test('launcher exit cannot wait indefinitely for descendant-owned log pipes', async (t) => {
+    const options = await fixture(t);
+    options.commands.applications = [
+        process.execPath,
+        '-e',
+        `
+        const { spawn } = require('node:child_process');
+        const { writeFileSync } = require('node:fs');
+        const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3000)'], { stdio: ['ignore', 'inherit', 'inherit'] });
+        writeFileSync('pipe-owner', String(child.pid));
+        process.stderr.write('opaque final detail');
+        process.exitCode = 7;
+        child.unref();
+    `,
+    ];
+    let pid;
+    t.after(() => {
+        if (!pid) return;
+        try {
+            process.kill(pid, 'SIGTERM');
+        } catch (error) {
+            if (error.code !== 'ESRCH') throw error;
+        }
+    });
+    let failureOutput = '';
+    options.stderr = {
+        write: (text) => {
+            failureOutput += text;
+        },
+    };
+    const started = Date.now();
+    await assert.rejects(
+        runDevelopment(options),
+        /applications exited unexpectedly/,
+    );
+    pid = Number(await readFile(join(options.cwd, 'pipe-owner'), 'utf8'));
+    assert.match(failureOutput, /opaque final detail/);
+    assert.ok(
+        Date.now() - started < 1500,
+        'sibling cleanup must not await the descendant pipe owner',
+    );
+});
+
+test('quiet services preserve opaque stderr and suppress expected launcher cancellation noise', () => {
+    let stderr = '';
+    const output = createDevelopmentOutput({
+        service: true,
+        isStopping: () => true,
+        stdout: { write() {} },
+        stderr: {
+            write: (text) => {
+                stderr += text;
+            },
+        },
+    });
+    output.write(
+        'stderr',
+        'Dictionary worker could not confirm lease release before shutdown.\n',
+    );
+    output.write('stderr', 'ELIFECYCLE Command failed with exit code 130.\n');
+    output.end();
+    assert.match(stderr, /could not confirm lease release/);
+    assert.doesNotMatch(stderr, /ELIFECYCLE/);
 });

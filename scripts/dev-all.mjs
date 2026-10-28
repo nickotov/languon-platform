@@ -3,9 +3,10 @@ import {
     StreamingRedactor,
 } from '../web-dev-panel/src/logs.mjs';
 import { execFile, spawn } from 'node:child_process';
+import { createDevelopmentOutput } from './dev-all-output.mjs';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { parseEnv } from 'node:util';
+import { parseArgs, parseEnv } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -177,6 +178,7 @@ export async function runDevelopment({
     signals = process,
     graceMs = 1500,
     storageInitializationTimeoutMs = 120_000,
+    verbose = false,
     stdout = process.stdout,
     stderr = process.stderr,
     log = (message) => console.log(`[dev:all] ${message}`),
@@ -286,29 +288,87 @@ export async function runDevelopment({
             shell: false,
             detached: false,
         });
+        const output = createDevelopmentOutput({
+            verbose,
+            stdout,
+            stderr,
+            service: ['applications', 'dictionary'].includes(name),
+            isStopping: () => stopping,
+        });
+        const redactors = [];
+        let streamsFinalized = false;
+        const finalizeStreams = () => {
+            if (streamsFinalized) return;
+            streamsFinalized = true;
+            for (const { stream, end } of redactors) {
+                stream.removeAllListeners('data');
+                stream.removeAllListeners('end');
+                end();
+                stream.destroy();
+            }
+            output.end();
+        };
         for (const [stream, target] of [
-            [child.stdout, stdout],
-            [child.stderr, stderr],
+            [child.stdout, 'stdout'],
+            [child.stderr, 'stderr'],
         ]) {
             const redactor = new StreamingRedactor({
                 redact,
-                onText: (text) => target.write(text),
+                onText: (text) => output.write(target, text),
             });
             stream.on('data', (chunk) => redactor.write(chunk));
-            stream.on('end', () => redactor.end());
+            let ended = false;
+            const end = () => {
+                if (ended) return;
+                ended = true;
+                redactor.end();
+            };
+            redactors.push({ stream, end });
+            stream.on('end', end);
         }
         const record = { child, done: null };
         record.done = new Promise((done) => {
+            let settled = false;
+            let drainTimer;
+            const finish = (result) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(drainTimer);
+                finalizeStreams();
+                const { code } = result;
+                if (code !== 0 && !stopping)
+                    output.failure({
+                        onlyIfSilent: [
+                            'readiness',
+                            'runtimeReadiness',
+                        ].includes(name),
+                    });
+                done(result);
+            };
             child.once('error', () =>
-                done({ name, code: 1, failedToStart: true }),
+                finish({ name, code: 1, failedToStart: true }),
             );
-            child.once('exit', (code, signal) => done({ name, code, signal }));
+            child.once('exit', (code, signal) => {
+                // Drain final diagnostics, but do not wait indefinitely for a
+                // descendant that inherited its launcher's log pipes.
+                drainTimer = setTimeout(
+                    () => finish({ name, code, signal }),
+                    100,
+                );
+            });
+            child.once('close', (code, signal) => {
+                finish({ name, code, signal });
+            });
         });
         children.add(record);
         return record.done;
     }
 
     try {
+        if (!verbose)
+            log(
+                'Concise output enabled. Use pnpm dev:all --verbose for full logs.',
+            );
         for (const name of [
             'infrastructure',
             'storageInitialization',
@@ -380,21 +440,37 @@ export async function runDevelopment({
     return interrupted ? 130 : 0;
 }
 
+export function parseDevelopmentArguments(args) {
+    return parseArgs({
+        args: args[0] === '--' ? args.slice(1) : args,
+        options: {
+            verbose: { type: 'boolean', default: false },
+            help: { type: 'boolean', default: false },
+        },
+    }).values;
+}
+
 if (
     process.argv[1] &&
     import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 ) {
-    if (process.argv.length > 2) {
-        console.error('[dev:all] This command takes no arguments.');
+    try {
+        const options = parseDevelopmentArguments(process.argv.slice(2));
+        if (options.help)
+            console.log(
+                'pnpm dev:all [--verbose]\nStart local infrastructure, migrate and supervise the applications. Normal output shows progress, service URLs and errors; --verbose shows full redacted logs.',
+            );
+        else
+            runDevelopment(options)
+                .then((code) => {
+                    process.exitCode = code;
+                })
+                .catch((error) => {
+                    console.error(`[dev:all] ${error.message}`);
+                    process.exitCode = 1;
+                });
+    } catch (error) {
+        console.error(`[dev:all] ${error.message}`);
         process.exitCode = 1;
-    } else {
-        runDevelopment()
-            .then((code) => {
-                process.exitCode = code;
-            })
-            .catch((error) => {
-                console.error(`[dev:all] ${error.message}`);
-                process.exitCode = 1;
-            });
     }
 }

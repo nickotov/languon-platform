@@ -23,3 +23,7 @@ rmcp_client = true
 
 [mcp_servers.figma]
 url = "https://mcp.figma.com/mcp"
+
+[mcp_servers.languon]
+url = "http://127.0.0.1:3002/mcp"
+bearer_token_env_var = "LANGUON_ADMIN_MCP_TOKEN"

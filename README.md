@@ -204,7 +204,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 
 | Command                                       | Purpose                                                                             |
 | --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm dev:all`                                | Prepare infra/migrations and run apps plus workers                                  |
+| `pnpm dev:all`                                | Prepare infra/migrations and run apps plus workers; add `--verbose` for full logs   |
 | `pnpm dev`                                    | Run backend, web, and admin development servers                                     |
 | `pnpm dev:infra`                              | Start PostgreSQL, Redis and private development MinIO                               |
 | `pnpm dev:mastra`                             | Provision and run isolated Mastra Studio                                            |

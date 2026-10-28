@@ -10,6 +10,7 @@ surfaces:
 source_paths:
     - web-dev-panel/**
     - scripts/dev-all.mjs
+    - scripts/dev-all-output.mjs
     - package.json
     - pnpm-workspace.yaml
     - scripts/check-user-flow-guides.mjs
@@ -67,7 +68,14 @@ Install dependencies, start Docker with a local daemon/context and configure roo
 This waits for PostgreSQL/Redis/MinIO, runs the idempotent private audio bucket
 initializer, builds shared dependencies and applies migrations before running
 backend, web, admin and dictionary worker. A failed initializer prevents app
-startup. Stopping the command leaves PostgreSQL, Redis and MinIO running. Only local development DB/cache targets are accepted. Expand **Running
+startup. Default logs show stage progress, service URLs, actionable warnings and
+errors. Build/cache chatter, successful readiness checks and environment fallback
+notices are hidden. In a terminal, use `pnpm dev:all --verbose` for the complete
+redacted stream. A failed stage automatically prints its bounded diagnostic tail;
+failed readiness checks show their blocking reasons without dumping successful
+checks. Readiness warnings do not stop the app, so missing AI configuration can
+still be corrected in admin.
+Stopping the command leaves PostgreSQL, Redis and MinIO running. Only local development DB/cache targets are accepted. Expand **Running
 service URLs** to open the public web, admin, or backend API in a new tab. The
 table is driven by the same server snapshot as the process cards, appears only
 for active panel-owned commands, and removes rows after they stop. The reviewed
