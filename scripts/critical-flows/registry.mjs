@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 
 export const backendExecutionFiles = Object.freeze([
+    'tests/integration/database/model-price-actualization.journeys.test.ts',
     'tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts',
     'tests/integration/modules/texts/text-selection.test.ts',
     'tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts',

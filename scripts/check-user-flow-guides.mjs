@@ -9,6 +9,10 @@ const guidesDirectory = join(repositoryRoot, 'docs', 'user-flows');
 const indexPath = join(guidesDirectory, 'README.md');
 const maximumTestFileBytes = 2 * 1024 * 1024;
 export const e2eCommands = new Map([
+    [
+        'model-price-actualization',
+        'pnpm test:e2e:critical -- --flow ai-execution-contracts',
+    ],
     ['architecture-diagrams-playwright', 'pnpm test:e2e:diagrams'],
     ['ai-accounting', 'node scripts/run-ai-accounting-e2e.mjs'],
     ['contextual-assistant', 'node scripts/run-contextual-assistant-e2e.mjs'],

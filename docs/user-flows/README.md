@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Model price actualization](./model-price-actualization.md) — official provider
+  metadata, scoped MCP previews and immutable price publication.
+
 - [Delegated local admin MCP](./admin-mcp.md) — expiring owner credentials,
   bounded agent operations and connection instructions.
 

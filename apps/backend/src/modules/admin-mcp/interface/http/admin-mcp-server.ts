@@ -1,4 +1,5 @@
 import { registerAdminMcpCheckTools } from './admin-mcp-check-tools';
+import { actualizeModelPricesSchema } from '../../application/admin-mcp-price-actualization-service';
 import type { AdminMcpCheckService } from '../../application/admin-mcp-check-service';
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
@@ -19,6 +20,12 @@ export interface AdminMcpServerDependencies {
     administration: AdminMcpAdministrationService;
     checks: AdminMcpCheckService;
     port: number;
+    actualizePrices?: (
+        actor: AdminMcpActor,
+        input: unknown,
+        secret: string,
+        signal: AbortSignal,
+    ) => Promise<unknown>;
 }
 function json(value: unknown) {
     return JSON.stringify(value, (_key, item: unknown) =>
@@ -69,6 +76,7 @@ function createTools(
     deps: AdminMcpServerDependencies,
     actor: AdminMcpActor,
     secret: string,
+    signal: AbortSignal,
 ) {
     const server = new McpServer({ name: 'languon-admin', version: '1.0.0' });
     const wrap = (call: () => Promise<unknown>) => async () => {
@@ -198,6 +206,37 @@ function createTools(
         );
     }
     registerAdminMcpCheckTools(server, deps.checks, actor, secret);
+    if (
+        deps.actualizePrices &&
+        actor.permissions.includes('provider-prices.write') &&
+        actor.allowedActions.includes('provider-prices.actualize') &&
+        actor.allowedActions.includes('provider-prices.write')
+    ) {
+        server.registerTool(
+            'actualize_model_prices',
+            {
+                title: 'Actualize prices of models',
+                description:
+                    'Fetch official prices for configured models and prepare exact price revisions. No paid generation or price publication. Publish returned previews with admin_apply using stable operation keys. Omit models to discover all configured active models in batches of 50; continue with the returned nextOffset until null. Reports unsupported/unchanged models without changing their prices.',
+                inputSchema: actualizeModelPricesSchema,
+                annotations: { readOnlyHint: false, openWorldHint: true },
+            },
+            async (args) => {
+                try {
+                    return result(
+                        await deps.actualizePrices!(
+                            actor,
+                            args,
+                            secret,
+                            signal,
+                        ),
+                    );
+                } catch (error) {
+                    return failure(error);
+                }
+            },
+        );
+    }
     return server;
 }
 export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
@@ -257,7 +296,7 @@ export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
             bursts.set(actor.tokenId, { count: 1, until: now + 60000 });
         } else burst.count++;
         const handler = createMcpHandler(
-            () => createTools(deps, actor, secret),
+            () => createTools(deps, actor, secret, c.req.raw.signal),
             { responseMode: 'json' },
         );
         return handler.fetch(c.req.raw);

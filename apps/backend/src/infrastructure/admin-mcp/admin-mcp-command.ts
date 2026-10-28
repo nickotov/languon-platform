@@ -28,6 +28,9 @@ import { createTextAiSyntheticFlows } from '../text-ai/probe-flow-registry';
 import { DrizzleProviderPriceStore } from '../../modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import { DrizzleAccountingStore } from '../../modules/ai-credits/infrastructure/persistence/drizzle/drizzle-accounting-store';
 import { DrizzleAiCreditTransactionParticipant } from '../../modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import { AdminMcpPriceActualizationService } from '../../modules/admin-mcp/application/admin-mcp-price-actualization-service';
+import { createProviderPriceSources } from '../../modules/ai-credits/infrastructure/pricing/provider-price-sources';
+import { configuredPriceTargets } from './price-actualization';
 
 const local = new URL('../../../../../.env.local', import.meta.url);
 if (existsSync(local)) loadEnvFile(local);
@@ -83,11 +86,24 @@ const probes = new TextAiProbeService(
     probeEnv.timeoutMs,
 );
 const checks = createAdminMcpChecks(database, credentials, probes);
+const administrationAdapter = new AdminMcpAdministrationAdapter(
+    database,
+    operations,
+);
+const administration = new AdminMcpAdministrationService(administrationAdapter);
+const priceSources = createProviderPriceSources();
 const app = createAdminMcpServer({
     credentials,
-    administration: new AdminMcpAdministrationService(
-        new AdminMcpAdministrationAdapter(database, operations),
-    ),
+    administration,
+    actualizePrices: (actor, input, secret, signal) =>
+        new AdminMcpPriceActualizationService({
+            sources: priceSources,
+            targets: async () => configuredPriceTargets(providerKeys),
+            prices: () => new DrizzleProviderPriceStore(database).list(),
+            administration,
+            audit: administrationAdapter,
+            reauthenticate: () => credentials.authenticate(secret),
+        }).actualize(actor, input, signal),
     checks,
     port: env.ADMIN_MCP_PORT,
 });

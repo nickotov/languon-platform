@@ -90,7 +90,10 @@ export const adminMcpActionsByPermission: Readonly<
     'model-checks.run': ['model-checks.run', 'model-checks.status'],
     'routing.write': ['routing.write'],
     'customer-tariffs.write': ['customer-tariffs.write'],
-    'provider-prices.write': ['provider-prices.write'],
+    'provider-prices.write': [
+        'provider-prices.write',
+        'provider-prices.actualize',
+    ],
     'spending-limits.write': ['spending-limits.write'],
     'credits.grant': ['credits.grant'],
     'credits.revoke': ['credits.revoke'],

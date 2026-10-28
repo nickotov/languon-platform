@@ -489,6 +489,17 @@ See [ADR-0044](adr/0044-learner-portrait-approval-and-use-boundaries.md),
 
 ## Action accounting and provider expenses
 
+Provider-price discovery uses the ai-credits price-source port and reviewed
+provider adapters. Configured active text and speech catalogs supply target
+identities; compatible new models reuse their provider adapter. The delegated
+MCP `actualize_model_prices` operation fetches official metadata and prepares
+existing price-write previews; `admin_apply` publishes immutable revisions.
+Unsupported providers, conditional or ambiguous rates and unavailable sources
+retain existing prices. Sources use fixed bounded HTTPS metadata reads, without
+generation or customer-tariff changes. See
+[ADR-0048](adr/0048-official-provider-price-actualization.md) and the
+[price actualization guide](user-flows/model-price-actualization.md).
+
 The ai-credits module joins typed feature transactions for exact milli-credit
 holds, attempt authorization and outcome-aware settlement. Customer tariffs,
 capability funding policies and provider USD rates are independent immutable
