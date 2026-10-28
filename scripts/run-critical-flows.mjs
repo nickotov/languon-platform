@@ -57,6 +57,8 @@ export function backendCommand(flow, report) {
         'run',
         ...flow.files,
         '--no-file-parallelism',
+        // Disposable setup replays the complete financial migration history.
+        '--hookTimeout=30000',
         '--retry=0',
         '--reporter=default',
         '--reporter=../../scripts/critical-flows/backend-retry-reporter.mjs',

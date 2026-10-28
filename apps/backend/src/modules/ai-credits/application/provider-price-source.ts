@@ -3,7 +3,7 @@ import type { ProviderPricePublishRequest } from '@languon/contracts';
 export interface ProviderPriceTarget {
     providerId: string;
     modelId: string;
-    meter: 'text-tokens' | 'speech-characters';
+    meter: 'text-tokens' | 'speech-characters' | 'speech-tokens';
 }
 
 export type FetchedProviderPrice = Omit<
@@ -19,7 +19,11 @@ export type ProviderPriceFetchResult =
       }
     | {
           target: ProviderPriceTarget;
-          status: 'unsupported' | 'unavailable';
+          status:
+              | 'unsupported'
+              | 'unavailable'
+              | 'model-not-found'
+              | 'source-changed';
           reason: string;
       };
 

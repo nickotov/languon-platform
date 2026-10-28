@@ -17,6 +17,7 @@ import {
 } from '../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
 import { lockTextAiCapacity } from '../../../src/infrastructure/text-ai/text-ai-capacity';
 import { parseFixed } from '../../../src/modules/ai-credits/domain/accounting';
+import { reviewedTextProviderBudget } from '../../../src/modules/ai-credits/domain/provider-cost-admission';
 import type { ActionTariff } from '../../../src/modules/ai-credits/domain/action-pricing';
 
 /** Real feature and policy proof for accounting tests; never disables production guards. */
@@ -93,17 +94,25 @@ export async function seedConversationActionAuthorityFixture(
         meter: 'text-tokens',
         at,
     });
-    const budget = {
+    const configuredBudget = {
         maxInputTokensPerAttempt: 10000,
         maxOutputTokensPerAttempt: 10000,
         maxCostMicrosPerAttempt: Number(input.operatorMaximumMicros ?? 10000n),
         inputCostMicrosPerMillionTokens: Number(
-            parseFixed(providerPrice!.inputUsdPerMillionTokens!, 6),
+            parseFixed(providerPrice!.inputUsdPerMillionTokens ?? '0', 6),
         ),
         outputCostMicrosPerMillionTokens: Number(
-            parseFixed(providerPrice!.outputUsdPerMillionTokens!, 6),
+            parseFixed(providerPrice!.outputUsdPerMillionTokens ?? '0', 6),
         ),
     };
+    const budget = providerPrice!.nativeRules
+        ? reviewedTextProviderBudget(
+              providerPrice,
+              configuredBudget,
+              undefined,
+              { dispatchedAt: at.toISOString() },
+          )
+        : configuredBudget;
     const funding = input.funding ?? 'customer';
     const current = await capability.current('conversation');
     const policyFunding = funding === 'unlimited' ? 'customer' : funding;

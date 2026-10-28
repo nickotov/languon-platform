@@ -1,0 +1,2 @@
+ALTER TABLE "text_ai_probes" DROP CONSTRAINT "text_ai_probe_cost";--> statement-breakpoint
+ALTER TABLE "text_ai_probes" ADD CONSTRAINT "text_ai_probe_cost" CHECK ("text_ai_probes"."maximum_micros">0 and ("text_ai_probes"."cost_micros" is null or ("text_ai_probes"."cost_micros">=0 and ("text_ai_probes"."cost_micros"<="text_ai_probes"."maximum_micros" or ("text_ai_probes"."state"='failed' and "text_ai_probes"."completed_at" is not null and coalesce(jsonb_typeof("text_ai_probes"."price"->'nativeRules')='object',false))))));

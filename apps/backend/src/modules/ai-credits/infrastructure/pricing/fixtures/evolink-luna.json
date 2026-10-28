@@ -1,0 +1,376 @@
+{
+    "meta": {
+        "schema_version": "2",
+        "catalog_version": "cat_ca954e14d547fa398bbbc9e0",
+        "pricing_version": "prc_cbf8ea5af2f89181f78e7521",
+        "price_scope": "public_default",
+        "currency": "USD",
+        "exchange_rate_version": "pricing-fx/v1:USD-CNY=6.8",
+        "updated_at": "2026-10-24T09:31:52.357Z",
+        "fresh_until": "2026-10-28T12:59:00Z"
+    },
+    "model": {
+        "model_id": "gpt-6-luna",
+        "product_id": "gpt-6-luna",
+        "operation": "text_generation",
+        "modality": "text",
+        "lifecycle": "active",
+        "pricing_status": "available",
+        "settlement_basis": "actual_usage",
+        "policy_version": 0,
+        "policy_checksum": "9c34fe87f941652555a7407aa10f6342f3764ef4fa5ec979124f1bb7de06b0e7",
+        "policy_source": "legacy_text_adapter",
+        "parameters": [
+            {
+                "name": "prompt_tokens",
+                "type": "integer",
+                "minimum": "0",
+                "default": "0"
+            }
+        ],
+        "components": [
+            {
+                "id": "cache_hit",
+                "role": "cache_hit",
+                "dimension": "cache_read_token",
+                "sku_id": "2722",
+                "unit": "1k_tokens",
+                "billing_unit_size": 1000,
+                "display_unit_size": 1000000,
+                "rate": {
+                    "uc": "6",
+                    "credits": "0.0006",
+                    "cny": "0.00006",
+                    "usd": "0.00000882"
+                },
+                "minimum_charge": {
+                    "uc": "100",
+                    "credits": "0.01",
+                    "cny": "0.001",
+                    "usd": "0.00014706"
+                },
+                "billing_rule": "per_token",
+                "pricing_status": "available",
+                "effective_at": "2026-10-24T09:31:52.357Z",
+                "quantity_rule": {
+                    "op": "divide",
+                    "args": [
+                        {
+                            "op": "variable",
+                            "name": "cache_read_tokens"
+                        },
+                        {
+                            "op": "constant",
+                            "value": "1000"
+                        }
+                    ]
+                },
+                "rounding": {
+                    "point": "per_component_subtotal",
+                    "mode": "ceil"
+                },
+                "tiers": [
+                    {
+                        "when": {
+                            "op": "gt",
+                            "args": [
+                                {
+                                    "op": "variable",
+                                    "name": "prompt_tokens"
+                                },
+                                {
+                                    "op": "constant",
+                                    "value": "272000"
+                                }
+                            ]
+                        },
+                        "multiplier": "2",
+                        "sku_id": "2722",
+                        "rate": {
+                            "uc": "12",
+                            "credits": "0.0012",
+                            "cny": "0.00012",
+                            "usd": "0.00001765"
+                        },
+                        "minimum_charge": {
+                            "uc": "100",
+                            "credits": "0.01",
+                            "cny": "0.001",
+                            "usd": "0.00014706"
+                        },
+                        "billing_rule": "per_token",
+                        "pricing_status": "available",
+                        "effective_at": "2026-10-24T09:31:52.357Z"
+                    }
+                ]
+            },
+            {
+                "id": "cache_write",
+                "role": "cache_write",
+                "dimension": "cache_write_token",
+                "sku_id": "2723",
+                "unit": "1k_tokens",
+                "billing_unit_size": 1000,
+                "display_unit_size": 1000000,
+                "rate": {
+                    "uc": "77",
+                    "credits": "0.0077",
+                    "cny": "0.00077",
+                    "usd": "0.00011324"
+                },
+                "minimum_charge": {
+                    "uc": "100",
+                    "credits": "0.01",
+                    "cny": "0.001",
+                    "usd": "0.00014706"
+                },
+                "billing_rule": "per_token",
+                "pricing_status": "available",
+                "effective_at": "2026-10-24T09:31:52.357Z",
+                "quantity_rule": {
+                    "op": "divide",
+                    "args": [
+                        {
+                            "op": "variable",
+                            "name": "cache_write_tokens"
+                        },
+                        {
+                            "op": "constant",
+                            "value": "1000"
+                        }
+                    ]
+                },
+                "rounding": {
+                    "point": "per_component_subtotal",
+                    "mode": "ceil"
+                },
+                "tiers": [
+                    {
+                        "when": {
+                            "op": "gt",
+                            "args": [
+                                {
+                                    "op": "variable",
+                                    "name": "prompt_tokens"
+                                },
+                                {
+                                    "op": "constant",
+                                    "value": "272000"
+                                }
+                            ]
+                        },
+                        "multiplier": "2",
+                        "sku_id": "2723",
+                        "rate": {
+                            "uc": "154",
+                            "credits": "0.0154",
+                            "cny": "0.00154",
+                            "usd": "0.00022647"
+                        },
+                        "minimum_charge": {
+                            "uc": "100",
+                            "credits": "0.01",
+                            "cny": "0.001",
+                            "usd": "0.00014706"
+                        },
+                        "billing_rule": "per_token",
+                        "pricing_status": "available",
+                        "effective_at": "2026-10-24T09:31:52.357Z"
+                    }
+                ]
+            },
+            {
+                "id": "image_gen:gpt-image-2.5-flare:image_input",
+                "role": "image_gen:gpt-image-2.5-flare:image_input",
+                "dimension": "image_input",
+                "sku_id": "2731",
+                "unit": "1k_tokens",
+                "billing_unit_size": 1000,
+                "display_unit_size": 1000000,
+                "rate": {
+                    "uc": "4896",
+                    "credits": "0.4896",
+                    "cny": "0.04896",
+                    "usd": "0.0072"
+                },
+                "minimum_charge": {
+                    "uc": "0",
+                    "credits": "0",
+                    "cny": "0",
+                    "usd": "0"
+                },
+                "billing_rule": "per_token",
+                "pricing_status": "available",
+                "effective_at": "2026-09-23T11:42:47.485Z",
+                "quantity_rule": {
+                    "op": "divide",
+                    "args": [
+                        {
+                            "op": "variable",
+                            "name": "image_count"
+                        },
+                        {
+                            "op": "constant",
+                            "value": "1000"
+                        }
+                    ]
+                },
+                "rounding": {
+                    "point": "per_component_subtotal",
+                    "mode": "ceil"
+                },
+                "tiers": []
+            },
+            {
+                "id": "input",
+                "role": "input",
+                "dimension": "input_token",
+                "sku_id": "2720",
+                "unit": "1k_tokens",
+                "billing_unit_size": 1000,
+                "display_unit_size": 1000000,
+                "rate": {
+                    "uc": "62",
+                    "credits": "0.0062",
+                    "cny": "0.00062",
+                    "usd": "0.00009118"
+                },
+                "minimum_charge": {
+                    "uc": "100",
+                    "credits": "0.01",
+                    "cny": "0.001",
+                    "usd": "0.00014706"
+                },
+                "billing_rule": "per_token",
+                "pricing_status": "available",
+                "effective_at": "2026-10-24T09:31:52.357Z",
+                "quantity_rule": {
+                    "op": "divide",
+                    "args": [
+                        {
+                            "op": "variable",
+                            "name": "input_tokens"
+                        },
+                        {
+                            "op": "constant",
+                            "value": "1000"
+                        }
+                    ]
+                },
+                "rounding": {
+                    "point": "per_component_subtotal",
+                    "mode": "ceil"
+                },
+                "tiers": [
+                    {
+                        "when": {
+                            "op": "gt",
+                            "args": [
+                                {
+                                    "op": "variable",
+                                    "name": "prompt_tokens"
+                                },
+                                {
+                                    "op": "constant",
+                                    "value": "272000"
+                                }
+                            ]
+                        },
+                        "multiplier": "2",
+                        "sku_id": "2720",
+                        "rate": {
+                            "uc": "124",
+                            "credits": "0.0124",
+                            "cny": "0.00124",
+                            "usd": "0.00018235"
+                        },
+                        "minimum_charge": {
+                            "uc": "100",
+                            "credits": "0.01",
+                            "cny": "0.001",
+                            "usd": "0.00014706"
+                        },
+                        "billing_rule": "per_token",
+                        "pricing_status": "available",
+                        "effective_at": "2026-10-24T09:31:52.357Z"
+                    }
+                ]
+            },
+            {
+                "id": "output",
+                "role": "output",
+                "dimension": "output_token",
+                "sku_id": "2721",
+                "unit": "1k_tokens",
+                "billing_unit_size": 1000,
+                "display_unit_size": 1000000,
+                "rate": {
+                    "uc": "306",
+                    "credits": "0.0306",
+                    "cny": "0.00306",
+                    "usd": "0.00045"
+                },
+                "minimum_charge": {
+                    "uc": "100",
+                    "credits": "0.01",
+                    "cny": "0.001",
+                    "usd": "0.00014706"
+                },
+                "billing_rule": "per_token",
+                "pricing_status": "available",
+                "effective_at": "2026-10-24T09:31:52.357Z",
+                "quantity_rule": {
+                    "op": "divide",
+                    "args": [
+                        {
+                            "op": "variable",
+                            "name": "output_tokens"
+                        },
+                        {
+                            "op": "constant",
+                            "value": "1000"
+                        }
+                    ]
+                },
+                "rounding": {
+                    "point": "per_component_subtotal",
+                    "mode": "ceil"
+                },
+                "tiers": [
+                    {
+                        "when": {
+                            "op": "gt",
+                            "args": [
+                                {
+                                    "op": "variable",
+                                    "name": "prompt_tokens"
+                                },
+                                {
+                                    "op": "constant",
+                                    "value": "272000"
+                                }
+                            ]
+                        },
+                        "multiplier": "1.5",
+                        "sku_id": "2721",
+                        "rate": {
+                            "uc": "459",
+                            "credits": "0.0459",
+                            "cny": "0.00459",
+                            "usd": "0.000675"
+                        },
+                        "minimum_charge": {
+                            "uc": "100",
+                            "credits": "0.01",
+                            "cny": "0.001",
+                            "usd": "0.00014706"
+                        },
+                        "billing_rule": "per_token",
+                        "pricing_status": "available",
+                        "effective_at": "2026-10-24T09:31:52.357Z"
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,4 +1,5 @@
-// @user-flow-revision model-price-actualization sha256:c0b6266ee2dfaeb1
+// @user-flow-revision model-price-actualization sha256:6f1fe9b76691a115
+// @user-flow-revision model-price-coverage-and-onboarding sha256:4a4be486f2203e09
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
@@ -10,7 +11,11 @@ import {
     type PostgresClient,
     type PostgresJsDatabase,
 } from '@languon/database';
-import type { AdminMcpPermission, ProviderPrice } from '@languon/contracts';
+import type {
+    AdminMcpPermission,
+    ProviderPrice,
+    ProviderPricePublishRequest,
+} from '@languon/contracts';
 import { databaseSchema } from '../../../src/infrastructure/database/schema';
 import {
     usersTable,
@@ -38,6 +43,7 @@ import { DrizzleAccountingStore } from '../../../src/modules/ai-credits/infrastr
 import { DrizzleAiCreditTransactionParticipant } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { DrizzleTextAiRoutingStore } from '../../../src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store';
 import { createProviderPriceSources } from '../../../src/modules/ai-credits/infrastructure/pricing/provider-price-sources';
+import { evaluateNativeProviderCost } from '../../../src/modules/ai-credits/domain/native-provider-pricing';
 import {
     createTestPostgresClient,
     isDatabaseIntegrationEnabled,
@@ -60,7 +66,20 @@ interface RefreshResult {
     results: Array<{
         target: { providerId: string; modelId: string; meter: string };
         status: string;
-        preview?: { id: string };
+        preview?: {
+            id: string;
+            proposed: ProviderPricePublishRequest;
+            operation: string;
+        };
+        pricing?: ProviderPrice;
+        catalog?: { configured: boolean; retired: boolean };
+        verification?: string;
+        comparison?: string;
+        publication?: string;
+        executionReadiness?: {
+            assessedByPriceVerification: false;
+            knownBlockers: string[];
+        };
     }>;
 }
 
@@ -90,7 +109,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client?.end();
         });
 
-        async function fixture(targetCount = 1) {
+        async function fixture(targetCount = 1, verificationCatalog = false) {
             const ownerId = randomUUID();
             await database
                 .insert(usersTable)
@@ -117,7 +136,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 () => new Date(),
                 {
                     ...adminMcpActionsByPermission,
-                    'provider-prices.write': ['provider-prices.write'],
+                    'provider-prices.write': [
+                        'provider-prices.write',
+                        'provider-prices.actualize',
+                    ],
+                    'providers.read': ['providers.inspect'],
                 },
             );
             const issue = async (
@@ -157,6 +180,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const administration = new AdminMcpAdministrationService(adapter);
             let requests = 0;
             const pricing = { prompt: '0.000000065', completion: '0.00000026' };
+            const catalog = async () =>
+                targets.map((item, index) => ({
+                    target: item,
+                    configured: !(verificationCatalog && index === 0),
+                    retired: verificationCatalog && index === 1,
+                    executionBlockers:
+                        verificationCatalog && index === 0
+                            ? [
+                                  'Synthetic provider credential is not configured.',
+                              ]
+                            : verificationCatalog && index === 1
+                              ? ['Synthetic exact model is retired.']
+                              : [],
+                }));
             const fetchPricing: typeof fetch = async (input, init) => {
                 requests++;
                 const url = new URL(String(input));
@@ -164,14 +201,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(init?.redirect).toBe('error');
                 if (url.pathname === '/api/v1/models')
                     return Response.json({
-                        data: targets.map((item) => ({
-                            id: item.modelId,
-                            pricing,
-                            architecture: {
-                                input_modalities: ['text'],
-                                output_modalities: ['text'],
-                            },
-                        })),
+                        data: targets
+                            .filter(
+                                (_item, index) =>
+                                    !verificationCatalog || index !== 1,
+                            )
+                            .map((item) => ({
+                                id: item.modelId,
+                                pricing,
+                                architecture: {
+                                    input_modalities: ['text'],
+                                    output_modalities: ['text'],
+                                },
+                            })),
                     });
                 const model = targets.find(
                     (item) =>
@@ -200,11 +242,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new AdminMcpPriceActualizationService({
                         sources,
                         targets: async () => targets,
+                        catalog,
                         prices: () => prices.list(),
                         administration,
                         audit: adapter,
                         reauthenticate: () => credentials.authenticate(secret),
                     }).actualize(actor, input, signal),
+                verifyPrices: (actor, input, secret, signal) =>
+                    new AdminMcpPriceActualizationService({
+                        sources,
+                        targets: async () => targets,
+                        catalog,
+                        prices: () => prices.list(),
+                        administration,
+                        audit: adapter,
+                        reauthenticate: () => credentials.authenticate(secret),
+                    }).verify(actor, input, signal),
             });
             const server = serve({
                 fetch: app.fetch,
@@ -256,12 +309,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     arguments: args,
                 });
                 const text = response.body.result?.content?.[0]?.text;
+                const isError =
+                    response.body.result?.isError === true ||
+                    response.body.error !== undefined;
+                let value: T | undefined;
+                if (text) {
+                    try {
+                        value = JSON.parse(text) as T;
+                    } catch (error) {
+                        // SDK validation errors can be plain text. Successful
+                        // tool results must still contain valid JSON.
+                        if (!isError) throw error;
+                    }
+                }
                 return {
                     status: response.status,
-                    isError:
-                        response.body.result?.isError === true ||
-                        response.body.error !== undefined,
-                    value: text ? (JSON.parse(text) as T) : undefined,
+                    isError,
+                    value,
+                    ...(isError && text ? { errorMessage: text } : {}),
                 };
             };
             const refresh = (offset?: number) =>
@@ -290,6 +355,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         }
 
         // @user-flow model-price-actualization/official-price-preview-and-idempotent-publication
+        // @user-flow model-price-coverage-and-onboarding/native-price-publication-and-legacy-snapshots
         it('publishes fetched prices once through HTTP previews while preserving historical pinned rates', async () => {
             const f = await fixture();
             const oldAt = new Date(Date.now() - 60_000);
@@ -327,6 +393,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 applied: false,
                 results: [{ status: 'preview' }],
             });
+            expect(first.value!.results[0]!.preview!.operation).toBe(
+                'provider-prices.native-write',
+            );
             const firstId = first.value!.results[0]!.preview!.id;
             const staleId = (await f.refresh()).value!.results[0]!.preview!.id;
             expect(
@@ -339,8 +408,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(applied.isError).toBe(false);
             expect(applied.value).toMatchObject({
                 version: 2,
-                inputUsdPerMillionTokens: '0.065',
-                outputUsdPerMillionTokens: '0.26',
+                inputUsdPerMillionTokens: null,
+                outputUsdPerMillionTokens: null,
+                cacheReadUsdPerMillionTokens: null,
+                cacheWriteUsdPerMillionTokens: null,
+                usdPer1000Characters: null,
+                nativeRules: { version: 1 },
             });
             expect((await f.apply(firstId, operationKey)).value).toEqual(
                 applied.value,
@@ -369,7 +442,40 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const latest = await database.transaction((tx) =>
                 pinProviderPrice(tx, { ...f.target, at: new Date() }),
             );
-            expect(latest?.inputUsdPerMillionTokens).toBe('0.065');
+            expect(latest?.inputUsdPerMillionTokens).toBeNull();
+            expect(latest?.nativeRules).toBeDefined();
+            const calculated = evaluateNativeProviderCost(
+                latest!.nativeRules!,
+                {
+                    dispatchedAt: new Date().toISOString(),
+                    serviceTier: 'standard',
+                },
+                {
+                    inputTokens: 1_000_000,
+                    outputTokens: 1_000_000,
+                    cacheReadTokens: 0,
+                    cacheWriteTokens: 0,
+                    requests: 1,
+                },
+            );
+            expect(calculated).toMatchObject({
+                status: 'calculated',
+                micros: 325_000n,
+            });
+            // A legacy flat writer cannot broaden its financial contract by receiving native fields.
+            const flatAttempt = await f.call('preview_provider_prices_write', {
+                ...first.value!.results[0]!.preview!.proposed,
+                expectedVersion: 2,
+            });
+            expect(flatAttempt.isError).toBe(true);
+            expect(
+                await database
+                    .select()
+                    .from(adminMcpPreviewsTable)
+                    .where(
+                        eq(adminMcpPreviewsTable.tokenId, f.issued.token.id),
+                    ),
+            ).toHaveLength(2);
             const stale = await f.apply(staleId);
             expect(stale.isError).toBe(true);
             const unchanged = await f.refresh();
@@ -384,14 +490,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 events.events.some(
                     (event) =>
-                        event.action === 'provider-prices.actualize' &&
+                        event.action ===
+                            'provider-prices.actualize-native.v1' &&
                         event.outcome === 'success',
                 ),
             ).toBe(true);
             expect(
                 events.events.some(
                     (event) =>
-                        event.action === 'provider-prices.write' &&
+                        event.action === 'provider-prices.native-write' &&
                         event.outcome === 'success',
                 ),
             ).toBe(true);
@@ -436,6 +543,123 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(published).toHaveLength(0);
         }, 20_000);
 
+        // @user-flow model-price-coverage-and-onboarding/native-price-verification-without-publication
+        it('verifies native prices without publication and separates missing credentials, retired identity and readiness', async () => {
+            const f = await fixture(2, true);
+            const legacyReader = await f.issue(['providers.read'], true);
+            const oldTools = await f.rpc(legacyReader.secret, 'tools/list');
+            expect(
+                oldTools.body.result?.tools?.map((tool) => tool.name),
+            ).not.toContain('verify_model_prices');
+            expect(
+                (
+                    await f.call(
+                        'verify_model_prices',
+                        { reason: 'Do not expand historical read authority' },
+                        legacyReader.secret,
+                    )
+                ).isError,
+            ).toBe(true);
+            expect(f.requests).toBe(0);
+
+            const reader = await f.issue(['providers.read']);
+            const tools = await f.rpc(reader.secret, 'tools/list');
+            expect(
+                tools.body.result?.tools?.map((tool) => tool.name),
+            ).toContain('verify_model_prices');
+            expect(
+                tools.body.result?.tools?.map((tool) => tool.name),
+            ).not.toContain('actualize_model_prices');
+            const before = await f.prices.list();
+            const verified = await f.call<RefreshResult>(
+                'verify_model_prices',
+                {
+                    reason: 'Verify synthetic current and retired exact identities',
+                },
+                reader.secret,
+            );
+            expect(verified.isError).toBe(false);
+            expect(verified.value).toMatchObject({
+                applied: false,
+                totalModels: 2,
+                nextOffset: null,
+                results: [
+                    {
+                        status: 'verified',
+                        verification: 'verified',
+                        comparison: 'missing',
+                        publication: 'ready',
+                        catalog: { configured: false, retired: false },
+                        pricing: { nativeRules: { version: 1 } },
+                        executionReadiness: {
+                            assessedByPriceVerification: false,
+                            knownBlockers: [
+                                'Synthetic provider credential is not configured.',
+                            ],
+                        },
+                    },
+                    {
+                        status: 'model-not-found',
+                        verification: 'model-not-found',
+                        publication: 'retired',
+                        catalog: { configured: true, retired: true },
+                    },
+                ],
+            });
+            expect(await f.prices.list()).toEqual(before);
+            expect(
+                await database
+                    .select()
+                    .from(adminMcpPreviewsTable)
+                    .where(eq(adminMcpPreviewsTable.tokenId, reader.token.id)),
+            ).toHaveLength(0);
+            expect(
+                await database
+                    .select()
+                    .from(adminMcpPreviewsTable)
+                    .where(
+                        eq(adminMcpPreviewsTable.tokenId, f.issued.token.id),
+                    ),
+            ).toHaveLength(0);
+
+            const update = await f.refresh();
+            expect(update.value!.results[0]!.status).toBe('preview');
+            expect(update.value!.results[1]!.status).toBe('model-not-found');
+            expect(
+                (await f.apply(update.value!.results[0]!.preview!.id)).isError,
+            ).toBe(false);
+            const afterPublication = await f.prices.list();
+            const matching = await f.call<RefreshResult>(
+                'verify_model_prices',
+                {
+                    reason: 'Verify published native pricing without another financial mutation',
+                    models: [f.target],
+                },
+                reader.secret,
+            );
+            expect(matching.value!.results).toMatchObject([
+                { status: 'verified', comparison: 'matches' },
+            ]);
+            expect(await f.prices.list()).toEqual(afterPublication);
+            expect(
+                await database
+                    .select()
+                    .from(adminMcpPreviewsTable)
+                    .where(eq(adminMcpPreviewsTable.tokenId, reader.token.id)),
+            ).toHaveLength(0);
+            const audit = await f.credentials.audit(f.ownerId, {
+                page: 1,
+                pageSize: 100,
+            });
+            expect(
+                audit.events.some(
+                    (event) =>
+                        event.action === 'provider-prices.verify' &&
+                        event.outcome === 'success',
+                ),
+            ).toBe(true);
+        });
+
         it('does not expand existing or read-only credentials and rejects revoked tokens before fetching', async () => {
             const f = await fixture();
             for (const token of [
@@ -446,6 +670,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(
                     tools.body.result?.tools?.map((t) => t.name),
                 ).not.toContain('actualize_model_prices');
+                expect(
+                    tools.body.result?.tools?.map((tool) => tool.name),
+                ).not.toContain('preview_provider_prices_native_write');
                 expect(
                     (
                         await f.call(

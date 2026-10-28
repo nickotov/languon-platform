@@ -1,19 +1,85 @@
 -- Speech keeps its success-only customer hold, but every new clip has independent USD authorization.
 CREATE OR REPLACE FUNCTION languon_guard_speech_accounting_snapshot() RETURNS trigger
 LANGUAGE plpgsql SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE k text; v jsonb;
 BEGIN
-  IF TG_OP='UPDATE' AND (NEW.accounting_version,NEW.provider_price_snapshot,NEW.provider_character_count)
-      IS DISTINCT FROM (OLD.accounting_version,OLD.provider_price_snapshot,OLD.provider_character_count) THEN
+  IF TG_OP='UPDATE' AND (NEW.accounting_version,NEW.provider_price_snapshot,NEW.provider_character_count,NEW.provider_usage_bounds)
+      IS DISTINCT FROM (OLD.accounting_version,OLD.provider_price_snapshot,OLD.provider_character_count,OLD.provider_usage_bounds) THEN
     RAISE EXCEPTION 'Speech provider accounting admission is immutable' USING ERRCODE='23514';
   END IF;
-  IF TG_OP='UPDATE' AND OLD.provider_outcome IS NOT NULL AND NEW.provider_outcome IS DISTINCT FROM OLD.provider_outcome THEN RAISE EXCEPTION 'Speech provider outcome is immutable' USING ERRCODE='23514'; END IF;
+  IF TG_OP='UPDATE' AND OLD.provider_outcome IS NOT NULL AND NEW.provider_outcome IS DISTINCT FROM OLD.provider_outcome THEN
+    RAISE EXCEPTION 'Speech provider outcome is immutable' USING ERRCODE='23514';
+  END IF;
   IF TG_OP='UPDATE' AND OLD.provider_dispatched_at IS NOT NULL AND NEW.provider_dispatched_at IS DISTINCT FROM OLD.provider_dispatched_at THEN
     RAISE EXCEPTION 'Speech provider dispatch identity is immutable' USING ERRCODE='23514';
+  END IF;
+  IF (NEW.provider_usage,NEW.provider_execution_facts) IS DISTINCT FROM (OLD.provider_usage,OLD.provider_execution_facts) THEN
+    IF OLD.provider_usage IS NOT NULL OR OLD.provider_execution_facts IS NOT NULL OR OLD.provider_outcome IS NOT NULL THEN
+      RAISE EXCEPTION 'Speech provider usage is an immutable first observation' USING ERRCODE='23514';
+    END IF;
+    IF current_setting('languon.speech_worker_version',true) IS DISTINCT FROM '1'
+       OR NEW.provider_dispatched_at IS NULL OR NEW.state NOT IN ('submitting','processing','storing')
+       OR NEW.lease_token IS NULL OR NEW.lease_expires_at IS NULL OR NEW.lease_expires_at<=clock_timestamp() THEN
+      RAISE EXCEPTION 'Speech provider usage requires its live dispatched worker' USING ERRCODE='23514';
+    END IF;
+    IF NEW.provider_usage IS NULL OR jsonb_typeof(NEW.provider_usage)<>'object' OR NEW.provider_usage->>'requests' IS DISTINCT FROM '1' THEN
+      RAISE EXCEPTION 'Invalid speech provider usage' USING ERRCODE='23514';
+    END IF;
+    FOR k,v IN SELECT * FROM jsonb_each(NEW.provider_usage) LOOP
+      IF k IN ('providerCreditsConsumed','providerCostUsd') THEN
+        IF (k='providerCreditsConsumed' AND (NEW.provider_price_snapshot->>'providerId' IS DISTINCT FROM 'kie' OR NEW.provider_price_snapshot->'nativeRules'->>'reportedCreditUsdPerCredit' IS NULL))
+           OR (k='providerCostUsd' AND (NEW.provider_price_snapshot->>'providerId' IS DISTINCT FROM 'openrouter' OR NOT (NEW.provider_price_snapshot ? 'nativeRules'))) THEN
+          RAISE EXCEPTION 'Speech monetary evidence does not match its pinned provider contract' USING ERRCODE='23514';
+        END IF;
+        IF jsonb_typeof(v)<>'string' OR (v#>>'{}') !~ '^(0|[1-9][0-9]{0,11})([.][0-9]{1,24})?$' THEN
+          RAISE EXCEPTION 'Invalid speech provider monetary observation' USING ERRCODE='23514';
+        END IF;
+      ELSIF k IN ('inputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','audioOutputTokens','characters','requests') THEN
+        IF jsonb_typeof(v)<>'number' OR (v#>>'{}') !~ '^(0|[1-9][0-9]*)$' OR (v#>>'{}')::numeric>9007199254740991 THEN
+          RAISE EXCEPTION 'Invalid speech provider usage quantity' USING ERRCODE='23514';
+        END IF;
+      ELSE
+        RAISE EXCEPTION 'Unknown speech provider usage meter' USING ERRCODE='23514';
+      END IF;
+    END LOOP;
+    IF NEW.provider_execution_facts IS NOT NULL THEN
+      IF jsonb_typeof(NEW.provider_execution_facts)<>'object' THEN
+        RAISE EXCEPTION 'Invalid speech execution observation' USING ERRCODE='23514';
+      END IF;
+      FOR k,v IN SELECT * FROM jsonb_each(NEW.provider_execution_facts) LOOP
+        IF k NOT IN ('endpointId','serviceTier') OR jsonb_typeof(v)<>'string' OR length(btrim(v#>>'{}')) NOT BETWEEN 1 AND 200 THEN
+          RAISE EXCEPTION 'Untrusted speech execution identity' USING ERRCODE='23514';
+        END IF;
+      END LOOP;
+    END IF;
   END IF;
   RETURN NEW;
 END $$;
 DROP TRIGGER IF EXISTS speech_accounting_snapshot_guard ON speech_jobs;
 CREATE TRIGGER speech_accounting_snapshot_guard BEFORE UPDATE ON speech_jobs FOR EACH ROW EXECUTE FUNCTION languon_guard_speech_accounting_snapshot();
+
+-- Column grants deny direct observation writes. Only this checked entry can write
+-- first evidence; a caller-controlled session flag is never a lease credential.
+CREATE OR REPLACE FUNCTION languon_retain_speech_provider_observation(job_value uuid,lease_value uuid,usage_value jsonb,execution_value jsonb) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE j public.speech_jobs%ROWTYPE;
+BEGIN
+ SELECT * INTO j FROM public.speech_jobs WHERE id=job_value FOR UPDATE;
+ IF j.id IS NULL OR lease_value IS NULL OR j.lease_token IS DISTINCT FROM lease_value
+    OR j.lease_expires_at IS NULL OR j.lease_expires_at<=clock_timestamp()
+    OR j.provider_dispatched_at IS NULL OR j.state NOT IN ('submitting','processing','storing') THEN
+   RAISE EXCEPTION 'Speech observation requires its expected live dispatch lease' USING ERRCODE='23514';
+ END IF;
+ IF j.provider_usage IS NOT NULL OR j.provider_execution_facts IS NOT NULL OR j.provider_outcome IS NOT NULL THEN
+   IF j.provider_usage IS DISTINCT FROM usage_value OR j.provider_execution_facts IS DISTINCT FROM execution_value THEN
+     RAISE EXCEPTION 'Speech observation conflicts with immutable first evidence' USING ERRCODE='23514';
+   END IF;
+   RETURN;
+ END IF;
+ PERFORM set_config('languon.speech_worker_version','1',true);
+ UPDATE public.speech_jobs SET provider_usage=usage_value,provider_execution_facts=execution_value WHERE id=job_value;
+END $$;
+REVOKE ALL ON FUNCTION languon_retain_speech_provider_observation(uuid,uuid,jsonb,jsonb) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION languon_guard_speech_accounting_authority() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
@@ -48,15 +114,50 @@ CREATE CONSTRAINT TRIGGER speech_accounting_authority_guard AFTER INSERT OR UPDA
 
 CREATE OR REPLACE FUNCTION languon_speech_provider_expense_identity(job_value uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE j public.speech_jobs%ROWTYPE; p public.ai_provider_price_revisions%ROWTYPE; amount_value bigint;
+DECLARE j public.speech_jobs%ROWTYPE; p public.ai_provider_price_revisions%ROWTYPE;
+  amount_value bigint; native_value jsonb; measurement_value text;
 BEGIN
  SELECT * INTO j FROM public.speech_jobs WHERE id=job_value;
  SELECT * INTO p FROM public.ai_provider_price_revisions WHERE id=(j.provider_price_snapshot->>'id')::uuid;
- IF j.id IS NULL OR j.accounting_version<>1 OR j.provider_dispatched_at IS NULL OR j.provider_outcome IS NULL OR p.id IS NULL OR p.provider_id IS DISTINCT FROM j.provider_price_snapshot->>'providerId' OR p.model_id IS DISTINCT FROM j.provider_price_snapshot->>'modelId' OR p.meter<>'speech-characters' OR p.version IS DISTINCT FROM (j.provider_price_snapshot->>'version')::integer OR p.effective_at>j.created_at OR p.data->>'usdPer1000Characters' IS DISTINCT FROM j.provider_price_snapshot->>'usdPer1000Characters' THEN RAISE EXCEPTION 'Speech expense requires its dispatched reviewed provenance' USING ERRCODE='23514'; END IF;
- IF j.provider_outcome='ready' THEN amount_value:=greatest(ceil(j.provider_character_count*(p.data->>'usdPer1000Characters')::numeric*1000)::bigint,ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint);
- ELSIF j.provider_outcome='not_submitted' THEN amount_value:=0;
- ELSIF j.provider_outcome<>'unknown' THEN RAISE EXCEPTION 'Unknown speech provider outcome' USING ERRCODE='23514'; END IF;
- RETURN jsonb_build_object('sourceKind','speech-attempt','attemptReference','speech:'||j.id::text,'actionId',j.id,'providerId',p.provider_id,'modelId',p.model_id,'measurement',CASE j.provider_outcome WHEN 'ready' THEN 'estimated' WHEN 'not_submitted' THEN 'measured' ELSE 'unknown' END,'costSource',CASE WHEN amount_value IS NULL THEN 'unknown' ELSE 'calculated' END,'amountUsdMicros',amount_value::text,'occurredAt',j.provider_dispatched_at);
+ IF j.id IS NULL OR j.accounting_version<>1 OR j.provider_dispatched_at IS NULL OR j.provider_outcome IS NULL
+    OR p.id IS NULL OR p.provider_id IS DISTINCT FROM j.provider_price_snapshot->>'providerId'
+    OR p.model_id IS DISTINCT FROM j.provider_price_snapshot->>'modelId'
+    OR p.meter NOT IN ('speech-characters','speech-tokens') OR p.meter IS DISTINCT FROM j.provider_price_snapshot->>'meter'
+    OR p.version IS DISTINCT FROM (j.provider_price_snapshot->>'version')::integer OR p.effective_at>j.created_at
+    OR p.data->'nativeRules' IS DISTINCT FROM j.provider_price_snapshot->'nativeRules'
+    OR p.data->>'usdPer1000Characters' IS DISTINCT FROM j.provider_price_snapshot->>'usdPer1000Characters'
+    OR p.data->>'minimumUsdPerRequest' IS DISTINCT FROM j.provider_price_snapshot->>'minimumUsdPerRequest' THEN
+   RAISE EXCEPTION 'Speech expense requires its dispatched reviewed provenance' USING ERRCODE='23514';
+ END IF;
+ IF j.provider_outcome='not_submitted' THEN
+   amount_value:=0;
+   measurement_value:='measured';
+ ELSIF p.data ? 'nativeRules' THEN
+   IF (j.provider_usage ? 'providerCreditsConsumed' AND (p.provider_id<>'kie' OR p.data->'nativeRules'->>'reportedCreditUsdPerCredit' IS NULL))
+      OR (j.provider_usage ? 'providerCostUsd' AND p.provider_id<>'openrouter') THEN
+     RAISE EXCEPTION 'Speech monetary evidence does not match its pinned provider contract' USING ERRCODE='23514';
+   END IF;
+   IF j.provider_outcome='ready' OR j.provider_usage ? 'providerCreditsConsumed' OR j.provider_usage ? 'providerCostUsd' THEN
+     native_value:=public.languon_evaluate_provider_price(
+       p.data,
+       coalesce(j.provider_execution_facts,'{}'::jsonb)||jsonb_build_object('dispatchedAt',j.provider_dispatched_at),
+       coalesce(j.provider_usage,jsonb_build_object('requests',1)),
+       'actual'
+     );
+     IF native_value->>'status'='calculated' THEN
+       amount_value:=(native_value->>'amountUsdMicros')::bigint;
+       measurement_value:=CASE WHEN p.meter='speech-tokens' OR native_value->>'costSource' IN ('reported-credits','reported-usd') THEN 'measured' ELSE 'estimated' END;
+     END IF;
+   END IF;
+ ELSIF j.provider_outcome='ready' AND p.meter='speech-characters' THEN
+   amount_value:=greatest(ceil(j.provider_character_count*(p.data->>'usdPer1000Characters')::numeric*1000)::bigint,ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint);
+   measurement_value:='estimated';
+ ELSIF j.provider_outcome<>'unknown' THEN
+   RAISE EXCEPTION 'Unknown speech provider outcome' USING ERRCODE='23514';
+ END IF;
+ RETURN jsonb_build_object('sourceKind','speech-attempt','attemptReference','speech:'||j.id::text,'actionId',j.id,'providerId',p.provider_id,'modelId',p.model_id,
+   'measurement',coalesce(measurement_value,'unknown'),'costSource',CASE WHEN amount_value IS NULL THEN 'unknown' ELSE 'calculated' END,
+   'amountUsdMicros',amount_value::text,'occurredAt',j.provider_dispatched_at);
 END $$;
 REVOKE ALL ON FUNCTION languon_speech_provider_expense_identity(uuid) FROM PUBLIC;
 
@@ -88,7 +189,7 @@ BEGIN
  SELECT * INTO b FROM public.ai_operator_action_budgets WHERE action_id=job_value FOR UPDATE;
  IF b.state='active' THEN
    SELECT * INTO o FROM public.ai_operator_attempt_costs WHERE attempt_id=job_value AND action_id=job_value FOR UPDATE;
-   IF o.attempt_id IS NULL OR (amount_value IS NOT NULL AND amount_value>o.reserved_micros) THEN RAISE EXCEPTION 'Speech observation exceeds provider authorization' USING ERRCODE='23514'; END IF;
+   IF o.attempt_id IS NULL OR (amount_value IS NOT NULL AND amount_value>o.reserved_micros AND NOT (j.provider_price_snapshot ? 'nativeRules')) THEN RAISE EXCEPTION 'Speech observation exceeds provider authorization' USING ERRCODE='23514'; END IF;
    IF o.settled_at IS NULL THEN UPDATE public.ai_operator_attempt_costs SET consumed_micros=coalesce(amount_value,reserved_micros),measurement=CASE WHEN amount_value IS NULL THEN 'conservative' ELSE 'measured' END,settled_at=clock_timestamp() WHERE attempt_id=job_value;
    ELSIF o.consumed_micros IS DISTINCT FROM coalesce(amount_value,o.reserved_micros) THEN RAISE EXCEPTION 'Speech operator amount conflicts with provider fact' USING ERRCODE='23514'; END IF;
    UPDATE public.ai_operator_action_budgets SET state='settled',consumed_micros=(SELECT coalesce(sum(consumed_micros),0) FROM public.ai_operator_attempt_costs WHERE action_id=job_value),settled_at=clock_timestamp() WHERE action_id=job_value;

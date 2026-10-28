@@ -116,6 +116,7 @@ GRANT UPDATE (expires_at) ON TABLE sentence_library_snapshots
 TO :"dictionary_worker_role";
 
 -- Shared speech: update durable execution/inventory, never publish tariffs or erase inventory.
+REVOKE UPDATE (provider_usage, provider_execution_facts) ON TABLE speech_jobs FROM :"dictionary_worker_role";
 GRANT SELECT ON TABLE speech_recordings, speech_jobs TO :"dictionary_worker_role";
 GRANT UPDATE (state, storage, checksum, byte_length, duration_ms, version,
     last_accessed_at, deleted_at, text)
@@ -172,6 +173,10 @@ GRANT UPDATE (action_id) ON TABLE ai_operator_action_budgets TO :"dictionary_wor
 GRANT EXECUTE ON FUNCTION languon_admit_text_provider_attempt(uuid,uuid,text,integer,integer,uuid,text,text,bigint,timestamptz),
     languon_settle_credit_action(uuid,text,timestamptz),
     languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz),
+    languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz,jsonb),
+    languon_authorize_native_text_call(uuid,integer,integer),
+    languon_observe_native_text_call(uuid,jsonb),
+    languon_retain_speech_provider_observation(uuid,uuid,jsonb,jsonb),
     languon_record_text_provider_expense(uuid,jsonb),
     languon_admit_speech_provider_attempt(uuid,uuid),
     languon_record_speech_provider_expense(uuid,text),

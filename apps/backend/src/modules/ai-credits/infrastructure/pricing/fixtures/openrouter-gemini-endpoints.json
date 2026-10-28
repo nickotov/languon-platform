@@ -1,0 +1,143 @@
+{
+    "data": {
+        "id": "google/gemini-3.1-flash-lite",
+        "endpoints": [
+            {
+                "pricing": {
+                    "prompt": "0.000000125",
+                    "completion": "0.00000075",
+                    "image": "0.000000125",
+                    "audio": "0.00000025",
+                    "input_audio_cache": "0.000000025",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.00000075",
+                    "input_cache_read": "0.0000000125",
+                    "input_cache_write": "0.0000000416666666666667",
+                    "discount": 0
+                },
+                "tag": "google-vertex/global/flex",
+                "provider_name": "Google",
+                "service_tier": "flex"
+            },
+            {
+                "pricing": {
+                    "prompt": "0.000000125",
+                    "completion": "0.00000075",
+                    "image": "0.000000125",
+                    "audio": "0.00000025",
+                    "input_audio_cache": "0.000000025",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.00000075",
+                    "input_cache_read": "0.0000000125",
+                    "input_cache_write": "0.0000000416666666666667",
+                    "discount": 0
+                },
+                "tag": "google-ai-studio/flex",
+                "provider_name": "Google AI Studio",
+                "service_tier": "flex"
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000025",
+                    "completion": "0.0000015",
+                    "image": "0.00000025",
+                    "audio": "0.0000005",
+                    "input_audio_cache": "0.00000005",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.0000015",
+                    "input_cache_read": "0.000000025",
+                    "input_cache_write": "0.0000000833333333333333",
+                    "discount": 0
+                },
+                "tag": "google-ai-studio",
+                "provider_name": "Google AI Studio",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000025",
+                    "completion": "0.0000015",
+                    "image": "0.00000025",
+                    "audio": "0.0000005",
+                    "input_audio_cache": "0.00000005",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.0000015",
+                    "input_cache_read": "0.000000025",
+                    "input_cache_write": "0.0000000833333333333333",
+                    "discount": 0
+                },
+                "tag": "google-vertex/global",
+                "provider_name": "Google",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.000000275",
+                    "completion": "0.00000165",
+                    "image": "0.000000275",
+                    "audio": "0.00000055",
+                    "input_audio_cache": "0.000000055",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.00000165",
+                    "input_cache_read": "0.0000000275",
+                    "input_cache_write": "0.0000000833333333333333",
+                    "discount": 0
+                },
+                "tag": "google-vertex/eu",
+                "provider_name": "Google",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.000000275",
+                    "completion": "0.00000165",
+                    "image": "0.000000275",
+                    "audio": "0.00000055",
+                    "input_audio_cache": "0.000000055",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.00000165",
+                    "input_cache_read": "0.0000000275",
+                    "input_cache_write": "0.0000000833333333333333",
+                    "discount": 0
+                },
+                "tag": "google-vertex/us",
+                "provider_name": "Google",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000045",
+                    "completion": "0.0000027",
+                    "image": "0.00000045",
+                    "audio": "0.0000009",
+                    "input_audio_cache": "0.00000009",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.0000027",
+                    "input_cache_read": "0.000000045",
+                    "input_cache_write": "0.00000015",
+                    "discount": 0
+                },
+                "tag": "google-vertex/global/priority",
+                "provider_name": "Google",
+                "service_tier": "priority"
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000045",
+                    "completion": "0.0000027",
+                    "image": "0.00000045",
+                    "audio": "0.0000009",
+                    "input_audio_cache": "0.00000009",
+                    "web_search": "0.014",
+                    "internal_reasoning": "0.0000027",
+                    "input_cache_read": "0.000000045",
+                    "input_cache_write": "0.00000015",
+                    "discount": 0
+                },
+                "tag": "google-ai-studio/priority",
+                "provider_name": "Google AI Studio",
+                "service_tier": "priority"
+            }
+        ]
+    }
+}

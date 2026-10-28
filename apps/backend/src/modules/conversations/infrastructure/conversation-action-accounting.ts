@@ -108,17 +108,21 @@ export function createConversationActionAccounting(input: {
                         usage: sql`jsonb_set(${turns.usage}, '{outputLimitReached}', 'true'::jsonb)`,
                     })
                     .where(eq(turns.id, input.turnId));
-            await recordProviderExpense(tx, {
-                attemptReference: `conversation:${call.callId}`,
-                attemptId: call.callId,
-                actionId: input.turnId,
-                providerId: snapshot.providerId,
-                modelId: snapshot.modelId,
-                measurement: measured ? 'measured' : 'unknown',
-                costSource: expense !== null ? 'calculated' : 'unknown',
-                amountUsdMicros: expense,
-                occurredAt: attempt?.createdAt ?? new Date(),
-            });
+            await recordProviderExpense(
+                tx,
+                {
+                    attemptReference: `conversation:${call.callId}`,
+                    attemptId: call.callId,
+                    actionId: input.turnId,
+                    providerId: snapshot.providerId,
+                    modelId: snapshot.modelId,
+                    measurement: measured ? 'measured' : 'unknown',
+                    costSource: expense !== null ? 'calculated' : 'unknown',
+                    amountUsdMicros: expense,
+                    occurredAt: attempt?.createdAt ?? new Date(),
+                },
+                { nativePrice: input.execution.providerPrice },
+            );
         });
     }
     return {
@@ -211,17 +215,21 @@ export async function settleConversationAction(
         const snapshot = turn.execution.snapshot as
             TextAiExecutionSnapshot | undefined;
         if (!snapshot) throw new Error('Pinned provider execution is missing.');
-        await recordProviderExpense(tx, {
-            attemptReference: `conversation:${attempt.id}`,
-            attemptId: attempt.id,
-            actionId: turn.id,
-            providerId: snapshot.providerId,
-            modelId: snapshot.modelId,
-            measurement: 'unknown',
-            costSource: 'unknown',
-            amountUsdMicros: null,
-            occurredAt: attempt.createdAt,
-        });
+        await recordProviderExpense(
+            tx,
+            {
+                attemptReference: `conversation:${attempt.id}`,
+                attemptId: attempt.id,
+                actionId: turn.id,
+                providerId: snapshot.providerId,
+                modelId: snapshot.modelId,
+                measurement: 'unknown',
+                costSource: 'unknown',
+                amountUsdMicros: null,
+                occurredAt: attempt.createdAt,
+            },
+            { nativePrice: turn.execution.providerPrice },
+        );
     }
     const action = await new DrizzleActionAccountingParticipant(tx).settle({
         actionId: turn.id,

@@ -219,12 +219,17 @@ function validatedUsage(
           }
         | undefined,
     budget: DictionaryGenerationProviderBudgetPolicy,
+    transportResult?: unknown,
 ) {
     try {
-        return readProviderTokenUsage(usage, {
-            maxInputTokens: budget.maxInputTokensPerAttempt,
-            maxOutputTokens: budget.maxOutputTokensPerAttempt,
-        });
+        return readProviderTokenUsage(
+            usage,
+            {
+                maxInputTokens: budget.maxInputTokensPerAttempt,
+                maxOutputTokens: budget.maxOutputTokensPerAttempt,
+            },
+            transportResult,
+        );
     } catch {
         throw new PastedTermsProposalGeneratorExecutionError('invalid_output');
     }
@@ -312,6 +317,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         meteredUsage = readProviderTokenUsage(
                             result.usage,
                             requestLimits,
+                            result,
                         );
                     } catch {
                         throw failure('invalid_output');
@@ -326,12 +332,17 @@ export function createMastraPastedTermsProposalGenerator(options: {
                 }
                 return {
                     proposal: validatedChunkOutput(result.object, request),
-                    usage: validatedUsage(result.usage, {
-                        ...request.providerBudget,
-                        maxInputTokensPerAttempt: requestLimits.maxInputTokens,
-                        maxOutputTokensPerAttempt:
-                            requestLimits.maxOutputTokens,
-                    }),
+                    usage: validatedUsage(
+                        result.usage,
+                        {
+                            ...request.providerBudget,
+                            maxInputTokensPerAttempt:
+                                requestLimits.maxInputTokens,
+                            maxOutputTokensPerAttempt:
+                                requestLimits.maxOutputTokens,
+                        },
+                        result,
+                    ),
                 };
             } catch (error) {
                 if (
@@ -343,6 +354,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         meteredUsage = readProviderTokenUsage(
                             error.usage,
                             requestLimits,
+                            error,
                         );
                     } catch {
                         /* Invalid/missing provider meters remain unknown. */

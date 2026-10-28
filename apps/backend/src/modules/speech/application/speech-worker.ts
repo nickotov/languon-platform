@@ -2,10 +2,12 @@ import type {
     AudioObjectStorage,
     SpeechStore,
     SpeechSynthesisProvider,
+    SpeechProviderObservation,
 } from './ports';
 import {
     SpeechSubmissionError,
     SpeechTaskFailedError,
+    SpeechOutputUnavailableError,
 } from './ports/speech-synthesis-provider';
 import { assertAudioIntegrity } from '../domain/audio-integrity';
 
@@ -39,6 +41,7 @@ export class SpeechWorker {
             job.profile.configurationId,
         );
         let submissionResolved = job.state !== 'submitting';
+        let observation: SpeechProviderObservation | undefined;
         try {
             if (job.state === 'storing') {
                 const stored = await this.options.storage.read(
@@ -103,12 +106,27 @@ export class SpeechWorker {
                     );
                 return true;
             }
+            observation =
+                result.usage || result.execution
+                    ? {
+                          ...(result.usage ? { usage: result.usage } : {}),
+                          ...(result.execution
+                              ? { execution: result.execution }
+                              : {}),
+                      }
+                    : undefined;
             assertAudioIntegrity(result.audio);
             if (
                 !(await this.options.store.storing(
                     job,
                     result.audio,
                     this.now(),
+                    {
+                        ...(result.usage ? { usage: result.usage } : {}),
+                        ...(result.execution
+                            ? { execution: result.execution }
+                            : {}),
+                    },
                 ))
             )
                 return true;
@@ -129,17 +147,34 @@ export class SpeechWorker {
                 (error instanceof SpeechSubmissionError &&
                     error.outcome === 'not_submitted')
             ) {
-                if (
-                    error instanceof SpeechTaskFailedError &&
-                    error.reason === 'provider_unavailable'
-                )
-                    await this.options.store.fail(
-                        job,
-                        'failure',
-                        this.now(),
-                        'speech_provider_unavailable',
-                    );
-                else if (error instanceof SpeechSubmissionError)
+                if (error instanceof SpeechTaskFailedError) {
+                    const reason =
+                        error.reason === 'provider_unavailable'
+                            ? ('speech_provider_unavailable' as const)
+                            : undefined;
+                    if (error.observation)
+                        await this.options.store.fail(
+                            job,
+                            'failure',
+                            this.now(),
+                            reason,
+                            false,
+                            error.observation,
+                        );
+                    else if (reason)
+                        await this.options.store.fail(
+                            job,
+                            'failure',
+                            this.now(),
+                            reason,
+                        );
+                    else
+                        await this.options.store.fail(
+                            job,
+                            'failure',
+                            this.now(),
+                        );
+                } else {
                     await this.options.store.fail(
                         job,
                         'failure',
@@ -147,10 +182,23 @@ export class SpeechWorker {
                         undefined,
                         true,
                     );
-                else await this.options.store.fail(job, 'failure', this.now());
+                }
             } else if (!submissionResolved)
                 await this.options.store.fail(job, 'unknown', this.now());
-            else await this.options.store.pending(job, 5000, this.now());
+            else {
+                const observed =
+                    error instanceof SpeechOutputUnavailableError
+                        ? error.observation
+                        : observation;
+                if (observed)
+                    await this.options.store.pending(
+                        job,
+                        5000,
+                        this.now(),
+                        observed,
+                    );
+                else await this.options.store.pending(job, 5000, this.now());
+            }
         }
         return true;
     }

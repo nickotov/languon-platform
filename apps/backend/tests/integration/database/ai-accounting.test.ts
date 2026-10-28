@@ -30,6 +30,7 @@ import {
 } from 'vitest';
 import {
     AccountingRecordRequestSchema,
+    AccountingReportSchema,
     ProviderPricePublishRequestSchema,
 } from '@languon/contracts';
 import { databaseSchema } from '../../../src/infrastructure/database/schema';
@@ -504,6 +505,158 @@ run('manual AI accounting persisted facts', () => {
             latestBalanceUsd: '9.100000',
             estimatedRemainingUsd: '9.600000',
         });
+    });
+    it('materializes a cold report with native null flat rates and exact expense beyond the old integer meter', async () => {
+        const prices = new DrizzleProviderPriceStore(database);
+        const nativePrice = {
+            expectedVersion: 0,
+            providerId: 'openrouter',
+            modelId: 'native-report-fixture',
+            meter: 'text-tokens' as const,
+            inputUsdPerMillionTokens: null,
+            outputUsdPerMillionTokens: null,
+            cacheReadUsdPerMillionTokens: null,
+            cacheWriteUsdPerMillionTokens: null,
+            usdPer1000Characters: null,
+            minimumUsdPerRequest: null,
+            effectiveAt: '2020-01-01T00:00:00.000Z',
+            sourceReference: 'Synthetic native report regression',
+            sourceUrl: null,
+            reason: 'Exact native reporting evidence',
+            nativeRules: {
+                version: 1 as const,
+                validFrom: '2020-01-01T00:00:00.000Z',
+                validUntil: null,
+                variants: [
+                    {
+                        id: 'base',
+                        applies: {},
+                        components: [
+                            {
+                                meter: 'inputTokens' as const,
+                                pricePerUnit: '1',
+                                unitQuantity: 1_000_000,
+                                chargeWhen: 'positive-usage' as const,
+                            },
+                            {
+                                meter: 'outputTokens' as const,
+                                pricePerUnit: '0',
+                                unitQuantity: 1_000_000,
+                                chargeWhen: 'positive-usage' as const,
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+        expect(
+            ProviderPricePublishRequestSchema.safeParse(nativePrice).success,
+        ).toBe(true);
+        await prices.publish(nativePrice, ownerId, new Date());
+        const nativeSpeechPrice = ProviderPricePublishRequestSchema.parse({
+            ...nativePrice,
+            providerId: 'native-report-speech',
+            modelId: 'audio-token-fixture',
+            meter: 'speech-tokens',
+            nativeRules: {
+                ...nativePrice.nativeRules,
+                variants: [
+                    {
+                        id: 'audio',
+                        applies: {},
+                        components: [
+                            {
+                                meter: 'inputTokens',
+                                pricePerUnit: '0',
+                                unitQuantity: 1_000_000,
+                                chargeWhen: 'positive-usage',
+                            },
+                            {
+                                meter: 'audioOutputTokens',
+                                pricePerUnit: '0.000000000000000000000001',
+                                unitQuantity: 1_000_000,
+                                chargeWhen: 'positive-usage',
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+        expect(
+            ProviderPricePublishRequestSchema.safeParse(nativeSpeechPrice)
+                .success,
+        ).toBe(true);
+        await prices.publish(nativeSpeechPrice, ownerId, new Date());
+        const action = await database.transaction((tx) =>
+            reserveConversationActionFixture(tx, {
+                ownerId,
+                maximumMilli: 0n,
+                funding: 'operator',
+                operatorMaximumMicros: 1000000n,
+                providerId: nativePrice.providerId,
+                modelId: nativePrice.modelId,
+            }),
+        );
+        await database.transaction(async (tx) => {
+            const participant = new DrizzleActionAccountingParticipant(tx);
+            const attempt = await participant.admitAttempt({
+                actionId: action.id,
+                ownerId,
+                callId: randomUUID(),
+                purpose: 'answer',
+                executionWitness: { jobId: action.id, leaseToken: action.id },
+                inputTokens: 100,
+                maxOutputTokens: 1,
+                budget: {
+                    maxInputTokensPerAttempt: 100,
+                    maxOutputTokensPerAttempt: 1,
+                    maxCostMicrosPerAttempt: 1000000,
+                    inputCostMicrosPerMillionTokens: 0,
+                    outputCostMicrosPerMillionTokens: 0,
+                },
+                at: new Date(),
+            });
+            const receipt = await tx.execute(
+                sql`select languon_authorize_native_text_call(${attempt.id}::uuid,100,1) as value`,
+            );
+            const call = receipt[0]!.value as { callId: string };
+            await tx.execute(
+                sql`select languon_observe_native_text_call(${call.callId}::uuid,${JSON.stringify({ usage: { requests: 1, providerCostUsd: '5000' } })}::jsonb)`,
+            );
+            await participant.recordAttempt({
+                actionId: action.id,
+                ownerId,
+                callId: attempt.id,
+                successful: false,
+                at: new Date(),
+            });
+            await settleConversationActionFixture(tx, {
+                ownerId,
+                actionId: action.id,
+                outcome: 'failure',
+            });
+        });
+        const from = new Date('2026-01-01T00:00:00Z');
+        const to = new Date('2027-01-01T00:00:00Z');
+        // A cold snapshot is explicitly pending, independent of native price representation.
+        await expect(store.report(from, to)).rejects.toThrow('prepared');
+        expect(await store.refreshNextReport()).toBe(true);
+        const report = AccountingReportSchema.parse(
+            await store.report(from, to),
+        );
+        expect(report.usage).toMatchObject({
+            calculatedExpenseUsd: '5000.000000',
+            measuredCount: 1,
+            unknownCount: 0,
+            complete: true,
+        });
+        expect(report.providers).toEqual([
+            expect.objectContaining({
+                providerId: 'openrouter',
+                calculatedExpenseUsd: '5000.000000',
+                estimatedRemainingUsd: '-5000.000000',
+            }),
+        ]);
     });
     it('renews an unchanged report without history aggregation and recomputes after a committed change', async () => {
         await payment();

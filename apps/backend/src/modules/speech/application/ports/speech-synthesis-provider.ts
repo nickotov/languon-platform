@@ -1,4 +1,15 @@
 import type { AudioBytes } from './audio-object-storage';
+import type { ProviderNativeUsage } from '@languon/contracts';
+import type { SpeechNativeBillingDefinition } from '../../domain/speech-models';
+
+/** Observed provider facts are captured by adapters, never supplied by a learner. */
+export interface SpeechProviderObservation {
+    usage?: ProviderNativeUsage;
+    execution?: { endpointId?: string; serviceTier?: string };
+}
+
+export type SpeechNativeUsageBounds =
+    SpeechNativeBillingDefinition['usageBounds'];
 
 export interface SpeechProfile {
     configurationId: string;
@@ -8,11 +19,13 @@ export interface SpeechProfile {
     language: string;
     settingsVersion: string;
     estimatedCostUnitsPerCharacter: number;
+    /** A reviewed provider-task bound is required before token-billed dispatch. */
+    nativeBilling?: SpeechNativeBillingDefinition;
 }
 
 export type SpeechSynthesisResult =
     | { state: 'pending'; taskId: string; retryAfterMs: number }
-    | { state: 'ready'; audio: AudioBytes };
+    | ({ state: 'ready'; audio: AudioBytes } & SpeechProviderObservation);
 
 export interface SpeechSynthesisProvider {
     readonly configurationId: string;
@@ -44,8 +57,17 @@ export class SpeechTaskFailedError extends Error {
     constructor(
         public readonly reason:
             'generation_failed' | 'provider_unavailable' = 'generation_failed',
+        public readonly observation?: SpeechProviderObservation,
     ) {
         super('Speech task failed.');
         this.name = 'SpeechTaskFailedError';
+    }
+}
+
+/** A billed task can have temporarily unavailable or invalid audio output. */
+export class SpeechOutputUnavailableError extends Error {
+    constructor(public readonly observation: SpeechProviderObservation) {
+        super('Speech output is unavailable.');
+        this.name = 'SpeechOutputUnavailableError';
     }
 }

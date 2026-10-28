@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
+import { bodyLimit } from 'hono/body-limit';
 import {
     ProviderPricePublishRequestSchema,
     ProviderPriceSchema,
@@ -35,6 +36,23 @@ export function createProviderPriceRoutes(options: {
                       400,
                   ),
     });
+    app.use(
+        '/admin/ai/accounting/provider-prices',
+        bodyLimit({
+            maxSize: 64 * 1024,
+            onError: (c) =>
+                c.json(
+                    {
+                        error: {
+                            code: 'invalid_request',
+                            message: 'Provider rates request is too large.',
+                            correlationId: randomUUID(),
+                        },
+                    },
+                    413,
+                ),
+        }),
+    );
     app.use('/admin/ai/accounting/provider-prices', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
@@ -80,6 +98,13 @@ export function createProviderPriceRoutes(options: {
             },
             description: 'Revision conflict.',
         },
+        413: {
+            content: {
+                'application/json': { schema: AdminErrorResponseSchema },
+            },
+            description:
+                'Request exceeds the bounded provider-price payload size.',
+        },
     };
     const tags = ['Administration'];
     const security = [{ bearerAuth: [] }];
@@ -123,7 +148,13 @@ export function createProviderPriceRoutes(options: {
                     required: true,
                     content: {
                         'application/json': {
-                            schema: ProviderPricePublishRequestSchema,
+                            schema: ProviderPricePublishRequestSchema.refine(
+                                (price) => !price.nativeRules,
+                                {
+                                    message:
+                                        'Native prices require the scoped MCP publication action.',
+                                },
+                            ),
                         },
                     },
                 },

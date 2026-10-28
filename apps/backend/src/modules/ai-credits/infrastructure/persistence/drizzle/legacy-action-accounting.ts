@@ -357,12 +357,7 @@ export async function recordLegacyAttempt(
         snapshot: LegacyActionSnapshot;
         successful: boolean;
         dispatched: boolean;
-        usage?: {
-            inputTokens: number;
-            outputTokens: number;
-            cacheReadTokens?: number;
-            cacheWriteTokens?: number;
-        };
+        usage?: ProviderTokenUsage;
         at: Date;
     },
 ) {
@@ -380,7 +375,7 @@ export async function recordLegacyAttempt(
             ),
         );
 
-    if (!attempt || attempt.state === 'settled') return;
+    if (!attempt) return;
     let usage: ProviderTokenUsage | undefined;
     if (!input.dispatched) usage = { inputTokens: 0, outputTokens: 0 };
     else if (input.usage) {
@@ -404,6 +399,8 @@ export async function recordLegacyAttempt(
     const actualSnapshot = dispatch?.snapshot ?? input.snapshot;
     const actualPrice =
         dispatch?.providerPrice ?? input.snapshot.actionProviderPrice;
+
+    if (attempt.state === 'settled' && !actualPrice?.nativeRules) return;
     const measured = usage !== undefined;
     const expense = !input.dispatched
         ? 0n
@@ -421,17 +418,21 @@ export async function recordLegacyAttempt(
         at: input.at,
     });
 
-    await recordProviderExpense(tx, {
-        attemptReference: `legacy:${callId}`,
-        attemptId: callId,
-        actionId: input.snapshot.actionParentId ?? input.id,
-        providerId: actualSnapshot.providerId,
-        modelId: actualSnapshot.modelId,
-        measurement: measured ? 'measured' : 'unknown',
-        costSource: expense === null ? 'unknown' : 'calculated',
-        amountUsdMicros: expense,
-        occurredAt: attempt.createdAt,
-    });
+    await recordProviderExpense(
+        tx,
+        {
+            attemptReference: `legacy:${callId}`,
+            attemptId: callId,
+            actionId: input.snapshot.actionParentId ?? input.id,
+            providerId: actualSnapshot.providerId,
+            modelId: actualSnapshot.modelId,
+            measurement: measured ? 'measured' : 'unknown',
+            costSource: expense === null ? 'unknown' : 'calculated',
+            amountUsdMicros: expense,
+            occurredAt: attempt.createdAt,
+        },
+        { nativePrice: actualPrice },
+    );
 }
 
 export async function settleLegacyAction(

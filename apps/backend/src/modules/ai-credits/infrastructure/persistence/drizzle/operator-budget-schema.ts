@@ -57,7 +57,7 @@ export const aiOperatorActionBudgetsTable = pgTable(
         ),
         check(
             'ai_operator_action_terminal',
-            sql`(${t.state}='active' and ${t.consumedMicros} is null and ${t.settledAt} is null) or (${t.state}='settled' and ${t.consumedMicros} is not null and ${t.consumedMicros} between 0 and ${t.reservedMicros} and ${t.settledAt} is not null)`,
+            sql`(${t.state}='active' and ${t.consumedMicros} is null and ${t.settledAt} is null) or (${t.state}='settled' and ${t.consumedMicros} is not null and ${t.consumedMicros} >= 0 and ${t.settledAt} is not null)`,
         ),
     ],
 );
@@ -79,7 +79,7 @@ export const aiOperatorAttemptCostsTable = pgTable(
         check('ai_operator_attempt_nonnegative', sql`${t.reservedMicros} >= 0`),
         check(
             'ai_operator_attempt_terminal',
-            sql`(${t.settledAt} is null and ${t.consumedMicros} is null and ${t.measurement} is null) or (${t.settledAt} is not null and ${t.consumedMicros} is not null and ${t.measurement} is not null and ${t.consumedMicros} between 0 and ${t.reservedMicros} and ${t.measurement} in ('measured','conservative'))`,
+            sql`(${t.settledAt} is null and ${t.consumedMicros} is null and ${t.measurement} is null) or (${t.settledAt} is not null and ${t.consumedMicros} is not null and ${t.measurement} is not null and ${t.consumedMicros} >= 0 and ${t.measurement} in ('measured','conservative'))`,
         ),
     ],
 );

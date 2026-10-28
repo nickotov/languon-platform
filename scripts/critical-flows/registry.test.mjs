@@ -239,10 +239,15 @@ test('actual cleanup path survives interruption and recovers an ID lost after co
 });
 
 const backendFlow = flows.find((flow) => flow.app === 'backend');
-const backendSuiteCounts = [
-    35, 18, 2, 8, 12, 4, 25, 4, 8, 12, 5, 4, 6, 4, 5, 15, 9, 20, 14, 20, 7, 10,
-    9, 8, 73, 8, 44, 10, 12,
-];
+// Synthetic valid reports follow file identity, so adding a required suite cannot
+// silently shift counts onto another file or erase its mandatory scenario titles.
+const backendSuiteCounts = backendExecutionFiles.map((file) =>
+    Math.max(
+        10,
+        requiredBackendScenarios.find((scenario) => scenario.file === file)
+            ?.titles.length ?? 0,
+    ),
+);
 const backendTestTotal = backendSuiteCounts.reduce(
     (sum, count) => sum + count,
     0,
@@ -285,6 +290,8 @@ test('backend gate is in the full registry, runs exact real execution suites ser
     const command = backendCommand(backendFlow, '/tmp/evidence.json');
     for (const file of backendExecutionFiles) assert.ok(command.includes(file));
     assert.ok(command.includes('--no-file-parallelism'));
+    assert.ok(command.includes('--hookTimeout=30000'));
+    assert.ok(!command.some((argument) => argument.startsWith('--testTimeout')));
     assert.ok(command.includes('--retry=0'));
     assert.ok(!command.includes('--grep') && !command.includes('-t'));
     for (const mutation of [

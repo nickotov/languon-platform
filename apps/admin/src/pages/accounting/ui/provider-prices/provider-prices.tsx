@@ -24,7 +24,7 @@ export function ProviderPrices() {
             dataIndex: 'sourceReference',
         },
         {
-            title: t('actions.edit'),
+            title: t('accounting.native.actions'),
             render: (_: unknown, price: ProviderPrice) => (
                 <EditProviderPrice price={price} onEdit={pricing.open} />
             ),
@@ -84,10 +84,29 @@ function EditProviderPrice({
 }) {
     const t = useTranslate();
     const edit = () => onEdit(price);
-    return <Button onClick={edit}>{t('actions.edit')}</Button>;
+    return (
+        <Button onClick={edit}>
+            {t(price.nativeRules ? 'accounting.native.view' : 'actions.edit')}
+        </Button>
+    );
 }
 function ProviderRates({ price }: { price: ProviderPrice }) {
     const t = useTranslate();
+    if (price.nativeRules) {
+        return (
+            <>
+                <Typography.Text strong>
+                    {t('accounting.native.title')}
+                </Typography.Text>
+                <Typography.Paragraph>
+                    {t('accounting.native.summary', {
+                        currency: price.nativeRules.currency?.code ?? 'USD',
+                        count: price.nativeRules.variants.length,
+                    })}
+                </Typography.Paragraph>
+            </>
+        );
+    }
     if (price.meter === 'speech-characters')
         return (
             <Typography.Text>

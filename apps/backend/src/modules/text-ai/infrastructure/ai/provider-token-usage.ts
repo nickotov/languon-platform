@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+    ProviderExecutionFactsSchema,
+    ProviderNativeCallObservationsSchema,
+    ProviderNativeUsageSchema,
+} from '@languon/contracts';
+import type { TextAiProviderUsage } from '../../application/ports/text-ai-provider-usage';
+import { readNativeTextObservation } from './provider-native-observations';
 
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const optionalCount = count.nullish();
@@ -21,13 +28,11 @@ const usageSchema = z.object({
             cacheWriteTokens: optionalCount,
         })
         .nullish(),
+    nativeUsage: ProviderNativeUsageSchema.optional(),
+    executionFacts: ProviderExecutionFactsSchema.optional(),
+    calls: ProviderNativeCallObservationsSchema.optional(),
 });
-export interface ProviderTokenUsage {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
-}
+export type ProviderTokenUsage = TextAiProviderUsage;
 function consistent(
     values: Array<number | null | undefined>,
 ): number | undefined {
@@ -42,8 +47,11 @@ function consistent(
 export function readProviderTokenUsage(
     value: unknown,
     limits: { maxInputTokens: number; maxOutputTokens: number },
+    transportResult?: unknown,
 ): ProviderTokenUsage {
     const parsed = usageSchema.parse(value);
+    const observation = readNativeTextObservation(transportResult);
+    const native = parsed.nativeUsage ?? observation?.usage;
     const inputTokens =
         typeof parsed.inputTokens === 'number'
             ? parsed.inputTokens
@@ -56,6 +64,7 @@ export function readProviderTokenUsage(
         parsed.cachedInputTokens,
         parsed.cacheReadTokens,
         parsed.inputTokenDetails?.cacheReadTokens,
+        native?.cacheReadTokens,
         typeof parsed.inputTokens === 'number'
             ? undefined
             : parsed.inputTokens.cacheRead,
@@ -63,6 +72,7 @@ export function readProviderTokenUsage(
     const cacheWriteTokens = consistent([
         parsed.cacheWriteTokens,
         parsed.inputTokenDetails?.cacheWriteTokens,
+        native?.cacheWriteTokens,
         typeof parsed.inputTokens === 'number'
             ? undefined
             : parsed.inputTokens.cacheWrite,
@@ -73,10 +83,34 @@ export function readProviderTokenUsage(
         (cacheReadTokens ?? 0) + (cacheWriteTokens ?? 0) > inputTokens
     )
         throw new Error('Provider usage exceeds the admitted meter bounds.');
+    const nativeUsage = native
+        ? {
+              ...native,
+              inputTokens,
+              outputTokens,
+              ...(cacheReadTokens === undefined ? {} : { cacheReadTokens }),
+              ...(cacheWriteTokens === undefined ? {} : { cacheWriteTokens }),
+          }
+        : undefined;
+    const executionFacts = parsed.executionFacts ?? observation?.execution;
+    const calls =
+        parsed.calls ??
+        (observation?.callId && executionFacts && nativeUsage
+            ? [
+                  {
+                      callId: observation.callId,
+                      usage: nativeUsage,
+                      execution: executionFacts,
+                  },
+              ]
+            : undefined);
     return {
         inputTokens,
         outputTokens,
         ...(cacheReadTokens === undefined ? {} : { cacheReadTokens }),
         ...(cacheWriteTokens === undefined ? {} : { cacheWriteTokens }),
+        ...(nativeUsage ? { nativeUsage } : {}),
+        ...(executionFacts ? { executionFacts } : {}),
+        ...(calls ? { calls } : {}),
     };
 }

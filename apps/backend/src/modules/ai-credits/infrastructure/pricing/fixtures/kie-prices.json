@@ -1,0 +1,70 @@
+{
+    "code": 200,
+    "data": {
+        "records": [
+            {
+                "modelDescription": "Gemini 3.8 Flash-Lite TTS, Text to speech, Input",
+                "interfaceType": "music",
+                "provider": "Google",
+                "creditPrice": "70",
+                "creditUnit": "per million tokens",
+                "usdPrice": "0.35",
+                "falPrice": "0.50",
+                "discountRate": 30.0,
+                "anchor": "https://kie.ai/gemini-3.8-flash-lite-tts",
+                "discountPrice": false
+            },
+            {
+                "modelDescription": "Gemini 3.8 Flash-Lite TTS, Text to Speech, Audio Output",
+                "interfaceType": "music",
+                "provider": "Google",
+                "creditPrice": "840",
+                "creditUnit": "per million tokens",
+                "usdPrice": "4.20",
+                "falPrice": "6.00",
+                "discountRate": 30.0,
+                "anchor": "https://kie.ai/gemini-3.8-flash-lite-tts",
+                "discountPrice": false
+            },
+            {
+                "modelDescription": "Elevenlabs V3, Text to dialogue",
+                "interfaceType": "music",
+                "provider": "Elevenlabs",
+                "creditPrice": "14",
+                "creditUnit": "per 1000 characters",
+                "usdPrice": "0.07",
+                "falPrice": "0.1",
+                "discountRate": 30.0,
+                "anchor": "https://kie.ai/elevenlabs/text-to-dialogue-v3",
+                "discountPrice": false
+            },
+            {
+                "modelDescription": "Elevenlabs Text to Speech, turbo 2.5",
+                "interfaceType": "music",
+                "provider": "Elevenlabs",
+                "creditPrice": "6.0",
+                "creditUnit": "per 1000 characters",
+                "usdPrice": "0.03",
+                "falPrice": "0.05",
+                "discountRate": 40.0,
+                "anchor": "https://kie.ai/elevenlabs-tts?model=elevenlabs%2Ftext-to-speech-turbo-2-5",
+                "discountPrice": false
+            },
+            {
+                "modelDescription": "Elevenlabs Text to Speech, multilingual v2",
+                "interfaceType": "music",
+                "provider": "Elevenlabs",
+                "creditPrice": "12.0",
+                "creditUnit": "per 1000 characters",
+                "usdPrice": "0.06",
+                "falPrice": "0.1",
+                "discountRate": 40.0,
+                "anchor": "https://kie.ai/elevenlabs-tts?model=elevenlabs%2Ftext-to-speech-multilingual-v2",
+                "discountPrice": false
+            }
+        ],
+        "pages": 1,
+        "current": 1,
+        "total": 5
+    }
+}

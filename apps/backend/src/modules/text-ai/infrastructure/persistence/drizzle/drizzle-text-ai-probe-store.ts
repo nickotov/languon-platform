@@ -5,6 +5,9 @@ import type { TextAiProbe } from '@languon/contracts';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { pinProviderPrice } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import { parseFixed } from '../../../../ai-credits/domain/accounting';
+import { evaluateNativeProviderCost } from '../../../../ai-credits/domain/native-provider-pricing';
+import { findTextAiModel } from '../../ai/text-ai-provider-catalog';
+import { nativeTextPolicyFingerprint } from '../../ai/native-text-policy-identity';
 import {
     TextAiProbeUnavailableError,
     type TextAiProbeLimits,
@@ -134,6 +137,7 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
             if (
                 !price ||
                 (input.identity.providerId === 'evolink' &&
+                    !price.nativeRules &&
                     (price.minimumUsdPerRequest == null ||
                         parseFixed(price.minimumUsdPerRequest, 6) <= 0n))
             )
@@ -147,10 +151,19 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                 );
 
             const id = randomUUID();
+            const identity = price.nativeRules
+                ? {
+                      ...input.identity,
+                      fingerprint: nativeTextPolicyFingerprint(
+                          input.identity.fingerprint,
+                      ),
+                  }
+                : input.identity;
+
             await tx.insert(probes).values({
                 id,
                 actorId: input.actorId,
-                ...input.identity,
+                ...identity,
                 kind: input.request.kind,
                 flowId: input.request.flowId ?? null,
                 state: 'running',
@@ -163,7 +176,7 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
 
             return {
                 id,
-                identity: input.identity,
+                identity,
                 request: input.request,
                 price,
                 maximumCostMicros: input.limits.maximumCostMicros,
@@ -191,9 +204,16 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                 );
             if (previous.state !== 'running') return dto(previous);
 
-            const cost = probeCostMicros(previous.price, result);
+            const cost = probeCostMicros(
+                previous.price,
+                result,
+                previous.startedAt,
+            );
             const safeCost =
-                cost !== null && cost <= previous.maximumMicros ? cost : null;
+                cost !== null &&
+                (previous.price.nativeRules || cost <= previous.maximumMicros)
+                    ? cost
+                    : null;
             const valid =
                 result.valid &&
                 (cost === null || cost <= previous.maximumMicros);
@@ -209,6 +229,23 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                     outputTokens: result.outputTokens,
                     cacheReadTokens: result.cacheReadTokens ?? null,
                     cacheWriteTokens: result.cacheWriteTokens ?? null,
+                    providerUsage: result.nativeUsage ?? null,
+                    providerExecutionFacts: result.executionFacts
+                        ? {
+                              ...(result.executionFacts.endpointId
+                                  ? {
+                                        endpointId:
+                                            result.executionFacts.endpointId,
+                                    }
+                                  : {}),
+                              ...(result.executionFacts.serviceTier
+                                  ? {
+                                        serviceTier:
+                                            result.executionFacts.serviceTier,
+                                    }
+                                  : {}),
+                          }
+                        : null,
                     measurement:
                         safeCost === null ? 'unknown' : result.measurement,
                     elapsedMs: result.elapsedMs,
@@ -318,7 +355,45 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
 export function probeCostMicros(
     price: TextAiProbeReservation['price'],
     result: TextAiProbeResult,
+    dispatchedAt?: Date,
 ): bigint | null {
+    if (
+        result.failure === 'budget_insufficient' &&
+        result.inputTokens === 0 &&
+        result.outputTokens === 0
+    )
+        return 0n;
+    if (price.nativeRules) {
+        if (!dispatchedAt && !result.executionFacts) return null;
+        const cost = evaluateNativeProviderCost(
+            price.nativeRules,
+            {
+                ...result.executionFacts,
+                dispatchedAt:
+                    dispatchedAt?.toISOString() ??
+                    result.executionFacts!.dispatchedAt,
+            },
+            {
+                ...result.nativeUsage,
+                requests: 1,
+                ...(result.inputTokens === null
+                    ? {}
+                    : { inputTokens: result.inputTokens }),
+                ...(result.outputTokens === null
+                    ? {}
+                    : { outputTokens: result.outputTokens }),
+                ...(result.cacheReadTokens === undefined
+                    ? {}
+                    : { cacheReadTokens: result.cacheReadTokens }),
+                ...(result.cacheWriteTokens === undefined
+                    ? {}
+                    : { cacheWriteTokens: result.cacheWriteTokens }),
+            },
+        );
+
+        return cost.status === 'calculated' ? cost.micros : null;
+    }
+
     if (
         result.measurement === 'unknown' ||
         result.inputTokens === null ||
@@ -362,6 +437,21 @@ export async function requireProbeReady(
     tx: ProbeTransaction,
     input: { routeId: string; flowId: string; now: Date; fingerprint: string },
 ) {
+    const model = findTextAiModel(input.routeId);
+    const currentPrice = model
+        ? await pinProviderPrice(tx, {
+              providerId: model.providerId,
+              modelId: model.modelId,
+              meter: 'text-tokens',
+              at: input.now,
+          })
+        : null;
+    const expected = {
+        ...input,
+        fingerprint: currentPrice?.nativeRules
+            ? nativeTextPolicyFingerprint(input.fingerprint)
+            : input.fingerprint,
+    };
     const [latest] = await tx
         .select()
         .from(probes)
@@ -378,10 +468,10 @@ export async function requireProbeReady(
     if (
         !latest ||
         latest.state !== 'passed' ||
-        latest.fingerprint !== input.fingerprint ||
+        latest.fingerprint !== expected.fingerprint ||
         !latest.evidenceExpiresAt ||
         latest.evidenceExpiresAt <= input.now ||
-        !(await isProbeDispatchAllowed(tx, input))
+        !(await isProbeDispatchAllowed(tx, expected))
     )
         throw new TextAiProbeUnavailableError('probe_check_required');
 }

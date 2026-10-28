@@ -3,6 +3,8 @@ import type {
     TextAiProbe,
     TextAiProbeFailure,
     TextAiProbeRequest,
+    ProviderNativeUsage,
+    ProviderExecutionFacts,
 } from '@languon/contracts';
 
 export interface TextAiProbeLimits {
@@ -26,6 +28,8 @@ export interface TextAiProbeReservation {
     startedAt: Date;
 }
 export interface TextAiProbeResult {
+    nativeUsage?: ProviderNativeUsage;
+    executionFacts?: ProviderExecutionFacts;
     valid: boolean;
     failure: TextAiProbeFailure | null;
     elapsedMs: number;

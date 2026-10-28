@@ -1,3 +1,4 @@
+import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type {
     ChatPreferences,
     KnowledgeNoteContent,
@@ -46,11 +47,7 @@ export interface TutorCallAdmission {
     providerCompleted?: boolean;
 }
 
-export interface TutorCallUsage {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
+export interface TutorCallUsage extends TextAiProviderUsage {
     outputLimitReached?: boolean;
 }
 

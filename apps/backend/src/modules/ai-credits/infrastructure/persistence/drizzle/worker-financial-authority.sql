@@ -97,7 +97,7 @@ REVOKE ALL ON FUNCTION languon_text_dispatch_execution(uuid,uuid,text,text,bigin
 
 CREATE OR REPLACE FUNCTION languon_admit_text_provider_attempt(action_value uuid, call_value uuid, purpose_value text, input_value integer, output_value integer, job_value uuid, token_value text, worker_value text, fence_value bigint, at_value timestamptz) RETURNS public.ai_credit_action_attempts
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE a public.ai_credit_actions%ROWTYPE; e jsonb; s jsonb; b jsonb; p public.ai_provider_price_revisions%ROWTYPE; price_value jsonb; result public.ai_credit_action_attempts%ROWTYPE; used_output bigint; used_input bigint; used_cost bigint; reserved_value bigint; available_cost bigint; affordable bigint; spent numeric; input_rate numeric; output_rate numeric; credit_input numeric; credit_output numeric; confirmed_output bigint; minimum_value bigint; call_available bigint; count_value integer; support_count integer; answer_count integer; owner_value uuid; kind_value text; dispatch_value timestamptz:=date_trunc('milliseconds',clock_timestamp());
+DECLARE a public.ai_credit_actions%ROWTYPE; e jsonb; s jsonb; b jsonb; p public.ai_provider_price_revisions%ROWTYPE; price_value jsonb; result public.ai_credit_action_attempts%ROWTYPE; used_output bigint; used_input bigint; used_cost bigint; reserved_value bigint; available_cost bigint; affordable bigint; spent numeric; input_rate numeric; output_rate numeric; credit_input numeric; credit_output numeric; confirmed_output bigint; minimum_value bigint; call_available bigint; count_value integer; support_count integer; answer_count integer; owner_value uuid; kind_value text; dispatch_value timestamptz:=date_trunc('milliseconds',clock_timestamp()); native_value jsonb; low_value integer; high_value integer; middle_value integer; native_facts jsonb;
 BEGIN
  PERFORM pg_advisory_xact_lock(4312189072);
  SELECT ca.owner_id,policy_row.job_kind INTO owner_value,kind_value FROM public.ai_credit_actions ca JOIN public.ai_action_charging_policies policy_row ON policy_row.job_id=ca.id WHERE ca.id=action_value;
@@ -105,16 +105,30 @@ BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended(owner_value::text,1920424381)); PERFORM pg_advisory_xact_lock(1920424395);
  SELECT * INTO a FROM public.ai_credit_actions WHERE id=action_value FOR UPDATE;
  IF a.state<>'active' OR a.deadline_at<=clock_timestamp() OR input_value IS NULL OR input_value<0 OR output_value IS NULL OR output_value<1 OR purpose_value NOT IN ('answer','observation','reflection') THEN RAISE EXCEPTION 'Action execution allowance is unavailable' USING ERRCODE='23514'; END IF;
+ native_facts:=jsonb_build_object('dispatchedAt',to_char(dispatch_value AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'latestDispatchAt',to_char((date_trunc('milliseconds',a.deadline_at-interval '1 microsecond')) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
  e:=public.languon_text_dispatch_execution(action_value,job_value,token_value,worker_value,fence_value);
  IF kind_value='portrait-interview' AND purpose_value<>'answer' THEN RAISE EXCEPTION 'Interview only authorizes answer calls' USING ERRCODE='23514'; END IF;
  s:=coalesce(e->'snapshot',e); b:=coalesce(e->'budget',s->'aggregateBudget'); price_value:=coalesce(e->'providerPrice',e->'actionProviderPrice');
  SELECT * INTO p FROM public.ai_provider_price_revisions WHERE id=(price_value->>'id')::uuid;
- IF p.id IS NULL OR p.provider_id IS DISTINCT FROM s->>'providerId' OR p.model_id IS DISTINCT FROM s->>'modelId' OR p.meter<>'text-tokens' OR p.version IS DISTINCT FROM (price_value->>'version')::integer OR p.effective_at>a.created_at OR p.data->>'inputUsdPerMillionTokens' IS NULL OR p.data->>'outputUsdPerMillionTokens' IS NULL THEN RAISE EXCEPTION 'Dispatch requires its reviewed immutable provider rate' USING ERRCODE='23514'; END IF;
+ IF p.id IS NULL OR p.provider_id IS DISTINCT FROM s->>'providerId' OR p.model_id IS DISTINCT FROM s->>'modelId' OR p.meter<>'text-tokens' OR p.version IS DISTINCT FROM (price_value->>'version')::integer OR p.effective_at>a.created_at OR (NOT p.data ? 'nativeRules' AND (p.data->>'inputUsdPerMillionTokens' IS NULL OR p.data->>'outputUsdPerMillionTokens' IS NULL)) THEN RAISE EXCEPTION 'Dispatch requires its reviewed immutable provider rate' USING ERRCODE='23514'; END IF;
+ IF p.data ? 'nativeRules' THEN
+  native_value:=public.languon_native_text_reservation(p.data,native_facts,1000000,0,5);
+  IF native_value->>'status'<>'calculated' THEN RAISE EXCEPTION 'Native input allowance is unavailable' USING ERRCODE='23514'; END IF;
+  input_rate:=(native_value->>'amountUsdMicros')::numeric;
+  native_value:=public.languon_native_text_reservation(p.data,native_facts,0,1000000,5);
+  IF native_value->>'status'<>'calculated' THEN RAISE EXCEPTION 'Native output allowance is unavailable' USING ERRCODE='23514'; END IF;
+  output_rate:=(native_value->>'amountUsdMicros')::numeric;
+  native_value:=public.languon_native_text_reservation(p.data,native_facts,0,0,5);
+  IF native_value->>'status'<>'calculated' OR input_rate>2147483647 OR output_rate>2147483647 THEN RAISE EXCEPTION 'Native provider allowance exceeds execution meter' USING ERRCODE='23514'; END IF;
+  minimum_value:=(native_value->>'amountUsdMicros')::bigint;
+  b:=b||jsonb_build_object('nativeProviderPrice',price_value,'nativeExecutionFacts',native_facts,'nativeMaxCalls',5,'inputCostMicrosPerMillionTokens',input_rate::bigint,'outputCostMicrosPerMillionTokens',output_rate::bigint);
+ ELSE
  minimum_value:=ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint;
  IF p.provider_id='evolink' AND minimum_value<=0 THEN RAISE EXCEPTION 'Reviewed provider minimum per request is required' USING ERRCODE='23514'; END IF;
  input_rate:=greatest((p.data->>'inputUsdPerMillionTokens')::numeric,coalesce((p.data->>'cacheReadUsdPerMillionTokens')::numeric,0),coalesce((p.data->>'cacheWriteUsdPerMillionTokens')::numeric,0))*1000000;
  output_rate:=(p.data->>'outputUsdPerMillionTokens')::numeric*1000000;
  b:=b||jsonb_build_object('inputCostMicrosPerMillionTokens',input_rate::bigint,'outputCostMicrosPerMillionTokens',output_rate::bigint);
+ END IF;
  IF NOT public.languon_text_dispatch_capacity_allows(owner_value,b) THEN RAISE EXCEPTION 'Provider operational capacity is unavailable' USING ERRCODE='23514'; END IF;
  SELECT count(*),count(*) FILTER(WHERE purpose<>'answer'),count(*) FILTER(WHERE purpose='answer'),coalesce(sum(coalesce(output_tokens,CASE WHEN EXISTS(SELECT 1 FROM public.text_ai_route_health_events rejection WHERE rejection.attempt_id=ai_credit_action_attempts.id AND rejection.reason IN ('authorization_failed','provider_credits_exhausted','rate_limited','model_retired','model_unavailable')) THEN 0 ELSE output_limit END)),0),coalesce(sum(coalesce(input_tokens,input_limit)),0),coalesce(sum(coalesce(actual_cost_micros,reserved_cost_micros)),0),coalesce(sum(CASE WHEN purpose='answer' AND (state='dispatched' OR (successful=1 AND (
    NOT EXISTS(SELECT 1 FROM public.sentence_preparation_actions WHERE action_id=action_value)
@@ -143,13 +157,23 @@ BEGIN
  SELECT reserved_micros-coalesce((SELECT sum(coalesce(consumed_micros,reserved_micros)) FROM public.ai_operator_attempt_costs WHERE action_id=action_value),0) INTO available_cost FROM public.ai_operator_action_budgets WHERE action_id=action_value AND state='active' FOR UPDATE;
  call_available:=least(available_cost,(b->>'maxCostMicrosPerAttempt')::bigint-used_cost);
  IF call_available<minimum_value THEN RAISE EXCEPTION 'Provider request minimum exceeds operator allowance' USING ERRCODE='23514'; END IF;
+ IF p.data ? 'nativeRules' THEN
+  low_value:=0; high_value:=greatest(0,affordable)::integer;
+  WHILE low_value<high_value LOOP
+   middle_value:=low_value+(high_value-low_value+1)/2;
+   native_value:=public.languon_native_text_reservation(p.data,native_facts,input_value,middle_value,5);
+   IF native_value->>'status'='calculated' AND (native_value->>'amountUsdMicros')::numeric<=call_available THEN low_value:=middle_value; ELSE high_value:=middle_value-1; END IF;
+  END LOOP;
+  affordable:=low_value;
+ ELSE
  available_cost:=call_available-ceil(input_value*input_rate/1000000)::bigint;
  IF available_cost IS NULL OR available_cost<0 THEN affordable:=0; ELSIF output_rate>0 THEN affordable:=least(affordable,floor(available_cost::numeric*1000000/output_rate)); END IF;
+ END IF;
  IF coalesce((e->>'routingDispatchAttempt')::integer,(e->>'dispatchJobAttempt')::integer,1)=2 AND affordable<confirmed_output THEN RAISE EXCEPTION 'Fallback cannot reduce confirmed allowance' USING ERRCODE='23514'; END IF;
  IF affordable<1 THEN RAISE EXCEPTION 'Action affordable output allowance exhausted' USING ERRCODE='23514'; END IF;
- reserved_value:=greatest(minimum_value,ceil(input_value*input_rate/1000000)::bigint+ceil(affordable*output_rate/1000000)::bigint);
+ IF p.data ? 'nativeRules' THEN native_value:=public.languon_native_text_reservation(p.data,native_facts,input_value,affordable::integer,5); reserved_value:=(native_value->>'amountUsdMicros')::bigint; ELSE reserved_value:=greatest(minimum_value,ceil(input_value*input_rate/1000000)::bigint+ceil(affordable*output_rate/1000000)::bigint); END IF;
  INSERT INTO public.ai_operator_attempt_costs(action_id,attempt_id,reserved_micros,created_at) VALUES(action_value,call_value,reserved_value,dispatch_value);
- INSERT INTO public.ai_credit_action_attempts(id,action_id,execution_job_id,ordinal,purpose,state,budget,reserved_cost_micros,input_limit,output_limit,created_at) VALUES(call_value,action_value,job_value,count_value+1,purpose_value,'dispatched',b,reserved_value,input_value,affordable,dispatch_value) RETURNING * INTO result;
+ INSERT INTO public.ai_credit_action_attempts(id,action_id,execution_job_id,ordinal,purpose,state,budget,reserved_cost_micros,input_limit,output_limit,created_at,provider_dispatch_witness) VALUES(call_value,action_value,job_value,count_value+1,purpose_value,'dispatched',b,reserved_value,input_value,affordable,dispatch_value,jsonb_build_object('jobId',job_value,'token',token_value,'worker',worker_value,'fence',fence_value::text)) RETURNING * INTO result;
  INSERT INTO public.text_ai_route_dispatches(attempt_id,route_id,snapshot,provider_price,created_at)
  VALUES(call_value,(s->>'providerId')||'/'||(s->>'modelId'),s,price_value,dispatch_value);
  RETURN result;
@@ -203,7 +227,7 @@ REVOKE ALL ON FUNCTION languon_admit_speech_provider_attempt(uuid) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION languon_admit_speech_provider_attempt(job_value uuid, lease_value uuid) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE j public.speech_jobs%ROWTYPE; p public.ai_provider_price_revisions%ROWTYPE; maximum_value bigint; owner_value uuid;
+DECLARE j public.speech_jobs%ROWTYPE; p public.ai_provider_price_revisions%ROWTYPE; maximum_value bigint; owner_value uuid; native_value jsonb; dispatch_value timestamptz:=date_trunc('milliseconds',clock_timestamp()); profile_value jsonb;
 BEGIN
  SELECT payer_id INTO owner_value FROM public.speech_jobs WHERE id=job_value;
  IF owner_value IS NULL THEN RAISE EXCEPTION 'Prepared speech owner is missing' USING ERRCODE='23514'; END IF;
@@ -211,8 +235,17 @@ BEGIN
  SELECT * INTO j FROM public.speech_jobs WHERE id=job_value FOR UPDATE;
  IF j.id IS NULL OR j.accounting_version<>1 OR j.state<>'submitting' OR lease_value IS NULL OR j.lease_token IS DISTINCT FROM lease_value OR j.lease_expires_at IS NULL OR j.lease_expires_at<=clock_timestamp() OR j.task_id IS NOT NULL OR j.provider_dispatched_at IS NOT NULL OR j.queue_deadline<=clock_timestamp() OR j.billing_deadline<=clock_timestamp() OR j.payer_id IS DISTINCT FROM owner_value OR NOT EXISTS(SELECT 1 FROM public.users WHERE id=j.payer_id AND status='active') THEN RAISE EXCEPTION 'Speech dispatch requires its prepared queued job' USING ERRCODE='23514'; END IF;
  SELECT * INTO p FROM public.ai_provider_price_revisions WHERE id=(j.provider_price_snapshot->>'id')::uuid;
- IF p.id IS NULL OR p.version IS DISTINCT FROM (j.provider_price_snapshot->>'version')::integer OR p.meter<>'speech-characters' OR p.provider_id IS DISTINCT FROM j.provider_price_snapshot->>'providerId' OR p.model_id IS DISTINCT FROM j.provider_price_snapshot->>'modelId' OR p.effective_at>j.created_at THEN RAISE EXCEPTION 'Speech reviewed rate is missing' USING ERRCODE='23514'; END IF;
+ IF p.id IS NULL OR p.version IS DISTINCT FROM (j.provider_price_snapshot->>'version')::integer OR p.meter NOT IN ('speech-characters','speech-tokens') OR p.provider_id IS DISTINCT FROM j.provider_price_snapshot->>'providerId' OR p.model_id IS DISTINCT FROM j.provider_price_snapshot->>'modelId' OR p.effective_at>j.created_at THEN RAISE EXCEPTION 'Speech reviewed rate is missing' USING ERRCODE='23514'; END IF;
+ IF p.data ? 'nativeRules' THEN
+  IF NOT public.languon_native_meter_compatible(p.data,p.meter) THEN RAISE EXCEPTION 'Native speech price has incompatible component meters' USING ERRCODE='23514'; END IF;
+  SELECT profile INTO profile_value FROM public.speech_recordings WHERE id=j.recording_id;
+  IF j.provider_usage_bounds IS NULL OR j.provider_usage_bounds->>'requests'<>'1' OR (j.provider_usage_bounds->>'characters')::integer IS DISTINCT FROM j.provider_character_count OR (p.meter='speech-tokens' AND (profile_value->'nativeBilling'->>'providerTaskBoundVerified' IS DISTINCT FROM 'true' OR NOT (j.provider_usage_bounds @> (profile_value->'nativeBilling'->'usageBounds')))) THEN RAISE EXCEPTION 'Native speech task has no reviewed finite bounds' USING ERRCODE='23514'; END IF;
+  native_value:=public.languon_evaluate_provider_price(p.data,jsonb_build_object('dispatchedAt',dispatch_value),j.provider_usage_bounds,'upper-bound');
+  IF native_value->>'status'<>'calculated' THEN RAISE EXCEPTION 'Native speech allowance is unavailable' USING ERRCODE='23514'; END IF;
+  maximum_value:=(native_value->>'amountUsdMicros')::bigint;
+ ELSE
  maximum_value:=greatest(ceil(j.provider_character_count*(p.data->>'usdPer1000Characters')::numeric*1000)::bigint,ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint);
+ END IF;
  IF maximum_value IS NULL OR NOT EXISTS(SELECT 1 FROM public.ai_operator_action_budgets WHERE action_id=j.id AND owner_id=j.payer_id AND state='active' AND reserved_micros>=maximum_value) THEN RAISE EXCEPTION 'Speech operator authorization is missing' USING ERRCODE='23514'; END IF;
  IF j.reservation_id IS NOT NULL THEN
   UPDATE public.ai_credit_reservations SET dispatched_at=coalesce(dispatched_at,clock_timestamp())
@@ -255,7 +288,7 @@ BEGIN
     IF OLD.state<>'dispatched' OR NEW.state<>'settled' OR
       NEW.id<>OLD.id OR NEW.action_id<>OLD.action_id OR NEW.execution_job_id IS DISTINCT FROM OLD.execution_job_id OR NEW.ordinal<>OLD.ordinal OR NEW.purpose<>OLD.purpose
       OR NEW.input_limit<>OLD.input_limit OR NEW.output_limit<>OLD.output_limit OR NEW.budget<>OLD.budget
-      OR NEW.reserved_cost_micros<>OLD.reserved_cost_micros OR NEW.created_at<>OLD.created_at THEN
+      OR NEW.reserved_cost_micros<>OLD.reserved_cost_micros OR NEW.created_at<>OLD.created_at OR NEW.provider_dispatch_witness IS DISTINCT FROM OLD.provider_dispatch_witness THEN
       RAISE EXCEPTION 'Provider attempt identity and final usage are immutable';
     END IF;
     RETURN NEW;

@@ -1,9 +1,9 @@
+import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import {
     withTextAiProviderAttemptWitness,
     type TextAiProviderAttemptWitness,
 } from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context.js';
 import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
 import { ConversationError } from '../../domain/conversation.js';
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm';
 import type {
@@ -30,43 +30,15 @@ export class TutorOperationLimitError extends Error {
     }
 }
 
-const tokenCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
-const usageSchema = z.object({
-    // The pinned router exposes V7 usage totals while declaring its V2 facade.
-    // Direct V2 provider fixtures expose scalar totals. Reject missing totals.
-    inputTokens: z.union([
-        tokenCount,
-        z.object({
-            total: tokenCount,
-            cacheRead: tokenCount.nullish(),
-            cacheWrite: tokenCount.nullish(),
-        }),
-    ]),
-    cachedInputTokens: tokenCount.nullish(),
-    outputTokens: z.union([tokenCount, z.object({ total: tokenCount })]),
-});
 function readUsage(usage: unknown): TutorCallUsage | null {
-    const parsed = usageSchema.safeParse(usage);
-    if (!parsed.success) return null;
-    const { inputTokens, outputTokens } = parsed.data;
-    const cacheReadTokens =
-        typeof inputTokens === 'number'
-            ? (parsed.data.cachedInputTokens ?? 0)
-            : (inputTokens.cacheRead ?? 0);
-    const cacheWriteTokens =
-        typeof inputTokens === 'number' ? 0 : (inputTokens.cacheWrite ?? 0);
-    const totalInputTokens =
-        typeof inputTokens === 'number' ? inputTokens : inputTokens.total;
-    if (cacheReadTokens + cacheWriteTokens > totalInputTokens) return null;
-    return {
-        inputTokens: totalInputTokens,
-        ...(cacheReadTokens ? { cacheReadTokens } : {}),
-        ...(cacheWriteTokens ? { cacheWriteTokens } : {}),
-        outputTokens:
-            typeof outputTokens === 'number'
-                ? outputTokens
-                : outputTokens.total,
-    };
+    try {
+        return readProviderTokenUsage(usage, {
+            maxInputTokens: Number.MAX_SAFE_INTEGER,
+            maxOutputTokens: Number.MAX_SAFE_INTEGER,
+        });
+    } catch {
+        return null;
+    }
 }
 
 /** Some adapters attach their final measured partial usage to an abort/error object. */

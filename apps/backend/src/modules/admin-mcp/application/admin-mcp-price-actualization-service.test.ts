@@ -30,7 +30,12 @@ const actor: AdminMcpActor = {
     tokenId: 'token',
     userId: 'owner',
     permissions: ['provider-prices.write'],
-    allowedActions: ['provider-prices.write', 'provider-prices.actualize'],
+    allowedActions: [
+        'provider-prices.write',
+        'provider-prices.actualize',
+        'provider-prices.native-write',
+        'provider-prices.actualize-native.v1',
+    ],
     limits: {},
 };
 const now = new Date('2026-10-28T12:00:00Z');
@@ -215,7 +220,7 @@ describe('model price actualization coordination', () => {
             },
         ]);
         expect((await f.service.actualize(actor, input)).results).toMatchObject(
-            [{ status: 'unavailable' }],
+            [{ status: 'source-changed' }],
         );
         f.fetchPrices.mockResolvedValue([]);
         expect((await f.service.actualize(actor, input)).results).toMatchObject(

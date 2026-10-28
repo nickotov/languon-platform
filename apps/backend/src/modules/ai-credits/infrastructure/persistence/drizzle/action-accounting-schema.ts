@@ -13,6 +13,11 @@ import {
     uuid,
 } from 'drizzle-orm/pg-core';
 import type { TextAiProviderBudgetPolicy } from '../../../../text-ai/application/text-ai-provider-catalog';
+import type {
+    ProviderExecutionFacts,
+    ProviderNativeUsage,
+    ProviderNativeCallObservation,
+} from '@languon/contracts';
 import type { ActionTariff } from '../../../domain/action-pricing';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import { aiCreditGrantsTable } from './schema';
@@ -99,13 +104,27 @@ export const aiCreditActionAttemptsTable = pgTable(
         state: text('state').$type<'dispatched' | 'settled'>().notNull(),
         budget: jsonb('budget').$type<TextAiProviderBudgetPolicy>().notNull(),
         reservedCostMicros: integer('reserved_cost_micros').notNull(),
-        actualCostMicros: integer('actual_cost_micros'),
+        actualCostMicros: bigint('actual_cost_micros', { mode: 'bigint' }),
         inputLimit: integer('input_limit').notNull(),
         outputLimit: integer('output_limit').notNull(),
         inputTokens: integer('input_tokens'),
         cacheReadTokens: integer('cache_read_tokens'),
         cacheWriteTokens: integer('cache_write_tokens'),
         outputTokens: integer('output_tokens'),
+        providerUsage: jsonb('provider_usage').$type<
+            Partial<ProviderNativeUsage> & {
+                calls?: ProviderNativeCallObservation[];
+            }
+        >(),
+        providerExecutionFacts: jsonb('provider_execution_facts').$type<
+            Pick<ProviderExecutionFacts, 'endpointId' | 'serviceTier'>
+        >(),
+        providerDispatchWitness: jsonb('provider_dispatch_witness').$type<{
+            jobId: string;
+            token: string | null;
+            worker: string | null;
+            fence: string | null;
+        }>(),
         successful: integer('successful').notNull().default(0),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
         settledAt: timestamp('settled_at', { withTimezone: true }),
@@ -126,6 +145,37 @@ export const aiCreditActionAttemptsTable = pgTable(
         check(
             'ai_credit_action_attempt_terminal',
             sql`(${t.state}='dispatched' and ${t.settledAt} is null) or (${t.state}='settled' and ${t.settledAt} is not null)`,
+        ),
+    ],
+);
+
+/** Internal DB-clock receipts bind every native SDK call to its immutable parent allowance. */
+export const aiCreditNativeCallDispatchesTable = pgTable(
+    'ai_credit_native_call_dispatches',
+    {
+        id: uuid('id').primaryKey(),
+        attemptId: uuid('attempt_id')
+            .notNull()
+            .references(() => aiCreditActionAttemptsTable.id, {
+                onDelete: 'cascade',
+            }),
+        ordinal: integer('ordinal').notNull(),
+        inputLimit: integer('input_limit').notNull(),
+        outputLimit: integer('output_limit').notNull(),
+        dispatchedAt: timestamp('dispatched_at', {
+            withTimezone: true,
+        }).notNull(),
+        providerUsage: jsonb('provider_usage').$type<ProviderNativeUsage>(),
+        providerExecutionFacts: jsonb('provider_execution_facts').$type<
+            Pick<ProviderExecutionFacts, 'endpointId' | 'serviceTier'>
+        >(),
+        observedAt: timestamp('observed_at', { withTimezone: true }),
+    },
+    (t) => [
+        uniqueIndex('ai_credit_native_call_ordinal').on(t.attemptId, t.ordinal),
+        check(
+            'ai_credit_native_call_limits',
+            sql`${t.ordinal} between 1 and 5 and ${t.inputLimit}>=0 and ${t.outputLimit}>=1`,
         ),
     ],
 );

@@ -4,6 +4,7 @@ import {
     AdminMcpError,
     requireAction,
     requirePermission,
+    permissionForWrite,
     type AdminMcpActor,
 } from '../domain/admin-mcp';
 import {
@@ -71,7 +72,7 @@ export class AdminMcpAdministrationService {
                     'Unsupported administrative change.',
                 );
             requireAction(actor, operation);
-            requirePermission(actor, operation);
+            requirePermission(actor, permissionForWrite(operation));
             const input = schema.parse(raw);
             const preview = await this.operations.preview(
                 actor,

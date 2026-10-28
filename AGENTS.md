@@ -110,6 +110,11 @@ and Redis; application processes normally run on the host.
 
 ## Code search and analysis
 
+For researching or onboarding AI providers and models, use
+[$ai-provider-model-onboarding](.agents/skills/ai-provider-model-onboarding/SKILL.md).
+It verifies exact identities, native pricing and bounded switch-ready settings,
+and composes the speech-specific configuration skill where applicable.
+
 For implementation exploration and review, use
 [$efficient-code-search](.agents/skills/efficient-code-search/SKILL.md).
 Scope searches to the likely app/package first: use `rg` (or scoped `grep`/`find`)

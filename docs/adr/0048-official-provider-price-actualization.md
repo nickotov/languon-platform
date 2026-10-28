@@ -5,6 +5,7 @@ title: Official provider price actualization through reviewed adapters
 status: accepted
 date: 2026-10-28
 supersedes: 'None'
+superseded_in_part_by: 'ADR-0049 native pricing/accounting and complete provider coverage; source adapter and delegated-MCP boundaries remain active'
 ---
 
 # ADR-0048: Official provider price actualization through reviewed adapters

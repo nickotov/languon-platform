@@ -1,3 +1,4 @@
+import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
 import type {
     TextAiExecutionSnapshot,
@@ -13,12 +14,7 @@ import {
     SentenceInvalidModelOutputError,
     type SentenceModelOutputReason,
 } from '../../domain/sentence-errors';
-export interface SentenceTokenUsage {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
-}
+export type SentenceTokenUsage = TextAiProviderUsage;
 /** Usage accompanying rejection has already passed the dispatched call's bounds. */
 export class SentenceProviderInvalidModelOutputError extends SentenceInvalidModelOutputError {
     readonly executionOutcome = 'completed' as const;

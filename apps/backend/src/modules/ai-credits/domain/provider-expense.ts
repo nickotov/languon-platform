@@ -1,4 +1,13 @@
-import type { ProviderPrice } from '@languon/contracts';
+import type {
+    ProviderPrice,
+    ProviderExecutionFacts,
+    ProviderNativeUsage,
+    ProviderNativeCallObservation,
+} from '@languon/contracts';
+import {
+    evaluateNativeProviderCalls,
+    evaluateNativeProviderCost,
+} from './native-provider-pricing';
 import { AccountingInvalidRecordError, parseFixed } from './accounting';
 
 function quantity(value: number): bigint {
@@ -14,8 +23,28 @@ export function providerTextExpenseMicros(
         outputTokens: number;
         cacheReadTokens?: number;
         cacheWriteTokens?: number;
+        providerCostUsd?: string | undefined;
+        providerCreditsConsumed?: string | undefined;
+        requests?: 0 | 1 | undefined;
+        calls?: ProviderNativeCallObservation[] | undefined;
     },
+    facts?: ProviderExecutionFacts,
 ): bigint | null {
+    if (price?.nativeRules) {
+        if (usage.calls) {
+            const result = evaluateNativeProviderCalls(
+                price.nativeRules,
+                usage.calls,
+            );
+            return result.status === 'calculated' ? result.micros : null;
+        }
+        if (!facts) return null;
+        const result = evaluateNativeProviderCost(price.nativeRules, facts, {
+            ...usage,
+            requests: usage.requests ?? 1,
+        });
+        return result.status === 'calculated' ? result.micros : null;
+    }
     const input = quantity(usage.inputTokens);
     const output = quantity(usage.outputTokens);
     const read = quantity(usage.cacheReadTokens ?? 0);
@@ -48,10 +77,24 @@ export function providerTextExpenseMicros(
 export function providerSpeechExpenseMicros(
     price: Pick<
         ProviderPrice,
-        'meter' | 'usdPer1000Characters' | 'minimumUsdPerRequest'
+        | 'meter'
+        | 'usdPer1000Characters'
+        | 'minimumUsdPerRequest'
+        | 'nativeRules'
     > | null,
     characters: number,
+    facts?: ProviderExecutionFacts,
+    reportedUsage?: Partial<ProviderNativeUsage>,
 ): bigint | null {
+    if (price?.nativeRules) {
+        if (!facts) return null;
+        const result = evaluateNativeProviderCost(price.nativeRules, facts, {
+            ...reportedUsage,
+            characters,
+            requests: reportedUsage?.requests ?? 1,
+        });
+        return result.status === 'calculated' ? result.micros : null;
+    }
     const count = quantity(characters);
     if (
         !price ||

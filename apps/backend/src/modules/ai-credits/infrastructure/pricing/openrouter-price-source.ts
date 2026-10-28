@@ -1,11 +1,19 @@
 import { z } from 'zod';
 import type {
-    FetchedProviderPrice,
+    ProviderNativeComponent,
+    ProviderNativePricingRules,
+    ProviderNativeVariant,
+} from '@languon/contracts';
+import type {
     ProviderPriceFetchResult,
     ProviderPriceSource,
     ProviderPriceTarget,
 } from '../../application/provider-price-source';
-import { scalePublishedPrice } from './exact-price';
+import {
+    nativePrice,
+    publishedRate,
+    sourceFailure,
+} from './native-price-source';
 import { readPricingJson } from './pricing-http';
 
 const pricingSchema = z.record(z.string(), z.unknown());
@@ -21,257 +29,481 @@ const catalogSchema = z.object({ data: z.array(modelSchema).max(10_000) });
 const endpointSchema = z.object({
     data: z.object({
         id: z.string(),
-        endpoints: z.array(z.object({ pricing: pricingSchema })).max(500),
+        endpoints: z
+            .array(
+                z.object({
+                    pricing: pricingSchema,
+                    tag: z.string().optional(),
+                    provider_name: z.string().optional(),
+                    service_tier: z.string().nullable().optional(),
+                }),
+            )
+            .min(1)
+            .max(500),
     }),
 });
 const catalogUrl = new URL(
     'https://openrouter.ai/api/v1/models?output_modalities=all',
 );
-
-// Official TTS docs describe character-based ElevenLabs prompt rates, while other
-// speech models may charge output seconds. Modality alone cannot establish units.
-// https://openrouter.ai/docs/guides/overview/multimodal/tts
-
-/** The flat accounting meter cannot express context/time tiers or endpoint-dependent prices. */
-function normalizedRates(
+const rateKeys = [
+    'prompt',
+    'completion',
+    'input_cache_read',
+    'input_cache_write',
+    'input_cache_write_1h',
+    'request',
+    'internal_reasoning',
+    'web_search',
+    'image',
+    'audio',
+    'input_audio_cache',
+] as const;
+const conditionKeys = ['min_prompt_tokens', 'utc_start', 'utc_end', 'utc_days'];
+const weekdays = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+];
+const overridesSchema = z.array(z.record(z.string(), z.unknown())).max(32);
+function clock(value: unknown): number {
+    if (
+        typeof value !== 'number' ||
+        !Number.isInteger(value) ||
+        value < 0 ||
+        value > 2359 ||
+        value % 100 >= 60
+    )
+        throw new Error('Invalid UTC clock.');
+    return Math.floor(value / 100) * 60 + (value % 100);
+}
+function overrides(pricing: Record<string, unknown>) {
+    for (const [key, value] of Object.entries(pricing)) {
+        if (rateKeys.includes(key as (typeof rateKeys)[number])) {
+            if (value != null) publishedRate(value);
+        } else if (key === 'discount') {
+            if (value !== 0)
+                throw new Error('Discount semantics require review.');
+        } else if (key !== 'overrides')
+            throw new Error('Unknown pricing component.');
+    }
+    const values = overridesSchema.parse(pricing.overrides ?? []);
+    for (const value of values) {
+        for (const key of Object.keys(value)) {
+            if (
+                !conditionKeys.includes(key) &&
+                !rateKeys.includes(key as (typeof rateKeys)[number])
+            )
+                throw new Error('Unknown override condition.');
+            if (rateKeys.includes(key as (typeof rateKeys)[number]))
+                publishedRate(value[key]);
+        }
+        if (
+            value.min_prompt_tokens !== undefined &&
+            (typeof value.min_prompt_tokens !== 'number' ||
+                !Number.isSafeInteger(value.min_prompt_tokens) ||
+                value.min_prompt_tokens < 0 ||
+                value.min_prompt_tokens >= 2_147_483_647)
+        )
+            throw new Error('Invalid context threshold.');
+        if ((value.utc_start === undefined) !== (value.utc_end === undefined))
+            throw new Error('Incomplete time window.');
+        if (value.utc_start !== undefined) {
+            clock(value.utc_start);
+            clock(value.utc_end);
+        }
+        if (value.utc_days !== undefined)
+            z.array(
+                z.enum([
+                    'monday',
+                    'tuesday',
+                    'wednesday',
+                    'thursday',
+                    'friday',
+                    'saturday',
+                    'sunday',
+                ]),
+            )
+                .min(1)
+                .max(7)
+                .parse(value.utc_days);
+    }
+    return values;
+}
+function applies(
+    value: Record<string, unknown>,
+    input: number,
+    instant: number,
+) {
+    if (
+        value.min_prompt_tokens !== undefined &&
+        input <= (value.min_prompt_tokens as number)
+    )
+        return false;
+    const date = new Date(instant);
+    if (
+        value.utc_days !== undefined &&
+        !(value.utc_days as string[]).includes(weekdays[date.getUTCDay()]!)
+    )
+        return false;
+    if (value.utc_start !== undefined) {
+        const start = clock(value.utc_start),
+            end = clock(value.utc_end);
+        const minute = date.getUTCHours() * 60 + date.getUTCMinutes();
+        if (
+            !(start <= end
+                ? minute >= start && minute < end
+                : minute >= start || minute < end)
+        )
+            return false;
+    }
+    return true;
+}
+function components(
     pricing: Record<string, unknown>,
     target: ProviderPriceTarget,
-): Pick<
-    FetchedProviderPrice,
-    | 'inputUsdPerMillionTokens'
-    | 'outputUsdPerMillionTokens'
-    | 'cacheReadUsdPerMillionTokens'
-    | 'cacheWriteUsdPerMillionTokens'
-    | 'usdPer1000Characters'
-    | 'minimumUsdPerRequest'
-> {
+): ProviderNativeComponent[] {
+    const input = publishedRate(pricing.prompt),
+        output = publishedRate(pricing.completion);
     if (
-        pricing.overrides !== undefined &&
-        (!Array.isArray(pricing.overrides) || pricing.overrides.length > 0)
+        pricing.internal_reasoning != null &&
+        publishedRate(pricing.internal_reasoning) !== output
     )
-        throw new Error('Tiered prices require a compatible accounting meter.');
-    const known = new Set([
-        'prompt',
-        'completion',
-        'input_cache_read',
-        'input_cache_write',
-        'input_cache_write_1h',
-        'request',
-        'discount',
-        'overrides',
-        // These optional services are not the text-token/speech-character meter.
-        'web_search',
-        'image',
-        'audio',
-        'input_audio_cache',
-        'internal_reasoning',
-    ]);
-    if (Object.keys(pricing).some((key) => !known.has(key)))
-        throw new Error('Unknown pricing components require review.');
-    const unsupportedMeters = {
-        web_search: 0,
-        image: 6,
-        audio: 6,
-        input_audio_cache: 6,
+        throw new Error('Distinct reasoning meter is not available.');
+    if (
+        pricing.input_cache_write_1h != null &&
+        publishedRate(pricing.input_cache_write_1h) !==
+            (pricing.input_cache_write == null
+                ? null
+                : publishedRate(pricing.input_cache_write))
+    )
+        throw new Error('Cache TTL identity requires another reported meter.');
+    const result: ProviderNativeComponent[] = [];
+    const add = (
+        meter: ProviderNativeComponent['meter'],
+        rate: unknown,
+        chargeWhen: 'positive-usage' | 'request' = 'positive-usage',
+    ) => {
+        if (rate != null)
+            result.push({
+                meter,
+                pricePerUnit: publishedRate(rate),
+                unitQuantity: 1,
+                chargeWhen,
+            });
     };
-    for (const [field, places] of Object.entries(unsupportedMeters)) {
-        const value = pricing[field];
-        if (
-            value !== undefined &&
-            value !== null &&
-            scalePublishedPrice(value, places) !== '0'
-        )
-            throw new Error('Additional pricing meters require review.');
-    }
-    if (
-        (pricing.discount !== undefined && pricing.discount !== 0) ||
-        (pricing.request !== undefined &&
-            scalePublishedPrice(pricing.request, 0) !== '0')
-    )
-        throw new Error('Discounts or request charges require review.');
-    const cache = (key: string) =>
-        pricing[key] === undefined || pricing[key] === null
-            ? null
-            : scalePublishedPrice(pricing[key], 6);
-    const input = scalePublishedPrice(pricing.prompt, 6);
-    const output = scalePublishedPrice(pricing.completion, 6);
-    if (
-        pricing.internal_reasoning !== undefined &&
-        scalePublishedPrice(pricing.internal_reasoning, 6) !== output
-    )
-        throw new Error('Distinct reasoning rates require review.');
-    const write = cache('input_cache_write');
-    if (
-        pricing.input_cache_write_1h !== undefined &&
-        cache('input_cache_write_1h') !== write
-    )
-        throw new Error('Distinct cache duration rates require review.');
     if (target.meter === 'speech-characters') {
         if (
+            !target.modelId.startsWith('elevenlabs/') ||
             output !== '0' ||
-            cache('input_cache_read') !== null ||
-            write !== null
+            pricing.input_cache_read != null ||
+            pricing.input_cache_write != null
         )
-            throw new Error('Speech pricing is not a flat character rate.');
-        return {
-            inputUsdPerMillionTokens: null,
-            outputUsdPerMillionTokens: null,
-            cacheReadUsdPerMillionTokens: null,
-            cacheWriteUsdPerMillionTokens: null,
-            usdPer1000Characters: scalePublishedPrice(pricing.prompt, 3),
-            minimumUsdPerRequest: null,
-        };
-    }
-    return {
-        inputUsdPerMillionTokens: input,
-        outputUsdPerMillionTokens: output,
-        cacheReadUsdPerMillionTokens: cache('input_cache_read'),
-        cacheWriteUsdPerMillionTokens: write,
-        usdPer1000Characters: null,
-        minimumUsdPerRequest: null,
-    };
+            throw new Error('Speech character units not established.');
+        add('characters', input);
+    } else if (target.meter === 'text-tokens') {
+        add(
+            pricing.input_cache_read != null ||
+                pricing.input_cache_write != null
+                ? 'uncachedInputTokens'
+                : 'inputTokens',
+            input,
+        );
+        add('outputTokens', output);
+        add('cacheReadTokens', pricing.input_cache_read);
+        add('cacheWriteTokens', pricing.input_cache_write);
+    } else throw new Error('Unsupported OpenRouter speech meter.');
+    add('requests', pricing.request, 'request');
+    // Optional web/image/audio prices are scoped to services absent from the
+    // server-owned text-only execution profile, not fees on every text request.
+    return result;
 }
-
-function unsupported(
+function normalize(
+    endpoint: z.infer<typeof endpointSchema>['data']['endpoints'][number],
     target: ProviderPriceTarget,
-    reason: string,
-): ProviderPriceFetchResult {
-    return { target, status: 'unsupported', reason };
+    index: number,
+    single: boolean,
+    now: Date,
+    budget: { remaining: number },
+): { variants: ProviderNativeVariant[]; until: string | null } {
+    const changes = overrides(endpoint.pricing);
+    const contexts = [
+        ...new Set([
+            0,
+            ...changes.flatMap((value) =>
+                value.min_prompt_tokens === undefined
+                    ? []
+                    : [(value.min_prompt_tokens as number) + 1],
+            ),
+        ]),
+    ].sort((a, b) => a - b);
+    const timed = changes.some(
+        (value) =>
+            value.utc_start !== undefined || value.utc_days !== undefined,
+    );
+    const start = timed
+        ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+        : now.getTime();
+    const end = timed ? start + 32 * 86_400_000 : start + 1;
+    const points = new Set([start, end]);
+    if (timed)
+        for (let date = start; date < end; date += 86_400_000) {
+            points.add(date);
+            points.add(date + 86_400_000);
+            for (const value of changes)
+                if (value.utc_start !== undefined) {
+                    points.add(date + clock(value.utc_start) * 60_000);
+                    points.add(date + clock(value.utc_end) * 60_000);
+                }
+        }
+    const sorted = [...points].sort((a, b) => a - b);
+    budget.remaining -=
+        contexts.length * (sorted.length - 1) * Math.max(1, changes.length);
+    if (budget.remaining < 0)
+        throw new Error('Published rule combinations exceed reviewed bounds.');
+    const variants: ProviderNativeVariant[] = [];
+    for (const [contextIndex, context] of contexts.entries()) {
+        const groups = new Map<
+            string,
+            {
+                components: ProviderNativeComponent[];
+                windows: Array<{ from: string; until: string }>;
+            }
+        >();
+        for (let position = 0; position < sorted.length - 1; position++) {
+            const pricing = { ...endpoint.pricing };
+            for (const change of changes)
+                if (applies(change, context, sorted[position]!)) {
+                    for (const key of rateKeys)
+                        if (change[key] !== undefined)
+                            pricing[key] = change[key];
+                }
+            const rates = components(pricing, target);
+            const key = JSON.stringify(rates);
+            const group = groups.get(key) ?? { components: rates, windows: [] };
+            if (timed)
+                group.windows.push({
+                    from: new Date(sorted[position]!).toISOString(),
+                    until: new Date(sorted[position + 1]!).toISOString(),
+                });
+            groups.set(key, group);
+        }
+        let groupIndex = 0;
+        for (const group of groups.values()) {
+            if (!endpoint.tag && !single)
+                throw new Error('Endpoint identity is absent.');
+            variants.push({
+                id: `endpoint-${index}-context-${contextIndex}-rate-${groupIndex++}`,
+                applies: {
+                    ...(endpoint.tag
+                        ? {
+                              endpointIds: [
+                                  ...new Set([
+                                      endpoint.tag,
+                                      ...(endpoint.provider_name
+                                          ? [endpoint.provider_name]
+                                          : []),
+                                  ]),
+                              ],
+                          }
+                        : {}),
+                    serviceTiers: [endpoint.service_tier ?? 'standard'],
+                    ...(contexts.length > 1
+                        ? {
+                              inputTokens: {
+                                  minInclusive: context,
+                                  ...(contexts[contextIndex + 1] === undefined
+                                      ? {}
+                                      : {
+                                            maxExclusive:
+                                                contexts[contextIndex + 1],
+                                        }),
+                              },
+                          }
+                        : {}),
+                    ...(timed ? { dispatchWindows: group.windows } : {}),
+                },
+                components: group.components,
+            });
+        }
+    }
+    return { variants, until: timed ? new Date(end).toISOString() : null };
 }
 
 export class OpenRouterPriceSource implements ProviderPriceSource {
     readonly providerId = 'openrouter';
-    constructor(private readonly fetcher: typeof fetch = fetch) {}
-
-    async fetchPrices(targets: ProviderPriceTarget[], signal?: AbortSignal) {
-        if (targets.length === 0) return [];
+    constructor(
+        private readonly fetcher: typeof fetch = fetch,
+        private readonly now: () => Date = () => new Date(),
+    ) {}
+    async fetchPrices(
+        targets: ProviderPriceTarget[],
+        signal?: AbortSignal,
+    ): Promise<ProviderPriceFetchResult[]> {
+        if (!targets.length) return [];
         if (signal?.aborted)
-            return targets.map((target): ProviderPriceFetchResult => ({
-                target,
-                status: 'unavailable',
-                reason: 'Price retrieval was cancelled.',
-            }));
+            return targets.map((target) =>
+                sourceFailure(
+                    target,
+                    'unavailable',
+                    'Price retrieval was cancelled.',
+                ),
+            );
         let catalog: z.infer<typeof catalogSchema>;
         try {
             catalog = catalogSchema.parse(
                 await readPricingJson(this.fetcher, catalogUrl, signal),
             );
         } catch {
-            return targets.map((target): ProviderPriceFetchResult => ({
-                target,
-                status: 'unavailable',
-                reason: 'The official OpenRouter pricing catalog is unavailable or invalid.',
-            }));
+            return targets.map((target) =>
+                sourceFailure(
+                    target,
+                    'unavailable',
+                    'The official OpenRouter pricing catalog is unavailable or invalid.',
+                ),
+            );
         }
         const results: ProviderPriceFetchResult[] = [];
         for (const target of targets) {
-            if (signal?.aborted) {
-                results.push({
-                    target,
-                    status: 'unavailable',
-                    reason: 'Price retrieval was cancelled.',
-                });
+            const matching = catalog.data.filter(
+                (model) => model.id === target.modelId,
+            );
+            if (
+                target.providerId !== this.providerId ||
+                matching.length !== 1
+            ) {
+                results.push(
+                    sourceFailure(
+                        target,
+                        'model-not-found',
+                        'The exact model is absent or ambiguous in the official catalog.',
+                    ),
+                );
                 continue;
             }
-            results.push(await this.fetchModel(catalog, target, signal));
+            const model = matching[0]!;
+            if (
+                !model.architecture.input_modalities.includes('text') ||
+                (target.meter === 'text-tokens' &&
+                    !model.architecture.output_modalities.includes('text')) ||
+                (target.meter !== 'text-tokens' &&
+                    !model.architecture.output_modalities.includes('speech'))
+            ) {
+                results.push(
+                    sourceFailure(
+                        target,
+                        'source-changed',
+                        'Published modalities do not match the configured execution meter.',
+                    ),
+                );
+                continue;
+            }
+            try {
+                overrides(model.pricing);
+            } catch {
+                results.push(
+                    sourceFailure(
+                        target,
+                        'source-changed',
+                        'Published pricing keys or conditions need review.',
+                    ),
+                );
+                continue;
+            }
+            const segments = target.modelId.split('/');
+            if (
+                segments.length !== 2 ||
+                segments.some((part) => !part || part === '.' || part === '..')
+            ) {
+                results.push(
+                    sourceFailure(
+                        target,
+                        'source-changed',
+                        'The exact model identifier is not supported by the endpoint API.',
+                    ),
+                );
+                continue;
+            }
+            const url = new URL(
+                `/api/v1/models/${segments.map(encodeURIComponent).join('/')}/endpoints`,
+                'https://openrouter.ai',
+            );
+            let raw: unknown;
+            try {
+                raw = await readPricingJson(this.fetcher, url, signal);
+            } catch {
+                results.push(
+                    sourceFailure(
+                        target,
+                        'unavailable',
+                        'Official endpoint prices are unavailable.',
+                    ),
+                );
+                continue;
+            }
+            try {
+                const endpoints = endpointSchema.parse(raw);
+                if (endpoints.data.id !== target.modelId) {
+                    results.push(
+                        sourceFailure(
+                            target,
+                            'model-not-found',
+                            'Endpoint response identifies another model.',
+                        ),
+                    );
+                    continue;
+                }
+                const at = this.now();
+                const ordered = [...endpoints.data.endpoints].sort((a, b) =>
+                    (a.tag ?? '').localeCompare(b.tag ?? ''),
+                );
+                if (ordered.length > 128)
+                    throw new Error(
+                        'Endpoint variants exceed reviewed bounds.',
+                    );
+                const budget = { remaining: 100_000 };
+                const cards = ordered.map((endpoint, index) =>
+                    normalize(
+                        endpoint,
+                        target,
+                        index,
+                        ordered.length === 1,
+                        at,
+                        budget,
+                    ),
+                );
+                const deadlines = cards.flatMap((card) =>
+                    card.until === null ? [] : [card.until],
+                );
+                const rules: ProviderNativePricingRules = {
+                    version: 1,
+                    validFrom: at.toISOString(),
+                    validUntil: deadlines.sort()[0] ?? null,
+                    variants: cards.flatMap((card) => card.variants),
+                };
+                results.push({
+                    target,
+                    status: 'available',
+                    price: nativePrice(
+                        target,
+                        rules,
+                        url.href,
+                        'openrouter-native-endpoint-rules-v2:text-and-speech-no-native-tools',
+                    ),
+                });
+            } catch {
+                results.push(
+                    sourceFailure(
+                        target,
+                        'source-changed',
+                        'OpenRouter endpoint billing units or pricing rules need review.',
+                    ),
+                );
+            }
         }
         return results;
-    }
-
-    private async fetchModel(
-        catalog: z.infer<typeof catalogSchema>,
-        target: ProviderPriceTarget,
-        signal?: AbortSignal,
-    ): Promise<ProviderPriceFetchResult> {
-        const matches = catalog.data.filter(
-            (model) => model.id === target.modelId,
-        );
-        if (target.providerId !== this.providerId || matches.length !== 1)
-            return unsupported(
-                target,
-                'The exact model is absent or ambiguous in the official catalog.',
-            );
-        const model = matches[0]!;
-        const input = model.architecture.input_modalities;
-        const output = model.architecture.output_modalities;
-        if (
-            !input.includes('text') ||
-            (target.meter === 'text-tokens' &&
-                (output.length !== 1 || output[0] !== 'text')) ||
-            (target.meter === 'speech-characters' &&
-                (!target.modelId.startsWith('elevenlabs/') ||
-                    input.length !== 1 ||
-                    output.length !== 1 ||
-                    output[0] !== 'speech'))
-        )
-            return unsupported(
-                target,
-                'The model pricing units do not match the requested meter.',
-            );
-        let rates: ReturnType<typeof normalizedRates>;
-        try {
-            rates = normalizedRates(model.pricing, target);
-        } catch {
-            return unsupported(
-                target,
-                'Published rates are tiered, have unsupported components or cannot be represented exactly.',
-            );
-        }
-        const segments = target.modelId.split('/');
-        if (
-            segments.length !== 2 ||
-            segments.some((part) => !part || part === '.' || part === '..')
-        )
-            return unsupported(
-                target,
-                'The model identifier is unsupported by the endpoint pricing API.',
-            );
-        const url = new URL(
-            `/api/v1/models/${segments.map(encodeURIComponent).join('/')}/endpoints`,
-            'https://openrouter.ai',
-        );
-        let endpoints: z.infer<typeof endpointSchema>;
-        try {
-            endpoints = endpointSchema.parse(
-                await readPricingJson(this.fetcher, url, signal),
-            );
-        } catch {
-            return {
-                target,
-                status: 'unavailable',
-                reason: 'Official model endpoint prices are unavailable or invalid.',
-            };
-        }
-        try {
-            if (
-                endpoints.data.id !== target.modelId ||
-                endpoints.data.endpoints.length === 0 ||
-                endpoints.data.endpoints.some(
-                    (endpoint) =>
-                        JSON.stringify(
-                            normalizedRates(endpoint.pricing, target),
-                        ) !== JSON.stringify(rates),
-                )
-            )
-                return unsupported(
-                    target,
-                    'Endpoint prices differ or no exact uniform endpoint rate is available.',
-                );
-        } catch {
-            return unsupported(
-                target,
-                'Endpoint prices require unsupported tiers, components or precision.',
-            );
-        }
-        return {
-            target,
-            status: 'available',
-            price: {
-                ...target,
-                ...rates,
-                sourceUrl: url.href,
-                sourceReference: 'openrouter-uniform-endpoints-v1',
-            },
-        };
     }
 }

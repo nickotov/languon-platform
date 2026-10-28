@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
-import type { AdminMcpPermission } from '@languon/contracts';
 import {
     AdminMcpError,
     requirePermission,
+    permissionForWrite,
+    type AdminMcpWriteAuthority,
     requireAction,
     requireOperationKey,
     assertSafeAuditContext,
@@ -19,7 +20,7 @@ import {
 } from './admin-mcp-persistence';
 import { adminMcpPreviewsTable, adminMcpReceiptsTable } from './schema';
 export interface AdminMcpPreviewInput {
-    operation: AdminMcpPermission;
+    operation: AdminMcpWriteAuthority;
     target: string;
     current: unknown;
     proposed: unknown;
@@ -36,7 +37,7 @@ export class AdminMcpPreviewStore {
         actor: AdminMcpActor,
         input: AdminMcpPreviewInput,
     ): Promise<AdminMcpPreview> {
-        requirePermission(actor, input.operation);
+        requirePermission(actor, permissionForWrite(input.operation));
         requireAction(actor, input.operation);
         if (input.operation.endsWith('.read'))
             throw new AdminMcpError(
@@ -104,7 +105,7 @@ export class AdminMcpPreviewStore {
 
             if (!preview)
                 throw new AdminMcpError('not_found', 'Preview not found.');
-            requirePermission(actor, preview.operation);
+            requirePermission(actor, permissionForWrite(preview.operation));
             requireAction(actor, preview.operation);
             const hash = payloadHash({
                 previewId,

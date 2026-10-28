@@ -51,7 +51,11 @@ Use `--list` for current entries. The initial registry covers:
 - Password signup/login/session restoration, password reset and virtual passkeys.
 - Admin expiry/refresh and independent recent-sign-in enforcement.
 - Admin MCP token issuance, scoped discovery, client instructions, narrow-screen
-  revocation and bounded idempotent credit adjustment through real HTTP.
+  revocation, bounded idempotent credit adjustment and native provider-price
+  publication/display through real HTTP.
+- Native provider-source verification, exact TypeScript/PostgreSQL tariff parity,
+  text-call receipt/checkpoint accounting, reported speech credits, immutable
+  history and native overrun/refund behavior with synthetic external HTTP.
 - Dictionary generation and persisted result recovery.
 - Sentence generation, AI checking, unavailable-model guidance with preserved
   answers and AI preferences, and free saved-reference practice for owners and

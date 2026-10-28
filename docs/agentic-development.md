@@ -39,6 +39,14 @@ Repository-scoped workflows are documented in
 [`agent-skills.md`](./agent-skills.md), including invocation, authority, locally
 adapted skills, upstream provenance, and license notices.
 
+For real AI provider/model research, verified pricing and compatible defaults,
+use `$ai-provider-model-onboarding`. A research-only request stays read-only;
+explicitly request a feature when adding an integration or changing defaults.
+The skill asks about unresolved material choices and continues authorized work
+through verification. See the [development examples](./development.md#ai-provider-and-model-onboarding)
+for separate research, prepared-integration and switch prompts. Speech-specific
+configuration remains in `$speech-model-configuration`.
+
 ## Responsibilities
 
 The developer owns product intent and the decisions that should not be inferred:

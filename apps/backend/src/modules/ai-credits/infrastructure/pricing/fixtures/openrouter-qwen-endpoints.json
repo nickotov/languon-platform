@@ -1,0 +1,17 @@
+{
+    "data": {
+        "id": "qwen/qwen3.5-flash-02-23",
+        "endpoints": [
+            {
+                "pricing": {
+                    "prompt": "0.000000065",
+                    "completion": "0.00000026",
+                    "discount": 0
+                },
+                "tag": "alibaba",
+                "provider_name": "Alibaba",
+                "service_tier": null
+            }
+        ]
+    }
+}

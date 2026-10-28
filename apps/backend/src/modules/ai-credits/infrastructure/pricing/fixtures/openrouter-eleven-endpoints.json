@@ -1,0 +1,17 @@
+{
+    "data": {
+        "id": "elevenlabs/eleven-v4-turbo",
+        "endpoints": [
+            {
+                "pricing": {
+                    "prompt": "0.00004",
+                    "completion": "0",
+                    "discount": 0
+                },
+                "tag": "elevenlabs",
+                "provider_name": "ElevenLabs",
+                "service_tier": null
+            }
+        ]
+    }
+}

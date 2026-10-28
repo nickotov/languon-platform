@@ -1,3 +1,4 @@
+import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
 import type {
     EnqueueTextDetectionRequest,
@@ -19,12 +20,7 @@ export type TextJobInput =
           segments: TextSourceSegment[];
       } & EnqueueTextTranslationRequest);
 export type TextJobResult = TextDetectionResult | TextTranslationProposal;
-export interface TextsTokenUsage {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
-}
+export type TextsTokenUsage = TextAiProviderUsage;
 export interface TextsProviderCall {
     providerAttempt?: TextAiProviderLeaseContext;
     input: TextJobInput;

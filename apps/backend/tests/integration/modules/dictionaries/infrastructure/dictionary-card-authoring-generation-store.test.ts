@@ -3,6 +3,10 @@ import { createDictionaryTextProviderRoutingAdapters } from '../../../../../src/
 import { DeterministicCardAuthoringProposalGenerator } from '../../../../../src/modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators';
 import { dictionaryCardAuthoringProviderInput } from '../../../../../src/modules/dictionaries/domain/card-authoring';
 import { aiProviderExpenseRecordsTable } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
+import { aiProviderPriceRevisionsTable } from '../../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
+import { DrizzleTextAiProbeStore } from '../../../../../src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store';
+import { textAiProbeIdentity } from '../../../../../src/modules/text-ai/infrastructure/ai/text-ai-probe-identity';
+import { createTextAiProviderRuntime } from '../../../../../src/infrastructure/text-ai/provider-runtime';
 import {
     seedTextAiRoutingFixture,
     textAiFixtureCredentials,
@@ -167,6 +171,374 @@ run('card-authoring generation persistence', () => {
     });
     afterAll(async () => client.end());
 
+    async function productionSdkAuthoring(
+        funding: 'operator' | 'customer',
+        outcome: 'success' | 'transport failure',
+        native = false,
+    ) {
+        await database.insert(capabilityPolicyRevisionsTable).values({
+            id: randomUUID(),
+            capability: 'dictionary-generation',
+            version: 1,
+            funding,
+            createdAt: instant(),
+            reason: 'Synthetic Free dictionary admission regression',
+        });
+        await seedTextAiRoutingFixture(database, {
+            routeId: 'openrouter/openai/gpt-6-luna',
+            tariff: {
+                inputCreditsPerMillionTokens: 100,
+                outputCreditsPerMillionTokens: 500,
+                cachedInputCreditsPerMillionTokens: 100,
+            },
+            omittedTariffFlows:
+                funding === 'operator' ? ['card-authoring'] : [],
+            replace: true,
+            at: instant(),
+        });
+        if (native) {
+            await database.insert(aiProviderPriceRevisionsTable).values({
+                id: randomUUID(),
+                providerId: 'openrouter',
+                modelId: 'openai/gpt-6-luna',
+                meter: 'text-tokens',
+                version: 2,
+                createdAt: instant(),
+                effectiveAt: instant(),
+                createdBy: ownerId,
+                data: {
+                    providerId: 'openrouter',
+                    modelId: 'openai/gpt-6-luna',
+                    meter: 'text-tokens',
+                    inputUsdPerMillionTokens: null,
+                    outputUsdPerMillionTokens: null,
+                    cacheReadUsdPerMillionTokens: null,
+                    cacheWriteUsdPerMillionTokens: null,
+                    usdPer1000Characters: null,
+                    minimumUsdPerRequest: null,
+                    effectiveAt: instant().toISOString(),
+                    sourceReference: 'synthetic-native-dictionary',
+                    sourceUrl: null,
+                    reason: 'Synthetic native production completion regression',
+                    nativeRules: {
+                        version: 1,
+                        validFrom: '2026-01-01T00:00:00.000Z',
+                        validUntil: null,
+                        variants: [
+                            {
+                                id: 'standard',
+                                applies: {},
+                                components: [
+                                    {
+                                        meter: 'inputTokens',
+                                        pricePerUnit: '1',
+                                        unitQuantity: 1_000_000,
+                                        chargeWhen: 'positive-usage',
+                                    },
+                                    {
+                                        meter: 'outputTokens',
+                                        pricePerUnit: '3',
+                                        unitQuantity: 1_000_000,
+                                        chargeWhen: 'positive-usage',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            });
+            const probes = new DrizzleTextAiProbeStore(database);
+            const request = {
+                routeId: 'openrouter/openai/gpt-6-luna',
+                kind: 'flow' as const,
+                flowId: 'card-authoring' as const,
+                approvedMaximumCostUsd: '0.01',
+            };
+            const reservation = await probes.reserve({
+                actorId: ownerId,
+                identity: {
+                    ...textAiProbeIdentity(request, textAiFixtureCredentials),
+                    fingerprint: fixtureRouteFingerprint(
+                        request.routeId,
+                        request.flowId,
+                    )!,
+                },
+                request,
+                at: instant(),
+                limits: {
+                    maximumCostMicros: 10_000n,
+                    dailyMaximumCostMicros: 1_000_000n,
+                    cooldownSeconds: 0,
+                    evidenceHours: 24,
+                },
+            });
+            await probes.finish(
+                reservation,
+                {
+                    valid: true,
+                    failure: null,
+                    elapsedMs: 1,
+                    inputTokens: 1,
+                    outputTokens: 1,
+                    measurement: 'measured',
+                    nativeUsage: {
+                        inputTokens: 1,
+                        outputTokens: 1,
+                        requests: 1,
+                    },
+                    executionFacts: {
+                        dispatchedAt: reservation.startedAt.toISOString(),
+                        serviceTier: 'standard',
+                    },
+                },
+                instant(),
+            );
+        }
+        await readyWorker(
+            dictionaryAiModelCatalog.find(
+                (model) =>
+                    model.providerId === 'openrouter' &&
+                    model.id === 'openai/gpt-6-luna',
+            )!,
+        );
+        if (funding === 'customer')
+            await database.transaction(async (tx) => {
+                await new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
+                    amount: 100_000n,
+                    createdAt: instant(),
+                    expiresAt: null,
+                    ownerId,
+                    source: 'admin',
+                    sourceReference: `synthetic-paid-${randomUUID()}`,
+                });
+            });
+        const dictionary = await dictionaryStore.createDictionary({
+            context: context(),
+            fingerprint: fingerprint('F'),
+            idempotencyKey: randomUUID(),
+            ownerId,
+            request: {
+                description: null,
+                name: 'Synthetic Free card authoring',
+                sourceLanguage: 'fr',
+                targetLanguage: 'ru',
+            },
+        });
+        const store = new DrizzleDictionaryGenerationStore(
+            database,
+            { generate: randomUUID },
+            undefined,
+            true,
+        );
+        const job = await store.enqueueCardAuthoring({
+            context: context(1),
+            dictionaryId: dictionary.id,
+            ownerId,
+            expectedDictionaryVersion: dictionary.version,
+            expectedSettingsVersion: dictionary.settings.version,
+            idempotencyKey: randomUUID(),
+            fingerprint: fingerprint('G'),
+            format: 'card-authoring:v3',
+            source: 'bonjour',
+            scope: { kind: 'all' },
+            target: { kind: 'create' },
+            draft: {
+                translationContext: null,
+                overrides,
+                values: {
+                    definition: null,
+                    example: null,
+                    exampleTranslation: null,
+                    transcription: null,
+                    translation: null,
+                },
+            },
+        });
+        expect(job.state).toBe('queued');
+        const [action] = await database
+            .select()
+            .from(actions)
+            .where(eq(actions.id, job.id));
+        expect(action).toMatchObject({
+            funding,
+        });
+        if (funding === 'operator') expect(action!.heldMilli).toBe(0n);
+        else expect(action!.heldMilli).toBeGreaterThan(0n);
+        expect(
+            await database
+                .select()
+                .from(aiCreditReservationsTable)
+                .where(eq(aiCreditReservationsTable.jobId, job.id)),
+        ).toHaveLength(0);
+        const [stored] = await database
+            .select()
+            .from(dictionaryGenerationJobsTable)
+            .where(eq(dictionaryGenerationJobsTable.id, job.id));
+        expect(stored?.selectedExecutionSnapshot).toMatchObject({
+            actionFunding: funding,
+            routingAuthority: { tariffPublished: funding === 'customer' },
+        });
+        expect(stored?.selectedExecutionSnapshot).toHaveProperty(
+            'actionProviderPrice',
+            expect.objectContaining({ meter: 'text-tokens' }),
+        );
+        const claimSpy = vi.spyOn(store, 'claim');
+        const providerFetch = vi.fn<typeof fetch>(async (url, init) => {
+            expect(String(url)).toBe(
+                'https://openrouter.ai/api/v1/chat/completions',
+            );
+            const body = JSON.parse(String(init?.body));
+            expect(body.model).toBe('openai/gpt-6-luna');
+            expect(body.max_tokens).toBeGreaterThan(0);
+            expect(body.max_tokens).toBeLessThanOrEqual(10000);
+            if (outcome === 'transport failure')
+                throw new TypeError('Synthetic transport failure');
+            const claim = await claimSpy.mock.results[0]!.value;
+            if (!claim || claim.input.format !== 'card-authoring:v3')
+                throw new Error('Expected card authoring claim');
+            const delta =
+                await new DeterministicCardAuthoringProposalGenerator().generate(
+                    {
+                        input: dictionaryCardAuthoringProviderInput(
+                            claim.input,
+                        ),
+                        providerBudget: claim.providerBudget,
+                        signal: new AbortController().signal,
+                        idempotencyKey: claim.id,
+                    },
+                );
+            return new Response(
+                JSON.stringify({
+                    id: 'synthetic-completion',
+                    object: 'chat.completion',
+                    created: 0,
+                    model: 'openai/gpt-6-luna',
+                    choices: [
+                        {
+                            index: 0,
+                            finish_reason: 'stop',
+                            message: {
+                                role: 'assistant',
+                                content: JSON.stringify(delta.delta),
+                            },
+                        },
+                    ],
+                    usage: {
+                        prompt_tokens: 100,
+                        completion_tokens: 30,
+                        total_tokens: 130,
+                        ...(native ? { cost: 3000 } : {}),
+                    },
+                }),
+                { headers: { 'content-type': 'application/json' } },
+            );
+        });
+        vi.stubGlobal('fetch', providerFetch);
+        const unexpected = {
+            generate: async () => {
+                throw new Error('Unexpected legacy provider');
+            },
+        };
+        const providers = createDictionaryTextProviderRoutingAdapters({
+            legacy: {
+                card: unexpected,
+                cardAuthoring: unexpected,
+                pastedTerms: unexpected,
+                importPairs: unexpected,
+            },
+            router: new DictionaryTextProviderRouter({
+                credentials: textAiFixtureCredentials,
+                ...createTextAiProviderRuntime(
+                    database,
+                    textAiFixtureCredentials,
+                ),
+            }),
+        });
+        const worker = new DictionaryGenerationWorkerService({
+            clock: { now: () => instant(2) },
+            store,
+            provider: providers.card,
+            cardAuthoringProvider: providers.cardAuthoring,
+            pastedTermsProvider: providers.pastedTerms,
+            importPairsProvider: providers.importPairs,
+        });
+        await expect(
+            worker.processNext({
+                signal: new AbortController().signal,
+                supportedFormats: ['card-authoring:v3'],
+                workerId: 'synthetic-completion-worker',
+            }),
+        ).resolves.toBe(true);
+        expect(providerFetch).toHaveBeenCalledOnce();
+        const persisted = await store.read({
+            context: context(3),
+            jobId: job.id,
+            ownerId,
+        });
+        expect(persisted.state).toBe(
+            outcome === 'success' ? 'review' : 'failed',
+        );
+        const [settled] = await database
+            .select()
+            .from(actions)
+            .where(eq(actions.id, job.id));
+        expect(settled).toMatchObject({
+            state: 'settled',
+            funding,
+            chargedMilli:
+                funding === 'customer' && outcome === 'success' ? 25n : 0n,
+            outcome: outcome === 'success' ? 'success' : 'failure',
+        });
+        const [expense] = await database
+            .select()
+            .from(aiProviderExpenseRecordsTable)
+            .where(eq(aiProviderExpenseRecordsTable.actionId, job.id));
+        expect(expense).toMatchObject({
+            providerId: 'openrouter',
+            modelId: 'openai/gpt-6-luna',
+            measurement: outcome === 'success' ? 'measured' : 'unknown',
+        });
+        if (native) {
+            expect(expense!.amountUsdMicros).toBe(3_000_000_000n);
+            expect(expense!.costSource).toBe('calculated');
+            const [completed] = await database
+                .select()
+                .from(dictionaryGenerationJobsTable)
+                .where(eq(dictionaryGenerationJobsTable.id, job.id));
+            expect(completed).toMatchObject({
+                providerReservationState: 'settled',
+                providerActualCostMicros: null,
+                providerActualInputTokens: 100,
+                providerActualOutputTokens: 30,
+            });
+        } else if (outcome === 'success') {
+            const [completed] = await database
+                .select()
+                .from(dictionaryGenerationJobsTable)
+                .where(eq(dictionaryGenerationJobsTable.id, job.id));
+            expect(completed!.providerActualCostMicros).not.toBeNull();
+        }
+        const [circuit] = await database
+            .select()
+            .from(dictionaryGenerationProviderCircuitTable)
+            .where(
+                eq(
+                    dictionaryGenerationProviderCircuitTable.id,
+                    'openrouter/openai/gpt-6-luna/card-authoring:v3',
+                ),
+            );
+        expect(circuit?.consecutiveFailures).toBe(
+            outcome === 'success' ? 0 : 1,
+        );
+        if (
+            persisted.kind === 'card-authoring' &&
+            persisted.proposal &&
+            outcome === 'success'
+        ) {
+            expect(persisted.proposal.suggestions.length).toBeGreaterThan(0);
+        }
+    }
+
     it.each([
         ['operator', 'success'],
         ['operator', 'transport failure'],
@@ -174,252 +546,11 @@ run('card-authoring generation persistence', () => {
         ['customer', 'transport failure'],
     ] as const)(
         'settles namespaced card authoring through the production SDK: %s / %s',
-        async (funding, outcome) => {
-            await database.insert(capabilityPolicyRevisionsTable).values({
-                id: randomUUID(),
-                capability: 'dictionary-generation',
-                version: 1,
-                funding,
-                createdAt: instant(),
-                reason: 'Synthetic Free dictionary admission regression',
-            });
-            await seedTextAiRoutingFixture(database, {
-                routeId: 'openrouter/openai/gpt-6-luna',
-                tariff: {
-                    inputCreditsPerMillionTokens: 100,
-                    outputCreditsPerMillionTokens: 500,
-                    cachedInputCreditsPerMillionTokens: 100,
-                },
-                omittedTariffFlows:
-                    funding === 'operator' ? ['card-authoring'] : [],
-                replace: true,
-                at: instant(),
-            });
-            await readyWorker(
-                dictionaryAiModelCatalog.find(
-                    (model) =>
-                        model.providerId === 'openrouter' &&
-                        model.id === 'openai/gpt-6-luna',
-                )!,
-            );
-            if (funding === 'customer')
-                await database.transaction(async (tx) => {
-                    await new DrizzleAiCreditTransactionParticipant(
-                        tx,
-                    ).issueGrant({
-                        amount: 100_000n,
-                        createdAt: instant(),
-                        expiresAt: null,
-                        ownerId,
-                        source: 'admin',
-                        sourceReference: `synthetic-paid-${randomUUID()}`,
-                    });
-                });
-            const dictionary = await dictionaryStore.createDictionary({
-                context: context(),
-                fingerprint: fingerprint('F'),
-                idempotencyKey: randomUUID(),
-                ownerId,
-                request: {
-                    description: null,
-                    name: 'Synthetic Free card authoring',
-                    sourceLanguage: 'fr',
-                    targetLanguage: 'ru',
-                },
-            });
-            const store = new DrizzleDictionaryGenerationStore(
-                database,
-                { generate: randomUUID },
-                undefined,
-                true,
-            );
-            const job = await store.enqueueCardAuthoring({
-                context: context(1),
-                dictionaryId: dictionary.id,
-                ownerId,
-                expectedDictionaryVersion: dictionary.version,
-                expectedSettingsVersion: dictionary.settings.version,
-                idempotencyKey: randomUUID(),
-                fingerprint: fingerprint('G'),
-                format: 'card-authoring:v3',
-                source: 'bonjour',
-                scope: { kind: 'all' },
-                target: { kind: 'create' },
-                draft: {
-                    translationContext: null,
-                    overrides,
-                    values: {
-                        definition: null,
-                        example: null,
-                        exampleTranslation: null,
-                        transcription: null,
-                        translation: null,
-                    },
-                },
-            });
-            expect(job.state).toBe('queued');
-            const [action] = await database
-                .select()
-                .from(actions)
-                .where(eq(actions.id, job.id));
-            expect(action).toMatchObject({
-                funding,
-            });
-            if (funding === 'operator') expect(action!.heldMilli).toBe(0n);
-            else expect(action!.heldMilli).toBeGreaterThan(0n);
-            expect(
-                await database
-                    .select()
-                    .from(aiCreditReservationsTable)
-                    .where(eq(aiCreditReservationsTable.jobId, job.id)),
-            ).toHaveLength(0);
-            const [stored] = await database
-                .select()
-                .from(dictionaryGenerationJobsTable)
-                .where(eq(dictionaryGenerationJobsTable.id, job.id));
-            expect(stored?.selectedExecutionSnapshot).toMatchObject({
-                actionFunding: funding,
-                routingAuthority: { tariffPublished: funding === 'customer' },
-            });
-            expect(stored?.selectedExecutionSnapshot).toHaveProperty(
-                'actionProviderPrice',
-                expect.objectContaining({ meter: 'text-tokens' }),
-            );
-            const claimSpy = vi.spyOn(store, 'claim');
-            const providerFetch = vi.fn<typeof fetch>(async (url, init) => {
-                expect(String(url)).toBe(
-                    'https://openrouter.ai/api/v1/chat/completions',
-                );
-                const body = JSON.parse(String(init?.body));
-                expect(body.model).toBe('openai/gpt-6-luna');
-                expect(body.max_tokens).toBeGreaterThan(0);
-                expect(body.max_tokens).toBeLessThanOrEqual(10000);
-                if (outcome === 'transport failure')
-                    throw new TypeError('Synthetic transport failure');
-                const claim = await claimSpy.mock.results[0]!.value;
-                if (!claim || claim.input.format !== 'card-authoring:v3')
-                    throw new Error('Expected card authoring claim');
-                const delta =
-                    await new DeterministicCardAuthoringProposalGenerator().generate(
-                        {
-                            input: dictionaryCardAuthoringProviderInput(
-                                claim.input,
-                            ),
-                            providerBudget: claim.providerBudget,
-                            signal: new AbortController().signal,
-                            idempotencyKey: claim.id,
-                        },
-                    );
-                return new Response(
-                    JSON.stringify({
-                        id: 'synthetic-completion',
-                        object: 'chat.completion',
-                        created: 0,
-                        model: 'openai/gpt-6-luna',
-                        choices: [
-                            {
-                                index: 0,
-                                finish_reason: 'stop',
-                                message: {
-                                    role: 'assistant',
-                                    content: JSON.stringify(delta.delta),
-                                },
-                            },
-                        ],
-                        usage: {
-                            prompt_tokens: 100,
-                            completion_tokens: 30,
-                            total_tokens: 130,
-                        },
-                    }),
-                    { headers: { 'content-type': 'application/json' } },
-                );
-            });
-            vi.stubGlobal('fetch', providerFetch);
-            const unexpected = {
-                generate: async () => {
-                    throw new Error('Unexpected legacy provider');
-                },
-            };
-            const providers = createDictionaryTextProviderRoutingAdapters({
-                legacy: {
-                    card: unexpected,
-                    cardAuthoring: unexpected,
-                    pastedTerms: unexpected,
-                    importPairs: unexpected,
-                },
-                router: new DictionaryTextProviderRouter({
-                    credentials: textAiFixtureCredentials,
-                    currentFingerprint: fixtureRouteFingerprint,
-                }),
-            });
-            const worker = new DictionaryGenerationWorkerService({
-                clock: { now: () => instant(2) },
-                store,
-                provider: providers.card,
-                cardAuthoringProvider: providers.cardAuthoring,
-                pastedTermsProvider: providers.pastedTerms,
-                importPairsProvider: providers.importPairs,
-            });
-            await expect(
-                worker.processNext({
-                    signal: new AbortController().signal,
-                    supportedFormats: ['card-authoring:v3'],
-                    workerId: 'synthetic-completion-worker',
-                }),
-            ).resolves.toBe(true);
-            expect(providerFetch).toHaveBeenCalledOnce();
-            const persisted = await store.read({
-                context: context(3),
-                jobId: job.id,
-                ownerId,
-            });
-            expect(persisted.state).toBe(
-                outcome === 'success' ? 'review' : 'failed',
-            );
-            const [settled] = await database
-                .select()
-                .from(actions)
-                .where(eq(actions.id, job.id));
-            expect(settled).toMatchObject({
-                state: 'settled',
-                funding,
-                chargedMilli:
-                    funding === 'customer' && outcome === 'success' ? 25n : 0n,
-                outcome: outcome === 'success' ? 'success' : 'failure',
-            });
-            const [expense] = await database
-                .select()
-                .from(aiProviderExpenseRecordsTable)
-                .where(eq(aiProviderExpenseRecordsTable.actionId, job.id));
-            expect(expense).toMatchObject({
-                providerId: 'openrouter',
-                modelId: 'openai/gpt-6-luna',
-                measurement: outcome === 'success' ? 'measured' : 'unknown',
-            });
-            const [circuit] = await database
-                .select()
-                .from(dictionaryGenerationProviderCircuitTable)
-                .where(
-                    eq(
-                        dictionaryGenerationProviderCircuitTable.id,
-                        'openrouter/openai/gpt-6-luna/card-authoring:v3',
-                    ),
-                );
-            expect(circuit?.consecutiveFailures).toBe(
-                outcome === 'success' ? 0 : 1,
-            );
-            if (
-                persisted.kind === 'card-authoring' &&
-                persisted.proposal &&
-                outcome === 'success'
-            ) {
-                expect(persisted.proposal.suggestions.length).toBeGreaterThan(
-                    0,
-                );
-            }
-        },
+        productionSdkAuthoring,
     );
+    it('settles native namespaced card authoring through the production SDK with canonical expense and no flat projection', async () => {
+        await productionSdkAuthoring('operator', 'success', true);
+    });
 
     it('accepts circuit keys for every catalog model while preserving legacy keys and malformed-key guards', async () => {
         const keys = [

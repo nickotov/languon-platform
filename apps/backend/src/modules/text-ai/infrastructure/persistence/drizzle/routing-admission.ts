@@ -90,7 +90,7 @@ async function computeAdminTextAiRouting(
         !preparePricesOnly,
     );
 
-    for (const { routeId, model, fingerprint } of configured) {
+    for (const { routeId, model } of configured) {
         const checked = authority.get(routeId);
         if (!checked?.allowed) continue;
         const price = checked.price;
@@ -130,7 +130,7 @@ async function computeAdminTextAiRouting(
 
         candidates.push({
             routeId,
-            fingerprint,
+            fingerprint: checked.fingerprint,
             snapshot,
             providerPrice: price,
         });

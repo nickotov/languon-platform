@@ -709,7 +709,20 @@ describe('curated model strategies', () => {
                 database: { execute: vi.fn() } as never,
                 role,
             } as never);
-            expect(adapters.provider.supports('fr')).toEqual(gemini);
+            expect(adapters.provider.supports('fr')).toEqual({
+                ...gemini,
+                nativeBilling: {
+                    meter: 'speech-tokens',
+                    usageBounds: {
+                        inputTokens: 8192,
+                        audioOutputTokens: 16384,
+                        requests: 1,
+                    },
+                    sourceUrl:
+                        'https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-lite-tts',
+                    providerTaskBoundVerified: false,
+                },
+            });
             expect(adapters.provider.supports('tr')).toBeNull();
             expect(adapters.provider.supports('constructor')).toBeNull();
             expect('submit' in adapters.provider).toBe(role === 'worker');

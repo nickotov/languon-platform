@@ -10,6 +10,7 @@ import { createFixtureAudio } from '../../../../src/modules/speech/domain/audio-
 import {
     SpeechSubmissionError,
     SpeechTaskFailedError,
+    SpeechOutputUnavailableError,
 } from '../../../../src/modules/speech/application/ports/speech-synthesis-provider';
 
 function harness(overrides: Partial<SpeechJob> = {}) {
@@ -76,6 +77,54 @@ function harness(overrides: Partial<SpeechJob> = {}) {
 }
 
 describe('shared speech worker recovery', () => {
+    it('retains known provider cost while retrying unavailable audio without resubmission', async () => {
+        const h = harness({ state: 'processing', taskId: 'billed-task' });
+        const usage = { requests: 1 as const, providerCreditsConsumed: '2.5' };
+        vi.mocked(h.provider.poll).mockRejectedValue(
+            new SpeechOutputUnavailableError({ usage }),
+        );
+        await h.worker.runOnce();
+        expect(h.store.pending).toHaveBeenCalledWith(
+            h.job,
+            5000,
+            expect.any(Date),
+            { usage },
+        );
+        expect(h.provider.submit).not.toHaveBeenCalled();
+        expect(h.store.fail).not.toHaveBeenCalled();
+    });
+    it('persists provider usage with inventory before audio storage and forwards failed-task observations', async () => {
+        const h = harness();
+        const usage = { requests: 1 as const, providerCreditsConsumed: '1.23' };
+        vi.mocked(h.provider.submit).mockResolvedValue({
+            state: 'ready',
+            audio: createFixtureAudio(),
+            usage,
+        });
+        await h.worker.runOnce();
+        expect(h.store.storing).toHaveBeenCalledWith(
+            h.job,
+            expect.any(Object),
+            expect.any(Date),
+            { usage },
+        );
+        const failed = harness({
+            state: 'processing',
+            taskId: 'accepted-task',
+        });
+        vi.mocked(failed.provider.poll).mockRejectedValue(
+            new SpeechTaskFailedError('generation_failed', { usage }),
+        );
+        await failed.worker.runOnce();
+        expect(failed.store.fail).toHaveBeenCalledWith(
+            failed.job,
+            'failure',
+            expect.any(Date),
+            undefined,
+            false,
+            { usage },
+        );
+    });
     it('publishes validated audio through inventory before completion', async () => {
         const h = harness();
         await h.worker.runOnce();

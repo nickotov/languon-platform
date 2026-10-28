@@ -9,6 +9,8 @@ surfaces:
     - api
 source_paths:
     - apps/admin/src/pages/admin-mcp/**
+    - apps/admin/src/pages/accounting/ui/provider-prices/**
+    - packages/contracts/src/provider-native-pricing.ts
     - apps/admin/src/shared/api/admin-mcp-api.ts
     - apps/backend/src/modules/admin-mcp/**
     - apps/backend/src/infrastructure/admin-mcp/**
@@ -19,6 +21,7 @@ e2e_tests:
 e2e_scenarios:
     - owner-token-lifecycle-and-client-guides
     - bounded-credit-preview-and-idempotent-apply
+    - native-provider-pricing-display
 related_features:
     - admin-user-management
     - ai-accounting
@@ -77,6 +80,14 @@ credentials are not production secrets.
 Expected result: no unexpected console errors or failed browser requests. Token
 metadata persists; the plaintext secret cannot be recovered from metadata.
 
+For native pricing, issue a fresh token with **Provider prices** enabled. Use
+`preview_provider_prices_native_write` with synthetic native billing rules and
+`admin_apply` to publish the preview. Open **Accounting**, find the model and
+select **View billing rules**. Verify exact component rates, currency conversion,
+minima, rounding, input ranges, endpoints, service tiers and UTC windows. Repeat
+at 375px width: the read-only dialog must wrap long values without horizontal
+overflow. Legacy flat rate fields must not appear for native prices.
+
 ## Admin verification
 
 Creation requires a sign-in within five minutes. Listing and revoking one's own
@@ -111,6 +122,10 @@ management is available.
   credit inspection, non-mutating bounded preview and one ledger grant despite
   retrying the same apply operation through the real HTTP MCP transport.
 
+- `native-provider-pricing-display` publishes a synthetic native price through a
+  freshly delegated pricing writer and checks exact read-only Accounting details
+  at desktop and narrow widths without paid provider or metadata requests.
+
 Database tests own exhaustive preview expiry/staleness, bounded grants, retry,
 concurrent reservations and financial invariants. Client CLI smoke evidence is
 recorded separately in feature EVIDENCE.md; rendered configurations alone do not
@@ -123,6 +138,9 @@ prove that each external client connects.
 - Missing permission or exhausted ceiling: bounded denial, no automatic escalation.
 - Stale/expired preview: create a fresh preview; never overwrite newer data.
 - Uncertain provider outcome: retain the reservation; do not blindly retry.
+- Native billing rules have null legacy rates; display the rules instead of
+  interpreting missing flat amounts as free usage. Updates require the native MCP
+  writer; the legacy flat editor cannot alter native revisions.
 - Missing listener: follow the in-admin startup instructions; do not expose its
   loopback port to a public network.
 

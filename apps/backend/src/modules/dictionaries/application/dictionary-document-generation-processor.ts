@@ -1,3 +1,7 @@
+import {
+    sumTextAiProviderUsage,
+    type TextAiProviderUsage,
+} from '../../text-ai/application/ports/text-ai-provider-usage';
 import type { TextAiProviderLeaseContext } from '../../text-ai/application/ports/text-ai-provider-lease-context';
 import { CardProposalGeneratorError } from './ports/card-proposal-generator';
 import {
@@ -438,38 +442,9 @@ export class DictionaryDocumentGenerationProcessor {
         const failures: ReturnType<
             typeof parseDictionaryBatchGenerationProposal
         >['failures'] = [...terms.failures];
-        let totalUsage:
-            | {
-                  inputTokens: number;
-                  outputTokens: number;
-                  cacheReadTokens?: number;
-                  cacheWriteTokens?: number;
-              }
-            | undefined;
-        const addUsage = (usage: NonNullable<typeof totalUsage>) => {
-            totalUsage = totalUsage
-                ? {
-                      inputTokens: totalUsage.inputTokens + usage.inputTokens,
-                      outputTokens:
-                          totalUsage.outputTokens + usage.outputTokens,
-                      ...(totalUsage.cacheReadTokens === undefined ||
-                      usage.cacheReadTokens === undefined
-                          ? {}
-                          : {
-                                cacheReadTokens:
-                                    totalUsage.cacheReadTokens +
-                                    usage.cacheReadTokens,
-                            }),
-                      ...(totalUsage.cacheWriteTokens === undefined ||
-                      usage.cacheWriteTokens === undefined
-                          ? {}
-                          : {
-                                cacheWriteTokens:
-                                    totalUsage.cacheWriteTokens +
-                                    usage.cacheWriteTokens,
-                            }),
-                  }
-                : usage;
+        let totalUsage: TextAiProviderUsage | undefined;
+        const addUsage = (usage: TextAiProviderUsage) => {
+            totalUsage = sumTextAiProviderUsage(totalUsage, usage);
         };
         let inputTokens = 0;
         let outputTokens = 0;

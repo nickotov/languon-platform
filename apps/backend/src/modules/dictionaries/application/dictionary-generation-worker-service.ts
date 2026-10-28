@@ -1,3 +1,7 @@
+import {
+    sumTextAiProviderUsage,
+    type TextAiProviderUsage,
+} from '../../text-ai/application/ports/text-ai-provider-usage';
 import { hasConclusiveTextAiFailure } from '../../text-ai/application/text-ai-routing-execution';
 import {
     CardProposalGeneratorError,
@@ -128,36 +132,8 @@ function parseCardAuthoringGeneratorResponse(
     };
 }
 
-type MeteredUsage = {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
-};
-function sumUsage(
-    previous: MeteredUsage | undefined,
-    next: MeteredUsage,
-): MeteredUsage {
-    if (!previous) return next;
-    return {
-        inputTokens: previous.inputTokens + next.inputTokens,
-        outputTokens: previous.outputTokens + next.outputTokens,
-        ...(previous.cacheReadTokens === undefined ||
-        next.cacheReadTokens === undefined
-            ? {}
-            : {
-                  cacheReadTokens:
-                      previous.cacheReadTokens + next.cacheReadTokens,
-              }),
-        ...(previous.cacheWriteTokens === undefined ||
-        next.cacheWriteTokens === undefined
-            ? {}
-            : {
-                  cacheWriteTokens:
-                      previous.cacheWriteTokens + next.cacheWriteTokens,
-              }),
-    };
-}
+type MeteredUsage = TextAiProviderUsage;
+const sumUsage = sumTextAiProviderUsage;
 
 async function generatePastedTermsProposal(input: {
     claim: Awaited<ReturnType<DictionaryGenerationStore['claim']>> & {};

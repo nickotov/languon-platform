@@ -69,11 +69,29 @@ accounting flow after these changes`. Run `pnpm diagrams` to browse locally and
 changes before stamping new hashes. Both are original Languon-owned skills and
 remain subject to the repository delivery and data-authority rules.
 
+### AI provider and model onboarding
+
+Use [`$ai-provider-model-onboarding`](../.agents/skills/ai-provider-model-onboarding/SKILL.md)
+to research an exact provider/model candidate, verify its current official price
+rules and integrate it with compatible defaults for an authorized switch. It
+checks real route identity, capabilities and processing constraints, asks focused
+questions where material choices remain, and carries authorized implementation
+through tests and review. Research-only requests stay read-only. Preparing a model
+does not select it as the current default; price metadata does not prove live
+availability or authorize paid checks.
+
+See [development examples](./development.md#ai-provider-and-model-onboarding)
+for research, implementation and switch prompts. The skill uses the existing
+[price verification/actualization guide](./user-flows/model-price-actualization.md)
+and composes the speech-specific skill below. It is an original Languon-owned
+skill, with automatic discovery enabled.
+
 ### Speech provider and model configuration
 
 Use [`$speech-model-configuration`](../.agents/skills/speech-model-configuration/SKILL.md)
-when adding or updating curated pronunciation models, voices, supported-language
-mappings or versioned synthesis profiles. The skill requires exact official API
+for the speech-specific steps when adding or updating curated pronunciation
+models, voices, supported-language mappings or versioned synthesis profiles.
+The skill requires exact official API
 evidence, preserves pending historical profiles and existing reusable audio, and
 keeps provider operational cost separate from editable customer-credit tariffs.
 It uses deterministic fixtures for local checks; it does not authorize paid probes

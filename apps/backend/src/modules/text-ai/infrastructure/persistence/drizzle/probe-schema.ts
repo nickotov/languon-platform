@@ -10,7 +10,12 @@ import {
     timestamp,
     uuid,
 } from 'drizzle-orm/pg-core';
-import type { ProviderPrice, TextAiProbeFailure } from '@languon/contracts';
+import type {
+    ProviderPrice,
+    TextAiProbeFailure,
+    ProviderNativeUsage,
+    ProviderExecutionFacts,
+} from '@languon/contracts';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 
 /** Bounded operator authorizations and immutable completed probe expense provenance. */
@@ -38,6 +43,10 @@ export const textAiProbesTable = pgTable(
         outputTokens: integer('output_tokens'),
         cacheReadTokens: integer('cache_read_tokens'),
         cacheWriteTokens: integer('cache_write_tokens'),
+        providerUsage: jsonb('provider_usage').$type<ProviderNativeUsage>(),
+        providerExecutionFacts: jsonb('provider_execution_facts').$type<
+            Pick<ProviderExecutionFacts, 'endpointId' | 'serviceTier'>
+        >(),
         measurement: text('measurement')
             .$type<'measured' | 'estimated' | 'unknown'>()
             .notNull()
@@ -95,7 +104,7 @@ export const textAiProbesTable = pgTable(
         ),
         check(
             'text_ai_probe_cost',
-            sql`${t.maximumMicros}>0 and (${t.costMicros} is null or (${t.costMicros}>=0 and ${t.costMicros}<=${t.maximumMicros}))`,
+            sql`${t.maximumMicros}>0 and (${t.costMicros} is null or (${t.costMicros}>=0 and (${t.costMicros}<=${t.maximumMicros} or (${t.state}='failed' and ${t.completedAt} is not null and coalesce(jsonb_typeof(${t.price}->'nativeRules')='object',false)))))`,
         ),
         check(
             'text_ai_probe_usage',

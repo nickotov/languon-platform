@@ -64,6 +64,61 @@ ignores forwarding headers received from every other peer.
 The individual commands build their workspace dependencies before starting the
 selected development server.
 
+### AI provider and model onboarding
+
+Use [`$ai-provider-model-onboarding`](../.agents/skills/ai-provider-model-onboarding/SKILL.md)
+when researching or adding a real AI provider/model, or preparing an authorized
+default switch. It verifies the exact provider route, current official billing
+rules and execution capabilities, then chooses bounded defaults from the existing
+application policies and documented model limits. It asks only unresolved material
+questions, such as which flows to support, processing restrictions or whether to
+switch the current default. Existing per-flow customer tariffs remain independent
+of provider USD prices.
+
+Research without changing configuration:
+
+```text
+$ai-provider-model-onboarding Research whether <provider>/<exact-model-id> is real
+and suitable for sentence generation. Verify official pricing, structured output,
+streaming and processing constraints. Report compatible defaults and missing facts;
+do not implement or change the current route.
+```
+
+Authorize implementation with a prepared configuration:
+
+```text
+$ai-provider-model-onboarding Create a feature to add <provider>/<exact-model-id>
+for sentence generation and checking, with current official pricing and bounded
+defaults. Implement and verify the integration, but keep the current default.
+Ask me about material choices that existing configuration cannot resolve.
+```
+
+Request a switch as part of the same authorized feature:
+
+```text
+$ai-provider-model-onboarding Create a feature to add <provider>/<exact-model-id>
+and switch the sentence-generation default after its required checks pass.
+Preserve the current customer tariff and other flow routes. Ask for any missing
+processing constraints, credentials or bounded live-check spending authority.
+```
+
+Replace the placeholders with the provider selling access and its exact model ID.
+The agent researches official catalogs/docs rather than assuming an alias exists.
+For speech, onboarding uses
+[`$speech-model-configuration`](../.agents/skills/speech-model-configuration/SKILL.md)
+for language/voice mappings and retained profiles. Review the
+[price verification and actualization guide](./user-flows/model-price-actualization.md)
+for current MCP methods and action permissions. Model-price verification reads
+metadata; it does not run a paid generation check. When the work needs a live
+probe, supply a finite spending authorization through the existing controls.
+
+The skill prepares source, pricing and configuration changes through reviewed
+application seams; it does not add arbitrary endpoints to learner requests or
+reinterpret already admitted jobs. Restart the relevant backend/worker processes
+after configuration changes and reconnect MCP clients when the listener or token
+action snapshot changes. Restart the coding-agent session after adding/updating
+skills so their discovery metadata reloads.
+
 ### Mastra development harness
 
 Run Mastra Server and Studio independently from the product applications:

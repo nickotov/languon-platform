@@ -1,4 +1,4 @@
-import type { AccountingRecord } from '@languon/contracts';
+import type { AccountingRecord, ProviderPrice } from '@languon/contracts';
 import { sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
@@ -38,6 +38,7 @@ export const canonical = (value: unknown): string =>
 export async function recordProviderExpense(
     tx: Transaction,
     fact: ProviderExpenseFact,
+    options?: { nativePrice?: ProviderPrice | null | undefined },
 ): Promise<void> {
     if (!fact.attemptId)
         throw new AccountingInvalidRecordError(
@@ -50,7 +51,9 @@ export async function recordProviderExpense(
     };
 
     await tx.execute(
-        sql`select languon_record_text_provider_expense(${fact.attemptId}::uuid, ${JSON.stringify(assertion)}::jsonb)`,
+        // Native expense comes from immutable per-call DB checkpoints, including
+        // reported money when the SDK omitted aggregate token counters.
+        sql`select languon_record_text_provider_expense(${fact.attemptId}::uuid, ${options?.nativePrice?.nativeRules ? null : JSON.stringify(assertion)}::jsonb)`,
     );
 }
 

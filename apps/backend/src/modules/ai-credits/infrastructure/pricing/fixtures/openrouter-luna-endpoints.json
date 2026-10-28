@@ -1,0 +1,161 @@
+{
+    "data": {
+        "id": "openai/gpt-6-luna",
+        "endpoints": [
+            {
+                "pricing": {
+                    "prompt": "0.00000005",
+                    "completion": "0.00000025",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.000000005",
+                    "input_cache_write": "0.0000000625",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.0000001",
+                            "completion": "0.000000375",
+                            "input_cache_read": "0.00000001",
+                            "input_cache_write": "0.000000125"
+                        }
+                    ]
+                },
+                "tag": "openai/flex",
+                "provider_name": "OpenAI",
+                "service_tier": "flex"
+            },
+            {
+                "pricing": {
+                    "prompt": "0.0000001",
+                    "completion": "0.0000005",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.00000001",
+                    "input_cache_write": "0.000000125",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.0000002",
+                            "completion": "0.00000075",
+                            "input_cache_read": "0.00000002",
+                            "input_cache_write": "0.00000025"
+                        }
+                    ]
+                },
+                "tag": "openai",
+                "provider_name": "OpenAI",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.0000001",
+                    "completion": "0.0000005",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.00000001",
+                    "input_cache_write": "0.000000125",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.0000002",
+                            "completion": "0.00000075",
+                            "input_cache_read": "0.00000002",
+                            "input_cache_write": "0.00000025"
+                        }
+                    ]
+                },
+                "tag": "azure",
+                "provider_name": "Azure",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000011",
+                    "completion": "0.00000055",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.000000011",
+                    "input_cache_write": "0.0000001375",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.00000022",
+                            "completion": "0.000000825",
+                            "input_cache_read": "0.000000022",
+                            "input_cache_write": "0.000000275"
+                        }
+                    ]
+                },
+                "tag": "azure/us",
+                "provider_name": "Azure",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000011",
+                    "completion": "0.00000055",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.000000011",
+                    "input_cache_write": "0.0000001375",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.00000022",
+                            "completion": "0.000000825",
+                            "input_cache_read": "0.000000022",
+                            "input_cache_write": "0.000000275"
+                        }
+                    ]
+                },
+                "tag": "azure/eu",
+                "provider_name": "Azure",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.00000011",
+                    "completion": "0.00000055",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.000000011",
+                    "input_cache_write": "0.0000001375",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.00000022",
+                            "completion": "0.000000825",
+                            "input_cache_read": "0.000000022",
+                            "input_cache_write": "0.000000275"
+                        }
+                    ]
+                },
+                "tag": "amazon-bedrock/us-east-1",
+                "provider_name": "Amazon Bedrock",
+                "service_tier": null
+            },
+            {
+                "pricing": {
+                    "prompt": "0.0000002",
+                    "completion": "0.000001",
+                    "web_search": "0.01",
+                    "input_cache_read": "0.00000002",
+                    "input_cache_write": "0.00000025",
+                    "discount": 0,
+                    "overrides": [
+                        {
+                            "min_prompt_tokens": 272000,
+                            "prompt": "0.0000004",
+                            "completion": "0.0000015",
+                            "input_cache_read": "0.00000004",
+                            "input_cache_write": "0.0000005"
+                        }
+                    ]
+                },
+                "tag": "openai/fast",
+                "provider_name": "OpenAI",
+                "service_tier": "priority"
+            }
+        ]
+    }
+}

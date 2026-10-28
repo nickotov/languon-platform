@@ -5,6 +5,7 @@ import type { ProviderPrice } from '@languon/contracts';
 import { DictionaryTextProviderRouter } from '../../../../../src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-router';
 import { createTextAiSyntheticFlows } from '../../../../../src/infrastructure/text-ai/probe-flow-registry';
 import { createTextAiRouteFingerprint } from '../../../../../src/infrastructure/text-ai/route-fingerprint';
+import { nativeTextPolicyFingerprint } from '../../../../../src/modules/text-ai/infrastructure/ai/native-text-policy-identity';
 import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
@@ -33,10 +34,45 @@ const providerPrice: ProviderPrice = {
     reason: 'Synthetic fixture price.',
 };
 const routeId = `${model.providerId}/${model.id}`;
-function fixture() {
+function fixture(native = false) {
     const credentials = { OPENROUTER_API_KEY: 'synthetic-only' };
     const currentFingerprint = createTextAiRouteFingerprint(credentials);
-    const fingerprint = currentFingerprint(routeId, 'card-authoring')!;
+    const baseFingerprint = currentFingerprint(routeId, 'card-authoring')!;
+    const fingerprint = native
+        ? nativeTextPolicyFingerprint(baseFingerprint)
+        : baseFingerprint;
+    const pinnedPrice: ProviderPrice = native
+        ? {
+              ...providerPrice,
+              inputUsdPerMillionTokens: null,
+              outputUsdPerMillionTokens: null,
+              nativeRules: {
+                  version: 1,
+                  validFrom: providerPrice.effectiveAt,
+                  validUntil: null,
+                  variants: [
+                      {
+                          id: 'standard',
+                          applies: {},
+                          components: [
+                              {
+                                  meter: 'inputTokens',
+                                  pricePerUnit: '0.17',
+                                  unitQuantity: 1_000_000,
+                                  chargeWhen: 'positive-usage',
+                              },
+                              {
+                                  meter: 'outputTokens',
+                                  pricePerUnit: '0.51',
+                                  unitQuantity: 1_000_000,
+                                  chargeWhen: 'positive-usage',
+                              },
+                          ],
+                      },
+                  ],
+              },
+          }
+        : providerPrice;
     const base = {
         adapterRevision: model.adapterRevision,
         aggregateBudget: model.aggregateBudget,
@@ -54,7 +90,12 @@ function fixture() {
             revisionId: 'synthetic-revision',
             flowId: 'card-authoring',
             candidates: [
-                { routeId, fingerprint, snapshot: base, providerPrice },
+                {
+                    routeId,
+                    fingerprint,
+                    snapshot: base,
+                    providerPrice: pinnedPrice,
+                },
             ],
             automaticReattemptLimit: 1,
             tariffPublished: true,
@@ -68,6 +109,15 @@ function fixture() {
         credentials,
         currentFingerprint,
         onProviderFailure,
+        ...(native
+            ? {
+                  authorizeNativeCall: async () => ({
+                      callId: '00000000-0000-4000-8000-000000000021',
+                      dispatchedAt: '2026-10-28T12:00:00.000Z',
+                  }),
+                  observeNativeCall: async () => {},
+              }
+            : {}),
     });
     const input = JSON.parse(
         createTextAiSyntheticFlows()['card-authoring'].input,
@@ -96,6 +146,7 @@ function fixture() {
         generate,
         onProviderFailure,
         fingerprint,
+        baseFingerprint,
     };
 }
 function success() {
@@ -129,6 +180,43 @@ function success() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe('production DictionaryTextProviderRouter gateway composition', () => {
+    it('executes a native worker with matching current policy through the real SDK', async () => {
+        const f = fixture(true);
+        const providerFetch = vi.fn(async () => success());
+        vi.stubGlobal('fetch', providerFetch);
+        await expect(f.generate()).resolves.toMatchObject({
+            usage: {
+                inputTokens: 12,
+                outputTokens: 5,
+                calls: [
+                    { execution: { dispatchedAt: '2026-10-28T12:00:00.000Z' } },
+                ],
+            },
+        });
+        expect(providerFetch).toHaveBeenCalledOnce();
+    });
+    it('rejects a native admission carrying an unhashed worker identity before HTTP', () => {
+        const f = fixture(true);
+        f.snapshot.routingAuthority!.candidates[0]!.fingerprint =
+            f.baseFingerprint;
+        const providerFetch = vi.fn();
+        vi.stubGlobal('fetch', providerFetch);
+        expect(() =>
+            f.router.resolve(f.snapshot, model.aggregateBudget),
+        ).toThrow('identity has changed');
+        expect(providerFetch).not.toHaveBeenCalled();
+    });
+    it('rejects a stale native worker identity after credential rotation before HTTP', () => {
+        const f = fixture(true);
+        f.router.resolve(f.snapshot, model.aggregateBudget);
+        f.credentials.OPENROUTER_API_KEY = 'synthetic-rotated';
+        const providerFetch = vi.fn();
+        vi.stubGlobal('fetch', providerFetch);
+        expect(() =>
+            f.router.resolve(f.snapshot, model.aggregateBudget),
+        ).toThrow('identity has changed');
+        expect(providerFetch).not.toHaveBeenCalled();
+    });
     it('uses its pinned price through router, generator and real SDK HTTP', async () => {
         const f = fixture();
         const providerFetch = vi.fn(

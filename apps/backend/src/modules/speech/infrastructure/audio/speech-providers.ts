@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
     SpeechSubmissionError,
     SpeechTaskFailedError,
+    SpeechOutputUnavailableError,
     type SpeechProfile,
     type SpeechSynthesisProvider,
     type SpeechSynthesisResult,
@@ -48,6 +49,12 @@ const statusSchema = taskSchema.extend({
     model: z.string(),
     state: z.enum(['waiting', 'queuing', 'generating', 'success', 'fail']),
     resultJson: z.string().max(16384).nullable().optional(),
+    creditsConsumed: z
+        .number()
+        .finite()
+        .nonnegative()
+        .max(1_000_000)
+        .optional(),
     failCode: z
         .union([z.string().max(64), z.number().int()])
         .nullable()
@@ -194,12 +201,24 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
         const data = statusSchema.parse(result.data);
         if (data.taskId !== input.taskId || data.model !== input.profile.model)
             throw new Error('Mismatched speech task.');
+        const observation =
+            data.creditsConsumed === undefined
+                ? undefined
+                : {
+                      usage: {
+                          requests: 1 as const,
+                          providerCreditsConsumed: exactReportedCredits(
+                              data.creditsConsumed,
+                          ),
+                      },
+                  };
         if (data.state === 'fail') {
             const unavailable = ['429', '500', '502', '503', '504'].includes(
                 String(data.failCode),
             );
             throw new SpeechTaskFailedError(
                 unavailable ? 'provider_unavailable' : 'generation_failed',
+                observation,
             );
         }
         if (data.state !== 'success')
@@ -208,16 +227,31 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
                 taskId: input.taskId,
                 retryAfterMs: 2500,
             };
-        const urls = resultSchema.parse(
-            JSON.parse(data.resultJson ?? ''),
-        ).resultUrls;
-        return {
-            state: 'ready',
-            audio: await (this.options.download ?? downloadAudioResult)(
-                urls[0]!,
-                this.options.allowedDownloadHosts,
-                input.signal,
-            ),
-        };
+        try {
+            const urls = resultSchema.parse(
+                JSON.parse(data.resultJson ?? ''),
+            ).resultUrls;
+            return {
+                state: 'ready',
+                ...observation,
+                audio: await (this.options.download ?? downloadAudioResult)(
+                    urls[0]!,
+                    this.options.allowedDownloadHosts,
+                    input.signal,
+                ),
+            };
+        } catch (error) {
+            if (observation)
+                throw new SpeechOutputUnavailableError(observation);
+            throw error;
+        }
     }
+}
+
+/** Kie reports JSON numbers; accept only its bounded, decimal credit observation. */
+function exactReportedCredits(value: number): string {
+    const decimal = value.toString();
+    if (!/^(0|[1-9]\d{0,6})(\.\d{1,6})?$/.test(decimal))
+        throw new Error('Unsupported provider credit precision.');
+    return decimal;
 }

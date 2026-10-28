@@ -30,7 +30,7 @@ import { DrizzleAccountingStore } from '../../modules/ai-credits/infrastructure/
 import { DrizzleAiCreditTransactionParticipant } from '../../modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { AdminMcpPriceActualizationService } from '../../modules/admin-mcp/application/admin-mcp-price-actualization-service';
 import { createProviderPriceSources } from '../../modules/ai-credits/infrastructure/pricing/provider-price-sources';
-import { configuredPriceTargets } from './price-actualization';
+import { modelPriceCatalog } from './price-actualization';
 
 const local = new URL('../../../../../.env.local', import.meta.url);
 if (existsSync(local)) loadEnvFile(local);
@@ -98,12 +98,25 @@ const app = createAdminMcpServer({
     actualizePrices: (actor, input, secret, signal) =>
         new AdminMcpPriceActualizationService({
             sources: priceSources,
-            targets: async () => configuredPriceTargets(providerKeys),
+            targets: async () =>
+                modelPriceCatalog(providerKeys).map((entry) => entry.target),
+            catalog: async () => modelPriceCatalog(providerKeys),
             prices: () => new DrizzleProviderPriceStore(database).list(),
             administration,
             audit: administrationAdapter,
             reauthenticate: () => credentials.authenticate(secret),
         }).actualize(actor, input, signal),
+    verifyPrices: (actor, input, secret, signal) =>
+        new AdminMcpPriceActualizationService({
+            sources: priceSources,
+            targets: async () =>
+                modelPriceCatalog(providerKeys).map((entry) => entry.target),
+            catalog: async () => modelPriceCatalog(providerKeys),
+            prices: () => new DrizzleProviderPriceStore(database).list(),
+            administration,
+            audit: administrationAdapter,
+            reauthenticate: () => credentials.authenticate(secret),
+        }).verify(actor, input, signal),
     checks,
     port: env.ADMIN_MCP_PORT,
 });

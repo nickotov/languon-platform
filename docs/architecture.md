@@ -489,16 +489,27 @@ See [ADR-0044](adr/0044-learner-portrait-approval-and-use-boundaries.md),
 
 ## Action accounting and provider expenses
 
-Provider-price discovery uses the ai-credits price-source port and reviewed
-provider adapters. Configured active text and speech catalogs supply target
-identities; compatible new models reuse their provider adapter. The delegated
-MCP `actualize_model_prices` operation fetches official metadata and prepares
-existing price-write previews; `admin_apply` publishes immutable revisions.
-Unsupported providers, conditional or ambiguous rates and unavailable sources
-retain existing prices. Sources use fixed bounded HTTPS metadata reads, without
-generation or customer-tariff changes. See
-[ADR-0048](adr/0048-official-provider-price-actualization.md) and the
-[price actualization guide](user-flows/model-price-actualization.md).
+Provider-price discovery uses the ai-credits port and reviewed adapters for all
+real text/speech catalog models, independently of credentials and retirement.
+MCP `verify_model_prices` separates official identity/rate verification, local
+comparison and execution readiness. `actualize_model_prices` prepares native
+price revisions; `admin_apply` retains version, audit and replay authority. New
+actions require new credential snapshots, while the flat writer stays separate.
+
+Versioned native rules preserve billing units, currencies, component rounding,
+minima, tiers, endpoints and time windows. Matching TypeScript/SQL evaluation
+reserves bounded maxima and settles trusted per-call facts, preserving unknown
+expense. Native SDK calls receive database dispatch receipts and write-once usage
+checkpoints. Native overrun facts remain recorded and restrict future admission;
+learner refund/output fences remain separate. A known native provider-reported
+monetary amount yields a measured provider expense even if aggregate SDK token
+counts are absent; action/customer token measurement and probe-result validity
+remain independent. Canonical native dictionary completion leaves its legacy flat
+cost projection null and retains the full immutable primary expense, including
+amounts beyond that secondary integer column. Legacy pins remain unchanged.
+Reviewed task bounds are still required even when official prices are verified.
+See [ADR-0049](adr/0049-native-provider-pricing-and-accounting.md) and the
+[native pricing guide](user-flows/model-price-coverage-and-onboarding.md).
 
 The ai-credits module joins typed feature transactions for exact milli-credit
 holds, attempt authorization and outcome-aware settlement. Customer tariffs,

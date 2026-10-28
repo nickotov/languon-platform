@@ -5,6 +5,12 @@ description: Add or update Languon speech provider/model definitions, language a
 
 # Speech model configuration
 
+For provider/model research, current pricing, cross-provider defaults or preparing
+an authorized model switch, start with
+[$ai-provider-model-onboarding](../ai-provider-model-onboarding/SKILL.md).
+This skill owns the speech-specific capability and historical-profile steps; do
+not duplicate the onboarding workflow or treat metadata as live synthesis proof.
+
 ## Establish the change
 
 Read root/closest `AGENTS.md`, the active feature or improvement record, and
@@ -44,11 +50,13 @@ historical identities for already admitted tasks and result recovery; never
 reinterpret a stored provider task using a replacement model or voice. Reusable
 approved audio is looked up before the new default profile.
 
-Keep customer-credit tariffs separate from provider cost estimates. New speech
-prices are immutable tariff revisions, not edits to old jobs or an assumption
-that provider money equals app credits. Unknown submission outcomes require
-reconciliation rather than blind resubmission. Complete this step with validated
-configuration, retained-profile behavior and safe result-download handling.
+Publish customer-credit tariffs and provider USD prices as separate immutable
+records through their current financial contracts. Preserve official billing
+meters and rules; label operational estimates rather than presenting them as
+actual rates. New prices do not edit old jobs or imply a USD-to-credit conversion.
+Unknown submission outcomes require reconciliation rather than blind
+resubmission. Complete this step with validated configuration, retained-profile
+behavior and safe result-download handling.
 
 ## Verify without live charges
 

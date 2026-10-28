@@ -28,6 +28,7 @@ import {
 import {
     AdminMcpError,
     requirePermission,
+    permissionForWrite,
     requireAction,
     type AdminMcpActor,
     type AdminMcpPreview,
@@ -202,7 +203,7 @@ export class AdminMcpOperations {
         raw: unknown,
     ) {
         requireAction(actor, name);
-        requirePermission(actor, name);
+        requirePermission(actor, permissionForWrite(name));
         const proposed = adminMcpWriteSchemas[name].parse(raw);
         let current: unknown;
         let target: string;
@@ -238,7 +239,8 @@ export class AdminMcpOperations {
                 target = `customer-tariff:${input.providerId}/${input.modelId}`;
                 break;
             }
-            case 'provider-prices.write': {
+            case 'provider-prices.write':
+            case 'provider-prices.native-write': {
                 const input = adminMcpWriteSchemas[name].parse(raw);
                 current = (
                     await this.dependencies.providerPrices.listInTransaction(tx)
@@ -331,7 +333,7 @@ export class AdminMcpOperations {
             );
         const name = preview.operation as AdminMcpWriteOperation;
         requireAction(actor, name);
-        requirePermission(actor, name);
+        requirePermission(actor, permissionForWrite(name));
         const correlationId = randomUUID();
         const at = new Date();
         switch (name) {
@@ -381,6 +383,7 @@ export class AdminMcpOperations {
                 );
             }
             case 'provider-prices.write':
+            case 'provider-prices.native-write':
                 return this.dependencies.providerPrices.publishInTransaction(
                     tx,
                     adminMcpWriteSchemas[name].parse(preview.proposed),

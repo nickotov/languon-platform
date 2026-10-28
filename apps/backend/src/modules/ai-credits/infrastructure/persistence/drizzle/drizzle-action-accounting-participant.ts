@@ -8,6 +8,7 @@ import {
 import { DrizzleCapabilityPolicyParticipant } from './drizzle-capability-policy-participant';
 import type { TextAiProviderBudgetPolicy } from '../../../../text-ai/application/text-ai-provider-catalog';
 import { randomUUID } from 'node:crypto';
+import type { TextAiProviderUsage } from '../../../../text-ai/application/ports/text-ai-provider-usage';
 import { and, asc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import type { AiCreditTransaction } from './drizzle-ai-credit-participant';
 import { AiCreditInsufficientBalanceError } from '../../../domain/ai-credit';
@@ -290,12 +291,7 @@ export class DrizzleActionAccountingParticipant {
         callId: string;
         successful: boolean;
         operatorCostMicros?: bigint | null;
-        usage?: {
-            inputTokens: number;
-            outputTokens: number;
-            cacheReadTokens?: number;
-            cacheWriteTokens?: number;
-        };
+        usage?: TextAiProviderUsage;
         at: Date;
     }) {
         await this.lock(input.ownerId);
@@ -329,12 +325,48 @@ export class DrizzleActionAccountingParticipant {
             ) &&
             cacheRead + cacheWrite <= input.usage.inputTokens;
 
+        const observations =
+            input.usage &&
+            (input.usage.nativeUsage ||
+                input.usage.executionFacts ||
+                input.usage.calls)
+                ? {
+                      ...(input.usage.nativeUsage
+                          ? { usage: input.usage.nativeUsage }
+                          : {}),
+                      ...(input.usage.executionFacts
+                          ? {
+                                execution: {
+                                    ...(input.usage.executionFacts.endpointId
+                                        ? {
+                                              endpointId:
+                                                  input.usage.executionFacts
+                                                      .endpointId,
+                                          }
+                                        : {}),
+                                    ...(input.usage.executionFacts.serviceTier
+                                        ? {
+                                              serviceTier:
+                                                  input.usage.executionFacts
+                                                      .serviceTier,
+                                          }
+                                        : {}),
+                                },
+                            }
+                          : {}),
+                      ...(input.usage.calls
+                          ? { calls: input.usage.calls }
+                          : {}),
+                  }
+                : null;
+
         await this.tx.execute(sql`select languon_settle_text_provider_attempt(
             ${attempt.id}::uuid, ${Boolean(input.successful && valid)},
             ${valid ? input.usage!.inputTokens : null}::integer,
             ${valid ? input.usage!.outputTokens : null}::integer,
             ${valid ? cacheRead : null}::integer, ${valid ? cacheWrite : null}::integer,
-            ${input.at.toISOString()}::timestamptz)`);
+            ${input.at.toISOString()}::timestamptz,
+            ${observations ? JSON.stringify(observations) : null}::jsonb)`);
     }
 
     async settle(input: {

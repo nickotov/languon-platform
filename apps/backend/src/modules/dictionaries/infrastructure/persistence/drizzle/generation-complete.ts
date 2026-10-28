@@ -16,10 +16,13 @@ import {
     usesModernCardAuthoringSemantics,
     type DictionaryCardAuthoringProposalPayload,
 } from '../../../domain/card-authoring';
-import { asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { DictionaryGenerationCompletionConflictError } from '../../../application/dictionary-errors';
 import type { DictionaryGenerationStore } from '../../../application/ports/dictionary-generation-store';
-import { dictionaryGenerationProviderUsageCostMicros } from '../../../application/ports/dictionary-generation-provider-policy';
+import { usesLegacyAction } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
+import { aiCreditActionAttemptsTable } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
+import { textAiRouteDispatchesTable } from '../../../../text-ai/infrastructure/persistence/drizzle/route-dispatch-schema';
+import { generationCompletionUsage } from './generation-completion-usage';
 import {
     createDictionaryBatchDuplicateWarnings,
     parseDictionaryImportPairsGenerationProposal,
@@ -342,43 +345,36 @@ export async function complete(
             });
         }
 
-        if (
-            input.providerUsage &&
-            (!Number.isSafeInteger(input.providerUsage.inputTokens) ||
-                input.providerUsage.inputTokens < 0 ||
-                !Number.isSafeInteger(input.providerUsage.outputTokens) ||
-                input.providerUsage.outputTokens < 0 ||
-                input.providerUsage.inputTokens >
-                    jobProviderBudget.maxInputTokensPerAttempt ||
-                input.providerUsage.outputTokens >
-                    jobProviderBudget.maxOutputTokensPerAttempt)
-        )
-            throw new Error('Invalid provider usage');
-        const priorAttemptCount = Math.max(0, job.attemptCount - 1);
-        const finalAttemptCostMicros = input.providerUsage
-            ? dictionaryGenerationProviderUsageCostMicros(
-                  jobProviderBudget,
-                  input.providerUsage,
-              )
-            : jobProviderBudget.maxCostMicrosPerAttempt;
-        const actualCostMicros =
-            priorAttemptCount * jobProviderBudget.maxCostMicrosPerAttempt +
-            finalAttemptCostMicros;
-        const actualInputTokens = input.providerUsage
-            ? priorAttemptCount * jobProviderBudget.maxInputTokensPerAttempt +
-              input.providerUsage.inputTokens
-            : job.providerReservedInputTokens;
-        const actualOutputTokens = input.providerUsage
-            ? priorAttemptCount * jobProviderBudget.maxOutputTokensPerAttempt +
-              input.providerUsage.outputTokens
-            : job.providerReservedOutputTokens;
+        const snapshot = job.selectedExecutionSnapshot;
+        const [nativeReceipt] = usesLegacyAction(snapshot)
+            ? await tx
+                  .select({ id: textAiRouteDispatchesTable.attemptId })
+                  .from(textAiRouteDispatchesTable)
+                  .innerJoin(
+                      aiCreditActionAttemptsTable,
+                      eq(
+                          aiCreditActionAttemptsTable.id,
+                          textAiRouteDispatchesTable.attemptId,
+                      ),
+                  )
+                  .where(
+                      and(
+                          eq(
+                              aiCreditActionAttemptsTable.actionId,
+                              snapshot.actionParentId ?? job.id,
+                          ),
+                          sql`jsonb_typeof(${textAiRouteDispatchesTable.providerPrice}->'nativeRules') = 'object'`,
+                      ),
+                  )
+                  .limit(1)
+            : [];
+        const projection = generationCompletionUsage(
+            job,
+            jobProviderBudget,
+            input.providerUsage,
+            Boolean(nativeReceipt),
+        );
 
-        if (
-            actualCostMicros > job.providerReservedCostMicros ||
-            actualInputTokens > job.providerReservedInputTokens ||
-            actualOutputTokens > job.providerReservedOutputTokens
-        )
-            throw new Error('Provider usage exceeds reservation');
         await tx.insert(dictionaryGenerationProposalsTable).values({
             createdAt: input.context.now,
             expiresAt: input.reviewExpiresAt,
@@ -412,9 +408,9 @@ export async function complete(
                 leaseDeadline: null,
                 progressPercent: 100,
                 progressStage: 'review_ready',
-                providerActualCostMicros: actualCostMicros,
-                providerActualInputTokens: actualInputTokens,
-                providerActualOutputTokens: actualOutputTokens,
+                providerActualCostMicros: projection.costMicros,
+                providerActualInputTokens: projection.inputTokens,
+                providerActualOutputTokens: projection.outputTokens,
                 providerReservationSettledAt: input.context.now,
                 providerReservationState: 'settled',
                 updatedAt: input.context.now,

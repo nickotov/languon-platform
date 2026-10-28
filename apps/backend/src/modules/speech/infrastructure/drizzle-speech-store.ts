@@ -6,6 +6,10 @@ import {
     lockSpeechWalletOwner,
 } from './speech-accounting';
 import { formatCreditMilli } from '../../ai-credits/domain/exact-credit-amount';
+import {
+    retainSpeechProviderObservation,
+    retainLiveSpeechProviderObservation,
+} from './provider-observation';
 import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
 import type { CapabilityPolicy } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
@@ -55,6 +59,7 @@ import type {
     SpeechProfileResolver,
     SpeechStore,
     StoredSpeechSource,
+    SpeechProviderObservation,
 } from '../application/ports';
 import {
     adminAuditEventsTable,
@@ -736,6 +741,13 @@ export class DrizzleSpeechStore implements SpeechStore {
             accountingVersion: 1,
             providerPriceSnapshot,
             providerCharacterCount: identity.characterCount,
+            providerUsageBounds: providerPriceSnapshot.nativeRules
+                ? {
+                      ...(profile.nativeBilling?.usageBounds ?? {}),
+                      characters: identity.characterCount,
+                      requests: 1,
+                  }
+                : null,
             billingState: reservationId ? 'reserved' : 'free',
             state: 'queued',
             nextPollAt: input.now,
@@ -1008,8 +1020,19 @@ export class DrizzleSpeechStore implements SpeechStore {
                 );
         }, job.id);
     }
-    public async pending(job: SpeechJob, retryAfterMs: number, _now: Date) {
+    public async pending(
+        job: SpeechJob,
+        retryAfterMs: number,
+        _now: Date,
+        observation?: SpeechProviderObservation,
+    ) {
         await this.workerTransaction(async (tx, now) => {
+            await retainLiveSpeechProviderObservation(
+                tx,
+                job,
+                observation,
+                now,
+            );
             await tx
                 .update(jobs)
                 .set({
@@ -1025,7 +1048,12 @@ export class DrizzleSpeechStore implements SpeechStore {
                 );
         }, job.id);
     }
-    public async storing(job: SpeechJob, audio: AudioBytes, _now: Date) {
+    public async storing(
+        job: SpeechJob,
+        audio: AudioBytes,
+        _now: Date,
+        observation?: SpeechProviderObservation,
+    ) {
         return this.workerTransaction(async (tx, now) => {
             const [row] = await tx
                 .update(jobs)
@@ -1042,6 +1070,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                 )
                 .returning();
             if (!row) return false;
+            await retainSpeechProviderObservation(tx, row, job, observation);
             await tx
                 .update(recordings)
                 .set({
@@ -1150,6 +1179,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         _now: Date,
         reason?: 'speech_provider_unavailable',
         notSubmitted = false,
+        observation?: SpeechProviderObservation,
     ) {
         await this.workerTransaction(async (tx, now) => {
             const [row] = await tx
@@ -1164,6 +1194,13 @@ export class DrizzleSpeechStore implements SpeechStore {
                 .limit(1)
                 .for('update');
             if (!row) return;
+            if (observation)
+                await retainSpeechProviderObservation(
+                    tx,
+                    row,
+                    job,
+                    observation,
+                );
             await settleSpeechProviderExpense(
                 tx,
                 row,

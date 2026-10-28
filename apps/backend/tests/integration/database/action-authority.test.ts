@@ -277,7 +277,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             successful: 1,
                             inputTokens: 2,
                             outputTokens: 3,
-                            actualCostMicros: 1,
+                            actualCostMicros: 1n,
                             settledAt: new Date(),
                         })
                         .where(eq(attempts.id, callId));

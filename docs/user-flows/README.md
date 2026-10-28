@@ -11,6 +11,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Native provider pricing coverage and onboarding](./model-price-coverage-and-onboarding.md) —
+  all-catalog native price verification, scoped publication and truthful readiness.
+
 - [Model price actualization](./model-price-actualization.md) — official provider
   metadata, scoped MCP previews and immutable price publication.
 

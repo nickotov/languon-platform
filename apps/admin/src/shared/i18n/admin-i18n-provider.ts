@@ -1,8 +1,10 @@
 import type { I18nProvider } from '@refinedev/core';
 import { adminMcpMessages } from './admin-mcp-messages';
+import { nativePriceMessages } from './native-price-messages';
 
 export const adminMessages = {
     ...adminMcpMessages,
+    ...nativePriceMessages,
     'routing.processing': 'Processing eligibility',
     'routing.retired': 'Retired',
     'routing.processingEligible': 'Reviewed controls',
@@ -527,7 +529,7 @@ export const adminMessages = {
     'accounting.defaultBudget':
         'Default maximum credits per action (blank = uncalibrated)',
     'accounting.publishSettings': 'Publish action budget revision',
-    'accounting.providerPrices': 'Provider USD cost rates',
+    'accounting.providerPrices': 'Provider cost rates',
     'accounting.providerPricesHelp':
         'Provider costs are independent of customer credit tariffs. Publish rates from verified provider pricing; absent rates remain unknown. No rates are prefilled.',
     'accounting.addProviderPrice': 'Add provider cost rate',
@@ -537,7 +539,7 @@ export const adminMessages = {
     'accounting.effectiveAt': 'Effective at (ISO 8601 UTC)',
     'accounting.sourceReference': 'Price source reference',
     'accounting.sourceUrl': 'Price source URL (optional HTTPS)',
-    'accounting.usdRates': 'USD cost rates',
+    'accounting.usdRates': 'Billing rates',
     'accounting.usdTokenRates':
         '{input} input / {output} output USD per 1M tokens',
     'accounting.usdCacheRates':

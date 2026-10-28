@@ -18,6 +18,13 @@ import {
     type TextAiCredentialReference,
 } from '../../application/text-ai-provider-catalog';
 import type { TextAiProviderBudgetPolicy } from '../../application/text-ai-provider-catalog';
+import type { TextAiProviderRuntimeOptions } from './text-ai-provider-runtime-observer';
+import {
+    captureNativeTextObservation,
+    type NativeTextCallReceipt,
+    type NativeTextObservation,
+} from './provider-native-observations';
+import { readProviderTokenUsage } from './provider-token-usage';
 
 export const textAiProviderIds = [
     'deepseek',
@@ -62,6 +69,8 @@ export type TextAiProviderReadiness =
 
 /** Bump when reviewed SDK/wire enforcement changes; probe evidence must expire. */
 export const textAiRequestPolicyRevision = 'text-ai-request-policy:v2';
+export const nativeTextAiRequestPolicyRevision =
+    'text-ai-native-request-policy:v1';
 export interface TextAiModelCatalogEntry {
     adapterRevision: string;
     requestPolicyRevision: string;
@@ -228,6 +237,11 @@ export function createTextAiMastraModel(options: {
     apiKey: string;
     model: TextAiModelCatalogEntry;
     providerPrice?: ProviderPrice;
+    providerBudget?: TextAiProviderBudgetPolicy;
+    authorizeNativeCall?: TextAiProviderRuntimeOptions['authorizeNativeCall'];
+    observeNativeCall?: TextAiProviderRuntimeOptions['observeNativeCall'];
+    /** Only the explicitly authorized probe executor supplies its persisted reservation time. */
+    nativeProbeDispatchedAt?: string;
     onProviderFailure?: (failure: SentenceProviderFailure) => Promise<void>;
 }): OpenAICompatibleConfig | ModelRouterLanguageModel {
     const config: OpenAICompatibleConfig = {
@@ -236,20 +250,33 @@ export function createTextAiMastraModel(options: {
         providerId: options.model.providerId,
         url: options.model.apiBaseUrl,
     };
+    const native = options.providerPrice?.nativeRules
+        ? {
+              authorize: options.authorizeNativeCall,
+              observe: options.observeNativeCall,
+              ...(options.nativeProbeDispatchedAt
+                  ? { probeDispatchedAt: options.nativeProbeDispatchedAt }
+                  : {}),
+              inputLimit: options.model.requestLimits.maxInputTokens,
+              outputLimit: options.model.requestLimits.maxOutputTokens,
+          }
+        : undefined;
     if (options.model.providerId === 'evolink')
         return new RestrictedGatewayModel(
             config,
             'evolink',
             undefined,
             options.onProviderFailure,
+            native,
         );
     if (options.model.providerId !== 'openrouter')
-        return options.onProviderFailure
+        return options.onProviderFailure || native
             ? new RestrictedGatewayModel(
                   config,
                   options.model.providerId,
                   undefined,
                   options.onProviderFailure,
+                  native,
               )
             : config;
     const price = ProviderPriceSchema.parse(options.providerPrice);
@@ -265,13 +292,71 @@ export function createTextAiMastraModel(options: {
         config,
         'openrouter',
         {
-            prompt: Number(price.inputUsdPerMillionTokens),
-            completion: Number(price.outputUsdPerMillionTokens),
-            request: Number(price.minimumUsdPerRequest ?? 0),
-            image: 0,
+            prompt: price.nativeRules
+                ? requiredNativeBudget(options.providerBudget)
+                      .inputCostMicrosPerMillionTokens / 1_000_000
+                : Number(price.inputUsdPerMillionTokens),
+            completion: price.nativeRules
+                ? requiredNativeBudget(options.providerBudget)
+                      .outputCostMicrosPerMillionTokens / 1_000_000
+                : Number(price.outputUsdPerMillionTokens),
+            request: price.nativeRules
+                ? requiredNativeBudget(options.providerBudget)
+                      .maxCostMicrosPerAttempt / 1_000_000
+                : Number(price.minimumUsdPerRequest ?? 0),
+            ...(price.nativeRules ? {} : { image: 0 as const }),
         },
         options.onProviderFailure,
+        native,
     );
+}
+function requiredNativeBudget(budget?: TextAiProviderBudgetPolicy) {
+    if (!budget)
+        throw new Error('A reviewed native provider budget is required.');
+    return budget;
+}
+export function assertTextOnlyNativePrompt(prompt: unknown, tools?: unknown) {
+    if (
+        tools !== undefined &&
+        (!Array.isArray(tools) ||
+            tools.some(
+                (tool) =>
+                    !tool ||
+                    typeof tool !== 'object' ||
+                    tool.type !== 'function',
+            ))
+    )
+        throw new Error('Native text pricing excludes provider-hosted tools.');
+    if (!Array.isArray(prompt))
+        throw new Error('Native text pricing requires a text prompt.');
+    for (const message of prompt) {
+        if (!message || typeof message !== 'object' || !('content' in message))
+            throw new Error('Invalid native text prompt.');
+        const content: unknown = message.content;
+        if (typeof content === 'string') continue;
+        if (!Array.isArray(content))
+            throw new Error('Native text pricing excludes media.');
+        for (const part of content) {
+            if (!part || typeof part !== 'object')
+                throw new Error('Invalid native text part.');
+            if (
+                part.type === 'text' ||
+                part.type === 'reasoning' ||
+                part.type === 'tool-call'
+            )
+                continue;
+            if (
+                part.type === 'tool-result' &&
+                part.output &&
+                typeof part.output === 'object' &&
+                ['text', 'json', 'error-text', 'error-json'].includes(
+                    part.output.type,
+                )
+            )
+                continue;
+            throw new Error('Native text pricing excludes media.');
+        }
+    }
 }
 
 /** Enforce gateway constraints at the SDK call boundary for structured and streamed calls.
@@ -285,11 +370,18 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
             prompt: number;
             completion: number;
             request: number;
-            image: 0;
+            image?: 0;
         },
         private readonly onProviderFailure?: (
             failure: SentenceProviderFailure,
         ) => Promise<void>,
+        private readonly native?: {
+            authorize?: TextAiProviderRuntimeOptions['authorizeNativeCall'];
+            observe?: TextAiProviderRuntimeOptions['observeNativeCall'];
+            probeDispatchedAt?: string;
+            inputLimit: number;
+            outputLimit: number;
+        },
     ) {
         super(config);
     }
@@ -297,11 +389,13 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
         options: Parameters<ModelRouterLanguageModel['doGenerate']>[0],
     ) {
         const witness = currentTextAiProviderAttemptWitness();
+        const receipt = await this.authorizeNative(options, witness);
         try {
             return this.observe(
                 await super.doGenerate(this.restrict(options)),
                 options.abortSignal,
                 witness,
+                receipt,
             );
         } catch (error) {
             await this.record(error, options.abortSignal, witness);
@@ -312,16 +406,50 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
         options: Parameters<ModelRouterLanguageModel['doStream']>[0],
     ) {
         const witness = currentTextAiProviderAttemptWitness();
+        const receipt = await this.authorizeNative(options, witness);
         try {
             return this.observe(
                 await super.doStream(this.restrict(options)),
                 options.abortSignal,
                 witness,
+                receipt,
             );
         } catch (error) {
             await this.record(error, options.abortSignal, witness);
             throw error;
         }
+    }
+    private async authorizeNative(
+        options: Parameters<ModelRouterLanguageModel['doStream']>[0],
+        witness?: ReturnType<typeof currentTextAiProviderAttemptWitness>,
+    ): Promise<NativeTextCallReceipt | undefined> {
+        if (!this.native) return undefined;
+        assertTextOnlyNativePrompt(options.prompt, options.tools);
+        const inputTokens =
+            Buffer.byteLength(
+                JSON.stringify({
+                    prompt: options.prompt,
+                    tools: options.tools,
+                    responseFormat: options.responseFormat,
+                }),
+                'utf8',
+            ) + 256;
+        const outputTokens = options.maxOutputTokens ?? this.native.outputLimit;
+        if (
+            inputTokens > this.native.inputLimit ||
+            outputTokens > this.native.outputLimit
+        )
+            throw new Error('Native provider request exceeds reviewed limits.');
+        if (witness && this.native.authorize)
+            return this.native.authorize({
+                witness,
+                inputTokens,
+                outputTokens,
+            });
+        if (this.native.probeDispatchedAt) return undefined;
+        throw new Error(
+            'Native provider dispatch requires durable call authorization.',
+        );
     }
     private async record(
         error: unknown,
@@ -352,12 +480,46 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
         result: Awaited<ReturnType<ModelRouterLanguageModel['doStream']>>,
         signal?: AbortSignal,
         witness?: ReturnType<typeof currentTextAiProviderAttemptWitness>,
+        receipt?: NativeTextCallReceipt,
     ) {
+        let observation: NativeTextObservation | undefined;
+        const capture = (raw: unknown) => {
+            if (!this.native) return;
+            const next = captureNativeTextObservation(
+                raw,
+                this.providerId,
+                receipt,
+                this.native.probeDispatchedAt,
+            );
+            if (!next) return;
+            observation = {
+                ...observation,
+                ...next,
+                usage: { ...observation?.usage, ...next.usage },
+                ...(next.execution
+                    ? {
+                          execution: {
+                              ...observation?.execution,
+                              ...next.execution,
+                          },
+                      }
+                    : {}),
+            };
+        };
+        capture({});
+        if (observation?.execution && this.providerId === 'openrouter')
+            observation.execution.serviceTier = 'standard';
+        if (
+            'response' in result &&
+            result.response &&
+            'body' in result.response
+        )
+            capture(result.response.body);
         // The installed router currently returns a stream for both methods.
         // Preserve successful nonstream results if an SDK/provider path returns
         // one; health observation must never turn success into a local failure.
         if (
-            !this.onProviderFailure ||
+            (!this.onProviderFailure && !this.native) ||
             !('stream' in result) ||
             !result.stream ||
             typeof result.stream.pipeThrough !== 'function'
@@ -368,9 +530,98 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
             stream: result.stream.pipeThrough(
                 new TransformStream({
                     transform: async (part, controller) => {
+                        if (this.native && part.type === 'raw') {
+                            capture(part.rawValue);
+                            return;
+                        }
                         if (part.type === 'error')
                             await this.record(part.error, signal, witness);
-                        controller.enqueue(part);
+                        if (part.type === 'finish' && observation) {
+                            try {
+                                const totals = readProviderTokenUsage(
+                                    part.usage,
+                                    {
+                                        maxInputTokens: this.native!.inputLimit,
+                                        maxOutputTokens:
+                                            this.native!.outputLimit,
+                                    },
+                                );
+                                observation.usage = {
+                                    ...observation.usage,
+                                    inputTokens: totals.inputTokens,
+                                    outputTokens: totals.outputTokens,
+                                    ...(totals.cacheReadTokens === undefined
+                                        ? {}
+                                        : {
+                                              cacheReadTokens:
+                                                  totals.cacheReadTokens,
+                                          }),
+                                    ...(totals.cacheWriteTokens === undefined
+                                        ? {}
+                                        : {
+                                              cacheWriteTokens:
+                                                  totals.cacheWriteTokens,
+                                          }),
+                                };
+                            } catch {
+                                // Invalid/missing SDK meters remain unknown; never invent zero usage.
+                            }
+                            if (observation.callId && this.native?.observe) {
+                                const facts = observation.execution;
+                                await this.native.observe({
+                                    callId: observation.callId,
+                                    usage: observation.usage,
+                                    ...(facts
+                                        ? {
+                                              execution: {
+                                                  ...(facts.endpointId
+                                                      ? {
+                                                            endpointId:
+                                                                facts.endpointId,
+                                                        }
+                                                      : {}),
+                                                  ...(facts.serviceTier
+                                                      ? {
+                                                            serviceTier:
+                                                                facts.serviceTier,
+                                                        }
+                                                      : {}),
+                                              },
+                                          }
+                                        : {}),
+                                });
+                            }
+                            controller.enqueue({
+                                ...part,
+                                usage: {
+                                    ...part.usage,
+                                    nativeUsage: observation.usage,
+                                    ...(observation.execution
+                                        ? {
+                                              executionFacts:
+                                                  observation.execution,
+                                          }
+                                        : {}),
+                                    ...(observation.callId &&
+                                    observation.execution
+                                        ? {
+                                              calls: [
+                                                  {
+                                                      callId: observation.callId,
+                                                      usage: observation.usage,
+                                                      execution:
+                                                          observation.execution,
+                                                  },
+                                              ],
+                                          }
+                                        : {}),
+                                },
+                                providerMetadata: {
+                                    ...part.providerMetadata,
+                                    languonNativePricing: { ...observation },
+                                },
+                            });
+                        } else controller.enqueue(part);
                     },
                 }),
             ),
@@ -380,9 +631,13 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
         options: Parameters<ModelRouterLanguageModel['doStream']>[0],
     ) {
         if (this.providerId !== 'openrouter' && this.providerId !== 'evolink')
-            return options;
+            return {
+                ...options,
+                ...(this.native ? { includeRawChunks: true } : {}),
+            };
         return {
             ...options,
+            ...(this.native ? { includeRawChunks: true } : {}),
             providerOptions: {
                 // Do not inherit caller gateway routing, model lists or plugins.
                 [this.providerId]: {
@@ -414,6 +669,8 @@ export function createTextAiMastraGeneratorOptions(options: {
     model: TextAiModelCatalogEntry;
     providerBudget: TextAiProviderBudgetPolicy;
     providerPrice?: ProviderPrice;
+    authorizeNativeCall?: TextAiProviderRuntimeOptions['authorizeNativeCall'];
+    observeNativeCall?: TextAiProviderRuntimeOptions['observeNativeCall'];
     onProviderFailure?: (failure: SentenceProviderFailure) => Promise<void>;
 }) {
     return {
@@ -421,6 +678,13 @@ export function createTextAiMastraGeneratorOptions(options: {
         model: createTextAiMastraModel({
             apiKey: options.apiKey,
             model: options.model,
+            providerBudget: options.providerBudget,
+            ...(options.authorizeNativeCall
+                ? { authorizeNativeCall: options.authorizeNativeCall }
+                : {}),
+            ...(options.observeNativeCall
+                ? { observeNativeCall: options.observeNativeCall }
+                : {}),
             ...(options.onProviderFailure
                 ? { onProviderFailure: options.onProviderFailure }
                 : {}),

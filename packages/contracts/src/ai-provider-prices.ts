@@ -1,11 +1,17 @@
 import { z } from 'zod';
 import { AccountingUsdSchema } from './ai-accounting';
+import {
+    ProviderNativePricingRulesSchema,
+    nativeProviderPricingMatchesMeter,
+    type ProviderNativePricingRules,
+} from './provider-native-pricing';
 
 const identifier = z.string().trim().min(1).max(200);
 const fields = {
     providerId: identifier,
     modelId: identifier,
-    meter: z.enum(['text-tokens', 'speech-characters']),
+    meter: z.enum(['text-tokens', 'speech-characters', 'speech-tokens']),
+    nativeRules: ProviderNativePricingRulesSchema.optional(),
     inputUsdPerMillionTokens: AccountingUsdSchema.nullable(),
     outputUsdPerMillionTokens: AccountingUsdSchema.nullable(),
     cacheReadUsdPerMillionTokens: AccountingUsdSchema.nullable(),
@@ -40,7 +46,22 @@ function validMeters(value: {
     cacheReadUsdPerMillionTokens: string | null;
     cacheWriteUsdPerMillionTokens: string | null;
     usdPer1000Characters: string | null;
+    minimumUsdPerRequest?: string | null | undefined;
+    nativeRules?: ProviderNativePricingRules | undefined;
 }): boolean {
+    if (value.nativeRules)
+        return (
+            nativeProviderPricingMatchesMeter(value.meter, value.nativeRules) &&
+            [
+                value.inputUsdPerMillionTokens,
+                value.outputUsdPerMillionTokens,
+                value.cacheReadUsdPerMillionTokens,
+                value.cacheWriteUsdPerMillionTokens,
+                value.usdPer1000Characters,
+                value.minimumUsdPerRequest ?? null,
+            ].every((amount) => amount === null)
+        );
+    if (value.meter === 'speech-tokens') return false;
     return value.meter === 'text-tokens'
         ? value.inputUsdPerMillionTokens !== null &&
               value.outputUsdPerMillionTokens !== null &&

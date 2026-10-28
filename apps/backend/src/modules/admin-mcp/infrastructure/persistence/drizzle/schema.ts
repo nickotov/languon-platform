@@ -11,6 +11,7 @@ import {
     uuid,
 } from 'drizzle-orm/pg-core';
 import type { AdminMcpLimits, AdminMcpPermission } from '@languon/contracts';
+import type { AdminMcpWriteAuthority } from '../../../domain/admin-mcp';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 const time = (name: string) =>
     timestamp(name, { mode: 'date', withTimezone: true });
@@ -56,7 +57,7 @@ export const adminMcpPreviewsTable = pgTable(
         tokenId: uuid('token_id')
             .notNull()
             .references(() => adminMcpTokensTable.id, { onDelete: 'restrict' }),
-        operation: text('operation').$type<AdminMcpPermission>().notNull(),
+        operation: text('operation').$type<AdminMcpWriteAuthority>().notNull(),
         target: text('target').notNull(),
         current: jsonb('current').$type<unknown>().notNull(),
         proposed: jsonb('proposed').$type<unknown>().notNull(),

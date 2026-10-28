@@ -17,7 +17,8 @@ import type {
     SpeechProfile,
     StoredSpeechSource,
 } from '../application/ports';
-import type { ProviderPrice } from '@languon/contracts';
+import type { ProviderPrice, ProviderNativeUsage } from '@languon/contracts';
+import type { SpeechProviderObservation } from '../application/ports/speech-synthesis-provider';
 import {
     dictionariesTable,
     dictionaryCardsTable,
@@ -38,6 +39,7 @@ export type SpeechProviderPriceSnapshot = Pick<
     | 'usdPer1000Characters'
     | 'minimumUsdPerRequest'
     | 'effectiveAt'
+    | 'nativeRules'
 >;
 
 const date = (name: string) => timestamp(name, { withTimezone: true });
@@ -99,6 +101,13 @@ export const speechJobsTable = pgTable(
         ).$type<SpeechProviderPriceSnapshot>(),
         providerCharacterCount: integer('provider_character_count'),
         providerDispatchedAt: date('provider_dispatched_at'),
+        providerUsage: jsonb('provider_usage').$type<ProviderNativeUsage>(),
+        providerExecutionFacts: jsonb('provider_execution_facts').$type<
+            NonNullable<SpeechProviderObservation['execution']>
+        >(),
+        providerUsageBounds: jsonb(
+            'provider_usage_bounds',
+        ).$type<ProviderNativeUsage>(),
         providerOutcome: text('provider_outcome').$type<
             'ready' | 'not_submitted' | 'unknown'
         >(),

@@ -1,0 +1,4 @@
+interface:
+    display_name: 'AI Provider and Model Onboarding'
+    short_description: 'Research, price and integrate real AI model routes'
+    default_prompt: 'Use $ai-provider-model-onboarding to verify the real provider/model and its current prices, resolve material choices, and implement compatible switch-ready defaults within the authorized scope.'

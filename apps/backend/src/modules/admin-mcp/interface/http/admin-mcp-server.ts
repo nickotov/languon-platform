@@ -8,7 +8,11 @@ import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { adminMcpReasonSchema } from '@languon/contracts';
 import type { AdminMcpCredentialService } from '../../application/admin-mcp-credential-service';
-import { AdminMcpError, type AdminMcpActor } from '../../domain/admin-mcp';
+import {
+    AdminMcpError,
+    permissionForWrite,
+    type AdminMcpActor,
+} from '../../domain/admin-mcp';
 import type { AdminMcpAdministrationService } from '../../application/admin-mcp-administration-service';
 import {
     adminMcpReadSchemas,
@@ -21,6 +25,12 @@ export interface AdminMcpServerDependencies {
     checks: AdminMcpCheckService;
     port: number;
     actualizePrices?: (
+        actor: AdminMcpActor,
+        input: unknown,
+        secret: string,
+        signal: AbortSignal,
+    ) => Promise<unknown>;
+    verifyPrices?: (
         actor: AdminMcpActor,
         input: unknown,
         secret: string,
@@ -153,7 +163,7 @@ function createTools(
     for (const [operation, schema] of Object.entries(adminMcpWriteSchemas)) {
         const name = operation as keyof typeof adminMcpWriteSchemas;
         if (
-            !actor.permissions.includes(name) ||
+            !actor.permissions.includes(permissionForWrite(name)) ||
             !actor.allowedActions.includes(operation)
         )
             continue;
@@ -209,15 +219,15 @@ function createTools(
     if (
         deps.actualizePrices &&
         actor.permissions.includes('provider-prices.write') &&
-        actor.allowedActions.includes('provider-prices.actualize') &&
-        actor.allowedActions.includes('provider-prices.write')
+        actor.allowedActions.includes('provider-prices.actualize-native.v1') &&
+        actor.allowedActions.includes('provider-prices.native-write')
     ) {
         server.registerTool(
             'actualize_model_prices',
             {
                 title: 'Actualize prices of models',
                 description:
-                    'Fetch official prices for configured models and prepare exact price revisions. No paid generation or price publication. Publish returned previews with admin_apply using stable operation keys. Omit models to discover all configured active models in batches of 50; continue with the returned nextOffset until null. Reports unsupported/unchanged models without changing their prices.',
+                    'Fetch official native pricing for real catalog models and prepare exact versioned price revisions. Includes tiers, schedules and native billing units. No paid generation or activation. Publish returned previews with admin_apply. Discovery pages contain at most50 models; continue with nextOffset until null. Retired/missing identities and source failures remain explicit.',
                 inputSchema: actualizeModelPricesSchema,
                 annotations: { readOnlyHint: false, openWorldHint: true },
             },
@@ -230,6 +240,31 @@ function createTools(
                             secret,
                             signal,
                         ),
+                    );
+                } catch (error) {
+                    return failure(error);
+                }
+            },
+        );
+    }
+    if (
+        deps.verifyPrices &&
+        actor.permissions.includes('providers.read') &&
+        actor.allowedActions.includes('provider-prices.verify')
+    ) {
+        server.registerTool(
+            'verify_model_prices',
+            {
+                title: 'Verify prices of models',
+                description:
+                    'Read-only official pricing verification for all real catalog models, including retired and unconfigured entries. Separately reports exact identity/source, stored-price comparison, native billing rules, publication and execution readiness. No price publication, preview, generation or activation. Omit models and continue nextOffset pages to verify the complete catalog.',
+                inputSchema: actualizeModelPricesSchema,
+                annotations: { readOnlyHint: true, openWorldHint: true },
+            },
+            async (args) => {
+                try {
+                    return result(
+                        await deps.verifyPrices!(actor, args, secret, signal),
                     );
                 } catch (error) {
                     return failure(error);

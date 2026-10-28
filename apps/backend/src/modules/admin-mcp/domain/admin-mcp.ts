@@ -31,10 +31,19 @@ export interface AdminMcpActor {
 export interface AdminMcpToken extends AdminMcpTokenMetadata {
     secretHash: string;
 }
+export type AdminMcpWriteAuthority =
+    AdminMcpPermission | 'provider-prices.native-write';
+export function permissionForWrite(
+    operation: AdminMcpWriteAuthority,
+): AdminMcpPermission {
+    return operation === 'provider-prices.native-write'
+        ? 'provider-prices.write'
+        : operation;
+}
 export interface AdminMcpPreview {
     id: string;
     tokenId: string;
-    operation: AdminMcpPermission;
+    operation: AdminMcpWriteAuthority;
     target: string;
     current: unknown;
     proposed: unknown;
@@ -86,13 +95,15 @@ export const adminMcpActionsByPermission: Readonly<
         'financial-reports.global',
         'financial-reports.user',
     ],
-    'providers.read': ['providers.inspect'],
+    'providers.read': ['providers.inspect', 'provider-prices.verify'],
     'model-checks.run': ['model-checks.run', 'model-checks.status'],
     'routing.write': ['routing.write'],
     'customer-tariffs.write': ['customer-tariffs.write'],
     'provider-prices.write': [
         'provider-prices.write',
         'provider-prices.actualize',
+        'provider-prices.native-write',
+        'provider-prices.actualize-native.v1',
     ],
     'spending-limits.write': ['spending-limits.write'],
     'credits.grant': ['credits.grant'],

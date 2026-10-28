@@ -101,10 +101,11 @@ export function preflightTextsRequest(
 function usageOf(
     value: unknown,
     limits: { maxInputTokens: number; maxOutputTokens: number },
+    transportResult?: unknown,
 ): TextsTokenUsage | undefined {
     if (value === undefined || value === null) return undefined;
     try {
-        return readProviderTokenUsage(value, limits);
+        return readProviderTokenUsage(value, limits, transportResult);
     } catch {
         throw new TextsProviderInvalidOutputError();
     }
@@ -201,7 +202,7 @@ export function createTextsAiProvider(options: {
                 );
             }
             call.signal.throwIfAborted();
-            const usage = usageOf(result.usage, limits);
+            const usage = usageOf(result.usage, limits, result);
             if (
                 result.tripwire &&
                 result.tripwire.processorId !== 'structured-output'

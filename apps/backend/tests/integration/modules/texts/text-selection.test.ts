@@ -633,7 +633,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             successful: 0,
             inputTokens: 100,
             outputTokens: 40,
-            actualCostMicros: 220,
+            actualCostMicros: 220n,
         });
         const expenses = await db.execute(
             sql`select measurement, amount_usd_micros from ai_provider_expense_records where action_id=${admitted.id}`,

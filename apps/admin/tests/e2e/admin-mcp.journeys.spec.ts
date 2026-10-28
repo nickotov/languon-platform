@@ -1,4 +1,4 @@
-// @user-flow-revision admin-mcp sha256:20fac70f70af7e5e
+// @user-flow-revision admin-mcp sha256:ce2252390d6e9f38
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -12,6 +12,7 @@ import {
 import postgres from 'postgres';
 import {
     adminOrigin,
+    backendOrigin,
     createUser,
     databaseUrl,
     password,
@@ -107,11 +108,20 @@ function browserFailures(page: Page) {
             [],
         );
 }
-async function issue(page: Page, name: string, grants = false) {
+async function issue(
+    page: Page,
+    name: string,
+    grants = false,
+    pricing = false,
+) {
     await page.getByLabel('Client name', { exact: true }).fill(name);
     await page
         .getByLabel('Reason', { exact: true })
         .fill('Synthetic disposable MCP integration verification');
+    if (pricing)
+        await page
+            .getByRole('checkbox', { name: 'Provider prices', exact: true })
+            .check();
     if (grants) {
         await page
             .getByRole('checkbox', {
@@ -377,5 +387,225 @@ test('bounded credit grant previews current state and replay never doubles the g
             (entry: { kind: string }) => entry.kind === 'grant',
         ),
     ).toHaveLength(1);
+    assertClean();
+});
+
+/** Warm exactly the Accounting page's current UTC range before visiting Accounting. */
+async function prepareAccountingReport(request: APIRequestContext) {
+    const login = await request.post(
+        `${backendOrigin}/admin/auth/login/password`,
+        {
+            data: { email, password },
+            headers: { Origin: adminOrigin },
+        },
+    );
+    expect(login.status()).toBe(200);
+    const { accessToken } = (await login.json()) as { accessToken: string };
+    const now = new Date();
+    const query = new URLSearchParams({
+        from: new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+        ).toISOString(),
+        to: new Date(
+            Date.UTC(
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate() + 1,
+            ),
+        ).toISOString(),
+    });
+    // The report worker runs every 15s. Only the documented pending response may retry.
+    await expect
+        .poll(
+            async () => {
+                const response = await request.get(
+                    `${backendOrigin}/admin/ai/accounting/report?${query}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            Origin: adminOrigin,
+                        },
+                        timeout: 5_000,
+                    },
+                );
+                if (response.status() === 200) return 200;
+                expect(response.status()).toBe(503);
+                expect(response.headers()['retry-after']).toBe('2');
+                expect((await response.json()).error.code).toBe(
+                    'service_unavailable',
+                );
+                return response.status();
+            },
+            {
+                timeout: 40_000,
+                intervals: [2_000],
+                message:
+                    'Accounting report must be materialized before the browser visits Accounting',
+            },
+        )
+        .toBe(200);
+}
+
+// @user-flow admin-mcp/native-provider-pricing-display
+test('native provider prices published through MCP show exact read-only billing rules at desktop and narrow width', async ({
+    page,
+    request,
+}, testInfo) => {
+    test.setTimeout(70_000);
+    await login(page);
+    const assertClean = browserFailures(page);
+    const issued = await issue(
+        page,
+        `Native pricing client ${runId}`,
+        false,
+        true,
+    );
+    await initialize(request, issued.secret);
+    const modelId = `native-model-${runId}`;
+    const preview = await callTool(
+        request,
+        issued.secret,
+        'preview_provider_prices_native_write',
+        {
+            providerId: 'native-ui-fixture',
+            modelId,
+            meter: 'speech-tokens',
+            inputUsdPerMillionTokens: null,
+            outputUsdPerMillionTokens: null,
+            cacheReadUsdPerMillionTokens: null,
+            cacheWriteUsdPerMillionTokens: null,
+            usdPer1000Characters: null,
+            minimumUsdPerRequest: null,
+            nativeRules: {
+                version: 1,
+                validFrom: '2026-10-01T00:00:00Z',
+                validUntil: '2026-12-31T00:00:00Z',
+                currency: {
+                    code: 'UC',
+                    usdNumerator: '1',
+                    unitDenominator: '680000',
+                },
+                variants: [
+                    {
+                        id: 'standard-base',
+                        applies: {
+                            endpointIds: ['synthetic-endpoint'],
+                            serviceTiers: ['standard'],
+                            inputTokens: {
+                                minInclusive: 0,
+                                maxExclusive: 272001,
+                            },
+                            dispatchWindows: [
+                                {
+                                    from: '2026-10-01T00:00:00Z',
+                                    until: '2026-12-31T00:00:00Z',
+                                },
+                            ],
+                        },
+                        components: [
+                            {
+                                meter: 'inputTokens',
+                                pricePerUnit: '62.123456789012345678901234',
+                                unitQuantity: 1000,
+                                minimum: '100',
+                                chargeWhen: 'request',
+                                rounding: { quantum: '1', mode: 'ceil' },
+                            },
+                            {
+                                meter: 'audioOutputTokens',
+                                pricePerUnit: '306',
+                                unitQuantity: 1000,
+                                minimum: '100',
+                                chargeWhen: 'request',
+                                rounding: { quantum: '1', mode: 'ceil' },
+                            },
+                        ],
+                        minimumPerRequest: '200',
+                        totalRounding: { quantum: '1', mode: 'ceil' },
+                    },
+                ],
+            },
+            effectiveAt: new Date().toISOString(),
+            expectedVersion: 0,
+            sourceUrl: 'https://example.test/pricing',
+            sourceReference: 'synthetic-native-price-ui',
+            reason: 'Verify synthetic native price presentation',
+        },
+    );
+    await callTool(request, issued.secret, 'admin_apply', {
+        previewId: preview.id,
+        operationKey: randomUUID(),
+    });
+    await prepareAccountingReport(request);
+    await page.goto('/accounting');
+    const row = page.getByRole('row').filter({ hasText: modelId });
+    await expect(
+        row.getByText('Native billing rules', { exact: true }),
+    ).toBeVisible();
+    await expect(
+        row.getByRole('button', { name: 'Edit', exact: true }),
+    ).toHaveCount(0);
+    await row
+        .getByRole('button', { name: 'View billing rules', exact: true })
+        .click();
+    const dialog = page.getByRole('dialog', {
+        name: 'Native billing rules',
+        exact: true,
+    });
+    await expect(
+        dialog.getByText('1 USD per 680000 UC', { exact: true }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByText(
+            '62.123456789012345678901234 UC per 1000 input tokens',
+            { exact: true },
+        ),
+    ).toBeVisible();
+    await expect(
+        dialog.getByText('306 UC per 1000 audio output tokens', {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByText('At least 0, below 272001', { exact: true }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByText('synthetic-endpoint', { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByText('standard', { exact: true })).toBeVisible();
+    await expect(
+        dialog.getByText(
+            '2026-10-01T00:00:00Z (inclusive) → 2026-12-31T00:00:00Z (exclusive)',
+            { exact: true },
+        ),
+    ).toBeVisible();
+    await expect(
+        dialog.getByText('Component minimum: 100 UC', { exact: true }),
+    ).toHaveCount(2);
+    await expect(
+        dialog.getByText('Round up to 1 UC', { exact: true }),
+    ).toHaveCount(2);
+    await expect(dialog.getByRole('textbox')).toHaveCount(0);
+    await page.screenshot({
+        path: testInfo.outputPath('native-pricing-desktop.png'),
+        animations: 'disabled',
+        fullPage: true,
+    });
+    await page.setViewportSize({ width: 375, height: 812 });
+    const layout = await dialog.evaluate((element) => ({
+        width: element.getBoundingClientRect().width,
+        contentWidth: element.scrollWidth,
+    }));
+    expect(layout.width).toBeLessThanOrEqual(375);
+    expect(layout.contentWidth).toBeLessThanOrEqual(375);
+    await page.screenshot({
+        path: testInfo.outputPath('native-pricing-narrow.png'),
+        animations: 'disabled',
+        fullPage: true,
+    });
+    await dialog
+        .getByRole('button', { name: 'Close billing rules', exact: true })
+        .click();
+    await expect(dialog).not.toBeVisible();
     assertClean();
 });

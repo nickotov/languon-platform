@@ -16,6 +16,11 @@ import {
     findTextAiModel,
 } from './text-ai-provider-catalog';
 import { readProviderTokenUsage } from './provider-token-usage';
+import { readNativeTextObservation } from './provider-native-observations';
+import {
+    reviewedTextProviderBudget,
+    providerAffordableOutputTokens,
+} from '../../../ai-credits/domain/provider-cost-admission';
 import { textAiProbeIdentity } from './text-ai-probe-identity';
 import { sentenceProviderFailure } from '../../../learning/infrastructure/ai/sentence-provider-failure';
 
@@ -85,6 +90,7 @@ export function createTextAiProbeExecutor(options: {
                 ) + 4096;
             if (
                 route.providerId === 'evolink' &&
+                !reservation.price.nativeRules &&
                 parseFixed(reservation.price.minimumUsdPerRequest ?? '0', 6) <=
                     0n
             )
@@ -111,13 +117,40 @@ export function createTextAiProbeExecutor(options: {
             const remaining = reservation.maximumCostMicros - inputCost;
             if (remaining <= 0n)
                 throw new TextAiProbeUnavailableError('probe_limit_reached');
-            const outputLimit = Math.min(
-                route.requestLimits.maxOutputTokens,
-                flow ? 2048 : 128,
-                outputRate === 0n
-                    ? 2048
-                    : Number((remaining * 1000000n) / outputRate),
-            );
+            const configuredBudget = {
+                inputCostMicrosPerMillionTokens: Number(inputRate),
+                outputCostMicrosPerMillionTokens: Number(outputRate),
+                maxCostMicrosPerAttempt: Number(reservation.maximumCostMicros),
+                maxInputTokensPerAttempt: route.requestLimits.maxInputTokens,
+                maxOutputTokensPerAttempt: Math.min(
+                    route.requestLimits.maxOutputTokens,
+                    flow ? 2048 : 128,
+                ),
+            };
+            const providerBudget = reservation.price.nativeRules
+                ? reviewedTextProviderBudget(
+                      reservation.price,
+                      configuredBudget,
+                      undefined,
+                      {
+                          dispatchedAt: reservation.startedAt.toISOString(),
+                          serviceTier: 'standard',
+                      },
+                  )
+                : configuredBudget;
+            const outputLimit = reservation.price.nativeRules
+                ? providerAffordableOutputTokens({
+                      inputTokens: inputLimit,
+                      outputLimit: configuredBudget.maxOutputTokensPerAttempt,
+                      budget: providerBudget,
+                  })
+                : Math.min(
+                      route.requestLimits.maxOutputTokens,
+                      flow ? 2048 : 128,
+                      outputRate === 0n
+                          ? 2048
+                          : Number((remaining * 1000000n) / outputRate),
+                  );
             if (
                 outputLimit < 1 ||
                 inputLimit > route.requestLimits.maxInputTokens
@@ -131,6 +164,9 @@ export function createTextAiProbeExecutor(options: {
                     apiKey,
                     model: route,
                     providerPrice: reservation.price,
+                    providerBudget,
+                    nativeProbeDispatchedAt:
+                        reservation.startedAt.toISOString(),
                 }),
                 defaultOptions: { maxSteps: 1 },
                 defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
@@ -183,6 +219,7 @@ export function createTextAiProbeExecutor(options: {
                               text,
                               object: undefined,
                               usage: await stream.totalUsage,
+                              providerMetadata: output.providerMetadata,
                           };
                       })()
                     : flow?.schema
@@ -199,10 +236,14 @@ export function createTextAiProbeExecutor(options: {
                       : await agent.generate(input, settings);
                 let usage;
                 try {
-                    usage = readProviderTokenUsage(result.usage, {
-                        maxInputTokens: inputLimit,
-                        maxOutputTokens: outputLimit,
-                    });
+                    usage = readProviderTokenUsage(
+                        result.usage,
+                        {
+                            maxInputTokens: inputLimit,
+                            maxOutputTokens: outputLimit,
+                        },
+                        result,
+                    );
                 } catch {
                     usage = null;
                 }
@@ -210,6 +251,22 @@ export function createTextAiProbeExecutor(options: {
                     ? flow.validate(flow.schema ? result.object : result.text)
                     : result.text.trim() === 'OK';
                 return {
+                    ...((usage?.nativeUsage ??
+                    readNativeTextObservation(result)?.usage)
+                        ? {
+                              nativeUsage:
+                                  usage?.nativeUsage ??
+                                  readNativeTextObservation(result)!.usage,
+                          }
+                        : {}),
+                    ...((usage?.executionFacts ??
+                    readNativeTextObservation(result)?.execution)
+                        ? {
+                              executionFacts:
+                                  usage?.executionFacts ??
+                                  readNativeTextObservation(result)!.execution,
+                          }
+                        : {}),
                     valid,
                     failure: valid ? null : 'invalid_output',
                     elapsedMs: Math.ceil(performance.now() - started),
@@ -288,6 +345,12 @@ export function createTextAiProbeExecutor(options: {
                     ...(failedUsage?.cacheWriteTokens === undefined
                         ? {}
                         : { cacheWriteTokens: failedUsage.cacheWriteTokens }),
+                    ...(failedUsage?.nativeUsage
+                        ? { nativeUsage: failedUsage.nativeUsage }
+                        : {}),
+                    ...(failedUsage?.executionFacts
+                        ? { executionFacts: failedUsage.executionFacts }
+                        : {}),
                 };
             }
         },

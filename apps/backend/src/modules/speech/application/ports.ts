@@ -11,6 +11,7 @@ import type {
 import type {
     SpeechProfile,
     SpeechSynthesisProvider,
+    SpeechProviderObservation,
 } from './ports/speech-synthesis-provider';
 
 export type {
@@ -19,6 +20,7 @@ export type {
     AudioObjectStorage,
     SpeechProfile,
     SpeechSynthesisProvider,
+    SpeechProviderObservation,
 };
 export type StoredSpeechSource = {
     [Kind in SpeechSource['kind']]: Omit<
@@ -108,8 +110,18 @@ export interface SpeechStore {
         retryAfterMs: number,
         now: Date,
     ): Promise<void>;
-    pending(job: SpeechJob, retryAfterMs: number, now: Date): Promise<void>;
-    storing(job: SpeechJob, audio: AudioBytes, now: Date): Promise<boolean>;
+    pending(
+        job: SpeechJob,
+        retryAfterMs: number,
+        now: Date,
+        observation?: SpeechProviderObservation,
+    ): Promise<void>;
+    storing(
+        job: SpeechJob,
+        audio: AudioBytes,
+        now: Date,
+        observation?: SpeechProviderObservation,
+    ): Promise<boolean>;
     complete(
         job: SpeechJob,
         storage: AudioObjectReference,
@@ -122,6 +134,7 @@ export interface SpeechStore {
         now: Date,
         reason?: 'speech_provider_unavailable',
         notSubmitted?: boolean,
+        observation?: SpeechProviderObservation,
     ): Promise<void>;
     releaseDeadlines(now: Date): Promise<void>;
     listRecordings(query: {

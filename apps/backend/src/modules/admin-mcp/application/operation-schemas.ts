@@ -34,7 +34,14 @@ export const adminMcpWriteSchemas = {
             })
             .strict(),
     ),
-    'provider-prices.write': ProviderPricePublishRequestSchema,
+    'provider-prices.write': ProviderPricePublishRequestSchema.refine(
+        (price) => !price.nativeRules,
+        'Native billing rules require the separately delegated native writer.',
+    ),
+    'provider-prices.native-write': ProviderPricePublishRequestSchema.refine(
+        (price) => Boolean(price.nativeRules),
+        'Native pricing rules are required.',
+    ),
     'spending-limits.write': AiAccountingSettingsPublishSchema.or(
         z
             .object({

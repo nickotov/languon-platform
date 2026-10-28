@@ -209,6 +209,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                         sp`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${randomUUID()}::uuid)`,
                                 ),
                             ).rejects.toThrow();
+                            await tx`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${lease}::uuid)`;
+                            for (const money of [
+                                { providerCreditsConsumed: '0' },
+                                { providerCostUsd: '0' },
+                            ]) {
+                                const meter = Object.keys(money)[0]!;
+                                await expect(
+                                    tx.savepoint(
+                                        (sp) =>
+                                            sp`select languon_retain_speech_provider_observation(${admitted!.id}::uuid,${lease}::uuid,jsonb_build_object('requests',1,${meter}::text,'0'),null)`,
+                                    ),
+                                ).rejects.toThrow('pinned provider contract');
+                            }
                             await tx`update speech_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where id=${admitted!.id}::uuid`;
                             await expect(
                                 tx.savepoint(

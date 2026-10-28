@@ -1,4 +1,5 @@
 import type { TextAiProviderRuntimeOptions } from './text-ai-provider-runtime-observer';
+import { nativeTextPolicyFingerprint } from './native-text-policy-identity';
 import { parseCreditMilli } from '../../../ai-credits/domain/exact-credit-amount';
 import {
     createTextAiMastraGeneratorOptions,
@@ -122,6 +123,12 @@ export function resolveTextAiProviderOptions(
         },
         providerBudget: input.budget,
         ...(providerPrice ? { providerPrice } : {}),
+        ...(input.authorizeNativeCall
+            ? { authorizeNativeCall: input.authorizeNativeCall }
+            : {}),
+        ...(input.observeNativeCall
+            ? { observeNativeCall: input.observeNativeCall }
+            : {}),
         ...(candidate && input.onProviderFailure
             ? {
                   onProviderFailure: async (failure) => {
@@ -151,11 +158,17 @@ export function validateTextAiRouteRuntimeIdentity(
             candidate.snapshot.providerId === snapshot.providerId &&
             candidate.snapshot.modelId === snapshot.modelId,
     );
+    const current =
+        candidate &&
+        options.currentFingerprint?.(candidate.routeId, authority.flowId);
+    const expected =
+        current && candidate?.providerPrice.nativeRules
+            ? nativeTextPolicyFingerprint(current)
+            : current;
     if (
         !candidate ||
         !options.currentFingerprint ||
-        options.currentFingerprint(candidate.routeId, authority.flowId) !==
-            candidate.fingerprint
+        expected !== candidate.fingerprint
     )
         throw new Error(
             'Approved provider route identity has changed. A matching check is required.',

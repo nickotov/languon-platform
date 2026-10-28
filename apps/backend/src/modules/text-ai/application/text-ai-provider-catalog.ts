@@ -1,5 +1,9 @@
 import type { TextAiRoutingAuthority } from './text-ai-routing-authority';
+import type { ProviderPrice, ProviderExecutionFacts } from '@languon/contracts';
 export interface TextAiProviderBudgetPolicy {
+    nativeProviderPrice?: ProviderPrice;
+    nativeExecutionFacts?: ProviderExecutionFacts;
+    nativeMaxCalls?: number;
     minimumCostMicrosPerRequest?: number;
     inputCostMicrosPerMillionTokens: number;
     maxCostMicrosPerAttempt: number;

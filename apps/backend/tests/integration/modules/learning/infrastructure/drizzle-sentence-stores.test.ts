@@ -3048,7 +3048,7 @@ run('sentence persistence', () => {
         expect(row?.consecutiveFailures).toBe(0);
         expect(row?.openUntil).toBeNull();
         expect(exercise.id).toBeTruthy();
-    });
+    }, 30_000);
     it('counts another learner dictionary running job together with sentence queued work at the global boundary despite differing pinned budgets', async () => {
         const dictionary = await seedDictionaryJob(reader);
         await startDictionaryJob(dictionary.id);

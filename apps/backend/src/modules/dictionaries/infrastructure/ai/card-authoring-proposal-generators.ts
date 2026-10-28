@@ -167,6 +167,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         meteredUsage = readProviderTokenUsage(
                             result.usage,
                             requestLimits,
+                            result,
                         );
                     } catch {
                         throw failure('invalid_output');
@@ -188,7 +189,11 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                 if (!result.usage) return delta;
                 let usage;
                 try {
-                    usage = readProviderTokenUsage(result.usage, requestLimits);
+                    usage = readProviderTokenUsage(
+                        result.usage,
+                        requestLimits,
+                        result,
+                    );
                 } catch {
                     throw failure('invalid_output');
                 }
@@ -207,6 +212,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         meteredUsage = readProviderTokenUsage(
                             error.usage,
                             requestLimits,
+                            error,
                         );
                     } catch {
                         /* Invalid/missing provider meters remain unknown. */

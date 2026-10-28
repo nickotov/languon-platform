@@ -1,6 +1,21 @@
 import { resolve } from 'node:path';
 
 export const backendExecutionFiles = Object.freeze([
+    'tests/integration/database/native-provider-pricing.test.ts',
+    'tests/integration/database/native-financial-admission.test.ts',
+    'tests/integration/database/ai-accounting.test.ts',
+    'tests/unit/modules/ai-credits/interface/provider-prices.routes.test.ts',
+    'tests/integration/database/native-call-monetary-authority.test.ts',
+    'tests/integration/modules/speech/native-speech-accounting.test.ts',
+    'tests/integration/modules/text-ai/native-text-pricing-execution.test.ts',
+    'tests/integration/modules/text-ai/native-probe-pricing.test.ts',
+    'tests/unit/modules/speech/native-speech-provider-observation.test.ts',
+    'tests/unit/modules/text-ai/infrastructure/native-provider-observations.test.ts',
+    'tests/unit/modules/admin-mcp/native-price-verification.test.ts',
+    'tests/unit/modules/ai-credits/infrastructure/native-text-expense.test.ts',
+    'tests/unit/modules/dictionaries/infrastructure/generation-completion-usage.test.ts',
+    'src/modules/ai-credits/domain/native-provider-pricing.test.ts',
+    'src/modules/ai-credits/infrastructure/pricing/provider-price-sources.test.ts',
     'tests/integration/database/model-price-actualization.journeys.test.ts',
     'tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts',
     'tests/integration/modules/texts/text-selection.test.ts',
@@ -36,8 +51,41 @@ export const backendExecutionFiles = Object.freeze([
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
     {
+        file: 'tests/integration/database/native-financial-admission.test.ts',
+        titles: [
+            'rejects an uncovered later dispatch gap before admitting an attempt or issuing HTTP receipts',
+            'admits a covered price transition and pins the complete exclusive action deadline horizon',
+            'preserves extreme native credit evidence while settling unrepresentable USD cost as unknown',
+            'rejects incompatible native text meters in SQL even when TypeScript admission is bypassed',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/text-ai/native-text-pricing-execution.test.ts',
+        titles: [
+            'retains raw reported cost checkpoint when SDK aggregate token usage is absent',
+            'reuses the observed remainder for two sequential SDK calls instead of reserving both full envelopes',
+            'rejects missing, foreign and duplicate receipt sets without losing the real checkpoint',
+            'preserves an incurred reported-cost overrun and blocks the next SDK dispatch before HTTP',
+            ...['deepseek', 'evolink'].flatMap((provider) =>
+                ['operator', 'customer'].flatMap((funding) =>
+                    ['success', 'failure'].map(
+                        (outcome) =>
+                            `native '${provider}' '${funding}' '${outcome}' completes the production SDK and financial action path`,
+                    ),
+                ),
+            ),
+        ],
+    },
+    {
+        file: 'tests/integration/modules/text-ai/native-probe-pricing.test.ts',
+        titles: [
+            'records the entire OpenRouter reported-cost overrun through the real SDK while failing the probe',
+        ],
+    },
+    {
         file: 'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
         titles: [
+            'settles native namespaced card authoring through the production SDK with canonical expense and no flat projection',
             ...['operator', 'customer'].flatMap((funding) =>
                 ['success', 'transport failure'].map(
                     (outcome) =>
@@ -161,7 +209,7 @@ export const flows = [
     },
     {
         id: 'admin-mcp',
-        minimumTests: 2,
+        minimumTests: 3,
         app: 'admin',
         file: 'admin-mcp.journeys.spec.ts',
         grep: '.',

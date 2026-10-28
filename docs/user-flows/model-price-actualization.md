@@ -14,6 +14,8 @@ source_paths:
     - apps/backend/src/modules/ai-credits/application/provider-price-source.ts
     - apps/backend/src/modules/ai-credits/infrastructure/pricing/**
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices.ts
+    - packages/contracts/src/ai-provider-prices.ts
+    - packages/contracts/src/provider-native-pricing.ts
     - apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts
     - apps/backend/src/modules/speech/domain/speech-models.ts
 e2e_command: model-price-actualization
@@ -23,6 +25,7 @@ e2e_scenarios:
     - official-price-preview-and-idempotent-publication
     - bounded-discovery-across-growing-catalogs
 related_features:
+    - model-price-coverage-and-onboarding
     - admin-mcp
     - ai-accounting
     - admin-text-ai-routing
@@ -32,18 +35,22 @@ related_features:
 
 ## What this verifies
 
-An authorized MCP client fetches official provider price metadata, prepares exact
-price previews and publishes immutable provider-cost revisions through the existing
-apply operation. Customer credit tariffs, routing and historical admitted price
-snapshots remain separate. This is an on-demand refresh, with no recurring scheduler
-or paid model generation. New catalog models reuse their provider's reviewed source
-adapter; new provider families need an adapter before prices can refresh.
+An authorized MCP client fetches official provider tariffs, prepares exact native
+price previews and publishes immutable provider-cost revisions through existing
+apply controls. Native rules retain billing units, precision, currencies, component
+minimums and rounding, context tiers, schedules and endpoint applicability. They
+are independent of customer credit tariffs, routing activation and historical pins.
+
+This guide covers publication and continuation. The related
+[native price coverage guide](./model-price-coverage-and-onboarding.md) covers
+read-only verification, exact identities and execution readiness. Refreshing prices
+is on demand and never invokes a paid model.
 
 ## Start the development environment
 
 The registered verification command creates and removes its own disposable loopback
 PostgreSQL and Redis services. Docker is required. The backend journey uses real
-credentials, database stores, the production price source/coordinator and a real
+credentials, database stores, production source parsing/coordinator and a real
 loopback HTTP MCP server. Only external provider metadata is synthetic. Never point
 these tests at the ordinary development database or shared services.
 
@@ -51,84 +58,85 @@ these tests at the ordinary development database or shared services.
 pnpm test:e2e:critical -- --flow ai-execution-contracts
 ```
 
-For ordinary local use, start Languon's documented development environment and opt-in
-MCP listener with `pnpm dev:admin-mcp`. Follow the existing
-[admin MCP guide](./admin-mcp.md) to issue a new token with provider-price write
-permission. Existing tokens retain their issuance-time action snapshot and therefore
-do not gain this tool automatically. Do not paste token secrets into examples,
-logs or chat. Keep the listener loopback-only.
+For ordinary local use, start the documented development environment and opt-in MCP
+listener with `pnpm dev:admin-mcp`. Follow the existing [admin MCP guide](./admin-mcp.md)
+to issue a new credential with provider-price write permission. The issuance snapshot
+must include `provider-prices.native-write` and `provider-prices.actualize-native.v1`.
+Existing credentials retain their old flat authority; they do not gain native writes
+by upgrading the application. A newly issued read-enabled credential can inspect and
+verify prices. Keep the listener loopback-only and secrets out of logs and examples.
 
 ## API verification
 
-1. Initialize the MCP connection and discover tools with the new scoped token.
-   Confirm `actualize_model_prices` appears alongside `admin_apply`.
+1. Initialize and discover tools with the newly scoped credential. Confirm
+   `actualize_model_prices` and `admin_apply` appear. The legacy flat preview tool
+   cannot accept native rules; `preview_provider_prices_native_write` is separately
+   action-scoped.
 2. Call `actualize_model_prices` with an audited `reason`. Omit `models` to inspect
-   configured active text and speech catalog models in pages of at most 50. The
-   response includes `totalModels` and `nextOffset`; alternatively select at most
-   50 exact provider/model/meter triples from that catalog. Explicit `models`
-   cannot be combined with `offset`.
-3. Inspect each result. `preview` includes the exact old/proposed values and a
-   five-minute preview ID; `unchanged` requires no publication. `unsupported`,
-   `unavailable` and `skipped` preserve the existing price. The tool returns
-   `applied: false`; fetching never publishes provider prices by itself.
-4. Publish each intended preview with `admin_apply`, using a stable UUID
-   `operationKey`. Retry the same preview/key pair after interruption. Confirm the
-   receipt and new version through `providers_inspect` with a read-enabled token.
-5. Apply the current page's intended previews before continuing so they do not
-   expire while later pages are fetched. If `nextOffset` is a number, call
-   `actualize_model_prices` with that `offset` and the same reason, then repeat
-   until `nextOffset` is null. Keep the catalog configuration stable during a
-   paged refresh; restart discovery if models or provider credentials change.
-6. Refresh again after publication. Identical numerical rates return `unchanged`.
-   Changing a price between preview and apply must reject the stale preview.
+   real catalog entries, including unconfigured and retired identities, in pages of
+   at most 50. Alternatively select at most 50 exact provider/model/meter triples.
+   Explicit `models` cannot be combined with `offset`.
+3. Inspect each result's source verification, stored-price comparison, publication
+   and execution-readiness fields. `preview` contains old/proposed values and a
+   five-minute ID. Native revisions contain `nativeRules`; legacy numerical amount
+   fields are null. `unchanged` needs no publication. Retired/missing exact identities,
+   failed sources and scheduled revisions remain explicit and preserve current data.
+4. Publish each intended preview with `admin_apply` and a stable UUID `operationKey`.
+   Reuse the same preview/key pair after interruption. Confirm the receipt and version
+   through `providers_inspect` with read authority.
+5. Apply the current page's intended previews before fetching later pages. When
+   `nextOffset` is a number, call again with that `offset` and the same reason until
+   `nextOffset` is null. Keep catalog configuration stable during traversal; restart
+   at offset zero if models or credentials change.
+6. Refresh again after publication. Identical monetary rules return `unchanged`;
+   retrieval time alone does not publish another revision. A concurrent price change
+   or expired preview must reject apply and require a fresh preview.
 
-Expected result: only compatible official rates create previews. No arbitrary URL,
-provider secret, paid request, customer tariff update or route activation occurs.
+Expected result: exact source-backed native revisions are published once. Price
+publication does not switch models, authorize generation or change customer tariffs.
 
 ## System verification
 
-Official OpenRouter catalog and endpoint metadata must agree on representable flat
-rates. Per-token rates convert exactly to USD per million tokens, and supported
-character rates convert to USD per 1,000 characters. Missing cache prices remain
-unknown. Conditional tiers, endpoint variation, incompatible units or precision
-produce explicit unsupported results rather than estimates. Providers without a
-reviewed source adapter retain their manually published prices.
+Reviewed adapters cover the current DeepSeek, EvoLink, Kie and OpenRouter catalog.
+Conditional prices retain their conditions instead of being flattened or labelled
+unsupported merely because their units differ. Unknown source shapes fail explicitly.
+A retired model's old URL can point to a replacement; verify the exact model identity
+and never substitute its new occupants' prices.
 
-The mapped journey uses a new synthetic model ID to prove discovery is by exact ID,
-not a duplicate pricing model list. It retains an old pinned price, publishes a new
-revision once despite replay, reads back the new rate and confirms the old revision
-and pinned value stay unchanged. This proves immutable price publication and
-snapshot retention; the broader execution stage retains actual admission and
-settlement coverage for existing generation capabilities.
+Native rules are authoritative. Old flat pins retain their original meaning, and new
+native records leave old flat amount fields null so incompatible workers fail closed.
+Native TS/SQL calculation, admission bounds and execution/settlement are separately
+covered by financial execution tests in the same critical stage. Source verification
+alone proves neither invoice reconciliation nor model availability.
 
 ## E2E coverage
 
-- `official-price-preview-and-idempotent-publication` proves scoped HTTP discovery,
-  real source parsing with synthetic external metadata, non-publishing preview,
-  exact persisted publication, replay without another revision, stale rejection,
-  unchanged refresh, audit and historical pinned-rate retention.
+- `official-price-preview-and-idempotent-publication` proves scoped real HTTP
+  discovery, native source parsing with synthetic metadata, non-publishing preview,
+  exact persisted publication/replay, stale rejection, unchanged refresh, audit and
+  retained legacy pinned rates. It also rejects native rules through the flat writer.
 - `bounded-discovery-across-growing-catalogs` proves a 51-model catalog returns
-  50 then one preview through real HTTP, reports continuation and total count,
-  includes every model exactly once and leaves publication to apply.
+  50 then one native preview, reports continuation/count, includes each model exactly
+  once and leaves publication to apply.
 
-The same integration file verifies old/read-only token exclusion, revocation before
-metadata fetch/apply, expired previews and preservation of scheduled future prices.
-Pure conversion, source errors, malformed metadata and exhaustive pricing variants
-remain in focused unit tests. Existing admin MCP browser coverage owns token form
-rendering and issuance; this feature adds no application screen or control.
+The same integration file verifies old/read-only authority exclusion, revocation,
+expired previews and future price schedules. Its related coverage guide owns the
+read-only verification scenario. Official-shape source fixtures cover all providers;
+exhaustive native arithmetic and TS/SQL parity stay at lower layers.
 
 ## Expected failure and edge cases
 
-- Missing, expired or revoked credential: deny before tool execution.
-- Old token lacking the new action, or missing write authority: omit the tool and
-  deny direct invocation. Issue a replacement through admin; MCP cannot self-expand.
-- Unsupported provider/model, ambiguous tiers or incompatible meter: report the
-  model explicitly and retain its existing price.
-- Unavailable/invalid official metadata: preserve rates and report failure without
-  leaking upstream response bodies or credentials.
-- Future price revision already scheduled: skip it instead of overriding intent.
-- Stale or expired preview: refresh and review a new preview. Never force apply.
-- Interrupted apply: reuse the same preview and operation key to receive its receipt.
+- Missing, expired or revoked credentials: deny before tool work.
+- Old pricing action snapshot: omit the native method and reject direct invocation;
+  issue a replacement through admin rather than expanding old authority.
+- Native payload through the legacy flat writer: reject without a preview or update.
+- Retired or absent exact identity: report it; do not publish a replacement price or
+  reactivate the retired route.
+- Invalid/stale source, calendar coverage or native rule shape: preserve prices and
+  report the source failure without guessing values or exposing raw credentials.
+- Future price revision: preserve its scheduled publication.
+- Stale or expired preview: fetch a new preview; never force apply.
+- Interrupted apply: reuse the exact preview and operation key.
 
 ## Automated regression checks
 
@@ -138,23 +146,21 @@ pnpm docs:user-flows:check
 pnpm test:e2e:critical -- --flow ai-execution-contracts
 ```
 
-The registered execution stage includes the exact mapped integration file and
-requires executed tests. A test file skipped because disposable configuration is
-absent is not successful journey evidence. Shared financial changes also require
-the complete critical gate before feature completion.
+The registered stage executes the exact mapped file on owned disposable services.
+Skipped DB tests are missing evidence. Shared accounting changes also require the
+complete critical gate before feature handoff.
 
 ## Troubleshooting
 
-If discovery omits the tool, inspect the token's permission and immutable allowed
-actions; replace an older credential through admin. Unsupported rates need a
-reviewed provider adapter or compatible pricing contract, not a guessed rate.
-Unavailable results require checking official metadata availability and bounded
-network access. A stale preview requires rereading the current version. Use
-correlation references for errors, never raw credential or provider response dumps.
+Missing methods usually require checking listener version and the credential's
+immutable actions, not changing its existing row. Source failures require current
+exact-model documentation or a reviewed adapter correction. Different native units
+are not a reason to invent a character price. A verified tariff can coexist with a
+blocked execution prerequisite; inspect those independent fields. Use correlation
+references and never paste raw credentials or upstream response dumps.
 
 ## Cleanup
 
 The critical runner stops only its owned services; the journey closes its own HTTP
-listener and database client. Normal local use leaves existing infrastructure and
-prices intact. Do not reset ordinary development databases, delete shared volumes
-or revoke unrelated real tokens to reproduce this journey.
+listener and database client. Do not reset development databases, delete shared
+volumes or revoke unrelated tokens. Ordinary price updates retain immutable history.

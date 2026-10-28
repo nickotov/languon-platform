@@ -52,7 +52,7 @@ export const aiProviderPriceRevisionsTable = pgTable(
         check('ai_provider_price_version_positive', sql`${t.version}>0`),
         check(
             'ai_provider_price_meter',
-            sql`${t.meter} in ('text-tokens','speech-characters')`,
+            sql`${t.meter} in ('text-tokens','speech-characters','speech-tokens')`,
         ),
     ],
 );

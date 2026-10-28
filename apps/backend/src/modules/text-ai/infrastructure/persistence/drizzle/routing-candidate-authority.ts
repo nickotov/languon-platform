@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { ProviderPriceSchema, type ProviderPrice } from '@languon/contracts';
 import type { TextAiRoutingTransaction } from './drizzle-text-ai-routing-store';
+import { nativeTextAiRequestPolicyRevision } from '../../ai/text-ai-provider-catalog';
 
 /** A bounded set (primary + at most four alternatives), checked in one statement.
  * The existing SQL health authority remains the sole runtime decision maker. */
@@ -15,13 +16,23 @@ export async function readRoutingCandidateAuthorities(
     flowId: string,
     at: Date,
     checkHealth = true,
-): Promise<Map<string, { allowed: boolean; price: ProviderPrice | null }>> {
+): Promise<
+    Map<
+        string,
+        { allowed: boolean; price: ProviderPrice | null; fingerprint: string }
+    >
+> {
     if (!candidates.length) return new Map();
     const rows = await tx.execute(sql`
-        select requested.route_id, ${
+        select requested.route_id,
+        case when price.data ? 'nativeRules' then
+          encode(sha256(convert_to(requested.fingerprint || ':' || ${nativeTextAiRequestPolicyRevision},'UTF8')),'hex')
+        else requested.fingerprint end as effective_fingerprint, ${
             checkHealth
                 ? sql`public.languon_text_ai_route_dispatch_allowed(
-            requested.route_id,${flowId},requested.fingerprint,${at.toISOString()}::timestamptz)`
+            requested.route_id,${flowId},case when price.data ? 'nativeRules' then
+              encode(sha256(convert_to(requested.fingerprint || ':' || ${nativeTextAiRequestPolicyRevision},'UTF8')),'hex')
+            else requested.fingerprint end,${at.toISOString()}::timestamptz)`
                 : sql`true`
         } as allowed,
         price.data || jsonb_build_object(
@@ -51,6 +62,7 @@ export async function readRoutingCandidateAuthorities(
             String(row.route_id),
             {
                 allowed: row.allowed === true,
+                fingerprint: String(row.effective_fingerprint),
                 price:
                     row.price === null
                         ? null

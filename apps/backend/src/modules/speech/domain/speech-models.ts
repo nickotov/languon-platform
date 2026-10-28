@@ -86,6 +86,18 @@ export const OPENROUTER_ELEVEN_VOICES = Object.freeze([
     'will',
 ]);
 
+export interface SpeechNativeBillingDefinition {
+    readonly meter: 'speech-tokens';
+    readonly usageBounds: {
+        readonly inputTokens: number;
+        readonly audioOutputTokens: number;
+        readonly requests: 1;
+    };
+    readonly sourceUrl: string;
+    /** Upstream model limits alone do not prove a broker task's total charge cap. */
+    readonly providerTaskBoundVerified: boolean;
+}
+
 export interface SpeechModelDefinition {
     readonly providerId: string;
     readonly modelId: string;
@@ -94,6 +106,7 @@ export interface SpeechModelDefinition {
     readonly settingsVersions: readonly string[] | null;
     readonly defaultSettingsVersion: string;
     readonly maxCharacters: number;
+    readonly nativeBilling?: SpeechNativeBillingDefinition;
 }
 
 /** Closed reviewed definitions shared by configuration and customer tariff discovery. */
@@ -155,6 +168,17 @@ export const SPEECH_MODEL_CATALOG: readonly SpeechModelDefinition[] =
         Object.freeze({
             providerId: 'kie',
             modelId: KIE_GEMINI_MODEL,
+            nativeBilling: Object.freeze({
+                meter: 'speech-tokens' as const,
+                usageBounds: Object.freeze({
+                    inputTokens: 8192,
+                    audioOutputTokens: 16384,
+                    requests: 1 as const,
+                }),
+                sourceUrl:
+                    'https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-lite-tts',
+                providerTaskBoundVerified: false,
+            }),
             languageCodes: Object.freeze({
                 ar: 'ar',
                 de: 'de',

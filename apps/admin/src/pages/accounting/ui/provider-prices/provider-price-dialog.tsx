@@ -5,23 +5,39 @@ import type {
 import { useTranslate } from '@refinedev/core';
 import { Alert, Button, Form, Input, Modal, Select, Typography } from 'antd';
 
+import { NativeProviderPriceDialog } from './native-provider-price-dialog';
+
 type Request = (typeof ProviderPricePublishRequestSchema)['_input'];
 type Fields = Omit<Request, 'expectedVersion'>;
-export function ProviderPriceDialog({
-    price,
-    pending,
-    error,
-    onSubmit,
-    onClose,
-    onReload,
-}: {
+type Props = {
     price: ProviderPrice | null;
     pending: boolean;
     error: string | null;
     onSubmit(body: Request): Promise<void>;
     onClose(): void;
     onReload(): void;
-}) {
+};
+
+export function ProviderPriceDialog(props: Props) {
+    if (props.price?.nativeRules) {
+        return (
+            <NativeProviderPriceDialog
+                price={props.price}
+                onClose={props.onClose}
+            />
+        );
+    }
+    return <LegacyProviderPriceDialog {...props} />;
+}
+
+function LegacyProviderPriceDialog({
+    price,
+    pending,
+    error,
+    onSubmit,
+    onClose,
+    onReload,
+}: Props) {
     const t = useTranslate();
     const [form] = Form.useForm<Fields>();
     const meter =

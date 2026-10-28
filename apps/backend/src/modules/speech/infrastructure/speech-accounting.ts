@@ -5,6 +5,8 @@ import type { AiCreditTransaction } from '../../ai-credits/infrastructure/persis
 import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
 import { pinProviderPrice } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import { providerSpeechExpenseMicros } from '../../ai-credits/domain/provider-expense';
+import { evaluateNativeProviderCost } from '../../ai-credits/domain/native-provider-pricing';
+import { findSpeechModel } from '../domain/speech-models';
 import {
     DrizzleOperatorBudgetParticipant,
     OperatorBudgetUnavailableError,
@@ -24,13 +26,41 @@ export async function authorizeSpeechAccounting(
         at: Date;
     },
 ) {
+    const nativeBilling =
+        input.profile.nativeBilling ??
+        findSpeechModel(input.profile.provider, input.profile.model)
+            ?.nativeBilling;
+    // A model serving limit is useful evidence, but not a broker's task cost cap.
+    if (nativeBilling && !nativeBilling.providerTaskBoundVerified)
+        throw new SpeechError('speech_provider_unavailable', 503);
     const price = await pinProviderPrice(tx, {
         providerId: input.profile.provider,
         modelId: input.profile.model,
-        meter: 'speech-characters',
+        meter: nativeBilling?.meter ?? 'speech-characters',
         at: input.at,
     });
-    const maximum = providerSpeechExpenseMicros(price, input.characters);
+    const nativeMaximum = price?.nativeRules
+        ? evaluateNativeProviderCost(
+              price.nativeRules,
+              {
+                  dispatchedAt: input.at.toISOString(),
+                  latestDispatchAt: new Date(
+                      input.at.getTime() + 120_000,
+                  ).toISOString(),
+              },
+              {
+                  ...(nativeBilling?.usageBounds ?? {}),
+                  characters: input.characters,
+                  requests: 1,
+              },
+              'upper-bound',
+          )
+        : null;
+    const maximum = nativeMaximum
+        ? nativeMaximum.status === 'calculated'
+            ? nativeMaximum.micros
+            : null
+        : providerSpeechExpenseMicros(price, input.characters);
     if (!price || maximum === null)
         throw new SpeechError('speech_provider_unavailable', 503);
     const settings = await new DrizzleCapabilityPolicyParticipant(
@@ -70,6 +100,7 @@ export async function authorizeSpeechAccounting(
             ? {}
             : { minimumUsdPerRequest: price.minimumUsdPerRequest }),
         effectiveAt: price.effectiveAt,
+        ...(price.nativeRules ? { nativeRules: price.nativeRules } : {}),
     };
 }
 

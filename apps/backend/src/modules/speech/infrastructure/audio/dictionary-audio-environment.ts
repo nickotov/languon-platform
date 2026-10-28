@@ -169,6 +169,9 @@ export function loadDictionaryAudioEnvironment(
                 language: model.languageCodes[language]!,
                 provider: env.DICTIONARY_AUDIO_PROVIDER,
                 configurationId: env.DICTIONARY_AUDIO_CONFIGURATION_ID,
+                ...(model.nativeBilling
+                    ? { nativeBilling: model.nativeBilling }
+                    : {}),
             };
         }
     }

@@ -191,7 +191,7 @@ export function createSentenceAiProvider(options: {
             }
         })();
         call.signal.throwIfAborted();
-        const usage = validateUsage(result.usage, limits);
+        const usage = validateUsage(result.usage, limits, result);
         // A strict SDK schema tripwire is invalid model output, not a transport retry.
         if (result.tripwire?.processorId === 'structured-output')
             throw new SentenceProviderInvalidModelOutputError(
@@ -341,10 +341,11 @@ function restoreEntryId(
 function validateUsage(
     reported: unknown,
     limits: { maxInputTokens: number; maxOutputTokens: number },
+    transportResult?: unknown,
 ): SentenceTokenUsage | undefined {
     if (reported === undefined || reported === null) return undefined;
     try {
-        return readProviderTokenUsage(reported, limits);
+        return readProviderTokenUsage(reported, limits, transportResult);
     } catch {
         throw new SentenceProviderInvalidModelOutputError('usage_invalid');
     }

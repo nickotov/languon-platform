@@ -1,7 +1,7 @@
 -- Numerical provenance is resolved behind this seam; worker callers cannot select arbitrary rates.
 CREATE OR REPLACE FUNCTION languon_text_provider_expense_identity(attempt_value uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE a public.ai_credit_action_attempts%ROWTYPE; k text; execution_value jsonb; snapshot_value jsonb; price_value jsonb; p public.ai_provider_price_revisions%ROWTYPE; provider_value text; model_value text; amount_value bigint; numerator numeric; ref text;
+DECLARE a public.ai_credit_action_attempts%ROWTYPE; k text; execution_value jsonb; snapshot_value jsonb; price_value jsonb; p public.ai_provider_price_revisions%ROWTYPE; provider_value text; model_value text; amount_value bigint; numerator numeric; ref text; native_result jsonb;
 BEGIN
   SELECT * INTO a FROM public.ai_credit_action_attempts WHERE id=attempt_value;
   IF NOT FOUND OR a.state<>'settled' THEN RAISE EXCEPTION 'Expense requires its settled authoritative attempt' USING ERRCODE='23514'; END IF;
@@ -26,7 +26,10 @@ BEGIN
   IF execution_value->>'actionAccountingVersion' IS DISTINCT FROM '1' OR p.id IS NULL OR p.provider_id IS DISTINCT FROM provider_value OR p.model_id IS DISTINCT FROM model_value OR p.meter<>'text-tokens' OR p.version IS DISTINCT FROM (price_value->>'version')::integer OR p.effective_at>a.created_at THEN
     RAISE EXCEPTION 'Expense requires its immutable reviewed provider pin' USING ERRCODE='23514';
   END IF;
-  IF a.input_tokens IS NOT NULL AND a.output_tokens IS NOT NULL THEN
+  IF p.data ? 'nativeRules' THEN
+    native_result:=public.languon_native_parent_expense(p.data,a.id,a.provider_usage->'calls');
+    IF native_result->>'status'='calculated' THEN amount_value:=(native_result->>'amountUsdMicros')::bigint; END IF;
+  ELSIF a.input_tokens IS NOT NULL AND a.output_tokens IS NOT NULL THEN
     IF a.input_tokens<0 OR a.output_tokens<0 OR a.input_tokens>a.input_limit OR a.output_tokens>a.output_limit OR coalesce(a.cache_read_tokens,0)+coalesce(a.cache_write_tokens,0)>a.input_tokens THEN RAISE EXCEPTION 'Expense meters exceed admitted attempt' USING ERRCODE='23514'; END IF;
     IF p.data->>'inputUsdPerMillionTokens' IS NOT NULL AND p.data->>'outputUsdPerMillionTokens' IS NOT NULL
        AND (coalesce(a.cache_read_tokens,0)=0 OR p.data->>'cacheReadUsdPerMillionTokens' IS NOT NULL)
@@ -38,7 +41,7 @@ BEGIN
       amount_value:=greatest(ceil(numerator)::bigint,CASE WHEN a.input_tokens+a.output_tokens>0 THEN ceil(coalesce((p.data->>'minimumUsdPerRequest')::numeric,0)*1000000)::bigint ELSE 0 END); -- USD/token-million * micro-USD/USD cancels exactly.
     END IF;
   END IF;
-  RETURN jsonb_build_object('attemptId',a.id,'actionId',a.action_id,'attemptReference',ref||a.id::text,'sourceKind','text-attempt','providerId',provider_value,'modelId',model_value,'measurement',CASE WHEN a.input_tokens IS NOT NULL AND a.output_tokens IS NOT NULL THEN 'measured' ELSE 'unknown' END,'costSource',CASE WHEN amount_value IS NULL THEN 'unknown' ELSE 'calculated' END,'amountUsdMicros',amount_value::text,'occurredAt',a.created_at);
+  RETURN jsonb_build_object('attemptId',a.id,'actionId',a.action_id,'attemptReference',ref||a.id::text,'sourceKind','text-attempt','providerId',provider_value,'modelId',model_value,'measurement',CASE WHEN (p.data ? 'nativeRules' AND amount_value IS NOT NULL) OR (a.input_tokens IS NOT NULL AND a.output_tokens IS NOT NULL) THEN 'measured' ELSE 'unknown' END,'costSource',CASE WHEN amount_value IS NULL THEN 'unknown' ELSE 'calculated' END,'amountUsdMicros',amount_value::text,'occurredAt',a.created_at);
 END $$;
 REVOKE ALL ON FUNCTION languon_text_provider_expense_identity(uuid) FROM PUBLIC;
 
@@ -69,28 +72,60 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION languon_record_text_provider_expense(uuid,jsonb) FROM PUBLIC;
 
-CREATE OR REPLACE FUNCTION languon_settle_text_provider_attempt(attempt_value uuid, successful_value boolean, input_value integer, output_value integer, read_value integer, write_value integer, at_value timestamptz) RETURNS void
+CREATE OR REPLACE FUNCTION languon_settle_text_provider_attempt(attempt_value uuid, successful_value boolean, input_value integer, output_value integer, read_value integer, write_value integer, at_value timestamptz, observations_value jsonb) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE a public.ai_credit_action_attempts%ROWTYPE; owner_value uuid; e jsonb; cost_value bigint; o public.ai_operator_attempt_costs%ROWTYPE; settled_value timestamptz:=date_trunc('milliseconds',clock_timestamp());
+DECLARE a public.ai_credit_action_attempts%ROWTYPE; owner_value uuid; e jsonb; cost_value bigint; o public.ai_operator_attempt_costs%ROWTYPE; settled_value timestamptz:=date_trunc('milliseconds',clock_timestamp()); calls_value jsonb; usage_value jsonb; facts_value jsonb; native_value boolean; k text; v jsonb;
 BEGIN
   SELECT c.owner_id INTO owner_value FROM public.ai_credit_action_attempts t JOIN public.ai_credit_actions c ON c.id=t.action_id WHERE t.id=attempt_value;
   IF owner_value IS NULL THEN RAISE EXCEPTION 'Provider attempt is unavailable' USING ERRCODE='23514'; END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended(owner_value::text,1920424381)); PERFORM pg_advisory_xact_lock(1920424395);
   SELECT * INTO a FROM public.ai_credit_action_attempts WHERE id=attempt_value FOR UPDATE;
+  native_value:=a.budget ? 'nativeProviderPrice';
+  IF observations_value IS NOT NULL AND (NOT public.languon_native_object(observations_value,ARRAY['usage','execution','calls']) OR octet_length(observations_value::text)>131072) THEN RAISE EXCEPTION 'Invalid provider observations' USING ERRCODE='23514'; END IF;
   IF a.state='settled' THEN
+    IF observations_value ? 'usage' AND observations_value->'usage' IS DISTINCT FROM (a.provider_usage-'calls') THEN RAISE EXCEPTION 'Provider usage replay differs' USING ERRCODE='23514'; END IF;
+    IF observations_value ? 'execution' AND observations_value->'execution' IS DISTINCT FROM a.provider_execution_facts THEN RAISE EXCEPTION 'Provider execution replay differs' USING ERRCODE='23514'; END IF;
+    IF observations_value ? 'calls' AND observations_value->'calls' IS DISTINCT FROM a.provider_usage->'calls' THEN RAISE EXCEPTION 'Provider observation replay differs' USING ERRCODE='23514'; END IF;
     IF (a.input_tokens,a.output_tokens,a.cache_read_tokens,a.cache_write_tokens,a.successful) IS DISTINCT FROM (input_value,output_value,read_value,write_value,CASE WHEN successful_value AND input_value IS NOT NULL AND output_value IS NOT NULL THEN 1 ELSE 0 END) THEN RAISE EXCEPTION 'Provider attempt replay differs from immutable usage' USING ERRCODE='23514'; END IF;
     PERFORM public.languon_record_text_provider_expense(attempt_value,NULL); RETURN;
   END IF;
   IF (input_value IS NULL) IS DISTINCT FROM (output_value IS NULL) OR input_value<0 OR output_value<0 OR input_value>a.input_limit OR output_value>a.output_limit OR coalesce(read_value,0)<0 OR coalesce(write_value,0)<0 OR coalesce(read_value,0)+coalesce(write_value,0)>input_value THEN RAISE EXCEPTION 'Invalid provider usage meters' USING ERRCODE='23514'; END IF;
+  IF native_value THEN
+    calls_value:=public.languon_native_parent_calls(attempt_value);
+    IF observations_value ? 'calls' AND observations_value->'calls' IS DISTINCT FROM calls_value THEN RAISE EXCEPTION 'Provider calls differ from DB checkpoint evidence' USING ERRCODE='23514'; END IF;
+    -- The DB checkpoint is authoritative even when SDK token totals are unavailable.
+    IF input_value IS NOT NULL AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(calls_value) c WHERE c->'usage'->>'inputTokens' IS NULL OR c->'usage'->>'outputTokens' IS NULL) AND
+      ((SELECT coalesce(sum((c->'usage'->>'inputTokens')::bigint),0) FROM jsonb_array_elements(calls_value)c)<>input_value OR
+       (SELECT coalesce(sum((c->'usage'->>'outputTokens')::bigint),0) FROM jsonb_array_elements(calls_value)c)<>output_value) THEN RAISE EXCEPTION 'Aggregate provider meters differ from DB checkpoints' USING ERRCODE='23514'; END IF;
+    usage_value:=coalesce(observations_value->'usage','{}'::jsonb);
+    facts_value:=observations_value->'execution';
+    IF NOT public.languon_native_object(usage_value,ARRAY['inputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','audioOutputTokens','characters','requests','providerCreditsConsumed','providerCostUsd']) OR (facts_value IS NOT NULL AND NOT public.languon_native_object(facts_value,ARRAY['endpointId','serviceTier'])) THEN RAISE EXCEPTION 'Invalid aggregate native observation fields' USING ERRCODE='23514'; END IF;
+    FOR k,v IN SELECT * FROM jsonb_each(usage_value) LOOP
+      IF k IN ('providerCreditsConsumed','providerCostUsd') THEN IF jsonb_typeof(v)<>'string' THEN RAISE EXCEPTION 'Invalid aggregate reported amount' USING ERRCODE='23514'; END IF; PERFORM public.languon_native_decimal(v#>>'{}');
+      ELSE PERFORM public.languon_native_count(v); END IF;
+    END LOOP;
+    IF usage_value ? 'requests' AND (usage_value->>'requests')::numeric NOT IN (0,1) THEN RAISE EXCEPTION 'Invalid aggregate native requests' USING ERRCODE='23514'; END IF;
+    FOR k,v IN SELECT * FROM jsonb_each(coalesce(facts_value,'{}'::jsonb)) LOOP IF jsonb_typeof(v)<>'string' OR length(btrim(v#>>'{}')) NOT BETWEEN 1 AND 200 THEN RAISE EXCEPTION 'Invalid aggregate execution selector' USING ERRCODE='23514'; END IF; END LOOP;
+    usage_value:=usage_value||jsonb_build_object('calls',calls_value);
+  ELSE
+    IF observations_value IS NOT NULL THEN RAISE EXCEPTION 'Legacy attempts do not accept native observations' USING ERRCODE='23514'; END IF;
+  END IF;
   -- The trigger validates immutable identity; price accounting is derived after these trusted meters persist.
-  UPDATE public.ai_credit_action_attempts SET state='settled',input_tokens=input_value,output_tokens=output_value,cache_read_tokens=read_value,cache_write_tokens=write_value,successful=CASE WHEN successful_value AND input_value IS NOT NULL THEN 1 ELSE 0 END,actual_cost_micros=NULL,settled_at=settled_value WHERE id=attempt_value;
+  UPDATE public.ai_credit_action_attempts SET state='settled',provider_usage=usage_value,provider_execution_facts=facts_value,input_tokens=input_value,output_tokens=output_value,cache_read_tokens=read_value,cache_write_tokens=write_value,successful=CASE WHEN successful_value AND input_value IS NOT NULL THEN 1 ELSE 0 END,actual_cost_micros=NULL,settled_at=settled_value WHERE id=attempt_value;
   e:=public.languon_text_provider_expense_identity(attempt_value); cost_value:=(e->>'amountUsdMicros')::bigint;
   UPDATE public.ai_credit_action_attempts SET actual_cost_micros=cost_value WHERE id=attempt_value AND actual_cost_micros IS DISTINCT FROM cost_value;
   SELECT * INTO o FROM public.ai_operator_attempt_costs WHERE attempt_id=attempt_value AND action_id=a.action_id FOR UPDATE;
-  IF o.attempt_id IS NULL OR (cost_value IS NOT NULL AND cost_value>o.reserved_micros) THEN RAISE EXCEPTION 'Provider cost exceeds its authoritative reservation' USING ERRCODE='23514'; END IF;
-  UPDATE public.ai_operator_attempt_costs SET consumed_micros=coalesce(cost_value,reserved_micros),measurement=CASE WHEN cost_value IS NULL THEN 'conservative' ELSE 'measured' END,settled_at=settled_value WHERE attempt_id=attempt_value AND settled_at IS NULL;
+  IF o.attempt_id IS NULL OR (cost_value IS NOT NULL AND cost_value>o.reserved_micros AND NOT native_value) THEN RAISE EXCEPTION 'Provider cost exceeds its authoritative reservation' USING ERRCODE='23514'; END IF;
   PERFORM public.languon_record_text_provider_expense(attempt_value,NULL);
+  UPDATE public.ai_operator_attempt_costs SET consumed_micros=coalesce(cost_value,reserved_micros),measurement=CASE WHEN cost_value IS NULL THEN 'conservative' ELSE 'measured' END,settled_at=settled_value WHERE attempt_id=attempt_value AND settled_at IS NULL;
 END $$;
+REVOKE ALL ON FUNCTION languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz,jsonb) FROM PUBLIC;
+
+-- Preserve the historical seven-argument API for legacy callers and old pins.
+CREATE OR REPLACE FUNCTION languon_settle_text_provider_attempt(attempt_value uuid, successful_value boolean, input_value integer, output_value integer, read_value integer, write_value integer, at_value timestamptz) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+ SELECT public.languon_settle_text_provider_attempt(attempt_value,successful_value,input_value,output_value,read_value,write_value,at_value,NULL::jsonb);
+$$;
 REVOKE ALL ON FUNCTION languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz) FROM PUBLIC;
 
 -- Append-only financial facts accept only exact closed numerical provenance.

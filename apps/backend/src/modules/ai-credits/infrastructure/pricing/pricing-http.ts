@@ -1,17 +1,61 @@
 const MAXIMUM_BYTES = 2 * 1024 * 1024;
+const origins = new Set([
+    'https://openrouter.ai',
+    'https://api-docs.deepseek.com',
+    'https://api.evolink.ai',
+    'https://kie.ai',
+    'https://api.kie.ai',
+]);
 
 /** Fixed official URLs are constructed by adapters, never accepted from an MCP argument. */
 export async function readPricingJson(
     fetcher: typeof fetch,
     url: URL,
     signal?: AbortSignal,
+    body?: {
+        pageNum: number;
+        pageSize: number;
+        modelDescription: string;
+        interfaceType: string;
+    },
 ): Promise<unknown> {
-    if (url.origin !== 'https://openrouter.ai' || url.username || url.password)
+    return JSON.parse(
+        await readPricingText(fetcher, url, signal, body),
+    ) as unknown;
+}
+
+export async function readPricingText(
+    fetcher: typeof fetch,
+    url: URL,
+    signal?: AbortSignal,
+    body?: {
+        pageNum: number;
+        pageSize: number;
+        modelDescription: string;
+        interfaceType: string;
+    },
+): Promise<string> {
+    signal?.throwIfAborted();
+    if (!origins.has(url.origin) || url.username || url.password || url.hash)
         throw new Error('Unsupported pricing source origin.');
+    if (
+        body &&
+        (url.origin !== 'https://api.kie.ai' ||
+            url.pathname !== '/client/v1/model-pricing/page' ||
+            url.search)
+    )
+        throw new Error('Unsupported pricing source request.');
     const bounded = AbortSignal.timeout(10_000);
     const response = await fetcher(url, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
+        method: body ? 'POST' : 'GET',
+        headers: body
+            ? {
+                  Accept: 'application/json',
+                  'Content-Type': 'application/json',
+                  'Cache-Control': 'no-cache',
+              }
+            : { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+        ...(body ? { body: JSON.stringify(body) } : {}),
         redirect: 'error',
         signal: signal ? AbortSignal.any([signal, bounded]) : bounded,
     });
@@ -38,5 +82,5 @@ export async function readPricingJson(
         await reader.cancel();
         reader.releaseLock();
     }
-    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
+    return Buffer.concat(chunks).toString('utf8');
 }

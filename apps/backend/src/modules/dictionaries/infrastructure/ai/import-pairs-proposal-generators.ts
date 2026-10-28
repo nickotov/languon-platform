@@ -217,6 +217,7 @@ export function createMastraImportPairsProposalGenerator(options: {
                         meteredUsage = readProviderTokenUsage(
                             result.usage,
                             requestLimits,
+                            result,
                         );
                     } catch {
                         throw failure('invalid_model_output');
@@ -239,6 +240,7 @@ export function createMastraImportPairsProposalGenerator(options: {
                     measuredUsage = readProviderTokenUsage(
                         usage,
                         requestLimits,
+                        result,
                     );
                 } catch {
                     throw failure('invalid_model_output');
@@ -258,6 +260,7 @@ export function createMastraImportPairsProposalGenerator(options: {
                         meteredUsage = readProviderTokenUsage(
                             error.usage,
                             requestLimits,
+                            error,
                         );
                     } catch {
                         /* Invalid/missing provider meters remain unknown. */

@@ -100,17 +100,21 @@ export function createInterviewActionAccounting(input: {
                           usage,
                       )
                     : null;
-            await recordProviderExpense(tx, {
-                attemptReference: `interview:${call.callId}`,
-                attemptId: call.callId,
-                actionId: input.operationId,
-                providerId: snapshot.providerId,
-                modelId: snapshot.modelId,
-                measurement: measured ? 'measured' : 'unknown',
-                costSource: expense !== null ? 'calculated' : 'unknown',
-                amountUsdMicros: expense,
-                occurredAt: attempt?.createdAt ?? new Date(),
-            });
+            await recordProviderExpense(
+                tx,
+                {
+                    attemptReference: `interview:${call.callId}`,
+                    attemptId: call.callId,
+                    actionId: input.operationId,
+                    providerId: snapshot.providerId,
+                    modelId: snapshot.modelId,
+                    measurement: measured ? 'measured' : 'unknown',
+                    costSource: expense !== null ? 'calculated' : 'unknown',
+                    amountUsdMicros: expense,
+                    occurredAt: attempt?.createdAt ?? new Date(),
+                },
+                { nativePrice: input.execution.providerPrice },
+            );
         });
     }
     return {
@@ -219,17 +223,21 @@ export async function settleInterviewAction(
             operation.execution as unknown as ActionInterviewExecution;
         if (!execution.snapshot)
             throw new Error('Pinned interview execution is missing.');
-        await recordProviderExpense(tx, {
-            attemptReference: `interview:${attempt.id}`,
-            attemptId: attempt.id,
-            actionId: operation.id,
-            providerId: execution.snapshot.providerId,
-            modelId: execution.snapshot.modelId,
-            measurement: 'unknown',
-            costSource: 'unknown',
-            amountUsdMicros: null,
-            occurredAt: attempt.createdAt,
-        });
+        await recordProviderExpense(
+            tx,
+            {
+                attemptReference: `interview:${attempt.id}`,
+                attemptId: attempt.id,
+                actionId: operation.id,
+                providerId: execution.snapshot.providerId,
+                modelId: execution.snapshot.modelId,
+                measurement: 'unknown',
+                costSource: 'unknown',
+                amountUsdMicros: null,
+                occurredAt: attempt.createdAt,
+            },
+            { nativePrice: execution.providerPrice },
+        );
     }
     await participant.settle({
         actionId: operation.id,
