@@ -30,3 +30,4 @@ export * from './routing-probes';
 export * from './admin-mcp';
 
 export * from './provider-native-pricing';
+export * from './learning-blocks';

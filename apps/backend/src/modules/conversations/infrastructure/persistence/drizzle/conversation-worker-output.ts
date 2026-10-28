@@ -1,6 +1,6 @@
 import {
     ConversationToolCallSchema,
-    KnowledgeNoteContentSchema,
+    LegacyKnowledgeNoteContentSchema,
     type ConversationToolCall,
     type KnowledgeNoteContent,
 } from '@languon/contracts';
@@ -171,7 +171,7 @@ export async function conversationPropose(
             .values({
                 id: randomUUID(),
                 conversationId: turn.conversationId,
-                content: KnowledgeNoteContentSchema.parse(content),
+                content: LegacyKnowledgeNoteContentSchema.parse(content),
                 targetNoteId: target?.noteId ?? null,
                 expectedNoteVersion: target?.version ?? null,
                 createdAt: now,

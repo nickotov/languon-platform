@@ -1,4 +1,4 @@
-import { KnowledgeNoteContentSchema } from '@languon/contracts';
+import { LegacyKnowledgeNoteContentSchema } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
@@ -83,7 +83,7 @@ export function createContextualTutorTools(
             id: 'propose_knowledge_note',
             description:
                 'Propose one editable, standalone Knowledge note draft or revision. Does not save or overwrite a note. The learner controls saving; the application controls any revision target.',
-            inputSchema: KnowledgeNoteContentSchema,
+            inputSchema: LegacyKnowledgeNoteContentSchema,
             outputSchema: z.object({
                 id: z.string(),
                 status: z.literal('draft'),
@@ -100,7 +100,7 @@ export function createContextualTutorTools(
                                 'A note draft has already been proposed during this response.',
                             );
                         const content =
-                            KnowledgeNoteContentSchema.parse(candidate);
+                            LegacyKnowledgeNoteContentSchema.parse(candidate);
                         proposed = true;
                         const draft = await input.onDraft(content);
                         return {

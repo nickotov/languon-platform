@@ -307,9 +307,11 @@ const BoundedDocumentSchema = z
         };
         visit(document);
     });
-export const KnowledgeBodySchema = z
+/** Frozen prose-only boundary for the legacy note-proposal tool. */
+export const LegacyKnowledgeBodySchema = z
     .object({ schemaVersion: z.literal(1), document: BoundedDocumentSchema })
     .strict();
+export const KnowledgeBodySchema = LegacyKnowledgeBodySchema;
 export type KnowledgeBody = z.infer<typeof KnowledgeBodySchema>;
 export const KnowledgeNoteContentSchema = z
     .object({
@@ -342,6 +344,11 @@ export const KnowledgeNoteContentSchema = z
         explanationLanguage: AssistantLanguageSchema.nullable(),
     })
     .strict();
+/** New document readers must not implicitly widen legacy agent write authority. */
+export const LegacyKnowledgeNoteContentSchema =
+    KnowledgeNoteContentSchema.extend({
+        body: LegacyKnowledgeBodySchema,
+    });
 /** Incomplete private edits are recoverable; publication applies the stricter note rules. */
 export const KnowledgeWorkingContentSchema = KnowledgeNoteContentSchema.extend({
     title: z.string().max(200).refine(validAssistantText),

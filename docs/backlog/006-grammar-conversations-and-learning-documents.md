@@ -4,7 +4,7 @@ id: BL-006
 title: 'Grammar conversations and learning documents'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-19
+updated: 2026-10-28
 original_tasks: '9'
 evidence:
     - .agent/features/044-contextual-language-assistant-and-knowledge/EVIDENCE.md
@@ -538,3 +538,21 @@ evidence and user-flow guide identify the implemented tests and runtime results.
 - Verify readable long-chat history and conversation-isolated context handling
   with the selected compaction mechanism; retrieve exact prior wording when
   needed and prevent memory from creating Knowledge automatically.
+
+## Interactive workbook extension — 2026-10-28
+
+The user confirmed [feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md)
+after the [interactive workbook interview](../interactive-workbook-discovery.md).
+This delivery extends knowledge notes with reusable grammar, vocabulary, bilingual
+text, video, audio-comprehension and exercise blocks; ordered workbooks; independent
+copies; shared-reader explanation/practice; and private versioned learner state.
+It includes on-demand exercise generation with preview/apply and explicit Save.
+The [execution plan](../../.agent/features/059-interactive-workbooks/EXEC_PLAN.md)
+owns current progress and verification requirements.
+
+Foundational contracts are in progress, not a completed interactive workspace.
+Earlier interview restrictions on media and copy-before-chat describe features
+044/047; feature 059 must explicitly reconcile ADR-0042 before extending them.
+Historical evidence above is retained and does not prove the new behavior.
+Guided course/lesson generation and workbook-wide AI context remain separate
+future work. BL-006 remains in progress after this partial scope allocation.
