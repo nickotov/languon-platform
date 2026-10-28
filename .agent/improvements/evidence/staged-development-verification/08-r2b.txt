@@ -1,0 +1,55 @@
+This is an explicitly authorized **feature**, because it changes shared contracts, persistence, financial semantics, provider execution and the admin editor. The probe itself remains read-only: no implementation, services, checks, branches or delegation have run.
+
+Apply the snapshot’s `.agent/DELIVERY.md`, feature-development, testing, db-verification, code-review, browser-verification and user-flow-e2e instructions. ADR-0049 governs native pricing; ADR-0048’s source-adapter and MCP boundaries, ADR-0047’s issuance-scoped authority, ADR-0045’s financial invariants and ADR-0002’s migration strategy remain applicable.
+
+**Bounded discovery outputs**
+
+Record these in the feature specification and ExecPlan during actual delivery:
+
+- A consumer and authority matrix tracing the shared request schema through the HTTP flat-price writer, MCP preview/apply, application/domain logic, database writes/reads, SDK observations, settlement, admin editor and unchanged legacy consumers. For each privileged entrypoint, identify credentials, permitted fields/actions, validation, version checks, audit and replay.
+- Prove that extending the schema does not let the existing flat writer or existing MCP credentials publish native prices. Native publication needs the separately scoped action; matching TypeScript shapes do not establish authorization.
+- A units/ranges/compatibility table covering native credits, rational USD conversion, minima, explicit rounding, schedule/context boundaries, per-call versus attempt settlement, integer storage limits, missing usage and immutable historical snapshots. Do not assume the existing PostgreSQL integer can store every valid result.
+- A three-provider coverage matrix linking each family to its actual production adapter/SDK path, native billing variations, supported bounds, failure observations and retained regressions.
+- Acceptance IDs mapped to implementation surfaces, focused proofs and final required gates. Discover affected guides through their metadata and resolve exact mapped tests and reviewed commands before execution.
+
+Preserve native rules as authoritative, native flat fields as null, existing flat revision semantics, pinned snapshots, unknown expense when evidence is absent and no learner charge for technical failure. Resolve materially ambiguous billing choices before dependent work proceeds.
+
+**First proofs, before spreading implementation**
+
+1. Validate representative native and legacy fixtures through the real request schemas and entrypoint contracts, including rejection of native writes through legacy authority.
+2. Exercise exact arithmetic and TypeScript/PostgreSQL parity on disposable PostgreSQL: fractional credits, minima, tier/window boundaries, rounding, maximum supported values and integer overflow boundaries.
+3. Retain a small production-composition SDK-to-database settlement regression, replacing only external HTTP. Follow admission, bounded dispatch, actual SDK serialization/observations, receipts/checkpoints where applicable, settlement and persisted readback. Include success and controlled transport failure with absent token counts; verify holds/refunds and honest unknown expense.
+4. Validate clean migration and representative legacy-row compatibility. Measure cold migration/setup time separately from test bodies.
+
+The passing draft parser file proves only its selected parser behavior. It does not establish schema compatibility, SDK wiring, SQL parity or settlement.
+
+**Development selections**
+
+Use seconds-long affected domain/parser/schema tests, HTTP/MCP contract tests, scoped static checks and selected real PostgreSQL integration cases. Keep legacy accounting regressions alongside native cases. Extend the validated production seam to all three changed provider families, including success and controlled failure, and Free/Paid policies wherever affected.
+
+Cover exhaustive numerical and validation combinations below E2E. Use mapped browser journeys for publication, editor/display behavior and persistence. Retain ADR-0016 browser evidence; valid maintained Playwright coverage can satisfy it when it covers the changed rendered behavior, states and console/network checks. Supplement only missing observations.
+
+Do not run the approximately 12-minute backend stage after every edit. An early broad smoke requires a named risk that smaller proofs cannot settle.
+
+**Review and final execution**
+
+Proceed through implementation and focused checks → author preflight → independent source review and coverage assessment → batched remediation and focused reruns → remediation review → broad final gates → reviewer evidence approval.
+
+Initial review examines the complete scoped source and surrounding execution paths. Broad final gates may be explicitly pending; completion approval cannot be given then. Plan security review for the material financial/SQL and privileged publication surfaces. Given the unresolved migration/setup behavior and cross-application financial journey, plan a separate tester’s bounded assessment of harness/setup adequacy and production-path coverage.
+
+Before broad execution, require:
+
+- Stable implementation and review repairs, valid boundary fixtures and passing affected fast checks.
+- Reviewed setup commands, explicitly disposable owned infrastructure, ready PostgreSQL/browser prerequisites and no competing builds/resets.
+- Measured cold setup after the schema extension and a justified bounded setup watchdog. The previous 14-second cold run versus a 10-second hook is evidence to investigate setup, not permission to relax product deadlines.
+- Captured tracked/untracked patch state, exact selections and known evidence dependencies.
+
+Then run affected database, browser/E2E, static and build checks and the **complete critical gate** required for shared accounting/provider changes, including the production backend stage. A targeted early proof does not replace that gate.
+
+**Late fixture/setup failure**
+
+Classify it as implementation, fixture, environment or assumption failure. Preserve the raw failure report, diagnose the smallest reproducer, validate repaired fixtures through actual boundary schemas and rerun affected fast checks first. Measure setup separately; investigate contention/waits before changing a harness watchdog. Preserve cancellation and product deadline assertions.
+
+Before another broad launch, identify which previous evidence was invalidated and justify the rerun selection. Reuse demonstrably unaffected evidence; shared schema/migration/setup changes may invalidate multiple consumers. Repeated similar failures require revisiting discovery or setup before relaunch. Never weaken tests or count skipped, flaky or retried required cases as complete evidence.
+
+Completion can be approved only after all acceptance criteria, required final layers, guide/E2E mappings and evidence are current for the final patch; material findings are resolved or appropriately justified; and the independent reviewer approves final reports and remediation. Paid provider calls and production mutations remain unauthorized. No completion claim is currently supported.

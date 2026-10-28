@@ -1,0 +1,57 @@
+Classify this as an explicitly authorized **feature**. The probe authorizes planning only: no implementation, branch, services, delegation or checks. Paid provider calls and production mutation remain excluded.
+
+1. **Bounded discovery outputs**
+
+   Produce an acceptance-to-proof matrix and one consumer map covering the shared request schema → HTTP writer → MCP preview/apply → immutable database revisions → admin editor → admission/reservation → SDK usage observations → settlement and history readers. Include unchanged legacy consumers and all three provider families.
+
+   Record these consequential uncertainties before dependent implementation:
+
+   - How native and legacy records remain distinguishable, including preserving old snapshots and making legacy readers fail closed on native revisions.
+   - Exact native currencies/conversion, decimal precision, per-call rounding, component/request minimums, endpoint/context tiers and UTC schedule boundaries.
+   - Missing versus zero usage, authoritative expense provenance, conservative reservations versus actual expense, replay/checkpoint identity and immutable settlement.
+   - PostgreSQL integer range, intermediate arithmetic and final rounding. Calculate maximum representable costs; select a compatible representation or enforce justified bounds rather than assume the current column is sufficient.
+   - Publication/version/audit/replay compatibility across HTTP, MCP and admin, including malformed and stale requests.
+
+   ADR-0049 supplies the native-accounting constraints; ADR-0048 retains source-adapter/MCP boundaries; ADR-0045 retains customer/provider separation and technical-failure refunds. ADR-0002 governs migrations. Do not revive superseded flat-only restrictions.
+
+   In eventual delivery, keep stable acceptance IDs in `FEATURE.md`, decisions/selections in `EXEC_PLAN.md`, results in `EVIDENCE.md` and reviews in `REVIEW.md`. Exact source/test paths and scoped execution commands require source discovery; the snapshot does not establish them.
+
+2. **First proofs before spreading the implementation**
+
+   Start with failing deterministic contract/arithmetic cases where practical. Validate representative native and legacy fixtures through the actual shared boundary schema, including HTTP/MCP/admin round trips.
+
+   Retain one small production-composition integration through real SDK serialization, admission, claim, usage checkpoint, settlement and persisted readback against disposable PostgreSQL. Replace only external HTTP and reject unexpected network requests. Exercise both success and transport failure with absent token counts; unknown expense must remain unknown and technical failure must release learner funds.
+
+   Prove TypeScript/PostgreSQL evaluator parity using exact expected values, including credit conversion, minima, tier/schedule boundaries, rounding and integer-range edges. Prove additive migration compatibility with legacy rows and pinned snapshots. The supplied passing parser file does not establish these seams.
+
+3. **Quick development feedback**
+
+   Select affected seconds-long parser, schema, domain and contract cases per slice. Extend the validated fixtures across all three provider families, then run their focused production SDK/database success and failure cases.
+
+   Include legacy accounting regressions, publication concurrency/replay, reservation bounds, overrun/refund behavior and immutable historical readback. Use scoped static checks for shared contracts and their transitive consumers.
+
+   Keep exhaustive arithmetic/validation cases below E2E. Resolve mapped browser files and command forwarding explicitly; cover admin publication/display, persistence/reload and material failure states in real application journeys. Synchronize applicable guides and markers with `user-flow:e2e` inspection/checks and `docs:user-flows:check`.
+
+   Do not use the approximately 12-minute backend stage as a per-edit command. An early broader smoke needs a named wiring risk that smaller proofs cannot settle.
+
+4. **Source review, then final gates**
+
+   Complete focused author preflight: acceptance mapping, valid fixtures, consequential integration proof, scoped checks, documentation and a clean scoped diff. Then obtain independent review of the complete stabilized feature and its coverage, explicitly identifying broad gates as pending.
+
+   Plan risk-triggered security review for financial/SQL and MCP execution boundaries. Assign a bounded independent tester question for the currently unresolved setup/infrastructure behavior; reassess additional harness or cross-application complexity during discovery.
+
+   Batch review fixes, run affected narrow regressions and request remediation review. Once source repairs stabilize, execute required database, browser/E2E, static/build and **complete critical gate** coverage. Shared accounting/provider changes require the full gate; a targeted `ai-execution-contracts` run cannot replace it.
+
+5. **Conditions before broad execution**
+
+   Confirm reviewed setup commands, disposable infrastructure ownership, readiness, exclusive resources, precise selections and captured tracked/untracked patch state.
+
+   Measure cold reset/migration/setup separately from test-body time after the schema extension. The previous 14-second cold setup already exceeds the default 10-second hook: diagnose setup waits/contention and establish a justified bounded harness watchdog from measurements before launching the long stage. Preserve product deadlines and cancellation assertions.
+
+6. **Late fixture or setup failure**
+
+   Classify it as implementation, fixture, environment or assumption failure. Preserve failed reports; reproduce narrowly, repair the cause, validate fixture shapes through real schemas and rerun affected fast/integration checks first.
+
+   Before another broad launch, identify which evidence changed and which selections need rerunning. Reuse unaffected results only with an explicit validity comparison. Repeated failures require revisiting discovery/setup, not blind broad retries or automatic timeout inflation. Skipped, flaky or retried critical cases do not constitute complete evidence.
+
+Completion can be approved only after required final coverage passes for the final patch, guide traceability is current, material findings are resolved and the independent reviewer confirms final evidence and any remediation. Source readiness or the supplied parser pass alone cannot approve completion. No checks were run in this probe.

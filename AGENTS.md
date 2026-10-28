@@ -226,9 +226,14 @@ expanded implementation; reuse authorization already given for that scope.
 ## Workflow handoff
 
 All three flows use the shared sequence in [`.agent/DELIVERY.md`](.agent/DELIVERY.md):
-scope/risk, implementation with focused checks, author preflight, risk-triggered
-independent review, remediation, and verified completion. It owns the common
-procedure and artifact responsibilities; flow skills own only their differences.
+risk-focused discovery, implementation with narrow checks, focused author preflight,
+risk-triggered source review/remediation, final required gates, and evidence approval.
+It owns the common procedure and artifact responsibilities; flow skills own only
+their differences. Scale research to uncertainty: map affected consumers and prove
+consequential assumptions early. During development, select affected unit/contract/
+integration cases and static checks; broad workspace and critical gates normally
+wait until implementation and review fixes stabilize. Required final coverage and
+small-fix proportionality remain unchanged.
 
 ### Corrections
 
@@ -336,9 +341,10 @@ if the running surface is unavailable; do not waive the accepted ADR implicitly.
 
 Use subagents for bounded independent work that benefits from isolated context;
 avoid overlapping edits, and keep integration and product decisions with the
-main agent. Features require one independent completion review after author
-preflight, not review after every task. The reviewer assesses correctness and
-test coverage. A separate tester is required when substantial new test harnesses,
+main agent. Features require one independent completion review after focused author
+preflight, not review after every task. It examines stabilized source and coverage
+before broad final gates, then approves final evidence after those gates pass;
+explicitly pending gates cannot receive completion approval. A separate tester is required when substantial new test harnesses,
 unresolved concurrency/infrastructure behavior, or complex cross-application
 journeys need independent verification expertise; record the reason and bounded
 assignment. Otherwise the reviewer can assess existing valid test evidence.

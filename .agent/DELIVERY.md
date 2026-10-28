@@ -64,6 +64,27 @@ use its one record. Identify supported behavior, explicit exclusions, affected
 invariants, and what evidence will establish completion. Resolve only material
 product/safety ambiguity with the user; continue independent authorized work.
 
+For consequential uncertainty, deepen discovery before parallel implementation:
+
+- Trace affected behavior through entrypoints, shared contracts, every reader/writer,
+  persistence and external adapters. Include unchanged consumers that can regress.
+  For shared contracts or privileged writes, identify who may read, preview,
+  apply, publish or edit at each entrypoint and which permission/credential scope
+  authorizes it. Prove that widening a schema cannot silently widen an existing
+  writer's authority; do not infer this from matching field types.
+- Identify relevant invariants: compatibility, units/ranges, permission authority,
+  failure/cancellation, deadlines, resource bounds and recovery, as applicable.
+- Name unresolved assumptions and the smallest proof that can settle each. A new
+  SDK/financial/worker seam may need one real production-composition integration
+  path before its implementation is copied across consumers; replace only external
+  transport. Use a bounded specialist question when independent expertise helps.
+- Record development selections and final required gates, with reasons and setup
+  prerequisites. Resolve consequential unknowns before dependent work fans out.
+
+Keep this in the existing record/ExecPlan, not a separate research artifact. For a
+bounded established fix, a short source/neighboring-test check suffices. Broader
+research must answer a named uncertainty; do not survey the whole app by default.
+
 For saved design prompts and returned designs, apply [versioned handoff
 rules](DESIGN_HANDOFF.md); DESIGN.md owns provenance and revision pointers only.
 
@@ -71,14 +92,21 @@ When implementing a supplied design, use `$ui-ux-composition` fidelity mode and
 its source-derived coverage inventory before coding. Missing backend support is
 not permission to silently remove designed UI or invent working capabilities.
 
-Exit: scope is accounted for, relevant risk triggers are identified, and every
-acceptance criterion has a planned verification method.
+Exit: scope, affected consumers and risk triggers are accounted for; consequential
+unknowns have an early proof or explicit unresolved decision; every acceptance
+criterion has a development/final verification plan.
 
 ## 2. Implement and verify in coherent slices
 
 Use `$testing` to choose the cheapest reliable checks, including browser/device,
 database, security, and mapped E2E evidence where required. Run focused checks
-while iterating. Investigate failures and fix their cause before broadening.
+while iterating, selecting unit/contract/integration cases and static checks for the
+changed behavior and affected consumers. Whole-workspace suites, full builds and
+critical stages are not per-edit defaults. Investigate failures and fix their cause
+before broadening. An early critical smoke is appropriate only for a named startup,
+wiring or other risk that a smaller check cannot establish; record why it is needed
+now and its exact selection. Required real database/browser proof remains available
+early when it resolves a consequential assumption.
 Do not request independent review after each task by default. An early review
 is useful only for a specific consequential uncertainty; state its question.
 
@@ -92,11 +120,13 @@ agent the task, relevant source/spec paths, diff boundary, and evidence needed;
 prefer a fresh context to copying a long conversation. Do not coach a reviewer
 toward the author's desired conclusion.
 
-Exit: the scoped implementation works and evidence covers the changed behavior.
+Exit: the scoped implementation works with focused evidence; remaining broad final
+checks are explicitly planned. A milestone with outstanding required proof remains
+unfinished even when its source is ready for review.
 
-## 3. Author preflight
+## 3. Focused author preflight
 
-Before an independent completion review or lightweight handoff:
+Before independent source review (or final verification for work without review):
 
 - Map every acceptance ID to implementation and valid evidence; make gaps
   explicit. For fidelity work, reconcile every source inventory row, including
@@ -106,25 +136,29 @@ Before an independent completion review or lightweight handoff:
 - Confirm public exports/callers and contracts where changed; inspect the final
   diff for accidental scope, secrets, generated output, and temporary artifacts.
 - Complete affected documentation and guide checks. Verify commands exist.
-- Apply the [critical workflow gate](../docs/operations/critical-workflows.md):
-  register new important journeys and prerequisites, execute affected entries,
-  and retain the full critical suite for shared auth/accounting/model/worker
-  changes. Verify the documented setup path as well as prepared fixtures.
-  Missing configuration or skipped tests cannot be reported as a passing flow.
+- Prepare the [critical workflow gate](../docs/operations/critical-workflows.md):
+  register new important journeys, exact selections and prerequisites. Keep the
+  full critical suite required for shared auth/accounting/model/worker changes.
+  Identify pending final execution explicitly; do not start it merely to enter
+  review. Focused tests must already cover consequential implementation seams.
 - For backlog work, reconcile the task and index using the synchronization rule
   below; a partial delivery must not imply the whole backlog task is Done.
 - Apply `$testing` evidence validity rules to the final patch. Reuse valid
   results; rerun checks invalidated by source, configuration, test, or environment
   changes. Do not skip required layers to reduce cost.
 
-Exit: there are no known unfinished acceptance items hidden behind a passing
-build, test count, screenshot, or a checked milestone.
+Exit: implementation and focused coverage are ready for review, fixtures are valid,
+known implementation gaps are resolved, and pending final gates are visible.
+Source readiness is not completion; a passing count cannot hide missing evidence.
 
-## 4. Review, remediate, and close
+## 4. Review and remediate stabilized source
 
 Apply root review triggers and `$code-review`. Initial independent review covers
 the complete scoped diff and its relevant context. The reviewer also assesses
-test coverage. When a root tester trigger applies, give the tester a concrete
+test coverage and the planned final gates. Broad execution may be explicitly
+pending at this stage; report source findings separately from final approval.
+This is one completion review with source/remediation and final-evidence phases,
+not a second full review after unchanged source passes its gates. When a root tester trigger applies, give the tester a concrete
 bounded question, such as new-harness adequacy or unresolved concurrency, and
 valid evidence to assess rather than repeat. A green new harness does not waive
 the root trigger. Security review remains independently
@@ -141,6 +175,43 @@ After two remediation cycles with material findings still appearing, diagnose
 the recurring cause (incomplete specification, oversized scope, missing test
 seam, or architectural uncertainty) and change the approach before another
 cycle. This is not a review cap or permission to leave defects unresolved.
+
+Exit: material source findings are resolved (or justified under root policy),
+focused repairs pass, and no known implementation defect is being handed to an
+expensive gate for rediscovery. Work without a required review enters the same
+final readiness check directly after author preflight.
+
+## 5. Run final gates and approve evidence
+
+Before broad workspace/critical execution:
+
+- Stabilize the implementation and review repairs; validate changed fixtures and
+  run affected fast checks. Select all required risk-triggered layers, not just
+  edited files. Use the root full-critical triggers unchanged.
+- Verify reviewed setup/profile commands, infrastructure ownership and readiness.
+  For new or changed test infrastructure, measure cold setup separately from test
+  bodies and use justified bounded setup watchdogs. Keep product deadlines and
+  cancellation assertions intact; a timeout needs diagnosis, not an automatic
+  timeout increase. Avoid contending builds or resets on the same test resources.
+- Capture the relevant tracked/untracked patch state and planned selections.
+  Run required critical, browser/device, database, static and build checks, plus
+  the documented setup path where required. A narrow early smoke never replaces
+  final required coverage.
+
+If a gate fails, classify the cause as implementation, fixture, environment or
+assumption; batch related fixes and run the smallest reproducer and affected
+checks first. Before another broad run, state what invalidates its prior evidence
+and why that selection is necessary. Repeated failures of the same kind require
+revisiting discovery/setup/coverage before another launch. Use supported selections
+and `$testing` validity rules to reuse unaffected results. Never edit failed raw
+reports into passes or count skipped or retried tests as complete critical evidence.
+
+Have the reviewer assess final reports and any changed surface in remediation
+mode. Unchanged source needs evidence confirmation, not another full source review.
+Final approval, milestone completion and handoff wait for all required final
+coverage with valid evidence. Missing configuration, failed or skipped required
+checks remain gaps. Preserve ADR-0016 real browser/device proof and risk-triggered
+security/database review.
 
 Finish when acceptance and required verification are complete and no unresolved
 critical/high or material security findings remain; resolve relevant medium

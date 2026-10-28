@@ -1,0 +1,42 @@
+Classify this as an explicitly authorized **feature**. Native billing changes shared contracts, persisted financial semantics, provider execution and admin behavior. No additional feature authorization is needed. This probe authorizes only a read-only plan: no implementation, branch creation, services or checks were run.
+
+The plan follows snapshot `AGENTS.md`, `.agent/DELIVERY.md`, `.agent/PLANS.md`, feature-development/testing/code-review/db-verification/browser-verification/user-flow-e2e skills, and accepted ADRs 0045, 0047, 0048 and 0049.
+
+1. **Bound discovery around consequential uncertainties.** In actual delivery, reuse the feature’s specification and ExecPlan or establish the four feature records, with stable acceptance IDs. Produce:
+
+   - A consumer map from the shared request schema through HTTP writer, MCP discovery/preview/apply, application services, immutable revisions, database evaluation/settlement and admin editor/display. Include unchanged flat-price readers and legacy accounting tests.
+   - An authority matrix identifying who can read, preview, apply and edit each price form. ADR-0049 requires a separate legacy flat writer and newly issuance-scoped native actions. Prove that widening the common schema cannot let an old HTTP writer or existing MCP credential publish native rules. Preview is disclosure, not authorization; apply must recheck scope, version, exact payload and replay.
+   - An invariant matrix covering exact native decimals/conversion, request/component minima, per-call rounding, endpoint/context/tier/UTC schedule applicability, conservative reservation versus actual expense, immutable snapshots and history, unknown usage, failure refunds and persisted numeric limits.
+   - An AI regression map and development/final selection table, including prerequisites, exact eventual files/cases and acceptance-to-proof links. Discover guides through the compact index and metadata, then inspect mapped journeys. The snapshot provides no application source, mapped test files or active feature artifacts, so exact file selectors remain discovery outputs rather than invented commands.
+
+   Keep existing flat revisions and admitted work unchanged. Native revisions must leave legacy amounts null and make old readers fail closed. Missing token counts or ambiguous applicability must remain unknown where actual expense cannot be established; reservation ceilings must not become invented actual costs.
+
+2. **Settle the first proofs before copying implementation across consumers.**
+
+   - Start contract tests for native acceptance through the intended entrypoints and rejection through the old flat writer/old credential action snapshots, including direct apply and replay/version cases.
+   - Retain a real production-composition slice using the actual provider factory/SDK, strict fake external HTTP and disposable PostgreSQL: admission → claim → receipt issuance before HTTP → observed usage/checkpoint → persisted result → settlement/readback. Exercise both success and controlled transport failure with absent token counts. Verify hold release/no learner charge, expense provenance or unknown status, database writes and health/circuit-breaker behavior.
+   - Prove TypeScript/PostgreSQL tariff parity with representative credits, minima, context thresholds and schedule boundaries; prove exact decimal handling and final whole-USD-micro rounding.
+   - Test the actual persisted integer boundary, conversion/overflow and failure behavior. Resolve whether supported native amounts fit the column; do not assume TypeScript numbers or a successful provider response establish database compatibility.
+   - Measure clean migration/reset/setup separately from test bodies. The historical 14-second cold setup already exceeds the default 10-second hook; the proposed schema’s setup time remains unknown. Diagnose first, then set a justified bounded setup watchdog if needed. Preserve product deadlines and cancellation assertions.
+
+   The passing draft parser file establishes only its tested parser cases. It does not establish contract authority, SDK wiring, SQL parity, persistence or settlement.
+
+3. **Develop with narrow selections.** Run affected parser/schema/domain cases, boundary contracts, selected HTTP/MCP cases, SQL parity and repository/settlement integration cases, plus affected workspace static checks. Validate new and legacy fixtures through their real boundary schemas, including native-null legacy fields. Cover all three provider families before delivery, extending the validated integration pattern with success and controlled failure through persistence; retain relevant Free/Paid policy coverage.
+
+   Keep exhaustive arithmetic and validation combinations at unit/contract/integration layers. Use mapped browser journeys for native publication, admin rendering and persistence/reload. Do not run the 12-minute backend stage per edit. An early broad smoke needs a named startup/wiring uncertainty that a smaller proof cannot resolve; it never replaces final coverage.
+
+4. **Review stabilized source before expensive final gates.** Complete focused author preflight: acceptance mapping, consequential integration evidence, valid fixtures, affected static checks, scoped diff inspection, guide/test synchronization and explicit pending final gates. Then request one independent completion review’s **source phase**, covering the complete scoped diff, consumers, authority, arithmetic/SQL and planned coverage. Run risk-triggered security review for material SQL and MCP/tool execution changes.
+
+   Assign a separate tester a bounded harness/setup question if new harness work is substantial or infrastructure uncertainty remains unresolved; do not duplicate valid runs merely to obtain another green report. Batch review fixes, run focused regressions and use remediation review. Completion approval remains pending while final gates are pending.
+
+5. **Start broad execution only when ready.** Implementation and review repairs must be stable; changed fixtures and affected fast checks must pass; exact selections and argument forwarding must be verified. Confirm reviewed setup commands, disposable infrastructure identity/ownership/readiness, measured cold setup, bounded watchdogs and absence of competing builds/resets. Capture base plus relevant tracked/untracked patch state and configuration.
+
+   Then run all required final layers: the **complete critical gate** (`pnpm test:e2e:critical`), including the backend execution stage, affected mapped browser/E2E journeys, disposable database/migration checks, affected lint/typecheck/build checks and documented setup verification. A targeted `ai-execution-contracts` run alone does not satisfy the full-gate accounting/provider trigger.
+
+   Preserve ADR-0016 real-browser evidence for admin changes. Valid maintained Playwright evidence can satisfy it when it covers the changed rendered states, interactions and console/network checks; use the safe browser wrapper for remaining observations. Synchronize guides/scenario revisions and run guide traceability checks.
+
+6. **Treat a late fixture/setup failure as evidence to diagnose.** Preserve the raw failure report; classify implementation, fixture, environment or mistaken assumption. Reproduce narrowly, fix related causes together and validate fixtures through real schemas. For setup timeouts, separate migration/setup cost from body time and investigate waits/contention before changing a setup watchdog. Do not weaken product assertions, skip legitimate cases or immediately relaunch the full gate.
+
+   Record which prior evidence the repair invalidates and why the next selection is necessary. Reuse only demonstrably unaffected evidence. Shared schema/migration/setup changes can invalidate multiple consumers. Repeated similar failures require revisiting discovery/setup/coverage before another broad launch. A later pass does not erase the earlier failure or remediation.
+
+Completion can be approved only after required final coverage passes for the final patch, all acceptance criteria and guide mappings are current, material findings are resolved or dispositioned under policy, and the independent reviewer confirms final evidence and changed surfaces in remediation mode. Pending, unavailable, skipped, flaky or retried required critical coverage remains a gap. Update all four feature records before the normal authorized local Git finish. Paid provider calls, production mutation and activation remain outside this plan.

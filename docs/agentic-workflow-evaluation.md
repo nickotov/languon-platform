@@ -1,3 +1,12 @@
+---
+type: reference
+title: Evaluating agentic workflow quality and cost
+source_paths:
+    - .agent/evals/workflow
+    - .agent/DELIVERY.md
+    - .agents/skills/testing
+---
+
 # Evaluating agentic workflow quality and cost
 
 Use this optional pilot when changing delivery instructions or investigating
@@ -8,7 +17,7 @@ defines the supplied-design workflow.
 
 ## Start with bounded decision probes
 
-The [case directory](../.agent/evals/workflow/cases/) contains seven offline
+The [case directory](../.agent/evals/workflow/cases/) contains eight offline
 scenarios. Each file is a complete request plus synthetic raw task facts. They
 test routing, evidence selection, design inventory, and review scope without
 running application code. They do **not** prove implementation quality, visual

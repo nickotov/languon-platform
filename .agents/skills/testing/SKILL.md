@@ -11,7 +11,12 @@ Read the active correction or improvement document, or feature specification/Exe
 implementation diff, applicable instructions, and neighboring tests. List the
 behaviors that could regress and select the lowest-cost reliable layer for each.
 Record required and deliberately omitted layers with rationale in the active
-durable work state before substantial implementation.
+durable work state before substantial implementation. Separate development checks
+from final gates. Trace shared contracts to their readers/writers and affected
+consumers; file edits alone do not define the regression surface. For consequential
+uncertainty, name and prove a small real integration seam early under
+[discovery](../../../.agent/DELIVERY.md#1-establish-the-outcome-and-risk), then extend
+the validated contract/fixtures across consumers. Keep small-fix discovery bounded.
 
 ## Select test layers
 
@@ -54,13 +59,27 @@ it when reasonably possible. For deterministic business logic, prefer a failing
 test first. API changes should begin with a contract or integration test when
 practical.
 
-Run the narrowest test repeatedly while iterating, then the affected workspace
-suite and any broader checks justified by the regression surface or required by
-the active flow. Resolve exact mapped E2E files and reviewed commands before
-execution; confirm runner argument forwarding so a filter does not silently
-select the entire suite.
-If a test fails, determine whether implementation, test, environment, or
-assumptions are wrong; fix the root cause and rerun focused and broader checks.
+During development, run the narrowest affected unit/contract/integration files or
+cases and scoped static checks. Include transitive consumers when a shared seam
+changes. Validate fixture shapes through their real boundary schemas. A smaller
+selection must still exercise the behavior at risk; mock only external transport
+when real internal composition/persistence is required.
+
+Schedule broad workspace suites, builds and critical gates after focused preflight
+and source-review fixes stabilize, using the
+[final readiness check](../../../.agent/DELIVERY.md#5-run-final-gates-and-approve-evidence).
+Record a specific risk/selection for an earlier broad check. A targeted production
+integration or rendered observation can run early to settle an assumption; this
+does not move the whole-app gate into every development iteration. Resolve exact
+mapped E2E files and reviewed commands; verify argument forwarding so a filter
+does not silently run the entire suite.
+
+If a check fails, distinguish implementation, fixture, environment and assumption
+errors. Repair and rerun the focused reproducer before a justified broader check.
+Measure cold reset/migration/setup cost separately from body time when diagnosing
+slow integration tests. Diagnose waits, asynchronous work and resource contention
+before changing a bounded harness watchdog; preserve product/cancellation deadline
+assertions. Do not run competing builds or destructive resets on shared test resources.
 
 Never delete, weaken, skip, or rewrite a legitimate test merely to produce a
 pass. Do not silently replace a required test layer with a weaker one.

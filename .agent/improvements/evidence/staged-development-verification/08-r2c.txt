@@ -1,0 +1,39 @@
+Use the **authorized feature flow**. Native pricing changes shared contracts, financial semantics and persistence; correction/improvement flows do not apply. This probe performed instruction reads only; no implementation, checks, services or delegation ran.
+
+1. **Bound discovery before implementation.** Record acceptance IDs and the following outputs in the prospective feature specification/ExecPlan:
+   - A consumer map: shared request schema → HTTP writer, MCP preview/apply, storage, admin editor → admission, provider SDK observations and settlement across all three provider families.
+   - An authority matrix for read, preview, apply and edit. Prove widening validation cannot grant native publication to the existing flat HTTP writer or old issued MCP credentials. ADR-0049 requires a separate flat writer and newly issuance-scoped native actions; preserve version checks, audit and exact replay.
+   - A financial compatibility matrix: native currency/conversion, credit rounding, request/component minima, schedule/context applicability, immutable snapshots, legacy flat prices, absent usage and numeric limits.
+   - Explicit unresolved assumptions and their smallest proofs, plus exact development selections, final gates and infrastructure prerequisites. The snapshot supplies no source/test filenames or mapped guide files, so those selections must be resolved during authorized source discovery, not invented here.
+
+2. **Prove consequential seams first.**
+   - Retain one small real production-composition case through actual SDK serialization, admission/claim and disposable PostgreSQL settlement, replacing only external HTTP. Verify a usable persisted result and final accounting; a parser unit pass is insufficient.
+   - Pair it with transport failure where token counts are absent. Preserve unknown expense when evidence is missing, release learner funds on technical failure, and verify durable settlement/receipt behavior rather than manufacturing zero usage.
+   - Test exact TypeScript/PostgreSQL arithmetic parity and persistence bounds. Exercise the PostgreSQL integer boundary and representative native totals; establish a compatible storage decision before spreading it across consumers.
+   - Prove legacy writer rejection and scoped native publication through the real boundaries.
+   - Measure cold reset/migration/setup separately from test-body time before broad execution. The previous 14-second cold setup already exceeds the default 10-second hook; diagnose current setup and choose a justified bounded harness watchdog. Preserve product deadlines and cancellation assertions.
+
+3. **Keep development feedback narrow.**
+   - Run selected parser/schema/domain cases for exact decimals, credits/conversion, minima, rounding, tier/context/schedule boundaries, ambiguous or missing evidence and legacy behavior.
+   - Run focused HTTP/MCP contract, repository/migration and SDK-to-settlement selections, including affected unchanged consumers. Validate fixtures through actual boundary schemas.
+   - Extend validated production paths across all three changed provider families, covering success and controlled failure, Free/Paid policy where affected, persistence/readback, hold release and provider-expense recording.
+   - Use affected static checks and the smallest mapped browser journey while iterating. Do not make the approximately 12-minute backend critical stage a per-edit check. An earlier broad smoke needs a named risk that narrower proof cannot establish.
+
+4. **Review stabilized source before broad final execution.**
+   - Finish focused author preflight: acceptance-to-proof mapping, legitimate legacy regressions, valid fixtures, failure/permission cases, scoped diff and synchronized guides/E2E markers.
+   - Obtain one independent completion review’s **source phase**, covering the full scoped diff, focused coverage and planned pending gates. Require security review for privileged publication, financial SQL and external-source boundaries.
+   - Assign a separate tester if substantial harness changes or complex cross-application verification trigger the root requirement; bound the question to harness/coverage adequacy rather than duplicate valid runs.
+   - Batch material fixes, run their narrow checks, then request remediation review. Source readiness cannot receive completion approval while final gates remain pending.
+
+5. **Start broad execution only when ready.**
+   - Implementation and review repairs are stable; no known material defect remains.
+   - Changed fixtures pass boundary validation and affected fast checks.
+   - Disposable infrastructure ownership, reviewed setup commands, readiness, measured cold setup and bounded watchdogs are established; no competing resets/builds use those resources.
+   - Capture the tested base plus tracked/untracked patch state, configuration and exact selections.
+   - Run the **complete critical gate**, required by shared accounting/provider changes: `pnpm test:e2e:critical`. A selected `ai-execution-contracts` run does not replace it.
+   - Complete required database/migration, affected static/build, mapped E2E and guide checks. Preserve ADR-0016 browser evidence for the admin change; valid real-app Playwright coverage can satisfy it when it covers the changed states and console/network evidence, with safe-wrapper observations only for remaining gaps.
+
+6. **Handle a late fixture/setup failure proportionally.**
+   Classify it as implementation, fixture, environment or invalid assumption; retain the failed reports. Diagnose and repair the smallest reproducer, validate changed fixtures/setup, and rerun affected fast checks before another expensive launch. Explain which prior evidence the change invalidates and why the next selection is necessary. Reuse demonstrably unaffected evidence; shared schema/migration/configuration changes may invalidate multiple consumers. Repeated failures require revisiting discovery/setup rather than repeatedly launching the full gate or automatically raising timeouts. Never count skipped, flaky, retried or incomplete critical execution as completion evidence.
+
+Completion approval follows valid final-patch evidence for every acceptance criterion and required gate, reviewer confirmation of final reports and remediation, current guides/mappings, and resolution of critical/high and material security findings, with relevant medium findings resolved or justified. Paid provider calls and production mutation remain outside authorization; deterministic SDK tests prove controlled production wiring, not live provider availability or invoice accuracy.

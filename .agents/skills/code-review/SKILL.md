@@ -26,6 +26,14 @@ from source rather than treating the author's summary as proof. Follow the
 [shared delivery procedure](../../../.agent/DELIVERY.md) for batch remediation
 and the recurring-findings diagnostic, not a fixed pass quota.
 
+Initial source review follows focused author preflight. Broad final gates may be
+explicitly pending under [delivery](../../../.agent/DELIVERY.md#3-focused-author-preflight);
+assess the source, focused proof and planned final selections. State that final
+evidence approval is pending rather than approving completion. After repairs
+stabilize and final gates run, inspect their evidence and changed surfaces in
+remediation mode; do not repeat the full source review for unchanged code. All
+required final layers and root security/tester triggers remain binding.
+
 ## Inspect material risk
 
 Trace changed execution paths and verify:

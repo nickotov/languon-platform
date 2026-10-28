@@ -34,7 +34,9 @@ constraints needed to interpret the plan.
 ### Existing architecture
 
 Record relevant components, execution paths, analogous patterns, dependencies,
-constraints, and accepted ADRs discovered from the repository.
+constraints, and accepted ADRs discovered from the repository. For consequential
+uncertainty, record affected readers/writers and transitive consumers, invariants,
+unresolved assumptions and the first small proof before dependent implementation.
 
 ### Acceptance criteria
 
@@ -45,7 +47,9 @@ text when scope changes. For fidelity work, reference its source inventory too.
 ### Test strategy
 
 State which unit, integration, contract, E2E, browser/device, migration, and
-manual checks are required or not required, with rationale.
+manual checks are required or not required, with rationale. Distinguish narrow
+development selections, early risky-seam proofs, setup prerequisites and deferred
+final gates. Link the shared delivery readiness checks rather than copying them.
 
 ### User-flow documentation
 
@@ -72,8 +76,9 @@ Use checkboxes and keep each milestone independently verifiable:
 For each milestone, record its objective, affected components, acceptance IDs,
 required checks, status, and evidence links. Never mark a milestone complete
 before its required verification passes. Task completion does not automatically
-trigger independent review: author preflight precedes completion review. An
-early specialist review must answer a specific consequential uncertainty.
+trigger independent review: author focused preflight precedes source review. Final gates can be pending during source
+review, but final approval and milestone completion require all required evidence.
+An early specialist review must answer a specific consequential uncertainty.
 
 ### Progress
 

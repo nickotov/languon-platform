@@ -14,16 +14,20 @@ execution state, not duplicate acceptance text or check results.
 
 ## Existing architecture
 
-Record relevant components, flows, analogous patterns, and accepted ADRs.
+Record relevant components, flows, analogous patterns, and accepted ADRs. For
+consequential uncertainty, identify affected consumers/readers/writers, invariants
+and the first proof needed before parallel dependent implementation.
 
 ## Test and review strategy
 
 Record required and deliberately omitted layers with rationale. Include unit,
 integration/contract, E2E, browser/device, database/migration, static checks, and
 guide traceability only as relevant. For E2E, resolve exact mapped test files,
-reviewed command, environment, and scenarios.
+reviewed command, environment, and scenarios. Separate narrow development checks
+and early risky-seam proofs from final broad gates and their setup prerequisites.
 
-- Independent completion review: required after author preflight.
+- Independent completion review: source phase after focused author preflight;
+  final evidence approval after required gates. Pending gates are not completion.
 - Separate tester: required / not required — root trigger and bounded question.
 - Security review: required / not required — root risk trigger.
 - Early specialist review: only for a named consequential uncertainty.
@@ -35,10 +39,11 @@ reviewed command, environment, and scenarios.
     - Acceptance IDs:
     - Required checks:
     - Evidence links:
-- [ ] M2 — Author preflight and completion review
-    - Acceptance/source inventory accounted for:
-    - Affected verification and guide evidence links:
-    - Review/remediation record: `REVIEW.md`.
+- [ ] M2 — Focused preflight, source review, final gates and evidence approval
+    - Acceptance/source inventory and focused proof accounted for:
+    - Source findings/remediation and pending final checks:
+    - Final verification and guide evidence links:
+    - Review/remediation and final verdict: `REVIEW.md`.
 
 Use more milestones only for independently verifiable behavior slices.
 

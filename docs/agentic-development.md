@@ -264,8 +264,8 @@ clearly authorizes in-scope repository edits and non-destructive validation.
 ## Choosing correction, improvement, or feature development
 
 All three flows use [shared delivery](../.agent/DELIVERY.md): scope and risk,
-implementation with focused checks, author preflight, independent review where
-required, and verified completion. See the [workflow audit](./agentic-workflow-audit.md)
+implementation with narrow checks, focused preflight, source review where required,
+final required gates and evidence approval. See the [workflow audit](./agentic-workflow-audit.md)
 for the rationale and [evaluation protocol](./agentic-workflow-evaluation.md) for
 behavioral cases and quality/cost measurement.
 
@@ -323,8 +323,12 @@ coordination needs, or a new user journey.
 
 ## Prompting feature work
 
-Features receive an independent completion review after author preflight, not
-after each task. The reviewer assesses correctness and test coverage. Separate
+Features receive one independent completion review after focused author preflight,
+not after each task. The source phase checks correctness, coverage and the planned
+final gates before expensive execution. Fix its findings with focused checks, then
+run required final gates and obtain final evidence approval. Explicit pending gates
+never imply completion. Follow the [shared delivery sequence](../.agent/DELIVERY.md)
+for risk-focused discovery, early integration proofs and final readiness. Separate
 tester and security assignments follow the actual root risk triggers. Repairs
 receive focused remediation review; a materially broader risk surface justifies
 expanded review. Existing valid checks are reused under `$testing`, not repeated
@@ -489,8 +493,14 @@ correct.
 
 ## Verification tools
 
-Use the lowest-cost reliable verification layer. An interactive browser session is
-evidence for real user behavior; it does not replace automated regression tests.
+Use the lowest-cost reliable verification layer. During development, select affected
+unit/contract/integration cases and scoped static checks, including shared consumers.
+Use a small real integration or browser proof early when it resolves a consequential
+assumption. Defer broad workspace and critical gates until implementation and source
+review fixes stabilize; preserve every required final layer. An interactive browser
+session is evidence for real user behavior; it does not replace automated regression
+tests. Record actual setup/body timings when a new test environment is costly and
+keep contending builds or resets off the same resources.
 
 | Need                              | Primary workflow/tool                                 |
 | --------------------------------- | ----------------------------------------------------- |

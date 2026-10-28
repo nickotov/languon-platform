@@ -37,8 +37,11 @@ reviewer after each task by default.
 
 ## Review and finish
 
-After author preflight, request an independent completion reviewer using
-`$code-review`. Apply root separate-tester and security-review triggers; assign
+After focused author preflight, request the source phase of independent completion
+review using `$code-review`. Resolve findings with focused checks before broad
+final gates; final evidence approval remains required after those gates pass.
+Follow the shared delivery readiness checks. Apply root separate-tester and
+security-review triggers; assign
 complementary questions rather than duplicate valid verification. Record findings
 in `REVIEW.md`, remediate in batches, and use remediation review for the affected
 surface. Review again broadly only when the risk surface expands.

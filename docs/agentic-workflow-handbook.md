@@ -1,3 +1,8 @@
+---
+type: reference
+title: Agentic development handbook
+---
+
 # Agentic development handbook
 
 This handbook explains how work moves from your request to a verified result in
@@ -174,12 +179,15 @@ radius, or your explicit request in both lightweight flows.
 flowchart TD
     A[Explicit feature authorization] --> B[Inspect Git; feature branch from main]
     B --> S[Specification and execution plan]
-    S --> I[Implement milestones with focused checks]
-    I --> E[Acceptance evidence and applicable guide updates]
-    E --> P[Author preflight]
-    P --> R[Independent completion review]
-    R --> Fix[Resolve findings and verify affected behavior]
-    Fix --> Done{All completion gates satisfied?}
+    S --> D[Risk-focused discovery; prove consequential seams early]
+    D --> I[Implement milestones with narrow checks]
+    I --> E[Focused evidence and applicable guide updates]
+    E --> P[Focused author preflight]
+    P --> R[Independent source review]
+    R --> Fix[Resolve findings; focused repair checks]
+    Fix --> Gate[Stable patch: required final critical and broader gates]
+    Gate --> V[Final evidence approval; bounded remediation if needed]
+    V --> Done{All completion gates satisfied?}
     Done -->|No| Work[Address remaining work; focused re-review as needed]
     Work --> Fix
     Done -->|Yes| Merge[Inspect final diff; local squash merge into main]
@@ -237,16 +245,20 @@ changes. Remove temporary instrumentation after an authorized implementation.
 
 ## 6. Review without endless full-review loops
 
-Features require one initial independent completion review **after author
-preflight**, not after every implementation task. This review covers the entire
-scoped diff and relevant callers, contracts, acceptance requirements, and tests.
-It is not limited to the author's list of likely problem areas.
+Features require one independent completion review **after focused author
+preflight**, not after every implementation task. Its source phase covers the
+entire scoped diff, relevant callers/contracts, acceptance requirements, focused
+evidence and planned final gates. It is not limited to the author's likely problem
+areas. Fix source findings before broad final execution; approve completion only
+after required final reports apply to the final patch. See the
+[shared sequence](../.agent/DELIVERY.md#3-focused-author-preflight).
 
 ```mermaid
 flowchart TD
-    P[Author preflight] --> R[Initial full scoped review]
-    R --> Q{Material findings?}
-    Q -->|No| D[Completion if all other gates pass]
+    P[Focused author preflight] --> R[Initial full scoped source review]
+    R --> Q{Material source findings?}
+    Q -->|No| G[Required final gates on stable source]
+    G --> D[Evidence approval; completion only when all gates pass]
     Q -->|Yes| F[Batch triage and fixes; retain finding IDs]
     F --> T[Run checks affected by repairs]
     T --> B{Materially new risk surface?}

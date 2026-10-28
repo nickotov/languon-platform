@@ -114,8 +114,14 @@ suites, too few tests, skipped/todo/expected-failure tests, retries and incomple
 reports. CI already executes this entry through `pnpm test:e2e:critical`; required
 checks must not rely on opt-in environment variables silently skipping tests.
 
-Run the focused stage while iterating. Shared model, worker, accounting or
-configuration changes require the complete gate before handoff. Extend the
+During development, select affected unit/contract/integration files or cases from
+the matrix and their affected consumers. The complete `ai-execution-contracts`
+stage is a broad gate, not the default per-edit integration command. Schedule it
+once focused checks and source-review fixes stabilize, following the
+[final readiness check](../../.agent/DELIVERY.md#5-run-final-gates-and-approve-evidence).
+An early critical smoke needs a named risk that smaller checks cannot establish.
+Shared model, worker, accounting or configuration changes still require the
+complete gate before handoff. Extend the
 reviewed registry selection when another critical capability needs production
 execution coverage; keep exhaustive cases in focused lower-layer tests. Replace
 only external transport in execution-contract tests, reject unexpected network

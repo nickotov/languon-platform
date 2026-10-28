@@ -31,6 +31,16 @@ Updated: {{DATE}}
 - AC-1 — One observable outcome. Keep criterion text here; map its ID to the
   evidence below. Add other IDs only for distinct outcomes.
 
+## Discovery and verification strategy
+
+Keep this brief for bounded work; remove inapplicable entries.
+
+- Affected behavior, shared readers/writers/consumers and invariants:
+- Consequential uncertainty and smallest early proof (if any):
+- Development unit/contract/integration selections and scoped static checks:
+- Final required gates, setup prerequisites and readiness:
+- Review trigger; source findings and pending final evidence tracked separately:
+
 ## Plan
 
 Follow `.agent/DELIVERY.md`. For supplied-design fidelity, add the source coverage
@@ -38,7 +48,9 @@ inventory to this record using `$ui-ux-composition`.
 
 - [ ] Implement the focused improvement.
 - [ ] Add or update the smallest reliable regression coverage when useful.
-- [ ] Run targeted validation.
+- [ ] Run focused validation and author preflight.
+- [ ] Resolve required source review findings, then run final required gates and
+      obtain evidence approval. Record why review/gates are not required when omitted.
 - [ ] Update affected documentation or record why none is needed.
 - [ ] Inspect the final diff and record results below.
 

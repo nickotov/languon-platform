@@ -1,0 +1,8 @@
+- **Classification:** Correction using `$correction-development` and the small-fix fast path. This restores existing presentation without adding behavior or crossing a feature boundary.
+- **Scope:** Change the existing English locale value from `Cacnel` to `Cancel`. In actual delivery, use one `.agent/corrections/<slug>.md` record and remain on the current branch.
+- **Verification:** Inspect the locale entry and its dialog binding; use existing relevant component coverage and affected locale/static validation where applicable. Obtain one real browser/device observation of the rendered English dialog showing “Cancel,” including its accessible label. A maintained real-app browser test can supply this evidence if it covers the exact change; otherwise use the approved browser wrapper. No new implementation-mirroring test, broad suite, browser matrix, database checks, or full critical gate is warranted.
+- **Documentation:** Record guide changes and E2E traceability updates as unnecessary: no guide documents the typo, and commands, journeys, and expected behavior remain established.
+- **Review:** Focused author preflight and final diff inspection suffice. Independent review, a separate tester, and security review are unwarranted for these facts.
+- **Complete when:** The corrected label is implemented, applicable checks pass for the final patch, required rendered evidence is recorded, the diff contains only the scoped correction and its record, and that record contains evidence, review rationale, remaining risks, and `Complete` status. Missing runtime evidence prevents completion. No automatic commit, merge, push, or deletion.
+
+This probe performed instruction reads only; no application changes or verification checks ran.
