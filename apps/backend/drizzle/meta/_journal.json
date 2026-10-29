@@ -1030,6 +1030,97 @@
       "when": 1793260000924,
       "tag": "0146_knowledge_sentence_private_retention",
       "breakpoints": true
+    },
+    {
+      "idx": 147,
+      "version": "7",
+      "when": 1793303454682,
+      "tag": "0147_block_proposal_updates",
+      "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1793303495411,
+      "tag": "0148_block_proposal_change_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 149,
+      "version": "7",
+      "when": 1793303662173,
+      "tag": "0149_knowledge-snippet-speech-lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 150,
+      "version": "7",
+      "when": 1793303899566,
+      "tag": "0150_knowledge-block-ai-actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 151,
+      "version": "7",
+      "when": 1793304000237,
+      "tag": "0151_knowledge-block-ai-authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 152,
+      "version": "7",
+      "when": 1793304088929,
+      "tag": "0152_block_proposal_dependencies",
+      "breakpoints": true
+    },
+    {
+      "idx": 153,
+      "version": "7",
+      "when": 1793304129407,
+      "tag": "0153_block_proposal_source_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 154,
+      "version": "7",
+      "when": 1793304418353,
+      "tag": "0154_knowledge-audio-draft-speech-lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 155,
+      "version": "7",
+      "when": 1793304498797,
+      "tag": "0155_retain-field-action-source-identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 156,
+      "version": "7",
+      "when": 1793306000081,
+      "tag": "0156_knowledge-speech-source-binding",
+      "breakpoints": true
+    },
+    {
+      "idx": 157,
+      "version": "7",
+      "when": 1793306245581,
+      "tag": "0157_knowledge-speech-live-source-authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 158,
+      "version": "7",
+      "when": 1793306544008,
+      "tag": "0158_retain-knowledge-speech-payer-identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 159,
+      "version": "7",
+      "when": 1793307585186,
+      "tag": "0159_knowledge-proposal-speech-erasure",
+      "breakpoints": true
     }
   ]
 }

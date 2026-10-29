@@ -1,0 +1,13 @@
+{
+  "runId": "99d58737",
+  "database": "languon_auth_v16_integration_test",
+  "ports": [
+    55492,
+    56492
+  ],
+  "files": [
+    "tests/integration/modules/speech/knowledge-speech-execution.test.ts"
+  ],
+  "externalProvider": "synthetic HTTP/fixture only",
+  "status": "passed"
+}

@@ -512,7 +512,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 {
                     operationId: randomUUID(),
                     noteId: copy.id,
-                    assetId: copiedAudio.assetId,
+                    assetId: copiedAudio.assetId!,
                     languages: ['en'],
                 },
                 new AbortController().signal,
@@ -797,7 +797,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).toHaveLength(1);
                 expect(
                     (
-                        await media.read(copy.id, copiedAudio.assetId, {
+                        await media.read(copy.id, copiedAudio.assetId!, {
                             ownerId: reader,
                         })
                     ).bytes.length,

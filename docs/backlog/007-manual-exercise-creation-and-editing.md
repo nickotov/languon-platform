@@ -4,9 +4,10 @@ id: BL-007
 title: 'Manual exercise creation and editing'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-28
+updated: 2026-10-30
 original_tasks: '11'
-evidence: []
+evidence:
+    - .agent/features/059-interactive-workbooks/EVIDENCE.md
 ---
 
 # BL-007 — Manual exercise creation and editing
@@ -62,3 +63,13 @@ it does not promise every future exercise format or a second flashcard store.
 Foundational contracts are in progress. Manual authoring, real practice journeys
 and independent completion/security review are not yet verified, so BL-007 is
 in progress and has no new completion evidence.
+
+## v16 partial-delivery checkpoint — 2026-10-30
+
+The initial workbook authoring slice supports multiple choice, blanks and free text, shared manual/AI block schemas, side dialogs/mobile sheets, reference answers/explanations, reviewed AI changes and independent copies. Browser and execution regressions verify the delivered slice; broader feature completion and future exercise capabilities are not implied.
+
+See [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md)
+and its [fidelity observations](../../.agent/features/059-interactive-workbooks/evidence/v16-migration/FIDELITY.md).
+The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
+this broader backlog task remain **in progress**; this is partial-delivery evidence,
+not a terminal task disposition.

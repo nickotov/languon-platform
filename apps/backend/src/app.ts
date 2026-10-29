@@ -59,6 +59,8 @@ export function createApp(options?: {
     knowledgeVocabulary?: OpenAPIHono;
     knowledgeSentences?: OpenAPIHono;
     knowledgePrivateTranslations?: OpenAPIHono;
+    knowledgeBlockFields?: OpenAPIHono;
+    knowledgeExerciseEvaluations?: OpenAPIHono;
     navigation?: OpenAPIHono;
     textsAi?: OpenAPIHono;
     textSelections?: OpenAPIHono;
@@ -93,6 +95,10 @@ export function createApp(options?: {
     if (options?.learnerPortraits) app.route('/', options.learnerPortraits);
     if (options?.workbooks) app.route('/', options.workbooks);
     if (options?.workbookLearning) app.route('/', options.workbookLearning);
+    if (options?.knowledgeBlockFields)
+        app.route('/', options.knowledgeBlockFields);
+    if (options?.knowledgeExerciseEvaluations)
+        app.route('/', options.knowledgeExerciseEvaluations);
     if (options?.knowledgePrivateTranslations)
         app.route('/', options.knowledgePrivateTranslations);
     if (options?.knowledgeMedia) app.route('/', options.knowledgeMedia);

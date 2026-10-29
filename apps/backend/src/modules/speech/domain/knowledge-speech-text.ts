@@ -34,7 +34,8 @@ export function knowledgeNarrationText(
     }
     if (block.type === 'audio') {
         text = block.sourceText ?? '';
-        language = studiedLanguage;
+        language =
+            block.language ?? block.transcript?.language ?? studiedLanguage;
     }
     if (!language || !text.trim())
         throw new SpeechError('speech_text_unavailable', 400);

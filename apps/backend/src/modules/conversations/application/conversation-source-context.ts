@@ -175,6 +175,16 @@ export function projectConversationSource(
         sourceKind: kind,
         snapshotScope: snapshot.scope ?? 'complete',
         availableMaterialCount: material.length,
+        // Every read is a subset of this frozen, bounded material. Small sheets
+        // must not reserve a full 24KB tool result that cannot actually exist.
+        retrievedContextByteBound: Math.min(
+            retrievedSourceContextBytes,
+            jsonBytes({
+                material,
+                total: material.length,
+                coverage: 'complete',
+            }),
+        ),
         ...(snapshot.blockTarget
             ? {
                   blockProposalsAvailable: true,
@@ -213,7 +223,7 @@ export function projectConversationSource(
                     jsonBytes({
                         material: items,
                         total: material.length,
-                        coverage: 'partial',
+                        coverage: 'complete',
                     }) <= retrievedSourceContextBytes,
             );
             // total deliberately describes the whole frozen source, not just

@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { LearningBlockProposalInputSchema } from '@languon/contracts';
+import {
+    learningBlockToolDescription,
+    learningBlockToolInputSchema,
+} from './learning-block-tool-contract';
 import { PortraitItemsSchema, type ChatPreferences } from '@languon/contracts';
 import { getLocalPrompt } from '@languon/prompts';
 import type { TutorRunInput } from './ports/tutor-runner';
@@ -35,17 +38,28 @@ export function tutorContextInstructions(input: ContextInput): string {
 // description; its schema plus bounded name/description framing are reserved.
 const blockProposalSchemaBytes =
     Buffer.byteLength(
-        JSON.stringify(
-            z.toJSONSchema(LearningBlockProposalInputSchema, {
-                io: 'output',
+        JSON.stringify({
+            name: 'propose_learning_blocks',
+            description: learningBlockToolDescription,
+            inputSchema: z.toJSONSchema(learningBlockToolInputSchema, {
+                io: 'input',
                 target: 'draft-7',
             }),
-        ),
+        }),
         'utf8',
     ) + 512;
 
 export function tutorReservedInputBytes(input: ContextInput): number {
     const contextInstructions = tutorContextInstructions(input);
+    const sourceBound = input.sourceContext.retrievedContextByteBound;
+    let retrievalBound = retrievedSourceContextBytes;
+    if (
+        typeof sourceBound === 'number' &&
+        Number.isSafeInteger(sourceBound) &&
+        sourceBound >= 0 &&
+        sourceBound <= retrievedSourceContextBytes
+    )
+        retrievalBound = sourceBound;
     return (
         Buffer.byteLength(
             JSON.stringify({
@@ -56,7 +70,7 @@ export function tutorReservedInputBytes(input: ContextInput): number {
         (input.sourceContext.snapshotScope === 'workspace' &&
         !input.sourceContext.availableMaterialCount
             ? 0
-            : retrievedSourceContextBytes) +
+            : retrievalBound) +
         10_000 +
         (input.sourceContext.blockProposalsAvailable === true
             ? blockProposalSchemaBytes

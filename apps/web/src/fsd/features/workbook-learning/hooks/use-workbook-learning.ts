@@ -10,11 +10,12 @@ import type {
     LearningBlockViewProps,
     LearningInteraction,
 } from '@/fsd/entities/learning-blocks';
-import { buildExerciseFeedbackRequest } from '@/fsd/entities/learning-blocks';
+import { useExerciseEvaluation } from './use-exercise-evaluation';
 import { learningApi } from '../api/learning-api';
 import { attemptAnswer } from '../lib/attempt-answer';
 import { learningLabels } from '../lib/labels';
 import { useNoteAudio } from './use-note-audio';
+import { privateExerciseView } from '../lib/private-exercise-view';
 import { exerciseSource } from '../lib/exercise-source';
 
 type SessionRequest = <T>(
@@ -42,7 +43,6 @@ export function useWorkbookLearning({
     locale,
     requestWithSession,
     access,
-    onAiRequest,
 }: WorkbookLearningOptions) {
     const labels = learningLabels(locale);
     const queryClient = useQueryClient();
@@ -67,6 +67,13 @@ export function useWorkbookLearning({
         retry: false,
         gcTime: 0,
         staleTime: 0,
+    });
+    const evaluation = useExerciseEvaluation({
+        noteId,
+        locale,
+        requestWithSession,
+        access,
+        onCompleted: query.refetch,
     });
     const audioUrls = useNoteAudio({
         noteId,
@@ -129,24 +136,6 @@ export function useWorkbookLearning({
         const revision = state?.exerciseRevisions.find(
             (item) => item.exerciseId === block.id,
         )?.revision;
-        const latest = state?.attempts.find(
-            (item) =>
-                item.exerciseId === block.id &&
-                item.exerciseRevision === revision,
-        );
-        let feedback: string | undefined;
-        if (latest) {
-            if (latest.evaluation.status === 'unchecked')
-                feedback = labels.unchecked;
-            else if (latest.evaluation.status === 'correct')
-                feedback = labels.correct;
-            else feedback = labels.incorrect;
-            if (
-                latest.evaluation.status !== 'unchecked' &&
-                latest.evaluation.feedback
-            )
-                feedback += `: ${latest.evaluation.feedback}`;
-        }
         function submit(_id: string, answer: LearningAnswer) {
             if (!ready || !state || !revision || block.type !== 'exercise')
                 return;
@@ -170,16 +159,16 @@ export function useWorkbookLearning({
             }
         }
         function evaluate(_id: string, answer: LearningAnswer) {
-            if (!ready || block.type !== 'exercise' || !onAiRequest) return;
+            if (!ready || !state || !revision || block.type !== 'exercise')
+                return;
             try {
-                onAiRequest(
-                    buildExerciseFeedbackRequest(
-                        block,
-                        answer,
-                        source.block,
-                        locale,
-                    ),
-                );
+                void evaluation.run({
+                    id: crypto.randomUUID(),
+                    noteVersion: state.noteVersion,
+                    exerciseId: block.id,
+                    exerciseRevision: revision,
+                    answer: attemptAnswer(block, answer),
+                });
             } catch {
                 setLocalError(true);
             }
@@ -207,6 +196,9 @@ export function useWorkbookLearning({
                     ),
             });
         }
+        let evaluationUnavailableReason: string | undefined;
+        if (!actorId) evaluationUnavailableReason = labels.signIn;
+        else if (!ready) evaluationUnavailableReason = labels.loading;
         return {
             interactionsDisabled: Boolean(actorId && !ready),
             ...(source.transcript ? { hintTranscript: source.transcript } : {}),
@@ -216,25 +208,36 @@ export function useWorkbookLearning({
             ...(source.audioAssetId
                 ? { audioUrl: audioUrls[source.audioAssetId] }
                 : {}),
-            ...(block.type === 'audio'
+            ...(block.type === 'audio' && block.assetId
                 ? { audioUrl: audioUrls[block.assetId] }
                 : {}),
             ...(ready ? { onInteraction: interaction } : {}),
             ...(ready && block.type === 'exercise' && revision
                 ? {
                       onSubmitAttempt: submit,
-                      submitAttemptLabel: labels.saveAnswer,
                       attemptPending: pending > 0,
                   }
                 : {}),
-            ...(ready && onAiRequest && block.type === 'exercise'
+            ...(ready && block.type === 'exercise'
                 ? { onEvaluate: evaluate }
                 : {}),
-            feedback,
+            evaluationPending: evaluation.states[block.id]?.pending ?? false,
+            evaluationUnavailableReason,
+            ...(evaluation.states[block.id]?.failed
+                ? { error: labels.aiError }
+                : {}),
+            ...privateExerciseView({
+                blockId: block.id,
+                revision,
+                state,
+                evaluated: evaluation.states[block.id]?.attempt,
+                labels,
+            }),
         };
     }
     return {
         labels,
+        evaluationConsent: evaluation.consent,
         query,
         state,
         ready,

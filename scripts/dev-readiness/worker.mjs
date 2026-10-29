@@ -35,14 +35,13 @@ export function workerSupports(worker, model, capability, format) {
             value,
         ]),
     );
-    const predicate =
-        capability.id === 'texts'
-            ? readiness.isTextsExecutionCapableObservation
-            : capability.id === 'sentences'
-              ? readiness.isSentenceExecutionCapableObservation
-              : ['conversation', 'interview'].includes(capability.id)
-                ? readiness.isConversationExecutionCapableObservation
-                : readiness.isTextAiCapacityCapableObservation;
+    const predicate = ['texts', 'knowledge-actions'].includes(capability.id)
+        ? readiness.isTextsExecutionCapableObservation
+        : capability.id === 'sentences'
+          ? readiness.isSentenceExecutionCapableObservation
+          : ['conversation', 'interview'].includes(capability.id)
+            ? readiness.isConversationExecutionCapableObservation
+            : readiness.isTextAiCapacityCapableObservation;
     return predicate(observation, format);
 }
 
@@ -50,6 +49,7 @@ export function customerFunded(snapshot, capability) {
     const name = {
         dictionary: 'dictionary-generation',
         texts: 'text-translation',
+        'knowledge-actions': 'text-translation',
         sentences: 'sentence-generation',
         conversation: 'conversation',
         interview: 'portrait-interview',

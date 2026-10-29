@@ -1,9 +1,16 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { KnowledgeApiError } from '@/fsd/entities/knowledge';
 import { useSessionStore } from '@/fsd/entities/session';
+import type { LearningBlock } from '@languon/contracts';
+import { useAuth } from '@/fsd/features/auth';
+import { type MenuItem } from '@/fsd/shared/ui';
+import { KnowledgeVocabularyPractice } from '@/fsd/widgets/knowledge-vocabulary';
+import { KnowledgeAudioTranscription } from '@/fsd/widgets/knowledge-transcription';
+import { KnowledgeAudioPreparation } from '@/fsd/widgets/knowledge-speech';
 import { KnowledgeNoteForm } from '@/fsd/features/knowledge-notes';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -23,7 +30,6 @@ import { WorkspaceDialogs } from './workspace-dialogs';
 import { WorkspaceNotices } from '../workspace-notices/workspace-notices';
 import { WorkspaceHeader } from './workspace-header';
 import { WorkspaceShareControls } from './workspace-share-controls';
-import { KnowledgeMediaTools } from './knowledge-media-tools';
 import styles from './knowledge-detail-page.module.css';
 
 export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
@@ -37,6 +43,9 @@ export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
 
 function DetailContent({ noteId }: { noteId: string }) {
     const { t, href } = useI18n();
+    const actorId = useSessionStore((state) => state.user?.id);
+    const [blockAccents, setBlockAccents] = useState(true);
+    const { requestWithSession } = useAuth();
     const actions = useKnowledgePageActions(noteId);
     const integrations = useKnowledgeLearningIntegrations(noteId, actions);
     const view = useWorkspacePresentation(actions);
@@ -88,6 +97,61 @@ function DetailContent({ noteId }: { noteId: string }) {
             </main>
         );
 
+    function renderAudioPreparation(
+        block: Extract<LearningBlock, { type: 'audio' }>,
+        onAccept: (
+            replacement: Extract<LearningBlock, { type: 'audio' }>,
+        ) => void,
+    ) {
+        if (!draft) return null;
+        const language =
+            block.language ||
+            block.transcript?.language ||
+            draft.content.studiedLanguage ||
+            'en';
+        return (
+            <>
+                <KnowledgeAudioPreparation
+                    noteId={noteId}
+                    branchId={draft.branchId}
+                    block={block}
+                    language={language}
+                    requestWithSession={requestWithSession}
+                    onAccept={onAccept}
+                />
+                <KnowledgeAudioTranscription
+                    noteId={noteId}
+                    branchId={draft.branchId}
+                    block={block}
+                    language={language}
+                    requestWithSession={requestWithSession}
+                    flush={integrations.transcription.flush}
+                    onAccept={onAccept}
+                />
+            </>
+        );
+    }
+    function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
+        if (block.type !== 'vocabulary' || !workspace?.published) return null;
+        const saved = workspace.published.body.document.content?.find(
+            (node) => node.attrs?.block?.id === block.id,
+        )?.attrs?.block;
+        if (saved?.type !== 'vocabulary') return null;
+        const { title: _workingTitle, ...currentMaterial } = block;
+        const { title: _savedTitle, ...savedMaterial } = saved;
+        if (JSON.stringify(currentMaterial) !== JSON.stringify(savedMaterial))
+            return null;
+        return actorId ? (
+            <KnowledgeVocabularyPractice
+                noteId={noteId}
+                block={block}
+                actorId={actorId}
+                requestWithSession={requestWithSession}
+                blockMenu
+                commonMenuItems={items}
+            />
+        ) : null;
+    }
     const noticeState = {
         alternatives: workspace.branches.length > 1,
         recoveryError: state.status === 'error',
@@ -170,6 +234,8 @@ function DetailContent({ noteId }: { noteId: string }) {
                             limit: workspace.limits.editorChars.toLocaleString(),
                         })
                     }
+                    blockAccents={blockAccents}
+                    onBlockAccentsChange={setBlockAccents}
                     onSave={actions.save}
                     onSaveCopy={actions.saveCopy}
                     onHistory={actions.openHistory}
@@ -195,6 +261,12 @@ function DetailContent({ noteId }: { noteId: string }) {
                             onApplyRetarget={actions.applyRetarget}
                         />
                         <WorkspaceDialogs actions={actions} />
+                        {integrations.speechConfirmation}
+                        <ActionConsentDialog
+                            quote={integrations.evaluationConsent.quote}
+                            onSend={integrations.evaluationConsent.confirm}
+                            onClose={integrations.evaluationConsent.cancel}
+                        />
                         <KnowledgeNoteForm
                             ref={actions.editor}
                             value={draft.content}
@@ -202,22 +274,27 @@ function DetailContent({ noteId }: { noteId: string }) {
                             onValidityChange={actions.setValid}
                             disabled={busy !== null}
                             workspace={{
-                                preparationTools: (
-                                    <KnowledgeMediaTools
-                                        narration={integrations.narration}
-                                        transcription={
-                                            integrations.transcription
-                                        }
-                                    />
-                                ),
                                 toolbarRootId: 'knowledge-workspace-toolbar',
-                                uploadAudio: integrations.uploadAudio,
-                                library: integrations.library,
-                                blockCopy: integrations.blockCopy,
                                 editorId: 'knowledge-workspace-editor',
                                 proposalRootId: 'knowledge-workspace-proposal',
                                 inlineProposalRootId:
                                     'knowledge-workspace-inline-proposal',
+                                languageDefaults: {
+                                    content:
+                                        draft.content.studiedLanguage ??
+                                        undefined,
+                                    translation:
+                                        draft.content.explanationLanguage ??
+                                        undefined,
+                                },
+                                library: integrations.library,
+                                blockCopy: integrations.blockCopy,
+                                uploadAudio: integrations.uploadAudio,
+                                blockAccents,
+                                renderBlockMenu,
+                                renderAudioPreparation,
+                                fieldAi: integrations.fieldAi,
+                                blockViewOptions: integrations.blockViewOptions,
                                 onAskTutor: view.askTutor,
                                 onTutorAction: view.tutorAction,
                                 tutorBusy: view.tutorBusy,

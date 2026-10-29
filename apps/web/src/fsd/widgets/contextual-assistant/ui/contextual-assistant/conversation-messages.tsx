@@ -131,12 +131,15 @@ export function ConversationMessages({
     const currentTool = answer?.parts.find(
         (part) =>
             (part.type === 'tool-read_source_context' ||
-                part.type === 'tool-propose_knowledge_note') &&
+                part.type === 'tool-propose_knowledge_note' ||
+                part.type === 'tool-propose_learning_blocks') &&
             part.state === 'input-available',
     );
-    let tool: 'reading' | 'preparing' | undefined;
+    let tool: 'reading' | 'preparing' | 'preparingBlocks' | undefined;
     if (currentTool?.type === 'tool-read_source_context') tool = 'reading';
     if (currentTool?.type === 'tool-propose_knowledge_note') tool = 'preparing';
+    if (currentTool?.type === 'tool-propose_learning_blocks')
+        tool = 'preparingBlocks';
     const responding = active || pending;
     const queued = pending || activeTurn?.status === 'queued';
     return (

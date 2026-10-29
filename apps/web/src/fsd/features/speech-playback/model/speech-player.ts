@@ -58,6 +58,8 @@ export class SpeechPlayer {
     private revision = 0;
     private abort: AbortController | null = null;
     private audio: HTMLAudioElement | null = null;
+    private externalPause: (() => void) | null = null;
+    private externalMediaId: string | null = null;
     private url: string | null = null;
     private transport: SpeechTransport | null = null;
     private confirmationOperation: string | null = null;
@@ -74,6 +76,10 @@ export class SpeechPlayer {
         this.listeners.forEach((listener) => listener());
     }
     private clear() {
+        const pause = this.externalPause;
+        this.externalPause = null;
+        this.externalMediaId = null;
+        pause?.();
         ++this.revision;
         this.abort?.abort();
         this.abort = null;
@@ -93,6 +99,15 @@ export class SpeechPlayer {
         this.transport = null;
         this.confirmationOperation = null;
         this.publish(idle);
+    };
+    registerExternalMedia = (pause: () => void, id?: string) => {
+        if (id && id === this.externalMediaId) {
+            this.externalPause = pause;
+            return;
+        }
+        this.reset();
+        this.externalPause = pause;
+        this.externalMediaId = id ?? null;
     };
     resetSelection(key: string) {
         if (this.state.selection === key) this.reset();

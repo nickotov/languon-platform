@@ -19,8 +19,8 @@ Revision rules: [Versioned design handoff](../../DESIGN_HANDOFF.md)
 ## interactive-knowledge-sheet-and-chat
 
 - Latest candidate: v003
-- Implementation target: None — no generated design or design implementation requested
-- Last implemented: None
+- Implementation target: v003 / Magic Patterns v16 — selected 2026-10-29; implemented, verified and independently approved 2026-10-30
+- Last implemented: v003 / Magic Patterns v16 — verified and independently approved 2026-10-30
 
 ### v001 — 2026-10-29
 
@@ -73,7 +73,7 @@ Decision history:
 - Prompt SHA-256: `78a48680147fe9aedefccd02ffdee5b8cac93b2de89473d555f9676b324b6435`
 - Snapshot link base: `docs/design-prompt/`
 - Source revision / working-tree changes: `def891808c6995efb0d5aac107422419f4eef184`; documentation-only brief/handoff/snapshot/index/correction changes. Application code unchanged.
-- Generated design URL: **PASTE GENERATED DESIGN URL HERE (v003)**
+- Generated design URL: https://www.magicpatterns.com/c/3pqoonbgxacst6w72rhiqb
 - Design identity: Pending — retain provider revision or export/captures with date and hashes
 - Design-system reference: User’s existing AI-chat/editor design is the required baseline; no new external design URL was supplied. Do not claim fidelity to unseen material. Runtime/prior-handoff references remain contextual.
 - Approval / implementation authorization: User requested revisions to the design brief; no application implementation or external design generation inferred
@@ -84,3 +84,17 @@ Decision history:
 Decision history:
 
 - 2026-10-29 — User clarified existing chat/editor design must be extended, not redesigned, and specified block playback, atomic AI editing, side/bottom editing overlays, inline exercises and future assessment direction. v003 supersedes v002 as the latest candidate; older snapshots and both implementation pointers remain unchanged.
+
+## v003 returned design and implementation selection — 2026-10-29
+
+- User supplied the generated design and explicitly requested faithful migration of custom blocks, related editor interactions and chat block handling. This resumes the existing authorized F059 feature; implementation remains on `feature/interactive-workbooks`.
+- Selected external identity: **Magic Patterns v16**, artifact `fb2e85d3-cf96-4a3f-b0e3-841f9057a4f8`, editor `3pqoonbgxacst6w72rhiqb`. The exact prompt actually submitted to the provider is unknown; v003 is the associated repository brief, not independently proven provider input.
+- Status: Implementing — user accepted all three recommendations after source analysis. Last implemented remains None.
+- Retained reference: [154 exported source files](designs/interactive-knowledge-sheet-and-chat/v003/magic-patterns-source/) and [per-file identity manifest](designs/interactive-knowledge-sheet-and-chat/v003/source-manifest.json). These are untrusted reference material, not application code or executable setup.
+- Source-derived fidelity inventory and open decisions: [FEATURE.md](FEATURE.md#magic-patterns-v16-fidelity-inventory); execution plan: [EXEC_PLAN.md](EXEC_PLAN.md#magic-patterns-v16-migration--active-discovery).
+- Rendered discovery: live provider preview observed in Chrome at 1512×894 window, browser zoom 80%. Hidden overlay/mobile states still require reference captures; default preview alone does not establish complete fidelity.
+- Preserve all prior revisions/decisions. No external design edits or provider/model additions are authorized by retrieval.
+
+- 2026-10-29 — User accepted the recommended atomic-field, empty-audio and exercise-checking scope. Implementation of the selected v16 is underway; [ADR-0052](../../../docs/adr/0052-source-bound-knowledge-ai-actions.md) records execution boundaries. Last implemented remains None until final fidelity and behavior evidence passes.
+
+- 2026-10-30 — v003/provider v16 is Implemented for the scoped custom-block/editor/chat migration. [Fidelity observations](evidence/v16-migration/FIDELITY.md), [final source identity](evidence/v16-migration/final-source-manifest.json), [retained critical reports](evidence/v16-migration/final-critical/manifest.json) and [independent approval](REVIEW.md) establish the result. Final14/812 critical checks and desktop/mobile/dark captures pass. Current implementation is on `feature/interactive-workbooks`; preserve the revision snapshots and source manifest. Parent F059 remains In progress for approved transcription activation; no whole-feature completion or provider/model activation is implied.

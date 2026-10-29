@@ -2,7 +2,7 @@
 feature: interactive-workbooks
 title: Interactive workbooks
 status: draft
-last_verified: 2026-10-28
+last_verified: 2026-10-30
 surfaces:
     - browser
     - api
@@ -36,6 +36,9 @@ source_paths:
     - packages/contracts/src/learning/sentences.ts
     - packages/contracts/src/speech/**
     - apps/backend/tests/support/contextual-assistant-fixture.ts
+    - apps/backend/tests/support/knowledge-private-translation-fixture.ts
+    - apps/backend/src/modules/texts/application/texts-worker-service.ts
+    - apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts
     - scripts/critical-flows/registry.mjs
 e2e_command: contextual-assistant
 e2e_tests:
@@ -43,6 +46,7 @@ e2e_tests:
 e2e_scenarios:
     - author-blocks-publish-practice
     - workbook-share-private-copy-revoke
+    - block-review-atomic-edit-inline-feedback
 related_features:
     - knowledge-workspace
     - contextual-language-assistant-and-knowledge
@@ -58,11 +62,13 @@ shared saved material and keep their answers and completion private. Copies are
 independent. Workbook links are revocable and do not expose working drafts.
 
 The two initial mapped journeys passed in a real browser on 2026-10-28. This
-guide remains draft while the rest of the feature is implemented. The journeys cover
+guide remains draft while the rest of the feature is implemented. The v16 migration
+updates the three mapped scenarios below; their current revision still requires
+execution before updating `last_verified`. The journeys cover
 manual grammar, vocabulary, free-text exercises, uploaded audio, private practice,
-ordering, sharing, copying, revocation and hostile text rendering. AI generation,
-private translations, speech generation/transcription and library/practice launch
-journeys need additional evidence before feature completion. Course generation,
+ordering, sharing, copying, revocation and hostile text rendering. The retained historical results are not proof of the new side-editor, atomic AI,
+inline evaluation or proposal-update behavior. Speech generation/transcription and
+remaining feature-wide journeys still need final evidence before completion. Course generation,
 group-wide AI context, grading and teacher visibility are explicitly deferred.
 
 ## Start the development environment
@@ -92,8 +98,11 @@ synthetic accounts. API health must succeed before browser interaction.
 
 1. Sign up with a synthetic account and create a Knowledge note. Add grammar,
    vocabulary and an exercise through the **Add block** menu below the document.
-   A chat-generated vocabulary proposal previews without an extra outer card
-   frame, completes its follow-up response, and changes the draft only after
+   A chat-generated vocabulary proposal appears beside its originating tutor reply
+   as one compact bordered preview with a type/count header and action footer,
+   without nested oversized cards. **Review** opens the full prepared material
+   in a right-side panel on desktop or bottom sheet on mobile. It completes its
+   follow-up response and changes the draft only after
    **Apply to working draft**. Its acknowledgement is not offered as a separate
    plain-text document edit.
    An empty note keeps audio prerequisites and unavailable copying out of the
@@ -102,30 +111,47 @@ synthetic accounts. API health must succeed before browser interaction.
    **Block settings** menu for Edit, Copy, Duplicate, Move up/down and Delete.
    Selecting a block does not show prose-selection actions; these appear only
    for selected text. The menu is keyboard accessible and usable on narrow screens.
-   Reload preserves the dragged order after explicit Save. Relevant audio
-   preparation is under the collapsed **Audio tools** section. A pending
+   Reload preserves the dragged order after explicit Save. **Edit** opens the
+   type-specific side dialog (440px desktop) or expandable mobile bottom sheet.
+   Existing vocabulary/text editors keep language fields under a collapsed
+   **Languages** settings disclosure; new blocks open that disclosure initially.
+   Open it only when changing the language pair.
+   Its local changes need **Apply changes** before entering the working draft;
+   explicit document **Save** publishes them. Dirty dismissal offers Keep editing
+   or Discard. Audio preparation is inside the relevant block editor. An audio
+   shell may exist without a recording; it must not show a fake playable asset. A pending
    request, confirmation or generated preview remains reachable if its last
    eligible source block is removed; changing a draft does not cancel or
    discard the operation. Supply the exercise question,
    reference answer and short explanation. Upload a synthetic WAV audio file.
 2. Select **Save**, reload, and open **Practice saved note**. The published blocks
-   and playable uploaded audio persist. Save an answer, reveal its explanation
-   and mark the note complete. Signed-in hint, transcript, answer-reveal and
+   and playable uploaded audio persist. With transcription deliberately unavailable,
+   **Prepare transcription** shows an honest provider/pricing/credit-configuration
+   warning. Manual speech source and transcript fields remain usable without
+   applying or publishing them; this fixture invokes no transcription provider.
+   Exercise sets and individual tasks are
+   folded initially; expanding reveals answer controls inline. Multiple-choice
+   and blank **Check** uses the prepared answer without an AI call; every type
+   also offers explicit **Check with AI**. Free text is saved before evaluation
+   and is not marked correct merely because it was saved. Feedback, Hint and
+   Show answer results stay below that question. Reveal its explanation and mark
+   the note complete. Signed-in hint, transcript, answer-reveal and
    retry actions wait until private progress loads, so an early interaction
    cannot appear successful without being recorded. Anonymous prepared reading
    remains available. Reload preserves private progress. A saved
-   free-text attempt is explicitly unevaluated; saving never pretends AI checked it.
-   In the vocabulary block, choose **Train → Cards**, start a round and mark
+   free-text attempt remains unevaluated until a real completed AI result; valid
+   alternative wording can be recognized without changing the author material.
+   In the vocabulary block, open its heading settings menu and choose **Cards**, start a round and mark
    the entry Known. This practices the saved block directly; saving a dictionary
    is optional and independent. The signed-in learner’s rating persists privately.
-   Choose **Train → Sentence practice** for a prepared bilingual example. Reveal
+   Choose **Sentence practice** in that same menu for a prepared bilingual example. Reveal
    its reference answer for free; the manual review is saved only for that learner.
    Edit the bilingual reading block: choose **Prepared translation → Add translation**
    to add another prepared language, then select existing languages to edit them.
    Applying preserves other prepared translations and their order.
-   On the authored bilingual reading block, switch from **Original** to
+   On the authored bilingual reading block, switch between **Original** and
    **Bilingual** and see the prepared translation without changing its source.
-   Use **Save to Texts**, preview the prepared aligned text, and explicitly save
+   Use **Save to Texts** in the heading settings menu, preview the prepared aligned text, and explicitly save
    an independent Text copy. This action does not call AI or mutate the block.
 3. Open **Workbooks**, create a workbook and add a saved note. Share it, then add
    another note: explicit acknowledgement explains that workbook readers gain
@@ -133,10 +159,12 @@ synthetic accounts. API health must succeed before browser interaction.
    can use previous/next navigation.
 4. Open the link in a fresh anonymous browser. Reading works; saved practice and
    copying require sign-in. Sign in as a different synthetic learner, answer an
-   exercise and mark the note complete. The workbook shows one completed note;
+   exercise inline, optionally request AI feedback from that reader’s credits,
+   and mark the note complete. The workbook shows one completed note;
    the author’s own count stays zero and does not expose the reader’s attempt.
    On a bilingual block, anonymous readers see no private-translation control.
-   A signed-in reader requests a different target language, explicitly confirms
+   A signed-in reader selects a private target in the inline translation-language
+   picker and requests its translation, explicitly confirms
    any reduced allowance, and sees only that actor's private overlay. A second
    signed-in reader and the author continue to see the unchanged prepared shared
    translation. The deterministic fixture replaces only external Texts-provider
@@ -153,7 +181,21 @@ synthetic accounts. API health must succeed before browser interaction.
    video hosting response, and makes no claim of automatic video understanding.
    Direct video uses the browser player; after playback failure, **Open video
    source** offers the validated HTTPS link in a separate tab.
-7. Display literal hostile HTML in a grammar rule. It remains text and creates
+7. Open a vocabulary block editor and check one translation with AI. Pending,
+   Looks correct, suggested replacement, stale and retry states belong to that
+   field. Review the current/proposed text; **Accept** changes only that field in
+   the editor draft. Other entries stay intact. The source note is unchanged until
+   Apply block and explicit Save. In a bilingual-text editor, generate a missing
+   translation for one segment without overwriting its original wording or other
+   languages. Discarding accepted local suggestions leaves the document unchanged.
+8. Ask the tutor to update an existing vocabulary block. The update proposal
+   captures that block’s content. An unrelated title/prose edit does not invalidate
+   it; a changed/deleted target or existing source passage does. **Show in sheet**
+   reveals applied material; retrying Apply cannot duplicate it. A stale proposal
+   can be regenerated or explicitly **Add separately**, with independently copied
+   captured source blocks and remapped question references when needed. A proposal
+   never publishes shared material until document Save.
+9. Display literal hostile HTML in a grammar rule. It remains text and creates
    no executable element. Inspect desktop and narrow practice layouts, labels,
    console errors and unexpected server failures.
 
@@ -181,6 +223,16 @@ synthetic accounts. API health must succeed before browser interaction.
   preview/commit, standalone practice, answer/reveal/completion persistence, direct vocabulary
   flashcard and prepared-example sentence practice without library publication, usable audio,
   selected bilingual-text hints, timestamped YouTube exercise hints and source-transcript replay, desktop and mobile screenshots, and console/server error assertions.
+- `block-review-atomic-edit-inline-feedback`: real field-level AI checking and
+  translation generation through admitted Texts jobs, desktop side-dialog and
+  mobile bottom-sheet editing, local Accept versus Apply versus publication, dirty
+  discard, independent library saving from the working draft before publication,
+  real tone-provider snippet playback and generated-audio preview/accept
+  through authorized storage/import, tool-backed read/current-block update proposal
+  and full review, prepared-audio proposal bytes and compact/full playback, stable
+  update identities despite unrelated edits, grouped inline prepared checking and
+  AI recognition of a private valid alternative, and rendered screenshots with
+  console/server-error checks. Only external provider responses are deterministic.
 - `workbook-share-private-copy-revoke`: ordered membership and shared-add consent,
   anonymous saved reading, private attempts, paid actor-private translation and
   completed-note counts, independent full copy, live revocation and inert hostile
@@ -192,9 +244,13 @@ copy identity rules. These matrices are not duplicated in the browser.
 
 ## Expected failure and edge cases
 
-Stale versions reject changes rather than overwrite newer material. A revoked
+Apply uses the current working-branch version. Unrelated edits do not invalidate
+independent append proposals; target changes and changed captured dependencies do.
+Stale replacement requests reject rather than overwrite newer material. A revoked
 share cannot read source-dependent history or submit new attempts. Free-text
-answers stay unchecked until actual evaluation; prepared answer reveals are free.
+answers stay unchecked until actual evaluation; failed AI calls retain the answer
+and offer retry or prepared content. Field suggestions never mutate a document
+without explicit acceptance/application; prepared answer reveals are free.
 Unsupported embeds and unsafe URL schemes are rejected. Uploaded audio must meet
 type and size restrictions. Share secrets are capability headers. Retrying a
 failed save reuses its operation identity; retrying practice creates a new attempt.

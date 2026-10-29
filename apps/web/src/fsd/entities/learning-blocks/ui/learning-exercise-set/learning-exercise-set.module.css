@@ -1,0 +1,88 @@
+.root {
+    min-width: 0;
+    color: var(--text-primary);
+    border: 1px solid transparent;
+    border-radius: var(--radius-12);
+    padding: var(--space-8) var(--space-16) var(--space-16);
+}
+
+.accented {
+    background: var(--success-50);
+    border-color: var(--success-100);
+}
+
+.preview {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--size-36);
+    min-width: 0;
+}
+
+.heading > svg {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+.heading h3 {
+    font-size: var(--size-14);
+    font-weight: 600;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.metadata {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.spacer {
+    flex: 1;
+}
+
+.summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.summary button {
+    font-size: var(--size-12);
+    min-height: var(--size-28);
+}
+
+.items {
+    display: grid;
+    gap: var(--space-4);
+}
+
+:where([data-theme='dark']) .accented {
+    background: color-mix(
+        in srgb,
+        var(--success-400) 9%,
+        var(--background-canvas)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--success-400) 22%,
+        var(--background-canvas)
+    );
+}
+
+@media (pointer: coarse) {
+    .heading,
+    .summary button {
+        min-height: var(--size-44);
+    }
+}

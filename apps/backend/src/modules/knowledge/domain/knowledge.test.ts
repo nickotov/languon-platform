@@ -88,3 +88,52 @@ it('retains useful content for a media-only note without claiming media understa
     });
     expect(knowledgeBodyPlainText(body)).toBe('Video');
 });
+
+it('projects author descriptions, exercise hints and group titles from saved material without presentation identities', () => {
+    const videoId = randomUUID();
+    const groupId = randomUUID();
+    const body = KnowledgeBodySchema.parse({
+        schemaVersion: 2,
+        document: {
+            type: 'doc',
+            content: [
+                {
+                    type: 'learningBlock',
+                    attrs: {
+                        block: {
+                            id: videoId,
+                            type: 'video',
+                            source: { kind: 'youtube', videoId: 'dQw4w9WgXcQ' },
+                            description: 'Author description: a train arrives.',
+                        },
+                    },
+                },
+                {
+                    type: 'learningBlock',
+                    attrs: {
+                        block: {
+                            id: randomUUID(),
+                            type: 'exercise',
+                            format: 'free-text',
+                            question: 'What arrives?',
+                            referenceAnswer: 'A train',
+                            explanation: 'The author describes a train.',
+                            hint: 'Look at the station.',
+                            group: {
+                                id: groupId,
+                                title: 'Listening practice',
+                                parentBlockId: videoId,
+                            },
+                        },
+                    },
+                },
+            ],
+        },
+    });
+    const text = knowledgeBodyPlainText(body);
+    expect(text).toContain('Author description: a train arrives.');
+    expect(text).toContain('Listening practice');
+    expect(text).toContain('Look at the station.');
+    expect(text).not.toContain(groupId);
+    expect(text).not.toContain(videoId);
+});

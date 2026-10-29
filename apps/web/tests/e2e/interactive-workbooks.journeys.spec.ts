@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import {
+    expect,
+    test,
+    type Page,
+    type TestInfo,
+    type Locator,
+} from '@playwright/test';
 import type {
     KnowledgeNote,
     Workbook,
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:7714455deb2c9ee8
+// @user-flow-revision interactive-workbooks sha256:2f9228d962ec94a6
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -65,7 +71,23 @@ async function api<T>(
     expect(response.ok(), await response.text()).toBe(true);
     return response.json() as Promise<T>;
 }
-function runtime(page: Page) {
+async function verifyAuthorizedWav(page: Page, url: string) {
+    expect(new URL(url).origin).toBe(new URL(origin).origin);
+    const response = await page.request.get(url, {
+        headers: {
+            Authorization: `Bearer ${tokens.get(page)}`,
+            Origin: origin,
+        },
+    });
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('audio/wav');
+    const bytes = await response.body();
+    expect(bytes.length).toBeGreaterThan(44);
+    expect(bytes.length).toBe(Number(response.headers()['content-length']));
+    expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF');
+    expect(bytes.subarray(8, 12).toString('ascii')).toBe('WAVE');
+}
+function runtime(page: Page, expectedFailures = new Set<string>()) {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -76,7 +98,12 @@ function runtime(page: Page) {
             errors.push(message.text());
     });
     page.on('response', (response) => {
-        if (response.status() >= 500)
+        if (
+            response.status() >= 500 &&
+            !expectedFailures.has(
+                `${response.status()} ${new URL(response.url()).pathname}`,
+            )
+        )
             errors.push(
                 `${response.status()} ${new URL(response.url()).pathname}`,
             );
@@ -85,7 +112,11 @@ function runtime(page: Page) {
 }
 async function capture(page: Page, info: TestInfo, name: string) {
     const path = info.outputPath(`${name}.png`);
-    await page.screenshot({ path, fullPage: true, animations: 'disabled' });
+    await page.screenshot({
+        path,
+        fullPage: (page.viewportSize()?.width ?? 1440) > 767,
+        animations: 'disabled',
+    });
     await info.attach(name, { path, contentType: 'image/png' });
 }
 async function addBlock(
@@ -108,9 +139,70 @@ async function addBlock(
     for (const [label, value] of Object.entries(values))
         await dialog.getByLabel(label, { exact: true }).fill(value);
     await dialog
-        .getByRole('button', { name: 'Apply block', exact: true })
+        .getByRole('button', { name: 'Apply changes', exact: true })
         .click();
     await expect(dialog).not.toBeVisible();
+}
+async function fillEditorLanguage(
+    dialog: Locator,
+    label: string,
+    value: string,
+) {
+    const field = dialog.getByLabel(label, { exact: true });
+    if (!(await field.isVisible())) {
+        const disclosure = dialog.getByRole('button', { name: /^Languages:/u });
+        await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+        await disclosure.click();
+    }
+    await expect(field).toBeVisible();
+    await field.fill(value);
+}
+async function expandExercise(region: Locator, question: string) {
+    const toggle = region.getByRole('button', { name: question });
+    await expect(toggle).toBeVisible();
+    if ((await toggle.getAttribute('aria-expanded')) === 'false')
+        await toggle.click();
+}
+async function aiAction(page: Page, button: Locator, endpoint: RegExp) {
+    const response = page.waitForResponse(
+        (item) =>
+            item.request().method() === 'POST' &&
+            endpoint.test(new URL(item.url()).pathname),
+    );
+    await button.click();
+    const accepted = await response;
+    if (accepted.status() === 409) {
+        expect((await accepted.json()).error.code).toBe(
+            'action_confirmation_required',
+        );
+        await page
+            .getByRole('dialog', {
+                name: 'Review this action’s budget',
+                exact: true,
+            })
+            .getByRole('button', { name: 'Send', exact: true })
+            .click();
+    } else expect(accepted.ok(), await accepted.text()).toBe(true);
+}
+async function prepareSpeech(page: Page, button: Locator) {
+    const prepared = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith('/speech/prepare'),
+    );
+    await button.click();
+    const response = await prepared;
+    expect(response.ok(), await response.text()).toBe(true);
+    const payload = await response.json();
+    if (payload.state === 'confirmation_required')
+        await page
+            .getByRole('dialog', {
+                name: 'Generate pronunciation?',
+                exact: true,
+            })
+            .getByRole('button', { name: 'Generate', exact: true })
+            .click();
+    else expect(['queued', 'processing', 'ready']).toContain(payload.state);
 }
 function syntheticWav() {
     const samples = 8000;
@@ -134,7 +226,8 @@ function syntheticWav() {
 test('author creates blocks and uploaded audio, publishes, reopens and saves private practice', async ({
     page,
 }, info) => {
-    const healthy = runtime(page);
+    const expectedFailures = new Set<string>();
+    const healthy = runtime(page, expectedFailures);
     await signup(page, info, 'author');
     await page.getByRole('button', { name: 'New note', exact: true }).click();
     await expect(page).toHaveURL(/\/knowledge\/[0-9a-f-]{36}$/u);
@@ -233,7 +326,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         const style = getComputedStyle(element);
         return { border: style.borderTopWidth, padding: style.paddingTop };
     });
-    expect(frame).toEqual({ border: '0px', padding: '0px' });
+    expect(frame).toEqual({ border: '1px', padding: '0px' });
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
     await capture(page, info, 'chat-vocabulary-proposal');
     await proposal
@@ -321,14 +414,12 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await translationEditor
         .getByRole('combobox', { name: 'Prepared translation' })
         .selectOption('');
-    await translationEditor
-        .getByLabel('Translation language', { exact: true })
-        .fill('es');
+    await fillEditorLanguage(translationEditor, 'Translation language', 'es');
     await translationEditor
         .getByLabel('Translated passage', { exact: true })
         .fill('Visité París el año pasado.');
     await translationEditor
-        .getByRole('button', { name: 'Apply block', exact: true })
+        .getByRole('button', { name: 'Apply changes', exact: true })
         .click();
     await page
         .getByRole('button', {
@@ -349,8 +440,15 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         translationEditor.getByLabel('Translated passage', { exact: true }),
     ).toHaveValue('J’ai visité Paris l’année dernière.');
+    await expect(
+        translationEditor.getByRole('button', {
+            name: 'Apply changes',
+            exact: true,
+        }),
+    ).toBeDisabled();
     await translationEditor
-        .getByRole('button', { name: 'Apply block', exact: true })
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
         .click();
     const authorBlocks = page.locator('[data-learning-block-id]');
     const beforeDragIds = await authorBlocks.evaluateAll((elements) =>
@@ -427,7 +525,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         .getByLabel('Title', { exact: true })
         .fill('Listening sample');
     await audioDialog
-        .getByRole('button', { name: 'Apply block', exact: true })
+        .getByRole('button', { name: 'Apply changes', exact: true })
         .click();
     await expect(
         page.getByRole('button', { name: 'Save', exact: true }),
@@ -463,15 +561,85 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         page.getByRole('heading', { name: 'Present simple', exact: true }),
     ).toBeVisible();
-    await expect(page.getByText('Audio tools', { exact: true })).toBeVisible();
-    await page.getByText('Audio tools', { exact: true }).click();
-    await expect(
-        page.getByText('Add a text, vocabulary or grammar block first.', {
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Listening sample',
             exact: true,
-        }),
-    ).toHaveCount(0);
-    await page.getByText('Audio tools', { exact: true }).click();
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    await expect(
+        page.getByRole('dialog').getByLabel('Title', { exact: true }),
+    ).toHaveValue('Listening sample');
+    const audioEditor = page.getByRole('dialog');
+    const unavailablePath = `/api/knowledge/${noteId}/transcriptions`;
+    expectedFailures.add(`503 ${unavailablePath}`);
+    const transcriptionResponse = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === unavailablePath,
+    );
+    await audioEditor
+        .getByRole('button', { name: 'Prepare transcription', exact: true })
+        .click();
+    const unavailable = await transcriptionResponse;
+    expect(unavailable.status()).toBe(503);
+    expectedFailures.delete(`503 ${unavailablePath}`);
+    await expect(
+        audioEditor.getByText(
+            'Transcription is unavailable with the current provider, pricing or credit configuration.',
+            { exact: true },
+        ),
+    ).toBeVisible();
+    await expect(
+        audioEditor.getByLabel('Speech source text', { exact: true }),
+    ).toBeEnabled();
+    await audioEditor
+        .getByRole('group', { name: 'Transcript passages', exact: true })
+        .getByRole('button', { name: 'Add row', exact: true })
+        .click();
+    await expect(
+        audioEditor.getByLabel('Transcript', { exact: true }),
+    ).toBeEnabled();
+    await audioEditor
+        .getByLabel('Speech source text', { exact: true })
+        .fill('Manual text remains editable.');
+    await expect(
+        audioEditor.getByLabel('Speech source text', { exact: true }),
+    ).toHaveValue('Manual text remains editable.');
+    await audioEditor
+        .getByLabel('Transcript', { exact: true })
+        .fill('Manual transcript remains editable.');
+    const unchangedAudio = await api<{ note: KnowledgeNote }>(
+        page,
+        `/knowledge/${noteId}`,
+    );
+    expect(JSON.stringify(unchangedAudio.note.body)).not.toContain(
+        'Manual text remains editable.',
+    );
+    expect(JSON.stringify(unchangedAudio.note.body)).not.toContain(
+        'Manual transcript remains editable.',
+    );
+    await capture(page, info, 'audio-transcription-unavailable-manual-fields');
+    await capture(page, info, 'audio-side-editor');
+    await page
+        .getByRole('dialog')
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
+        .click();
+    await page
+        .getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+        .getByRole('button', { name: 'Discard', exact: true })
+        .click();
     await capture(page, info, 'editor-populated-desktop');
+    await page.getByRole('button', { name: /Account menu/u }).click();
+    await page.getByRole('button', { name: 'Dark', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.keyboard.press('Escape');
+    await capture(page, info, 'editor-populated-desktop-dark');
+    await page.getByRole('button', { name: /Account menu/u }).click();
+    await page.getByRole('button', { name: 'Light', exact: true }).click();
+    await page.keyboard.press('Escape');
     await page.goto(`${origin}/knowledge/${noteId}/practice`);
     const reading = page.getByRole('region', {
         name: 'Travel reading',
@@ -480,6 +648,9 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         reading.getByText('I visited Paris last year.', { exact: true }),
     ).toBeVisible();
+    await reading
+        .getByRole('button', { name: 'Original', exact: true })
+        .click();
     await expect(
         reading.getByText('J’ai visité Paris l’année dernière.', {
             exact: true,
@@ -493,8 +664,14 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
             exact: true,
         }),
     ).toBeVisible();
+    await reading
+        .getByRole('button', {
+            name: 'Block settings: Travel reading',
+            exact: true,
+        })
+        .click();
     await page
-        .getByRole('button', { name: 'Save to Texts', exact: true })
+        .getByRole('menuitem', { name: 'Save to Texts', exact: true })
         .click();
     const textLibrary = page.getByRole('dialog', { name: 'Save to Texts' });
     await textLibrary.getByLabel('Name', { exact: true }).fill('Travel copy');
@@ -514,15 +691,27 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         page.getByRole('heading', { name: 'Present simple', exact: true }),
     ).toBeVisible();
-    await page
+    const verbPractice = page.getByRole('region', {
+        name: 'Verb practice',
+        exact: true,
+    });
+    await expandExercise(verbPractice, 'Complete: I ___ English.');
+    await verbPractice
         .getByRole('textbox', { name: 'Your answer', exact: true })
         .fill('study');
-    await page
-        .getByRole('button', { name: 'Save answer', exact: true })
-        .click();
+    await aiAction(
+        page,
+        verbPractice.getByRole('button', {
+            name: 'Check with AI',
+            exact: true,
+        }),
+        /\/learning\/evaluations$/u,
+    );
     await expect(
-        page.getByText('Answer saved. Not evaluated.', { exact: true }),
-    ).toBeVisible();
+        verbPractice.getByText('Your answer expresses the reference meaning.', {
+            exact: false,
+        }),
+    ).toBeVisible({ timeout: 30_000 });
     await page
         .getByRole('region', { name: 'Verb practice', exact: true })
         .getByRole('button', { name: 'Show answer', exact: true })
@@ -549,14 +738,17 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         `/knowledge/${noteId}/learning`,
     );
     expect(state.attempts).toHaveLength(1);
-    expect(state.attempts[0]?.evaluation.status).toBe('unchecked');
+    expect(state.attempts[0]?.evaluation).toMatchObject({
+        status: 'correct',
+        method: 'ai',
+    });
     expect(state.events.some((event) => event.kind === 'answer-revealed')).toBe(
         true,
     );
     // The original saved vocabulary is practiced directly, without publishing a dictionary.
     await page
         .getByRole('region', { name: 'Useful words', exact: true })
-        .getByRole('button', { name: 'Train', exact: true })
+        .getByRole('button', { name: 'Useful words', exact: true })
         .click();
     await page.getByRole('menuitem', { name: 'Cards', exact: true }).click();
     const cardSetup = page.getByRole('dialog', { name: 'Train with cards' });
@@ -590,7 +782,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     expect(vocabularyProgress).toMatchObject({ known: 1, total: 1 });
     await page
         .getByRole('region', { name: 'Useful words', exact: true })
-        .getByRole('button', { name: 'Train', exact: true })
+        .getByRole('button', { name: 'Useful words', exact: true })
         .click();
     await page
         .getByRole('menuitem', { name: 'Sentence practice', exact: true })
@@ -753,6 +945,45 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         },
         'POST',
     );
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(`${origin}/knowledge/${timed.note.id}`);
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Timestamped video',
+            exact: true,
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    const videoEditor = page.getByRole('dialog');
+    const description = videoEditor.getByRole('textbox', {
+        name: 'Author’s description',
+        exact: true,
+    });
+    await expect(description).toHaveCount(1);
+    await description.fill(
+        'Unsaved author description for video editor verification.',
+    );
+    await capture(page, info, 'video-side-editor');
+    await videoEditor
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
+        .click();
+    await videoEditor
+        .getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+        .getByRole('button', { name: 'Discard', exact: true })
+        .click();
+    expect(
+        JSON.stringify(
+            (
+                await api<{ note: KnowledgeNote }>(
+                    page,
+                    `/knowledge/${timed.note.id}`,
+                )
+            ).note.body,
+        ),
+    ).not.toContain(
+        'Unsaved author description for video editor verification.',
+    );
     await page.goto(`${origin}/knowledge/${timed.note.id}/practice`);
     const videoQuestion = page.getByRole('region', {
         name: 'Timestamped question',
@@ -768,6 +999,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
             exact: true,
         }),
     ).toHaveCount(0);
+    await expandExercise(videoQuestion, 'Where does the bus stop?');
     await videoQuestion
         .getByRole('button', { name: 'Hint', exact: true })
         .click();
@@ -790,13 +1022,20 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await videoSource
         .getByRole('button', { name: 'Show transcript', exact: true })
         .click();
+    await expect(
+        videoSource.getByText('The remaining transcript stays hidden.', {
+            exact: true,
+        }),
+    ).toBeVisible();
     await videoSource
+        .getByRole('region', { name: 'Exercise', exact: true })
         .getByRole('button', { name: 'Replay passage', exact: true })
         .click();
-    await expect(videoSource.locator('iframe')).toHaveAttribute(
+    await expect(videoQuestion.locator('iframe')).toHaveAttribute(
         'src',
         'https://www.youtube-nocookie.com/embed/abcdefghijk?start=12&autoplay=1',
     );
+    await capture(page, info, 'video-transcript-grounded-hint');
     const readingQuestion = page.getByRole('region', {
         name: 'Linked reading question',
         exact: true,
@@ -804,6 +1043,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         readingQuestion.getByText('The train leaves at noon.', { exact: true }),
     ).toHaveCount(0);
+    await expandExercise(readingQuestion, 'When does the train leave?');
     await readingQuestion
         .getByRole('button', { name: 'Hint', exact: true })
         .click();
@@ -988,10 +1228,7 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
             exact: true,
         });
         await greeting
-            .getByText('Private translation', { exact: true })
-            .click();
-        await greeting
-            .getByLabel('Target language', { exact: true })
+            .getByLabel('Translation language', { exact: true })
             .selectOption('fr');
         await greeting
             .getByRole('button', { name: 'Translate privately', exact: true })
@@ -1004,17 +1241,9 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
         await consent
             .getByRole('button', { name: 'Send', exact: true })
             .click();
-        const privateView = greeting.getByRole('region', {
-            name: 'Your private bilingual view',
-            exact: true,
-        });
-        await expect(privateView).toBeVisible({ timeout: 30_000 });
-        await privateView
-            .getByRole('button', { name: 'Bilingual', exact: true })
-            .click();
         await expect(
-            privateView.getByText('[fr] Hello world.', { exact: true }),
-        ).toBeVisible();
+            greeting.getByText('[fr] Hello world.', { exact: true }),
+        ).toBeVisible({ timeout: 30_000 });
         const ownerSource = await api<{ note: KnowledgeNote }>(
             page,
             `/knowledge/${first.id}`,
@@ -1040,27 +1269,43 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
                 exact: true,
             });
             await otherGreeting
-                .getByText('Private translation', { exact: true })
-                .click();
+                .getByLabel('Translation language', { exact: true })
+                .selectOption('fr');
             await expect(
-                otherGreeting.getByRole('region', {
-                    name: 'Your private bilingual view',
+                otherGreeting.getByText('[fr] Hello world.', { exact: true }),
+            ).toHaveCount(0);
+            await expect(
+                otherGreeting.getByRole('button', {
+                    name: 'Translate privately',
                     exact: true,
                 }),
-            ).toHaveCount(0);
+            ).toBeVisible();
             otherHealthy();
         } finally {
             await otherContext.close();
         }
-        await reader
+        const greetingPractice = reader.getByRole('region', {
+            name: 'Exercise',
+            exact: true,
+        });
+        await expandExercise(greetingPractice, 'Write a greeting.');
+        await greetingPractice
             .getByRole('textbox', { name: 'Your answer', exact: true })
             .fill('Hello');
-        await reader
-            .getByRole('button', { name: 'Save answer', exact: true })
-            .click();
+        await aiAction(
+            reader,
+            greetingPractice.getByRole('button', {
+                name: 'Check with AI',
+                exact: true,
+            }),
+            /\/learning\/evaluations$/u,
+        );
         await expect(
-            reader.getByText('Answer saved. Not evaluated.', { exact: true }),
-        ).toBeVisible();
+            greetingPractice.getByText(
+                'Your answer expresses the reference meaning.',
+                { exact: false },
+            ),
+        ).toBeVisible({ timeout: 30_000 });
         await reader
             .getByRole('button', { name: 'Mark complete', exact: true })
             .click();
@@ -1104,5 +1349,607 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
     } finally {
         await context.close();
     }
+    healthy();
+});
+
+// @user-flow interactive-workbooks/block-review-atomic-edit-inline-feedback
+test('reviews typed updates, accepts atomic field suggestions in side editors and evaluates private inline alternatives', async ({
+    page,
+}, info) => {
+    const healthy = runtime(page);
+    await signup(page, info, 'block-review');
+    const preference = await api<{ version: number }>(
+        page,
+        '/users/me/ai-model-preference',
+    );
+    await api(
+        page,
+        '/users/me/ai-model-preference',
+        {
+            mode: 'auto',
+            expectedVersion: preference.version,
+            maxCreditsPerAction: '100',
+        },
+        'PUT',
+    );
+    const vocabularyId = randomUUID();
+    const textId = randomUUID();
+    const groupId = randomUUID();
+    const choiceId = randomUUID();
+    const freeId = randomUUID();
+    const correctChoiceId = randomUUID();
+    const entries = [
+        ['travail', 'BAD translation'],
+        ['joie', 'радость'],
+        ['ménage', 'уборка'],
+        ['carrelage', 'плитка'],
+        ['poisson', 'рыба'],
+        ['nourriture', 'корм'],
+    ].map(([term, translation]) => ({ id: randomUUID(), term, translation }));
+    const blocks = [
+        {
+            id: vocabularyId,
+            type: 'vocabulary',
+            title: 'Review vocabulary',
+            language: 'fr',
+            translationLanguage: 'ru',
+            entries,
+        },
+        {
+            id: textId,
+            type: 'bilingual-text',
+            title: 'Reading to translate',
+            language: 'fr',
+            segments: [
+                {
+                    id: randomUUID(),
+                    text: 'Le samedi, nous faisons le ménage.',
+                },
+            ],
+            translations: [],
+        },
+        { id: randomUUID(), type: 'audio', title: 'Prepare recording later' },
+        {
+            id: choiceId,
+            type: 'exercise',
+            format: 'multiple-choice',
+            group: { id: groupId, title: 'Practice together' },
+            question: 'Choose the right article: ___ ménage',
+            choices: [
+                { id: correctChoiceId, text: 'le' },
+                { id: randomUUID(), text: 'la' },
+            ],
+            correctChoiceId,
+            referenceAnswer: 'le',
+            explanation: 'Ménage is masculine.',
+        },
+        {
+            id: freeId,
+            type: 'exercise',
+            format: 'free-text',
+            group: { id: groupId, title: 'Practice together' },
+            question: 'Write a French greeting.',
+            referenceAnswer: 'Salut.',
+            explanation: 'Salut is an informal greeting.',
+            acceptedAnswers: ['Bonjour.'],
+            hint: 'A polite greeting is also valid.',
+        },
+    ];
+    const { note } = await api<{ note: KnowledgeNote }>(
+        page,
+        '/knowledge',
+        {
+            operationId: randomUUID(),
+            content: {
+                title: 'Block review laboratory',
+                summary: '',
+                categories: [],
+                studiedLanguage: 'fr',
+                explanationLanguage: 'en',
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: blocks.map((block) => ({
+                            type: 'learningBlock',
+                            attrs: { block },
+                        })),
+                    },
+                },
+            },
+        },
+        'POST',
+    );
+    await page.goto(`${origin}/knowledge/${note.id}`);
+    await expect(
+        page.locator(`[data-learning-block-id="${vocabularyId}"]`),
+    ).toBeVisible();
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Review vocabulary',
+            exact: true,
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    const editor = page.getByRole('dialog', {
+        name: 'Review vocabulary',
+        exact: true,
+    });
+    await expect(editor).toBeVisible();
+    const desktopBox = await editor.boundingBox();
+    expect(desktopBox?.width).toBeCloseTo(440, 0);
+    const translation = editor
+        .getByLabel('Translation', { exact: true })
+        .first();
+    await expect(translation).toHaveValue('BAD translation');
+    await aiAction(
+        page,
+        editor
+            .getByRole('button', { name: 'Check translation', exact: true })
+            .first(),
+        /\/block-field-actions$/u,
+    );
+    await expect(
+        editor.getByText(
+            'Use this translation for the selected source phrase.',
+            { exact: true },
+        ),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(translation).toHaveValue('BAD translation');
+    await capture(page, info, 'atomic-vocabulary-side-editor');
+    const beforeAccept = await api<{ note: KnowledgeNote }>(
+        page,
+        `/knowledge/${note.id}`,
+    );
+    expect(JSON.stringify(beforeAccept.note.body)).toContain('BAD translation');
+    await editor.getByRole('button', { name: 'Accept', exact: true }).click();
+    await expect(translation).toHaveValue('работа');
+    await expect(
+        editor.getByLabel('Translation', { exact: true }).nth(1),
+    ).toHaveValue('радость');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(editor).toBeVisible();
+    await capture(page, info, 'atomic-vocabulary-bottom-sheet');
+    await editor
+        .getByRole('button', { name: 'Expand editor', exact: true })
+        .click();
+    await expect(
+        editor.getByRole('button', { name: 'Collapse editor', exact: true }),
+    ).toBeVisible();
+    await editor
+        .getByRole('button', { name: 'Apply changes', exact: true })
+        .click();
+    await expect(editor).not.toBeVisible();
+    expect(
+        JSON.stringify(
+            (await api<{ note: KnowledgeNote }>(page, `/knowledge/${note.id}`))
+                .note.body,
+        ),
+    ).toContain('BAD translation');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Review vocabulary',
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole('menuitem', { name: 'Save to dictionary', exact: true })
+        .click();
+    const library = page.getByRole('dialog', {
+        name: 'Save to dictionary',
+        exact: true,
+    });
+    await library
+        .getByLabel('Name', { exact: true })
+        .fill('Independent corrected words');
+    await library.getByRole('button', { name: 'Preview', exact: true }).click();
+    await expect(
+        library.getByText('travail — работа', { exact: true }),
+    ).toBeVisible();
+    await expect(library.getByText(/BAD translation/u)).toHaveCount(0);
+    await library
+        .getByRole('button', { name: 'Save independent copy', exact: true })
+        .click();
+    await expect(
+        library.getByText('Independent copy saved.', { exact: true }),
+    ).toBeVisible();
+    // Saving a draft block to a library must not publish the author's sheet.
+    expect(
+        JSON.stringify(
+            (await api<{ note: KnowledgeNote }>(page, `/knowledge/${note.id}`))
+                .note.body,
+        ),
+    ).toContain('BAD translation');
+    await library.getByRole('button', { name: 'Done', exact: true }).click();
+    const saved = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith(`/knowledge/${note.id}/save`) &&
+            response.status() === 200,
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await saved;
+    const published = await api<{ note: KnowledgeNote }>(
+        page,
+        `/knowledge/${note.id}`,
+    );
+    expect(JSON.stringify(published.note.body)).not.toContain(
+        'BAD translation',
+    );
+    expect(JSON.stringify(published.note.body)).toContain('работа');
+
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Prepare recording later',
+            exact: true,
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    const recordingEditor = page.getByRole('dialog', {
+        name: 'Prepare recording later',
+        exact: true,
+    });
+    await recordingEditor
+        .getByLabel('Speech source text', { exact: true })
+        .fill('Bonjour, nous faisons le ménage.');
+    await prepareSpeech(
+        page,
+        recordingEditor.getByRole('button', {
+            name: 'Generate speech',
+            exact: true,
+        }),
+    );
+    await expect(
+        recordingEditor.getByText('Generated audio preview', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(recordingEditor.locator('audio')).toHaveAttribute(
+        'src',
+        /^blob:/u,
+    );
+    await recordingEditor
+        .getByRole('button', { name: 'Play preview', exact: true })
+        .click();
+    await expect
+        .poll(() =>
+            recordingEditor
+                .locator('audio')
+                .evaluate((element: HTMLAudioElement) => element.duration),
+        )
+        .toBe(1);
+    const beforeAudio = await api<{ note: KnowledgeNote }>(
+        page,
+        `/knowledge/${note.id}`,
+    );
+    const audioBefore = beforeAudio.note.body.document.content?.find(
+        (node) => node.attrs?.block?.title === 'Prepare recording later',
+    )?.attrs?.block;
+    expect(audioBefore?.type).toBe('audio');
+    expect(audioBefore).not.toHaveProperty('assetId');
+    await capture(page, info, 'generated-audio-preview');
+    await recordingEditor
+        .getByRole('button', { name: 'Accept recording', exact: true })
+        .click();
+    await expect(
+        recordingEditor.getByText(
+            'Recording accepted. Apply block changes when ready.',
+            { exact: true },
+        ),
+    ).toBeVisible();
+    await recordingEditor
+        .getByRole('button', { name: 'Apply changes', exact: true })
+        .click();
+    const audioSaved = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith(`/knowledge/${note.id}/save`) &&
+            response.status() === 200,
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await audioSaved;
+    const preparedAudio = (
+        await api<{ note: KnowledgeNote }>(page, `/knowledge/${note.id}`)
+    ).note.body.document.content?.find(
+        (node) => node.attrs?.block?.title === 'Prepare recording later',
+    )?.attrs?.block;
+    expect(preparedAudio).toHaveProperty('assetId', expect.any(String));
+
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Reading to translate',
+            exact: true,
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    const textEditor = page.getByRole('dialog', {
+        name: 'Reading to translate',
+        exact: true,
+    });
+    await fillEditorLanguage(textEditor, 'Translation language', 'ru');
+    await aiAction(
+        page,
+        textEditor.getByRole('button', {
+            name: 'Generate translation',
+            exact: true,
+        }),
+        /\/block-field-actions$/u,
+    );
+    await expect(
+        textEditor.getByText('[ru] Le samedi, nous faisons le ménage.', {
+            exact: true,
+        }),
+    ).toBeVisible({ timeout: 30_000 });
+    await textEditor
+        .getByRole('button', { name: 'Accept', exact: true })
+        .click();
+    await expect(
+        textEditor.getByLabel('Translated passage', { exact: true }),
+    ).toHaveValue('[ru] Le samedi, nous faisons le ménage.');
+    // Dismissing a dirty editor is explicit and does not publish accepted field proposals.
+    await textEditor
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
+        .click();
+    await expect(
+        textEditor.getByRole('alertdialog', {
+            name: 'Discard changes?',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await textEditor
+        .getByRole('button', { name: 'Discard', exact: true })
+        .click();
+    expect(
+        JSON.stringify(
+            (await api<{ note: KnowledgeNote }>(page, `/knowledge/${note.id}`))
+                .note.body,
+        ),
+    ).not.toContain('[ru] Le samedi');
+
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    if (!(await tutor.isVisible()))
+        await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    await tutor
+        .getByLabel('Your question')
+        .fill(
+            'Update French vocabulary block fixture: keep the existing entries and improve the first translation.',
+        );
+    await aiAction(
+        page,
+        tutor.getByRole('button', { name: 'Send', exact: true }),
+        /\/conversations\/[^/]+\/turns$/u,
+    );
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+    await expect(
+        proposal.getByText('работа / труд', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+    const audioContent = page.waitForResponse(
+        (response) =>
+            response.status() === 200 &&
+            /\/speech\/playbacks\/[^/]+\/content$/u.test(
+                new URL(response.url()).pathname,
+            ),
+    );
+    await prepareSpeech(
+        page,
+        proposal.getByRole('button', { name: 'Play: travail', exact: true }),
+    );
+    const playbackResponse = await audioContent;
+    expect(playbackResponse.headers()['content-type']).toContain('audio/wav');
+    await expect(
+        proposal.getByRole('button', { name: 'Stop', exact: true }),
+    ).toBeVisible();
+    await proposal.getByRole('button', { name: 'Stop', exact: true }).click();
+    // Chromium transfers and decodes these bytes, but CDP binary-body capture
+    // can be empty. Read the identical authorized URL independently as well.
+    await verifyAuthorizedWav(page, playbackResponse.url());
+    await proposal.getByRole('button', { name: 'Review', exact: true }).click();
+    const review = page.getByRole('dialog', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+    await expect(
+        review.getByText('работа / труд', { exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'chat-target-update-review');
+    await review.getByRole('button', { name: 'Close', exact: true }).click();
+    // An unrelated title edit must not invalidate the captured vocabulary target.
+    await page
+        .getByLabel('Title', { exact: true })
+        .fill('Block review laboratory updated');
+    await proposal
+        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .click();
+    await expect(
+        proposal.getByRole('button', { name: 'Show in sheet', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(
+        blocks.length,
+    );
+    const stillPublished = await api<{ note: KnowledgeNote }>(
+        page,
+        `/knowledge/${note.id}`,
+    );
+    expect(JSON.stringify(stillPublished.note.body)).not.toContain(
+        'работа / труд',
+    );
+    const publishUpdate = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith(`/knowledge/${note.id}/save`) &&
+            response.status() === 200,
+    );
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await publishUpdate;
+    const updated = await api<{ note: KnowledgeNote }>(
+        page,
+        `/knowledge/${note.id}`,
+    );
+    const vocabulary = updated.note.body.document.content?.find(
+        (node) => node.attrs?.block?.id === vocabularyId,
+    )?.attrs?.block;
+    expect(vocabulary).toMatchObject({
+        id: vocabularyId,
+        type: 'vocabulary',
+        entries: [
+            {
+                id: entries[0]!.id,
+                term: 'travail',
+                translation: 'работа / труд',
+            },
+            ...entries.slice(1),
+        ],
+    });
+    await tutor
+        .getByLabel('Your question')
+        .fill('Copy prepared audio block fixture for review.');
+    const preparedMediaRead = page.waitForResponse(
+        (response) =>
+            response.status() === 200 &&
+            new URL(response.url()).pathname.endsWith(
+                `/knowledge/notes/${note.id}/media/${preparedAudio!.assetId}`,
+            ),
+    );
+    await aiAction(
+        page,
+        tutor.getByRole('button', { name: 'Send', exact: true }),
+        /\/conversations\/[^/]+\/turns$/u,
+    );
+    const audioProposal = tutor
+        .getByRole('article', { name: 'Proposed learning blocks', exact: true })
+        .filter({
+            has: page.getByRole('heading', {
+                name: 'Prepared audio proposal',
+                exact: true,
+            }),
+        });
+    await expect(audioProposal).toBeVisible({ timeout: 30_000 });
+    const preparedMedia = await preparedMediaRead;
+    expect(preparedMedia.headers()['content-type']).toContain('audio/wav');
+    await verifyAuthorizedWav(page, preparedMedia.url());
+    await expect(audioProposal.locator('audio')).toHaveAttribute(
+        'src',
+        /^blob:/u,
+    );
+    await expect
+        .poll(() =>
+            audioProposal
+                .locator('audio')
+                .evaluate((element: HTMLAudioElement) => element.duration),
+        )
+        .toBe(1);
+    const compactAudioSource = await audioProposal
+        .locator('audio')
+        .getAttribute('src');
+    await audioProposal
+        .getByRole('button', { name: 'Review', exact: true })
+        .click();
+    const audioReview = page.getByRole('dialog', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+    await expect(audioReview.locator('audio')).toHaveAttribute(
+        'src',
+        compactAudioSource ?? '',
+    );
+    const reviewBounds = await audioReview.boundingBox();
+    expect(reviewBounds?.y).toBe(12);
+    expect(reviewBounds?.height).toBe((page.viewportSize()?.height ?? 0) - 24);
+    await capture(page, info, 'prepared-audio-chat-review');
+    await audioReview
+        .getByRole('button', { name: 'Close', exact: true })
+        .click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    if (!(await tutor.isVisible()))
+        await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    await audioProposal
+        .getByRole('button', { name: 'Review', exact: true })
+        .click();
+    const mobileReviewBounds = await audioReview.boundingBox();
+    expect(mobileReviewBounds?.height).toBeCloseTo(844 * 0.82, 0);
+    const publicationNotice = audioReview.getByText(
+        'Not published until you Save.',
+        { exact: true },
+    );
+    await expect(publicationNotice).toBeVisible();
+    expect(
+        (await publicationNotice.boundingBox())?.width,
+    ).toBeGreaterThanOrEqual(300);
+    await capture(page, info, 'prepared-audio-chat-review-mobile');
+    await audioReview
+        .getByRole('button', { name: 'Expand', exact: true })
+        .click();
+    const expandedReviewBounds = await audioReview.boundingBox();
+    expect(expandedReviewBounds?.y).toBe(8);
+    expect(expandedReviewBounds?.height).toBe(836);
+    await capture(page, info, 'prepared-audio-chat-review-mobile-expanded');
+    await audioReview
+        .getByRole('button', { name: 'Close', exact: true })
+        .click();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(`${origin}/knowledge/${note.id}/practice`);
+    await expect(
+        page.getByRole('heading', { name: 'Practice together', exact: true }),
+    ).toBeVisible();
+    // Expand the set, then use the exact question panel to keep its feedback local.
+    const choiceToggle = page.getByRole('button', {
+        name: /Choose the right article: ___ ménage/u,
+    });
+    await choiceToggle.click();
+    const articleChoice = page.getByRole('radio', { name: 'le', exact: true });
+    await articleChoice.locator('..').click();
+    await expect(articleChoice).toBeChecked();
+    await page.getByRole('button', { name: 'Check', exact: true }).click();
+    await expect
+        .poll(async () => {
+            const state = await api<WorkbookLearningState>(
+                page,
+                `/knowledge/${note.id}/learning`,
+            );
+            return state.attempts.find(
+                (attempt) => attempt.exerciseId === choiceId,
+            )?.evaluation;
+        })
+        .toMatchObject({ status: 'correct', method: 'deterministic' });
+    await page
+        .getByRole('button', { name: /Write a French greeting\./u })
+        .click();
+    const answer = page.getByRole('textbox', {
+        name: 'Your answer',
+        exact: true,
+    });
+    await answer.fill('Bonjour.');
+    await aiAction(
+        page,
+        page.getByRole('button', { name: 'Check with AI', exact: true }).last(),
+        /\/learning\/evaluations$/u,
+    );
+    await expect(
+        page.getByText('A valid alternative expresses the reference meaning.', {
+            exact: false,
+        }),
+    ).toBeVisible({ timeout: 30_000 });
+    const state = await api<WorkbookLearningState>(
+        page,
+        `/knowledge/${note.id}/learning`,
+    );
+    expect(
+        state.attempts.find((attempt) => attempt.exerciseId === freeId)
+            ?.evaluation,
+    ).toMatchObject({
+        status: 'correct',
+        method: 'ai',
+        validAlternative: true,
+    });
+    await capture(page, info, 'inline-exercise-feedback-desktop');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await answer.locator('xpath=ancestor::form').scrollIntoViewIfNeeded();
+    await capture(page, info, 'inline-exercise-feedback-mobile');
     healthy();
 });

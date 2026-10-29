@@ -39,3 +39,10 @@ apps/*/next-env.d.ts
 # Frozen learner portrait prompt and exact selected provider source.
 .agent/features/051-learner-portrait/designs/learner-portrait/v001.prompt.md
 .agent/features/051-learner-portrait/designs/learner-portrait/v001/source
+
+# Immutable v16 provider export/identity and original machine test reports.
+.agent/features/059-interactive-workbooks/designs/interactive-knowledge-sheet-and-chat/v003/magic-patterns-source
+.agent/features/059-interactive-workbooks/designs/interactive-knowledge-sheet-and-chat/v003/source-manifest.json
+.agent/features/059-interactive-workbooks/evidence/v16-migration/**/tests.json
+.agent/features/059-interactive-workbooks/evidence/v16-migration/**/selection.json
+.agent/features/059-interactive-workbooks/evidence/v16-migration/final-critical/reports

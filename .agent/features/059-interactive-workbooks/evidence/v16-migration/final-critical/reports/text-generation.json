@@ -1,0 +1,242 @@
+{
+  "config": {
+    "argv": [
+      "/Users/nickkotov/.nvm/versions/node/v24.8.0/bin/node",
+      "/Users/nickkotov/projects/languon/apps/web/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config",
+      "tests/e2e/support/texts-playwright.config.ts",
+      "texts.journeys.spec.ts",
+      "--grep",
+      "owner translates, saves|independent text keeps",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output",
+      "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts"
+    ],
+    "configFile": "/Users/nickkotov/projects/languon/apps/web/tests/e2e/support/texts-playwright.config.ts",
+    "rootDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "texts.journeys.spec.ts",
+          "sidebar-navigation.journeys.spec.ts",
+          "app-shell.journeys.spec.ts"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "texts.journeys.spec.ts",
+      "file": "texts.journeys.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "owner translates, saves, reloads, edits and collects a contextual word",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 23900,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:25:45.405Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "owner-compose-missing-target",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-compose-missing-target-ceb8ccbadffad1b43847b35ed8ea698c381e2a04.png"
+                    },
+                    {
+                      "name": "owner-compose-long-source",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-compose-long-source-2db53c6442f9d992211e327c9db2aa2eccf52678.png"
+                    },
+                    {
+                      "name": "owner-compose-counter-action",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-compose-counter-action-d5142dc0cd9e2241eba621e7de55416cd95e19be.png"
+                    },
+                    {
+                      "name": "owner-saved-reader-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-saved-reader-desktop-4a2b028a48e1001634d8dbb0bea79c7549aeaf52.png"
+                    },
+                    {
+                      "name": "owner-reader-menu",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-reader-menu-a57bc00518aef442455a67728d426ebc33ef78c9.png"
+                    },
+                    {
+                      "name": "owner-edited-paragraphs",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-edited-paragraphs-28313f1530a45d1494098afaffb06f383a002a93.png"
+                    },
+                    {
+                      "name": "owner-collection-short-viewport",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-collection-short-viewport-f537a2b35e56ac07d8e5f7976a0123c7c6838147.png"
+                    },
+                    {
+                      "name": "owner-contextual-bank-card",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-contextual-bank-card-ad6fe0e5b74dce2fbe925e9dceeac0ecb2ef34cd.png"
+                    },
+                    {
+                      "name": "owner-french-canonical-source-card",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-owner-trans-b5f41--collects-a-contextual-word/attachments/owner-french-canonical-source-card-b87bf111fab51cb5cbcf835a939ee8c14ccd4aad.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a1889aa6179acd09e0f6-e031063bdac63f801c31",
+          "file": "texts.journeys.spec.ts",
+          "line": 803,
+          "column": 5
+        },
+        {
+          "title": "independent text keeps its identity through shared-folder moves and guards unsaved navigation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10829,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:26:09.610Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "texts-library-active-1440",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/texts-library-active-1440-e7b447a718ef47eee03aee37f99eb117d33f35a5.png"
+                    },
+                    {
+                      "name": "texts-library-archived-1440",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/texts-library-archived-1440-04fc1b46558e6b1edd3e252b09fb00237af9af2d.png"
+                    },
+                    {
+                      "name": "texts-library-active-390",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/texts-library-active-390-0906e5bdff43d88d0a725db608dbb98090a056c7.png"
+                    },
+                    {
+                      "name": "texts-library-archived-390",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/texts-library-archived-390-551b17f08c1d948e14cd4358d5156c2a2818d54c.png"
+                    },
+                    {
+                      "name": "independent-shared-folder-confirmation",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/independent-shared-folder-confirmation-eb2cbeb27b1cc2b918a608bed550e8147afa7dd2.png"
+                    },
+                    {
+                      "name": "independent-unsaved-editor-with-sidebar",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/independent-unsaved-editor-with-sidebar-93c44737d5499f4a51e0ee5b078a3ef4afca74e0.png"
+                    },
+                    {
+                      "name": "independent-recovered-translation-proposal",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation-artifacts/texts.journeys-independent-bc162-d-guards-unsaved-navigation/attachments/independent-recovered-translation-proposal-c071550a076963df23f63729e4f28bf39954fc46.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a1889aa6179acd09e0f6-ae1d34482a8f5591104f",
+          "file": "texts.journeys.spec.ts",
+          "line": 1114,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-29T22:25:35.869Z",
+    "duration": 44804.44,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

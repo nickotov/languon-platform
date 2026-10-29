@@ -1,3 +1,7 @@
+import type { KnowledgeExerciseEvaluationInput } from '../../../knowledge/application/ports/exercise-evaluation-store';
+import type { KnowledgeExerciseEvaluationResult } from '@languon/contracts';
+import type { KnowledgeBlockFieldResult } from '@languon/contracts';
+import type { KnowledgeFieldActionInput } from '../../../knowledge/application/ports/block-field-action-store';
 import type { KnowledgeLearningSourceBinding } from '../../../knowledge/application/learning-source-binding';
 import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
@@ -20,8 +24,14 @@ export type TextJobInput =
           kind: 'text-translation';
           segments: TextSourceSegment[];
           knowledgeSource?: KnowledgeLearningSourceBinding;
+          knowledgeFieldAction?: KnowledgeFieldActionInput;
+          knowledgeExerciseEvaluation?: KnowledgeExerciseEvaluationInput;
       } & EnqueueTextTranslationRequest);
-export type TextJobResult = TextDetectionResult | TextTranslationProposal;
+export type TextJobResult =
+    | TextDetectionResult
+    | TextTranslationProposal
+    | KnowledgeBlockFieldResult
+    | KnowledgeExerciseEvaluationResult;
 export type TextsTokenUsage = TextAiProviderUsage;
 export interface TextsProviderCall {
     providerAttempt?: TextAiProviderLeaseContext;
@@ -33,7 +43,11 @@ export interface TextsProviderCall {
 }
 export interface TextsAiProvider {
     run(call: TextsProviderCall): Promise<{
-        draft: TextDetectionResult | { translation: TextTranslationSegment[] };
+        draft:
+            | TextDetectionResult
+            | { translation: TextTranslationSegment[] }
+            | KnowledgeBlockFieldResult
+            | KnowledgeExerciseEvaluationResult;
         usage?: TextsTokenUsage;
     }>;
 }

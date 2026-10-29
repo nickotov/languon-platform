@@ -1,3 +1,4 @@
+import { createKnowledgeActionAgents } from '../../../knowledge/infrastructure/ai/knowledge-action-agents';
 import { Agent } from '@mastra/core/agent';
 import { noopLogger } from '@mastra/core/logger';
 import type {
@@ -27,5 +28,6 @@ export function createTextsAgents(options: {
     return {
         textTranslationAgent: create('text-translation-agent'),
         textDetectionAgent: create('text-detection-agent'),
+        ...createKnowledgeActionAgents(options),
     };
 }

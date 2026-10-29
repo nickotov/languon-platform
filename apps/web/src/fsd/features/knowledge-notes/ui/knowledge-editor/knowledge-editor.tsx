@@ -27,8 +27,10 @@ import { WorkspaceEditorChrome } from './workspace-editor-chrome';
 import type { UploadBlockAudio } from '../learning-block-authoring/audio-block-upload';
 import { BlockAuthoringProvider } from '../learning-block-authoring/block-authoring-context';
 import { LearningBlockAuthoring } from '../learning-block-authoring/learning-block-authoring';
+import { LearningBlockTextGaps } from '../learning-block-authoring/learning-block-text-gaps';
 import { LearningBlockNode } from '../learning-block-authoring/learning-block-node';
 import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
+import { ExerciseGroupDrag } from '../../lib/exercise-group-drag';
 import { rejectCopiedLearningBlockDrop } from '../../lib/learning-block-drop';
 import { pasteLearningBlock } from '../../lib/learning-block-paste';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
@@ -122,6 +124,10 @@ export const KnowledgeEditor = forwardRef<
             }),
             TableKit.configure({ table: { resizable: false } }),
             LearningBlockNode.configure({ labels: blockLabels }),
+            ExerciseGroupDrag,
+            LearningBlockTextGaps.configure({
+                label: blockLabels.field('Write here…'),
+            }),
         ],
         [blockLabels],
     );
@@ -264,6 +270,13 @@ export const KnowledgeEditor = forwardRef<
     return (
         <BlockAuthoringProvider
             enabled={authoringEnabled}
+            library={workspace?.library}
+            renderBlockMenu={workspace?.renderBlockMenu}
+            blockAccents={workspace?.blockAccents}
+            fieldAi={workspace?.fieldAi}
+            languageDefaults={workspace?.languageDefaults}
+            renderAudioPreparation={workspace?.renderAudioPreparation}
+            blockViewOptions={workspace?.blockViewOptions}
             canDuplicateOnServer={Boolean(workspace?.blockCopy)}
             additionalActions={getBlockActions}
         >

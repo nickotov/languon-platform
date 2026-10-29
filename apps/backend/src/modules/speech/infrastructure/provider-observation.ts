@@ -41,7 +41,7 @@ export async function retainSpeechProviderObservation(
         ...row.providerUsage,
         ...observed.usage,
         requests: 1,
-        characters: Array.from(job.text).length,
+        characters: row.providerCharacterCount ?? Array.from(job.text).length,
     });
     const execution = observed.execution
         ? {

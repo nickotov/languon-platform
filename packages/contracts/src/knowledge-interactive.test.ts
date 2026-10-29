@@ -78,6 +78,31 @@ describe('interactive knowledge document compatibility and safety', () => {
             }).success,
         ).toBe(false);
     });
+    it('requires consistent titles for one exercise group without replacing question identities', () => {
+        const first = {
+            ...exercise,
+            group: { id: audioId, title: 'Listening practice' },
+        };
+        const second = { ...first, id: segmentId };
+        expect(
+            KnowledgeBodySchema.safeParse(
+                body([node(audio), node(first), node(second)]),
+            ).success,
+        ).toBe(true);
+        expect(
+            KnowledgeBodySchema.safeParse(
+                body([
+                    node(audio),
+                    node(first),
+                    node({
+                        ...second,
+                        group: { id: audioId, title: 'Different title' },
+                    }),
+                ]),
+            ).success,
+        ).toBe(false);
+    });
+
     it('rejects duplicate block identities', () => {
         expect(
             KnowledgeBodySchema.safeParse(body([node(audio), node(audio)]))

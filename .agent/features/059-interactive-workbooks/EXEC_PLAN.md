@@ -1,7 +1,7 @@
 # ExecPlan: Interactive knowledge workbooks
 
 Feature: [FEATURE.md](FEATURE.md)
-Last updated: 2026-10-29
+Last updated: 2026-10-30
 
 ## Goal and specification
 
@@ -601,7 +601,7 @@ currently backend67/749 after workbook2/chat1/insuff1/free1passed. Log
 /tmp/languon-059-e46-critical-final-frozen.log. Awaitterminalbackend +speech4 +
 adminMCP3 then independentlyvalidated14flow union with7earlierpasses3a5b0f2b.
 Earlierfailedcommandsretained; final0d8screens+browsermetadata retained in
- evidence/block-controls-and-continuation/. Reviewer e46_completion_review holds
+evidence/block-controls-and-continuation/. Reviewer e46_completion_review holds
 onlyfinalevidenceapproval. E46notcompleteuntilremaininggates; parentF059open.
 
 E46 remaininggate checkpoint:0d8backend interruptedEXIT1 after2unchangedworker
@@ -633,3 +633,205 @@ E46 COMPLETE — independent final bounded approval received. All4requested fixe
 realnativebrowserproof,14flows775tests and exact31filemanifest9712b627… approved.
 No openmaterialscopedfinding. ParentF059 Inprogress and its unrelated remaining
 items unchanged. No env/provider switch, livepaidcall, commit/merge/push performed.
+
+## Magic Patterns v16 migration — active discovery
+
+2026-10-29: User selected [Magic Patterns v16](DESIGN.md) for faithful custom-block
+UI and corresponding editor/chat behavior, requesting careful analysis and questions
+before coding. Classification: continuation/extension of the existing explicitly
+authorized F059 feature; retain current feature branch and earlier evidence as
+historical, not proof of the new source. Two bounded independent discovery readers
+inspected block/editor and chat/AI seams. Application implementation has not begun.
+
+Current discoveries:
+
+- Retained all 154 source files and per-file hashes. FEATURE.md MP-01–MP-21 owns
+  the source-derived acceptance inventory. Source is reference-only; do not execute
+  scripts, import prototype configuration/dependencies, or port mock services.
+- Existing `propose_learning_blocks` already provides typed owner-only generation
+  and persistent proposals through the admitted conversation worker. Extend this
+  tool seam for dedicated per-type generation where useful; do not add providers,
+  parallel wallets, detached execution or unbounded agent calls. Specialist model
+  executions must inherit caller authorization, aggregate budget, cancellation,
+  deadlines and settlement. Exact dedicated-agent composition requires further
+  source proof, not a visual-design assumption.
+- Current proposal API appends fresh blocks and checks the entire branch version.
+  Source update proposals need explicit captured block target/hash and transaction
+  validation, plus retry-safe add-separately semantics. Exercise sets must preserve
+  stable per-item material versions and history, even if grouped visually.
+- Atomic field actions have no current production path. They must return validated
+  suggestions without mutating a note, target explicit eligible fields, tolerate
+  unsaved dialog drafts, reject stale acceptance, preserve manual edits and use
+  existing accounting/admission. Do not create chat noise for side-editor requests.
+- Do not use prototype `dangerouslySetInnerHTML` text gaps. Preserve TipTap prose
+  and safe parsing/paste. Match gap affordance through structured editor nodes.
+- Highlight learning blocks is an ephemeral local display toggle in v16, default
+  on; not shared saved material or a document dirty change. Preserve this behavior.
+
+Product answers accepted by the user on 2026-10-29 (all recommendations):
+
+1. Atomic AI for vocabulary and bilingual-text fields initially; all six families retain manual editing.
+2. Permit unprepared audio shells before upload/speech generation; absent asset is explicit, never a fake UUID.
+3. Free prepared checking for choice/blank plus optional AI feedback for every exercise type.
+
+FutureBoard capabilities remain deferred: no microphone/assessment activation,
+question-difficulty controls, automatic remote-video understanding or course work.
+No new provider/model selection is authorized.
+
+Planned implementation slices after resolving product answers:
+
+1. Contracts and first production-composition proof for atomic field AI, update
+   proposals and exercise grouping; retain source/media/credit boundaries.
+2. Shared block variants/chrome, six views, real speech actions, styling toggle
+   and safe writable gaps; side panel/bottom-sheet authoring with per-field AI.
+3. Inline exercises and private state, library/media/copy/practice integration,
+   compact chat previews and review/apply/update/recovery transitions.
+4. Focused author preflight and independent source/security review; appropriate
+   separate tester assessment for added AI/persistence concurrency boundaries;
+   remediation then affected static/build, disposable DB, mapped E2E, full critical
+   AI execution gate and reference/runtime browser comparisons before completion.
+
+Required risk coverage: quoted/reduced/insufficient allowances, correct actual
+outgoing model limits, tool aggregate budget, cancellation/timeout, fenced
+settlement, source snapshots, accepted alternatives, shared-read-only denial,
+field/block staleness, per-question versions, media grant/copy survival and hostile
+content/URL rendering. Use deterministic provider HTTP replacements at production
+composition; never paid services in tests. Update mapped guides/scenario markers
+and registry only as actual observable behavior changes; no generation-provider
+activation inferred from UI controls.
+
+Next action: resolve pending product answers, capture relevant hidden reference
+states, inspect exact action/practice/model composition and related accepted ADRs,
+then implement the first bounded schema/action slice. No new source is claimed
+implemented, reviewed, tested or visually matched yet.
+
+### v16 implementation coordination after accepted answers
+
+- Root integrates page/widget composition, block playback bridge, presentation toggle,
+  inline private-learning actions and final verification/docs.
+- Workers own disjoint surfaces: atomic field AI backend/queue, general block
+  contracts/media helpers, entity renderers, TipTap/authoring dialogs, chat proposal
+  lifecycle and speech snippet source resolution. They must coordinate shared
+  composition/migration changes and retain existing providers.
+- Exercise sets retain individual persisted exercise nodes with optional
+  `group:{id,title?}` presentation metadata. Group changes are non-material;
+  each question retains independent version/attempt authority. Copies remap group
+  identities consistently. Adjacent group rendering must not merge unrelated sets.
+- Video description and author-prepared hint are optional bounded plain text;
+  source description changes are material for grounded exercises, hint-only and
+  presentation changes preserve correctness progress.
+- Atomic actions reuse existing admitted Texts worker infrastructure via a
+  server-only source-bound subtype, rather than parallel AI accounting. Exact
+  subtype, public isolation, cleanup and source authorization require focused
+  integration/security proof and a durable ADR before final delivery.
+
+### Active integration and verified discoveries
+
+- User recommendations are accepted. Core block variants, side-panel/mobile-sheet
+  editors, grouped exercises/audio questions, inline proposal cards/review/update,
+  atomic translation checks, saved private inline evaluation and real snippet/
+  audio-draft speech are implemented in the working tree. Not complete yet.
+- Dedicated execution reuses admitted source-bound Texts jobs under ADR-0052.
+  Initial field/evaluation SDK+PostgreSQL retained run: 17 action cases +11 learner
+  authority cases passed. HTTP evaluator9, field6, canonical agent and rollout
+  gating cases also pass in focused runs. Existing provider selection unchanged.
+- Initial root speech/proposal database selection had 60/62 passed. Two issues:
+  proposal speech fixture used forbidden direct conversation writes (now replaced
+  with real store lifecycle); populated customer update hit a conservative fixed
+  retrieval reserve (chat worker implementing trusted serialized frozen-source
+  upper bound, retaining all budgets). Rerun after fixes; early evidence is not a
+  final pass. Owned root containers were removed.
+- Security findings SEC-V16-01/02 require knowledge-only source fences and cleanup
+  (REVIEW.md). Speech worker owns binding schema/migrations, regression updates;
+  no completion claim until independently reviewed and real DB checks pass.
+- Author library saving needs current private working material without publishing.
+  Atomic worker extending existing library snapshot requests for owned working
+  branches; explicit preview/copy and destination independence unchanged. Editor
+  worker adding menu host; root integrates flush resolver and native practice.
+- Read private translations now have a whole-block render-prop wrapper to avoid
+  duplicate inline blocks and preserve prepared/original text and private-library
+  receipts. Root page factory integration underway.
+- Root owns browser/critical execution and final docs; chat worker owns v16 mapped
+  E2E/guide and its deterministic fixture. Speech helper supplies actual worker,
+  source resolver and storage with test-only tone provider, no HTTP endpoint stubs.
+
+### Post-browser integration tasks (2026-10-30 local date)
+
+- Root migrated `pages/workbooks/ui/learning-note` to the same inline private
+  wrapper/native practice menus/real speech/inline evaluation as standalone/shared
+  sheets. The old reader call site was the real first-browser failure; isolated
+  renderer was correct and gained a real Doc→wrapper regression.
+- Authoring worker final visual delta: quiet language-pair controls, source-style
+  entry heading and optional fields, shared credits subtitle, no group-internal
+  prose placeholder. Root prose selectors no longer style typed block descendants;
+  group outer spacing excludes middle/end atoms.
+- Root source capture access is now reliable via the authenticated private preview
+  tab; continue capturing mobile/gallery/review states and compare final runtime.
+- Speech reviewer accepted SEC01/02 controls pending final dispositions and found
+  SEC03: erase proposal-only speech excerpts when chat/proposal is permanently
+  deleted. Worker owns new lifecycle migration and proof; do not mark security done.
+- Need finish localized field failure messages, final source/docs formatting,
+  full stable web tests, focused author preflight, independent full completion
+  review, remediation, final AI/critical/browser/build/type/lint/db/guide gates and
+  evidence approval. Parent F059 remains In progress; v16 milestone not complete.
+
+### Final-preflight continuation — 2026-10-30
+
+- User accepted the explicit-Cancel admission safeguard. Both close and explicit
+  cancellation now retain bounded admission readback and cancel a late queued
+  job. Independent review caught and closed the adjacent stuck-busy UI issue;
+  mounted explicit cancellation restores retry, unmount never applies late work.
+- Full web180/1255 and contracts231/prompts5 pass; styling/db consistency/docs
+  checks pass. Backend stale error/retired-provider tests and one test fixture
+  type were repaired without changing runtime provider policy; final reruns pending.
+- Real browser iterations found a nested-select accessible name defect, fixed at
+  the entity boundary and verified in Chromium. Current E2E remediation is limited
+  to following actual disclosure/fold/no-op controls and investigating zero-byte
+  captured speech content. Add browser proof for restored unavailable transcription.
+- Keep v003 Implementing and F059 In progress until fidelity/critical evidence and
+  final independent evidence approval are complete. No commit or merge yet.
+- Backlog synchronization applies to BL-003
+  (`docs/backlog/003-personal-learning-progress.md`), BL-006
+  (`docs/backlog/006-grammar-conversations-and-learning-documents.md`) and BL-007
+  (`docs/backlog/007-manual-exercise-creation-and-editing.md`). Read the compact
+  index, task requirements and shared context; all remain In progress. Update
+  their partial-delivery evidence after final runtime verification, without
+  terminal renames or claiming broader guided-course/grammar-library scope done.
+
+### v16 verification complete; final evidence review — 2026-10-30
+
+- Implementation and source-derived fidelity inventory MP-01–MP-20 are verified;
+  MP-21 remains explicitly deferred. See `evidence/v16-migration/FIDELITY.md`.
+  Final real-app captures include the corrected mobile publication footer.
+- Full critical gate a4685c8e passes14 flows /812 tests, zero skips/retries,
+  including785 backend execution tests, field/evaluation17 and speech14.
+  Full web180/1256, contracts231/prompts5, backend227/1821 plus new fixture4,
+  root14-task typecheck, root build9 tasks and final affected web build pass.
+- Failed, timed-out, interrupted and refused-port runs remain historical failures.
+  Original passing reports and hashes are retained; no report was rewritten or
+  merged to create a passing result. Final source/evidence manifests follow.
+- Local `.env.local` receives v4 only in six explicit job format allowlists;
+  unrelated lines are byte-identical. Applied only the13 reviewed forward
+  migrations to the identified local development database, with no reset or
+  route/model/key/price/credit changes. Configuration doctor passes; runtime
+  doctor requires the existing API/worker processes to restart for fresh v4
+  worker evidence. Do not stop user-owned processes without authorization.
+- Rollback: disable new v4 admissions through the existing allowlists; preserve
+  forward schema and independent content/financial receipts. No automatic down
+  migration or data reset is supplied. Deploy matching API/worker/client versions
+  before enabling the new format.
+- Independent final evidence approval and final documentation checks pass.
+  Parent F059 and BL-003/006/007 remain In progress. Live uploaded-audio
+  transcription is still unavailable until a compatible provider/model is
+  explicitly approved; no activation or whole-feature completion is claimed.
+
+### v16 milestone Complete — 2026-10-30
+
+Independent completion reviewer approves the final339-file source manifest,
+all14/812 critical results and final runtime/fidelity captures. All scoped
+implementation, remediation and verification is complete. See REVIEW.md for the
+exact verdict and EVIDENCE.md for commands, retained reports and source identity.
+Record a local milestone commit on the existing feature branch; no main merge
+or push while parent F059 remains In progress. The outstanding parent work is
+approved live transcription activation; the operational local handoff is an
+API/worker restart, not a new provider/model or credit configuration change.

@@ -1,11 +1,11 @@
 .root {
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-12);
     margin-block: var(--space-12);
 }
 
 .selected {
     outline: 2px solid var(--border-focus);
-    outline-offset: var(--size-2);
+    outline-offset: 0;
 }
 
 .dragHandle {
@@ -49,4 +49,116 @@
         min-height: var(--size-44);
         min-width: var(--size-44);
     }
+}
+
+.groupSummary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.expandAll {
+    min-height: var(--size-28);
+    padding: 0 var(--space-6);
+    border: 0;
+    border-radius: var(--radius-6);
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.expandAll:hover {
+    background: var(--background-subtle);
+}
+
+.expandAll:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+.root:where([data-group-position='start']) {
+    margin-bottom: 0;
+}
+
+.root:where([data-group-position='middle']) {
+    margin-block: 0;
+}
+
+.root:where([data-group-position='end']) {
+    margin-top: 0;
+}
+
+.root:where([data-group-position='start']) > :where(section) {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: 0;
+}
+
+.root:where([data-group-position='middle']) > :where(section) {
+    border-block: 0;
+    border-radius: 0;
+    padding-block: 0;
+}
+
+.root:where([data-group-position='end']) > :where(section) {
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding-top: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dragHandle {
+        opacity: 0;
+        min-width: var(--size-20);
+        min-height: var(--size-28);
+        margin-left: calc(var(--size-28) * -1);
+    }
+
+    .root:hover :where(.dragHandle),
+    .selected :where(.dragHandle),
+    .dragHandle:focus-visible {
+        opacity: 1;
+    }
+}
+
+.textGap,
+.gapParagraph {
+    display: block;
+    min-height: var(--size-28);
+    margin-block: var(--space-4);
+    color: var(--text-tertiary);
+    font: inherit;
+    font-size: var(--size-14);
+    line-height: var(--size-28);
+}
+
+.textGap {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: start;
+    cursor: text;
+}
+
+.textGap:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.gapParagraph:where(:has(> br:only-child))::before {
+    float: inline-start;
+    content: attr(data-placeholder);
+    height: 0;
+    color: var(--text-tertiary);
+    pointer-events: none;
+}
+
+/* Existing empty prose is retained in the document, but does not split a logical set. */
+.groupSpacer {
+    display: none;
 }

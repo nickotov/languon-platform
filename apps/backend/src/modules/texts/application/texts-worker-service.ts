@@ -1,5 +1,7 @@
 import { hasConclusiveTextAiFailure } from '../../text-ai/application/text-ai-routing-execution';
 import {
+    KnowledgeBlockFieldResultSchema,
+    KnowledgeExerciseEvaluationResultSchema,
     TextDetectionResultSchema,
     TextTranslationProposalSchema,
 } from '@languon/contracts';
@@ -32,6 +34,7 @@ export interface TextsWorkerDependencies {
         | 'text-translation:v1'
         | 'text-translation:v2'
         | 'text-translation:v3'
+        | 'text-translation:v4'
     )[];
 }
 export class TextsWorkerService {
@@ -83,7 +86,32 @@ export class TextsWorkerService {
             usage = result.usage;
             combined.throwIfAborted();
             let proposal: TextJobResult;
-            if (job.input.kind === 'text-translation') {
+            if (
+                job.input.kind === 'text-translation' &&
+                job.input.knowledgeExerciseEvaluation
+            ) {
+                const parsed =
+                    KnowledgeExerciseEvaluationResultSchema.safeParse(
+                        result.draft,
+                    );
+                if (!parsed.success)
+                    throw new TextsProviderInvalidOutputError(usage);
+                proposal = parsed.data;
+            } else if (
+                job.input.kind === 'text-translation' &&
+                job.input.knowledgeFieldAction
+            ) {
+                const parsed = KnowledgeBlockFieldResultSchema.safeParse(
+                    result.draft,
+                );
+                if (
+                    !parsed.success ||
+                    (job.input.knowledgeFieldAction.action === 'generate' &&
+                        parsed.data.status !== 'suggested')
+                )
+                    throw new TextsProviderInvalidOutputError(usage);
+                proposal = parsed.data;
+            } else if (job.input.kind === 'text-translation') {
                 if (!('translation' in result.draft))
                     throw new TextsProviderInvalidOutputError(usage);
                 proposal = TextTranslationProposalSchema.parse({

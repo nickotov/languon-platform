@@ -122,7 +122,42 @@ export function createInteractiveKnowledgeBodySchema(
                         path: issue.path,
                         message: issue.message,
                     });
+            const exerciseGroups = new Map<string, string>();
             for (const block of blocks.values()) {
+                if (block.type === 'exercise' && block.group) {
+                    if (
+                        exerciseGroups.has(block.group.id) &&
+                        exerciseGroups.get(block.group.id) !==
+                            JSON.stringify({
+                                title: block.group.title,
+                                parentBlockId: block.group.parentBlockId,
+                            })
+                    )
+                        ctx.addIssue({
+                            code: 'custom',
+                            message:
+                                'Exercises in the same group must share its title and media parent.',
+                        });
+                    exerciseGroups.set(
+                        block.group.id,
+                        JSON.stringify({
+                            title: block.group.title,
+                            parentBlockId: block.group.parentBlockId,
+                        }),
+                    );
+                    if (block.group.parentBlockId) {
+                        const parent = blocks.get(block.group.parentBlockId);
+                        if (
+                            !parent ||
+                            (parent.type !== 'audio' && parent.type !== 'video')
+                        )
+                            ctx.addIssue({
+                                code: 'custom',
+                                message:
+                                    'Exercise group parent must reference audio or video in this document.',
+                            });
+                    }
+                }
                 if (block.type !== 'exercise' || !block.source) continue;
                 const source = blocks.get(block.source.blockId);
                 const ids = new Set(source ? sourceSegments(source) : []);

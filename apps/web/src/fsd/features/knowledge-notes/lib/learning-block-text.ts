@@ -30,18 +30,22 @@ export function learningBlockPlainText(block: LearningBlock): string {
             translation.segments.forEach((item) => parts.push(item.text)),
         );
     }
-    if (block.type === 'video')
+    if (block.type === 'video') {
+        parts.push(block.description ?? '');
         parts.push(
             block.source.kind === 'youtube'
                 ? `YouTube: ${block.source.videoId}`
                 : block.source.url,
         );
+    }
     if (block.type === 'audio') parts.push(block.sourceText ?? '');
     if (block.type === 'audio' || block.type === 'video')
         block.transcript?.segments.forEach((item) => parts.push(item.text));
     if (block.type === 'exercise') {
         parts.push(
+            block.group?.title ?? '',
             block.question,
+            block.hint ?? '',
             block.referenceAnswer,
             block.explanation,
             block.evaluationCriteria ?? '',

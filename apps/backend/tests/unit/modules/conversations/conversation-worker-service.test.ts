@@ -375,7 +375,15 @@ describe('conversation worker bounded source context', () => {
             tutorMemoryThresholds(128_000, 40_000).messageTokens,
         ).toBeLessThan(16_000);
         expect(() => tutorMemoryThresholds(64_000, 63_000)).toThrow(
-            'insufficient context',
+            'This conversation is too long for an AI response. Start a fresh chat.',
+        );
+        expect(tutorMemoryThresholds(64_000, 64_000 - 4096)).toEqual({
+            messageTokens: 512,
+            observationTokens: 256,
+            maxTokensPerBatch: 512,
+        });
+        expect(() => tutorMemoryThresholds(64_000, 64_000 - 4095)).toThrow(
+            'This conversation is too long for an AI response. Start a fresh chat.',
         );
     });
 });

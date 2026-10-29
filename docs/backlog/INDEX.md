@@ -38,3 +38,8 @@ progress for interactive knowledge workbooks, the associated BL-003 progress
 slice, BL-006 interactive documents/exercises, and BL-007 initial manual exercise
 authoring. This allocation is not completion evidence; broader remaining scope
 is retained in each task.
+
+The [v16 migration evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md)
+records the verified custom-block/editor/chat slice and its full critical gate.
+BL-003, BL-006 and BL-007 retain their broader in-progress scope; this milestone
+does not activate unapproved transcription providers or complete guided lessons.

@@ -22,14 +22,15 @@ export function copyWorkbookBody(
         const object = value as Record<string, unknown>;
         if (
             object.type === 'audio' &&
-            (typeof object.assetId !== 'string' ||
-                !assetCopies?.has(object.assetId))
+            typeof object.assetId === 'string' &&
+            !assetCopies?.has(object.assetId)
         )
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Audio copies require independent asset ownership; this copy cannot be completed yet.',
             );
-        if (typeof object.id === 'string') ids.set(object.id, randomUUID());
+        if (typeof object.id === 'string' && !ids.has(object.id))
+            ids.set(object.id, randomUUID());
         Object.values(object).forEach(visit);
     };
 
@@ -45,6 +46,7 @@ export function copyWorkbookBody(
             [
                 'id',
                 'blockId',
+                'parentBlockId',
                 'sourceSegmentId',
                 'correctChoiceId',
                 'segmentIds',

@@ -93,7 +93,7 @@ async function main() {
     });
     if (values.help) {
         console.log(
-            'node scripts/dev-doctor.mjs [--env-file FILE] [--phase configuration|runtime] [--learner-email EMAIL] [--capability texts,interview] [--wait-ms 15000] [--process-environment] [--json]\nRead-only local prerequisite inspection. Does not generate, configure, or charge.',
+            'node scripts/dev-doctor.mjs [--env-file FILE] [--phase configuration|runtime] [--learner-email EMAIL] [--capability texts,knowledge-actions,interview] [--wait-ms 15000] [--process-environment] [--json]\nRead-only local prerequisite inspection. Does not generate, configure, or charge.',
         );
         return;
     }

@@ -52,7 +52,7 @@ function AuthorTranscription(props: KnowledgeTranscriptionProps) {
     return (
         <section className={styles.root} aria-label={copy.title}>
             <h3>{copy.title}</h3>
-            {hasSource && (
+            {hasSource && props.variant !== 'focused' && (
                 <>
                     <label htmlFor={`${id}-source`}>{copy.source}</label>
                     <select
@@ -139,14 +139,20 @@ function AuthorTranscription(props: KnowledgeTranscriptionProps) {
                         rows={6}
                         value={preview.text}
                     />
-                    <p>{copy.noSave}</p>
+                    <p>
+                        {props.variant === 'focused'
+                            ? copy.localNoSave
+                            : copy.noSave}
+                    </p>
                     <div>
                         <Button
                             type='button'
                             onClick={apply}
                             disabled={state.busy || state.applied}
                         >
-                            {copy.apply}
+                            {props.variant === 'focused'
+                                ? copy.localApply
+                                : copy.apply}
                         </Button>
                     </div>
                 </>
@@ -154,7 +160,13 @@ function AuthorTranscription(props: KnowledgeTranscriptionProps) {
             {state.conflict ? (
                 <InlineAlert tone='warning'>{copy.conflict}</InlineAlert>
             ) : null}
-            {state.applied ? <p role='status'>{copy.applied}</p> : null}
+            {state.applied ? (
+                <p role='status'>
+                    {props.variant === 'focused'
+                        ? copy.localApplied
+                        : copy.applied}
+                </p>
+            ) : null}
         </section>
     );
 }

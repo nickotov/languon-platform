@@ -1,12 +1,10 @@
 import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
-import { randomUUID } from 'node:crypto';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import {
     KnowledgeBlockProposalSchema,
     KnowledgeBodySchema,
     KnowledgeWorkingBranchSchema,
     LearningBlockProposalInputSchema,
-    type LearningBlock,
     type LearningBlockProposalInput,
 } from '@languon/contracts';
 import type {
@@ -29,11 +27,41 @@ import {
     type ConversationPersistenceContext,
 } from './conversation-persistence-context';
 import { conversationBlockProposalsTable as proposals } from './conversation-block-proposal-schema';
+import {
+    blockContentHash,
+    findProposalBlock,
+    freshProposalBlocks,
+    replaceProposalBlock,
+} from './block-proposal-content';
 
-function view(row: typeof proposals.$inferSelect) {
+function view(row: typeof proposals.$inferSelect, currentDocument?: unknown) {
+    const captured = [...row.dependencySnapshots];
+    if (row.targetSnapshot) captured.push(row.targetSnapshot);
+    const targetStale =
+        Boolean(currentDocument) &&
+        captured.some((block) => {
+            const current = findProposalBlock(currentDocument, block.id);
+
+            return (
+                !current ||
+                blockContentHash(current) !== blockContentHash(block)
+            );
+        });
+
     return KnowledgeBlockProposalSchema.parse({
         id: row.id,
         conversationId: row.conversationId,
+        turnId: row.turnId,
+        ...(row.targetBlockId && row.targetSnapshot
+            ? {
+                  target: {
+                      blockId: row.targetBlockId,
+                      blockHash: blockContentHash(row.targetSnapshot),
+                  },
+              }
+            : {}),
+        targetStale,
+        dependencies: row.dependencySnapshots,
         noteId: row.noteId,
         branchId: row.branchId,
         baseBranchVersion: row.baseBranchVersion,
@@ -42,51 +70,6 @@ function view(row: typeof proposals.$inferSelect) {
         appliedAt: row.appliedAt?.toISOString() ?? null,
         appliedBranchVersion: row.appliedBranchVersion,
     });
-}
-
-function freshBlocks(blocks: LearningBlock[]): LearningBlock[] {
-    const ids = new Map<string, string>();
-    const find = (value: unknown): void => {
-        if (Array.isArray(value)) {
-            value.forEach(find);
-
-            return;
-        }
-
-        if (!value || typeof value !== 'object') return;
-        const object = value as Record<string, unknown>;
-        if (typeof object.id === 'string') ids.set(object.id, randomUUID());
-        Object.values(object).forEach(find);
-    };
-
-    find(blocks);
-    const remap = (value: unknown, key?: string): unknown => {
-        if (Array.isArray(value))
-            return value.map((child) => remap(child, key));
-        if (
-            typeof value === 'string' &&
-            key &&
-            [
-                'id',
-                'blockId',
-                'sourceSegmentId',
-                'segmentIds',
-                'correctChoiceId',
-            ].includes(key)
-        )
-            return ids.get(value) ?? value;
-        if (!value || typeof value !== 'object') return value;
-
-        return Object.fromEntries(
-            Object.entries(value).map(([name, child]) => [
-                name,
-                remap(child, name),
-            ]),
-        );
-    };
-
-    return LearningBlockProposalInputSchema.parse({ blocks: remap(blocks) })
-        .blocks;
 }
 
 async function ownerContext(
@@ -137,17 +120,21 @@ export async function conversationProposeBlocks(
             throw conflict(
                 'The working document changed during generation. Request a new proposal.',
             );
-        const blocks = freshBlocks(
-            LearningBlockProposalInputSchema.parse(input).blocks,
-        );
+        const parsed = LearningBlockProposalInputSchema.parse(input);
+        const blocks = parsed.targetBlockId
+            ? parsed.blocks.map((block) => ({
+                  ...block,
+                  id: parsed.targetBlockId!,
+              }))
+            : freshProposalBlocks(parsed.blocks);
         // A worker can propose only against its active admitted turn. It never
         // reads private branch bodies or other conversations' proposals.
         const result = await tx
             .execute(
                 sql`
-            select public.languon_propose_learning_blocks(
+            select public.languon_propose_learning_block_change(
                 ${turn.id}::uuid, ${turn.leaseToken}::uuid,
-                ${JSON.stringify(blocks)}::jsonb
+                ${JSON.stringify(blocks)}::jsonb, ${parsed.targetBlockId ?? null}::uuid
             ) as id
         `,
             )
@@ -193,7 +180,20 @@ export async function conversationListBlockProposals(
                 .orderBy(desc(proposals.createdAt))
                 .limit(100);
 
-            return { proposals: rows.map(view) };
+            const branchRows = await tx
+                .select()
+                .from(branches)
+                .where(eq(branches.noteId, rows[0]?.noteId ?? id));
+            const byId = new Map(
+                branchRows.map((branch) => [
+                    branch.id,
+                    branch.content.body.document,
+                ]),
+            );
+
+            return {
+                proposals: rows.map((row) => view(row, byId.get(row.branchId))),
+            };
         },
         false,
     );
@@ -205,6 +205,7 @@ export async function conversationApplyBlockProposal(
     id: string,
     proposalId: string,
     expectedBranchVersion: number,
+    mode: 'proposal' | 'add-separately' = 'proposal',
 ) {
     return conversationTransaction(persistence, async (tx) => {
         const { chat } = await ownerContext(persistence, tx, access, id);
@@ -251,26 +252,80 @@ export async function conversationApplyBlockProposal(
                     updatedAt: branch.updatedAt.toISOString(),
                 }),
             };
-        if (
-            expectedBranchVersion !== proposal.baseBranchVersion ||
-            branch.version !== proposal.baseBranchVersion
-        )
+        if (branch.version !== expectedBranchVersion)
             throw conflict(
-                'The working document changed. Review it and request a new proposal.',
+                'The working document changed. Review it before applying.',
             );
-        const body = KnowledgeBodySchema.parse({
-            schemaVersion: 2,
-            document: {
-                type: 'doc',
+        const isUpdate = Boolean(
+            proposal.targetBlockId && proposal.targetSnapshot,
+        );
+
+        if (mode === 'proposal') {
+            for (const captured of proposal.dependencySnapshots) {
+                const current = findProposalBlock(
+                    branch.content.body.document,
+                    captured.id,
+                );
+
+                if (
+                    !current ||
+                    blockContentHash(current) !== blockContentHash(captured)
+                )
+                    throw conflict(
+                        'The source passage changed. Request a new proposal or add it separately with its captured source.',
+                    );
+            }
+        }
+
+        let document: unknown;
+        let appliedBlocks = proposal.blocks;
+        if (isUpdate && mode === 'proposal') {
+            const current = findProposalBlock(
+                branch.content.body.document,
+                proposal.targetBlockId!,
+            );
+
+            if (
+                !current ||
+                blockContentHash(current) !==
+                    blockContentHash(proposal.targetSnapshot!)
+            )
+                throw conflict(
+                    'The target block changed. Request a new proposal or add it separately.',
+                );
+            const replacement = proposal.blocks[0]!;
+            if (
+                current.type !== replacement.type ||
+                proposal.blocks.length !== 1
+            )
+                throw conflict('An update must keep the existing block type.');
+            document = replaceProposalBlock(
+                branch.content.body.document,
+                current.id,
+                { ...replacement, id: current.id },
+            );
+        } else {
+            const sources =
+                mode === 'add-separately' ? proposal.dependencySnapshots : [];
+            const added =
+                mode === 'add-separately'
+                    ? freshProposalBlocks([...sources, ...proposal.blocks])
+                    : proposal.blocks;
+
+            appliedBlocks = added.slice(sources.length);
+            document = {
+                ...branch.content.body.document,
                 content: [
                     ...(branch.content.body.document.content ?? []),
-                    ...proposal.blocks.map((block) => ({
+                    ...added.map((block) => ({
                         type: 'learningBlock',
                         attrs: { block },
                     })),
                 ],
-            },
-        });
+            };
+        }
+
+        const body = KnowledgeBodySchema.parse({ schemaVersion: 2, document });
 
         await assertKnowledgeMediaGrants(tx, proposal.noteId, body);
         const now = persistence.now();
@@ -287,6 +342,7 @@ export async function conversationApplyBlockProposal(
             .update(proposals)
             .set({
                 appliedAt: now,
+                blocks: appliedBlocks,
                 appliedBranchVersion: updatedBranch!.version,
             })
             .where(eq(proposals.id, proposal.id))

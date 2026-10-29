@@ -1,0 +1,100 @@
+{
+    "runId": "a4685c8e-11b3-4774-9c3b-576c3cd263be",
+    "command": "pnpm test:e2e:critical",
+    "exitCode": 0,
+    "flows": 14,
+    "tests": 812,
+    "sourceBoundary": "REV05 changed only mobile proposal CSS and workbook assertion during unrelated desktop flows; affected workbook flow began afterward with a fresh Next server. Earlier rendered selectors and consumed behavior were unchanged. No single-start-tree claim.",
+    "files": [
+        {
+            "path": "reports/admin-mcp.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/admin-mcp.json",
+            "bytes": 5494,
+            "sha256": "9094521bfbf3d63314acdc678b20066e55dffd0d41d7fe7815fa72253e662b42"
+        },
+        {
+            "path": "reports/admin-session-refresh.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/admin-session-refresh.json",
+            "bytes": 6343,
+            "sha256": "a8b45902374230eb498f1635e1a9f95dc61b7ba1a08014d6c15c496b477802dd"
+        },
+        {
+            "path": "reports/admin-text-ai-routing.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/admin-text-ai-routing.json",
+            "bytes": 4495,
+            "sha256": "a1b29d2177c6a742005753105e538cf1dda25ff61eb4754346a83319996e70c1"
+        },
+        {
+            "path": "reports/ai-execution-contracts.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/ai-execution-contracts.json",
+            "bytes": 367741,
+            "sha256": "0f7d0b4ecd8b3dfc43610d56e5dc4153f19922bc3c887aedb600cf7fa1605d6e"
+        },
+        {
+            "path": "reports/authentication.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/authentication.json",
+            "bytes": 5997,
+            "sha256": "e22916c059e8631ccfdc4b9cc7b2180eddc6f073d9a27f483c791015d3ffed43"
+        },
+        {
+            "path": "reports/chat-lifecycle.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle.json",
+            "bytes": 6798,
+            "sha256": "1ff544697af196b465c705e0321acaf3b5614b27bd5634aeb0b8f6cc3cc5b9c0"
+        },
+        {
+            "path": "reports/dictionary-generation.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/dictionary-generation.json",
+            "bytes": 3757,
+            "sha256": "49c192832ddb895ed7a0a4478ff4cffa70fcce101c9e67f5570d4a6d1f37e914"
+        },
+        {
+            "path": "reports/free-interview.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview.json",
+            "bytes": 6316,
+            "sha256": "772c01c75be3d02648cb853642ac87bf1a93d3afd7e98d63129d8c1b4b215b87"
+        },
+        {
+            "path": "reports/insufficient-credits.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/insufficient-credits.json",
+            "bytes": 4419,
+            "sha256": "2db34033271d85cf8d8ad5978c94e7713baac3980b4a41b655579f8e866e92e4"
+        },
+        {
+            "path": "reports/interactive-workbooks.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks.json",
+            "bytes": 16494,
+            "sha256": "79a12343784361066266898123a5d2b483a34d7af928f49cb764574f805b2668"
+        },
+        {
+            "path": "reports/sentence-practice.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice.json",
+            "bytes": 13704,
+            "sha256": "3a2d649d6c49a511d982751902a737c9e623345036b5084ec38e94694163acc4"
+        },
+        {
+            "path": "reports/setup-to-generation.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/setup-to-generation.json",
+            "bytes": 3411,
+            "sha256": "51e514c7cd242cf8311a18736752de56a50a446f58dc1a86193b3b0f3860a0e6"
+        },
+        {
+            "path": "reports/speech-playback.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/speech-playback.json",
+            "bytes": 7428,
+            "sha256": "3a131546d21307d15f5143d0fe10a90ba8cfac6aa8f0485ee18b4fd828c03c26"
+        },
+        {
+            "path": "reports/summary.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/summary.json",
+            "bytes": 1649,
+            "sha256": "968741405bffa809e4b75d2160d2d09ae8c80c6eaab8c72482ff13229de56365"
+        },
+        {
+            "path": "reports/text-generation.json",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/text-generation.json",
+            "bytes": 11976,
+            "sha256": "2bcf238b7f3ec12273d0732a0625cdf441780e889a5e5fb4eb3c4256b36d87de"
+        }
+    ]
+}

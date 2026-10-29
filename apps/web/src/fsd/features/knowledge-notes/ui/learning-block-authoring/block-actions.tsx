@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { LearningBlock } from '@languon/contracts';
 import { Menu, InlineAlert, type MenuItem } from '@/fsd/shared/ui';
@@ -12,9 +12,11 @@ import {
     Trash2,
     Ellipsis,
 } from 'lucide-react';
+import { moveLearningBlock } from '../../lib/move-learning-block';
+import { authoringBlockGroup } from '../../lib/authoring-block-group';
 import { normalizeEditorDocument } from '../../lib/editor-document';
 import {
-    copyLearningBlock,
+    copyLearningBlocks,
     learningBlockClipboardPrefix,
 } from '../../lib/learning-block-copy';
 import type { BlockAuthoringLabels } from './block-labels';
@@ -35,6 +37,7 @@ export function BlockActions({
     onServerDuplicate,
     onServerCopy,
     additionalActions = [],
+    renderBlockMenu,
 }: {
     item: PositionedBlock;
     index: number;
@@ -46,12 +49,17 @@ export function BlockActions({
     onServerDuplicate?: ((block: LearningBlock) => void) | undefined;
     onServerCopy?: ((block: LearningBlock) => void) | undefined;
     additionalActions?: MenuItem[] | undefined;
+    renderBlockMenu?:
+        ((block: LearningBlock, items: MenuItem[]) => ReactNode) | undefined;
 }) {
     const [copyError, setCopyError] = useState(false);
     function current() {
         return blocks(editor).find(
             (candidate) => candidate.block.id === item.block.id,
         );
+    }
+    function currentGroup() {
+        return authoringBlockGroup(blocks(editor), item.block.id);
     }
     function edit() {
         if (disabled) return;
@@ -62,9 +70,11 @@ export function BlockActions({
         if (disabled) return;
         const found = current();
         if (!found) return;
+        const group = currentGroup();
+        const last = group[group.length - 1] ?? found;
         const transaction = editor.state.tr.delete(
             found.position,
-            found.position + found.size,
+            last.position + last.size,
         );
         if (transaction.doc.childCount === 0)
             transaction.insert(0, editor.schema.nodes.paragraph!.create());
@@ -78,22 +88,26 @@ export function BlockActions({
     function duplicate() {
         if (disabled) return;
         const found = current();
+        if (!found) return;
+        const group = currentGroup();
         if (
-            found &&
-            (found.block.type === 'audio' ||
-                (found.block.type === 'exercise' && found.block.source))
+            group.some(
+                ({ block }) =>
+                    block.type === 'audio' ||
+                    (block.type === 'exercise' && block.source),
+            )
         ) {
             onServerDuplicate?.(found.block);
             return;
         }
-        if (!found) return;
-        const copied = copyLearningBlock(found.block);
-        const node = editor.schema.nodes.learningBlock!.create({
-            block: copied,
-        });
+        const copied = copyLearningBlocks(group.map((item) => item.block));
+        const nodes = copied.map((block) =>
+            editor.schema.nodes.learningBlock!.create({ block }),
+        );
+        const last = group[group.length - 1] ?? found;
         const transaction = editor.state.tr.insert(
-            found.position + found.size,
-            node,
+            last.position + last.size,
+            nodes,
         );
         try {
             normalizeEditorDocument(transaction.doc.toJSON());
@@ -103,25 +117,8 @@ export function BlockActions({
         }
     }
     function move(direction: -1 | 1) {
-        if (disabled) return;
-        const all = blocks(editor);
-        const sourceIndex = all.findIndex(
-            (candidate) => candidate.block.id === item.block.id,
-        );
-        const source = all[sourceIndex];
-        const neighbor = all[sourceIndex + direction];
-        if (!source || !neighbor) return;
-        const transaction = editor.state.tr;
-        const node = transaction.doc.nodeAt(source.position);
-        if (!node) return;
-        transaction.delete(source.position, source.position + source.size);
-        const destination =
-            direction < 0
-                ? neighbor.position
-                : neighbor.position + neighbor.size - source.size;
-        transaction.insert(destination, node);
-        normalizeEditorDocument(transaction.doc.toJSON());
-        editor.view.dispatch(transaction);
+        if (!disabled && !moveLearningBlock(editor, item.block.id, direction))
+            setCopyError(true);
     }
     function up() {
         move(-1);
@@ -146,10 +143,22 @@ export function BlockActions({
             setCopyError(true);
         }
     }
+    const groupSize = currentGroup().length;
+    const duplicateUnavailable = currentGroup().some(
+        ({ block }) =>
+            block.type === 'audio' ||
+            (block.type === 'exercise' && Boolean(block.source)),
+    );
     const copyUnavailable =
+        groupSize > 1 ||
         item.block.type === 'audio' ||
         (item.block.type === 'exercise' && Boolean(item.block.source));
-    const title = item.block.title ?? labels.view.kinds[item.block.type];
+    const title =
+        (item.block.type === 'exercise'
+            ? item.block.group?.title
+            : undefined) ??
+        item.block.title ??
+        labels.view.kinds[item.block.type];
     const actions: MenuItem[] = [
         {
             label: labels.edit,
@@ -166,7 +175,7 @@ export function BlockActions({
         {
             label: labels.duplicate,
             icon: <CopyPlus size={16} />,
-            disabled: disabled || (copyUnavailable && !onServerDuplicate),
+            disabled: disabled || (duplicateUnavailable && !onServerDuplicate),
             onSelect: duplicate,
         },
         {
@@ -179,7 +188,7 @@ export function BlockActions({
         {
             label: labels.down,
             icon: <ArrowDown size={16} />,
-            disabled: disabled || index === total - 1,
+            disabled: disabled || index + groupSize >= total,
             onSelect: down,
         },
         ...additionalActions,
@@ -193,16 +202,20 @@ export function BlockActions({
         },
     ];
     const menuLabel = `${labels.field('Block settings')}: ${title}`;
+    const customMenu = renderBlockMenu?.(item.block, actions);
+    const menu = customMenu ?? (
+        <Menu
+            items={actions}
+            label={menuLabel}
+            trigger={<Ellipsis size={18} aria-hidden />}
+            triggerClassName={styles.settingsTrigger}
+            iconOnly
+            allowDisabledItems
+        />
+    );
     return (
         <div className={styles.blockMenu}>
-            <Menu
-                items={actions}
-                label={menuLabel}
-                trigger={<Ellipsis size={18} aria-hidden />}
-                triggerClassName={styles.settingsTrigger}
-                iconOnly
-                allowDisabledItems
-            />
+            {menu}
             {copyError && (
                 <InlineAlert tone='error'>{labels.error}</InlineAlert>
             )}

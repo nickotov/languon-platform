@@ -1,0 +1,155 @@
+{
+  "config": {
+    "argv": [
+      "/Users/nickkotov/.nvm/versions/node/v24.8.0/bin/node",
+      "/Users/nickkotov/projects/languon/apps/web/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config",
+      "tests/e2e/support/learner-portrait-playwright.config.ts",
+      "learner-portrait.journeys.spec.ts",
+      "--grep",
+      "interview resumes, uses a deterministic",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output",
+      "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts"
+    ],
+    "configFile": "/Users/nickkotov/projects/languon/apps/web/tests/e2e/support/learner-portrait-playwright.config.ts",
+    "rootDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "learner-portrait.journeys.spec.ts"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "learner-portrait.journeys.spec.ts",
+      "file": "learner-portrait.journeys.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "interview resumes, uses a deterministic queued response, and keeps proposal approval explicit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8781,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:28:36.230Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "portrait-interview-intro-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts/learner-portrait.journeys--a77f5--proposal-approval-explicit/attachments/portrait-interview-intro-desktop-0dc1c61403e106ecacf01740737b33ec2124259e.png"
+                    },
+                    {
+                      "name": "portrait-interview-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts/learner-portrait.journeys--a77f5--proposal-approval-explicit/attachments/portrait-interview-desktop-6d5c36142b1aff22771b7cd4fabdfcd72dc28d72.png"
+                    },
+                    {
+                      "name": "portrait-two-language-details-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts/learner-portrait.journeys--a77f5--proposal-approval-explicit/attachments/portrait-two-language-details-desktop-670680cec79420be967e6752df88a97f338f48a0.png"
+                    },
+                    {
+                      "name": "portrait-expanded-language-details-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts/learner-portrait.journeys--a77f5--proposal-approval-explicit/attachments/portrait-expanded-language-details-mobile-3795259a67dcd9ea1a1c7fd7ae4a7298a1d88b8e.png"
+                    },
+                    {
+                      "name": "portrait-interview-preview-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts/learner-portrait.journeys--a77f5--proposal-approval-explicit/attachments/portrait-interview-preview-desktop-5910a58bfabf7c681f79a5a8f3eef23b1e320e6c.png"
+                    },
+                    {
+                      "name": "portrait-interview-review-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/free-interview-artifacts/learner-portrait.journeys--a77f5--proposal-approval-explicit/attachments/portrait-interview-review-desktop-41887d8ba13f6067789cb29df6fad29b0fb4c2f6.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b40555ff5271eb1dac00-e11cc234c0646c92073a",
+          "file": "learner-portrait.journeys.spec.ts",
+          "line": 325,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-29T22:28:28.850Z",
+    "duration": 16420.936999999998,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

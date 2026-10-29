@@ -3,21 +3,25 @@
 import { useEffect, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { Transaction } from '@tiptap/pm/state';
-import { type LearningBlock } from '@languon/contracts';
-import { Dialog, InlineAlert } from '@/fsd/shared/ui';
+import {
+    type LearningBlock,
+    type ExerciseLearningBlock,
+} from '@languon/contracts';
+import { InlineAlert } from '@/fsd/shared/ui';
 import { blocks } from '../../lib/positioned-learning-blocks';
-import { normalizeEditorDocument } from '../../lib/editor-document';
+import { applyLearningBlockEdit } from '../../lib/apply-learning-block-edit';
 import type { BlockKind } from '../../lib/learning-block-form';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
-import {
-    CopyBlocksToNote,
-    BlockCopyDialog,
-} from '../block-copy/copy-blocks-to-note';
+import { BlockCopyDialog } from '../block-copy/copy-blocks-to-note';
+import { LibrarySaveDialog } from '../library-copy/library-save-dialog';
+import { libraryLabels } from '../library-copy/library-labels';
+import { useI18n } from '@/fsd/shared/i18n';
 import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
 import { InsertLibraryBlock } from '../library-copy/insert-library-block';
-import { AudioBlockUpload, type UploadBlockAudio } from './audio-block-upload';
+import { type UploadBlockAudio } from './audio-block-upload';
 import { useBlockAuthoring } from './block-authoring-context';
 import { BlockInsertMenu } from './block-insert-menu';
+import { ExerciseSetDialog } from './exercise-set-dialog';
 import { BlockFormDialog } from './block-form-dialog';
 import {
     defaultAuthoringLabels,
@@ -40,6 +44,7 @@ export function LearningBlockAuthoring({
     library?: KnowledgeLibraryContext | undefined;
     blockCopy?: KnowledgeBlockCopyContext | undefined;
 }) {
+    const { locale } = useI18n();
     const authoring = useBlockAuthoring();
     if (!authoring)
         throw new Error('Block authoring requires its editor scope.');
@@ -51,7 +56,6 @@ export function LearningBlockAuthoring({
         copyToAnotherNote,
     } = authoring;
     const [items, setItems] = useState(() => blocks(editor));
-    const [audioPending, setAudioPending] = useState(false);
     const [error, setError] = useState(false);
     useEffect(() => {
         setItems(blocks(editor));
@@ -65,68 +69,65 @@ export function LearningBlockAuthoring({
     }, [editor]);
     function add(kind: BlockKind) {
         if (disabled) return;
-        if (kind === 'audio') setAudioPending(true);
-        else setEditing({ kind });
-    }
-    function closeAudio() {
-        setAudioPending(false);
+        setEditing({ kind });
     }
     function close() {
         setEditing(null);
     }
     function apply(block: LearningBlock) {
         if (disabled) return false;
-        const previous = editing?.existing ? editing.block : undefined;
-        const found = previous
-            ? blocks(editor).find((item) => item.block.id === previous.id)
-            : undefined;
-        if (
-            previous &&
-            (!found || JSON.stringify(found.block) !== JSON.stringify(previous))
-        ) {
-            setError(true);
-            return false;
-        }
-        const node = editor.schema.nodes.learningBlock!.create({ block });
-        const transaction = editor.state.tr;
-        if (found)
-            transaction.replaceWith(
-                found.position,
-                found.position + found.size,
-                node,
-            );
-        else transaction.insert(transaction.doc.content.size, node);
-        try {
-            normalizeEditorDocument(transaction.doc.toJSON());
-            editor.view.dispatch(transaction);
-            close();
-            setError(false);
-            return true;
-        } catch {
-            setError(true);
-            return false;
-        }
+        const previous =
+            editing?.existing && editing.block ? [editing.block] : [];
+        const applied = applyLearningBlockEdit(editor, previous, [block]);
+        setError(!applied);
+        if (applied) close();
+        return applied;
+    }
+    function applyExercises(next: ExerciseLearningBlock[]) {
+        if (disabled) return false;
+        const previous =
+            editing?.members ??
+            (editing?.existing && editing.block ? [editing.block] : []);
+        const applied = applyLearningBlockEdit(editor, previous, next);
+        setError(!applied);
+        if (applied) close();
+        return applied;
+    }
+    function applyAudio(
+        audio: Extract<LearningBlock, { type: 'audio' }>,
+        questions: ExerciseLearningBlock[],
+    ) {
+        if (disabled) return false;
+        const previous =
+            editing?.members ??
+            (editing?.existing && editing.block ? [editing.block] : []);
+        const groupId = questions[0]?.group?.id ?? crypto.randomUUID();
+        const nextQuestions = questions.map((block) => ({
+            ...block,
+            group: {
+                id: groupId,
+                parentBlockId: audio.id,
+                ...(questions[0]?.group?.title
+                    ? { title: questions[0].group.title }
+                    : {}),
+            },
+        }));
+        const applied = applyLearningBlockEdit(editor, previous, [
+            audio,
+            ...nextQuestions,
+        ]);
+        setError(!applied);
+        if (applied) close();
+        return applied;
     }
     function insert(block: LearningBlock) {
         if (disabled) return false;
-        const node = editor.schema.nodes.learningBlock!.create({ block });
-        const transaction = editor.state.tr.insert(
-            editor.state.doc.content.size,
-            node,
-        );
-        try {
-            normalizeEditorDocument(transaction.doc.toJSON());
-            editor.view.dispatch(transaction);
-            setError(false);
-            return true;
-        } catch {
-            setError(true);
-            return false;
-        }
+        const applied = applyLearningBlockEdit(editor, [], [block]);
+        setError(!applied);
+        return applied;
     }
-    function uploaded(block: Extract<LearningBlock, { type: 'audio' }>) {
-        setAudioPending(false);
-        setEditing({ kind: 'audio', block });
+    function closeLibrary() {
+        authoring?.setLibraryBlock(null);
     }
     function closeDuplicate() {
         setServerDuplicate(null);
@@ -138,7 +139,11 @@ export function LearningBlockAuthoring({
                   branchId: blockCopy.source.branchId,
               }
             : undefined;
-    const duplicateSelection = serverDuplicate ? [serverDuplicate.id] : [];
+    const duplicateSelection = authoring.serverDuplicateMembers.length
+        ? authoring.serverDuplicateMembers.map((block) => block.id)
+        : serverDuplicate
+          ? [serverDuplicate.id]
+          : [];
     const sourceBlocks = items.map((item) => item.block);
     return (
         <div className={styles.root}>
@@ -156,15 +161,15 @@ export function LearningBlockAuthoring({
                         compact
                     />
                 )}
-                {blockCopy && sourceBlocks.length > 0 && (
-                    <CopyBlocksToNote
-                        context={blockCopy}
-                        blocks={sourceBlocks}
-                        disabled={disabled}
-                        compact
-                    />
-                )}
             </div>
+            {authoring.libraryBlock && authoring.library && (
+                <LibrarySaveDialog
+                    block={authoring.libraryBlock}
+                    context={authoring.library}
+                    labels={libraryLabels(locale)}
+                    onClose={closeLibrary}
+                />
+            )}
             {serverDuplicate && blockCopy && (
                 <BlockCopyDialog
                     context={blockCopy}
@@ -174,27 +179,23 @@ export function LearningBlockAuthoring({
                     onClose={closeDuplicate}
                 />
             )}
-            {audioPending && (
-                <Dialog
-                    open
-                    title={labels.view.kinds.audio}
-                    closeLabel={labels.cancel}
-                    onClose={closeAudio}
-                >
-                    {uploadAudio ? (
-                        <AudioBlockUpload
-                            upload={uploadAudio}
-                            disabled={disabled}
-                            labels={labels}
-                            onReady={uploaded}
-                        />
-                    ) : (
-                        <InlineAlert>{labels.audioPending}</InlineAlert>
-                    )}
-                </Dialog>
-            )}
             {error && <InlineAlert tone='error'>{labels.error}</InlineAlert>}
-            {editing !== null && (
+            {editing?.kind === 'exercise' && (
+                <ExerciseSetDialog
+                    exercises={(
+                        editing.members ??
+                        (editing.block ? [editing.block] : [])
+                    ).filter(
+                        (block): block is ExerciseLearningBlock =>
+                            block.type === 'exercise',
+                    )}
+                    labels={labels}
+                    sources={sourceBlocks}
+                    onClose={close}
+                    onApply={applyExercises}
+                />
+            )}
+            {editing !== null && editing.kind !== 'exercise' && (
                 <BlockFormDialog
                     key={editing.block?.id ?? editing.kind}
                     kind={editing.kind}
@@ -203,6 +204,16 @@ export function LearningBlockAuthoring({
                     onClose={close}
                     onApply={apply}
                     sources={sourceBlocks}
+                    uploadAudio={uploadAudio}
+                    fieldAi={authoring.fieldAi}
+                    languageDefaults={authoring.languageDefaults}
+                    renderAudioPreparation={authoring.renderAudioPreparation}
+                    relatedExercises={editing.members?.filter(
+                        (block): block is ExerciseLearningBlock =>
+                            block.type === 'exercise',
+                    )}
+                    onApplyAudio={applyAudio}
+                    blockViewOptions={authoring.blockViewOptions}
                 />
             )}
         </div>

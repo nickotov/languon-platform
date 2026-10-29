@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
 import type {
     KnowledgeBody,
     WorkbookLearningShareAccess,
 } from '@languon/contracts';
-import { readKnowledgeAudio } from '@/fsd/entities/knowledge';
+import { useKnowledgeAudioUrls } from '@/fsd/entities/knowledge';
 import type { WorkbookLearningOptions } from './use-workbook-learning';
 
 function audioAssets(body: KnowledgeBody | undefined): string[] {
@@ -13,7 +12,8 @@ function audioAssets(body: KnowledgeBody | undefined): string[] {
     ) {
         if (
             node.type === 'learningBlock' &&
-            node.attrs?.block?.type === 'audio'
+            node.attrs?.block?.type === 'audio' &&
+            node.attrs.block.assetId
         )
             ids.add(node.attrs.block.assetId);
         node.content?.forEach(visit);
@@ -21,14 +21,7 @@ function audioAssets(body: KnowledgeBody | undefined): string[] {
     body?.document.content?.forEach(visit);
     return [...ids];
 }
-export function useNoteAudio({
-    noteId,
-    body,
-    access,
-    requestWithSession,
-    actorId,
-    unavailable,
-}: {
+export function useNoteAudio(options: {
     noteId: string;
     body: KnowledgeBody | undefined;
     access: WorkbookLearningShareAccess | undefined;
@@ -36,63 +29,8 @@ export function useNoteAudio({
     actorId: string | undefined;
     unavailable: boolean;
 }) {
-    const assetKey = audioAssets(body).join(',');
-    const [urls, setUrls] = useState<Record<string, string>>({});
-    const accessKind = access?.kind;
-    const accessLocator = access?.locator;
-    const accessKey = access?.key;
-    useEffect(() => {
-        const controller = new AbortController();
-        const created: string[] = [];
-        const grant =
-            accessKind && accessLocator && accessKey
-                ? { kind: accessKind, locator: accessLocator, key: accessKey }
-                : undefined;
-        setUrls({});
-        if (!assetKey || unavailable || (!actorId && !grant))
-            return () => controller.abort();
-        const assets = assetKey.split(',');
-        async function load(assetId: string) {
-            try {
-                const options = { access: grant, signal: controller.signal };
-                const blob = actorId
-                    ? await requestWithSession((token) =>
-                          readKnowledgeAudio(noteId, assetId, {
-                              ...options,
-                              token,
-                          }),
-                      )
-                    : await readKnowledgeAudio(noteId, assetId, options);
-                if (controller.signal.aborted) return;
-                const url = URL.createObjectURL(blob);
-                created.push(url);
-                setUrls((current) => ({ ...current, [assetId]: url }));
-            } catch {
-                /* The renderer shows media unavailable without exposing server details. */
-            }
-        }
-        async function drain() {
-            while (!controller.signal.aborted) {
-                const assetId = assets.shift();
-                if (!assetId) return;
-                await load(assetId);
-            }
-        }
-        void drain();
-        void drain();
-        return () => {
-            controller.abort();
-            for (const url of created) URL.revokeObjectURL(url);
-        };
-    }, [
-        noteId,
-        assetKey,
-        accessKind,
-        accessLocator,
-        accessKey,
-        actorId,
-        requestWithSession,
-        unavailable,
-    ]);
-    return unavailable ? {} : urls;
+    return useKnowledgeAudioUrls({
+        ...options,
+        assetIds: audioAssets(options.body),
+    });
 }

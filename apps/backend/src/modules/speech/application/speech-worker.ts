@@ -77,6 +77,12 @@ export class SpeechWorker {
                 else await this.options.store.pending(job, 30_000, this.now());
                 return true;
             }
+            if (
+                !job.taskId &&
+                this.options.store.authorizeDispatch &&
+                !(await this.options.store.authorizeDispatch(job, this.now()))
+            )
+                return true;
             const result = job.taskId
                 ? await provider.poll({
                       taskId: job.taskId,

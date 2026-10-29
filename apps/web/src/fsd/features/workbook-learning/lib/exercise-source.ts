@@ -55,8 +55,9 @@ export function exerciseSource(
     return {
         block: media,
         transcript: { language: media.transcript.language, segments },
-        ...(media.type === 'audio'
+        ...(media.type === 'audio' && media.assetId
             ? { audioAssetId: media.assetId }
-            : { videoSource: media.source }),
+            : {}),
+        ...(media.type === 'video' ? { videoSource: media.source } : {}),
     };
 }

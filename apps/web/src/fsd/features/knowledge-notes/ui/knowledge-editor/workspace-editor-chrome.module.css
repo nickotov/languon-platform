@@ -17,7 +17,15 @@
     margin: 0;
 }
 
-.prose :global(.tiptap) > * + * {
+.prose
+    :global(.tiptap)
+    > *
+    + *:not(
+        [data-group-position='middle'],
+        [data-group-position='end'],
+        :has([data-group-position='middle']),
+        :has([data-group-position='end'])
+    ) {
     margin-top: 0.85em;
 }
 
@@ -40,48 +48,70 @@
     margin-top: 0;
 }
 
-.prose :global(.tiptap) strong {
+.prose
+    :global(.tiptap)
+    strong:not(:where([data-block-family], [data-block-family] *)) {
     font-weight: 650;
 }
 
-.prose :global(.tiptap) a {
+.prose
+    :global(.tiptap)
+    a:not(:where([data-block-family], [data-block-family] *)) {
     color: var(--primary-default);
     text-decoration: underline;
     text-underline-offset: var(--size-3);
 }
 
-.prose :global(.tiptap) :where(ul, ol) {
+.prose
+    :global(.tiptap)
+    :where(ul, ol):not(:where([data-block-family], [data-block-family] *)) {
     padding-inline-start: 1.4em;
 }
 
-.prose :global(.tiptap) ul {
+.prose
+    :global(.tiptap)
+    ul:not(:where([data-block-family], [data-block-family] *)) {
     list-style: disc;
 }
 
-.prose :global(.tiptap) ol {
+.prose
+    :global(.tiptap)
+    ol:not(:where([data-block-family], [data-block-family] *)) {
     list-style: decimal;
 }
 
-.prose :global(.tiptap) li + li {
+.prose
+    :global(.tiptap)
+    li
+    + li:not(:where([data-block-family], [data-block-family] *)) {
     margin-top: 0.3em;
 }
 
-.prose :global(.tiptap) li::marker {
+.prose
+    :global(.tiptap)
+    li:not(:where([data-block-family], [data-block-family] *))::marker {
     color: var(--text-tertiary);
 }
 
-.prose :global(.tiptap) blockquote {
+.prose
+    :global(.tiptap)
+    blockquote:not(:where([data-block-family], [data-block-family] *)) {
     border-inline-start: 3px solid var(--primary-200);
     padding: 0.2em 0 0.2em 1em;
     color: var(--text-secondary);
     font-style: italic;
 }
 
-:global([data-theme='dark']) .prose :global(.tiptap) blockquote {
+:global([data-theme='dark'])
+    .prose
+    :global(.tiptap)
+    blockquote:not(:where([data-block-family], [data-block-family] *)) {
     border-inline-start-color: var(--primary-800);
 }
 
-.prose :global(.tiptap) table {
+.prose
+    :global(.tiptap)
+    table:not(:where([data-block-family], [data-block-family] *)) {
     border-collapse: collapse;
     width: 100%;
     font-size: var(--size-15);
@@ -89,19 +119,26 @@
     table-layout: fixed;
 }
 
-.prose :global(.tiptap) :where(th, td) {
+.prose
+    :global(.tiptap)
+    :where(th, td):not(:where([data-block-family], [data-block-family] *)) {
     border: 1px solid var(--border-default);
     padding: 0.45em 0.7em;
     text-align: start;
     vertical-align: top;
 }
 
-.prose :global(.tiptap) th {
+.prose
+    :global(.tiptap)
+    th:not(:where([data-block-family], [data-block-family] *)) {
     background: var(--background-subtle);
     font-weight: 600;
 }
 
-.prose :global(.tiptap) :where(th, td) p {
+.prose
+    :global(.tiptap)
+    :where(th, td)
+    p:not(:where([data-block-family], [data-block-family] *)) {
     margin: 0;
 }
 

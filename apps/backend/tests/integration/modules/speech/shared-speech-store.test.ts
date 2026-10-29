@@ -165,7 +165,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 generationEnabled: true,
                 playbackEnabled: true,
                 revalidateSource: async (actor, _source, tx) => {
-                    if (_source.kind === 'knowledge-block')
+                    if (
+                        _source.kind === 'knowledge-block' ||
+                        _source.kind === 'knowledge-snippet' ||
+                        _source.kind === 'knowledge-audio-draft'
+                    )
                         throw new SpeechError('speech_source_unavailable', 404);
                     const [user] = await tx
                         .select()

@@ -228,4 +228,31 @@ describe('shared speech playback', () => {
         expect(player.snapshot().phase).toBe('unavailable');
         player.reset();
     });
+    it('stops native recording playback before speech and stops speech before another recording', async () => {
+        const player = new SpeechPlayer();
+        const pauseRecording = vi.fn();
+        player.registerExternalMedia(pauseRecording);
+        await player.play(source, transport());
+        expect(pauseRecording).toHaveBeenCalledOnce();
+        const audio = FakeAudio.instances.at(-1)!;
+        const pauseSecond = vi.fn();
+        player.registerExternalMedia(pauseSecond);
+        expect(audio.pause).toHaveBeenCalled();
+        expect(player.snapshot().phase).toBe('idle');
+        player.reset();
+        expect(pauseSecond).toHaveBeenCalledOnce();
+    });
+
+    it('does not pause a native player registering the same target twice and refreshes its stop callback', () => {
+        const player = new SpeechPlayer();
+        const stale = vi.fn();
+        const current = vi.fn();
+        player.registerExternalMedia(stale, 'same-video');
+        player.registerExternalMedia(current, 'same-video');
+        expect(stale).not.toHaveBeenCalled();
+        expect(current).not.toHaveBeenCalled();
+        player.reset();
+        expect(stale).not.toHaveBeenCalled();
+        expect(current).toHaveBeenCalledOnce();
+    });
 });

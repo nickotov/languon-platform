@@ -1,12 +1,14 @@
 import { exerciseSource } from '../src/fsd/features/workbook-learning/lib/exercise-source';
 import { KnowledgeBodySchema } from '@languon/contracts';
 import { VideoPlayer } from '../src/fsd/entities/learning-blocks/ui/media-block/media-block';
+import { checkPreparedAnswer } from '../src/fsd/entities/learning-blocks/lib/check-prepared-answer';
 import { safeAudioUrl } from '../src/fsd/entities/learning-blocks/lib/safe-audio-url';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { LearningBlock } from '@languon/contracts';
 import {
     LearningBlockView,
+    LearningExerciseSet,
     type LearningBlockLabels,
 } from '@/fsd/entities/learning-blocks';
 
@@ -52,7 +54,474 @@ const exercise: LearningBlock = {
     explanation: 'The passage describes her departure.',
 };
 
+it('counts only real local checks and clears anonymous attempts on retry', () => {
+    const block = {
+        ...exercise,
+        format: 'multiple-choice' as const,
+        choices: [
+            { id: first, text: 'Past' },
+            { id: second, text: 'Present' },
+        ],
+        correctChoiceId: first,
+        hint: 'Consider the tense.',
+    } as Extract<LearningBlock, { type: 'exercise' }>;
+    const entries = [{ block }];
+    const setLabels = {
+        ...labels,
+        check: 'Check',
+        expandAll: 'Expand all',
+        collapseAll: 'Collapse all',
+        attempted: 'attempted',
+    };
+    const { rerender } = render(
+        <LearningExerciseSet entries={entries} labels={setLabels} />,
+    );
+    expect(screen.getByText('0 / 1 attempted')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Expand all' }));
+    fireEvent.click(screen.getByLabelText('Past'));
+    fireEvent.click(screen.getByRole('button', { name: 'Hint' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+    expect(screen.getByText('0 / 1 attempted')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Expand all' }));
+    expect(screen.getByLabelText('Past')).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    expect(screen.getByText('1 / 1 attempted')).toBeVisible();
+    rerender(
+        <LearningExerciseSet
+            entries={[{ block: { ...block, explanation: 'A correction.' } }]}
+            labels={setLabels}
+        />,
+    );
+    expect(screen.getByText('1 / 1 attempted')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(screen.getByText('0 / 1 attempted')).toBeVisible();
+    fireEvent.click(screen.getByLabelText('Past'));
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+    rerender(
+        <LearningExerciseSet
+            entries={[{ block: { ...block, question: 'A changed question?' } }]}
+            labels={setLabels}
+        />,
+    );
+    expect(screen.getByText('0 / 1 attempted')).toBeVisible();
+});
+
+it('keeps historical attempts on retry and counts an actual AI check', () => {
+    const evaluate = vi.fn();
+    render(
+        <LearningExerciseSet
+            entries={[
+                {
+                    block: exercise as Extract<
+                        LearningBlock,
+                        { type: 'exercise' }
+                    >,
+                    options: {
+                        onEvaluate: evaluate,
+                        learnerState: {
+                            attempted: false,
+                            revealed: false,
+                            hintUsed: false,
+                        },
+                    },
+                },
+            ]}
+            labels={{
+                ...labels,
+                attempted: 'attempted',
+                expandAll: 'Expand all',
+            }}
+        />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Expand all' }));
+    fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'My answer' },
+    });
+    expect(screen.getByText('0 / 1 attempted')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Check with AI' }));
+    expect(evaluate).toHaveBeenCalledWith(id, 'My answer');
+    expect(screen.getByText('1 / 1 attempted')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(screen.getByText('1 / 1 attempted')).toBeVisible();
+});
+
+it('offers an unavailable AI check with the host reason and no attempted event', () => {
+    const evaluate = vi.fn();
+    const attempt = vi.fn();
+    const { rerender } = render(
+        <LearningBlockView
+            block={exercise}
+            labels={labels}
+            evaluationUnavailableReason='Save changes first'
+            onEvaluate={evaluate}
+            onAttemptedChange={attempt}
+        />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: 'My answer' },
+    });
+    const check = screen.getByRole('button', { name: 'Check with AI' });
+    expect(check).toBeDisabled();
+    expect(check).toHaveAttribute('title', 'Save changes first');
+    fireEvent.click(check);
+    expect(evaluate).not.toHaveBeenCalled();
+    expect(attempt).not.toHaveBeenCalled();
+    rerender(
+        <LearningBlockView
+            block={exercise}
+            labels={labels}
+            evaluationUnavailableReason='Sign in to check'
+        />,
+    );
+    expect(
+        screen.getByRole('button', { name: 'Check with AI' }),
+    ).toBeDisabled();
+    expect(
+        screen.getByRole('button', { name: 'Check with AI' }),
+    ).toHaveAttribute('title', 'Sign in to check');
+});
+
 describe('reusable learning blocks', () => {
+    it('uses the same case-sensitive NFC/whitespace policy as prepared server checking', () => {
+        const block = {
+            id,
+            type: 'exercise' as const,
+            format: 'fill-in-the-blank' as const,
+            question: 'Complete',
+            referenceAnswer: 'café noir',
+            explanation: 'Prepared equivalent',
+            parts: [
+                {
+                    kind: 'gap' as const,
+                    id: first,
+                    acceptedAnswers: ['café noir'],
+                },
+            ],
+        };
+        expect(
+            checkPreparedAnswer(block, { [first]: '  cafe\u0301  noir ' }),
+        ).toBe(true);
+        expect(checkPreparedAnswer(block, { [first]: 'CAFÉ noir' })).toBe(
+            false,
+        );
+    });
+    it('does not label an edited answer with persisted correctness or feedback', () => {
+        render(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                feedback='Correct: saved evaluation'
+                learnerState={{
+                    answer: 'A saved attempt',
+                    attempted: true,
+                    correct: true,
+                    revealed: false,
+                    hintUsed: false,
+                }}
+            />,
+        );
+        expect(screen.getByRole('status')).toHaveTextContent(
+            'saved evaluation',
+        );
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: 'Another answer' },
+        });
+        expect(
+            screen.queryByText('Correct: saved evaluation'),
+        ).not.toBeInTheDocument();
+    });
+    it('resets local answers on a new material revision even when the task text is unchanged', () => {
+        const { rerender } = render(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                exerciseRevision='one'
+            />,
+        );
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: 'Old material answer' },
+        });
+        rerender(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                exerciseRevision='two'
+            />,
+        );
+        expect(screen.getByRole('textbox')).toHaveValue('');
+    });
+    it('preserves an expanded unsent draft when private progress and media URLs first load', () => {
+        const initial = {
+            block: exercise,
+            labels,
+            variant: 'learner' as const,
+            evaluationUnavailableReason: 'Loading progress',
+        };
+        const { rerender } = render(<LearningBlockView {...initial} />);
+        fireEvent.click(
+            screen.getByRole('button', { name: exercise.question }),
+        );
+        const field = screen.getByRole('textbox');
+        fireEvent.change(field, { target: { value: 'My early draft' } });
+        const hydrated = {
+            block: exercise,
+            labels,
+            variant: 'learner' as const,
+            exerciseRevision: 'first-server-revision',
+            learnerState: {
+                answer: 'Previous saved answer',
+                attempted: true,
+                revealed: false,
+                hintUsed: false,
+            },
+            onEvaluate: vi.fn(),
+        };
+        rerender(
+            <LearningBlockView
+                {...hydrated}
+                audioUrl='https://example.com/audio?token=first'
+            />,
+        );
+        expect(screen.getByRole('textbox')).toBe(field);
+        expect(field).toHaveValue('My early draft');
+        expect(
+            screen.getByRole('button', { name: 'Check with AI' }),
+        ).toBeEnabled();
+        rerender(
+            <LearningBlockView
+                {...hydrated}
+                audioUrl='https://example.com/audio?token=refreshed'
+            />,
+        );
+        expect(screen.getByRole('textbox')).toBe(field);
+        expect(field).toHaveValue('My early draft');
+        rerender(
+            <LearningBlockView
+                {...hydrated}
+                exerciseRevision='changed-source-revision'
+            />,
+        );
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: new RegExp(exercise.question.replace('?', '\\?')),
+            }),
+        );
+        expect(screen.getByRole('textbox')).not.toBe(field);
+        expect(screen.getByRole('textbox')).toHaveValue(
+            'Previous saved answer',
+        );
+    });
+    it('expands a question set while retaining individual drafts and private attempted counts', () => {
+        render(
+            <LearningExerciseSet
+                entries={[
+                    {
+                        block: exercise as Extract<
+                            LearningBlock,
+                            { type: 'exercise' }
+                        >,
+                        options: {
+                            learnerState: {
+                                answer: 'A saved answer',
+                                attempted: true,
+                                revealed: false,
+                                hintUsed: false,
+                            },
+                        },
+                    },
+                    {
+                        block: {
+                            ...exercise,
+                            id: first,
+                            question: 'What happened next?',
+                        } as Extract<LearningBlock, { type: 'exercise' }>,
+                    },
+                ]}
+                labels={{
+                    ...labels,
+                    expandAll: 'Expand all',
+                    collapseAll: 'Collapse all',
+                    attempted: 'attempted',
+                }}
+                title='Practice'
+            />,
+        );
+        expect(screen.getByText('1 / 2 attempted')).toBeVisible();
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Expand all' }));
+        expect(screen.getAllByRole('textbox')).toHaveLength(2);
+        fireEvent.change(screen.getAllByRole('textbox')[1]!, {
+            target: { value: 'My second answer' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Expand all' }));
+        expect(screen.getAllByRole('textbox')[0]).toHaveValue('A saved answer');
+        expect(screen.getAllByRole('textbox')[1]).toHaveValue(
+            'My second answer',
+        );
+    });
+    it('shows compact vocabulary pairs and plays through its host without a practice reveal', () => {
+        const onPlay = vi.fn();
+        render(
+            <LearningBlockView
+                block={{
+                    id,
+                    type: 'vocabulary',
+                    language: 'fr',
+                    translationLanguage: 'ru',
+                    entries: [
+                        { id: first, term: 'travail', translation: 'работа' },
+                    ],
+                }}
+                labels={labels}
+                variant='compact'
+                scope='chat-proposal'
+                playback={{ onPlay }}
+            />,
+        );
+        expect(screen.getByText('работа')).toBeVisible();
+        expect(
+            screen.queryByRole('button', { name: 'Show answer' }),
+        ).not.toBeInTheDocument();
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Replay: travail' }),
+        );
+        expect(onPlay).toHaveBeenCalledWith({
+            id: `chat-proposal:${first}`,
+            blockId: id,
+            text: 'travail',
+            language: 'fr',
+        });
+    });
+    it('reviews prepared exercise answers without asking the author to solve them', () => {
+        render(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                variant='review'
+            />,
+        );
+        expect(screen.getByText('She left.', { exact: false })).toBeVisible();
+        expect(
+            screen.getByText('The passage describes her departure.'),
+        ).toBeVisible();
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'Show answer' }),
+        ).not.toBeInTheDocument();
+    });
+    it('keeps inline answers while folding and expanding a learner exercise', () => {
+        render(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                variant='learner'
+            />,
+        );
+        const toggle = screen.getByRole('button', { expanded: false });
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        fireEvent.click(toggle);
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: 'She went away.' },
+        });
+        fireEvent.click(toggle);
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        fireEvent.click(toggle);
+        expect(screen.getByRole('textbox')).toHaveValue('She went away.');
+        expect(screen.queryByText('She left.')).not.toBeInTheDocument();
+    });
+    it('hydrates private practice once while preserving edits when saved state refreshes', () => {
+        const saved = {
+            answer: 'A saved attempt',
+            attempted: true,
+            revealed: false,
+            hintUsed: false,
+        };
+        const { rerender } = render(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                learnerState={saved}
+            />,
+        );
+        expect(screen.getByRole('textbox')).toHaveValue('A saved attempt');
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: 'A new draft' },
+        });
+        rerender(
+            <LearningBlockView
+                block={exercise}
+                labels={labels}
+                learnerState={{ ...saved, answer: 'A later server refresh' }}
+            />,
+        );
+        expect(screen.getByRole('textbox')).toHaveValue('A new draft');
+        rerender(
+            <LearningBlockView
+                block={{ ...exercise, explanation: 'A corrected explanation' }}
+                labels={labels}
+                learnerState={saved}
+            />,
+        );
+        expect(screen.getByRole('textbox')).toHaveValue('A new draft');
+    });
+    it('distinguishes unprepared audio and defers explicit video playback in previews', () => {
+        const { rerender, container } = render(
+            <LearningBlockView
+                block={{ id, type: 'audio' }}
+                labels={{ ...labels, noRecording: 'No recording prepared' }}
+                variant='author'
+            />,
+        );
+        expect(screen.getByRole('status')).toHaveTextContent(
+            'No recording prepared',
+        );
+        expect(container.querySelector('audio')).toBeNull();
+        rerender(
+            <LearningBlockView
+                block={{
+                    id,
+                    type: 'video',
+                    source: { kind: 'youtube', videoId: 'abcdefghijk' },
+                }}
+                labels={labels}
+                variant='compact'
+            />,
+        );
+        expect(container.querySelector('iframe')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Replay' }));
+        expect(container.querySelector('iframe')).toHaveAttribute(
+            'src',
+            'https://www.youtube-nocookie.com/embed/abcdefghijk',
+        );
+    });
+    it('checks prepared choices without AI or revealing the reference answer', () => {
+        render(
+            <LearningBlockView
+                block={{
+                    id,
+                    type: 'exercise',
+                    format: 'multiple-choice',
+                    question: 'Choose',
+                    referenceAnswer: 'The first one',
+                    explanation: 'It describes a past event.',
+                    choices: [
+                        { id: first, text: 'Past' },
+                        { id: second, text: 'Present' },
+                    ],
+                    correctChoiceId: first,
+                }}
+                labels={{ ...labels, check: 'Check' }}
+            />,
+        );
+        fireEvent.click(screen.getByLabelText('Past'));
+        fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+        expect(screen.getByRole('status')).toHaveTextContent('Correct');
+        expect(screen.queryByText('The first one')).not.toBeInTheDocument();
+    });
     it('renders hostile text as text rather than HTML', () => {
         const hostile =
             '<img src=x onerror="alert(1)"><script>alert(1)</script>';
@@ -115,10 +584,10 @@ describe('reusable learning blocks', () => {
         expect(screen.queryByText('Primero')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Bilingual' }));
         expect(
-            screen.getByText('First source').parentElement,
+            screen.getByText('First source').closest('li'),
         ).toHaveTextContent('Primero');
         expect(
-            screen.getByText('Second source').parentElement,
+            screen.getByText('Second source').closest('li'),
         ).toHaveTextContent('Segundo');
     });
     it('hides audio transcript and reports disclosure without constructing asset URLs', () => {

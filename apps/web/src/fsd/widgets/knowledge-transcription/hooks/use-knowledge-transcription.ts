@@ -19,6 +19,25 @@ import {
 } from '../lib/transcription-proposal';
 
 type Action = 'submit' | 'read' | 'cancel';
+async function cancelPrepared(
+    api: ReturnType<typeof transcriptionApi>,
+    current: PreparedTranscription,
+) {
+    const bounded = new AbortController();
+    const timeout = setTimeout(() => bounded.abort(), 30_000);
+    try {
+        return await api.cancel(
+            current.noteId,
+            current.input.operationId,
+            bounded.signal,
+        );
+    } catch {
+        // Best effort; a still-admitting POST is cancelled again after its response.
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
 export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
     const [selected, setSelectedValue] = useState(''),
         [language, setLanguage] = useState(props.language);
@@ -34,9 +53,17 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
         lock = useRef(false),
         cancelling = useRef(false);
     const [jobNoteId, setJobNoteId] = useState(props.noteId);
+    const latest = useRef(props);
+    latest.current = props;
+    const observedJob = useRef<KnowledgeTranscriptionJob | null>(null);
+    const submission = useRef<{
+        operation: AbortController;
+        detached: 'closed' | 'cancel' | null;
+    } | null>(null);
     function reset() {
         controller.current?.abort();
         prepared.current = null;
+        observedJob.current = null;
         lock.current = false;
         cancelling.current = false;
         setJob(null);
@@ -48,7 +75,29 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
     }
     useEffect(
         () => () => {
-            controller.current?.abort();
+            const admitting = submission.current;
+            if (
+                latest.current.cancelOnUnmount &&
+                admitting?.operation === controller.current
+            ) {
+                // Retain only bounded admission readback, never polling or UI after closure.
+                admitting.detached = 'closed';
+            } else controller.current?.abort();
+            const current = prepared.current;
+            if (
+                latest.current.cancelOnUnmount &&
+                current &&
+                !transcriptionTerminal(observedJob.current)
+            ) {
+                // Dialog closure must not leave a known learner-funded request running.
+                void cancelPrepared(
+                    transcriptionApi(
+                        latest.current.requestWithSession,
+                        current.expected.assetId,
+                    ),
+                    current,
+                );
+            }
             prepared.current = null;
         },
         [props.noteId],
@@ -68,7 +117,16 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
     async function perform(action: Action) {
         const current = prepared.current;
         if (!current) return;
-        controller.current?.abort();
+        const pendingAdmission = submission.current;
+        if (
+            action === 'cancel' &&
+            props.cancelOnUnmount &&
+            pendingAdmission?.operation === controller.current
+        ) {
+            // An early cancellation may precede POST commit. Keep its bounded readback
+            // so the admitted job is cancelled again without starting observation.
+            pendingAdmission.detached = 'cancel';
+        } else controller.current?.abort();
         const operation = new AbortController();
         controller.current = operation;
         lastAction.current = action;
@@ -80,11 +138,51 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             props.requestWithSession,
             current.expected.assetId,
         );
+        const admitting =
+            props.cancelOnUnmount && action === 'submit'
+                ? { operation, detached: null as 'closed' | 'cancel' | null }
+                : null;
+        if (admitting) submission.current = admitting;
+        function recoverCancelledDialog(
+            result: KnowledgeTranscriptionJob | null,
+        ) {
+            if (
+                admitting?.detached !== 'cancel' ||
+                prepared.current !== current
+            )
+                return;
+            // Only this still-open request can recover its controls; closure/reset
+            // erases the prepared identity and prevents every late UI update.
+            controller.current?.abort();
+            lock.current = false;
+            cancelling.current = false;
+            setBusy(false);
+            if (result && transcriptionTerminal(result)) {
+                if (result.state === 'cancelled') {
+                    observedJob.current = result;
+                    setJob(result);
+                    setFailed(false);
+                    setUnready(false);
+                } else reset();
+            } else {
+                setFailed(true);
+                setUnready(false);
+            }
+        }
         try {
             let result;
-            if (action === 'submit')
-                result = await api.submit(current.input, operation.signal);
-            else if (action === 'cancel')
+            if (action === 'submit') {
+                const timeout = admitting
+                    ? setTimeout(() => operation.abort(), 30_000)
+                    : null;
+                try {
+                    result = await api.submit(current.input, operation.signal);
+                } finally {
+                    if (timeout !== null) clearTimeout(timeout);
+                    if (submission.current === admitting)
+                        submission.current = null;
+                }
+            } else if (action === 'cancel')
                 result = await api.cancel(
                     current.noteId,
                     current.input.operationId,
@@ -96,6 +194,13 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                     current.input.operationId,
                     operation.signal,
                 );
+            if (admitting?.detached) {
+                const cancelled = transcriptionTerminal(result)
+                    ? result
+                    : await cancelPrepared(api, current);
+                recoverCancelledDialog(cancelled);
+                return;
+            }
             operation.signal.throwIfAborted();
             if (result.assetId !== current.expected.assetId)
                 throw new Error('The audio source changed.');
@@ -109,10 +214,17 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                     ),
                 operation.signal,
                 (next) => {
-                    if (!operation.signal.aborted) setJob(next);
+                    if (!operation.signal.aborted) {
+                        observedJob.current = next;
+                        setJob(next);
+                    }
                 },
             );
         } catch (error) {
+            if (admitting?.detached) {
+                recoverCancelledDialog(await cancelPrepared(api, current));
+                return;
+            }
             if (!operation.signal.aborted) {
                 setFailed(true);
                 setUnready(
@@ -121,7 +233,11 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                 );
             }
         } finally {
-            if (controller.current === operation && !operation.signal.aborted) {
+            if (
+                controller.current === operation &&
+                !operation.signal.aborted &&
+                !admitting?.detached
+            ) {
                 lock.current = false;
                 cancelling.current = false;
                 setBusy(false);
@@ -148,7 +264,7 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                 props.noteId,
                 draft,
                 targetId,
-                language,
+                props.variant === 'focused' ? props.language : language,
             );
             lock.current = false;
             await perform('submit');
@@ -211,7 +327,7 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             const replacement = transcriptionReplacement(
                 current.expected,
                 job.result.text,
-                language,
+                current.input.languages[0]!,
             );
             const outcome = await props.onApply(current.expected, replacement, {
                 noteId: current.noteId,

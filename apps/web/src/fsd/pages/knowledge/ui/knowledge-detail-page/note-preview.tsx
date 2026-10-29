@@ -11,11 +11,21 @@ export function NotePreview({
     blockOptions,
     library,
     blockCopy,
+    renderBlockMenu,
+    getBlockActions,
+    wrapBlock,
 }: {
     content: KnowledgeWorkingContent;
+    wrapBlock?: ComponentProps<typeof KnowledgeDocumentView>['wrapBlock'];
     blockOptions?: ComponentProps<typeof KnowledgeDocumentView>['blockOptions'];
     library?: ComponentProps<typeof KnowledgeDocumentView>['library'];
     blockCopy?: ComponentProps<typeof KnowledgeDocumentView>['blockCopy'];
+    renderBlockMenu?: ComponentProps<
+        typeof KnowledgeDocumentView
+    >['renderBlockMenu'];
+    getBlockActions?: ComponentProps<
+        typeof KnowledgeDocumentView
+    >['getBlockActions'];
 }) {
     const { t, locale } = useI18n();
     const names = new Intl.DisplayNames([locale], { type: 'language' });
@@ -63,6 +73,9 @@ export function NotePreview({
                 blockOptions={blockOptions}
                 library={library}
                 blockCopy={blockCopy}
+                renderBlockMenu={renderBlockMenu}
+                getBlockActions={getBlockActions}
+                wrapBlock={wrapBlock}
                 {...(content.explanationLanguage
                     ? { language: content.explanationLanguage }
                     : {})}

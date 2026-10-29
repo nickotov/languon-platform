@@ -1,3 +1,4 @@
+import { projectConversationSource } from '../../application/conversation-source-context';
 import { tutorReservedInputBytes } from '../../application/tutor-context-budget';
 import {
     textAiModelCatalog,
@@ -106,6 +107,60 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
             tutorReservedInputBytes(input) -
                 tutorReservedInputBytes(withoutBlockTool),
         ).toBeGreaterThanOrEqual(Buffer.byteLength(JSON.stringify(blockTool)));
+    });
+
+    it('uses the same frozen escaped retrieval bound through the actual SDK read-tool continuation', async () => {
+        const input = runInput();
+        const sourceText = '\\"\n Français русский 😀 '.repeat(30);
+        const id = '01900000-0000-4000-8000-000000000012';
+        const source = projectConversationSource(
+            'knowledge',
+            {
+                version: 'draft:1',
+                title: 'Escaped source',
+                description: null,
+                studiedLanguage: 'fr',
+                provenance: 'draft',
+                scope: 'workspace',
+                material: [],
+                blockTarget: {
+                    branchId: id,
+                    version: 1,
+                    material: [
+                        {
+                            id,
+                            kind: 'text',
+                            label: 'Français',
+                            content: sourceText,
+                        },
+                    ],
+                },
+            },
+            'Read français',
+        );
+        input.sourceContext = source.initialContext;
+        input.readContext = async (query) => source.read(query);
+        const provider = scriptedTutorModel([
+            {
+                toolName: 'read_source_context',
+                input: { query: 'français', limit: 10 },
+            },
+            'The passage was read.',
+        ]);
+        await createContextualTutorRunner({
+            model: provider.model,
+            accounting: tutorAccountingFixture(),
+            maxInputTokens: 64_000,
+        }).run(input);
+        expect(provider.requests).toHaveLength(2);
+        const continuation = JSON.stringify(provider.requests[1]?.prompt);
+        expect(continuation).toContain('русский');
+        expect(Buffer.byteLength(continuation, 'utf8')).toBeLessThan(
+            tutorReservedInputBytes(input),
+        );
+        expect(source.initialContext.retrievedContextByteBound).toBeLessThan(
+            4000,
+        );
     });
 
     it('sends only read tools to the provider for shared-source execution', async () => {

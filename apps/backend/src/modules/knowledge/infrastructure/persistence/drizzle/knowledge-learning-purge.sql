@@ -18,6 +18,10 @@ BEGIN
   WHERE j.external_source_kind='knowledge-block' AND (s.actor_id=owner_value OR n.owner_id=owner_value)
     AND (j.execution_state IN ('queued','running') OR j.provider_reservation_state='active')
   UNION ALL
+  SELECT j.id,j.owner_id,'texts_ai_jobs'::text FROM public.texts_ai_jobs j JOIN public.knowledge_field_job_sources s ON s.job_id=j.id JOIN public.knowledge_notes n ON n.id=s.note_id WHERE j.external_source_kind='knowledge-field' AND (s.actor_id=owner_value OR n.owner_id=owner_value) AND (j.execution_state IN ('queued','running') OR j.provider_reservation_state='active')
+  UNION ALL
+  SELECT j.id,j.owner_id,'texts_ai_jobs'::text FROM public.texts_ai_jobs j JOIN public.knowledge_exercise_evaluation_job_sources s ON s.job_id=j.id JOIN public.knowledge_notes n ON n.id=s.note_id WHERE j.external_source_kind='knowledge-exercise' AND (s.actor_id=owner_value OR n.owner_id=owner_value) AND (j.execution_state IN ('queued','running') OR j.provider_reservation_state='active')
+  UNION ALL
   SELECT j.id,j.learner_id,'sentence_ai_jobs'::text
   FROM public.sentence_ai_jobs j JOIN public.knowledge_notes n ON n.id=j.source_note_id
   WHERE j.source_kind='knowledge-vocabulary' AND (j.learner_id=owner_value OR n.owner_id=owner_value)

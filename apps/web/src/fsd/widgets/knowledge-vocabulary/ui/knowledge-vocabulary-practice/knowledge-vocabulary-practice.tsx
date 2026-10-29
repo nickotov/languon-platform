@@ -9,11 +9,15 @@ import { dictionaryApi } from '@/fsd/entities/dictionary';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 import { VocabularyTraining } from './vocabulary-training';
 import { createKnowledgeSentenceApi } from '../../api/knowledge-sentence-api';
-import { Button } from '@/fsd/shared/ui';
+import { Ellipsis } from 'lucide-react';
+import styles from './knowledge-vocabulary-practice.module.css';
+import { Button, Menu, type MenuItem } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import { createKnowledgeFlashcardApi } from '../../api/knowledge-flashcard-api';
 export interface KnowledgeVocabularyPracticeProps {
     noteId: string;
+    blockMenu?: boolean | undefined;
+    commonMenuItems?: MenuItem[] | undefined;
     block: Extract<LearningBlock, { type: 'vocabulary' }>;
     actorId: string;
     requestWithSession: RequestWithSession;
@@ -61,6 +65,28 @@ function Practice({
     const target = catalog.data?.languages.find(
         (language) => language.tag === props.block.translationLanguage,
     );
+    const label =
+        props.block.title ??
+        {
+            en: 'Vocabulary',
+            ru: 'Словарь',
+            fr: 'Vocabulaire',
+            es: 'Vocabulario',
+        }[locale];
+    const blockTrigger = <Ellipsis size={16} aria-hidden />;
+    if (
+        props.blockMenu &&
+        (catalog.isPending || catalog.isError || !source || !target)
+    )
+        return (
+            <Menu
+                iconOnly
+                label={label}
+                trigger={blockTrigger}
+                triggerClassName={styles.menuTrigger}
+                items={props.commonMenuItems ?? []}
+            />
+        );
     if (catalog.isPending)
         return (
             <p role='status'>
@@ -103,6 +129,10 @@ function Practice({
     return (
         <VocabularyTraining
             sentenceApi={sentenceApi}
+            additionalItems={props.commonMenuItems ?? []}
+            menuTrigger={props.blockMenu ? blockTrigger : undefined}
+            menuLabel={props.blockMenu ? label : undefined}
+            triggerClassName={props.blockMenu ? styles.menuTrigger : undefined}
             capabilityIdentity={`${props.actorId}:${props.noteId}:${props.block.id}:${props.access?.kind}:${props.access?.locator}`}
             api={api}
             signedIn

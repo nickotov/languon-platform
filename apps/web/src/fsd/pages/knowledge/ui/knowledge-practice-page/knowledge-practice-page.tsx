@@ -1,10 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import type { KnowledgeNote, LearningBlock } from '@languon/contracts';
-import { KnowledgePrivateTranslation } from '@/fsd/widgets/knowledge-private-translation';
+import { useKnowledgeBlockPlayback } from '@/fsd/widgets/knowledge-speech';
+import { KnowledgeBilingualStudy } from '@/fsd/widgets/knowledge-private-translation';
 import { KnowledgeVocabularyPractice } from '@/fsd/widgets/knowledge-vocabulary';
 import { knowledgeApi } from '@/fsd/entities/knowledge';
 import { useSessionStore } from '@/fsd/entities/session';
@@ -14,7 +15,13 @@ import {
     LearningProgress,
 } from '@/fsd/features/workbook-learning';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, ButtonLink, InlineAlert, LoadingState } from '@/fsd/shared/ui';
+import {
+    Button,
+    ButtonLink,
+    InlineAlert,
+    LoadingState,
+    type MenuItem,
+} from '@/fsd/shared/ui';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
 import { NotePreview } from '../knowledge-detail-page/note-preview';
 import styles from './knowledge-practice-page.module.css';
@@ -81,6 +88,18 @@ function SavedPractice({ note }: { note: KnowledgeNote }) {
     const actorId = useSessionStore((state) => state.user?.id);
     const { requestWithSession } = useAuth();
     const { locale } = useI18n();
+    const playback = useKnowledgeBlockPlayback({
+        noteId: note.id,
+        requestWithSession,
+    });
+    const blocks =
+        note.body.document.content?.flatMap((node) =>
+            node.attrs?.block ? [node.attrs.block] : [],
+        ) ?? [];
+    const blockPlayback = playback.options(async () => ({
+        origin: { kind: 'saved', expectedNoteVersion: note.version },
+        blocks,
+    }));
     const model = useWorkbookLearning({
         noteId: note.id,
         noteVersion: note.version,
@@ -109,42 +128,54 @@ function SavedPractice({ note }: { note: KnowledgeNote }) {
         },
     };
     function blockOptions(block: LearningBlock) {
-        const options = model.options(block);
-        if (actorId && block.type === 'vocabulary') {
-            return {
-                ...options,
-                actions: (
-                    <KnowledgeVocabularyPractice
-                        noteId={note.id}
-                        block={block}
-                        actorId={actorId}
-                        requestWithSession={requestWithSession}
-                    />
-                ),
-            };
-        }
-        if (actorId && block.type === 'bilingual-text')
-            return {
-                ...options,
-                actions: (
-                    <KnowledgePrivateTranslation
-                        actorId={actorId}
-                        noteId={note.id}
-                        noteVersion={note.version}
-                        block={block}
-                        requestWithSession={requestWithSession}
-                    />
-                ),
-            };
+        const options = {
+            ...model.options(block),
+            variant: 'learner' as const,
+            playback: blockPlayback,
+        };
         return options;
     }
+    function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
+        if (!actorId || block.type !== 'vocabulary') return null;
+        return (
+            <KnowledgeVocabularyPractice
+                noteId={note.id}
+                block={block}
+                actorId={actorId}
+                requestWithSession={requestWithSession}
+                blockMenu
+                commonMenuItems={items}
+            />
+        );
+    }
+    const wrapBlock: NonNullable<
+        ComponentProps<typeof NotePreview>['wrapBlock']
+    > = (block, render) => {
+        if (!actorId || block.type !== 'bilingual-text') return render();
+        return (
+            <KnowledgeBilingualStudy
+                actorId={actorId}
+                noteId={note.id}
+                noteVersion={note.version}
+                block={block}
+                requestWithSession={requestWithSession}
+                viewOptions={blockOptions(block)}
+                library={library}
+            >
+                {render}
+            </KnowledgeBilingualStudy>
+        );
+    };
     return (
         <>
+            {playback.confirmation}
             <h1>{note.title}</h1>
             <LearningProgress model={model} />
             <NotePreview
                 content={note}
                 blockOptions={blockOptions}
+                renderBlockMenu={renderBlockMenu}
+                wrapBlock={wrapBlock}
                 library={library}
                 blockCopy={blockCopy}
             />

@@ -157,6 +157,11 @@ GRANT UPDATE (state, task_id, lease_token, lease_expires_at, next_poll_at,
     error, billing_state)
     ON TABLE speech_jobs TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE model_price_revisions TO :"dictionary_worker_role";
+-- Private knowledge speech validates source identity through a boolean lease fence, never document reads.
+GRANT EXECUTE ON FUNCTION languon_speech_knowledge_source_state(uuid,uuid), languon_cleanup_knowledge_speech_quotes(integer) TO :"dictionary_worker_role";
+REVOKE EXECUTE ON FUNCTION languon_knowledge_speech_binding_available(uuid), languon_erase_branch_speech(), languon_erase_proposal_speech() FROM :"dictionary_worker_role";
+REVOKE UPDATE (source_binding_id) ON TABLE speech_jobs FROM :"dictionary_worker_role";
+
 
 -- Texts jobs share the bounded worker and accounting infrastructure. Selection
 -- publication is an explicit user-authorized operation, including new dictionary
@@ -186,6 +191,7 @@ GRANT UPDATE (updated_at) ON TABLE knowledge_working_branches TO :"dictionary_wo
 REVOKE SELECT, INSERT ON TABLE knowledge_speech_recordings FROM :"dictionary_worker_role";
 REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_block_proposals FROM :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION public.languon_propose_learning_blocks(uuid,uuid,jsonb) TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_propose_learning_block_change(uuid,uuid,jsonb,uuid) TO :"dictionary_worker_role";
 -- Transcription reads immutable admitted jobs and changes lifecycle only. Audio
 -- bytes require the exact live job lease; financial receipts use typed authority.
 -- Config revisions contain a private credential equality pin; only definer authority reads them.
@@ -262,4 +268,13 @@ GRANT SELECT ON TABLE text_ai_routing_state, text_ai_routing_revisions,
     text_ai_probes, text_ai_route_dispatches TO :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION languon_text_ai_route_dispatch_allowed(text,text,text,timestamptz),
     languon_record_text_ai_route_health(uuid,uuid,uuid,text,text,bigint,text)
+    TO :"dictionary_worker_role";
+
+-- Knowledge block authoring sources expose identities only. Private learner
+-- attempts remain inaccessible; evaluation publication requires a live exact job fence.
+GRANT SELECT ON TABLE knowledge_field_job_sources TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION
+    languon_assert_knowledge_field_action_source(uuid,uuid),
+    languon_assert_knowledge_exercise_action_source(uuid,uuid),
+    languon_publish_knowledge_exercise_evaluation(uuid,text,bigint,jsonb)
     TO :"dictionary_worker_role";

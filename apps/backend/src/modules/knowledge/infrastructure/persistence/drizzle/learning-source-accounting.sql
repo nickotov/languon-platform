@@ -48,8 +48,11 @@ BEGIN
  IF kind_value IN ('text-detection','text-translation') THEN
   SELECT to_jsonb(t) INTO j FROM public.texts_ai_jobs t WHERE id=job_value;
   IF j->>'external_source_kind' IS NULL THEN
-   IF j->'input_payload'->'knowledgeSource' IS NOT NULL THEN RAISE EXCEPTION 'Knowledge text source cannot lose its parent tag' USING ERRCODE='23514'; END IF;
+   IF j->'input_payload'->'knowledgeSource' IS NOT NULL OR j->'input_payload'->'knowledgeFieldAction' IS NOT NULL OR j->'input_payload'->'knowledgeExerciseEvaluation' IS NOT NULL THEN RAISE EXCEPTION 'Knowledge text source cannot lose its parent tag' USING ERRCODE='23514'; END IF;
    RETURN;
+  END IF;
+  IF j->>'external_source_kind' IN ('knowledge-field','knowledge-exercise') THEN
+   PERFORM public.languon_assert_knowledge_text_action_source(job_value,actor_value); RETURN;
   END IF;
   SELECT binding,requested_target_language INTO linked_value,requested_target_value FROM public.knowledge_text_job_sources WHERE job_id=job_value AND actor_id=actor_value AND note_id=(binding->>'noteId')::uuid AND block_id=(binding->>'blockId')::uuid;
   binding_value:=j->'input_payload'->'knowledgeSource';
@@ -132,6 +135,7 @@ BEGIN
   END IF;
   erasure_value:=old_value->>'source_kind'='knowledge-vocabulary' AND new_value->>'execution_state' IN ('completed','failed','cancelled') AND coalesce(new_value->'knowledge_source','null'::jsonb)='null'::jsonb AND coalesce(new_value->'input_payload','null'::jsonb)='null'::jsonb AND new_value->>'result_knowledge_exercise_id' IS NULL AND new_value->>'result_knowledge_attempt_id' IS NULL AND NOT EXISTS(SELECT 1 FROM public.knowledge_notes WHERE id=(old_value->>'source_note_id')::uuid);
   IF new_value->'external_source_kind' IS DISTINCT FROM old_value->'external_source_kind' OR new_value->'source_kind' IS DISTINCT FROM old_value->'source_kind' OR new_value->'source_note_id' IS DISTINCT FROM old_value->'source_note_id' OR ((new_value->'knowledge_source' IS DISTINCT FROM old_value->'knowledge_source' OR new_value->'source_exercise_id' IS DISTINCT FROM old_value->'source_exercise_id') AND NOT coalesce(erasure_value,false)) THEN RAISE EXCEPTION 'Knowledge learning job source identities are immutable' USING ERRCODE='23514'; END IF;
+  IF old_value->>'external_source_kind' IN ('knowledge-field','knowledge-exercise') AND new_value->'input_payload' IS NOT NULL AND new_value->'input_payload'<>'null'::jsonb AND new_value->'input_payload' IS DISTINCT FROM old_value->'input_payload' THEN RAISE EXCEPTION 'Knowledge action captured input is immutable' USING ERRCODE='23514'; END IF;
   IF new_value->'input_payload' IS NOT NULL AND new_value->'input_payload'<>'null'::jsonb AND new_value->'input_payload'->'knowledgeSource' IS DISTINCT FROM old_value->'input_payload'->'knowledgeSource' THEN RAISE EXCEPTION 'Knowledge translation source identity is immutable' USING ERRCODE='23514'; END IF;
   IF new_value->>'execution_state'='completed' AND old_value->>'execution_state' IS DISTINCT FROM 'completed' THEN
    PERFORM public.languon_assert_knowledge_job_source(NEW.id,kind_value,actor_value);

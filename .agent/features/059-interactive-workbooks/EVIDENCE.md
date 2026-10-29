@@ -1386,7 +1386,7 @@ E44 final remediation and verification:
   `/tmp/languon-059-editor-redesign-browser-complete.log`.
 - Final web typecheck81963, styling31690, affected UI/widget ESLint64539 and prior
   editor/readiness lint27605/34349 all passed. Final docs validator8544 passed
- 16 tests/33 guides; current mapping `sha256:9b82f864dfa04019` passes.
+  16 tests/33 guides; current mapping `sha256:9b82f864dfa04019` passes.
   `git diff --check` passed and runner restored generated `next-env.d.ts`.
 - Final screenshot files and checksum manifest:
   `evidence/editor-redesign/{editor-empty-desktop,editor-empty-mobile,editor-block-menu,editor-populated-desktop}.png`
@@ -1501,7 +1501,7 @@ readiness proof, not a paid/live model completion claim.
 E45 secondary Texts regression and final frozen rerun:
 
 - The first complete execution-stage report (59e374f4…) had748 tests,745 passed,
- 3 failed/no pending. Two were a real F059 regression: find() passed the entire
+  3 failed/no pending. Two were a real F059 regression: find() passed the entire
   job to source authorization, so owner status/cancel incorrectly checked mutable
   Text version. It now projects immutable owner/folder/job/source identity only;
   Knowledge-backed jobs still repeat live source/actor authorization. Full Text
@@ -1788,3 +1788,232 @@ all14/775 original report hashes, final terminal gate and durable records. No op
 material scoped finding; REV1/2/3 and the test-harness repair are closed. E46 is
 Complete. Parent Feature059 remains In progress; no whole-feature completion,
 merge or additional commit is claimed.
+
+## E47 — Magic Patterns v16 discovery (implementation pending)
+
+- User-supplied source: https://www.magicpatterns.com/c/3pqoonbgxacst6w72rhiqb;
+  provider version v16, artifact `fb2e85d3-cf96-4a3f-b0e3-841f9057a4f8`.
+- Retrieved all 154 source files through the read-only Magic Patterns connector;
+  retained reference files, byte lengths and SHA-256 hashes in the v003 design
+  source manifest. No source scripts executed and no external design writes.
+- Independent discovery: `design_block_inventory` inspected block views/editors;
+  `design_chat_ai_discovery` inspected chat, proposals and AI execution seams.
+  Findings integrated into FEATURE.md MP-01–MP-21 and the active ExecPlan section.
+- Actual provider preview inspected in Chrome at 1512×894 window / 80% browser
+  zoom. [Default reference capture](designs/interactive-knowledge-sheet-and-chat/v003/reference-captures/provider-workspace-default.png).
+  This only proves access/default rendering; hidden panels, custom-block viewport,
+  mobile, theme and recovery states still need matching reference/runtime evidence.
+- Three material product questions sent before coding: eligible atomic field-AI
+  scope, pre-media audio shells, prepared-vs-AI exercise checking. Awaiting answers.
+- No runtime implementation or tests run for this discovery slice. Earlier E46
+  verification does not establish behavior or fidelity for this selected design.
+
+### v16 focused integration evidence so far (not final)
+
+- Root web selection: `workbook-learning`, `exercise-evaluation`, snippet-selector
+  and speech-player unit/UI cases: 4 files /22 tests passed, including known job-ID
+  polling, late accepted-job cancellation and prepared-vs-AI inline private results.
+- Contracts/backend evaluator worker: contracts43, HTTP/domain/copy28, retained
+  production SDK+PostgreSQL28 (17 actions +11 learner), no skips. Root will retain
+  machine reports/source manifests and rerun required final gates.
+- Authoring worker:23 component/helper cases; renderer/read-wrapper initial55;
+  proposal worker related17 UI cases. All are scoped early evidence, not full
+  runtime, visual fidelity, security remediation or completion approval.
+- Root focused real PostgreSQL/Redis run retained under
+  `evidence/v16-migration/focused-db-0df92212/tests.json`:60/62 pass. Failed customer
+  update reserve and direct-write speech fixture have assigned fixes; do not treat
+  this report as a green gate. Initial prior runner attempt failed only PostgreSQL
+  readiness, removed owned containers; bounded readiness added before test run.
+- No paid external provider calls. Test adapters replace provider HTTP only for
+  production-composition execution, with real database, SDK/worker and accounting.
+
+### v16 first real-browser findings and speech remediation proof
+
+- Real registered `interactive-workbooks` run retained at
+  `test-results/critical-flows/d3952c55-1ce9-487a-b2bf-8f7f43d869ed`: all3 journeys
+  initially failed. Two failures were stale Apply block selectors after the
+  approved Apply changes label; the third revealed an unmigrated workbook reader
+  (legacy separate private translation). Selectors and workbook LearningNote
+  composition are corrected; next real run remains required.
+- Actual desktop/mobile side-editor images were produced in the third journey.
+  Comparing the desktop image with the real provider side-editor capture exposed
+  inherited editor list markers/spacing and excess language/optional-field form
+  chrome. Root scoped prose CSS away from typed block families; authoring worker
+  is matching the source first-screen hierarchy while retaining required language
+  and optional definition controls in disclosures.
+- Source reference captured through the authenticated existing Chrome window at
+  the provider's private `/preview?hideToolbar=true` route. No design changes or
+  public sharing activation. [Vocabulary side editor](designs/interactive-knowledge-sheet-and-chat/v003/reference-captures/vocabulary-side-editor.png).
+- Root speech-only full retained run after strict PostgreSQL error-cause assertion
+  fix:14/14 pass, no skips. Report:
+  `evidence/v16-migration/focused-db-99d58737/tests.json`. It proves original payer
+  pin immutability, before-dispatch and in-flight source denial, no charge/ready
+  result after invalidation, provider expense preservation, branch discard and
+  bounded quote cleanup. Containers were removed.
+- Root prior combined report `focused-db-c417238b/tests.json`:66/67 pass; its
+  conversation store47 and production append/update6 cases all pass, including
+  the previously rejected paid populated-source update. The only failure was
+  the new speech trigger error assertion wrapper, subsequently fixed and the
+  entire14-case speech file rerun green.
+- Independent remediation review accepted core SEC01/02 structure but found
+  adjacent SEC-V16-03 proposal/conversation deletion cleanup. Speech worker is
+  adding erasure trigger+regression; final security approval still pending.
+
+### v16 final-preflight checkpoint — 2026-10-30
+
+- Full web suite: `pnpm --filter @languon/web test`, 180 files /1255 tests
+  passed (`/tmp/knowledge-v16-web-final-unit.log`). Later isolated transcription
+  cancellation and picker-label deltas have separate focused regression runs;
+  the suite result is not a final-source blanket approval.
+- Contracts231 and prompts5 tests pass. Styling contract, database migration
+  consistency, guide validation and `interactive-workbooks` E2E mappings pass.
+- First broad backend run:225 files passed,2 failed,100 database suites skipped
+  without disposable database configuration. Four failing cases were stale
+  expectations: one conversation error message and three tests expecting the
+  already-retired Kie model to execute. Repaired tests retain budget boundaries,
+  assert retired routing rejects before any fetch, and leave provider/model
+  configuration unchanged. Focused6+6 cases pass; full rerun underway. Required
+  database cases remain the responsibility of the final real critical gate.
+- Broad typecheck found one proposal speech fixture widened to a union containing
+  raw access keys. `satisfies SpeechSource` preserves the actual proposal literal;
+  backend typecheck passes after this test-only correction.
+- Independent source review closed duplicate video description, zero-based
+  exercise numbering, restored contextual transcription UI and explicit-cancel
+  recovery findings. Focused transcription22, language/editor40 and picker39
+  tests pass. Final source/evidence approval remains pending browser/critical gates.
+- Third real browser report:
+  `test-results/critical-flows/e138b7b8-2ecb-4102-8a47-55418eba9cdc` (3 failures).
+  Found stale language-disclosure selector, an actual bilingual picker accessible
+  label defect, and a speech-path GET connection reset. Fixed the first two;
+  do not classify the reset as resolved without subsequent journey proof.
+- Fourth report:
+  `test-results/critical-flows/1e8a02ca-e3ed-45bf-b529-a48056c8e2a7` (3 failures).
+  Translation generation/isolation now progresses. Remaining findings are a
+  no-op Apply selector, an exercise-fold helper selecting the new menu control,
+  and a zero-byte captured audio response. Test/transport diagnosis is active;
+  no assertions are weakened and no successful runtime gate is claimed.
+- Original machine reports and provider source remain immutable. Formatting and
+  lint ignore rules now cover their exact reference locations; runtime source is
+  still checked. No external paid calls or new model/provider activation.
+- Scope remains the v16 migration milestone. Parent F059 is **In progress**:
+  live uploaded-audio transcription still requires an approved compatible
+  provider/model. The restored control must truthfully report unavailable.
+- Final broad backend rerun passes227 files /1821 tests;100 database suites /930
+  cases remain skipped in this unit invocation and must run where selected by the
+  disposable critical gate. Full production build passes9/9 tasks, and root lint
+  passes after immutable-reference exclusions. The owned disposable
+  `languon-block-field-tests-059` container has been removed after recorded tests.
+- Retained private-preview reference captures now cover six block families,
+  exercise dark theme, full proposal review and desktop/mobile vocabulary editing.
+  Their identity is recorded by `reference-captures/capture-manifest.json`.
+- Root typecheck now passes14/14 tasks; retained preflight logs and hashes are in
+  `evidence/v16-migration/final-preflight/` (including original passing build,
+  lint, unit/package and guide reports).
+- Fifth browser report `test-results/critical-flows/01be0143-2bf5-416a-a21e-d9ddfa41753a`:
+  shared workbook/private translation/progress/copy/revocation journey **passes**.
+  Author journey reached the genuine503 and honest transcription warning, then
+  CDP response-body extraction hung; test now retains status/UI/manual-edit proof
+  and uses the structured transcript row control. Third journey verifies strict
+  authenticated same-URL WAV readback (RIFF/WAVE/content length) and native
+  playback after Chromium trace proved32044 transferred bytes but empty CDP
+  extraction. It subsequently fails on prepared-audio proposal generation;
+  chat/fixture diagnosis remains active. Full critical gate still pending.
+- Eighth registered workbook browser run:
+  `test-results/critical-flows/21ba1195-28f5-44f8-a2c9-1f14d2f2f72b`, **3/3 pass,
+  zero retries/skips**. Real tests cover manual drag, six block families,
+  source publication/copying, field suggestion accept/cancel, unavailable STT,
+  private translation/evaluation, typed early-answer preservation and native audio.
+  The context fixture now reconstructs only complete authorized transcript rows;
+  four focused tests also reject incomplete rows and user-supplied fake tool JSON.
+- Browser-discovered hydration bug fixed: first private revision arrival and
+  ephemeral media URL arrival no longer remount an exercise; later material
+  revisions still reset it.37 focused entity tests pass; reviewer checked actor,
+  note and share identity fences in all executable hosts. Whole web rerun under
+  concurrent host load timed out two tests; exact13 cases pass without changing
+  assertions/timeouts. A full isolated single-worker run is pending.
+- Eighth screenshots exposed two further fidelity defects despite passing
+  interactions: a narrow bilingual label and a short-content review panel.
+  Label/select wrapping is fixed; review now fills desktop viewport minus24px,
+  starts at82dvh on mobile and expands to8px top. Duplicate footer intro is
+  replaced by one concise publication notice. Review source/units are approved;
+  final geometry/mobile recaptures remain pending. The first full critical run
+  was intentionally interrupted through its cleanup handler before final source
+  changes; it is not completion evidence and will be rerun fresh.
+- Final isolated full web suite: `pnpm --filter @languon/web exec vitest run
+--maxWorkers=1`, **180 files /1256 tests pass**, existing timeouts unchanged.
+  Duration199.27s. Retained `final-preflight/web-unit-final-serial.log` supersedes
+  the concurrent timeout run. Exact13 timeout cases also pass in isolation.
+- Ninth registered workbook run
+  `test-results/critical-flows/9d9ee58a-d43b-48b6-bb93-f20dc7a0593f`: **3/3 pass,
+  no skips/retries** (1.1m). Exact short desktop review height,82dvh/expanded
+  mobile geometry, readable bilingual controls and actual video dialog/edit/
+  discard are observed. Independent screenshot review found REV05: mobile
+  publication notice still squeezed beside three buttons. Final CSS puts it on
+  its own full row; E2E now asserts >=300px notice width at390px. Source/units/
+  typecheck/lint reviewed; fresh full-gate captures remain required.
+- The clean fresh full critical run is active at
+  `test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be`.
+  An initial restart refused reserved port3435 rather than reusing a listener.
+  Identified and removed only the interrupted run's orphan Next/Vite servers
+  (specific PIDs, repository working directories, matching reserved test ports).
+  User development servers were not stopped or adopted. The refusal report is
+  not runtime acceptance evidence. REV05 CSS/assertion landed before the active
+  run's affected workbook flow starts; backend/model source remains unchanged.
+
+## v16 terminal verification — 2026-10-30
+
+- `pnpm test:e2e:critical` — **exit0,14/14 flows,812 tests, zero skips/retries**.
+  Run `a4685c8e-11b3-4774-9c3b-576c3cd263be`;785 backend execution cases plus27
+  browser cases. Field/evaluation17/17 and private knowledge speech14/14 pass
+  against real disposable PostgreSQL/Redis and production worker/SDK composition.
+  External provider transport is deterministic; no paid/live-provider result is
+  claimed. The strict report validators completed before this result was recorded.
+- Byte-exact original reports and summary are retained under
+  [final-critical](evidence/v16-migration/final-critical/manifest.json). Its manifest
+  records every original path/hash and the truthful per-flow source boundary:
+  REV05 touched only a mobile review selector and its workbook assertion while
+  unrelated desktop flows were running. The affected workbook flow began after
+  the fix with a fresh Next server, passed all3 cases and retained final captures.
+  Earlier flows' rendered selectors/behavior were unchanged. No single-start-tree
+  claim or merged/repaired test report is used.
+- Final [runtime captures](evidence/v16-migration/runtime-captures/manifest.json)
+  retain15 actual application images. The reviewer viewed compact and expanded
+  mobile review, confirmed the publication notice is readable on a full row and
+  closed REV05. [Fidelity observations](evidence/v16-migration/FIDELITY.md) map
+  MP-01–MP-21 to source/runtime evidence and disclose mechanism adaptations.
+- Full isolated web suite180/1256 passes; backend227/1821 unit cases plus4 new
+  fixture regressions, contracts231 and prompts5 pass. The unit backend invocation
+  skipped DB suites without configured disposable infrastructure; the required
+  selected real execution suites are covered by the785-case gate above.
+- Root lint/typecheck14 tasks, original whole-workspace build9 tasks, final affected
+  web production build, styles, schema consistency, critical-tooling16, guide and
+  mapping checks pass. Original preflight logs/hashes are retained under
+  [final-preflight](evidence/v16-migration/final-preflight/manifest.json).
+- Local readiness: added only `text-translation:v4` to six explicit ignored
+  `.env.local` API/worker format allowlists; other lines are byte-identical.
+  Applied the13 reviewed forward migrations0147–0159 to the identified local
+  development database with no reset. Configuration doctor passes every check.
+  Runtime doctor truthfully reports no fresh matching v4 worker: existing
+  user-owned API/worker processes must restart to load the new environment.
+  No user process restart, provider/model/key/route/price/credit mutation or paid
+  probe was performed. The aged unchanged route check remains dispatch-eligible;
+  no routing publication is attempted.
+- All task-owned disposable test containers are removed. Generated Next imports
+  are restored; existing user development servers and unrelated data are preserved.
+- Scope: verified v16 migration, with final independent evidence sign-off recorded
+  in REVIEW.md. Parent F059 and BL-003/006/007 remain In progress. Successful live
+  uploaded-audio transcription still requires explicitly approved compatible
+  provider/model activation; this milestone neither activates it nor completes
+  the whole feature.
+
+Final staging hygiene: the immutable provider export and already-applied
+migration0159 retain their original trailing blank lines. Default cached
+whitespace checking reports only those EOF blanks; the bounded check
+`git -c core.whitespace=-blank-at-eof diff --cached --check` passes, retaining
+all other whitespace checks. No tested/applied migration or design-source byte
+was rewritten for formatting. Prettier passes all non-frozen affected files.
+The339-file content identity is unchanged; final-source-manifest.json separately
+records the pre-stage snapshot and canonical staged patch hash for the339-file
+runtime/test/configuration scope (excluding delivery/design/docs)
+`cce2b58262d085164d40bd57d8985209d5f6a3fa50981a68bfa533da52957d18`.
+No conflicts or staged environment secrets are present.

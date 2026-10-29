@@ -472,3 +472,82 @@ test('only database-authorized recovery with a prior matching pass can restore r
     legacySnapshot.probes.forEach((probe) => delete probe.dispatch_allowed);
     assert.equal(check(legacySnapshot), 'blocked');
 });
+
+test('knowledge actions reuse Texts routing and require the exact new worker format', () => {
+    const selected = selectCapabilities(env, ['knowledge-actions']);
+    assert.deepEqual(
+        selected.map((capability) => capability.id),
+        ['knowledge-actions'],
+    );
+    assert.deepEqual(selected[0].formats, ['text-translation:v4']);
+    assert.equal(selected[0].criticalFlow, 'interactive-workbooks');
+    const value = snapshot();
+    assert.ok(
+        evaluateReadiness(value, env, 'runtime', selected).every(
+            (check) => check.status === 'pass',
+        ),
+    );
+    value.workers.forEach((worker) => {
+        worker.text_ai_supported_formats =
+            worker.text_ai_supported_formats.filter(
+                (format) => format !== 'text-translation:v4',
+            );
+    });
+    assert.equal(
+        evaluateReadiness(value, env, 'runtime', selected).find(
+            (check) => check.id === 'knowledge-actions:worker',
+        ).status,
+        'blocked',
+    );
+    assert.equal(
+        evaluateReadiness(
+            value,
+            env,
+            'runtime',
+            selectCapabilities(env, ['texts']),
+        ).find((check) => check.id === 'texts:worker').status,
+        'pass',
+    );
+});
+
+test('knowledge action readiness follows Texts enablement, execution identity and funding', () => {
+    const selected = selectCapabilities(env, ['knowledge-actions']);
+    const value = snapshot();
+    const disabled = { ...env, TEXTS_AI_ENABLED: 'false' };
+    assert.ok(
+        !selectCapabilities(disabled).some(
+            (capability) => capability.id === 'knowledge-actions',
+        ),
+    );
+    assert.equal(
+        evaluateReadiness(value, disabled, 'runtime', selected).find(
+            (check) => check.id === 'knowledge-actions:enabled',
+        ).status,
+        'blocked',
+    );
+    value.workers.forEach((worker) => {
+        worker.texts_execution_revision = null;
+    });
+    assert.equal(
+        evaluateReadiness(value, env, 'runtime', selected).find(
+            (check) => check.id === 'knowledge-actions:worker',
+        ).status,
+        'blocked',
+    );
+    const free = snapshot();
+    free.policies = [{ capability: 'text-translation', funding: 'operator' }];
+    delete free.routing.configuration.flowTariffs['text-translation'];
+    assert.equal(
+        evaluateReadiness(free, env, 'configuration', selected).find(
+            (check) => check.id === 'customer-tariff',
+        ).status,
+        'pass',
+    );
+    free.policies[0].funding = 'customer';
+    assert.equal(
+        evaluateReadiness(free, env, 'configuration', selected).find(
+            (check) => check.id === 'customer-tariff',
+        ).status,
+        'blocked',
+    );
+});

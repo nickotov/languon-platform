@@ -163,13 +163,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         });
         it.each([
-            { funding: 'operator', outcome: 'success' },
-            { funding: 'customer', outcome: 'success' },
-            { funding: 'operator', outcome: 'failure' },
-            { funding: 'customer', outcome: 'failure' },
+            { funding: 'operator', outcome: 'success', operation: 'append' },
+            { funding: 'customer', outcome: 'success', operation: 'append' },
+            { funding: 'operator', outcome: 'failure', operation: 'append' },
+            { funding: 'customer', outcome: 'failure', operation: 'append' },
+            { funding: 'operator', outcome: 'success', operation: 'update' },
+            { funding: 'customer', outcome: 'success', operation: 'update' },
         ] as const)(
-            '$funding $outcome survives admission through the default worker and SDK without widening its budget',
-            async ({ funding, outcome }) => {
+            '$funding $outcome $operation survives admission through the default worker and SDK without widening its budget',
+            async ({ funding, outcome, operation }) => {
                 const now = new Date();
                 await db.insert(capabilityPolicyRevisionsTable).values({
                     id: randomUUID(),
@@ -234,9 +236,42 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             sourceReference: randomUUID(),
                         }),
                     );
+                const targetBlockId = randomUUID();
+                const initialBlock = {
+                    id: targetBlockId,
+                    type: 'vocabulary' as const,
+                    language: 'fr',
+                    translationLanguage: 'ru',
+                    entries: [
+                        {
+                            id: randomUUID(),
+                            term: 'travail',
+                            translation: 'работа',
+                        },
+                    ],
+                };
+                const noteContent =
+                    operation === 'update'
+                        ? {
+                              ...content,
+                              body: {
+                                  schemaVersion: 2 as const,
+                                  document: {
+                                      type: 'doc' as const,
+                                      content: [
+                                          ...content.body.document.content,
+                                          {
+                                              type: 'learningBlock' as const,
+                                              attrs: { block: initialBlock },
+                                          },
+                                      ],
+                                  },
+                              },
+                          }
+                        : content;
                 const note = await knowledge.create(ownerId, {
                     operationId: randomUUID(),
-                    content,
+                    content: noteContent,
                 });
                 const workspace = await knowledge.getWorkspace(
                     ownerId,
@@ -424,6 +459,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                               name: 'propose_learning_blocks',
                                               arguments: JSON.stringify({
                                                   blocks,
+                                                  ...(operation === 'update'
+                                                      ? { targetBlockId }
+                                                      : {}),
                                               }),
                                           },
                                       },
@@ -530,7 +568,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect(
                         (await knowledge.get(ownerId, note.id)).body
                             .schemaVersion,
-                    ).toBe(1);
+                    ).toBe(operation === 'update' ? 2 : 1);
+                    if (operation === 'update') {
+                        expect(proposals.proposals[0]?.target).toMatchObject({
+                            blockId: targetBlockId,
+                        });
+                        const accepted = await store.applyBlockProposal(
+                            { ownerId },
+                            chat.id,
+                            proposals.proposals[0]!.id,
+                            branch.version,
+                        );
+                        expect(
+                            accepted.branch.content.body.document.content,
+                        ).toHaveLength(2);
+                        expect(
+                            accepted.branch.content.body.document.content?.[1]
+                                ?.attrs?.block,
+                        ).toMatchObject({
+                            id: targetBlockId,
+                            type: 'vocabulary',
+                            entries: expect.any(Array),
+                        });
+                        expect(
+                            (await knowledge.get(ownerId, note.id)).body
+                                .document.content?.[1]?.attrs?.block,
+                        ).toEqual(initialBlock);
+                    }
                 } else {
                     expect(
                         detail.messages.some(

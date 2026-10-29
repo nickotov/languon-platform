@@ -1,0 +1,125 @@
+.root {
+    display: grid;
+    gap: var(--space-16);
+    padding-block: var(--space-4);
+}
+
+.compact {
+    display: grid;
+    gap: var(--space-8);
+    padding-block: var(--space-4);
+}
+
+.rule {
+    font-size: var(--size-16);
+    line-height: 1.75;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.compact .rule {
+    font-size: var(--size-14);
+}
+
+.label {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 var(--space-4);
+}
+
+.pattern {
+    display: inline-block;
+    background: var(--background-subtle);
+    border-radius: var(--radius-8);
+    font-family: monospace;
+    font-size: var(--size-14);
+    margin: 0;
+    padding: var(--space-6) var(--space-12);
+    white-space: pre-wrap;
+}
+
+.compact .pattern {
+    font-size: var(--size-12);
+}
+
+.examples {
+    display: grid;
+    gap: var(--space-8);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.exampleRow {
+    display: flex;
+    align-items: start;
+    gap: var(--space-6);
+}
+
+.example {
+    border-inline-start: var(--size-2) solid var(--primary-200);
+    padding-inline-start: var(--space-12);
+    flex: 1;
+    min-width: 0;
+    font-size: var(--size-14);
+    line-height: 1.7;
+}
+
+.example p {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.translation {
+    color: var(--text-tertiary);
+}
+
+.mistakes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.mistake {
+    border-bottom: 1px solid var(--border-default);
+    padding-block: var(--space-8);
+}
+
+.mistake:last-child {
+    border-bottom: 0;
+}
+
+.correction {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-8);
+    font-size: var(--size-14);
+    margin: 0;
+}
+
+.incorrect,
+.correct {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.incorrect {
+    color: var(--danger-default);
+}
+
+.correct {
+    color: var(--success-default);
+    font-weight: 500;
+}
+
+.explanation {
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: 1.7;
+    margin: var(--space-2) 0 0;
+}

@@ -1,6 +1,36 @@
 import { expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { knowledgeNarrationText } from './knowledge-speech-text';
+it('uses explicit audio language, then transcript language, then note language', () => {
+    const block = {
+        id: randomUUID(),
+        type: 'audio' as const,
+        sourceText: 'Bonjour.',
+    };
+    expect(knowledgeNarrationText(block, 'en', 'ru')).toEqual({
+        text: 'Bonjour.',
+        language: 'en',
+    });
+    const transcribed = {
+        ...block,
+        transcript: {
+            language: 'fr',
+            segments: [{ id: randomUUID(), text: 'Bonjour.' }],
+        },
+    };
+    expect(knowledgeNarrationText(transcribed, 'en', 'ru').language).toBe('fr');
+    expect(
+        knowledgeNarrationText(
+            { ...transcribed, language: 'fr-CA' },
+            'en',
+            'ru',
+        ).language,
+    ).toBe('fr-CA');
+    expect(
+        knowledgeNarrationText({ ...block, language: 'fr-CA' }, null, 'ru')
+            .language,
+    ).toBe('fr-CA');
+});
 it('keeps vocabulary translation out of source-language narration', () => {
     expect(
         knowledgeNarrationText(

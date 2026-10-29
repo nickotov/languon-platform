@@ -6,11 +6,24 @@ import { resolveApiUrl } from '@/fsd/shared/api/api-url';
 export type KnowledgeLibraryContext = {
     requestWithSession: RequestWithSession;
     noteId: string;
-    noteVersion: number;
+    /** Local presentation target for a currently selected private view. */
+    translationLanguage?:
+        c.CopyKnowledgeTextRequest['translationLanguage'] | undefined;
     onSaved?(): void;
-    privateTranslation?: c.CopyKnowledgeTextRequest['privateTranslation'];
     access?: c.WorkbookLearningShareAccess | undefined;
-};
+} & (
+    | {
+          noteVersion: number;
+          workingSource?: never;
+          privateTranslation?: c.CopyKnowledgeTextRequest['privateTranslation'];
+      }
+    | {
+          noteVersion?: never;
+          workingSource: c.KnowledgeLibraryWorkingSource;
+          resolveWorkingSource?: () => Promise<c.KnowledgeLibraryWorkingSource>;
+          privateTranslation?: never;
+      }
+);
 async function request<T>(
     context: KnowledgeLibraryContext,
     path: string,

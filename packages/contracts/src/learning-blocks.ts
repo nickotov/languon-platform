@@ -91,6 +91,7 @@ export const VideoLearningBlockSchema = z
     .object({
         ...base,
         type: z.literal('video'),
+        description: text().optional(),
         source: z.discriminatedUnion('kind', [
             z
                 .object({
@@ -200,7 +201,10 @@ export const AudioLearningBlockSchema = z
     .object({
         ...base,
         type: z.literal('audio'),
-        assetId: z.string().uuid(),
+        /** Omitted until an author uploads or generates a recording. */
+        assetId: z.string().uuid().optional(),
+        /** Explicit source/speech language, including before a transcript exists. */
+        language: language.optional(),
         transcript: LearningTranscriptSchema.optional(),
         sourceText: text(40_000).optional(),
     })
@@ -257,6 +261,16 @@ const exerciseBase = {
     question: text(),
     referenceAnswer: text(),
     explanation: text(),
+    hint: text().optional(),
+    /** Presentation grouping never replaces an individual exercise identity. */
+    group: z
+        .object({
+            id: LearningBlockIdSchema,
+            title: text(200).optional(),
+            parentBlockId: LearningBlockIdSchema.optional(),
+        })
+        .strict()
+        .optional(),
     evaluationCriteria: text().optional(),
     source: z
         .object({

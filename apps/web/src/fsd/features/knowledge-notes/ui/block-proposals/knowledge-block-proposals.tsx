@@ -1,9 +1,16 @@
 'use client';
-import { useEffect, useState } from 'react';
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    type ReactNode,
+} from 'react';
 import type {
     KnowledgeBlockProposal,
     KnowledgeWorkingBranch,
 } from '@languon/contracts';
+import type { LearningBlockPlayback } from '@/fsd/entities/learning-blocks';
 import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -20,15 +27,65 @@ export type KnowledgeBlockProposalContext = {
     beforeApply(): Promise<{ branchId: string; version: number }>;
     onApplied(branch: KnowledgeWorkingBranch): void | Promise<void>;
     onApplyingChange?(busy: boolean): void;
+    onShowBlocks?(blockIds: string[]): void;
+    getPlayback?(
+        proposal: KnowledgeBlockProposal,
+    ): LearningBlockPlayback | undefined;
+    onAskAgain?(proposal: KnowledgeBlockProposal): void;
 };
+type ProposalListContext = {
+    proposals: KnowledgeBlockProposal[];
+    context: KnowledgeBlockProposalContext;
+    applying: boolean;
+    refresh(): void;
+};
+const ProposalList = createContext<ProposalListContext | null>(null);
+
+export function KnowledgeBlockProposalsForTurn({
+    turnId,
+}: {
+    turnId: string | null | undefined;
+}) {
+    const value = useContext(ProposalList);
+    if (!value || !turnId) return null;
+    return (
+        <ProposalCards
+            value={value}
+            proposals={value.proposals.filter((item) => item.turnId === turnId)}
+        />
+    );
+}
+function ProposalCards({
+    value,
+    proposals,
+}: {
+    value: ProposalListContext;
+    proposals: KnowledgeBlockProposal[];
+}) {
+    return (
+        <>
+            {proposals.map((proposal) => (
+                <BlockProposalCard
+                    key={proposal.id}
+                    proposal={proposal}
+                    context={value.context}
+                    disabled={value.applying || Boolean(value.context.disabled)}
+                    onApplied={value.refresh}
+                />
+            ))}
+        </>
+    );
+}
 export function KnowledgeBlockProposals({
     context,
     refreshKey,
     active = false,
+    children,
 }: {
-    context: KnowledgeBlockProposalContext;
+    context?: KnowledgeBlockProposalContext | undefined;
     refreshKey?: string | number | undefined;
     active?: boolean | undefined;
+    children?: ReactNode;
 }) {
     const { locale } = useI18n();
     const labels = blockProposalLabels(locale);
@@ -36,8 +93,13 @@ export function KnowledgeBlockProposals({
     const [error, setError] = useState(false);
     const [applying, setApplying] = useState(false);
     const [revision, setRevision] = useState(0);
-    const { requestWithSession, conversationId } = context;
+    const requestWithSession = context?.requestWithSession;
+    const conversationId = context?.conversationId;
     useEffect(() => {
+        setProposals([]);
+    }, [conversationId]);
+    useEffect(() => {
+        if (!requestWithSession || !conversationId) return;
         const controller = new AbortController();
         let loading = false;
         async function load() {
@@ -45,8 +107,8 @@ export function KnowledgeBlockProposals({
             loading = true;
             try {
                 const result = await blockProposalsApi.list(
-                    requestWithSession,
-                    conversationId,
+                    requestWithSession!,
+                    conversationId!,
                     controller.signal,
                 );
                 if (!controller.signal.aborted) {
@@ -70,23 +132,30 @@ export function KnowledgeBlockProposals({
     }, [requestWithSession, conversationId, refreshKey, active, revision]);
     function changeApplying(value: boolean) {
         setApplying(value);
-        context.onApplyingChange?.(value);
+        context?.onApplyingChange?.(value);
     }
-    const cardContext = { ...context, onApplyingChange: changeApplying };
     function refresh() {
         setRevision((value) => value + 1);
     }
+    if (!context) return children;
+    const value = {
+        proposals,
+        context: { ...context, onApplyingChange: changeApplying },
+        applying,
+        refresh,
+    };
+    const standalone = children === undefined;
+    const fallback = standalone
+        ? proposals
+        : proposals.filter((proposal) => !proposal.turnId);
     return (
-        <section aria-label={labels.title}>
-            {proposals.map((proposal) => (
-                <BlockProposalCard
-                    key={proposal.id}
-                    proposal={proposal}
-                    context={cardContext}
-                    disabled={applying || Boolean(context.disabled)}
-                    onApplied={refresh}
-                />
-            ))}
+        <ProposalList.Provider value={value}>
+            {children}
+            {fallback.length > 0 && (
+                <section aria-label={labels.title}>
+                    <ProposalCards value={value} proposals={fallback} />
+                </section>
+            )}
             {error && (
                 <>
                     <InlineAlert tone='error'>{labels.error}</InlineAlert>
@@ -95,6 +164,6 @@ export function KnowledgeBlockProposals({
                     </Button>
                 </>
             )}
-        </section>
+        </ProposalList.Provider>
     );
 }

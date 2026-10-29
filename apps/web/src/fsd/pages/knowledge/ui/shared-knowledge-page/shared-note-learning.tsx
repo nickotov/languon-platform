@@ -1,10 +1,12 @@
 'use client';
-import { useState } from 'react';
-import { KnowledgePrivateTranslation } from '@/fsd/widgets/knowledge-private-translation';
+import { useState, type ComponentProps } from 'react';
+import { useKnowledgeBlockPlayback } from '@/fsd/widgets/knowledge-speech';
+import { KnowledgeBilingualStudy } from '@/fsd/widgets/knowledge-private-translation';
 import { KnowledgeVocabularyPractice } from '@/fsd/widgets/knowledge-vocabulary';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 import type {
     KnowledgeNote,
+    LearningBlock,
     WorkbookLearningShareAccess,
 } from '@languon/contracts';
 import { useSessionStore } from '@/fsd/entities/session';
@@ -14,6 +16,7 @@ import {
     LearningProgress,
     useWorkbookLearning,
 } from '@/fsd/features/workbook-learning';
+import type { MenuItem } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 
 export function SharedNoteLearning({
@@ -54,6 +57,24 @@ function Content({
               }
             : {}),
     };
+    const playback = useKnowledgeBlockPlayback({
+        noteId: note.id,
+        requestWithSession,
+    });
+    const blocks =
+        note.body.document.content?.flatMap((node) =>
+            node.attrs?.block ? [node.attrs.block] : [],
+        ) ?? [];
+    const blockPlayback = actorId
+        ? playback.options(async () => ({
+              origin: {
+                  kind: 'saved',
+                  expectedNoteVersion: note.version,
+                  access,
+              },
+              blocks,
+          }))
+        : undefined;
     const model = useWorkbookLearning({
         noteId: note.id,
         noteVersion: note.version,
@@ -72,8 +93,49 @@ function Content({
               access,
           }
         : undefined;
+    function blockOptions(block: LearningBlock) {
+        return {
+            ...model.options(block),
+            variant: 'learner' as const,
+            playback: blockPlayback,
+        };
+    }
+    const wrapBlock: NonNullable<
+        ComponentProps<typeof NotePreview>['wrapBlock']
+    > = (block, render) => {
+        if (!actorId || block.type !== 'bilingual-text') return render();
+        return (
+            <KnowledgeBilingualStudy
+                actorId={actorId}
+                noteId={note.id}
+                noteVersion={note.version}
+                block={block}
+                requestWithSession={requestWithSession}
+                access={access}
+                viewOptions={blockOptions(block)}
+                library={library}
+            >
+                {render}
+            </KnowledgeBilingualStudy>
+        );
+    };
+    function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
+        if (!actorId || block.type !== 'vocabulary') return null;
+        return (
+            <KnowledgeVocabularyPractice
+                noteId={note.id}
+                block={block}
+                actorId={actorId}
+                requestWithSession={requestWithSession}
+                access={access}
+                blockMenu
+                commonMenuItems={items}
+            />
+        );
+    }
     return (
         <>
+            {playback.confirmation}
             {actorId && (
                 <ContextualAssistant
                     source={source}
@@ -85,36 +147,9 @@ function Content({
             <LearningProgress model={model} />
             <NotePreview
                 content={note}
-                blockOptions={(block) => ({
-                    ...model.options(block),
-                    ...(block.type === 'bilingual-text' && actorId
-                        ? {
-                              actions: (
-                                  <KnowledgePrivateTranslation
-                                      actorId={actorId}
-                                      noteId={note.id}
-                                      noteVersion={note.version}
-                                      block={block}
-                                      requestWithSession={requestWithSession}
-                                      access={access}
-                                  />
-                              ),
-                          }
-                        : {}),
-                    ...(block.type === 'vocabulary' && actorId
-                        ? {
-                              actions: (
-                                  <KnowledgeVocabularyPractice
-                                      noteId={note.id}
-                                      block={block}
-                                      actorId={actorId}
-                                      requestWithSession={requestWithSession}
-                                      access={access}
-                                  />
-                              ),
-                          }
-                        : {}),
-                })}
+                renderBlockMenu={renderBlockMenu}
+                blockOptions={blockOptions}
+                wrapBlock={wrapBlock}
                 library={library}
                 blockCopy={
                     actorId

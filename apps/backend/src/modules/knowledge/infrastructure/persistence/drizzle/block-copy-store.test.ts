@@ -190,6 +190,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
             if (
                 copiedAudio?.type !== 'audio' ||
+                !copiedAudio.assetId ||
                 copiedExercise?.type !== 'exercise'
             )
                 throw new Error('Missing copied content');

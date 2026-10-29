@@ -1,10 +1,9 @@
+import { selectKnowledgeBlocksForCopy } from './block-copy-selection';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import {
     CopyKnowledgeBlocksResponseSchema,
-    KnowledgeBodySchema,
     KnowledgeWorkingContentSchema,
     type CopyKnowledgeBlocksRequest,
-    type KnowledgeBody,
 } from '@languon/contracts';
 import type { KnowledgeBlockCopyStore } from '../../../application/block-copy-store';
 import { KnowledgeDomainError } from '../../../domain/knowledge';
@@ -40,36 +39,6 @@ function stale(): never {
         'version_conflict',
         'A source or destination changed. Refresh before copying.',
     );
-}
-
-function selectedBody(
-    body: KnowledgeBody,
-    selectedIds: string[],
-): KnowledgeBody {
-    const all = (body.document.content ?? []).filter(
-        (node) => node.type === 'learningBlock',
-    );
-    const byId = new Map(all.map((node) => [node.attrs!.block!.id, node]));
-    const selected = new Set(selectedIds);
-    for (const id of selectedIds) if (!byId.has(id)) stale();
-    for (const id of selected) {
-        const block = byId.get(id)?.attrs?.block;
-        if (block?.type === 'exercise' && block.source)
-            selected.add(block.source.blockId);
-        if (selected.size > 50)
-            throw new KnowledgeDomainError(
-                'invalid_request',
-                'Select fewer blocks so their source material can be copied together.',
-            );
-    }
-
-    return KnowledgeBodySchema.parse({
-        schemaVersion: 2,
-        document: {
-            type: 'doc',
-            content: all.filter((node) => selected.has(node.attrs!.block!.id)),
-        },
-    });
 }
 
 export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
@@ -202,7 +171,7 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
             }
 
             if (destination.version !== input.expectedBranchVersion) stale();
-            const source = selectedBody(
+            const source = selectKnowledgeBlocksForCopy(
                 await this.source(tx, ownerId, input),
                 input.blockIds,
             );

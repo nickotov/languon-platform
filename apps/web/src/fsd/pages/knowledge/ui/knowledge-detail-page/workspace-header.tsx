@@ -7,6 +7,7 @@ import {
     History,
     Link2,
     Sparkles,
+    Highlighter,
     Trash2,
 } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -45,8 +46,12 @@ export function WorkspaceHeader({
     onDelete,
     onRetryRecovery,
     practiceHref,
+    blockAccents = true,
+    onBlockAccentsChange,
 }: {
     title: string;
+    blockAccents?: boolean;
+    onBlockAccentsChange?: ((enabled: boolean) => void) | undefined;
     practiceHref?: string | undefined;
     titleVisible?: boolean;
     stats?: string;
@@ -113,6 +118,14 @@ export function WorkspaceHeader({
             onSelect: openSharing,
         },
     ];
+    if (onBlockAccentsChange) {
+        actions.push({
+            label: t('knowledge.highlightLearningBlocks'),
+            icon: <Highlighter size={16} aria-hidden />,
+            checked: blockAccents,
+            onSelect: () => onBlockAccentsChange(!blockAccents),
+        });
+    }
     if (stats) {
         actions.push({
             label: stats,

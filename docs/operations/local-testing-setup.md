@@ -160,6 +160,28 @@ The backend/worker environment must enable the intended capability. In particula
 Configure the provider credential in the ignored environment, and advertise it
 only when actually present. Never paste credentials into this guide or evidence.
 
+### Knowledge block AI actions
+
+Field checks/translations and inline exercise AI evaluation reuse the existing
+Texts execution route and configured models. They require `TEXTS_AI_ENABLED=true`.
+In production, both `DICTIONARY_JOB_API_ENQUEUED_FORMATS` and
+`DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS` must include
+`text-translation:v4` for these source-bound actions. This separate admission gate
+does not disable ordinary Texts translation when v4 is absent. Existing knowledge
+jobs can still be read or cancelled while new admissions are disabled.
+
+If API acceptable/readable/cancellable/discardable format lists are explicitly
+configured, include v4 in those lists too: enqueued formats must remain a subset
+of every API capability. Empty lists use the current supported defaults. Restart
+the API and workers after changing format allowlists.
+
+Use `pnpm dev:doctor -- --capability knowledge-actions` to check this capability's
+API/worker format intersection and existing text-translation routing/funding. No
+new API key, provider, model selection or production activation is implied. Review
+[ADR-0052](../adr/0052-source-bound-knowledge-ai-actions.md) for source/credit
+boundaries. The interactive-workbooks critical flow provides deterministic local
+browser coverage; tests must not call paid providers.
+
 ## Multilingual reference evaluation
 
 The versioned synthetic corpus is

@@ -91,3 +91,54 @@ describe('knowledge library publication contracts', () => {
         ).toBe(false);
     });
 });
+
+describe('owned working library source authority', () => {
+    const working = {
+        operationId: id,
+        noteId: id,
+        blockId: id,
+        workingSource: { branchId: id, expectedVersion: 2 },
+        translationLanguage: 'ru',
+        destination: { kind: 'new', title: 'Working copy' },
+    };
+    it('requires exactly one explicit saved or working snapshot without accepting content', () => {
+        expect(CopyKnowledgeTextRequestSchema.safeParse(working).success).toBe(
+            true,
+        );
+        expect(
+            CopyKnowledgeTextRequestSchema.safeParse({
+                ...working,
+                noteVersion: 1,
+            }).success,
+        ).toBe(false);
+        expect(
+            CopyKnowledgeTextRequestSchema.safeParse({
+                ...working,
+                workingSource: undefined,
+            }).success,
+        ).toBe(false);
+        expect(
+            CopyKnowledgeTextRequestSchema.safeParse({
+                ...working,
+                workingSource: { branchId: id, expectedVersion: 0 },
+            }).success,
+        ).toBe(false);
+        expect(
+            CopyKnowledgeTextRequestSchema.safeParse({
+                ...working,
+                block: { sourceText: 'forged' },
+            }).success,
+        ).toBe(false);
+    });
+    it('keeps private reader translation receipts bound to saved material', () => {
+        expect(
+            CopyKnowledgeTextRequestSchema.safeParse({
+                ...working,
+                privateTranslation: {
+                    sourceFingerprint: 'a'.repeat(64),
+                    updatedAt: '2026-10-29T00:00:00.000Z',
+                },
+            }).success,
+        ).toBe(false);
+    });
+});

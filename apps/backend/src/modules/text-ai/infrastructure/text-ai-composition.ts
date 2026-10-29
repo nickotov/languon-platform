@@ -49,3 +49,25 @@ export function textsAiAdmissionsEnabled(
         (format) => api.includes(format) && workers.includes(format),
     );
 }
+
+/** New knowledge actions must not disable the existing Texts journeys during rollout. */
+export function knowledgeTextAiAdmissionsEnabled(
+    environment: Record<string, string | undefined>,
+): boolean {
+    if (!textsAiAdmissionsEnabled(environment)) return false;
+    if (
+        !['staging', 'production'].includes(
+            environment.APP_ENV ?? 'development',
+        )
+    )
+        return true;
+    return [
+        'DICTIONARY_JOB_API_ENQUEUED_FORMATS',
+        'DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS',
+    ].every((key) =>
+        (environment[key] ?? '')
+            .split(',')
+            .map((value) => value.trim())
+            .includes('text-translation:v4'),
+    );
+}

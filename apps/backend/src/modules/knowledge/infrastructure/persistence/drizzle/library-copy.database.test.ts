@@ -166,6 +166,168 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 translationLanguage: 'ru',
                 destination: { kind: 'new', title: 'Copied text' },
             });
+        async function working(block: LearningBlock) {
+            const workspace = await knowledge.createDraft(owner, {
+                operationId: randomUUID(),
+            });
+            const branch = workspace.branches[0]!;
+            const content = {
+                ...branch.content,
+                title: 'Working library material',
+                body: {
+                    schemaVersion: 2 as const,
+                    document: {
+                        type: 'doc' as const,
+                        content: [
+                            {
+                                type: 'learningBlock' as const,
+                                attrs: { block },
+                            },
+                        ],
+                    },
+                },
+            };
+            const updated = await knowledge.updateWorking(
+                owner,
+                workspace.noteId,
+                {
+                    operationId: randomUUID(),
+                    branchId: branch.id,
+                    expectedVersion: branch.version,
+                    content,
+                },
+            );
+            return {
+                noteId: workspace.noteId,
+                branch: updated.branch,
+                workingSource: {
+                    branchId: branch.id,
+                    expectedVersion: updated.branch.version,
+                },
+            };
+        }
+        it('copies prepared vocabulary from an unpublished owned working branch without publishing it', async () => {
+            const draft = await working(vocabulary);
+            const request = CopyKnowledgeVocabularyRequestSchema.parse({
+                ...vocabRequest(draft.noteId, 1),
+                noteVersion: undefined,
+                workingSource: draft.workingSource,
+            });
+            expect(
+                (await library.previewVocabulary(owner, request, signal()))
+                    .entries[0]?.pronunciation,
+            ).toBe('kæt');
+            const copied = await library.copyVocabulary(
+                owner,
+                request,
+                signal(),
+            );
+            const [noteRow] = await db
+                .select()
+                .from(knowledgeNotesTable)
+                .where(eq(knowledgeNotesTable.id, draft.noteId));
+            expect(noteRow?.status).toBe('draft');
+            expect(noteRow?.version).toBe(0);
+            expect(JSON.stringify(noteRow?.body)).not.toContain('cat');
+            const [card] = await db
+                .select()
+                .from(dictionaryCardsTable)
+                .where(
+                    eq(dictionaryCardsTable.dictionaryId, copied.dictionary.id),
+                );
+            expect(card).toMatchObject({
+                source: 'cat',
+                translation: 'кот',
+                definition: 'A small animal.',
+                transcription: 'kæt',
+            });
+            await db
+                .delete(knowledgeNotesTable)
+                .where(eq(knowledgeNotesTable.id, draft.noteId));
+            expect(
+                (await library.copyVocabulary(owner, request, signal()))
+                    .dictionary.id,
+            ).toBe(copied.dictionary.id);
+        });
+        it('previews and creates or appends aligned Text from an unpublished working text block', async () => {
+            const draft = await working(bilingual);
+            const request = CopyKnowledgeTextRequestSchema.parse({
+                ...textRequest(draft.noteId, 1),
+                noteVersion: undefined,
+                workingSource: draft.workingSource,
+            });
+            const preview = await library.previewText(owner, request, signal());
+            expect(preview.text.sourceText).toBe('A cat sleeps.');
+            expect(preview.text.alignment?.translation[0]?.text).toBe(
+                'Кот спит.',
+            );
+            const created = await library.copyText(owner, request, signal());
+            const append = {
+                ...request,
+                operationId: randomUUID(),
+                destination: {
+                    kind: 'existing' as const,
+                    textId: created.id,
+                    expectedVersion: created.version,
+                },
+            };
+            expect(
+                (await library.previewText(owner, append, signal())).text
+                    .sourceText,
+            ).toBe('A cat sleeps.\n\nA cat sleeps.');
+            const copied = await library.copyText(owner, append, signal());
+            expect(copied.sourceText).toBe('A cat sleeps.\n\nA cat sleeps.');
+            expect(copied.alignment?.source).toHaveLength(2);
+            const [noteRow] = await db
+                .select()
+                .from(knowledgeNotesTable)
+                .where(eq(knowledgeNotesTable.id, draft.noteId));
+            expect(noteRow?.status).toBe('draft');
+            expect(noteRow?.version).toBe(0);
+        });
+        it('rejects stale and foreign working snapshots atomically while retaining completed independent copies', async () => {
+            const draft = await working(vocabulary);
+            const request = CopyKnowledgeVocabularyRequestSchema.parse({
+                ...vocabRequest(draft.noteId, 1),
+                noteVersion: undefined,
+                workingSource: draft.workingSource,
+            });
+            await library.previewVocabulary(owner, request, signal());
+            await expect(
+                library.copyVocabulary(reader, request, signal()),
+            ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+            await expect(
+                library.copyVocabulary(owner, request, signal(), {
+                    kind: 'note',
+                    locator: 'a'.repeat(32),
+                    key: 'b'.repeat(43),
+                }),
+            ).rejects.toMatchObject({ code: 'invalid_request' });
+            await knowledge.updateWorking(owner, draft.noteId, {
+                operationId: randomUUID(),
+                branchId: draft.branch.id,
+                expectedVersion: draft.branch.version,
+                content: {
+                    ...draft.branch.content,
+                    title: 'A later private edit',
+                },
+            });
+            await expect(
+                library.copyVocabulary(owner, request, signal()),
+            ).rejects.toMatchObject({ code: 'version_conflict' });
+            expect(
+                await db
+                    .select()
+                    .from(dictionariesTable)
+                    .where(eq(dictionariesTable.ownerId, owner)),
+            ).toHaveLength(0);
+            expect(
+                await db
+                    .select()
+                    .from(textsTable)
+                    .where(eq(textsTable.ownerId, owner)),
+            ).toHaveLength(0);
+        });
         it('atomically retains prepared fields, revision and independent replay after original deletion', async () => {
             const source = await note(vocabulary);
             const request = vocabRequest(source.id, source.version);

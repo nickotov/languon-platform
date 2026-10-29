@@ -11,11 +11,41 @@ import {
     TextAlignmentSchema,
 } from './texts';
 
+export const KnowledgeLibraryWorkingSourceSchema = z
+    .object({
+        branchId: z.uuid(),
+        expectedVersion: z.number().int().positive(),
+    })
+    .strict();
+export type KnowledgeLibraryWorkingSource = z.infer<
+    typeof KnowledgeLibraryWorkingSourceSchema
+>;
+
 const source = {
     noteId: z.uuid(),
-    noteVersion: z.number().int().positive(),
+    noteVersion: z.number().int().positive().optional(),
+    workingSource: KnowledgeLibraryWorkingSourceSchema.optional(),
     blockId: z.uuid(),
 };
+function validateSource(
+    value: {
+        noteVersion?: number | undefined;
+        workingSource?:
+            { branchId: string; expectedVersion: number } | undefined;
+    },
+    context: z.RefinementCtx,
+) {
+    if (
+        (value.noteVersion !== undefined) ===
+        (value.workingSource !== undefined)
+    )
+        context.addIssue({
+            code: 'custom',
+            path: ['workingSource'],
+            message: 'Choose exactly one saved or owned working source.',
+        });
+}
+
 export const CopyKnowledgeVocabularyRequestSchema = z
     .object({
         operationId: z.uuid(),
@@ -30,7 +60,8 @@ export const CopyKnowledgeVocabularyRequestSchema = z
             ),
         destination: DictionaryImportTargetSchema,
     })
-    .strict();
+    .strict()
+    .superRefine(validateSource);
 export const KnowledgeVocabularyPreviewSchema = z
     .object({
         entries: z
@@ -79,7 +110,16 @@ export const CopyKnowledgeTextRequestSchema = z
                 .strict(),
         ]),
     })
-    .strict();
+    .strict()
+    .superRefine((value, context) => {
+        validateSource(value, context);
+        if (value.workingSource && value.privateTranslation)
+            context.addIssue({
+                code: 'custom',
+                path: ['privateTranslation'],
+                message: 'Private translation receipts require a saved source.',
+            });
+    });
 export const KnowledgeTextLibraryPreviewSchema = z
     .object({
         text: z

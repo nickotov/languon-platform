@@ -89,6 +89,7 @@ export const speechJobsTable = pgTable(
             .notNull()
             .default('intl-word-codepoint-v1'),
         payerId: uuid('payer_id'),
+        sourceBindingId: uuid('source_binding_id'),
         reservationId: uuid('reservation_id'),
         rateRevisionId: uuid('rate_revision_id'),
         credits: bigint('credits', { mode: 'bigint' }).notNull(),

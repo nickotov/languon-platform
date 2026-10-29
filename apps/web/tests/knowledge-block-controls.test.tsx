@@ -98,7 +98,7 @@ it('selects a draggable block without editing content and exposes actions in its
         target: { value: 'Updated rule.' },
     });
     expect(changed).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Apply block' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     await waitFor(() => expect(changed).toHaveBeenCalledOnce());
     expect(container.querySelectorAll('[data-learning-block-id]')).toHaveLength(
         2,

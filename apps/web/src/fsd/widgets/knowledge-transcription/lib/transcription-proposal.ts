@@ -7,7 +7,7 @@ import {
 import type { TranscriptionAudioBlock, TranscriptionDraft } from '../types';
 export type PreparedTranscription = {
     input: SubmitKnowledgeTranscriptionRequest;
-    expected: TranscriptionAudioBlock;
+    expected: TranscriptionAudioBlock & { assetId: string };
     branchId: string;
     branchVersion: number;
     noteId: string;
@@ -25,11 +25,13 @@ export function captureTranscription(
     if (!found) throw new Error('The selected audio block is unavailable.');
     const target = LearningBlockSchema.parse(found);
     if (target.type !== 'audio') throw new Error('An audio block is required.');
+    if (!target.assetId)
+        throw new Error('Add a recording before requesting a transcription.');
     return {
         noteId,
         branchId: draft.branchId,
         branchVersion: draft.branchVersion,
-        expected: target,
+        expected: { ...target, assetId: target.assetId },
         input: {
             operationId: crypto.randomUUID(),
             noteId,

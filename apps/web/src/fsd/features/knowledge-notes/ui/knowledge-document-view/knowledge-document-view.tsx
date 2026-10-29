@@ -1,23 +1,26 @@
 'use client';
 
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+import { KnowledgeBodySchema, type LearningBlock } from '@languon/contracts';
 import { KnowledgeBody } from '@/fsd/entities/knowledge';
-import {
-    LearningBlockView,
-    type LearningBlockViewProps,
-} from '@/fsd/entities/learning-blocks';
-import type { LearningBlock } from '@languon/contracts';
-import { useI18n } from '@/fsd/shared/i18n';
+import type { LearningBlockViewProps } from '@/fsd/entities/learning-blocks';
+import type { MenuItem } from '@/fsd/shared/ui';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
-import { CopyBlocksToNote } from '../block-copy/copy-blocks-to-note';
 import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
-import { BlockLibrarySave } from '../library-copy/block-library-save';
-import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
+import { knowledgeDocumentGroups } from '../../lib/knowledge-document-groups';
+import {
+    ReaderLearningBlock,
+    type KnowledgeReadingBlockOverrides,
+} from './reader-learning-block';
 
 export function KnowledgeDocumentView({
     blockOptions,
     library,
     blockCopy,
+    getBlockActions,
+    renderBlockMenu,
+    renderBlockContent,
+    wrapBlock,
     ...props
 }: Omit<ComponentProps<typeof KnowledgeBody>, 'renderLearningBlock'> & {
     library?: KnowledgeLibraryContext | undefined;
@@ -27,45 +30,49 @@ export function KnowledgeDocumentView({
               block: LearningBlock,
           ) => Omit<Partial<LearningBlockViewProps>, 'block' | 'labels'>)
         | undefined;
+    getBlockActions?: ((block: LearningBlock) => MenuItem[]) | undefined;
+    renderBlockMenu?:
+        ((block: LearningBlock, items: MenuItem[]) => ReactNode) | undefined;
+    wrapBlock?:
+        | ((
+              block: LearningBlock,
+              render: (overrides?: KnowledgeReadingBlockOverrides) => ReactNode,
+          ) => ReactNode)
+        | undefined;
+    renderBlockContent?:
+        | ((
+              block: LearningBlock,
+              options: Omit<
+                  Partial<LearningBlockViewProps>,
+                  'block' | 'labels'
+              >,
+          ) => ReactNode)
+        | undefined;
 }) {
-    const { locale } = useI18n();
-    const labels = localizedBlockLabels(locale);
+    const plan = knowledgeDocumentGroups(KnowledgeBodySchema.parse(props.body));
     function renderBlock(block: LearningBlock) {
-        const options = blockOptions?.(block);
-        const canSave =
-            block.type === 'vocabulary' || block.type === 'bilingual-text';
         return (
-            <>
-                <LearningBlockView
-                    {...options}
-                    block={block}
-                    labels={labels.view}
-                />
-                {library && canSave && (
-                    <BlockLibrarySave
-                        block={
-                            block as Extract<
-                                LearningBlock,
-                                { type: 'vocabulary' | 'bilingual-text' }
-                            >
-                        }
-                        context={library}
-                    />
-                )}
-            </>
+            <ReaderLearningBlock
+                key={block.id}
+                block={block}
+                allBlocks={plan.blocks}
+                group={plan.groups.get(block.id)}
+                linked={plan.linked.get(block.id)}
+                library={library}
+                blockCopy={blockCopy}
+                blockOptions={blockOptions}
+                getBlockActions={getBlockActions}
+                renderBlockMenu={renderBlockMenu}
+                renderBlockContent={renderBlockContent}
+                wrapBlock={wrapBlock}
+            />
         );
     }
-    const blocks = (props.body.document.content ?? []).flatMap((node) =>
-        node.type === 'learningBlock' && node.attrs?.block
-            ? [node.attrs.block]
-            : [],
-    );
     return (
-        <>
-            {blockCopy && (
-                <CopyBlocksToNote context={blockCopy} blocks={blocks} />
-            )}
-            <KnowledgeBody {...props} renderLearningBlock={renderBlock} />
-        </>
+        <KnowledgeBody
+            {...props}
+            body={plan.body}
+            renderLearningBlock={renderBlock}
+        />
     );
 }

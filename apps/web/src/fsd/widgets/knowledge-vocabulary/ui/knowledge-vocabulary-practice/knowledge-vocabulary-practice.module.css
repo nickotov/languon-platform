@@ -1,0 +1,25 @@
+.menuTrigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-32);
+    height: var(--size-32);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--text-tertiary);
+    box-shadow: none;
+}
+
+.menuTrigger:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+@media (pointer: coarse) {
+    .menuTrigger {
+        width: var(--size-44);
+        height: var(--size-44);
+    }
+}

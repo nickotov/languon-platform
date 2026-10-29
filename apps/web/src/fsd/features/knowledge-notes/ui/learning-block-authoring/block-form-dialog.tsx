@@ -1,215 +1,139 @@
 'use client';
-
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import type { LearningBlock } from '@languon/contracts';
-import { LearningBlockView } from '@/fsd/entities/learning-blocks';
-import { Button, Dialog, InlineAlert } from '@/fsd/shared/ui';
+import { useRef } from 'react';
+import type { ExerciseLearningBlock, LearningBlock } from '@languon/contracts';
 import {
-    blockForm,
-    readBlockForm,
-    type BlockKind,
+    LearningBlockView,
+    type LearningBlockViewProps,
+} from '@/fsd/entities/learning-blocks';
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
+import type {
+    BlockKind,
+    BlockLanguageDefaults,
 } from '../../lib/learning-block-form';
-import { ExerciseSourcePicker } from './exercise-source-picker';
-import { BlockFieldInput, BlockRowGroup } from './block-form-fields';
+import { useBlockFormDraft } from '../../hooks/use-block-form-draft';
+import type { KnowledgeBlockFieldAiContext } from '../../api/block-field-ai-api';
+import type { RenderAudioPreparation } from './block-authoring-context';
 import type { BlockAuthoringLabels } from './block-labels';
+import {
+    ExerciseSetFields,
+    type ExerciseSetFieldsHandle,
+} from './exercise-set-fields';
+import { BlockEditorPanel } from './block-editor-panel';
+import { BlockEditorFooter } from './block-editor-footer';
+import { BlockEditorForm } from './block-editor-form';
+import type { UploadBlockAudio } from './audio-block-upload';
 import styles from './learning-block-authoring.module.css';
-
-export function BlockFormDialog({
-    kind,
-    block,
-    labels,
-    onClose,
-    onApply,
-    sources,
-}: {
+export function BlockFormDialog(props: {
     kind: BlockKind;
     block?: LearningBlock | undefined;
     labels: BlockAuthoringLabels;
     onClose(): void;
     onApply(block: LearningBlock): boolean;
     sources: LearningBlock[];
+    uploadAudio?: UploadBlockAudio | undefined;
+    fieldAi?: KnowledgeBlockFieldAiContext | undefined;
+    languageDefaults?: BlockLanguageDefaults | undefined;
+    renderAudioPreparation?: RenderAudioPreparation | undefined;
+    relatedExercises?: ExerciseLearningBlock[] | undefined;
+    blockViewOptions?:
+        | ((
+              block: LearningBlock,
+          ) => Omit<Partial<LearningBlockViewProps>, 'block' | 'labels'>)
+        | undefined;
+    onApplyAudio?:
+        | ((
+              audio: Extract<LearningBlock, { type: 'audio' }>,
+              questions: ExerciseLearningBlock[],
+          ) => boolean)
+        | undefined;
 }) {
-    const [format, setFormat] = useState(
-        block?.type === 'exercise' ? block.format : 'free-text',
-    );
-    const [error, setError] = useState(false);
-    const [preview, setPreview] = useState<LearningBlock | null>(null);
-    const form = useRef<HTMLFormElement>(null);
-    const [definition] = useState(() => blockForm(kind, block));
-    const counts = useRef(
-        Object.fromEntries(
-            definition.groups.map((group) => [group.name, group.rows.length]),
-        ),
-    );
-    function count(name: string, value: number) {
-        counts.current[name] = value;
-    }
-    function parse() {
-        if (!form.current) return null;
-        try {
-            const result = readBlockForm(
-                kind,
-                new FormData(form.current),
-                counts.current,
-                block,
-            );
-            setError(false);
-            return result;
-        } catch {
-            setError(true);
-            return null;
+    const { kind, block, labels, onClose, sources, uploadAudio } = props;
+    const questions = useRef<ExerciseSetFieldsHandle>(null);
+    function apply(block: LearningBlock) {
+        if (block.type === 'audio' && props.onApplyAudio) {
+            const next = questions.current?.read();
+            if (!next) return false;
+            return props.onApplyAudio(block, next);
         }
+        return props.onApply(block);
     }
-    function submit(event: FormEvent) {
-        event.preventDefault();
-        const result = parse();
-        if (result && !onApply(result)) setError(true);
+    const draft = useBlockFormDraft({ ...props, onApply: apply });
+    function markDirty() {
+        draft.setDirty(true);
     }
-    function change(event: React.FormEvent<HTMLFormElement>) {
-        const target = event.target;
-        if (target instanceof HTMLSelectElement && target.name === 'format') {
-            const next = target.value;
-            if (
-                next === 'free-text' ||
-                next === 'multiple-choice' ||
-                next === 'fill-in-the-blank'
-            )
-                setFormat(next);
-        }
+    function submitAudio() {
+        draft.form.current?.requestSubmit();
     }
-    function visibleField(name: string) {
-        if (name === 'correctChoice') return format === 'multiple-choice';
-        if (name === 'gapText') return format === 'fill-in-the-blank';
-        if (name === 'acceptedAnswers') return format === 'free-text';
-        return true;
-    }
-    const fields = definition.fields.filter((field) =>
-        visibleField(field.name),
-    );
-    const groups = definition.groups.filter(
-        (group) => group.name !== 'choices' || format === 'multiple-choice',
-    );
-    function showPreview() {
-        setPreview(parse());
-    }
-    const title = labels.view.kinds[kind];
-    const preparedTranslations =
-        block?.type === 'bilingual-text' ? block.translations : [];
-    const hasPreparedTranslations = preparedTranslations.length > 0;
-    const selectedPreparedLanguage = preparedTranslations[0]?.language ?? '';
-    function chooseTranslation(language: string) {
-        if (!form.current || block?.type !== 'bilingual-text') return;
-        const translation = block.translations.find(
-            (item) => item.language === language,
-        );
-        const languageInput = form.current.elements.namedItem(
-            'translationLanguage',
-        );
-        if (languageInput instanceof HTMLInputElement)
-            languageInput.value = language;
-        for (
-            let index = 0;
-            index < (counts.current['segments'] ?? 0);
-            index++
-        ) {
-            const input = form.current.elements.namedItem(
-                `segments.${index}.translation`,
-            );
-            if (input instanceof HTMLTextAreaElement)
-                input.value =
-                    translation?.segments.find(
-                        (item) =>
-                            item.sourceSegmentId === block.segments[index]?.id,
-                    )?.text ?? '';
-        }
-        setPreview(null);
-        setError(false);
-    }
-    function handlePreparedTranslationChange(
-        event: ChangeEvent<HTMLSelectElement>,
-    ) {
-        chooseTranslation(event.target.value);
-    }
-    return (
-        <Dialog
-            open
+    const audioDraft = draft.getAudioDraft();
+    const questionSources = audioDraft
+        ? [
+              ...sources.filter((source) => source.id !== audioDraft.id),
+              audioDraft,
+          ]
+        : sources;
+    const footer = (
+        <BlockEditorFooter
+            confirming={draft.confirming}
+            dirty={draft.dirty}
+            formId={draft.formId}
+            labels={labels}
+            keepEditing={draft.keepEditing}
             onClose={onClose}
-            title={title}
-            closeLabel={labels.cancel}
-            size='large'
-        >
-            <form
-                ref={form}
-                onSubmit={submit}
-                onChange={change}
-                className={styles.form}
+            requestClose={draft.requestClose}
+        />
+    );
+    return (
+        <>
+            <BlockEditorPanel
+                kind={kind}
+                title={draft.title}
+                labels={labels}
+                onClose={draft.requestClose}
+                footer={footer}
             >
-                {hasPreparedTranslations && (
-                    <label className={styles.field}>
-                        {labels.field('Prepared translation')}
-                        <select
-                            defaultValue={selectedPreparedLanguage}
-                            onChange={handlePreparedTranslationChange}
-                        >
-                            {preparedTranslations.map((translation) => (
-                                <option
-                                    key={translation.language}
-                                    value={translation.language}
-                                >
-                                    {translation.language}
-                                </option>
-                            ))}
-                            <option value=''>
-                                {labels.field('Add translation')}
-                            </option>
-                        </select>
-                    </label>
+                <BlockEditorForm
+                    draft={draft}
+                    kind={kind}
+                    block={block}
+                    labels={labels}
+                    sources={sources}
+                    uploadAudio={uploadAudio}
+                    renderAudioPreparation={props.renderAudioPreparation}
+                />
+                {kind === 'audio' && props.onApplyAudio && (
+                    <section className={styles.audioQuestions}>
+                        <h3>{labels.field('Questions')}</h3>
+                        <ExerciseSetFields
+                            ref={questions}
+                            exercises={props.relatedExercises ?? []}
+                            labels={labels}
+                            sources={questionSources}
+                            onDirty={markDirty}
+                            onSubmit={submitAudio}
+                            allowEmpty
+                        />
+                    </section>
                 )}
-                {fields.map((field) => (
-                    <BlockFieldInput
-                        key={field.name}
-                        field={field}
-                        labels={labels}
-                    />
-                ))}
-                {groups.map((group) => (
-                    <BlockRowGroup
-                        key={group.name}
-                        group={group}
-                        labels={labels}
-                        onCount={count}
-                    />
-                ))}
-                {kind === 'exercise' && (
-                    <ExerciseSourcePicker
-                        sources={sources}
-                        initial={
-                            block?.type === 'exercise'
-                                ? block.source
-                                : undefined
-                        }
-                        labels={labels}
-                    />
-                )}
-                {error && (
-                    <InlineAlert tone='error'>{labels.error}</InlineAlert>
-                )}
-                <div className={styles.actions}>
-                    <Button
-                        type='button'
-                        variant='secondary'
-                        onClick={showPreview}
+                {draft.preview !== null && (
+                    <section
+                        className={styles.preview}
+                        aria-label={labels.preview}
                     >
-                        {labels.preview}
-                    </Button>
-                    <Button type='submit'>{labels.apply}</Button>
-                </div>
-            </form>
-            {preview !== null && (
-                <section className={styles.preview} aria-label={labels.preview}>
-                    <LearningBlockView block={preview} labels={labels.view} />
-                </section>
-            )}
-        </Dialog>
+                        <LearningBlockView
+                            {...props.blockViewOptions?.(draft.preview)}
+                            block={draft.preview}
+                            labels={labels.view}
+                            variant='learner'
+                            scope='editor-preview'
+                        />
+                    </section>
+                )}
+            </BlockEditorPanel>
+            <ActionConsentDialog
+                quote={draft.ai.consent.quote}
+                onSend={draft.ai.consent.confirm}
+                onClose={draft.ai.consent.cancel}
+            />
+        </>
     );
 }

@@ -42,6 +42,8 @@ export interface TrainingLauncherProps {
     placement?: 'top' | 'bottom';
     /** Higher-level composition supplies other learning journeys. */
     additionalItems?: MenuItem[];
+    menuTrigger?: ReactNode;
+    menuLabel?: string | undefined;
 }
 
 interface Running {
@@ -107,6 +109,8 @@ function Launcher({
     placement = 'bottom',
     desktopIconOnly = false,
     additionalItems,
+    menuTrigger,
+    menuLabel,
 }: FlashcardPracticeLauncherProps) {
     const { t } = useI18n();
 
@@ -213,7 +217,7 @@ function Launcher({
         .filter(Boolean)
         .join(' ');
 
-    const trigger = (
+    const defaultTrigger = (
         <span className={labelClassName}>
             <GraduationCap aria-hidden className={styles.icon} />
             <span className={styles.triggerText}>{t('training.train')}</span>
@@ -224,13 +228,14 @@ function Launcher({
         <div ref={rootRef} className={className}>
             <Menu
                 triggerClassName={triggerClassName}
-                label={t('training.train')}
-                trigger={trigger}
+                label={menuLabel ?? t('training.train')}
+                trigger={menuTrigger ?? defaultTrigger}
+                iconOnly={Boolean(menuTrigger)}
                 items={items}
                 heading={t('training.menuHeading')}
                 variant='secondary'
                 showTooltip={desktopIconOnly}
-                showChevron={!desktopIconOnly}
+                showChevron={!desktopIconOnly && !menuTrigger}
                 allowDisabledItems
                 placement={placement === 'top' ? 'top-end' : 'bottom-end'}
                 menuClassName={styles.menu}

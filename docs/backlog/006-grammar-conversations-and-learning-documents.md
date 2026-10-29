@@ -4,9 +4,10 @@ id: BL-006
 title: 'Grammar conversations and learning documents'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-28
+updated: 2026-10-30
 original_tasks: '9'
 evidence:
+    - .agent/features/059-interactive-workbooks/EVIDENCE.md
     - .agent/features/044-contextual-language-assistant-and-knowledge/EVIDENCE.md
     - docs/user-flows/contextual-language-assistant-and-knowledge.md
     - .agent/features/047-knowledge-workspace/EVIDENCE.md
@@ -556,3 +557,13 @@ Earlier interview restrictions on media and copy-before-chat describe features
 Historical evidence above is retained and does not prove the new behavior.
 Guided course/lesson generation and workbook-wide AI context remain separate
 future work. BL-006 remains in progress after this partial scope allocation.
+
+## v16 partial-delivery checkpoint — 2026-10-30
+
+The selected Magic Patterns v16 custom-block/editor/chat migration is implemented: six reusable block families, reviewed generation/update proposals, atomic vocabulary/text AI, independent library copies and private shared-reader practice. Guided lessons, workbook-wide AI context and grammar-library saving remain deferred. Live uploaded-audio transcription still awaits approved provider/model activation.
+
+See [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md)
+and its [fidelity observations](../../.agent/features/059-interactive-workbooks/evidence/v16-migration/FIDELITY.md).
+The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
+this broader backlog task remain **in progress**; this is partial-delivery evidence,
+not a terminal task disposition.

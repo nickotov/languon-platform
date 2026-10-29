@@ -68,7 +68,7 @@ describe('dictionary text provider wire contracts', () => {
         'kie/gemini-2.5-pro',
     ] as const) {
         for (const kind of ['card', 'import-pairs', 'pasted-terms'] as const) {
-            it(`maps ${catalogId} ${kind} through the capped OpenAI-compatible wire contract`, async () => {
+            it(`${catalogId === 'kie/gemini-2.5-pro' ? 'rejects retired' : 'maps'} ${catalogId} ${kind} through the capped OpenAI-compatible wire contract`, async () => {
                 const catalogModel = dictionaryTextModelCatalog[catalogId];
                 const model = dictionaryAiModelCatalog.find(
                     (candidate) =>
@@ -155,6 +155,14 @@ describe('dictionary text provider wire contracts', () => {
                         [model.credentialReference]: 'wire-contract-key',
                     },
                 });
+                if (catalogId === 'kie/gemini-2.5-pro') {
+                    expect(model.retired).toBe(true);
+                    expect(() => router.resolve(execution, budget)).toThrow(
+                        'Text AI provider execution snapshot is unsupported.',
+                    );
+                    expect(fetchProvider).not.toHaveBeenCalled();
+                    return;
+                }
                 const providers = router.resolve(execution, budget);
                 const common = {
                     providerExecution: execution,

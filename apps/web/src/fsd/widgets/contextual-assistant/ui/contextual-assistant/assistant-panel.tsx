@@ -1,4 +1,5 @@
 'use client';
+import type { KnowledgeBlockProposal } from '@languon/contracts';
 import { KnowledgeBlockProposals } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -85,12 +86,20 @@ export function AssistantPanel(
         if (window.matchMedia('(max-width: 1023px)').matches) props.onFold();
     }
 
+    function askForBlocksAgain(proposal: KnowledgeBlockProposal) {
+        const question = detail?.messages.find(
+            (message) =>
+                message.role === 'user' && message.turnId === proposal.turnId,
+        )?.content;
+        if (question) chat.setQuestion(question);
+    }
     const blockProposalContext =
         workspace?.blockProposalContext && chat.id
             ? {
                   ...workspace.blockProposalContext,
                   requestWithSession: panel.requestWithSession,
                   conversationId: chat.id,
+                  onAskAgain: askForBlocksAgain,
               }
             : undefined;
     const blockProposalRefresh = `${detail?.conversation.updatedAt ?? ''}:${lastTurn?.id ?? ''}:${lastTurn?.status ?? ''}`;
@@ -191,56 +200,59 @@ export function AssistantPanel(
                     hidden={panel.history || panel.unavailable}
                 >
                     {showContent && detail && (
-                        <ConversationMessages
-                            detail={detail}
-                            sourceKind={props.source.kind}
-                            contextLabel={props.contextLabel}
-                            uiMessages={chat.stream.messages}
+                        <KnowledgeBlockProposals
+                            context={blockProposalContext}
+                            refreshKey={blockProposalRefresh}
                             active={panel.active}
-                            pending={chat.submit.isPending}
-                            onRetry={panel.retry}
-                            onContinue={panel.continueResponse}
-                            onPropose={
-                                readOnlyKnowledge ? undefined : panel.propose
-                            }
-                            onAcceptWorkspaceProposal={
-                                workspace ? panel.acceptProposal : undefined
-                            }
-                            workspaceTargets={panel.proposalTargets}
-                            onSuggest={chat.setQuestion}
-                            proposalRootId={workspace?.proposalRootId}
-                            onReviewProposal={foldMobileForReview}
-                            workspace={workspace}
                         >
-                            {!readOnlyKnowledge &&
-                                detail.drafts.map((draft) => (
-                                    <KnowledgeDraftCard
-                                        key={draft.id}
-                                        draft={draft}
-                                        request={panel.requestWithSession}
-                                        shareKey={props.shareKey}
-                                        onChanged={chat.refresh}
-                                        onDirtyChange={panel.draftDirty}
-                                        discardRevision={panel.discardRevision}
-                                        expanded={
-                                            panel.editingDraft === draft.id
-                                        }
-                                        onOpen={panel.setEditingDraft}
-                                        onBack={panel.backToChat}
-                                        onPublished={publishedNote}
-                                    />
-                                ))}
-                            {!readOnlyKnowledge && blockProposalContext && (
-                                <KnowledgeBlockProposals
-                                    context={blockProposalContext}
-                                    refreshKey={blockProposalRefresh}
-                                    active={panel.active}
-                                />
-                            )}
-                            {!readOnlyKnowledge && published && (
-                                <PublishedNoteNotice note={published} />
-                            )}
-                        </ConversationMessages>
+                            <ConversationMessages
+                                detail={detail}
+                                sourceKind={props.source.kind}
+                                contextLabel={props.contextLabel}
+                                uiMessages={chat.stream.messages}
+                                active={panel.active}
+                                pending={chat.submit.isPending}
+                                onRetry={panel.retry}
+                                onContinue={panel.continueResponse}
+                                onPropose={
+                                    readOnlyKnowledge
+                                        ? undefined
+                                        : panel.propose
+                                }
+                                onAcceptWorkspaceProposal={
+                                    workspace ? panel.acceptProposal : undefined
+                                }
+                                workspaceTargets={panel.proposalTargets}
+                                onSuggest={chat.setQuestion}
+                                proposalRootId={workspace?.proposalRootId}
+                                onReviewProposal={foldMobileForReview}
+                                workspace={workspace}
+                            >
+                                {!readOnlyKnowledge &&
+                                    detail.drafts.map((draft) => (
+                                        <KnowledgeDraftCard
+                                            key={draft.id}
+                                            draft={draft}
+                                            request={panel.requestWithSession}
+                                            shareKey={props.shareKey}
+                                            onChanged={chat.refresh}
+                                            onDirtyChange={panel.draftDirty}
+                                            discardRevision={
+                                                panel.discardRevision
+                                            }
+                                            expanded={
+                                                panel.editingDraft === draft.id
+                                            }
+                                            onOpen={panel.setEditingDraft}
+                                            onBack={panel.backToChat}
+                                            onPublished={publishedNote}
+                                        />
+                                    ))}
+                                {!readOnlyKnowledge && published && (
+                                    <PublishedNoteNotice note={published} />
+                                )}
+                            </ConversationMessages>
+                        </KnowledgeBlockProposals>
                     )}
                     {panel.error && !chat.quote && (
                         <div className={styles.notice}>

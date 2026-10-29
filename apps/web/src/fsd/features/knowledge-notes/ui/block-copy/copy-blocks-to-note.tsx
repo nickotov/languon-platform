@@ -2,13 +2,14 @@
 import { useState, type ChangeEvent } from 'react';
 import type { LearningBlock } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Dialog, InlineAlert } from '@/fsd/shared/ui';
+import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
 import type { CopyDestination } from '../../types';
 import { useBlockCopy } from '../../hooks/use-block-copy';
 import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
 import { CopyDestinationPicker } from './copy-destination-picker';
 import { blockCopyLabels } from './block-copy-labels';
+import { BlockEditorPanel } from '../learning-block-authoring/block-editor-panel';
 import styles from './block-copy.module.css';
 export function CopyBlocksToNote({
     context,
@@ -84,14 +85,56 @@ export function BlockCopyDialog({
         copy.selected.length === 0 ||
         copy.selected.length > 50 ||
         !copy.destination;
+    const editorLabels = localizedBlockLabels(locale);
+    const kind = blocks[0]?.type ?? 'vocabulary';
+    let primaryAction;
+    if (!copy.copied) {
+        primaryAction = (
+            <Button
+                type='button'
+                size='compact'
+                onClick={copy.preview}
+                disabled={previewUnavailable}
+                loading={copy.busy}
+            >
+                {labels.preview}
+            </Button>
+        );
+        if (copy.plan)
+            primaryAction = (
+                <Button
+                    type='button'
+                    size='compact'
+                    onClick={copy.apply}
+                    loading={copy.busy}
+                >
+                    {labels.apply}
+                </Button>
+            );
+    }
+    const footer = (
+        <div className={styles.actions}>
+            <Button
+                type='button'
+                size='compact'
+                variant='ghost'
+                onClick={close}
+                disabled={copy.busy}
+            >
+                {copy.copied ? labels.done : labels.cancel}
+            </Button>
+            {primaryAction}
+        </div>
+    );
     return (
-        <Dialog
-            open
+        <BlockEditorPanel
+            kind={kind}
             title={labels.title}
-            closeLabel={labels.cancel}
+            subtitle=''
+            labels={editorLabels}
             onClose={close}
             dismissible={!copy.busy}
-            size='large'
+            footer={footer}
         >
             <div className={styles.form}>
                 <fieldset className={styles.selection} disabled={copy.busy}>
@@ -119,14 +162,6 @@ export function BlockCopyDialog({
                     disabled={copy.busy}
                     initialDestination={initialDestination}
                 />
-                <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={copy.preview}
-                    disabled={previewUnavailable}
-                >
-                    {labels.preview}
-                </Button>
                 {copy.plan && (
                     <div className={styles.preview}>
                         <p>
@@ -140,13 +175,6 @@ export function BlockCopyDialog({
                         <p>
                             {labels.media}: {copy.plan.result.mediaCount ?? '—'}
                         </p>
-                        <Button
-                            type='button'
-                            onClick={copy.apply}
-                            loading={copy.busy}
-                        >
-                            {labels.apply}
-                        </Button>
                     </div>
                 )}
                 {copy.copied && <p role='status'>{labels.copied}</p>}
@@ -154,6 +182,6 @@ export function BlockCopyDialog({
                     <InlineAlert tone='error'>{labels.error}</InlineAlert>
                 )}
             </div>
-        </Dialog>
+        </BlockEditorPanel>
     );
 }

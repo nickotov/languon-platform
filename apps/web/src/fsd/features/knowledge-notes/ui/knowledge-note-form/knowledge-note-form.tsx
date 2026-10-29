@@ -12,11 +12,14 @@ import {
 import {
     KnowledgeNoteContentSchema,
     type KnowledgeWorkingContent,
+    type LearningBlock,
 } from '@languon/contracts';
+import type { LearningBlockViewProps } from '@/fsd/entities/learning-blocks';
+import type { KnowledgeBlockFieldAiContext } from '../../api/block-field-ai-api';
 import { useI18n } from '@/fsd/shared/i18n';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
 import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
-import { Input } from '@/fsd/shared/ui';
+import { Input, type MenuItem } from '@/fsd/shared/ui';
 import {
     KnowledgeEditor,
     type KnowledgeEditorHandle,
@@ -29,6 +32,26 @@ export type KnowledgeTutorAction =
     'explain' | 'correct' | 'translate' | 'simplify' | 'rephrase' | 'examples';
 
 export type KnowledgeWorkspaceEditorOptions = {
+    blockAccents?: boolean | undefined;
+    languageDefaults?:
+        | { content?: string | undefined; translation?: string | undefined }
+        | undefined;
+    renderBlockMenu?:
+        ((block: LearningBlock, items: MenuItem[]) => ReactNode) | undefined;
+    renderAudioPreparation?:
+        | ((
+              block: Extract<LearningBlock, { type: 'audio' }>,
+              onAccept: (
+                  block: Extract<LearningBlock, { type: 'audio' }>,
+              ) => void,
+          ) => ReactNode)
+        | undefined;
+    fieldAi?: KnowledgeBlockFieldAiContext | undefined;
+    blockViewOptions?:
+        | ((
+              block: LearningBlock,
+          ) => Omit<Partial<LearningBlockViewProps>, 'block' | 'labels'>)
+        | undefined;
     blockCopy?: KnowledgeBlockCopyContext | undefined;
     library?: KnowledgeLibraryContext | undefined;
     uploadAudio?: ((file: File) => Promise<{ assetId: string }>) | undefined;

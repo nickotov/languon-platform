@@ -288,3 +288,137 @@ it('saves original-only blocks as drafts for an explicitly selected target langu
     expect(bodies[0]).toMatchObject({ translationLanguage: 'fr' });
     expect(bodies[1]).toEqual(bodies[0]);
 });
+
+it('flushes a private working source once for preview and keeps its exact request on technical copy retries', async () => {
+    const resolveWorkingSource = vi.fn(async () => ({
+        branchId: pair,
+        expectedVersion: 9,
+    }));
+    const working: KnowledgeLibraryContext = {
+        requestWithSession: context.requestWithSession,
+        noteId: id,
+        workingSource: { branchId: pair, expectedVersion: 7 },
+        resolveWorkingSource,
+    };
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init: RequestInit) => {
+            bodies.push(JSON.parse(String(init.body)));
+            if (url.endsWith('/preview'))
+                return Response.json({
+                    text: {
+                        title: 'Reading',
+                        sourceLanguage: 'en',
+                        targetLanguage: 'fr',
+                        sourceText: text.sourceText,
+                        alignment: text.alignment,
+                    },
+                    isNew: true,
+                });
+            return Response.json(
+                {
+                    error: {
+                        code: 'service_unavailable',
+                        message: 'Try again.',
+                        correlationId: 'synthetic',
+                    },
+                },
+                { status: 503 },
+            );
+        }),
+    );
+    const block = textLibraryBlock(text);
+    renderLibrary(<BlockLibrarySave block={block} context={working} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Save to Texts' }));
+    fireEvent.click(
+        screen.getByRole('button', { name: 'Preview', exact: true }),
+    );
+    const commit = await screen.findByRole('button', {
+        name: 'Save independent copy',
+    });
+    expect(resolveWorkingSource).toHaveBeenCalledTimes(1);
+    expect(bodies[0]).toMatchObject({
+        workingSource: { branchId: pair, expectedVersion: 9 },
+    });
+    expect(bodies[0]).not.toHaveProperty('noteVersion');
+    resolveWorkingSource.mockResolvedValue({
+        branchId: pair,
+        expectedVersion: 10,
+    });
+    fireEvent.click(commit);
+    await screen.findByRole('alert');
+    await waitFor(() => expect(commit).toBeEnabled());
+    fireEvent.click(commit);
+    await waitFor(() => expect(bodies).toHaveLength(3));
+    expect(resolveWorkingSource).toHaveBeenCalledTimes(1);
+    expect(bodies[1]).toEqual(bodies[0]);
+    expect(bodies[2]).toEqual(bodies[0]);
+});
+
+it('requires explicit fresh preview after a working source version conflict instead of copying changed material', async () => {
+    const resolveWorkingSource = vi.fn(async () => ({
+        branchId: pair,
+        expectedVersion: 9,
+    }));
+    const working: KnowledgeLibraryContext = {
+        requestWithSession: context.requestWithSession,
+        noteId: id,
+        workingSource: { branchId: pair, expectedVersion: 7 },
+        resolveWorkingSource,
+    };
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init: RequestInit) => {
+            bodies.push(JSON.parse(String(init.body)));
+            if (url.endsWith('/preview'))
+                return Response.json({
+                    text: {
+                        title: 'Reading',
+                        sourceLanguage: 'en',
+                        targetLanguage: 'fr',
+                        sourceText: text.sourceText,
+                        alignment: text.alignment,
+                    },
+                    isNew: true,
+                });
+            return Response.json(
+                {
+                    error: {
+                        code: 'version_conflict',
+                        message: 'Preview changed material.',
+                        correlationId: 'synthetic',
+                    },
+                },
+                { status: 409 },
+            );
+        }),
+    );
+    renderLibrary(
+        <BlockLibrarySave block={textLibraryBlock(text)} context={working} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save to Texts' }));
+    fireEvent.click(
+        screen.getByRole('button', { name: 'Preview', exact: true }),
+    );
+    fireEvent.click(
+        await screen.findByRole('button', { name: 'Save independent copy' }),
+    );
+    await screen.findByRole('alert');
+    expect(resolveWorkingSource).toHaveBeenCalledTimes(1);
+    expect(bodies).toHaveLength(2);
+    resolveWorkingSource.mockResolvedValue({
+        branchId: pair,
+        expectedVersion: 10,
+    });
+    fireEvent.click(
+        await screen.findByRole('button', { name: 'Preview', exact: true }),
+    );
+    await screen.findByRole('button', { name: 'Save independent copy' });
+    expect(resolveWorkingSource).toHaveBeenCalledTimes(2);
+    expect(bodies[2]).toMatchObject({
+        workingSource: { branchId: pair, expectedVersion: 10 },
+    });
+    expect(bodies[2]?.operationId).not.toBe(bodies[0]?.operationId);
+});

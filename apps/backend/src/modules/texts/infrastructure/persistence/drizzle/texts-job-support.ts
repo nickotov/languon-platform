@@ -1,3 +1,7 @@
+import { authorizeKnowledgeExerciseJobSource } from '../../../../knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source';
+import type { KnowledgeExerciseEvaluationInput } from '../../../../knowledge/application/ports/exercise-evaluation-store';
+import { authorizeKnowledgeFieldJobSource } from '../../../../knowledge/infrastructure/persistence/drizzle/block-field-source';
+import type { KnowledgeFieldActionInput } from '../../../../knowledge/application/ports/block-field-action-store';
 import type { KnowledgeLearningSourceBinding } from '../../../../knowledge/application/learning-source-binding';
 import {
     authorizeKnowledgeTranslationJobSource,
@@ -66,7 +70,10 @@ export async function authorizeTextsJob(
     input: {
         ownerId: string;
         id?: string;
-        externalSourceKind?: 'knowledge-block' | null;
+        externalSourceKind?:
+            'knowledge-block' | 'knowledge-field' | 'knowledge-exercise' | null;
+        knowledgeFieldAction?: KnowledgeFieldActionInput;
+        knowledgeExerciseEvaluation?: KnowledgeExerciseEvaluationInput;
         knowledgeSource?: KnowledgeLearningSourceBinding;
         folderId: string | null;
         textId?: string | null | undefined;
@@ -82,7 +89,16 @@ export async function authorizeTextsJob(
     if (!owner || owner.status !== 'active')
         throw new TextsAiError('access_revoked');
     try {
-        await authorizeKnowledgeTranslationJobSource(tx, input);
+        await authorizeKnowledgeFieldJobSource(tx, input);
+        await authorizeKnowledgeExerciseJobSource(tx, input);
+        if (
+            input.externalSourceKind !== 'knowledge-field' &&
+            input.externalSourceKind !== 'knowledge-exercise'
+        )
+            await authorizeKnowledgeTranslationJobSource(tx, {
+                ...input,
+                externalSourceKind: input.externalSourceKind ?? null,
+            });
     } catch (error) {
         if (error instanceof KnowledgeDomainError)
             throw new TextsAiError(
@@ -156,6 +172,7 @@ export async function loadTextTranslationProposal(
         job.executionState !== 'completed' ||
         !!job.cancellationRequestedAt ||
         job.jobKind !== 'text-translation' ||
+        job.format === 'text-translation:v4' ||
         (!job.resultPayload && job.externalSourceKind !== 'knowledge-block')
     )
         throw new TextsAiError('generation_not_reviewable');
@@ -211,6 +228,7 @@ export async function resolveTextTranslationProposal(
         job.executionState !== 'completed' ||
         !!job.cancellationRequestedAt ||
         job.jobKind !== 'text-translation' ||
+        job.format === 'text-translation:v4' ||
         (!job.resultPayload && job.externalSourceKind !== 'knowledge-block') ||
         job.appliedTextId
     )

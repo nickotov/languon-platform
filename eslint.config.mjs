@@ -19,6 +19,7 @@ export default tseslint.config(
             '**/storybook-static/**',
             // Imported design snapshots are immutable reference artifacts, not runtime source.
             '.agent/features/**/designs/**/source/**',
+            '.agent/features/**/designs/**/magic-patterns-source/**',
             'apps/mobile/.expo/**',
         ],
     },

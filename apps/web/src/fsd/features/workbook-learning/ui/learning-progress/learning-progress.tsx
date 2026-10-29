@@ -1,3 +1,4 @@
+import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { Button, InlineAlert, LoadingState } from '@/fsd/shared/ui';
 import type { useWorkbookLearning } from '../../hooks/use-workbook-learning';
 import styles from './learning-progress.module.css';
@@ -30,6 +31,11 @@ export function LearningProgress({
     const action = completed ? labels.incomplete : labels.complete;
     return (
         <section className={styles.panel}>
+            <ActionConsentDialog
+                quote={model.evaluationConsent.quote}
+                onSend={model.evaluationConsent.confirm}
+                onClose={model.evaluationConsent.cancel}
+            />
             <p>{labels.private}</p>
             {completed && <p role='status'>{labels.completed}</p>}
             {state.updatedSinceCompletion && <p>{labels.updated}</p>}

@@ -62,6 +62,7 @@ export interface TextsWorkerStore {
                 | 'text-translation:v1'
                 | 'text-translation:v2'
                 | 'text-translation:v3'
+                | 'text-translation:v4'
             )[];
         },
         context: TextJobContext,

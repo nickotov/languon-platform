@@ -1,9 +1,18 @@
+import { z } from 'zod';
 import { BrowserApiError } from '@languon/browser-auth';
 import * as c from '@languon/contracts';
 import { resolveApiUrl } from '@/fsd/shared/api/api-url';
-type ErrorDetail = ReturnType<
-    typeof c.KnowledgeErrorResponseSchema.parse
->['error'];
+const learningErrorSchema = z.object({
+    error: z.object({
+        code: z.string().min(1).max(100),
+        message: z.string().max(2_000),
+        correlationId: z.string().max(200),
+        details: z
+            .object({ quote: c.ActionAllowanceQuoteSchema.optional() })
+            .optional(),
+    }),
+});
+type ErrorDetail = z.infer<typeof learningErrorSchema>['error'];
 export class LearningApiError extends BrowserApiError<ErrorDetail> {}
 async function request<T>(
     token: string,
@@ -59,7 +68,7 @@ async function request<T>(
     }
     const payload: unknown = await response.json().catch(() => undefined);
     if (!response.ok) {
-        const parsed = c.KnowledgeErrorResponseSchema.safeParse(payload);
+        const parsed = learningErrorSchema.safeParse(payload);
         throw new LearningApiError(
             response.status,
             parsed.success ? parsed.data.error : fallback,
@@ -129,6 +138,56 @@ export const learningApi = {
             '/events',
             c.WorkbookLearningEventResponseSchema,
             c.RecordWorkbookLearningEventRequestSchema.parse(input),
+            access,
+        ),
+    evaluate: (
+        token: string,
+        noteId: string,
+        input: c.RequestKnowledgeExerciseEvaluation,
+        access?: c.WorkbookLearningShareAccess,
+        confirmedQuoteId?: string,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            token,
+            noteId,
+            '/evaluations',
+            c.KnowledgeExerciseEvaluationResponseSchema,
+            {
+                ...c.RequestKnowledgeExerciseEvaluationSchema.parse(input),
+                ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+            },
+            access,
+            signal,
+        ),
+    evaluation: (
+        token: string,
+        noteId: string,
+        operationId: string,
+        access?: c.WorkbookLearningShareAccess,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            token,
+            noteId,
+            `/evaluations/${c.RequestKnowledgeExerciseEvaluationSchema.shape.operationId.parse(operationId)}`,
+            c.KnowledgeExerciseEvaluationResponseSchema,
+            undefined,
+            access,
+            signal,
+        ),
+    cancelEvaluation: (
+        token: string,
+        noteId: string,
+        operationId: string,
+        access?: c.WorkbookLearningShareAccess,
+    ) =>
+        request(
+            token,
+            noteId,
+            `/evaluations/${c.RequestKnowledgeExerciseEvaluationSchema.shape.operationId.parse(operationId)}/cancel`,
+            c.KnowledgeExerciseEvaluationResponseSchema,
+            {},
             access,
         ),
     completion: (

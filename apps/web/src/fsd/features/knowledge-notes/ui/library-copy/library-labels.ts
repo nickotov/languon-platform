@@ -1,5 +1,6 @@
 import type { Locale } from '@/fsd/shared/i18n';
 const values = {
+    done: ['Done', 'Готово', 'Listo', 'Terminé'],
     saveVocabulary: [
         'Save to dictionary',
         'Сохранить в словарь',

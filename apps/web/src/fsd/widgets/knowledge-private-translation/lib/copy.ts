@@ -2,6 +2,7 @@ import type { Locale } from '@/fsd/shared/i18n';
 const copy = {
     en: {
         title: 'Private translation',
+        remove: 'Show original view',
         noTargets:
             'All supported languages already have a prepared translation.',
         notice: 'Only you can see this translation. AI actions use your credits; the original note stays unchanged.',
@@ -18,6 +19,7 @@ const copy = {
     },
     ru: {
         title: 'Личный перевод',
+        remove: 'Показать оригинал',
         noTargets: 'Для всех поддерживаемых языков уже есть готовый перевод.',
         notice: 'Этот перевод виден только вам. Действия ИИ используют ваши кредиты; исходная заметка не изменяется.',
         language: 'Язык перевода',
@@ -32,6 +34,7 @@ const copy = {
     },
     fr: {
         title: 'Traduction privée',
+        remove: 'Afficher l’original',
         noTargets:
             'Toutes les langues prises en charge ont déjà une traduction préparée.',
         notice: 'Vous seul voyez cette traduction. Les actions IA utilisent vos crédits ; la note originale reste inchangée.',
@@ -47,6 +50,7 @@ const copy = {
     },
     es: {
         title: 'Traducción privada',
+        remove: 'Mostrar original',
         noTargets:
             'Todos los idiomas compatibles ya tienen una traducción preparada.',
         notice: 'Solo tú ves esta traducción. Las acciones de IA usan tus créditos; la nota original permanece igual.',

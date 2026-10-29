@@ -492,6 +492,17 @@ preview and atomic retry-safe copy operation; destination edits do not change
 the original block. Permanent source deletion erases associated private state,
 while independent notes and library items survive.
 
+Custom-block field authoring and inline exercise assessment reuse a server-only
+source-bound subtype of the admitted Texts AI worker, with dedicated Knowledge
+contracts, structured agents and HTTP routes. They create no Text item and are
+inaccessible through ordinary Text translation/history/apply APIs. Field suggestions
+require local Accept → block Apply → explicit note Save. Learner evaluation binds
+a private saved attempt and its source revision, publishing only through the
+current settled worker fence. Knowledge speech selects authorized snippets or a
+frozen owner draft, retaining the existing speech providers and accounting.
+[ADR-0052](adr/0052-source-bound-knowledge-ai-actions.md) records these boundaries;
+the active feature evidence owns implementation and verification status.
+
 Only validated YouTube identifiers and direct playable HTTPS URLs become video
 players. Remote video playback does not imply transcript access. Uploaded audio
 is bounded and parsed before storage; shared playback requires both a live grant

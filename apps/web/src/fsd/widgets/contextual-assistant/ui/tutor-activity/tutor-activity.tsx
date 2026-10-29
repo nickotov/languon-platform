@@ -12,7 +12,7 @@ export function TutorActivity({
     active: boolean;
     queued: boolean;
     text: string;
-    tool?: 'reading' | 'preparing' | undefined;
+    tool?: 'reading' | 'preparing' | 'preparingBlocks' | undefined;
 }) {
     const { locale } = useI18n();
     const copy = messagesCopy(locale);
@@ -24,8 +24,13 @@ export function TutorActivity({
         return () => clearTimeout(timer);
     }, [active, text]);
     if (!active) return null;
-    let state: 'waiting' | 'working' | 'writing' | 'reading' | 'preparing' =
-        'working';
+    let state:
+        | 'waiting'
+        | 'working'
+        | 'writing'
+        | 'reading'
+        | 'preparing'
+        | 'preparingBlocks' = 'working';
     if (queued) state = 'waiting';
     else if (tool) state = tool;
     else if (text && recentText === text) state = 'writing';

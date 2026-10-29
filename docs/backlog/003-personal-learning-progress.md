@@ -4,10 +4,11 @@ id: BL-003
 title: 'Personal learning progress'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-28
+updated: 2026-10-30
 original_tasks: '6 and 10'
 summary: Flashcard persistence verified and frontend progress implemented under feature 034; other exercise modes remain outstanding.
 evidence:
+    - .agent/features/059-interactive-workbooks/EVIDENCE.md
     - .agent/features/033-flashcard-training-backend/EVIDENCE.md
     - .agent/features/034-flashcard-training-web/EVIDENCE.md
     - docs/adr/0024-flashcard-learning-state-and-revisions.md
@@ -114,3 +115,13 @@ Foundational contracts are in progress; no completed workbook-progress behavior
 or runtime evidence is claimed. Existing flashcard/sentence evidence remains
 valid only for its recorded scope. Broader learning statistics and future exercise
 modes remain outside this slice; BL-003 stays in progress.
+
+## v16 partial-delivery checkpoint — 2026-10-30
+
+Private inline exercise attempts, prepared versus AI evaluation, separate hint/reveal observations, material revisions and explicit completion are implemented and verified for the knowledge-workbook slice. Initial progress loading preserves an answer already being edited. Broader cross-mode statistics and future exercise modes remain outstanding.
+
+See [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md)
+and its [fidelity observations](../../.agent/features/059-interactive-workbooks/evidence/v16-migration/FIDELITY.md).
+The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
+this broader backlog task remain **in progress**; this is partial-delivery evidence,
+not a terminal task disposition.

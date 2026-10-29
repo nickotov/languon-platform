@@ -62,6 +62,7 @@ export const backendExecutionFiles = Object.freeze([
     'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-retention.database.test.ts',
     'src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store.test.ts',
     'src/modules/knowledge/infrastructure/persistence/drizzle/private-translation.database.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts',
     'tests/integration/modules/texts/texts-job-store.test.ts',
     'tests/integration/modules/knowledge/knowledge-account-purge.test.ts',
     'tests/integration/modules/knowledge/knowledge-learning-purge.test.ts',
@@ -73,6 +74,19 @@ export const backendExecutionFiles = Object.freeze([
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
     {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts',
+        titles: [
+            'evaluates a private saved attempt through the real SDK and fenced publication (restricted=false)',
+            'evaluates a private saved attempt through the real SDK and fenced publication (restricted=true)',
+            'persists usable field suggestion through real SDK and settlement (restricted=false)',
+            'persists usable field suggestion through real SDK and settlement (restricted=true)',
+            'runs a bilingual-text field generate through the real bounded worker',
+            'runs a bilingual-text field check through the real bounded worker',
+            'rejects dispatched exercise feedback after material change without learner charge or publication',
+            'rejects dispatched exercise feedback after share revoked without learner charge or publication',
+        ],
+    },
+    {
         file: 'tests/integration/modules/conversations/conversation-accounting.test.ts',
         titles: [
             'preserves reduced quotes and minimum output admission when reserving block continuation',
@@ -81,10 +95,20 @@ export const requiredBackendScenarios = Object.freeze([
     {
         file: 'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         titles: [
-            "'operator' 'success' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'failure' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'failure' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
+        ],
+    },
+    {
+        file: 'tests/integration/modules/conversations/conversation-store.test.ts',
+        titles: [
+            'retains typed proposals separately and applies only to the frozen owner working branch without publishing',
+            'updates only an unchanged target and copies a stale update separately with fresh identities',
+            'captures exercise source passages and copies stale grounding independently',
         ],
     },
     {
@@ -106,12 +130,6 @@ export const requiredBackendScenarios = Object.freeze([
         file: 'tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts',
         titles: [
             'claims, dispatches, settles and publishes through least privilege grants',
-        ],
-    },
-    {
-        file: 'tests/integration/modules/conversations/conversation-store.test.ts',
-        titles: [
-            'retains typed proposals separately and applies only to the frozen owner working branch without publishing',
         ],
     },
     {
@@ -345,7 +363,7 @@ export const flows = [
     },
     {
         id: 'interactive-workbooks',
-        minimumTests: 2,
+        minimumTests: 3,
         app: 'assistant',
         file: 'interactive-workbooks.journeys.spec.ts',
         grep: '.',

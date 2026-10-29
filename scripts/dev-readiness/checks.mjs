@@ -29,6 +29,12 @@ export const capabilityRequirements = [
         ],
     },
     {
+        id: 'knowledge-actions',
+        criticalFlow: 'interactive-workbooks',
+        flag: 'TEXTS_AI_ENABLED',
+        formats: ['text-translation:v4'],
+    },
+    {
         id: 'conversation',
         criticalFlow: 'chat-lifecycle',
         formats: ['conversation:v1'],
@@ -65,7 +71,7 @@ export function selectCapabilities(
     for (const id of ids) {
         if (!registry.some((capability) => capability.id === id))
             throw new Error(
-                'Unknown readiness capability. Use dictionary, texts, conversation, interview or sentences.',
+                'Unknown readiness capability. Use dictionary, texts, knowledge-actions, conversation, interview or sentences.',
             );
     }
     return registry.filter((capability) =>

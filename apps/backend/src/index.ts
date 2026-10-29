@@ -1,3 +1,9 @@
+import { KnowledgeBlockFieldService } from './modules/knowledge/application/block-field-service';
+import { DrizzleKnowledgeBlockFieldStore } from './modules/knowledge/infrastructure/persistence/drizzle/block-field-store';
+import { createKnowledgeBlockFieldRoutes } from './modules/knowledge/interface/http/block-field-routes';
+import { KnowledgeExerciseEvaluationService } from './modules/knowledge/application/exercise-evaluation-service';
+import { DrizzleKnowledgeExerciseEvaluationStore } from './modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-store';
+import { createKnowledgeExerciseEvaluationRoutes } from './modules/knowledge/interface/http/exercise-evaluation-routes';
 import { createKnowledgeSentenceComposition } from './modules/knowledge/infrastructure/knowledge-sentence-composition';
 import { eraseKnowledgeSentenceJobs } from './modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-cleanup';
 import { eraseKnowledgeTranslationJobs } from './modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle';
@@ -68,7 +74,10 @@ import {
 import { createTextSelectionApiModule } from './modules/dictionaries/infrastructure/text-selection-composition';
 import { createTextSelectionRoutes } from './modules/dictionaries/interface/http/text-selection.routes';
 import { BoundedDictionaryRateLimiter } from './modules/dictionaries/infrastructure/rate-limit/bounded-dictionary-rate-limiter';
-import { textsAiAdmissionsEnabled } from './modules/text-ai/infrastructure/text-ai-composition';
+import {
+    textsAiAdmissionsEnabled,
+    knowledgeTextAiAdmissionsEnabled,
+} from './modules/text-ai/infrastructure/text-ai-composition';
 import { defaultTextAiAvailabilityPolicy } from './modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
 import { DrizzleTextAiAdmissionParticipant } from './modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant';
 import { DrizzleSentenceLibraryStore } from './modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-library-store';
@@ -306,6 +315,7 @@ const texts = createTextsContentComposition({
     loadProposal: loadTextTranslationProposal,
 });
 const textsAi = createTextsAiComposition({
+    knowledgeActionsEnabled: knowledgeTextAiAdmissionsEnabled(process.env),
     burstLimiter: generationBurstLimiter,
     database: authentication.productDependencies.database,
     enabled: textsEnabled,
@@ -400,6 +410,29 @@ const app = createApp({
             ),
             authenticate: authenticateTextActor,
             rateLimiter: authentication.productDependencies.rateLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgeBlockFields: createKnowledgeBlockFieldRoutes({
+        service: new KnowledgeBlockFieldService({
+            store: new DrizzleKnowledgeBlockFieldStore(
+                textsAi.store.knowledgeActionPersistence(),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+            burstLimiter: generationBurstLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgeExerciseEvaluations: createKnowledgeExerciseEvaluationRoutes({
+        service: new KnowledgeExerciseEvaluationService({
+            store: new DrizzleKnowledgeExerciseEvaluationStore(
+                textsAi.store.knowledgeActionPersistence(),
+                new KnowledgeShareCrypto(environment.DICTIONARY_HMAC_SECRET),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+            burstLimiter: generationBurstLimiter,
         }),
         policy: authentication.options.policy,
     }),

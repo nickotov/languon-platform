@@ -84,7 +84,7 @@ it.each(['ru', 'fr', 'de'])(
         fireEvent.change(screen.getByLabelText('Translated passage'), {
             target: { value: 'Updated translation.' },
         });
-        fireEvent.click(screen.getByRole('button', { name: 'Apply block' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         const result = apply.mock.calls[0]?.[0];
         if (result?.type !== 'bilingual-text')
             throw new Error('Expected a bilingual block.');
@@ -204,7 +204,7 @@ describe('learning block editor', () => {
             target: { value: 'Use the past tense.' },
         });
         expect(onChange).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Apply block' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         await waitFor(() => expect(onChange).toHaveBeenCalled());
         expect(onChange.mock.lastCall?.[0]).toMatchObject({ schemaVersion: 2 });
         expect(ref.current?.getSnapshot().content).toContain(
@@ -219,7 +219,7 @@ describe('learning block editor', () => {
         fireEvent.change(screen.getByLabelText('Rule'), {
             target: { value: 'Use the present tense.' },
         });
-        fireEvent.click(screen.getByRole('button', { name: 'Apply block' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         expect(ref.current?.getSnapshot().content).toContain(
             'Use the present tense.',
         );
@@ -289,10 +289,10 @@ describe('learning block editor', () => {
             screen.getByLabelText('Upload audio (WAV or MP3, up to 5 MiB)'),
             { target: { files: [file] } },
         );
-        await screen.findByRole('button', { name: 'Apply block' });
+        await screen.findByRole('button', { name: 'Apply changes' });
         expect(uploadAudio).toHaveBeenCalledWith(file);
         expect(onChange).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Apply block' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         await waitFor(() => expect(onChange).toHaveBeenCalled());
         const saved = onChange.mock.lastCall?.[0];
         expect(saved).toMatchObject({ schemaVersion: 2 });
@@ -344,7 +344,7 @@ it('authors a manual exercise with selected source passages and retains them on 
     fireEvent.click(
         screen.getByRole('checkbox', { name: 'The train leaves at noon.' }),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Apply block' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(JSON.stringify(onChange.mock.lastCall?.[0])).toContain(
         '"source":{"blockId":"' +
@@ -531,5 +531,42 @@ it('applies a captured audio transcript atomically and rejects stale or retarget
     );
     expect(editor.current?.getSnapshot().content).toContain(
         'Unrelated newer material.',
+    );
+});
+
+it('edits exactly one video description control and preserves that value on Apply', () => {
+    const block = LearningBlockSchema.parse({
+        id,
+        type: 'video',
+        source: { kind: 'youtube', videoId: 'dQw4w9WgXcQ' },
+        description: 'Original scene description.',
+    });
+    const onApply = vi.fn(() => true);
+    render(
+        <BlockFormDialog
+            kind='video'
+            block={block}
+            labels={defaultAuthoringLabels}
+            onClose={() => {}}
+            onApply={onApply}
+            sources={[]}
+        />,
+    );
+    const descriptions = screen.getAllByLabelText('Author’s description', {
+        exact: true,
+    });
+    expect(descriptions).toHaveLength(1);
+    fireEvent.change(descriptions[0]!, {
+        target: { value: 'A flower opens in the morning.' },
+    });
+    fireEvent.click(
+        screen.getByRole('button', { name: 'Apply changes', exact: true }),
+    );
+    expect(onApply).toHaveBeenCalledWith(
+        expect.objectContaining({
+            id,
+            type: 'video',
+            description: 'A flower opens in the morning.',
+        }),
     );
 });

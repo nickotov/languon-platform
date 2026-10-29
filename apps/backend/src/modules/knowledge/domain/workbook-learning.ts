@@ -59,7 +59,16 @@ function sourceDescriptor(
                 source.type === 'audio'
                     ? { assetId: source.assetId }
                     : source.source,
+            ...(source.type === 'video' && source.description
+                ? { description: source.description }
+                : {}),
             language: source.transcript!.language,
+            ...(source.type === 'audio' &&
+            source.language &&
+            source.language.toLowerCase() !==
+                source.transcript!.language.toLowerCase()
+                ? { audioLanguage: source.language }
+                : {}),
             passages: ids.map((id) => {
                 const segment = segments.find((item) => item.id === id);
                 if (!segment)

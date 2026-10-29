@@ -1,19 +1,28 @@
-import { useRef, useState, type Ref } from 'react';
-import { VideoLearningBlockSchema } from '@languon/contracts';
-import type { LearningBlock, LearningTranscript } from '@languon/contracts';
+import { useRef, useState } from 'react';
+import type { LearningBlock } from '@languon/contracts';
 import { Button } from '@/fsd/shared/ui/button/button';
 import { safeAudioUrl } from '../../lib/safe-audio-url';
-import type { LearningBlockViewProps, VideoReplaySource } from '../../types';
+import type { LearningBlockViewProps } from '../../types';
+import { AudioPlayer } from './audio-player';
+import { Transcript } from './transcript';
+import { VideoPlayer, type VideoSeek } from './video-player';
+import mediaStyles from './media-block.module.css';
+export { Transcript } from './transcript';
+export { VideoPlayer, type VideoSeek } from './video-player';
 import styles from '../block-layout.module.css';
 
 type Media = Extract<LearningBlock, { type: 'audio' | 'video' }>;
 export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
     const { block, labels } = props;
     const player = useRef<HTMLMediaElement | null>(null);
-    const [transcriptVisible, setTranscriptVisible] = useState(false);
+    const preview = props.variant === 'compact' || props.variant === 'review';
+    const [transcriptVisible, setTranscriptVisible] = useState(
+        props.variant === 'review',
+    );
     const [hintVisible, setHintVisible] = useState(false);
     const [failed, setFailed] = useState(false);
     const [videoSeek, setVideoSeek] = useState<VideoSeek>();
+    const [position, setPosition] = useState(0);
     const audioUrl = safeAudioUrl(props.audioUrl);
     const transcript = block.transcript;
     const hasTranscript = transcript !== undefined;
@@ -22,6 +31,22 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
         ? labels.hideTranscript
         : labels.showTranscript;
     const mediaTitle = block.title ?? labels.kinds[block.type];
+    const previewTranscript =
+        props.variant === 'compact' && transcript
+            ? { ...transcript, segments: transcript.segments.slice(0, 2) }
+            : transcript;
+    function handlePosition(seconds: number) {
+        setPosition(seconds);
+    }
+    function handlePlaybackStart(pause: () => void) {
+        setFailed(false);
+        if (props.playback?.onMediaStart)
+            props.playback.onMediaStart({
+                id: `${props.scope ?? block.id}:${block.id}:media`,
+                pause,
+            });
+        else props.playback?.onStop?.();
+    }
     function handleFailure() {
         setFailed(true);
     }
@@ -55,19 +80,34 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
     }
     let media;
     if (block.type === 'audio') {
-        media = audioUrl ? (
-            <audio
-                aria-label={mediaTitle}
-                ref={handlePlayer}
-                className={styles.media}
-                controls
-                preload='none'
-                src={audioUrl}
-                onError={handleFailure}
-            />
-        ) : (
-            <p role='status'>{labels.mediaUnavailable}</p>
-        );
+        media =
+            audioUrl && props.variant !== undefined ? (
+                <AudioPlayer
+                    src={audioUrl}
+                    title={mediaTitle}
+                    labels={labels}
+                    mediaRef={handlePlayer}
+                    onError={handleFailure}
+                    onPosition={handlePosition}
+                    onStart={handlePlaybackStart}
+                />
+            ) : audioUrl ? (
+                <audio
+                    aria-label={mediaTitle}
+                    ref={handlePlayer}
+                    className={styles.media}
+                    controls
+                    preload='none'
+                    src={audioUrl}
+                    onError={handleFailure}
+                />
+            ) : (
+                <p role='status' className={mediaStyles.unprepared}>
+                    {block.assetId
+                        ? labels.mediaUnavailable
+                        : (labels.noRecording ?? labels.mediaUnavailable)}
+                </p>
+            );
     } else {
         media = (
             <VideoPlayer
@@ -78,9 +118,21 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
                 onError={handleFailure}
                 unavailableLabel={labels.mediaUnavailable}
                 openSourceLabel={labels.openVideoSource}
+                deferPlayback={props.variant !== undefined}
+                playLabel={labels.play ?? labels.replay}
+                onPlaybackStart={handlePlaybackStart}
             />
         );
     }
+    const showPreparedTranscript =
+        preview && (block.type === 'audio' || props.variant === 'review');
+    let sourceUrl: string | undefined;
+    if (block.type === 'video') {
+        if (block.source.kind === 'youtube')
+            sourceUrl = `https://www.youtube.com/watch?v=${block.source.videoId}`;
+        else sourceUrl = block.source.url;
+    }
+    const sourceHost = sourceUrl ? new URL(sourceUrl).hostname : undefined;
     const canReplay = block.type === 'video' || Boolean(audioUrl);
     return (
         <div className={styles.stack}>
@@ -90,33 +142,66 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
                     {labels.mediaUnavailable}
                 </p>
             ) : null}
-            <div className={styles.actions}>
-                {hasTranscript ? (
-                    <Button
-                        type='button'
-                        variant='secondary'
-                        onClick={handleTranscript}
-                        aria-expanded={transcriptVisible}
-                        disabled={props.interactionsDisabled}
+            {block.type === 'video' &&
+            block.description &&
+            props.variant !== 'compact' ? (
+                <p className={mediaStyles.description}>{block.description}</p>
+            ) : null}
+            {sourceUrl && props.variant !== undefined ? (
+                <div className={mediaStyles.source}>
+                    <span>{sourceHost}</span>
+                    <a
+                        href={sourceUrl}
+                        target='_blank'
+                        rel='noopener noreferrer nofollow'
                     >
-                        {transcriptLabel}
-                    </Button>
-                ) : null}
-                {hasHint ? (
-                    <Button
-                        type='button'
-                        variant='secondary'
-                        onClick={handleHint}
-                        aria-expanded={hintVisible}
-                        disabled={props.interactionsDisabled}
-                    >
-                        {labels.hint}
-                    </Button>
-                ) : null}
-            </div>
-            {transcriptVisible && transcript ? (
+                        {labels.openVideoSource}
+                    </a>
+                </div>
+            ) : null}
+            {!transcript && labels.missingTranscript ? (
+                <p className={mediaStyles.description}>
+                    {labels.missingTranscript}
+                </p>
+            ) : null}
+            {block.type === 'video' &&
+            (props.variant === 'author' || props.variant === 'review') &&
+            labels.videoNotWatched ? (
+                <p className={mediaStyles.description}>
+                    {labels.videoNotWatched}
+                </p>
+            ) : null}
+            {!preview ? (
+                <div className={styles.actions}>
+                    {hasTranscript ? (
+                        <Button
+                            type='button'
+                            variant='secondary'
+                            onClick={handleTranscript}
+                            aria-expanded={transcriptVisible}
+                            disabled={props.interactionsDisabled}
+                        >
+                            {transcriptLabel}
+                        </Button>
+                    ) : null}
+                    {hasHint ? (
+                        <Button
+                            type='button'
+                            variant='secondary'
+                            onClick={handleHint}
+                            aria-expanded={hintVisible}
+                            disabled={props.interactionsDisabled}
+                        >
+                            {labels.hint}
+                        </Button>
+                    ) : null}
+                </div>
+            ) : null}
+            {(transcriptVisible || showPreparedTranscript) &&
+            previewTranscript ? (
                 <Transcript
-                    transcript={transcript}
+                    transcript={previewTranscript}
+                    position={position}
                     replayLabel={labels.replay}
                     onReplay={canReplay ? handleReplay : undefined}
                 />
@@ -127,134 +212,6 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
                     replayLabel={labels.replay}
                     onReplay={canReplay ? handleReplay : undefined}
                 />
-            ) : null}
-        </div>
-    );
-}
-
-export interface VideoSeek {
-    seconds: number;
-    revision: number;
-}
-
-/** Fixed provider URLs only; seek reloads YouTube without accepting embed HTML or API scripts. */
-export function VideoPlayer({
-    source,
-    title,
-    seek,
-    mediaRef,
-    onError,
-    unavailableLabel,
-    openSourceLabel,
-}: {
-    source: VideoReplaySource;
-    title: string;
-    seek?: VideoSeek | undefined;
-    mediaRef?: Ref<HTMLVideoElement> | undefined;
-    onError?: (() => void) | undefined;
-    unavailableLabel: string;
-    openSourceLabel: string;
-}) {
-    const [failed, setFailed] = useState(false);
-    function handleFailure() {
-        setFailed(true);
-        onError?.();
-    }
-    const validated = VideoLearningBlockSchema.shape.source.safeParse(source);
-    if (!validated.success) return <p role='status'>{unavailableLabel}</p>;
-    const safeSource = validated.data;
-    const videoClass = `${styles.media} ${styles.video}`;
-    if (safeSource.kind === 'url')
-        return (
-            <>
-                <video
-                    aria-label={title}
-                    ref={mediaRef}
-                    className={videoClass}
-                    controls
-                    preload='none'
-                    src={safeSource.url}
-                    onError={handleFailure}
-                />
-                {failed ? (
-                    <a
-                        href={safeSource.url}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                    >
-                        {openSourceLabel}
-                    </a>
-                ) : null}
-            </>
-        );
-    const seconds =
-        seek && Number.isFinite(seek.seconds) && seek.seconds >= 0
-            ? Math.floor(seek.seconds)
-            : undefined;
-    const embedUrl = `https://www.youtube-nocookie.com/embed/${safeSource.videoId}${seconds === undefined ? '' : `?start=${seconds}&autoplay=1`}`;
-    return (
-        <iframe
-            key={seek?.revision ?? 0}
-            title={title}
-            className={videoClass}
-            src={embedUrl}
-            loading='lazy'
-            referrerPolicy='no-referrer'
-            sandbox='allow-scripts allow-same-origin allow-presentation'
-            allow='autoplay; encrypted-media; picture-in-picture'
-            allowFullScreen
-        />
-    );
-}
-
-export function Transcript({
-    transcript,
-    replayLabel,
-    onReplay,
-}: {
-    transcript: LearningTranscript;
-    replayLabel: string;
-    onReplay?: ((seconds: number) => void) | undefined;
-}) {
-    return (
-        <div className={styles.panel} lang={transcript.language} dir='auto'>
-            {transcript.segments.map((segment) => (
-                <TranscriptSegment
-                    key={segment.id}
-                    segment={segment}
-                    replayLabel={replayLabel}
-                    onReplay={onReplay}
-                />
-            ))}
-        </div>
-    );
-}
-function TranscriptSegment({
-    segment,
-    replayLabel,
-    onReplay,
-}: {
-    segment: LearningTranscript['segments'][number];
-    replayLabel: string;
-    onReplay?: ((seconds: number) => void) | undefined;
-}) {
-    function handleReplay() {
-        if (segment.timing) onReplay?.(segment.timing.startSeconds);
-    }
-    const canReplay = segment.timing !== undefined && onReplay !== undefined;
-    return (
-        <div className={styles.stack}>
-            <p className={styles.text}>{segment.text}</p>
-            {canReplay ? (
-                <div>
-                    <Button
-                        type='button'
-                        variant='ghost'
-                        onClick={handleReplay}
-                    >
-                        {replayLabel}
-                    </Button>
-                </div>
             ) : null}
         </div>
     );

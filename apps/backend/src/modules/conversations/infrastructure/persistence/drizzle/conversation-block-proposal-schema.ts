@@ -37,6 +37,12 @@ export const conversationBlockProposalsTable = pgTable(
             }),
         baseBranchVersion: integer('base_branch_version').notNull(),
         blocks: jsonb('blocks').$type<LearningBlock[]>().notNull(),
+        targetBlockId: uuid('target_block_id'),
+        targetSnapshot: jsonb('target_snapshot').$type<LearningBlock>(),
+        dependencySnapshots: jsonb('dependency_snapshots')
+            .$type<LearningBlock[]>()
+            .notNull()
+            .default(sql`'[]'::jsonb`),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
         appliedAt: timestamp('applied_at', { withTimezone: true }),
         appliedBranchVersion: integer('applied_branch_version'),

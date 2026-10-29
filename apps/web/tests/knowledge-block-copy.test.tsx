@@ -246,10 +246,15 @@ it.each([
                         expectedVersion: 4,
                     },
                 });
+                expect(request.blockIds).toEqual(
+                    kind === 'exercise'
+                        ? ['44444444-4444-4444-8444-444444444444', id]
+                        : [id],
+                );
                 return Response.json({
                     branch: null,
-                    selectedCount: 1,
-                    blockCount: 1,
+                    selectedCount: request.blockIds.length,
+                    blockCount: request.blockIds.length,
                     dependencyCount: 0,
                     mediaCount: 1,
                     replayed: false,
@@ -328,7 +333,10 @@ it.each([
         );
         fireEvent.click(
             await screen.findByRole('button', {
-                name: 'Block settings: Uploaded recording',
+                name:
+                    kind === 'exercise'
+                        ? 'Block settings: Source recording'
+                        : 'Block settings: Uploaded recording',
             }),
         );
         const duplicate = await screen.findByRole('menuitem', {

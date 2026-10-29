@@ -6,6 +6,203 @@ import {
 
 // Small feature-owned vocabulary follows knowledgeProposalLabels, including forms.
 const words: Record<string, [string, string, string]> = {
+    Languages: ['Языки', 'Idiomas', 'Langues'],
+    'Uses author credits': [
+        'Использует кредиты автора',
+        'Usa créditos del autor',
+        'Utilise les crédits de l’auteur',
+    ],
+    'Edit vocabulary block': [
+        'Редактирование словаря',
+        'Editar bloque de vocabulario',
+        'Modifier le bloc de vocabulaire',
+    ],
+    'Edit grammar block': [
+        'Редактирование грамматики',
+        'Editar bloque de gramática',
+        'Modifier le bloc de grammaire',
+    ],
+    'Edit bilingual text block': [
+        'Редактирование двуязычного текста',
+        'Editar bloque de texto bilingüe',
+        'Modifier le bloc de texte bilingue',
+    ],
+    'Edit audio block': [
+        'Редактирование аудио',
+        'Editar bloque de audio',
+        'Modifier le bloc audio',
+    ],
+    'Edit video block': [
+        'Редактирование видео',
+        'Editar bloque de vídeo',
+        'Modifier le bloc vidéo',
+    ],
+    'Edit exercises block': [
+        'Редактирование упражнений',
+        'Editar bloque de ejercicios',
+        'Modifier le bloc d’exercices',
+    ],
+
+    'The original changed. Review every prepared translation before applying changes.':
+        [
+            'Оригинал изменён. Проверьте все подготовленные переводы перед применением изменений.',
+            'El original ha cambiado. Revisa todas las traducciones preparadas antes de aplicar los cambios.',
+            'L’original a changé. Vérifiez toutes les traductions préparées avant d’appliquer les modifications.',
+        ],
+    'Save to dictionary': [
+        'Сохранить в словарь',
+        'Guardar en diccionario',
+        'Enregistrer dans un dictionnaire',
+    ],
+    'Save to Texts': [
+        'Сохранить в Тексты',
+        'Guardar en Textos',
+        'Enregistrer dans Textes',
+    ],
+    Play: ['Воспроизвести', 'Reproducir', 'Lire'],
+    Stop: ['Остановить', 'Detener', 'Arrêter'],
+    Expand: ['Развернуть', 'Expandir', 'Déplier'],
+    Collapse: ['Свернуть', 'Contraer', 'Replier'],
+    Check: ['Проверить', 'Comprobar', 'Vérifier'],
+    'No recording prepared': [
+        'Запись не подготовлена',
+        'Sin grabación preparada',
+        'Aucun enregistrement préparé',
+    ],
+    'Prepared translations': [
+        'Подготовленные переводы',
+        'Traducciones preparadas',
+        'Traductions préparées',
+    ],
+    'Not answered': ['Нет ответа', 'Sin responder', 'Sans réponse'],
+    attempted: ['попыток', 'intentadas', 'tentées'],
+    'The tutor uses only the transcript and description you provide — it does not watch videos.':
+        [
+            'Помощник использует только предоставленные расшифровку и описание — он не смотрит видео.',
+            'El tutor utiliza solo la transcripción y descripción que proporcionas; no ve los vídeos.',
+            'Le tuteur utilise uniquement la transcription et la description fournies ; il ne regarde pas les vidéos.',
+        ],
+    'No transcript has been prepared.': [
+        'Расшифровка не подготовлена.',
+        'No se ha preparado una transcripción.',
+        'Aucune transcription préparée.',
+    ],
+    'Apply changes': [
+        'Применить изменения',
+        'Aplicar cambios',
+        'Appliquer les modifications',
+    ],
+    'No recording yet. Add audio when you are ready.': [
+        'Записи пока нет. Добавьте аудио, когда будете готовы.',
+        'Todavía no hay grabación. Añade audio cuando quieras.',
+        'Pas encore d’enregistrement. Ajoutez un audio quand vous le souhaitez.',
+    ],
+    Questions: ['Вопросы', 'Preguntas', 'Questions'],
+
+    'Expand editor': [
+        'Развернуть редактор',
+        'Ampliar editor',
+        'Agrandir l’éditeur',
+    ],
+    'Collapse editor': [
+        'Свернуть редактор',
+        'Reducir editor',
+        'Réduire l’éditeur',
+    ],
+    Entry: ['Слово', 'Entrada', 'Entrée'],
+    Item: ['Элемент', 'Elemento', 'Élément'],
+    questions: ['вопросов', 'preguntas', 'questions'],
+    'Expand all': ['Развернуть все', 'Expandir todo', 'Tout déplier'],
+    'Collapse all': ['Свернуть все', 'Contraer todo', 'Tout replier'],
+    'Show all translations': [
+        'Показать все переводы',
+        'Mostrar todas las traducciones',
+        'Afficher toutes les traductions',
+    ],
+    'Hide all translations': [
+        'Скрыть все переводы',
+        'Ocultar todas las traducciones',
+        'Masquer toutes les traductions',
+    ],
+    'Write here…': ['Напишите здесь…', 'Escribe aquí…', 'Écrivez ici…'],
+    'Add question': [
+        'Добавить вопрос',
+        'Añadir pregunta',
+        'Ajouter une question',
+    ],
+    'Author’s description': [
+        'Описание автора',
+        'Descripción del autor',
+        'Description de l’auteur',
+    ],
+    'Discard changes?': [
+        'Отменить изменения?',
+        '¿Descartar cambios?',
+        'Abandonner les modifications ?',
+    ],
+    'Your changes have not been applied to the sheet.': [
+        'Изменения ещё не применены к листу.',
+        'Los cambios no se han aplicado a la hoja.',
+        'Les modifications n’ont pas été appliquées à la feuille.',
+    ],
+    'Keep editing': [
+        'Продолжить редактирование',
+        'Seguir editando',
+        'Continuer à modifier',
+    ],
+    Discard: ['Отменить изменения', 'Descartar', 'Abandonner'],
+    'Changes stay in this editor until you apply them.': [
+        'Изменения останутся в редакторе, пока вы их не примените.',
+        'Los cambios se quedan aquí hasta que los apliques.',
+        'Les modifications restent ici jusqu’à leur application.',
+    ],
+    'No changes yet.': [
+        'Пока нет изменений.',
+        'Sin cambios todavía.',
+        'Aucune modification.',
+    ],
+    'Check translation': [
+        'Проверить перевод',
+        'Comprobar traducción',
+        'Vérifier la traduction',
+    ],
+    'Generate translation': [
+        'Создать перевод',
+        'Generar traducción',
+        'Générer la traduction',
+    ],
+    'Checking with AI…': [
+        'Проверяем с ИИ…',
+        'Comprobando con IA…',
+        'Vérification avec l’IA…',
+    ],
+    'AI checking failed. Your edits are kept.': [
+        'Не удалось проверить с ИИ. Изменения сохранены.',
+        'No se pudo comprobar con IA. Se conservan tus cambios.',
+        'Échec de la vérification. Vos modifications sont conservées.',
+    ],
+    'Not enough credits. Your edits are kept.': [
+        'Недостаточно кредитов. Изменения сохранены.',
+        'Créditos insuficientes. Se conservan tus cambios.',
+        'Crédits insuffisants. Vos modifications sont conservées.',
+    ],
+    'This field or its source changed. Check again before applying this suggestion.':
+        [
+            'Поле или источник изменились. Проверьте снова, прежде чем принять предложение.',
+            'El campo o su origen ha cambiado. Vuelve a comprobarlo antes de aceptar.',
+            'Le champ ou sa source a changé. Vérifiez à nouveau avant d’accepter.',
+        ],
+    'Check again': [
+        'Проверить снова',
+        'Volver a comprobar',
+        'Vérifier à nouveau',
+    ],
+    Dismiss: ['Отклонить', 'Descartar', 'Ignorer'],
+    'Looks correct': ['Всё верно', 'Parece correcto', 'Cela semble correct'],
+    Current: ['Сейчас', 'Actual', 'Actuel'],
+    Suggested: ['Предложение', 'Sugerencia', 'Suggestion'],
+    Accept: ['Принять', 'Aceptar', 'Accepter'],
+
     'Block settings': [
         'Настройки блока',
         'Opciones del bloque',
@@ -271,7 +468,7 @@ export function localizedBlockLabels(locale: Locale): BlockAuthoringLabels {
     }
     const view = Object.fromEntries(
         Object.entries(defaultAuthoringLabels.view)
-            .filter(([key]) => key !== 'kinds')
+            .filter(([key]) => key !== 'kinds' && key !== 'exerciseKinds')
             .map(([key, value]) => [key, translate(value as string)]),
     );
     const kinds = Object.fromEntries(
@@ -287,6 +484,14 @@ export function localizedBlockLabels(locale: Locale): BlockAuthoringLabels {
     return {
         ...actions,
         field: translate,
-        view: { ...view, kinds },
+        view: {
+            ...view,
+            kinds,
+            exerciseKinds: Object.fromEntries(
+                Object.entries(
+                    defaultAuthoringLabels.view.exerciseKinds ?? {},
+                ).map(([key, value]) => [key, translate(value)]),
+            ),
+        },
     } as BlockAuthoringLabels;
 }

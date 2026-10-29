@@ -1,4 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import { KnowledgeBlockFieldService } from '../../src/modules/knowledge/application/block-field-service';
+import { KnowledgeExerciseEvaluationService } from '../../src/modules/knowledge/application/exercise-evaluation-service';
+import { DrizzleKnowledgeBlockFieldStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/block-field-store';
+import { DrizzleKnowledgeExerciseEvaluationStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-store';
+import { createKnowledgeBlockFieldRoutes } from '../../src/modules/knowledge/interface/http/block-field-routes';
+import { createKnowledgeExerciseEvaluationRoutes } from '../../src/modules/knowledge/interface/http/exercise-evaluation-routes';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
     TextLanguageSchema,
@@ -81,8 +87,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
             model?: unknown;
             messages?: Array<{ role?: unknown; content?: unknown }>;
         };
-        let payload:
-            { targetLanguage?: unknown; segments?: unknown } | undefined;
+        let payload: Record<string, unknown> | undefined;
         for (const message of body.messages ?? []) {
             if (message.role !== 'user') continue;
             const parts =
@@ -98,32 +103,97 @@ export function createKnowledgePrivateTranslationFixture(input: {
                     if (
                         parsed &&
                         typeof parsed === 'object' &&
-                        'segments' in parsed
+                        ('segments' in parsed ||
+                            'action' in parsed ||
+                            'exercise' in parsed)
                     )
-                        payload = parsed;
+                        payload = parsed as Record<string, unknown>;
                 } catch {
                     /* Inline schema instructions are not source input. */
                 }
             }
         }
-        if (
-            !payload ||
-            !Array.isArray(payload.segments) ||
-            payload.segments.length > 500
-        )
-            throw new Error(
-                'Missing bounded private translation fixture input',
-            );
-        const language = TextLanguageSchema.parse(payload.targetLanguage);
-        const translation = payload.segments.map((value) => {
-            const segment = TextSourceSegmentSchema.parse(value);
-            return {
-                pairId: segment.pairId,
-                text: segment.text.startsWith('\n\n')
-                    ? `\n\n[${language}] ${segment.text.slice(2)}`
-                    : `[${language}] ${segment.text}`,
+        if (!payload)
+            throw new Error('Missing bounded knowledge-action fixture input');
+        let result: unknown;
+        if ('action' in payload) {
+            const source = String(payload.sourceText ?? '');
+            const target = String(payload.targetLanguage ?? '');
+            const translations: Record<string, string> = {
+                travail: 'работа',
+                joie: 'радость',
+                ménage: 'уборка',
+                carrelage: 'плитка',
+                poisson: 'рыба',
+                nourriture: 'корм',
             };
-        });
+            const expected =
+                target === 'ru' && translations[source]
+                    ? translations[source]
+                    : `[${target}] ${source}`;
+            result =
+                payload.action === 'check' && payload.currentValue === expected
+                    ? {
+                          status: 'correct',
+                          explanation:
+                              'The translation fits this source phrase.',
+                      }
+                    : {
+                          status: 'suggested',
+                          proposedValue: expected,
+                          explanation:
+                              'Use this translation for the selected source phrase.',
+                      };
+        } else if ('exercise' in payload) {
+            const exercise = payload.exercise as { referenceAnswer?: string };
+            const learnerAnswer = payload.learnerAnswer;
+            let answer =
+                typeof learnerAnswer === 'string'
+                    ? learnerAnswer
+                    : JSON.stringify(learnerAnswer);
+            if (
+                learnerAnswer &&
+                typeof learnerAnswer === 'object' &&
+                'text' in learnerAnswer
+            )
+                answer = String(learnerAnswer.text);
+            const alternative = answer === 'Bonjour.';
+            const correct =
+                alternative ||
+                answer?.toLowerCase().replace(/[.!]/gu, '').trim() ===
+                    exercise.referenceAnswer
+                        ?.toLowerCase()
+                        .replace(/[.!]/gu, '')
+                        .trim();
+            result = {
+                status: correct ? 'correct' : 'incorrect',
+                feedback: alternative
+                    ? 'A valid alternative expresses the reference meaning.'
+                    : correct
+                      ? 'Your answer expresses the reference meaning.'
+                      : 'Review the source passage and try again.',
+                validAlternative: alternative,
+            };
+        } else {
+            if (
+                !Array.isArray(payload.segments) ||
+                payload.segments.length > 500
+            )
+                throw new Error(
+                    'Missing bounded private translation fixture input',
+                );
+            const language = TextLanguageSchema.parse(payload.targetLanguage);
+            const translation = payload.segments.map((value) => {
+                const segment = TextSourceSegmentSchema.parse(value);
+                return {
+                    pairId: segment.pairId,
+                    text: segment.text.startsWith('\n\n')
+                        ? `\n\n[${language}] ${segment.text.slice(2)}`
+                        : `[${language}] ${segment.text}`,
+                };
+            });
+            result = { translation };
+        }
         await delay(200, undefined, { signal: request.signal });
         return Response.json({
             id: `synthetic-private-${randomUUID()}`,
@@ -135,7 +205,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
                     index: 0,
                     message: {
                         role: 'assistant',
-                        content: JSON.stringify({ translation }),
+                        content: JSON.stringify(result),
                     },
                     finish_reason: 'stop',
                 },
@@ -158,7 +228,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
         userConcurrency: 1,
         maxAttempts: 2,
         retryDelayMs: 100,
-        supportedFormats: ['text-translation:v3'],
+        supportedFormats: ['text-translation:v3', 'text-translation:v4'],
         provider: {
             async run(call) {
                 const previous = globalThis.fetch;
@@ -172,6 +242,29 @@ export function createKnowledgePrivateTranslationFixture(input: {
         },
     });
     return {
+        fieldRoutes: createKnowledgeBlockFieldRoutes({
+            policy: input.policy,
+            service: new KnowledgeBlockFieldService({
+                store: new DrizzleKnowledgeBlockFieldStore(
+                    ai.store.knowledgeActionPersistence(),
+                ),
+                authenticate: input.authenticate,
+                rateLimiter: input.rateLimiter,
+                burstLimiter,
+            }),
+        }),
+        evaluationRoutes: createKnowledgeExerciseEvaluationRoutes({
+            policy: input.policy,
+            service: new KnowledgeExerciseEvaluationService({
+                store: new DrizzleKnowledgeExerciseEvaluationStore(
+                    ai.store.knowledgeActionPersistence(),
+                    new KnowledgeShareCrypto(input.secret),
+                ),
+                authenticate: input.authenticate,
+                rateLimiter: input.rateLimiter,
+                burstLimiter,
+            }),
+        }),
         routes: createKnowledgePrivateTranslationRoutes({
             policy: input.policy,
             service: new KnowledgePrivateTranslationService({
@@ -213,7 +306,10 @@ export function createKnowledgePrivateTranslationFixture(input: {
                     textsExecutionRevision: 1,
                     textsCapacityRevision: 1,
                     creditSettlementRevision: 1,
-                    textAiSupportedFormats: ['text-translation:v3'],
+                    textAiSupportedFormats: [
+                        'text-translation:v3',
+                        'text-translation:v4',
+                    ],
                 })
                 .onConflictDoUpdate({
                     target: observations.id,

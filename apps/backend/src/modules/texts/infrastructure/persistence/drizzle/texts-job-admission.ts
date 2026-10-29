@@ -353,6 +353,8 @@ export async function get(
 
     return transaction(persistence, async (tx) => {
         const job = await find(persistence, tx, ownerId, jobId);
+        if (job.format === 'text-translation:v4')
+            throw new TextsAiError('generation_job_not_found');
         if (job.expiresAt <= context.now)
             throw new TextsAiError('generation_proposal_expired');
 
@@ -375,6 +377,8 @@ export async function cancel(
 
     return transaction(persistence, async (tx) => {
         const job = await find(persistence, tx, ownerId, jobId);
+        if (job.format === 'text-translation:v4')
+            throw new TextsAiError('generation_job_not_found');
         if (job.expiresAt <= context.now && job.executionState === 'completed')
             throw new TextsAiError('generation_proposal_expired');
         if (

@@ -49,6 +49,8 @@ describe('workbook semantic revisions', () => {
                     ...exercise,
                     title: 'Changed',
                     explanation: 'A clearer explanation.',
+                    hint: 'An updated prepared hint.',
+                    group: { id: otherId, title: 'New group' },
                 },
                 [audio],
             ),
@@ -107,6 +109,46 @@ describe('workbook semantic revisions', () => {
                 },
             ]),
         ).not.toBe(revision);
+    });
+    it('versions an exercise again when its prepared transcript gains audio', () => {
+        if (audio.type !== 'audio') throw new Error('fixture');
+        const { assetId: _assetId, ...unprepared } = audio;
+        const revision = exerciseSemanticRevision(exercise, [unprepared]);
+        expect(exerciseSemanticRevision(exercise, [audio])).not.toBe(revision);
+    });
+    it('preserves legacy progress for a title edit and redundant explicit audio language', () => {
+        if (audio.type !== 'audio') throw new Error('fixture');
+        const revision = exerciseSemanticRevision(exercise, [audio]);
+        for (const language of ['en', 'EN'])
+            expect(
+                exerciseSemanticRevision(exercise, [
+                    { ...audio, title: 'Listening', language },
+                ]),
+            ).toBe(revision);
+        expect(
+            exerciseSemanticRevision(exercise, [{ ...audio, language: 'fr' }]),
+        ).not.toBe(revision);
+    });
+    it('versions video-based exercises when the author-supplied source description changes', () => {
+        if (audio.type !== 'audio' || !audio.transcript)
+            throw new Error('fixture');
+        const video: LearningBlock = {
+            id: sourceId,
+            type: 'video',
+            source: { kind: 'youtube', videoId: 'abcdefghijk' },
+            transcript: audio.transcript,
+        };
+        const revision = exerciseSemanticRevision(exercise, [video]);
+        expect(
+            exerciseSemanticRevision(exercise, [
+                { ...video, description: 'A cat sleeps on the mat.' },
+            ]),
+        ).not.toBe(revision);
+        expect(
+            exerciseSemanticRevision(exercise, [
+                { ...video, title: 'A clearer title' },
+            ]),
+        ).toBe(revision);
     });
     it('refuses missing source passages', () => {
         expect(() => exerciseSemanticRevision(exercise)).toThrow('source');

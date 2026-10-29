@@ -78,6 +78,7 @@ export function VocabularyTraining({
             <FlashcardPracticeLauncher
                 {...props}
                 additionalItems={[
+                    ...(props.additionalItems ?? []),
                     {
                         label: capability.isPending
                             ? `${label} · ${t('training.checking')}`

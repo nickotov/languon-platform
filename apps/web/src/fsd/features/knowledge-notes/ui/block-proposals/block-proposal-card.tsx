@@ -1,9 +1,21 @@
 'use client';
 import { useState } from 'react';
+import { CheckCircle2, Maximize2, RotateCcw } from 'lucide-react';
 import type { KnowledgeBlockProposal } from '@languon/contracts';
-import { LearningBlockView } from '@/fsd/entities/learning-blocks';
-import { Button, InlineAlert } from '@/fsd/shared/ui';
+import { ConversationApiError } from '@/fsd/entities/conversation';
+import {
+    learningBlockIcons,
+    learningBlockCount,
+} from '@/fsd/entities/learning-blocks';
+import { ProposalBlockContent } from '../proposal-block-content/proposal-block-content';
+import {
+    Button,
+    Dialog,
+    InlineAlert,
+    useCompanionLayout,
+} from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
+import { useProposalAudio } from '../../hooks/use-proposal-audio';
 import { blockProposalsApi } from '../../api/block-proposals-api';
 import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
 import { blockProposalLabels } from './block-proposal-labels';
@@ -22,27 +34,48 @@ export function BlockProposalCard({
     disabled: boolean;
 }) {
     const { locale } = useI18n();
+    const placement = useCompanionLayout();
     const labels = blockProposalLabels(locale);
     const blockLabels = localizedBlockLabels(locale).view;
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(false);
     const [changed, setChanged] = useState(false);
     const [applied, setApplied] = useState(proposal.appliedAt !== null);
-    const stale =
-        proposal.branchId !== context.branchId ||
-        proposal.baseBranchVersion !== context.branchVersion;
-    async function apply() {
-        if (busy || disabled || applied || stale) return;
+    const [review, setReview] = useState(false);
+    const [appliedIds, setAppliedIds] = useState<string[] | null>(null);
+    const [fullHeight, setFullHeight] = useState(false);
+    const media = useProposalAudio(
+        proposal,
+        context.requestWithSession,
+        review,
+    );
+    const wrongBranch = proposal.branchId !== context.branchId;
+    const stale = wrongBranch || proposal.targetStale === true;
+    const isApplied = applied || proposal.appliedAt !== null;
+    const isStale = !isApplied && (stale || changed);
+    const canApply = !isApplied && !isStale;
+    const first = proposal.blocks[0]!;
+    const playback = context.getPlayback?.(proposal);
+    const Icon = learningBlockIcons[first.type];
+    const typeLabel = blockLabels.kinds[first.type];
+    const count = learningBlockCount(first) ?? proposal.blocks.length;
+    const summary = `${typeLabel} · ${count}`;
+    async function accept(mode: 'proposal' | 'add-separately') {
+        if (
+            busy ||
+            disabled ||
+            isApplied ||
+            wrongBranch ||
+            (mode === 'proposal' && isStale)
+        )
+            return;
         context.onApplyingChange?.(true);
         setBusy(true);
         setError(false);
         setChanged(false);
         try {
             const branch = await context.beforeApply();
-            if (
-                branch.branchId !== proposal.branchId ||
-                branch.version !== proposal.baseBranchVersion
-            ) {
+            if (branch.branchId !== proposal.branchId) {
                 setChanged(true);
                 return;
             }
@@ -51,44 +84,238 @@ export function BlockProposalCard({
                 context.conversationId,
                 proposal.id,
                 branch.version,
+                mode === 'proposal' ? undefined : mode,
             );
+            setAppliedIds(result.proposal.blocks.map((block) => block.id));
             setApplied(true);
             await context.onApplied(result.branch);
             onApplied();
-        } catch {
-            setError(true);
+        } catch (failure) {
+            if (
+                failure instanceof ConversationApiError &&
+                failure.status === 409
+            )
+                setChanged(true);
+            else setError(true);
         } finally {
             context.onApplyingChange?.(false);
             setBusy(false);
         }
     }
-    const isApplied = applied || proposal.appliedAt !== null;
-    const isStale = !isApplied && (stale || changed);
+    function apply() {
+        void accept('proposal');
+    }
+    function addSeparately() {
+        void accept('add-separately');
+    }
+    function openReview() {
+        setReview(true);
+    }
+    function closeReview() {
+        setReview(false);
+    }
+    function toggleHeight() {
+        setFullHeight((value) => !value);
+    }
+    function askAgain() {
+        context.onAskAgain?.(proposal);
+    }
+    function showInSheet() {
+        const ids = appliedIds ?? proposal.blocks.map((block) => block.id);
+        if (placement) {
+            placement.setMobileTab('document');
+            placement.setMode('split');
+        }
+        if (context.onShowBlocks) {
+            context.onShowBlocks(ids);
+            return;
+        }
+        window.requestAnimationFrame(() => {
+            const element = document.querySelector<HTMLElement>(
+                `[data-learning-block-id="${ids[0]}"]`,
+            );
+            element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element?.focus({ preventScroll: true });
+        });
+    }
+    const applyLabel = error ? labels.retry : labels.apply;
+    const badge = isApplied ? labels.appliedShort : labels.notInSheet;
+    const panelClass = fullHeight
+        ? `${styles.review} ${styles.fullHeight}`
+        : styles.review;
     return (
-        <article className={styles.preview} aria-label={labels.title}>
-            {proposal.blocks.map((block) => (
-                <LearningBlockView
-                    key={block.id}
-                    block={block}
+        <article
+            ref={media.ref}
+            className={styles.preview}
+            aria-label={labels.title}
+        >
+            <header className={styles.header}>
+                <Icon size={16} aria-hidden='true' />
+                <p className={styles.summary}>{summary}</p>
+                <span className={isApplied ? styles.applied : styles.badge}>
+                    {isApplied && <CheckCircle2 size={14} aria-hidden='true' />}
+                    {badge}
+                </span>
+            </header>
+            <div className={styles.content}>
+                {proposal.target && (
+                    <p className={styles.caption}>{labels.updates}</p>
+                )}
+                <ProposalBlockContent
+                    blocks={proposal.blocks}
+                    variant='compact'
+                    scope={`proposal-${proposal.id}`}
                     labels={blockLabels}
+                    playback={playback}
+                    audioUrls={media.urls}
                 />
-            ))}
-            {isApplied ? (
-                <p role='status'>{labels.applied}</p>
-            ) : (
+            </div>
+            <div aria-live='polite' className={styles.notice}>
+                {isStale && (
+                    <InlineAlert tone='warning'>{labels.stale}</InlineAlert>
+                )}
+                {error && (
+                    <InlineAlert tone='error'>{labels.error}</InlineAlert>
+                )}
+                {isApplied && <p role='status'>{labels.applied}</p>}
+            </div>
+            <footer className={styles.footer}>
+                {canApply && (
+                    <Button
+                        type='button'
+                        size='compact'
+                        onClick={apply}
+                        disabled={disabled}
+                        loading={busy}
+                        leadingIcon={
+                            error ? (
+                                <RotateCcw size={14} aria-hidden='true' />
+                            ) : undefined
+                        }
+                    >
+                        {applyLabel}
+                    </Button>
+                )}
+                {isStale && !wrongBranch && (
+                    <Button
+                        type='button'
+                        size='compact'
+                        variant='secondary'
+                        onClick={addSeparately}
+                        loading={busy}
+                        disabled={disabled}
+                    >
+                        {labels.addSeparately}
+                    </Button>
+                )}
+                {isStale && context.onAskAgain && (
+                    <Button
+                        type='button'
+                        size='compact'
+                        variant='ghost'
+                        onClick={askAgain}
+                        disabled={disabled}
+                    >
+                        {labels.askAgain}
+                    </Button>
+                )}
+                {isApplied && (
+                    <Button
+                        type='button'
+                        size='compact'
+                        variant='secondary'
+                        onClick={showInSheet}
+                    >
+                        {labels.showInSheet}
+                    </Button>
+                )}
                 <Button
                     type='button'
-                    onClick={apply}
-                    loading={busy}
-                    disabled={isStale || disabled}
+                    size='compact'
+                    variant='ghost'
+                    className={styles.reviewButton}
+                    onClick={openReview}
+                    leadingIcon={<Maximize2 size={14} aria-hidden='true' />}
                 >
-                    {labels.apply}
+                    {labels.review}
                 </Button>
-            )}
-            {isStale && (
-                <InlineAlert tone='warning'>{labels.stale}</InlineAlert>
-            )}
-            {error && <InlineAlert tone='error'>{labels.error}</InlineAlert>}
+            </footer>
+            <Dialog
+                open={review}
+                onClose={closeReview}
+                title={labels.reviewTitle}
+                description={summary}
+                className={panelClass}
+                bodyClassName={styles.reviewBody}
+                headerClassName={styles.reviewHeader}
+                footerClassName={styles.reviewFooter}
+                footer={
+                    <div className={styles.panelActions}>
+                        <p>
+                            {isApplied
+                                ? labels.applied
+                                : labels.publicationNotice}
+                        </p>
+                        <Button
+                            type='button'
+                            size='compact'
+                            variant='ghost'
+                            className={styles.heightButton}
+                            onClick={toggleHeight}
+                        >
+                            {fullHeight ? labels.collapse : labels.expand}
+                        </Button>
+                        <Button
+                            type='button'
+                            size='compact'
+                            variant='ghost'
+                            onClick={closeReview}
+                        >
+                            {labels.close}
+                        </Button>
+                        {canApply && (
+                            <Button
+                                type='button'
+                                size='compact'
+                                loading={busy}
+                                onClick={apply}
+                                disabled={disabled}
+                            >
+                                {applyLabel}
+                            </Button>
+                        )}
+                    </div>
+                }
+            >
+                <p className={styles.reviewNote}>{labels.reviewNote}</p>
+                <ProposalBlockContent
+                    blocks={proposal.blocks}
+                    variant='review'
+                    scope={`review-${proposal.id}`}
+                    labels={blockLabels}
+                    playback={playback}
+                    audioUrls={media.urls}
+                />
+                {(proposal.dependencies?.length ?? 0) > 0 && (
+                    <section>
+                        <h3>{labels.sourceBasis}</h3>
+                        <p>{labels.sourceBasisNote}</p>
+                        <ProposalBlockContent
+                            blocks={proposal.dependencies!}
+                            variant='review'
+                            scope={`source-${proposal.id}`}
+                            labels={blockLabels}
+                            audioUrls={media.urls}
+                        />
+                    </section>
+                )}
+                {isStale && (
+                    <InlineAlert tone='warning'>{labels.stale}</InlineAlert>
+                )}
+                {error && (
+                    <InlineAlert tone='error'>{labels.error}</InlineAlert>
+                )}
+            </Dialog>
         </article>
     );
 }

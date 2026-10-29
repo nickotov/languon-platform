@@ -33,7 +33,15 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
     constructor(
         private readonly database: TextsDatabase,
         private readonly policy?: TextsJobAdmissionPolicy,
+        private readonly knowledgeActionsEnabled = true,
     ) {}
+
+    knowledgeActionPersistence() {
+        return {
+            database: this.database,
+            policy: this.knowledgeActionsEnabled ? this.policy : undefined,
+        };
+    }
 
     async enqueue(
         ownerId: string,

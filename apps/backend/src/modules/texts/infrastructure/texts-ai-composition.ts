@@ -7,7 +7,10 @@ import {
     TextsWorkerService,
     type TextsWorkerDependencies,
 } from '../application/texts-worker-service';
-import { DrizzleTextsJobStore } from './persistence/drizzle/drizzle-texts-job-store';
+import {
+    DrizzleTextsJobStore,
+    type TextsJobAdmissionPolicy,
+} from './persistence/drizzle/drizzle-texts-job-store';
 import type {
     TextsDatabase,
     TextsTransaction,
@@ -15,6 +18,7 @@ import type {
 export function createTextsAiComposition(input: {
     database: TextsDatabase;
     enabled: boolean;
+    knowledgeActionsEnabled?: boolean;
     burstLimiter: GenerationBurstLimiter;
     fingerprintSecret: string;
     authenticate: (token: string) => Promise<{ userId: string }>;
@@ -26,7 +30,7 @@ export function createTextsAiComposition(input: {
     maxAttempts?: number;
 }) {
     const clock = input.clock ?? { now: () => new Date() };
-    const store = new DrizzleTextsJobStore(input.database, {
+    const policy = {
         fingerprintSecret: input.fingerprintSecret,
         resolveExecution: (tx, userId, format, now) =>
             input.admissionParticipant(tx).resolve({
@@ -45,7 +49,12 @@ export function createTextsAiComposition(input: {
         ...(input.maxAttempts === undefined
             ? {}
             : { maxAttempts: input.maxAttempts }),
-    });
+    } satisfies TextsJobAdmissionPolicy;
+    const store = new DrizzleTextsJobStore(
+        input.database,
+        policy,
+        input.enabled && (input.knowledgeActionsEnabled ?? input.enabled),
+    );
     return {
         store,
         service: new TextsJobService({

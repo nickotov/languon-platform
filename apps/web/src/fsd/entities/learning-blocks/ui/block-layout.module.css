@@ -1,27 +1,79 @@
 .root {
-    background: var(--background-surface);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
+    border: 1px solid transparent;
+    border-radius: var(--radius-12);
     color: var(--text-primary);
-    display: grid;
-    gap: var(--space-16);
     min-width: 0;
     overflow-wrap: anywhere;
-    padding: var(--space-16);
+    padding: var(--space-4) var(--space-12) var(--space-8);
+}
+
+.accented {
+    padding: var(--space-8) var(--space-16) var(--space-16);
+}
+
+.accented:where([data-block-family='vocabulary']) {
+    background: var(--primary-50);
+    border-color: var(--primary-100);
+}
+
+.accented:where([data-block-family='grammar']) {
+    background: var(--info-50);
+    border-color: var(--info-100);
+}
+
+.accented:where([data-block-family='exercise']) {
+    background: var(--success-50);
+    border-color: var(--success-100);
+}
+
+.accented:where([data-block-family='bilingual-text']) {
+    background: var(--warning-50);
+    border-color: var(--warning-100);
+}
+
+.accented:where([data-block-family='audio'], [data-block-family='video']) {
+    background: var(--background-subtle);
+    border-color: var(--border-default);
+}
+
+.preview,
+.withoutHeading {
+    padding: 0;
+    border: 0;
+    background: transparent;
 }
 
 .heading {
     align-items: center;
     display: flex;
-    gap: var(--space-8);
+    gap: var(--space-6);
     min-width: 0;
+    min-height: var(--size-36);
 }
 
 .title {
-    flex: 1;
     min-width: 0;
-    font-size: var(--size-18);
+    font-size: var(--size-14);
+    font-weight: 600;
     margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.familyIcon {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+.metadata {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    flex-shrink: 0;
+}
+
+.headingSpacer {
+    flex: 1;
 }
 
 .stack {
@@ -110,5 +162,65 @@
 @media (min-width: 640px) {
     .pair {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+:where([data-theme='dark']) .accented:where([data-block-family='vocabulary']) {
+    background: color-mix(
+        in srgb,
+        var(--primary-400) 9%,
+        var(--background-canvas)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--primary-400) 22%,
+        var(--background-canvas)
+    );
+}
+
+:where([data-theme='dark']) .accented:where([data-block-family='grammar']) {
+    background: color-mix(
+        in srgb,
+        var(--info-400) 9%,
+        var(--background-canvas)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--info-400) 22%,
+        var(--background-canvas)
+    );
+}
+
+:where([data-theme='dark']) .accented:where([data-block-family='exercise']) {
+    background: color-mix(
+        in srgb,
+        var(--success-400) 9%,
+        var(--background-canvas)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--success-400) 22%,
+        var(--background-canvas)
+    );
+}
+
+:where([data-theme='dark'])
+    .accented:where([data-block-family='bilingual-text']) {
+    background: color-mix(
+        in srgb,
+        var(--warning-400) 8%,
+        var(--background-canvas)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--warning-400) 20%,
+        var(--background-canvas)
+    );
+}
+
+@media (pointer: coarse) {
+    .heading {
+        min-height: var(--size-44);
+        flex-wrap: wrap;
     }
 }

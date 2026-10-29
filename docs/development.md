@@ -162,6 +162,15 @@ and billing cannot be established by caller-selected Studio fields. Deterministi
 integration tests exercise the same factory with synthetic source/accounting
 ports; no learner execution route is added to Studio.
 
+The knowledge block field-check and exercise-evaluation specialists are defined
+in the Knowledge module and composed into the canonical registry through the
+Texts job composition. They run only for authenticated durable knowledge actions,
+with pinned source access, an admitted budget, cancellation and fenced settlement.
+They are intentionally absent from default Studio: a caller-selected Studio field
+cannot establish a note grant, private learner attempt or billing authority. The
+registry unit test and production worker/SDK integration tests exercise this same
+composition with synthetic data; no additional Studio execution route is enabled.
+
 #### Registering Mastra primitives
 
 Mastra Studio does not scan the repository for new files. A new agent, tool,

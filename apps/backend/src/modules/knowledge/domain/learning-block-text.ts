@@ -6,7 +6,7 @@ export function learningBlockPlainText(block: LearningBlock): string {
     if (block.title) parts.push(block.title);
     switch (block.type) {
         case 'video':
-            parts.push('Video');
+            parts.push('Video', block.description ?? '');
             for (const segment of block.transcript?.segments ?? [])
                 parts.push(segment.text);
             break;
@@ -50,7 +50,11 @@ export function learningBlockPlainText(block: LearningBlock): string {
                 );
             break;
         case 'exercise':
-            parts.push(block.question);
+            parts.push(
+                block.group?.title ?? '',
+                block.question,
+                block.hint ?? '',
+            );
             if (block.format === 'multiple-choice')
                 parts.push(...block.choices.map((choice) => choice.text));
             if (block.format === 'fill-in-the-blank')

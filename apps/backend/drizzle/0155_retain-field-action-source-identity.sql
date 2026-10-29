@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_field_job_sources" DROP CONSTRAINT "knowledge_field_job_sources_branch_id_knowledge_working_branches_id_fk";

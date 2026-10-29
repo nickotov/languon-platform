@@ -583,14 +583,321 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 JSON.stringify(next.sourceSnapshot.blockTarget?.material),
             ).not.toContain('Changed rule after admission.');
+            const refreshed = await knowledge.getWorkspace(owner, note.id);
+            const changedBranch = refreshed.branches.find(
+                (item) => item.id === branch.id,
+            )!;
+            const independentAppend = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                stale.id,
+                changedBranch.version,
+            );
+            expect(
+                independentAppend.branch.content.body.document.content?.at(-1)
+                    ?.attrs?.block,
+            ).toMatchObject({ rule: 'Next rule.' });
+            expect(
+                JSON.stringify(independentAppend.branch.content.body),
+            ).toContain('Changed rule after admission.');
+        });
+        it('updates only an unchanged target and copies a stale update separately with fresh identities', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const blockId = randomUUID();
+            const original = {
+                id: blockId,
+                type: 'grammar' as const,
+                language: 'es',
+                rule: 'Original rule.',
+            };
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: {
+                    ...content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                ...content.body.document.content!,
+                                {
+                                    type: 'learningBlock',
+                                    attrs: { block: original },
+                                },
+                            ],
+                        },
+                    },
+                },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            async function propose(version: number, rule: string) {
+                await store.submit(access(), chat.id, {
+                    ...submit('Update the grammar block'),
+                    editorContext: {
+                        ...workspaceContext('Current grammar.'),
+                        workingBranch: { id: branch.id, version },
+                    },
+                });
+                const turn = (await store.claim())!;
+                const proposal = await store.proposeBlocks(turn, {
+                    targetBlockId: blockId,
+                    blocks: [{ ...original, id: randomUUID(), rule }],
+                });
+                await store.finish(turn, 'succeeded');
+                return proposal;
+            }
+            const proposal = await propose(branch.version, 'Proposed rule.');
+            const edited = await knowledge.updateWorking(owner, note.id, {
+                operationId: randomUUID(),
+                branchId: branch.id,
+                expectedVersion: branch.version,
+                content: { ...branch.content, title: 'Unrelated title edit' },
+            });
+            const current = edited.branch;
+            const listed = (await store.listBlockProposals(access(), chat.id))
+                .proposals[0]!;
+            expect(listed.turnId).toBeTruthy();
+            expect(listed.target).toMatchObject({ blockId });
+            expect(listed.targetStale).toBe(false);
+            const applied = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                proposal.id,
+                current.version,
+            );
+            expect(applied.branch.content.title).toBe('Unrelated title edit');
+            expect(applied.branch.content.body.document.content).toHaveLength(
+                2,
+            );
+            expect(
+                applied.branch.content.body.document.content?.[1]?.attrs?.block,
+            ).toMatchObject({ id: blockId, rule: 'Proposed rule.' });
+            expect(
+                (await knowledge.get(owner, note.id)).body.document.content?.[1]
+                    ?.attrs?.block,
+            ).toMatchObject({ rule: 'Original rule.' });
+            const stale = await propose(
+                applied.branch.version,
+                'Later AI proposal.',
+            );
+            const manual = await knowledge.updateWorking(owner, note.id, {
+                operationId: randomUUID(),
+                branchId: branch.id,
+                expectedVersion: applied.branch.version,
+                content: {
+                    ...applied.branch.content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                ...content.body.document.content!,
+                                {
+                                    type: 'learningBlock',
+                                    attrs: {
+                                        block: {
+                                            ...original,
+                                            rule: 'Manual correction.',
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                },
+            });
+            expect(
+                (await store.listBlockProposals(access(), chat.id)).proposals[0]
+                    ?.targetStale,
+            ).toBe(true);
             await expect(
                 store.applyBlockProposal(
                     access(),
                     chat.id,
                     stale.id,
-                    applied.branch.version,
+                    manual.branch.version,
                 ),
-            ).rejects.toThrow('working document changed');
+            ).rejects.toThrow('target block changed');
+            const copied = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                stale.id,
+                manual.branch.version,
+                'add-separately',
+            );
+            const added =
+                copied.branch.content.body.document.content?.at(-1)?.attrs
+                    ?.block;
+            expect(added).toMatchObject({ rule: 'Later AI proposal.' });
+            expect(added?.id).not.toBe(blockId);
+            const replay = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                stale.id,
+                manual.branch.version,
+                'add-separately',
+            );
+            expect(replay.branch.content.body.document.content).toHaveLength(3);
+            expect(replay.proposal.blocks[0]?.id).toBe(added?.id);
+        });
+        it('captures exercise source passages and copies stale grounding independently', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const sourceId = randomUUID();
+            const segmentId = randomUUID();
+            const sourceBlock = {
+                id: sourceId,
+                type: 'bilingual-text' as const,
+                language: 'es',
+                segments: [{ id: segmentId, text: 'Ana compra pescado.' }],
+                translations: [],
+            };
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: {
+                    ...content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                ...content.body.document.content!,
+                                {
+                                    type: 'learningBlock',
+                                    attrs: { block: sourceBlock },
+                                },
+                            ],
+                        },
+                    },
+                },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            await store.submit(access(), chat.id, {
+                ...submit('Ask about Ana'),
+                editorContext: {
+                    ...workspaceContext('Ana compra pescado.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+            const turn = (await store.claim())!;
+            const proposed = await store.proposeBlocks(turn, {
+                blocks: [
+                    {
+                        id: randomUUID(),
+                        type: 'exercise',
+                        format: 'free-text',
+                        question: '¿Qué compra Ana?',
+                        referenceAnswer: 'Pescado.',
+                        explanation: 'El texto dice que compra pescado.',
+                        source: { blockId: sourceId, segmentIds: [segmentId] },
+                    },
+                ],
+            });
+            await store.finish(turn, 'succeeded');
+            const listed = (await store.listBlockProposals(access(), chat.id))
+                .proposals[0]!;
+            expect(listed.dependencies).toEqual([sourceBlock]);
+            expect(listed.targetStale).toBe(false);
+            const manual = await knowledge.updateWorking(owner, note.id, {
+                operationId: randomUUID(),
+                branchId: branch.id,
+                expectedVersion: branch.version,
+                content: {
+                    ...branch.content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                ...content.body.document.content!,
+                                {
+                                    type: 'learningBlock',
+                                    attrs: {
+                                        block: {
+                                            ...sourceBlock,
+                                            segments: [
+                                                {
+                                                    id: segmentId,
+                                                    text: 'Ana compra pan.',
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                },
+            });
+            expect(
+                (await store.listBlockProposals(access(), chat.id)).proposals[0]
+                    ?.targetStale,
+            ).toBe(true);
+            await expect(
+                store.applyBlockProposal(
+                    access(),
+                    chat.id,
+                    proposed.id,
+                    manual.branch.version,
+                ),
+            ).rejects.toThrow('source passage changed');
+            const copied = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                proposed.id,
+                manual.branch.version,
+                'add-separately',
+            );
+            const nodes = copied.branch.content.body.document.content!;
+            expect(nodes).toHaveLength(4);
+            const copiedSource = nodes[2]?.attrs?.block;
+            const copiedExercise = nodes[3]?.attrs?.block;
+            expect(copiedSource?.type).toBe('bilingual-text');
+            expect(copiedExercise?.type).toBe('exercise');
+            if (
+                copiedSource?.type !== 'bilingual-text' ||
+                copiedExercise?.type !== 'exercise'
+            )
+                throw new Error('Expected source and exercise');
+            expect(copiedSource.id).not.toBe(sourceId);
+            expect(copiedSource.segments[0]?.id).not.toBe(segmentId);
+            expect(copiedSource.segments[0]?.text).toBe('Ana compra pescado.');
+            expect(copiedExercise.source).toEqual({
+                blockId: copiedSource.id,
+                segmentIds: [copiedSource.segments[0]!.id],
+            });
+            const replay = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                proposed.id,
+                manual.branch.version,
+                'add-separately',
+            );
+            expect(replay.branch.content.body.document.content).toHaveLength(4);
+            expect(replay.proposal.blocks).toHaveLength(1);
         });
         it('freezes approved portrait at admission, applies next-message changes and removes terminal snapshots', async () => {
             portraitPolicy = {

@@ -20,6 +20,11 @@ export async function eraseKnowledgeSpeech(
             .from(owned)
             .where(eq(owned.noteId, noteId))
     ).map((r) => r.id);
+    await tx
+        .delete(quotes)
+        .where(
+            sql`${quotes.source}->>'kind' in ('knowledge-block','knowledge-snippet','knowledge-audio-draft') and ${quotes.source}->>'noteId'=${noteId}`,
+        );
     if (!ids.length) return;
     const [active] = await tx
         .select({ id: jobs.id })
@@ -46,10 +51,5 @@ export async function eraseKnowledgeSpeech(
             version: sql`${recordings.version}+1`,
         })
         .where(inArray(recordings.id, ids));
-    await tx
-        .delete(quotes)
-        .where(
-            sql`${quotes.source}->>'kind'='knowledge-block' and ${quotes.source}->>'noteId'=${noteId}`,
-        );
     await tx.delete(bindings).where(inArray(bindings.recordingId, ids));
 }

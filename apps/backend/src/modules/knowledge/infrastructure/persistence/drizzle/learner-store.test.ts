@@ -1,3 +1,7 @@
+import {
+    pinKnowledgeExerciseEvaluation,
+    authorizeKnowledgeExerciseJobSource,
+} from './exercise-evaluation-source';
 import { randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import {
@@ -147,6 +151,105 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 store.read(reader, noteId, access),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+        });
+        it('pins only the authenticated learner private answer and verified share digest for AI evaluation', async () => {
+            const access = await share();
+            const answer = request();
+            await store.attempt(reader, noteId, answer, access);
+            const crypto = new KnowledgeShareCrypto(
+                'synthetic-workbook-learner-secret',
+            );
+            const pinned = await db.transaction((tx) =>
+                pinKnowledgeExerciseEvaluation(
+                    tx,
+                    crypto,
+                    reader,
+                    noteId,
+                    {
+                        operationId: randomUUID(),
+                        attemptId: answer.id,
+                        replyLanguage: 'ru',
+                    },
+                    access,
+                ),
+            );
+            expect(pinned.answer).toEqual(answer.answer);
+            expect(pinned.exercise.referenceAnswer).toBe('Past');
+            expect(pinned.grant?.digest).toBe(crypto.digest(access.key));
+            expect(JSON.stringify(pinned)).not.toContain(access.key);
+            await expect(
+                db.transaction((tx) =>
+                    pinKnowledgeExerciseEvaluation(
+                        tx,
+                        crypto,
+                        other,
+                        noteId,
+                        { operationId: randomUUID(), attemptId: answer.id },
+                        access,
+                    ),
+                ),
+            ).rejects.toMatchObject({ code: 'access_revoked' });
+            await expect(
+                db.transaction((tx) =>
+                    authorizeKnowledgeExerciseJobSource(tx, {
+                        ownerId: reader,
+                        knowledgeExerciseEvaluation: pinned,
+                    }),
+                ),
+            ).resolves.toBeUndefined();
+            await notes.revokeShare(author, noteId);
+            await expect(
+                db.transaction((tx) =>
+                    authorizeKnowledgeExerciseJobSource(tx, {
+                        ownerId: reader,
+                        knowledgeExerciseEvaluation: pinned,
+                    }),
+                ),
+            ).rejects.toBeDefined();
+        });
+        it('allows explanation-only source updates but refuses AI evaluation after the exercise material changes', async () => {
+            const answer = request();
+            await store.attempt(author, noteId, answer);
+            const pinned = await db.transaction((tx) =>
+                pinKnowledgeExerciseEvaluation(
+                    tx,
+                    new KnowledgeShareCrypto(
+                        'synthetic-workbook-learner-secret',
+                    ),
+                    author,
+                    noteId,
+                    { operationId: randomUUID(), attemptId: answer.id },
+                ),
+            );
+            await notes.update(author, noteId, {
+                operationId: randomUUID(),
+                expectedVersion: 1,
+                content: content({
+                    ...exercise,
+                    explanation: 'A clearer reason.',
+                }),
+            });
+            await expect(
+                db.transaction((tx) =>
+                    authorizeKnowledgeExerciseJobSource(tx, {
+                        ownerId: author,
+                        knowledgeExerciseEvaluation: pinned,
+                    }),
+                ),
+            ).resolves.toBeUndefined();
+            await notes.update(author, noteId, {
+                operationId: randomUUID(),
+                expectedVersion: 2,
+                content: content({ ...exercise, question: 'Changed question' }),
+            });
+            await expect(
+                db.transaction((tx) =>
+                    authorizeKnowledgeExerciseJobSource(tx, {
+                        ownerId: author,
+                        knowledgeExerciseEvaluation: pinned,
+                    }),
+                ),
+            ).rejects.toBeDefined();
         });
         it('derives correctness and preserves immutable exercise snapshot with idempotent concurrent retry', async () => {
             const access = await share();

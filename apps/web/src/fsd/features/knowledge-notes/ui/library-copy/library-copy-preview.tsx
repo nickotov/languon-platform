@@ -13,11 +13,13 @@ export function LibraryCopyPreview({
     labels,
     busy,
     onCommit,
+    hideCommit = false,
 }: {
     preview: Preview;
     labels: LibraryLabels;
     busy: boolean;
     onCommit(): void;
+    hideCommit?: boolean;
 }) {
     return (
         <div className={styles.preview} aria-label={labels.preview}>
@@ -46,9 +48,11 @@ export function LibraryCopyPreview({
                     )}
                 </>
             )}
-            <Button type='button' loading={busy} onClick={onCommit}>
-                {labels.commit}
-            </Button>
+            {!hideCommit ? (
+                <Button type='button' loading={busy} onClick={onCommit}>
+                    {labels.commit}
+                </Button>
+            ) : null}
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import type { Locale } from '@/fsd/shared/i18n';
 const values = {
+    done: ['Done', 'Готово', 'Listo', 'Terminé'],
     title: [
         'Copy blocks to a note',
         'Копировать блоки в документ',

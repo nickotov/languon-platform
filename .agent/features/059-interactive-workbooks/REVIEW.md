@@ -316,3 +316,138 @@ worker10s and all security/financial assertions unchanged. No DnD probes remain.
 External paid/live provider availability/model behavior was not exercised; real
 production composition uses deterministic external transport. Parent F059 remains
 In progress; this approval is E46-only.
+
+## v16 early independent assessments — implementation still active
+
+These assessments are not completion approval and do not replace the final
+stabilized-source review or required execution/browser gates.
+
+### Independent testing assessment
+
+`v16_test_assessment` reviewed the moving source and identified required evidence:
+exercise-evaluation HTTP/app composition; source changes/revocation between dispatch
+and publication; bilingual field worker proof; proposal lifecycle UI; paid speech
+source behavior; v16 browser journeys and reference/runtime comparison. Evaluator
+worker subsequently added the HTTP9 cases and production-dispatch bilingual,
+normal/reduced and in-flight denial cases. Final-source reruns remain required.
+
+### Early security review
+
+`v16_action_security` reported two material Medium findings (no Critical/High in
+that snapshot), both accepted and assigned to the speech worker:
+
+- **SEC-V16-01 — Open remediation:** knowledge speech must revalidate the exact
+  original payer/source binding before provider dispatch and under the current
+  worker fence before publication/settlement. Revoked sources cannot create new
+  provider work or usable paid results. Preserve actual provider expense when
+  already dispatched; release learner reservation, and do not borrow a joiner's
+  still-live binding to justify the original payer's charge.
+- **SEC-V16-02 — Open remediation:** remove bounded expired unconfirmed draft
+  quotes and atomically purge branch-discard source quotes/bindings. Missing payer
+  binding must deny the worker; scrub private recording text once no authorized
+  binding remains, preserving financial receipts and deletion inventory.
+
+The reviewed source was dirty-tree HEAD `22333ec8de75cb1d5baebc9539fa8813d322d4f0`
+at `2026-10-29T20:28:23Z`. Reviewer aggregate hashes: field/evaluation
+`b115b013f3e17d7cce961ab1045a0bfb084d7d4006a92b7249aa72201bab65cd`,
+proposal `e2d9ccdae4a02fbcfe5f277cd9a7b4921d26d1bb1f88483060963385f24da6cd`,
+speech `8a72a28154f10f6645d61ab9b0256bfd0a7504b3ea2e97a2f08d1fd658748b72`,
+rendering/contracts `02441db53b54a0d3a8da5ba23d248bfde79e1c608856c9a159f5311352cee5fd`.
+The reviewer found no additional material issue in scoped field/evaluation,
+proposal authority, structured output, React escaping/safe URLs or whole-source
+cleanup. No runtime security claim was made. Fresh remediation and final evidence
+review are mandatory after the source stabilizes.
+
+### v16 source completion/remediation review — 2026-10-30
+
+Independent `v16_completion_review` reviewed the full tracked/untracked migration
+against `22333ec8de75cb1d5baebc9539fa8813d322d4f0`, including contracts, migrations,
+worker/source authority, rendering and coverage. Source approval is scoped to the
+v16 milestone; completion/evidence approval remains pending final runtime gates.
+
+- **V16-REV-01 Medium, closed:** duplicate video description input could silently
+  ignore edits. One control and exact-one round-trip regression now pass.
+- **V16-REV-02 Low, closed:** author exercise indices started at zero. One-based
+  numbering and grouped-summary coverage now pass.
+- **V16-REV-03 Medium, source closed:** contextual uploaded-audio transcription
+  was unreachable after removing legacy tools. The audio side editor now mounts
+  a reusable focused widget with explicit local apply and stale-source fences.
+  Unavailable-state browser proof is being added; successful live STT is unproven.
+- **V16-REV-04 Medium, closed:** explicit cancellation during admission could
+  cancel financially but leave the mounted editor busy. Closed/explicit-cancel
+  reasons are distinct; confirmed cancellation restores retry only on the same
+  mounted request.22 tests, lint/typecheck pass. Hook SHA
+  `ed98d62908261c89dd4785bc928580372ac5887a4194994949a5a1ba47de0cb0`;
+  test SHA `a356fa3b306bb5300810fc13a2c740376b0085c7647317fd28c49ae589b94319`.
+- **V16-ACC-01 High, parent feature remains open:** uploaded-audio transcription
+  only has the explicitly unapproved provider/model path. Do not activate it or
+  mark F059 complete. This does not prevent a v16 milestone with honest
+  unavailable behavior; provider research/approval remains separate outstanding work.
+
+Independent security reviewer accepted SEC01/02 source remediation and the later
+SEC03 proposal-deletion erasure trigger (migration0159). A focused real-DB
+proposal erasure test passes; whole post0159 speech14 is required in final critical
+evidence before runtime security approval. No additional material issue was found
+in working-branch library copying or the trusted retrieval-byte-bound admission fix.
+
+Late narrow review accepts explicit bilingual-picker ARIA labeling, actual
+disclosure/fold/no-op test interactions, exact4096/4095 reserve boundary coverage,
+retired-provider zero-fetch rejection tests and test-only SpeechSource narrowing.
+Prior aggregate hashes are superseded by these deltas. Speech byte transport and
+current browser/critical gates remain unresolved; no final approval is claimed.
+
+### v16 terminal remediation/evidence review — 2026-10-30
+
+The independent reviewer subsequently closed every scoped runtime finding:
+
+- REV01 duplicate video description, REV02 numbering and REV03 reachable
+  transcription controls have focused regressions and real application evidence.
+- REV04 cancellation recovers the open editor and never applies after close.
+- The browser-discovered initial-progress hydration race now preserves expanded
+  unsent answers; later material revisions still reset. The reviewer verified
+  actor/note/share identity fences in every executable host.
+- **REV05 Medium, closed:** mobile review publication text was squeezed beside
+  three buttons. It now owns a full row. Post-fix a468 compact/expanded captures
+  and the >=300px width assertion pass; reviewer viewed both images directly.
+- SEC01/02/03 source remediation now has the whole post0159 real speech14-case
+  pass, alongside field/evaluation17 and the full785-case execution gate.
+
+The full gate a468 passes14 flows /812 tests, no skips/retries, terminalexit0.
+Original reports/hashes are retained in `evidence/v16-migration/final-critical/`.
+The reviewer accepts per-consumed-source validity: only unused mobile proposal
+CSS changed during unrelated desktop flows; the affected workbook flow starts a
+fresh server after the fix. No pre-fix affected flow or repaired report is reused.
+
+Final source/evidence manifests and documentation checks are being finalized for
+the reviewer's exact-state sign-off. **No open scoped material finding remains.**
+V16-ACC-01 remains the whole-F059 completion blocker: no unapproved transcription
+provider/model can be activated. The existing local worker needs restart after
+the format-only environment update; fixture-based real execution does not claim
+live provider readiness or authorize stopping user-owned processes.
+
+### Final independent v16 verdict — Approved
+
+`v16_completion_review` approves the complete scoped migration and final evidence
+on2026-10-30. No material scoped finding remains. It independently revalidated
+all339 source file hashes/modes: tracked patch
+`943d79ce8148e7bca8ed3cbee7d4dbfe11919be1f839570954f899297f87ba4f`, content
+`1c675f16a851e87e5c69b22b65932b6a87065a1a5e9a46f9d3719ae51062070f`.
+
+Accepted evidence:14/14 critical flows,812/812 tests,785/785 backend execution
+cases, field/evaluation17/17, speech14/14, workbook browser3/3, web180/1256,
+typecheck14 tasks, lint, production builds, migration/schema and guide/mapping
+checks. No required scoped gate is pending, skipped or waived.
+
+The per-consumed-source boundary and final post-REV05 captures are accepted.
+**v16 milestone Complete; parent F059 In progress.** V16-ACC-01 remains open for
+the parent feature. Existing local API/worker processes require restart for v4;
+no new provider/model or live/paid transcription activation is approved.
+
+Final bookkeeping audit preserves this approval. The reviewer verified exactly142
+blank-at-EOF diagnostics:141 immutable provider-source files and applied
+migration0159, with no other whitespace issue. The bounded whitespace check
+passes; migration0159 retains its tested hash. Canonical staged patch
+`cce2b58262d085164d40bd57d8985209d5f6a3fa50981a68bfa533da52957d18`
+is independently reproduced for the339-file runtime/test/configuration manifest
+scope, excluding delivery/design/docs. This tracking-state clarification changes
+no verified source byte and requires no repeated execution gate.

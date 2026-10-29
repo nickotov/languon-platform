@@ -1,0 +1,258 @@
+{
+  "config": {
+    "argv": [
+      "/Users/nickkotov/.nvm/versions/node/v24.8.0/bin/node",
+      "/Users/nickkotov/projects/languon/apps/web/node_modules/@playwright/test/cli.js",
+      "test",
+      "sentence-practice.journeys.spec.ts",
+      "--grep",
+      "checks owner practice and gives a zero-credit reader|unavailable provider model keeps the answer",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output",
+      "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts"
+    ],
+    "configFile": "/Users/nickkotov/projects/languon/apps/web/playwright.config.ts",
+    "rootDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "sentence-practice.journeys.spec.ts",
+      "file": "sentence-practice.journeys.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "sentence practice and model preferences",
+          "file": "sentence-practice.journeys.spec.ts",
+          "line": 278,
+          "column": 6,
+          "specs": [
+            {
+              "title": "unavailable provider model keeps the answer and opens AI preferences",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7496,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-29T22:24:57.342Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "sentence-model-unavailable",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-7d67e-er-and-opens-AI-preferences-chromium/attachments/sentence-model-unavailable-d97d5da80878aeca45736eb5ebaab3961623b0d3.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8cbc70d03105e4d22dbe-d0faf7cece9d813c7efc",
+              "file": "sentence-practice.journeys.spec.ts",
+              "line": 279,
+              "column": 9
+            },
+            {
+              "title": "checks owner practice and gives a zero-credit reader a free personal saved reference",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 26548,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "narrow viewport keeps reference and controls visible",
+                          "duration": 121
+                        }
+                      ],
+                      "startTime": "2026-10-29T22:25:05.130Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "sentence-batch-guidance",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-batch-guidance-e591444081c3b608b076978a52c9151c507fc03e.png"
+                        },
+                        {
+                          "name": "sentence-setup",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-setup-1f23ee7b930e519bf5e4b99b7bb8239ad27c5f15.png"
+                        },
+                        {
+                          "name": "sentence-contextual-hover-hint",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-contextual-hover-hint-96755b9b071da3dcac9c936d224c75f9aaba7097.png"
+                        },
+                        {
+                          "name": "sentence-inline-ai-preferences",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-inline-ai-preferences-f35de6a2c419e9d7170e49873e4ed6902512da58.png"
+                        },
+                        {
+                          "name": "sentence-inline-ai-preferences-mobile",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-inline-ai-preferences-mobile-a1a6612428f7fa9be02fd89f14e01a1b287c4df1.png"
+                        },
+                        {
+                          "name": "sentence-dialog-draft-dark",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-dialog-draft-dark-d57e6f023b442512c7df551111c9191baddb8070.png"
+                        },
+                        {
+                          "name": "sentence-check-pending-dark",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-check-pending-dark-8a58c0761e764900c2bbc19b22ad752ae7815894.png"
+                        },
+                        {
+                          "name": "sentence-fullscreen-feedback-dark",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-fullscreen-feedback-dark-06f3f985f3eb5c7f48d551785355834790cdd249.png"
+                        },
+                        {
+                          "name": "shared-secondary-actions-mobile",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/shared-secondary-actions-mobile-fdd63fa3c4336cd19be1d1870f0c8daa28453041.png"
+                        },
+                        {
+                          "name": "shared-sentence-library-mobile",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/shared-sentence-library-mobile-2eb4b3c7a4c64dc5b05ec8cdeac1a9f0b2612f2a.png"
+                        },
+                        {
+                          "name": "sentence-over-limit-draft",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-over-limit-draft-4a5f95b9567499061115e6ec58c039716b1edf69.png"
+                        },
+                        {
+                          "name": "sentence-zero-credit-check-denied",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-zero-credit-check-denied-ed0676ab4f631af2423823201ad000b93f21d921.png"
+                        },
+                        {
+                          "name": "sentence-failed-check-close-guard",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-failed-check-close-guard-14fcfc714f107f3432e8ce8e0c523676d8b9dcff.png"
+                        },
+                        {
+                          "name": "sentence-mobile-reference",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-mobile-reference-4003348ea1fda865c91123e600cff19056cbfb70.png"
+                        },
+                        {
+                          "name": "sentence-mobile-history",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-mobile-history-ffa3bd859eea36b67be0c29709afef26c4520d35.png"
+                        },
+                        {
+                          "name": "sentence-access-loss-no-cached-content",
+                          "contentType": "image/png",
+                          "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/sentence-practice-artifacts/sentence-practice.journeys-2c1de-ee-personal-saved-reference-chromium/attachments/sentence-access-loss-no-cached-content-01ddd686e0e8fa6018dc4dff0d3ce49f6e10a6ff.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8cbc70d03105e4d22dbe-12661be866163d5a6dc3",
+              "file": "sentence-practice.journeys.spec.ts",
+              "line": 394,
+              "column": 9
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-29T22:24:45.281Z",
+    "duration": 46622.687999999995,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -131,6 +131,7 @@ export function usePrivateTranslation(props: KnowledgePrivateTranslationProps) {
         setLanguage,
         busy,
         canCancel: jobId !== null,
+        pendingLanguage: operation.current?.language,
         failed,
         unavailable: unavailable || query.isError,
         loading: query.isPending,

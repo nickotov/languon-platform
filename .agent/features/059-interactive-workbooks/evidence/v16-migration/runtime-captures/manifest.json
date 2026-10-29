@@ -1,0 +1,99 @@
+{
+    "runId": "a4685c8e-11b3-4774-9c3b-576c3cd263be",
+    "viewports": {
+        "desktop": [1440, 1000],
+        "mobile": [390, 844]
+    },
+    "files": [
+        {
+            "path": "editor-inline-block-settings.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/editor-inline-block-settings.png",
+            "bytes": 175337,
+            "sha256": "28d4f997c735fd66d0fcb22c344f2a72a5daf983ba21c5b21e1af1de0d159f41"
+        },
+        {
+            "path": "editor-populated-desktop-dark.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/editor-populated-desktop-dark.png",
+            "bytes": 162180,
+            "sha256": "fc33736caff579245e32e2af67d7ea55e5e6c6ae3660e7bbabe91d93de81f63a"
+        },
+        {
+            "path": "workbook-practice-mobile.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/workbook-practice-mobile.png",
+            "bytes": 52074,
+            "sha256": "4c234d959b75835c844ecf83c30a2193d5ab1389d71267f2146957ede53e4244"
+        },
+        {
+            "path": "video-side-editor.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/video-side-editor.png",
+            "bytes": 159230,
+            "sha256": "4bbc94d92df750748a176fe163edce0ea1d8b071481d9b88ed1425f234b46c0a"
+        },
+        {
+            "path": "audio-transcription-unavailable-manual-fields.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/audio-transcription-unavailable-manual-fields.png",
+            "bytes": 149951,
+            "sha256": "07505970eac530d81512548e7e66b47c0e194887c6855ca0f5af3556cdef8270"
+        },
+        {
+            "path": "chat-vocabulary-proposal.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/chat-vocabulary-proposal.png",
+            "bytes": 133461,
+            "sha256": "489116d4079ebeccd6371b2605255ea9b8418940e11b9e5b73f25d1da0c59143"
+        },
+        {
+            "path": "video-transcript-grounded-hint.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/video-transcript-grounded-hint.png",
+            "bytes": 164517,
+            "sha256": "72442d85982fc1e29d18721a84c0f2fe27a7f84963038dfcd20fda3343d576cf"
+        },
+        {
+            "path": "atomic-vocabulary-side-editor.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/atomic-vocabulary-side-editor.png",
+            "bytes": 154950,
+            "sha256": "52174440e8d162ac5f59030a3338da709adfdedaf679d4963bcb5e3c8eeccb9a"
+        },
+        {
+            "path": "atomic-vocabulary-bottom-sheet.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/atomic-vocabulary-bottom-sheet.png",
+            "bytes": 42908,
+            "sha256": "afe97dff43ef0bc30905029440c0e188edec9647a0bca012c7b11402564e7892"
+        },
+        {
+            "path": "chat-target-update-review.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/chat-target-update-review.png",
+            "bytes": 169728,
+            "sha256": "b7295b16b28a6a5b220735828b401299d3049a0854563c4fdb6e40ed8710b046"
+        },
+        {
+            "path": "prepared-audio-chat-review.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/prepared-audio-chat-review.png",
+            "bytes": 161106,
+            "sha256": "7441e906747bf4c1473b1ef8ee5f9931dd3742f53ffc1924fe22f71c20be91d4"
+        },
+        {
+            "path": "prepared-audio-chat-review-mobile.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/prepared-audio-chat-review-mobile.png",
+            "bytes": 47716,
+            "sha256": "c09eff804da6d0f4f60a3eaaf2ec1fb9ef8065ae87f55c972603a0553d95722b"
+        },
+        {
+            "path": "prepared-audio-chat-review-mobile-expanded.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/prepared-audio-chat-review-mobile-expanded.png",
+            "bytes": 34281,
+            "sha256": "4f8c92dd468b2f147bc5652e9d43d4f7a6f53e92fd5b9c8451998da7fa53b014"
+        },
+        {
+            "path": "inline-exercise-feedback-desktop.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/inline-exercise-feedback-desktop.png",
+            "bytes": 174052,
+            "sha256": "e52888c467a4ba2ffb5c696eb16169c94e4033161613397aecdf98dc1688ab0b"
+        },
+        {
+            "path": "inline-exercise-feedback-mobile.png",
+            "original": "test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/inline-exercise-feedback-mobile.png",
+            "bytes": 51814,
+            "sha256": "18dc0e22d3b79176ee6be46de41433c5fa1d4ff05ce03fb005357eb181d4ffa2"
+        }
+    ]
+}

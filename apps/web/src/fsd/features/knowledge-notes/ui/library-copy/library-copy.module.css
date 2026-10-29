@@ -6,7 +6,7 @@
     min-width: 0;
 }
 
-.form label {
+.form :where(label) {
     display: grid;
     gap: var(--space-8);
 }
@@ -48,4 +48,49 @@
     color: var(--text-primary);
     background: var(--background-surface);
     font: inherit;
+}
+
+.prepared {
+    min-width: 0;
+    flex: 1;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    margin: 0;
+}
+
+.footerActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: end;
+    gap: var(--space-8);
+}
+
+.destinationChoices {
+    display: grid;
+    gap: var(--space-8);
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.destinationChoice {
+    display: flex;
+    align-items: start;
+    gap: var(--space-10);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    padding: var(--space-10) var(--space-12);
+    font-size: var(--size-14);
+    cursor: pointer;
+}
+
+.destinationChoice:where([data-selected]) {
+    border-color: var(--primary-default);
+    background: var(--primary-subtle);
+}
+
+.destinationChoice input {
+    accent-color: var(--primary-default);
+    margin-top: var(--space-4);
 }

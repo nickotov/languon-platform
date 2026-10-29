@@ -1,17 +1,26 @@
 'use client';
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useId, useState, type ChangeEvent, type FormEvent } from 'react';
 import * as c from '@languon/contracts';
-import { Button, Dialog, InlineAlert, Input } from '@/fsd/shared/ui';
+import { KnowledgeApiError } from '@/fsd/entities/knowledge';
+import { resolveLibraryCopySource } from '../../lib/library-copy-source';
+import { InlineAlert } from '@/fsd/shared/ui';
 import {
     libraryCopyApi,
     type KnowledgeLibraryContext,
 } from '../../api/library-copy-api';
 import { useLibraryPublication } from '../../hooks/use-library-publication';
-import { LibraryItemPicker, type LibraryItem } from './library-item-picker';
+import type { LibraryItem } from './library-item-picker';
 import { type LibraryLabels } from './library-labels';
 import styles from './library-copy.module.css';
-import { LibraryEntrySelection } from './library-entry-selection';
 import { LibraryCopyPreview } from './library-copy-preview';
+import { LibrarySaveFooter } from './library-save-footer';
+import {
+    LibrarySaveFields,
+    type LibrarySaveFieldsProps,
+} from './library-save-fields';
+import { useI18n } from '@/fsd/shared/i18n';
+import { BlockEditorPanel } from '../learning-block-authoring/block-editor-panel';
+import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
 
 import type { LibraryContentBlock, PreparedLibraryCopy } from '../../types';
 
@@ -32,12 +41,15 @@ export function LibrarySaveDialog({
     labels: LibraryLabels;
     onClose(): void;
 }) {
+    const { locale } = useI18n();
+    const editorLabels = localizedBlockLabels(locale);
+    const formId = useId();
     const publish = useLibraryPublication();
     const [destination, setDestination] = useState('new');
     const [item, setItem] = useState<LibraryItem | null>(null);
     const [name, setName] = useState(block.title ?? '');
-    const [translation, setTranslation] = useState(() =>
-        initialTranslation(block),
+    const [translation, setTranslation] = useState(
+        () => context.translationLanguage ?? initialTranslation(block),
     );
     const [entries, setEntries] = useState<string[]>(
         block.type === 'vocabulary'
@@ -51,7 +63,7 @@ export function LibrarySaveDialog({
     const kind = block.type === 'vocabulary' ? 'dictionary' : 'text';
     const title =
         kind === 'dictionary' ? labels.saveVocabulary : labels.saveText;
-    function changeDestination(event: ChangeEvent<HTMLSelectElement>) {
+    function changeDestination(event: ChangeEvent<HTMLInputElement>) {
         setDestination(event.target.value);
     }
     function changeName(event: ChangeEvent<HTMLInputElement>) {
@@ -80,7 +92,7 @@ export function LibrarySaveDialog({
         try {
             const source = {
                 noteId: context.noteId,
-                noteVersion: context.noteVersion,
+                ...(await resolveLibraryCopySource(context)),
                 blockId: block.id,
                 operationId: crypto.randomUUID(),
             };
@@ -147,8 +159,14 @@ export function LibrarySaveDialog({
             setSaved(true);
             setPreview(null);
             context.onSaved?.();
-        } catch {
+        } catch (caught) {
             setError(true);
+            if (
+                caught instanceof KnowledgeApiError &&
+                (caught.detail.code === 'version_conflict' ||
+                    caught.detail.code === 'idempotency_conflict')
+            )
+                setPreview(null);
         } finally {
             setBusy(false);
         }
@@ -156,81 +174,55 @@ export function LibrarySaveDialog({
     function close() {
         if (!busy) onClose();
     }
+    const previewDisabled =
+        busy ||
+        (destination === 'new' ? !name.trim() : !item) ||
+        (block.type === 'vocabulary' && entries.length === 0);
+    const footer = (
+        <LibrarySaveFooter
+            labels={labels}
+            busy={busy}
+            saved={saved}
+            previewReady={preview !== null}
+            previewDisabled={previewDisabled}
+            formId={formId}
+            onClose={close}
+            onCommit={commit}
+        />
+    );
+    const fields: LibrarySaveFieldsProps = {
+        block,
+        context,
+        labels,
+        busy,
+        destination,
+        name,
+        translation,
+        entries,
+        kind,
+        onDestination: changeDestination,
+        onName: changeName,
+        onTranslation: changeTranslation,
+        onToggleEntry: toggleEntry,
+        onSelectItem: setItem,
+    };
     return (
-        <Dialog
-            open
+        <BlockEditorPanel
+            kind={block.type}
+            title={title}
+            subtitle={block.title ?? ''}
+            labels={editorLabels}
             dismissible={!busy}
             onClose={close}
-            title={title}
-            closeLabel={labels.cancel}
-            size='large'
+            footer={footer}
         >
-            <p>{labels.prepared}</p>
             <form
+                id={formId}
                 className={styles.form}
                 onSubmit={prepare}
                 onChange={invalidate}
             >
-                <fieldset disabled={busy} className={styles.form}>
-                    <label>
-                        {labels.destination}
-                        <select
-                            value={destination}
-                            onChange={changeDestination}
-                        >
-                            <option value='new'>{labels.fresh}</option>
-                            <option value='existing'>{labels.existing}</option>
-                        </select>
-                    </label>
-                    {destination === 'new' ? (
-                        <Input
-                            label={labels.name}
-                            value={name}
-                            onChange={changeName}
-                            maxLength={200}
-                            required
-                        />
-                    ) : (
-                        <LibraryItemPicker
-                            kind={kind}
-                            request={context.requestWithSession}
-                            labels={labels}
-                            onSelect={setItem}
-                        />
-                    )}
-                    {block.type === 'vocabulary' && (
-                        <LibraryEntrySelection
-                            entries={block.entries}
-                            selected={entries}
-                            label={labels.selected}
-                            onChange={toggleEntry}
-                        />
-                    )}
-                    {block.type === 'bilingual-text' && (
-                        <label>
-                            {labels.language}
-                            <select
-                                value={translation}
-                                onChange={changeTranslation}
-                                disabled={Boolean(context.privateTranslation)}
-                            >
-                                {c.TextLanguageSchema.options
-                                    .filter(
-                                        (language) =>
-                                            language !== block.language,
-                                    )
-                                    .map((language) => (
-                                        <option key={language} value={language}>
-                                            {language}
-                                        </option>
-                                    ))}
-                            </select>
-                        </label>
-                    )}
-                    <Button type='submit' loading={busy}>
-                        {labels.preview}
-                    </Button>
-                </fieldset>
+                <LibrarySaveFields {...fields} />
             </form>
             {preview && (
                 <LibraryCopyPreview
@@ -238,10 +230,11 @@ export function LibrarySaveDialog({
                     labels={labels}
                     busy={busy}
                     onCommit={commit}
+                    hideCommit
                 />
             )}
             {saved && <p role='status'>{labels.saved}</p>}
             {error && <InlineAlert tone='error'>{labels.error}</InlineAlert>}
-        </Dialog>
+        </BlockEditorPanel>
     );
 }

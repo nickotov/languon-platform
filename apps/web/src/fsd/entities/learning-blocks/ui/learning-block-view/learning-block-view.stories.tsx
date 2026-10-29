@@ -90,3 +90,87 @@ export const MissingAudio: Story = {
         },
     },
 };
+
+const vocabulary = {
+    id,
+    type: 'vocabulary' as const,
+    language: 'fr',
+    translationLanguage: 'ru',
+    title: 'Le ménage',
+    entries: [
+        {
+            id: '22222222-2222-4222-8222-222222222222',
+            term: 'travail',
+            translation: 'работа',
+            pronunciation: '[tʁa.vaj]',
+            example: 'Je vais au travail.',
+            exampleTranslation: 'Я иду на работу.',
+        },
+        {
+            id: '33333333-3333-4333-8333-333333333333',
+            term: 'joie',
+            translation: 'радость',
+            pronunciation: '[ʒwa]',
+        },
+        {
+            id: '44444444-4444-4444-8444-444444444444',
+            term: 'ménage',
+            translation: 'уборка',
+            pronunciation: '[me.naʒ]',
+        },
+    ],
+};
+export const VocabularyCompact: Story = {
+    args: { block: vocabulary, variant: 'compact', hideHeading: true },
+};
+export const VocabularyReview: Story = {
+    args: { block: vocabulary, variant: 'review' },
+};
+export const VocabularyStudy: Story = {
+    args: { block: vocabulary, variant: 'learner' },
+};
+export const BilingualStudy: Story = {
+    args: {
+        variant: 'learner',
+        block: {
+            id,
+            type: 'bilingual-text',
+            title: 'Le samedi à la maison',
+            language: 'fr',
+            segments: [
+                { id, text: 'Le samedi, toute la famille fait le ménage.' },
+            ],
+            translations: [
+                {
+                    language: 'ru',
+                    segments: [
+                        {
+                            sourceSegmentId: id,
+                            text: 'В субботу вся семья делает уборку.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+};
+export const VideoPreview: Story = {
+    args: {
+        block: {
+            id,
+            type: 'video',
+            title: 'Un clip en français',
+            source: { kind: 'youtube', videoId: 'abcdefghijk' },
+            description:
+                'Author-provided context. No automatic video understanding.',
+        },
+        variant: 'compact',
+    },
+};
+export const UnpreparedAudio: Story = {
+    args: {
+        block: { id, type: 'audio', title: 'Dialogue à préparer' },
+        labels: { ...labels, noRecording: 'No recording prepared yet' },
+        variant: 'author',
+    },
+};

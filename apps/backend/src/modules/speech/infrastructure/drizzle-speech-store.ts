@@ -1,4 +1,9 @@
 import {
+    knowledgeSpeechSourceState,
+    rejectKnowledgeSpeechResult,
+    type KnowledgeSpeechSourceState,
+} from './knowledge-speech-worker-authority';
+import {
     authorizeSpeechAccounting,
     reserveSpeechAdmissionQuota,
     reserveSpeechProviderAttempt,
@@ -132,28 +137,48 @@ export class DrizzleSpeechStore implements SpeechStore {
         return now;
     }
     private workerTransaction<T>(
-        callback: (transaction: AiCreditTransaction, now: Date) => Promise<T>,
+        callback: (
+            transaction: AiCreditTransaction,
+            now: Date,
+            sourceState: KnowledgeSpeechSourceState,
+        ) => Promise<T>,
         jobId?: string,
+        leaseToken?: string,
     ): Promise<T> {
         return this.options.database.transaction(async (tx) => {
             await tx.execute(
                 sql`select set_config('languon.speech_worker_version','1',true)`,
             );
+            let sourceState: KnowledgeSpeechSourceState = 'legacy';
             if (jobId) {
+                sourceState = await knowledgeSpeechSourceState(
+                    tx,
+                    jobId,
+                    leaseToken,
+                );
                 const [job] = await tx
                     .select({ ownerId: jobs.payerId })
                     .from(jobs)
                     .where(eq(jobs.id, jobId));
                 await lockSpeechWalletOwner(tx, job?.ownerId ?? null);
             }
-            return callback(tx, await this.databaseNow(tx));
+            return callback(tx, await this.databaseNow(tx), sourceState);
         });
     }
     private authority(
         source: SpeechSource | StoredSpeechSource,
         resolved: ResolvedSpeechSource,
     ): StoredSpeechSource {
-        if (source.kind === 'knowledge-block') return source;
+        if (
+            source.kind === 'knowledge-block' ||
+            source.kind === 'knowledge-audio-draft'
+        )
+            return source;
+        if (source.kind === 'knowledge-snippet') {
+            if (!resolved.authority)
+                throw new SpeechError('speech_source_unavailable', 403);
+            return resolved.authority;
+        }
         if (resolved.authority) return resolved.authority;
         if (source.access.kind === 'shared' && !('keyDigest' in source.access))
             throw new SpeechError('speech_source_unavailable', 403);
@@ -787,7 +812,19 @@ export class DrizzleSpeechStore implements SpeechStore {
                 maximumCredits: credits,
                 at: input.now,
             });
-        return this.bind(tx, input, resolved, recordingId, jobId);
+        const response = await this.bind(
+            tx,
+            input,
+            resolved,
+            recordingId,
+            jobId,
+        );
+        if (resolved.privateKnowledgeSource && response.requestId)
+            await tx
+                .update(jobs)
+                .set({ sourceBindingId: response.requestId })
+                .where(eq(jobs.id, jobId));
+        return response;
     }
     private async response(
         tx: AiCreditTransaction,
@@ -947,70 +984,120 @@ export class DrizzleSpeechStore implements SpeechStore {
             .orderBy(asc(jobs.nextPollAt))
             .limit(20);
         for (const candidate of candidates) {
-            const result = await this.workerTransaction(async (tx, now) => {
-                await this.lock(tx, 'worker-capacity');
-                const [row] = await tx
-                    .select()
-                    .from(jobs)
-                    .where(and(eq(jobs.id, candidate.id), eligible))
-                    .for('update', { skipLocked: true });
-                if (!row) return null;
-                const leased = and(
-                    inArray(jobs.state, [
-                        'submitting',
-                        'processing',
-                        'storing',
-                    ]),
-                    gte(jobs.leaseExpiresAt, now),
-                );
-                const [active] = await tx
-                    .select({ value: count() })
-                    .from(jobs)
-                    .where(leased);
-                if (
-                    (active?.value ?? 0) >=
-                    (this.options.globalActiveLimit ?? 4)
-                )
-                    return null;
-                if (row.payerId) {
-                    const [owned] = await tx
+            const result = await this.workerTransaction(
+                async (tx, now, sourceState) => {
+                    await this.lock(tx, 'worker-capacity');
+                    const [row] = await tx
+                        .select()
+                        .from(jobs)
+                        .where(and(eq(jobs.id, candidate.id), eligible))
+                        .for('update', { skipLocked: true });
+                    if (!row) return null;
+                    if (
+                        sourceState === 'unavailable' &&
+                        row.state === 'queued'
+                    ) {
+                        await rejectKnowledgeSpeechResult(
+                            tx,
+                            row,
+                            now,
+                            'not_submitted',
+                        );
+                        return null;
+                    }
+                    const leased = and(
+                        inArray(jobs.state, [
+                            'submitting',
+                            'processing',
+                            'storing',
+                        ]),
+                        gte(jobs.leaseExpiresAt, now),
+                    );
+                    const [active] = await tx
                         .select({ value: count() })
                         .from(jobs)
-                        .where(and(leased, eq(jobs.payerId, row.payerId)));
+                        .where(leased);
                     if (
-                        (owned?.value ?? 0) >=
-                        (this.options.ownerActiveLimit ?? 2)
+                        (active?.value ?? 0) >=
+                        (this.options.globalActiveLimit ?? 4)
                     )
                         return null;
-                }
-                const [claimed] = await tx
-                    .update(jobs)
-                    .set({
-                        state:
-                            row.state === 'queued' ? 'submitting' : row.state,
-                        leaseToken: randomUUID(),
-                        leaseExpiresAt: new Date(now.getTime() + 60_000),
-                    })
-                    .where(eq(jobs.id, row.id))
-                    .returning();
-                if (!claimed) return null;
-                if (row.state === 'queued')
-                    await reserveSpeechProviderAttempt(tx, claimed, now);
-                const [acknowledged] = await tx
-                    .select()
-                    .from(jobs)
-                    .where(eq(jobs.id, row.id));
-                const [recording] = await tx
-                    .select()
-                    .from(recordings)
-                    .where(eq(recordings.id, row.recordingId));
-                return acknowledged && recording
-                    ? this.asJob(acknowledged, recording)
-                    : null;
-            }, candidate.id);
+                    if (row.payerId) {
+                        const [owned] = await tx
+                            .select({ value: count() })
+                            .from(jobs)
+                            .where(and(leased, eq(jobs.payerId, row.payerId)));
+                        if (
+                            (owned?.value ?? 0) >=
+                            (this.options.ownerActiveLimit ?? 2)
+                        )
+                            return null;
+                    }
+                    const [claimed] = await tx
+                        .update(jobs)
+                        .set({
+                            state:
+                                row.state === 'queued'
+                                    ? 'submitting'
+                                    : row.state,
+                            leaseToken: randomUUID(),
+                            leaseExpiresAt: new Date(now.getTime() + 60_000),
+                        })
+                        .where(eq(jobs.id, row.id))
+                        .returning();
+                    if (!claimed) return null;
+                    if (row.state === 'queued')
+                        await reserveSpeechProviderAttempt(tx, claimed, now);
+                    const [acknowledged] = await tx
+                        .select()
+                        .from(jobs)
+                        .where(eq(jobs.id, row.id));
+                    const [recording] = await tx
+                        .select()
+                        .from(recordings)
+                        .where(eq(recordings.id, row.recordingId));
+                    return acknowledged && recording
+                        ? this.asJob(acknowledged, recording)
+                        : null;
+                },
+                candidate.id,
+            );
             if (result) return result;
         }
         return null;
+    }
+    public async authorizeDispatch(
+        job: SpeechJob,
+        _now: Date,
+    ): Promise<boolean> {
+        return this.workerTransaction(
+            async (tx, now, sourceState) => {
+                const [row] = await tx
+                    .select()
+                    .from(jobs)
+                    .where(
+                        and(
+                            eq(jobs.id, job.id),
+                            eq(jobs.leaseToken, job.leaseToken),
+                            gte(jobs.leaseExpiresAt, now),
+                        ),
+                    )
+                    .for('update');
+                if (!row || row.state !== 'submitting') return false;
+                if (sourceState === 'unavailable') {
+                    await rejectKnowledgeSpeechResult(
+                        tx,
+                        row,
+                        now,
+                        'not_submitted',
+                    );
+                    return false;
+                }
+                return true;
+            },
+            job.id,
+            job.leaseToken,
+        );
     }
     public async submitted(
         job: SpeechJob,
@@ -1075,46 +1162,14 @@ export class DrizzleSpeechStore implements SpeechStore {
         _now: Date,
         observation?: SpeechProviderObservation,
     ) {
-        return this.workerTransaction(async (tx, now) => {
-            const [row] = await tx
-                .update(jobs)
-                .set({
-                    state: 'storing',
-                    leaseExpiresAt: new Date(now.getTime() + 60_000),
-                })
-                .where(
-                    and(
-                        eq(jobs.id, job.id),
-                        eq(jobs.leaseToken, job.leaseToken),
-                        gte(jobs.leaseExpiresAt, now),
-                    ),
-                )
-                .returning();
-            if (!row) return false;
-            await retainSpeechProviderObservation(tx, row, job, observation);
-            await tx
-                .update(recordings)
-                .set({
-                    checksum: audio.checksum,
-                    byteLength: audio.bytes.length,
-                    durationMs: audio.durationMs ?? null,
-                })
-                .where(eq(recordings.id, job.recordingId));
-            await settleSpeechProviderExpense(tx, row, 'ready', now);
-            return true;
-        }, job.id);
-    }
-    public async complete(
-        job: SpeechJob,
-        storage: AudioObjectReference,
-        audio: AudioBytes,
-        _now: Date,
-    ) {
-        await this.workerTransaction(async (tx, now) => {
-            const row = (
-                await tx
-                    .select()
-                    .from(jobs)
+        return this.workerTransaction(
+            async (tx, now, sourceState) => {
+                const [row] = await tx
+                    .update(jobs)
+                    .set({
+                        state: 'storing',
+                        leaseExpiresAt: new Date(now.getTime() + 60_000),
+                    })
                     .where(
                         and(
                             eq(jobs.id, job.id),
@@ -1122,77 +1177,137 @@ export class DrizzleSpeechStore implements SpeechStore {
                             gte(jobs.leaseExpiresAt, now),
                         ),
                     )
-                    .limit(1)
-                    .for('update')
-            )[0];
-            if (!row || row.state !== 'storing') return;
-            await settleSpeechProviderExpense(tx, row, 'ready', now);
-            const [recording] = await tx
-                .select()
-                .from(recordings)
-                .where(eq(recordings.id, row.recordingId))
-                .limit(1)
-                .for('update');
-            if (!recording || recording.state !== 'pending') return;
-            if (
-                row.reservationId &&
-                row.payerId &&
-                row.billingState === 'reserved'
-            )
-                await tx.execute(
-                    sql`select pg_advisory_xact_lock(hashtextextended(${row.payerId},${aiCreditOwnerLockNamespace}))`,
-                );
-            const publicationNow = await this.databaseNow(tx);
-            if (!row.leaseExpiresAt || row.leaseExpiresAt <= publicationNow)
-                return;
-            const [published] = await tx
-                .update(recordings)
-                .set({
-                    state: 'ready',
-                    storage,
-                    checksum: audio.checksum,
-                    byteLength: audio.bytes.length,
-                    durationMs: audio.durationMs ?? recording.durationMs,
-                    version: sql`${recordings.version}+1`,
-                })
-                .where(eq(recordings.id, row.recordingId))
-                .returning({ readyAt: recordings.readyAt });
-            const settlementNow = await this.databaseNow(tx);
-            let billingState = row.billingState;
-            if (
-                row.reservationId &&
-                row.payerId &&
-                billingState === 'reserved'
-            ) {
-                const settled = await new DrizzleAiCreditTransactionParticipant(
+                    .returning();
+                if (!row) return false;
+                await retainSpeechProviderObservation(
                     tx,
-                ).settleSpeechAttempt({
-                    ownerId: row.payerId,
-                    reservationId: row.reservationId,
-                    settledAt: settlementNow,
-                    billingDeadline: row.billingDeadline,
-                    outcome:
-                        published?.readyAt &&
-                        published.readyAt < row.billingDeadline &&
-                        settlementNow < row.billingDeadline
-                            ? 'success'
-                            : 'deadline',
-                });
-                billingState =
-                    settled.chargedCredits > 0n
-                        ? 'charged_success'
-                        : 'released_no_charge';
-            }
-            await tx
-                .update(jobs)
-                .set({
-                    state: 'ready',
-                    billingState,
-                    leaseToken: null,
-                    leaseExpiresAt: null,
-                })
-                .where(eq(jobs.id, row.id));
-        }, job.id);
+                    row,
+                    job,
+                    observation,
+                );
+                await tx
+                    .update(recordings)
+                    .set({
+                        checksum: audio.checksum,
+                        byteLength: audio.bytes.length,
+                        durationMs: audio.durationMs ?? null,
+                    })
+                    .where(eq(recordings.id, job.recordingId));
+                await settleSpeechProviderExpense(tx, row, 'ready', now);
+                if (sourceState === 'unavailable') {
+                    await rejectKnowledgeSpeechResult(tx, row, now, 'ready');
+                    return false;
+                }
+                return true;
+            },
+            job.id,
+            job.leaseToken,
+        );
+    }
+    public async complete(
+        job: SpeechJob,
+        storage: AudioObjectReference,
+        audio: AudioBytes,
+        _now: Date,
+    ) {
+        await this.workerTransaction(
+            async (tx, now, sourceState) => {
+                const row = (
+                    await tx
+                        .select()
+                        .from(jobs)
+                        .where(
+                            and(
+                                eq(jobs.id, job.id),
+                                eq(jobs.leaseToken, job.leaseToken),
+                                gte(jobs.leaseExpiresAt, now),
+                            ),
+                        )
+                        .limit(1)
+                        .for('update')
+                )[0];
+                if (!row || row.state !== 'storing') return;
+                if (sourceState === 'unavailable') {
+                    await rejectKnowledgeSpeechResult(
+                        tx,
+                        row,
+                        now,
+                        'ready',
+                        storage,
+                    );
+                    return;
+                }
+                await settleSpeechProviderExpense(tx, row, 'ready', now);
+                const [recording] = await tx
+                    .select()
+                    .from(recordings)
+                    .where(eq(recordings.id, row.recordingId))
+                    .limit(1)
+                    .for('update');
+                if (!recording || recording.state !== 'pending') return;
+                if (
+                    row.reservationId &&
+                    row.payerId &&
+                    row.billingState === 'reserved'
+                )
+                    await tx.execute(
+                        sql`select pg_advisory_xact_lock(hashtextextended(${row.payerId},${aiCreditOwnerLockNamespace}))`,
+                    );
+                const publicationNow = await this.databaseNow(tx);
+                if (!row.leaseExpiresAt || row.leaseExpiresAt <= publicationNow)
+                    return;
+                const [published] = await tx
+                    .update(recordings)
+                    .set({
+                        state: 'ready',
+                        storage,
+                        checksum: audio.checksum,
+                        byteLength: audio.bytes.length,
+                        durationMs: audio.durationMs ?? recording.durationMs,
+                        version: sql`${recordings.version}+1`,
+                    })
+                    .where(eq(recordings.id, row.recordingId))
+                    .returning({ readyAt: recordings.readyAt });
+                const settlementNow = await this.databaseNow(tx);
+                let billingState = row.billingState;
+                if (
+                    row.reservationId &&
+                    row.payerId &&
+                    billingState === 'reserved'
+                ) {
+                    const settled =
+                        await new DrizzleAiCreditTransactionParticipant(
+                            tx,
+                        ).settleSpeechAttempt({
+                            ownerId: row.payerId,
+                            reservationId: row.reservationId,
+                            settledAt: settlementNow,
+                            billingDeadline: row.billingDeadline,
+                            outcome:
+                                published?.readyAt &&
+                                published.readyAt < row.billingDeadline &&
+                                settlementNow < row.billingDeadline
+                                    ? 'success'
+                                    : 'deadline',
+                        });
+                    billingState =
+                        settled.chargedCredits > 0n
+                            ? 'charged_success'
+                            : 'released_no_charge';
+                }
+                await tx
+                    .update(jobs)
+                    .set({
+                        state: 'ready',
+                        billingState,
+                        leaseToken: null,
+                        leaseExpiresAt: null,
+                    })
+                    .where(eq(jobs.id, row.id));
+            },
+            job.id,
+            job.leaseToken,
+        );
     }
     public async fail(
         job: SpeechJob,
@@ -1414,6 +1529,9 @@ export class DrizzleSpeechStore implements SpeechStore {
                         sql`exists(select 1 from speech_jobs j where j.recording_id=speech_recordings.id and j.state='submission_unknown' and j.recovery_deadline<=${now.toISOString()}::timestamptz)`,
                     ),
                 );
+            await tx.execute(
+                sql`select public.languon_cleanup_knowledge_speech_quotes(100)`,
+            );
             const abandoned = await tx
                 .select({ id: recordings.id })
                 .from(recordings)

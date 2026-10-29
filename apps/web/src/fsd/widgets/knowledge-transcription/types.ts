@@ -7,6 +7,8 @@ export interface TranscriptionDraft {
     blocks: LearningBlock[];
 }
 export interface KnowledgeTranscriptionProps {
+    variant?: 'focused';
+    cancelOnUnmount?: boolean;
     hideWhenEmpty?: boolean;
     noteId: string;
     blocks: LearningBlock[];
@@ -23,4 +25,13 @@ export interface KnowledgeTranscriptionProps {
         | 'missing'
         | 'invalid'
         | Promise<'applied' | 'changed' | 'missing' | 'invalid'>;
+}
+export interface KnowledgeAudioTranscriptionProps {
+    noteId: string;
+    branchId: string;
+    block: TranscriptionAudioBlock;
+    language: string;
+    requestWithSession: RequestWithSession;
+    flush(): Promise<TranscriptionDraft>;
+    onAccept(block: TranscriptionAudioBlock): void;
 }

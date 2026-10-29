@@ -183,7 +183,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { operationId: randomUUID(), expectedVersion: saved.version },
             );
             const copiedBlock = copy.body.document.content?.[0]?.attrs?.block;
-            if (copiedBlock?.type !== 'audio')
+            if (copiedBlock?.type !== 'audio' || !copiedBlock.assetId)
                 throw new Error('Missing copied audio');
             expect(copiedBlock.assetId).not.toBe(asset.id);
             await store.delete(owner, note.id, {

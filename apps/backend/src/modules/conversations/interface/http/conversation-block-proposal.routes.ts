@@ -104,6 +104,7 @@ export function registerConversationBlockProposalRoutes(
                     params.conversationId,
                     params.proposalId,
                     c.req.valid('json').expectedBranchVersion,
+                    c.req.valid('json').mode,
                 ),
                 200,
             );

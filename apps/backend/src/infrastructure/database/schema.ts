@@ -1,3 +1,5 @@
+import * as knowledgeFieldSourceSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/block-field-source-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/block-field-source-schema';
 import * as knowledgeSentenceJobSourceSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-job-source-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-job-source-schema';
 import * as knowledgeSentenceNextSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-next-schema';
@@ -195,6 +197,7 @@ export const databaseSchema = {
     ...workbookLearnerSchema,
     ...knowledgeLearningEpochSchema,
     ...knowledgePrivateTranslationSchema,
+    ...knowledgeFieldSourceSchema,
     ...knowledgeSentenceJobSourceSchema,
     ...conversationSchema,
     ...blockProposalSchema,
@@ -297,3 +300,4 @@ export * from '../../modules/speech/infrastructure/knowledge-speech-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/transcription-accounting-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source-schema';

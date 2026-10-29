@@ -47,3 +47,5 @@ export * from './knowledge-transcription-admin';
 export * from './knowledge-transcription-jobs';
 export * from './knowledge-vocabulary-practice';
 export * from './knowledge-private-translations';
+export * from './knowledge-block-field-ai';
+export * from './knowledge-exercise-evaluation';

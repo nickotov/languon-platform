@@ -98,6 +98,7 @@ export class DrizzleConversationStore implements ConversationStore {
         conversationId: string,
         proposalId: string,
         expectedBranchVersion: number,
+        mode?: 'proposal' | 'add-separately',
     ) {
         return conversationApplyBlockProposal(
             this.persistence,
@@ -105,6 +106,7 @@ export class DrizzleConversationStore implements ConversationStore {
             conversationId,
             proposalId,
             expectedBranchVersion,
+            mode,
         );
     }
 

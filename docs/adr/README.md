@@ -73,6 +73,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0050](./0050-interactive-workbook-content-and-learning-boundaries.md) | Interactive workbook content and learning boundaries | Accepted |
 
 | [ADR-0051](./0051-duration-based-transcription-accounting.md) | Duration-based transcription authority and accounting | Accepted |
+| [ADR-0052](./0052-source-bound-knowledge-ai-actions.md) | Source-bound knowledge AI authoring and evaluation | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

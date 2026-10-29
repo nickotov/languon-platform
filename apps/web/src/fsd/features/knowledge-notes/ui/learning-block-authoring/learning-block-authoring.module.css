@@ -21,12 +21,27 @@
     align-items: center;
 }
 
-.group,
-.row,
+.group {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.group :where(legend) {
+    margin-bottom: var(--space-12);
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+.row {
+    padding-block: var(--space-16);
+    border-top: 1px solid var(--border-default);
+}
+
 .preview {
-    padding: var(--space-12);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
+    padding-block: var(--space-12);
+    border-top: 1px solid var(--border-default);
 }
 
 .field {
@@ -116,4 +131,182 @@
         min-width: var(--size-44);
         min-height: var(--size-44);
     }
+}
+
+.fieldControl :where(label) {
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    font-weight: 500;
+}
+
+.fieldControl :where(input),
+.fieldControl :where(textarea),
+.field :where(select) {
+    border-color: var(--border-strong);
+    border-radius: var(--radius-8);
+    font-size: var(--size-14);
+}
+
+.fieldControl :where(input) {
+    min-height: var(--size-36);
+}
+
+.primaryFields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+}
+
+.rowHeading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+.removeRow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-32);
+    height: var(--size-32);
+    border: 0;
+    border-radius: var(--radius-6);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+
+.removeRow:hover {
+    color: var(--danger-default);
+    background: var(--danger-subtle);
+}
+
+.addRow {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: var(--space-6);
+    min-height: var(--size-36);
+    padding: 0 var(--space-12);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-8);
+    color: var(--text-secondary);
+    background: transparent;
+    font-size: var(--size-14);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.addRow:hover:not(:disabled) {
+    background: var(--background-subtle);
+}
+
+.addRow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.addRow:focus-visible,
+.removeRow:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+.footerActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.footerNote {
+    flex: 1;
+    min-width: var(--size-128);
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+}
+
+.footerNote :where(p) {
+    margin: 0;
+}
+
+@media (max-width: 767px) {
+    .fieldControl :where(input),
+    .removeRow,
+    .addRow {
+        min-height: var(--size-44);
+    }
+}
+
+.audioQuestions {
+    margin-top: var(--space-20);
+    padding-top: var(--space-16);
+    border-top: 1px solid var(--border-default);
+}
+
+.audioQuestions > :where(h3) {
+    margin: 0 0 var(--space-12);
+    color: var(--text-primary);
+    font-size: var(--size-14);
+    font-weight: 600;
+}
+
+@media (max-width: 639px) {
+    .primaryFields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.languageSettings {
+    margin-top: calc(var(--space-8) * -1);
+}
+
+.languageSummary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--size-20);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    list-style: none;
+}
+
+.languageSummary::-webkit-details-marker {
+    display: none;
+}
+
+.languageSummary:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.languageFields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+    margin-block: var(--space-8);
+}
+
+.entryTerm {
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+.optionalField {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+}
+
+.optionalField > :where(summary) {
+    cursor: pointer;
+}
+
+.optionalField[open] > :where(summary) {
+    margin-bottom: var(--space-8);
 }

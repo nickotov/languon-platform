@@ -1,3 +1,5 @@
+import { knowledgeFieldJobSourcesTable as fieldSources } from './block-field-source-schema';
+import { knowledgeExerciseEvaluationJobSourcesTable as evaluationSources } from './exercise-evaluation-source-schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { KnowledgeTransaction } from './knowledge-transaction';
 import { knowledgeTextJobSourcesTable as sources } from './private-translation-schema';
@@ -15,11 +17,20 @@ export async function eraseKnowledgeTranslationJobs(
         sql`select set_config('languon.ai_credit_settlement_revision','1',true),set_config('languon.texts_execution_revision','1',true),set_config('languon.texts_capacity_revision','1',true)`,
     );
 
-    const linked = await tx
+    const translated = await tx
         .select({ id: sources.jobId })
         .from(sources)
         .where(eq(sources.noteId, noteId));
 
+    const fieldRows = await tx
+        .select({ id: fieldSources.jobId })
+        .from(fieldSources)
+        .where(eq(fieldSources.noteId, noteId));
+    const evaluationRows = await tx
+        .select({ id: evaluationSources.jobId })
+        .from(evaluationSources)
+        .where(eq(evaluationSources.noteId, noteId));
+    const linked = [...translated, ...fieldRows, ...evaluationRows];
     if (!linked.length) return;
     const rows = await tx
         .select()
@@ -54,7 +65,11 @@ export async function eraseKnowledgeTranslationJobs(
                 .where(
                     and(
                         eq(jobs.id, job.id),
-                        eq(jobs.externalSourceKind, 'knowledge-block'),
+                        inArray(jobs.externalSourceKind, [
+                            'knowledge-block',
+                            'knowledge-field',
+                            'knowledge-exercise',
+                        ]),
                     ),
                 );
         } else {

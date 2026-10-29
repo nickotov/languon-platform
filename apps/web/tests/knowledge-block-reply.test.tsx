@@ -67,3 +67,53 @@ it.each(['succeeded', 'failed', 'none'] as const)(
         expect(accepted).not.toHaveBeenCalled();
     },
 );
+
+it('labels a running block tool as block preparation without offering prose insertion', () => {
+    const metadata = ConversationMessageSchema.parse({
+        id: '11111111-1111-4111-8111-111111111111',
+        conversationId: '22222222-2222-4222-8222-222222222222',
+        turnId: '33333333-3333-4333-8333-333333333333',
+        role: 'assistant',
+        content: '',
+        attachments: [],
+        toolCalls: [
+            {
+                id: 'block-tool',
+                name: 'propose_learning_blocks',
+                state: 'running',
+            },
+        ],
+        status: 'streaming',
+        sourceVersion: 'draft:1',
+        sourceProvenance: 'draft',
+        createdAt: '2026-10-29T12:00:00.000Z',
+    });
+    const message: ConversationUIMessage = {
+        id: metadata.id,
+        role: 'assistant',
+        metadata,
+        parts: [
+            {
+                type: 'tool-propose_learning_blocks',
+                state: 'input-available',
+                toolCallId: 'block-tool',
+                input: {},
+            },
+        ],
+    };
+    render(
+        <TutorMessage
+            message={message}
+            changed={false}
+            turn={undefined}
+            active
+            hasAssistant
+            question='Create vocabulary'
+            onRetry={vi.fn()}
+        />,
+    );
+    expect(screen.getByText(/Preparing learning blocks/u)).toBeVisible();
+    expect(
+        screen.queryByRole('button', { name: 'Use in document' }),
+    ).not.toBeInTheDocument();
+});

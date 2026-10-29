@@ -57,8 +57,15 @@ export const WorkbookAttemptEvaluationSchema = z.discriminatedUnion('status', [
             status: z.enum(['correct', 'incorrect']),
             method: z.enum(['deterministic', 'ai']),
             feedback: z.string().max(8_000).optional(),
+            validAlternative: z.boolean().optional(),
         })
-        .strict(),
+        .strict()
+        .refine(
+            (value) =>
+                value.validAlternative === undefined ||
+                (value.method === 'ai' && value.status === 'correct'),
+            'Alternative-answer feedback belongs to correct AI evaluations.',
+        ),
 ]);
 export const WorkbookLearnerAttemptSchema =
     SubmitWorkbookAttemptRequestSchema.extend({

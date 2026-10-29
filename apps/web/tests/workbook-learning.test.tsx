@@ -15,6 +15,9 @@ vi.mock('@/fsd/features/workbook-learning/api/learning-api', () => ({
         attempt: vi.fn(),
         event: vi.fn(),
         completion: vi.fn(),
+        evaluate: vi.fn(),
+        evaluation: vi.fn(),
+        cancelEvaluation: vi.fn(),
     },
 }));
 const noteId = '11111111-1111-4111-8111-111111111111';
@@ -177,8 +180,49 @@ describe('private workbook learning', () => {
         });
         expect(learningApi.attempt).not.toHaveBeenCalled();
     });
-    it('prefills an explicit AI request without saving an attempt or evaluating it', async () => {
+    it('saves and evaluates an exact private attempt, then exposes inline feedback without opening chat', async () => {
         const onAiRequest = vi.fn();
+        const attempt = {
+            id: noteId,
+            noteId,
+            noteVersion: 3,
+            exerciseId,
+            exerciseRevision: revision,
+            answer: { format: 'multiple-choice' as const, choiceId },
+            createdAt: new Date().toISOString(),
+            evaluation: {
+                status: 'correct' as const,
+                method: 'ai' as const,
+                feedback: 'Valid alternative.',
+                validAlternative: true,
+            },
+        };
+        vi.mocked(learningApi.attempt).mockResolvedValue({
+            attempt: { ...attempt, evaluation: { status: 'unchecked' } },
+        });
+        vi.mocked(learningApi.evaluate).mockResolvedValue({
+            job: {
+                id: choiceId,
+                noteId,
+                attemptId: attempt.id,
+                exerciseId,
+                exerciseRevision: revision,
+                status: 'completed',
+                result: {
+                    status: 'correct',
+                    feedback: 'Valid alternative.',
+                    validAlternative: true,
+                },
+                attempt,
+                failureCode: null,
+                createdAt: attempt.createdAt,
+                completedAt: attempt.createdAt,
+            },
+        });
+        vi.mocked(learningApi.state).mockResolvedValue({
+            ...state,
+            attempts: [attempt],
+        });
         const { result } = renderHook(
             () => useWorkbookLearning({ ...options, onAiRequest }),
             { wrapper },
@@ -187,9 +231,38 @@ describe('private workbook learning', () => {
         act(() =>
             result.current.options(block).onEvaluate?.(exerciseId, choiceId),
         );
-        expect(onAiRequest).toHaveBeenCalledOnce();
-        expect(onAiRequest.mock.calls[0]![0].prompt).toContain('Choose');
-        expect(learningApi.attempt).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(learningApi.evaluate).toHaveBeenCalledOnce(),
+        );
+        expect(learningApi.attempt).toHaveBeenCalledWith(
+            'token',
+            noteId,
+            expect.objectContaining({
+                exerciseId,
+                exerciseRevision: revision,
+                answer: { format: 'multiple-choice', choiceId },
+            }),
+            undefined,
+        );
+        expect(learningApi.evaluate).toHaveBeenCalledWith(
+            'token',
+            noteId,
+            expect.objectContaining({ attemptId: noteId, replyLanguage: 'en' }),
+            undefined,
+            undefined,
+        );
+        await waitFor(() =>
+            expect(result.current.options(block).evaluationPending).toBe(false),
+        );
+        expect(result.current.options(block).feedback).toContain(
+            'Valid alternative.',
+        );
+        expect(result.current.options(block).learnerState).toMatchObject({
+            answer: choiceId,
+            correct: true,
+            validAlternative: true,
+        });
+        expect(onAiRequest).not.toHaveBeenCalled();
         expect(learningApi.event).not.toHaveBeenCalled();
     });
     it('maps gap values to authored identities without accepting injected extra gaps', () => {

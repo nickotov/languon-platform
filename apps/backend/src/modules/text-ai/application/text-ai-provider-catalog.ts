@@ -58,6 +58,7 @@ export const textAiTextsFormats = [
     'text-translation:v1',
     'text-translation:v2',
     'text-translation:v3',
+    'text-translation:v4',
     'text-selection-card:v1',
 ] as const;
 

@@ -1,270 +1,222 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useRef, type FormEvent } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { ExerciseLearningBlock } from '@languon/contracts';
-import { Button } from '@/fsd/shared/ui/button/button';
 import type { LearningAnswer, LearningBlockViewProps } from '../../types';
-import { safeAudioUrl } from '../../lib/safe-audio-url';
-import {
-    Transcript,
-    VideoPlayer,
-    type VideoSeek,
-} from '../media-block/media-block';
-import { VideoLearningBlockSchema } from '@languon/contracts';
-import styles from '../block-layout.module.css';
+import { useBlockExpansion } from '../../hooks/use-block-expansion';
+import { useExercisePractice } from '../../hooks/use-exercise-practice';
+import { checkPreparedAnswer } from '../../lib/check-prepared-answer';
+import { learningAnswerEquals } from '../../lib/learning-answer-equals';
+import { ExerciseAnswerFields } from './exercise-answer-fields';
+import { ExerciseHint } from './exercise-hint';
+import { ExercisePreview } from './exercise-preview';
+import { ExerciseActions } from './exercise-actions';
+import styles from './exercise-block.module.css';
 
 export function ExerciseBlock(
     props: LearningBlockViewProps & { block: ExerciseLearningBlock },
 ) {
     const { block, labels } = props;
     const form = useRef<HTMLFormElement>(null);
-    const hintPlayer = useRef<HTMLMediaElement>(null);
-    const hintAudioUrl = safeAudioUrl(props.audioUrl);
-    const hintVideoResult = VideoLearningBlockSchema.shape.source.safeParse(
-        props.hintVideoSource,
+    const expansion = useBlockExpansion(
+        props.expandAll,
+        props.variant === undefined,
     );
-    const hintVideo = hintVideoResult.success
-        ? hintVideoResult.data
-        : undefined;
-    const [videoSeek, setVideoSeek] = useState<VideoSeek>();
-    const [hintMediaFailed, setHintMediaFailed] = useState(false);
-    function handleHintMediaFailure() {
-        setHintMediaFailed(true);
-    }
-    function handleReplayHint(seconds: number) {
-        if (!Number.isFinite(seconds) || seconds < 0) return;
-        if (hintVideo?.kind === 'youtube') {
-            setVideoSeek((prior) => ({
-                seconds,
-                revision: (prior?.revision ?? 0) + 1,
-            }));
-            return;
-        }
-        if (!hintPlayer.current) return;
-        hintPlayer.current.currentTime = seconds;
-        void hintPlayer.current.play().catch(handleHintMediaFailure);
-    }
-    const replayHint = hintAudioUrl || hintVideo ? handleReplayHint : undefined;
-    function handleHintPlayer(element: HTMLMediaElement | null) {
-        hintPlayer.current = element;
-    }
-    const [answer, setAnswer] = useState('');
-    const [gaps, setGaps] = useState<Record<string, string>>({});
-    const [revealed, setRevealed] = useState(false);
-    const [hintVisible, setHintVisible] = useState(false);
+    const practice = useExercisePractice(props.learnerState);
+    const { answer, gaps, revealed, hintVisible, preparedResult } = practice;
     const response: LearningAnswer =
         block.format === 'fill-in-the-blank' ? gaps : answer;
-    function handleAnswer(
-        event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    ) {
-        setAnswer(event.target.value);
-    }
-    function handleGap(event: ChangeEvent<HTMLInputElement>) {
-        setGaps({ ...gaps, [event.target.name]: event.target.value });
+    const preview = props.variant === 'compact' || props.variant === 'review';
+    function handleExpansion() {
+        expansion.toggle();
+        props.onExpansionChange?.(!expansion.open);
     }
     function handleReveal() {
         if (props.interactionsDisabled) return;
         props.onInteraction?.(block.id, { kind: 'answer-revealed' });
-        setRevealed(true);
+        practice.reveal();
     }
     function handleHint() {
         if (props.interactionsDisabled) return;
         if (!hintVisible)
             props.onInteraction?.(block.id, { kind: 'hint-used' });
-        setHintVisible(!hintVisible);
+        practice.toggleHint();
     }
     function handleRetry() {
         if (props.interactionsDisabled) return;
-        setAnswer('');
-        setGaps({});
-        setRevealed(false);
-        setHintVisible(false);
+        practice.retry();
         props.onInteraction?.(block.id, { kind: 'retry' });
+        props.onAttemptedChange?.(
+            block.id,
+            props.learnerState !== undefined &&
+                (practice.attempted || props.learnerState.attempted),
+        );
     }
-    function handleSubmitAttempt(event: FormEvent<HTMLFormElement>) {
+    function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        props.onSubmitAttempt?.(block.id, response);
+        if (
+            props.interactionsDisabled ||
+            props.attemptPending ||
+            !form.current?.reportValidity()
+        )
+            return;
+        if (!props.onSubmitAttempt && block.format === 'free-text') return;
+        practice.markAttempted();
+        props.onAttemptedChange?.(block.id, true);
+        if (props.onSubmitAttempt) props.onSubmitAttempt(block.id, response);
+        else practice.setPreparedResult(checkPreparedAnswer(block, response));
     }
     function handleEvaluate() {
-        if (!form.current?.reportValidity()) return;
-        props.onEvaluate?.(block.id, response);
+        if (
+            props.interactionsDisabled ||
+            props.evaluationPending ||
+            props.evaluationUnavailableReason !== undefined ||
+            !props.onEvaluate ||
+            !form.current?.reportValidity()
+        )
+            return;
+        practice.markAttempted();
+        props.onAttemptedChange?.(block.id, true);
+        props.onEvaluate(block.id, response);
     }
-    const canSubmitAttempt = props.onSubmitAttempt !== undefined;
-    const submitAttemptLabel = props.submitAttemptLabel ?? labels.answer;
-    const canEvaluate = props.onEvaluate !== undefined;
-    const hasHint = props.hintTranscript !== undefined;
-    const groupName = `exercise-${block.id}`;
-    let fields;
-    if (block.format === 'multiple-choice')
-        fields = (
-            <fieldset className={styles.choices}>
-                <legend>{labels.answer}</legend>
-                {block.choices.map((choice) => (
-                    <label className={styles.choice} key={choice.id}>
-                        <input
-                            type='radio'
-                            name={groupName}
-                            value={choice.id}
-                            checked={answer === choice.id}
-                            onChange={handleAnswer}
-                            required
-                        />
-                        <span dir='auto'>{choice.text}</span>
-                    </label>
-                ))}
-            </fieldset>
-        );
-    if (block.format === 'free-text')
-        fields = (
-            <label className={styles.stack}>
-                {labels.answer}
-                <textarea
-                    className={styles.field}
-                    value={answer}
-                    onChange={handleAnswer}
-                    rows={3}
-                    maxLength={8000}
-                    required
-                />
-            </label>
-        );
-    if (block.format === 'fill-in-the-blank')
-        fields = (
-            <div className={styles.stack}>
-                {block.parts.map((part, index) => {
-                    if (part.kind === 'text')
-                        return (
-                            <span dir='auto' key={index}>
-                                {part.text}
-                            </span>
-                        );
-                    const gapLabel = `${labels.answer} ${index + 1}`;
-                    const gapValue = gaps[part.id] ?? '';
-                    return (
-                        <label className={styles.stack} key={part.id}>
-                            {gapLabel}
-                            <input
-                                className={styles.field}
-                                name={part.id}
-                                value={gapValue}
-                                onChange={handleGap}
-                                maxLength={500}
-                                required
-                            />
-                        </label>
-                    );
-                })}
-            </div>
-        );
+    const canSubmit =
+        block.format !== 'free-text' ||
+        (props.variant === undefined && props.onSubmitAttempt !== undefined);
+    const submitLabel =
+        props.submitAttemptLabel ?? labels.check ?? labels.answer;
+    const hasHint = Boolean(props.hintTranscript || block.hint);
+    const hasResponse =
+        block.format === 'fill-in-the-blank'
+            ? block.parts.every(
+                  (part) =>
+                      part.kind === 'text' || Boolean(gaps[part.id]?.trim()),
+              )
+            : Boolean(answer.trim());
+    const panelId = `${props.scope ?? block.id}-exercise`;
+    const chevronClass = expansion.open ? styles.chevronOpen : styles.chevron;
+    const summaryLabel = expansion.open
+        ? (labels.exerciseKinds?.[block.format] ?? labels.kinds.exercise)
+        : block.question;
+    const questionClass = expansion.open
+        ? styles.summaryQuestion
+        : styles.summaryFolded;
+    const matchesSaved =
+        !props.learnerState?.answer ||
+        learningAnswerEquals(props.learnerState.answer, response);
+    const visibleFeedback = matchesSaved ? props.feedback : undefined;
+    const feedbackTitle =
+        props.feedbackKind === 'ai'
+            ? labels.checkWithAi
+            : (labels.check ?? labels.answer);
+    let status = practice.attempted
+        ? (labels.attempted ?? labels.answer)
+        : (labels.notAnswered ?? '');
+    if (hintVisible) status = labels.hint;
+    if (revealed) status = labels.showAnswer;
+    if (preparedResult !== undefined)
+        status = preparedResult ? labels.correct : labels.incorrect;
+    if (matchesSaved && props.learnerState?.attempted) status = labels.answer;
+    if (matchesSaved && props.learnerState?.correct !== undefined)
+        status = props.learnerState.correct ? labels.correct : labels.incorrect;
+    if (visibleFeedback) status = visibleFeedback.split(':')[0] ?? '';
+    if (preview) return <ExercisePreview {...props} />;
     return (
-        <form
-            ref={form}
-            className={styles.stack}
-            onSubmit={handleSubmitAttempt}
-        >
-            <p className={styles.text} dir='auto'>
-                {block.question}
-            </p>
-            {fields}
-            <div className={styles.actions}>
-                {canSubmitAttempt ? (
-                    <Button
-                        type='submit'
-                        loading={props.attemptPending ?? false}
-                    >
-                        {submitAttemptLabel}
-                    </Button>
+        <div className={styles.root}>
+            <button
+                type='button'
+                className={styles.summary}
+                aria-expanded={expansion.open}
+                aria-controls={panelId}
+                onClick={handleExpansion}
+            >
+                {props.exerciseIndex !== undefined ? (
+                    <span className={styles.index}>{props.exerciseIndex}.</span>
                 ) : null}
-                {canEvaluate ? (
-                    <Button
-                        type='button'
-                        onClick={handleEvaluate}
-                        loading={props.evaluationPending ?? false}
-                    >
-                        {labels.checkWithAi}
-                    </Button>
-                ) : null}
-                <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={handleReveal}
-                    disabled={revealed || props.interactionsDisabled}
+                <span className={questionClass}>{summaryLabel}</span>
+                <span className={styles.status}>{status}</span>
+                <ChevronDown
+                    size={16}
+                    className={chevronClass}
+                    aria-hidden='true'
+                />
+            </button>
+            <div id={panelId} hidden={!expansion.open}>
+                <form
+                    ref={form}
+                    className={styles.form}
+                    onSubmit={handleSubmit}
                 >
-                    {labels.showAnswer}
-                </Button>
-                {hasHint ? (
-                    <Button
-                        type='button'
-                        variant='ghost'
-                        onClick={handleHint}
-                        aria-expanded={hintVisible}
-                        disabled={props.interactionsDisabled}
-                    >
-                        {labels.hint}
-                    </Button>
-                ) : null}
-                <Button
-                    type='button'
-                    variant='ghost'
-                    onClick={handleRetry}
-                    disabled={props.interactionsDisabled}
-                >
-                    {labels.retry}
-                </Button>
-            </div>
-            {hintVisible && props.hintTranscript ? (
-                <div className={styles.stack}>
-                    {hintAudioUrl ? (
-                        <audio
-                            ref={handleHintPlayer}
-                            controls
-                            preload='none'
-                            src={hintAudioUrl}
-                            aria-label={labels.hint}
-                            onError={handleHintMediaFailure}
-                        />
-                    ) : null}
-                    {hintVideo ? (
-                        <VideoPlayer
-                            source={hintVideo}
-                            title={`${labels.hint}: ${labels.kinds.video}`}
-                            seek={videoSeek}
-                            mediaRef={handleHintPlayer}
-                            onError={handleHintMediaFailure}
-                            unavailableLabel={labels.mediaUnavailable}
-                            openSourceLabel={labels.openVideoSource}
-                        />
-                    ) : null}
-                    {hintMediaFailed ? (
-                        <p role='alert' className={styles.error}>
-                            {labels.mediaUnavailable}
-                        </p>
-                    ) : null}
-                    <Transcript
-                        transcript={props.hintTranscript}
-                        replayLabel={labels.replay}
-                        onReplay={replayHint}
+                    <p className={styles.question} dir='auto'>
+                        {block.question}
+                    </p>
+                    <ExerciseAnswerFields
+                        block={block}
+                        labels={labels}
+                        answer={answer}
+                        gaps={gaps}
+                        onAnswer={practice.handleAnswer}
+                        onGap={practice.handleGap}
                     />
-                </div>
-            ) : null}
-            {revealed ? (
-                <div className={styles.panel} role='status'>
-                    <p className={styles.text} dir='auto'>
-                        {block.referenceAnswer}
-                    </p>
-                    <p className={styles.secondary} dir='auto'>
-                        {block.explanation}
-                    </p>
-                </div>
-            ) : null}
-            {props.feedback ? (
-                <p role='status' className={styles.text} dir='auto'>
-                    {props.feedback}
-                </p>
-            ) : null}
-            {props.error ? (
-                <p role='alert' className={styles.error}>
-                    {props.error}
-                </p>
-            ) : null}
-        </form>
+                    <ExerciseActions
+                        options={props}
+                        canSubmit={canSubmit}
+                        submitLabel={submitLabel}
+                        hasResponse={hasResponse}
+                        hasHint={hasHint}
+                        revealed={revealed}
+                        hintVisible={hintVisible}
+                        onEvaluate={handleEvaluate}
+                        onHint={handleHint}
+                        onReveal={handleReveal}
+                        onRetry={handleRetry}
+                    />
+                    <div aria-live='polite' className={styles.results}>
+                        {preparedResult !== undefined ? (
+                            <div
+                                className={styles.feedback}
+                                data-correct={preparedResult}
+                                role='status'
+                            >
+                                <strong>
+                                    {preparedResult
+                                        ? labels.correct
+                                        : labels.incorrect}
+                                </strong>
+                                <p>{block.explanation}</p>
+                            </div>
+                        ) : null}
+                        {visibleFeedback ? (
+                            <div role='status' className={styles.feedback}>
+                                <p className={styles.feedbackTitle}>
+                                    {feedbackTitle}
+                                </p>
+                                <p dir='auto'>{visibleFeedback}</p>
+                            </div>
+                        ) : null}
+                        {hintVisible ? (
+                            <ExerciseHint {...props} hint={block.hint} />
+                        ) : null}
+                        {revealed ? (
+                            <div
+                                className={styles.referencePanel}
+                                role='status'
+                            >
+                                <p className={styles.feedbackTitle}>
+                                    {labels.answer}
+                                </p>
+                                <p dir='auto'>{block.referenceAnswer}</p>
+                                <p className={styles.secondary} dir='auto'>
+                                    {block.explanation}
+                                </p>
+                            </div>
+                        ) : null}
+                        {props.error ? (
+                            <p role='alert' className={styles.error}>
+                                {props.error}
+                            </p>
+                        ) : null}
+                    </div>
+                </form>
+            </div>
+        </div>
     );
 }

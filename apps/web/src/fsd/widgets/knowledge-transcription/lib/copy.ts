@@ -1,6 +1,11 @@
 import type { Locale } from '@/fsd/shared/i18n';
 export const transcriptionCopy = {
     en: {
+        localApply: 'Apply transcript to audio draft',
+        localApplied:
+            'Transcript added to this audio draft. Apply the block, then Save to publish.',
+        localNoSave:
+            'Applying changes only this open audio draft. Apply the block and Save the note to publish.',
         title: 'Transcribe uploaded audio',
         source: 'Audio block',
         language: 'Transcript language',
@@ -24,6 +29,11 @@ export const transcriptionCopy = {
         noSave: 'Applying changes only your working draft. This does not save or publish the note.',
     },
     ru: {
+        localApply: 'Применить к черновику аудио',
+        localApplied:
+            'Расшифровка добавлена в черновик аудио. Примените блок и сохраните заметку для публикации.',
+        localNoSave:
+            'Изменится только открытый черновик аудио. Для публикации примените блок и сохраните заметку.',
         title: 'Расшифровать загруженное аудио',
         source: 'Аудиоблок',
         language: 'Язык расшифровки',
@@ -47,6 +57,11 @@ export const transcriptionCopy = {
         noSave: 'Применение изменяет только рабочий черновик. Заметка не сохраняется и не публикуется.',
     },
     es: {
+        localApply: 'Aplicar al borrador de audio',
+        localApplied:
+            'Transcripción añadida al borrador de audio. Aplica el bloque y guarda para publicar.',
+        localNoSave:
+            'Solo cambia este borrador de audio. Aplica el bloque y guarda la nota para publicar.',
         title: 'Transcribir audio subido',
         source: 'Bloque de audio',
         language: 'Idioma de la transcripción',
@@ -70,6 +85,11 @@ export const transcriptionCopy = {
         noSave: 'Aplicar solo cambia el borrador. No guarda ni publica la nota.',
     },
     fr: {
+        localApply: 'Appliquer au brouillon audio',
+        localApplied:
+            'Transcription ajoutée au brouillon audio. Appliquez le bloc puis enregistrez pour publier.',
+        localNoSave:
+            'Seul ce brouillon audio change. Appliquez le bloc et enregistrez la note pour publier.',
         title: 'Transcrire un audio importé',
         source: 'Bloc audio',
         language: 'Langue de transcription',

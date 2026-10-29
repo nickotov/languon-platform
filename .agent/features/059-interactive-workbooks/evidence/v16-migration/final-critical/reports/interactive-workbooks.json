@@ -1,0 +1,309 @@
+{
+  "config": {
+    "argv": [
+      "/Users/nickkotov/.nvm/versions/node/v24.8.0/bin/node",
+      "/Users/nickkotov/projects/languon/apps/web/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config",
+      "tests/e2e/support/contextual-assistant-playwright.config.ts",
+      "interactive-workbooks.journeys.spec.ts",
+      "--grep",
+      ".",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output",
+      "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts"
+    ],
+    "configFile": "/Users/nickkotov/projects/languon/apps/web/tests/e2e/support/contextual-assistant-playwright.config.ts",
+    "rootDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/(?:contextual-assistant|knowledge-workspace|interactive-workbooks|ai-accounting)\\.journeys\\.spec\\.ts/"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "interactive-workbooks.journeys.spec.ts",
+      "file": "interactive-workbooks.journeys.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "author creates blocks and uploaded audio, publishes, reopens and saves private practice",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 23905,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:26:32.219Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "editor-block-menu",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-block-menu-7b42e0a09c26fe9e2299b3165ce15b555be0a15f.png"
+                    },
+                    {
+                      "name": "editor-empty-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-empty-desktop-53be275c55953b453ca7c6ee9b5f2bff4d4fe9ca.png"
+                    },
+                    {
+                      "name": "editor-empty-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-empty-mobile-5efd418271e92c14d537851d2364076d52ff9563.png"
+                    },
+                    {
+                      "name": "chat-vocabulary-proposal",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/chat-vocabulary-proposal-49a621aebc3ee573eece5adf4bf0f0648cec5665.png"
+                    },
+                    {
+                      "name": "editor-inline-block-settings",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-inline-block-settings-e60677b51dd1f974a029c633af384a435d7240fc.png"
+                    },
+                    {
+                      "name": "editor-block-settings-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-block-settings-mobile-6a3222e04ccb215a9cd95cd8e401fc37845049ab.png"
+                    },
+                    {
+                      "name": "audio-transcription-unavailable-manual-fields",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/audio-transcription-unavailable-manual-fields-48072dd1c032b534136d152fbe784859f1c7539d.png"
+                    },
+                    {
+                      "name": "audio-side-editor",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/audio-side-editor-746edb4fbf57d6988704c06180f4c7fd039c6623.png"
+                    },
+                    {
+                      "name": "editor-populated-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-populated-desktop-6e7dd70f23d77901346195f601b2894625971789.png"
+                    },
+                    {
+                      "name": "editor-populated-desktop-dark",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/editor-populated-desktop-dark-542a159e027f5a5d8fa1886f28e8fbe8716fcac7.png"
+                    },
+                    {
+                      "name": "workbook-practice-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/workbook-practice-desktop-32d3406e0a64ac3e386047a90fe2c37fb814f2e9.png"
+                    },
+                    {
+                      "name": "workbook-practice-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/workbook-practice-mobile-0d9b79be37afd12d16389e63528240b89ea3967b.png"
+                    },
+                    {
+                      "name": "video-side-editor",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/video-side-editor-925e80b5136b3d338075b0b6e35072c4dbd98e00.png"
+                    },
+                    {
+                      "name": "video-transcript-grounded-hint",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/attachments/video-transcript-grounded-hint-7db3abcf57db98a30fb651df403e32c7a23c1fb7.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "252109c5575e5112000c-9571a384a133c8f2c0b0",
+          "file": "interactive-workbooks.journeys.spec.ts",
+          "line": 226,
+          "column": 5
+        },
+        {
+          "title": "ordered workbook shares saved content, isolates reader progress, copies independently and revokes safely",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14110,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:26:56.405Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "252109c5575e5112000c-f86a67834f0f5697a66b",
+          "file": "interactive-workbooks.journeys.spec.ts",
+          "line": 1082,
+          "column": 5
+        },
+        {
+          "title": "reviews typed updates, accepts atomic field suggestions in side editors and evaluates private inline alternatives",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21442,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:27:10.522Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "atomic-vocabulary-side-editor",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/atomic-vocabulary-side-editor-8bff6e9d66cab3e7d1b1aff7be08c9674e73495e.png"
+                    },
+                    {
+                      "name": "atomic-vocabulary-bottom-sheet",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/atomic-vocabulary-bottom-sheet-4f490337501283d2f481a824c2a3909891966c8e.png"
+                    },
+                    {
+                      "name": "generated-audio-preview",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/generated-audio-preview-6ba99139b3c37dfbc3ff930f539a9246743f2b63.png"
+                    },
+                    {
+                      "name": "chat-target-update-review",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/chat-target-update-review-4a1b0cdcd509dde66541b9801670b42750c2010b.png"
+                    },
+                    {
+                      "name": "prepared-audio-chat-review",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/prepared-audio-chat-review-757a57d96b43dcadd344db10dc8c27d9197dd0a8.png"
+                    },
+                    {
+                      "name": "prepared-audio-chat-review-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/prepared-audio-chat-review-mobile-948f45b7f8c2ec9dd2a5cffa6696e2af6aeaf169.png"
+                    },
+                    {
+                      "name": "prepared-audio-chat-review-mobile-expanded",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/prepared-audio-chat-review-mobile-expanded-4b132dd01ce02ecb60f366497dc0b9851fc0fe3f.png"
+                    },
+                    {
+                      "name": "inline-exercise-feedback-desktop",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/inline-exercise-feedback-desktop-0719ef0e5d7809f01b681ccd1314dff1cb570b29.png"
+                    },
+                    {
+                      "name": "inline-exercise-feedback-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/interactive-workbooks-artifacts/interactive-workbooks.jour-3adfb-private-inline-alternatives/attachments/inline-exercise-feedback-mobile-3a4ff7c8a1faad8d8bfc88615bedae1651604c45.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "252109c5575e5112000c-329f83523857bd1e24db",
+          "file": "interactive-workbooks.journeys.spec.ts",
+          "line": 1356,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-29T22:26:23.944Z",
+    "duration": 68291.352,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

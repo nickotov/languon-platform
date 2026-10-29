@@ -1,3 +1,4 @@
+import { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import { dictionaryAudioBudget } from './audio/dictionary-audio-budget';
 import { randomBytes } from 'node:crypto';
 import type { PostgresJsDatabase } from '@languon/database';
@@ -32,6 +33,7 @@ export function createSpeechInfrastructure(input: {
             secret: input.dictionaryHmacSecret,
             entropy: { randomBytes },
         }),
+        new KnowledgeShareCrypto(input.dictionaryHmacSecret),
     );
     const budget = dictionaryAudioBudget(input.environment);
     const store = new DrizzleSpeechStore({

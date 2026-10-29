@@ -1,6 +1,6 @@
 # Interactive knowledge workbooks
 
-Status: In progress — independent review remediation and final verification
+Status: In progress — v16 migration verified; transcription activation awaits provider/model approval
 Owner: Engineering agent
 Created: 2026-10-28
 
@@ -75,7 +75,7 @@ older pending-confirmation wording is historical, not a new approval requirement
 
 All ACs above are one authorized feature delivered in six milestones. Web, API,
 worker and persistence surfaces are in scope; reusable contracts do not authorize
-an unrelated mobile redesign. No supplied visual design requires fidelity.
+an unrelated mobile redesign. The user subsequently selected Magic Patterns v16 for custom-block/editor/chat fidelity; see the inventory below.
 
 Out of scope: course/lesson generation, group-wide AI context, teacher dashboards,
 submitted assignments, course grading/prerequisites, grammar-library saving,
@@ -115,3 +115,45 @@ before dependent implementation, with strategic commitments escalated if needed.
 
 [Confirmed interview](../../../docs/interactive-workbook-discovery.md), Q1–Q25
 plus explicit XSS requirement; [glossary](../../../CONTEXT.md).
+
+## Magic Patterns v16 fidelity inventory
+
+Selected source: [versioned handoff](DESIGN.md), Magic Patterns artifact
+`fb2e85d3-cf96-4a3f-b0e3-841f9057a4f8` (v16). This is a continuation of
+AC-1–AC-3, AC-8–AC-17 and AC-19–AC-22, including the expressly requested atomic
+AI authoring extension. Existing chat/editor shell is retained; prototype/demo
+controls and future boards are reference-only, not shipped product UI.
+
+| ID    | Source requirement / states                                                                                                                                                     | Intended local owner                                            | Required verification                                                       | Disposition                                                 |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| MP-01 | Grip, 16px family icon, title, type/count and right ellipsis on a compact row; selected indigo ring, hover/touch handle                                                         | Knowledge block node/actions                                    | Wide/narrow selection, keyboard/touch/menu                                  | Required                                                    |
+| MP-02 | Type-specific soft tinted containers with neutral media; sheet Highlight learning blocks toggle; default on, local display preference, no dirty Save; shared readers default on | Knowledge workspace / block frame                               | On/off, selected/inserted, light/dark                                       | Required; mirror v16 local behavior                         |
+| MP-03 | Reorder, duplicate/copy/delete and extensible family menu; empty writable prose after/between blocks                                                                            | TipTap block node / document transactions                       | Drag/keyboard, text insertion, undo, reload, safe paste                     | Required; retain TipTap and safe structured rendering       |
+| MP-04 | Desktop right editing panel: 440px max width, 12px inset; mobile 82% bottom sheet expandable to 8px top inset, fixed header/footer                                              | Knowledge block form dialog                                     | Dirty-dismiss/cancel/apply, focus/keyboard, long forms, mobile              | Required                                                    |
+| MP-05 | Per-type editors for all six blocks, manual edits local until Apply changes; document Save publishes                                                                            | Knowledge block authoring                                       | All forms, validation, discard/recovery                                     | Required                                                    |
+| MP-06 | Atomic AI field check/generation; pending/correct/proposed/failure/stale; current/proposed Accept/Dismiss                                                                       | Knowledge field-AI authoring feature and bounded backend action | Target isolation, input changes, cancel/late result, credits, authorization | Required; accepted vocabulary and bilingual fields          |
+| MP-07 | Compact chat preview, full review panel, author and learner variants                                                                                                            | Reusable learning-block entity                                  | Representative all-six contexts and long content                            | Required                                                    |
+| MP-08 | Compact proposal header/count/status, Apply, Review, applied Show in sheet, failed Retry                                                                                        | Conversation proposal UI                                        | Preparing/ready/review/applying/applied/failure, scroll/focus               | Required                                                    |
+| MP-09 | Update existing block proposal with captured target; stale Add separately/Ask again, no silent overwrite                                                                        | Proposal contracts / backend persistence / editor apply         | Per-block staleness, atomic update, duplicate apply, source authorization   | Required; implementation extends append-only contracts      |
+| MP-10 | Vocabulary six-row compact pairs; author/learner per-row folds initially closed; Show/Hide all in menu; two columns at 11+ entries and 560px block width                        | Vocabulary block                                                | Chat vs review vs sheet, expand-all, content-width resize                   | Required                                                    |
+| MP-11 | Explicit playback for vocabulary terms/examples, grammar examples and bilingual source/snippets; shared active target                                                           | Speech playback integration                                     | Real prepared playback, generation/unavailable/retry, cross-context stop    | Required; no mock timers or new provider                    |
+| MP-12 | Grammar rule/pattern/examples/mistakes; compact summary and focused editor                                                                                                      | Grammar block                                                   | Optional sections, examples/playback, narrow widths                         | Required                                                    |
+| MP-13 | Original/Bilingual, translation picker, aligned columns >=560px otherwise stacking, private reader translation                                                                  | Bilingual block / translation feature                           | Multiple languages, prepared/private/stale, role and credits                | Required                                                    |
+| MP-14 | Audio player, hidden learner transcript, timed passage/replay and inline related questions; preview/review transcript variants                                                  | Media / exercise blocks                                         | Media/failed/unprepared/transcript variants, hints/reveal isolation         | Required; accepted unprepared audio                         |
+| MP-15 | Explicit video playback, supported source/link fallback, description and transcript disclosure, unavailable and honest understanding label                                      | Video block / editor                                            | YouTube/direct/unsupported/unsafe/unavailable, no autoplay                  | Required; no automatic remote understanding                 |
+| MP-16 | Folded exercise summary and individually expandable task/input; inline feedback, hint and answer below task, collapse preserves answer                                          | Exercise block / private learning                               | MC/blank/free, retry/loading/reveal/hint/correct distinct                   | Required; free MC/blank check, optional AI feedback for all |
+| MP-17 | Exercise set editor, multiple questions and per-question reference/alternatives/explanation/grounding                                                                           | Contracts / authoring / learning persistence                    | Material versions, unchanged progress, copies fresh IDs                     | Required; preserve reusable exercise identity/history       |
+| MP-18 | Library create/extend dictionary, create/append Text with selection/preview; media copy panel; library insert and practice launch                                               | Existing library/practice/copy widgets                          | Independent saved items, retry-safe apply/copy, media remains usable        | Required; use real existing practice, no mock replacement   |
+| MP-19 | Learner preview and shared reader menu without author editing; private attempts/completion and revoked/sign-in/credits states                                                   | Workbook learning and shared sheet                              | Author/signed-in/anonymous, save vs publication, access lifecycle           | Required                                                    |
+| MP-20 | All visual controls/states keep source dimensions, semantic colors, icons, typography, responsive/dark styling                                                                  | Owning CSS Modules / shared primitives                          | Matched reference/runtime capture, styling guard, accessibility             | Required; adapt code mechanisms, not supplied design        |
+| MP-21 | Future pronunciation, deeper transcript+description comprehension, difficulty, courses/group context                                                                            | No launch owner                                                 | Ensure future/demo controls absent from launch UI                           | Explicitly deferred per brief and source FutureBoard        |
+
+Brief mapping: KS-01–KS-05 → MP-01–MP-05, MP-19–MP-20; KS-06–KS-08 →
+MP-07–MP-09; KS-09–KS-14 → MP-10–MP-17; KS-15–KS-18 → MP-17–MP-19;
+KS-19–KS-21 → MP-20; KS-22 → MP-06; KS-23 → MP-21.
+
+Source field-AI, playback, grading, private translations and upload/generation
+include fake local results/timers. Implement real existing services and bounded
+new action contracts; never port their fake success paths. Preview state controls,
+prototype navigation and boards are verification references only. New schemas must
+not weaken shared-source authority, XSS validation, asset grants or AI budgets.

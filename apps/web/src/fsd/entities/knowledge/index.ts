@@ -9,3 +9,8 @@ export {
     knowledgeCategoryKeys,
     noteContent,
 } from './lib/knowledge-content';
+
+export {
+    useKnowledgeAudioUrls,
+    type KnowledgeAudioUrlsOptions,
+} from './hooks/use-knowledge-audio-urls';

@@ -1,4 +1,12 @@
-import { KnowledgeBodySchema, type LearningBlock } from '@languon/contracts';
+import { and, eq } from 'drizzle-orm';
+import { knowledgeWorkingBranchesTable as branches } from './schema';
+import { getOwnedKnowledgeRow } from './knowledge-transaction';
+import {
+    KnowledgeBodySchema,
+    type LearningBlock,
+    type KnowledgeBody,
+    type CopyKnowledgeVocabularyRequest,
+} from '@languon/contracts';
 import type { LearnerSourceAccess } from '../../../application/learner-store';
 import { KnowledgeDomainError } from '../../../domain/knowledge';
 import type { KnowledgeShareCrypto } from '../../knowledge-share-crypto';
@@ -10,23 +18,59 @@ export async function readLibraryCopyBlock(
     tx: KnowledgeTransaction,
     crypto: KnowledgeShareCrypto,
     actorId: string,
-    request: { noteId: string; noteVersion: number; blockId: string },
+    request: Pick<
+        CopyKnowledgeVocabularyRequest,
+        'noteId' | 'noteVersion' | 'blockId' | 'workingSource'
+    >,
     access?: LearnerSourceAccess,
 ): Promise<LearningBlock> {
-    const note = await readLearnerNote(
-        tx,
-        crypto,
-        actorId,
-        request.noteId,
-        access,
-    );
+    let body: KnowledgeBody;
+    if (request.workingSource) {
+        if (request.noteVersion !== undefined || access)
+            throw new KnowledgeDomainError(
+                'invalid_request',
+                'Working copies require an owned working source only.',
+            );
+        await getOwnedKnowledgeRow(tx, actorId, request.noteId);
+        const [branch] = await tx
+            .select()
+            .from(branches)
+            .where(
+                and(
+                    eq(branches.id, request.workingSource.branchId),
+                    eq(branches.noteId, request.noteId),
+                ),
+            )
+            .for('share');
 
-    if (note.version !== request.noteVersion)
-        throw new KnowledgeDomainError(
-            'version_conflict',
-            'The note changed. Preview the copy again.',
+        if (!branch)
+            throw new KnowledgeDomainError(
+                'knowledge_not_found',
+                'The working source is unavailable.',
+            );
+        if (branch.version !== request.workingSource.expectedVersion)
+            throw new KnowledgeDomainError(
+                'version_conflict',
+                'The working material changed. Preview the copy again.',
+            );
+        body = KnowledgeBodySchema.parse(branch.content.body);
+    } else {
+        const note = await readLearnerNote(
+            tx,
+            crypto,
+            actorId,
+            request.noteId,
+            access,
         );
-    const body = KnowledgeBodySchema.parse(note.body);
+
+        if (note.version !== request.noteVersion)
+            throw new KnowledgeDomainError(
+                'version_conflict',
+                'The note changed. Preview the copy again.',
+            );
+        body = KnowledgeBodySchema.parse(note.body);
+    }
+
     const block = body.document.content?.find(
         (node) =>
             node.type === 'learningBlock' &&

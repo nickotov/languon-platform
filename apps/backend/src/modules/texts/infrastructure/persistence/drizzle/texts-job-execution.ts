@@ -1,3 +1,7 @@
+import type { TextsJobRow } from './texts-job-support';
+import { validateKnowledgeExerciseEvaluationResult } from '../../../../knowledge/infrastructure/ai/exercise-evaluation-provider';
+import { publishKnowledgeExerciseEvaluation } from '../../../../knowledge/infrastructure/persistence/drizzle/exercise-evaluation-publication';
+import { validateKnowledgeFieldResult } from '../../../../knowledge/infrastructure/ai/block-field-provider';
 import {
     publishPrivateKnowledgeTranslation,
     renewPrivateKnowledgeTranslation,
@@ -146,6 +150,26 @@ export async function markDispatched(
     });
 }
 
+function validateJobResult(job: TextsJobRow, result: TextJobResult) {
+    if (job.inputPayload?.kind === 'text-translation') {
+        if (job.inputPayload.knowledgeExerciseEvaluation)
+            return validateKnowledgeExerciseEvaluationResult(
+                job.inputPayload.knowledgeExerciseEvaluation,
+                result,
+            );
+        if (job.inputPayload.knowledgeFieldAction)
+            return validateKnowledgeFieldResult(
+                job.inputPayload.knowledgeFieldAction,
+                result,
+            );
+    }
+
+    if (job.jobKind === 'text-translation')
+        return TextTranslationProposalSchema.parse(result);
+
+    return TextDetectionResultSchema.parse(result);
+}
+
 export async function complete(
     persistence: TextsJobStoreContext,
     lease: TextsLease,
@@ -165,12 +189,13 @@ export async function complete(
             return false;
         }
 
-        const validated =
-            job.jobKind === 'text-translation'
-                ? TextTranslationProposalSchema.parse(result)
-                : TextDetectionResultSchema.parse(result);
+        const validated = validateJobResult(job, result);
 
-        if (job.inputPayload?.kind === 'text-translation') {
+        if (
+            job.inputPayload?.kind === 'text-translation' &&
+            !job.inputPayload.knowledgeFieldAction &&
+            !job.inputPayload.knowledgeExerciseEvaluation
+        ) {
             const original = job.inputPayload;
             const proposal = TextTranslationProposalSchema.parse(validated);
             if (
@@ -196,6 +221,18 @@ export async function complete(
         }
 
         await settleTextsAttempt(tx, job, context.now, usage, 'success');
+        if (
+            job.inputPayload?.kind === 'text-translation' &&
+            job.inputPayload.knowledgeExerciseEvaluation
+        )
+            await publishKnowledgeExerciseEvaluation(
+                tx,
+                job,
+                validateKnowledgeExerciseEvaluationResult(
+                    job.inputPayload.knowledgeExerciseEvaluation,
+                    validated,
+                ),
+            );
         await recordTextAiCircuitSuccess(tx, scope(job, context.now));
         if (job.externalSourceKind === 'knowledge-block') {
             await publishPrivateKnowledgeTranslation(

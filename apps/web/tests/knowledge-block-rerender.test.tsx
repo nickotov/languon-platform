@@ -36,6 +36,7 @@ it('preserves a learner answer when parent query options and callbacks rerender'
             />
         </I18nProvider>,
     );
+    fireEvent.click(screen.getByRole('button', { name: /When\?/ }));
     fireEvent.change(screen.getByLabelText('Your answer'), {
         target: { value: 'My unsent answer' },
     });

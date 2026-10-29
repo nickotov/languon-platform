@@ -5,6 +5,10 @@ import {
 } from '@languon/contracts';
 
 export type BlockKind = LearningBlock['type'];
+export type BlockLanguageDefaults = {
+    content?: string | undefined;
+    translation?: string | undefined;
+};
 export type BlockField = {
     name: string;
     label: string;
@@ -26,7 +30,11 @@ const field = (
 ): BlockField => ({ name, label, value, multiline });
 
 /** Authoring controls describe content, never executable markup or storage keys. */
-export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
+export function blockForm(
+    kind: BlockKind,
+    block?: LearningBlock,
+    defaults?: BlockLanguageDefaults,
+): BlockForm {
     const fields = [field('title', 'Title', block?.title)];
     const groups: BlockGroup[] = [];
     if (kind !== 'exercise')
@@ -34,7 +42,9 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
             field(
                 'language',
                 'Content language',
-                block && 'language' in block ? block.language : 'en',
+                (block && 'language' in block ? block.language : undefined) ??
+                    defaults?.content ??
+                    'en',
             ),
         );
     if (kind === 'video') {
@@ -49,9 +59,18 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
                     : source?.url,
             ),
         );
+        fields.push(
+            field(
+                'description',
+                'Author’s description',
+                video?.description,
+                true,
+            ),
+        );
         const languageField = fields.find((item) => item.name === 'language');
         if (languageField)
-            languageField.value = video?.transcript?.language ?? 'en';
+            languageField.value =
+                video?.transcript?.language ?? defaults?.content ?? 'en';
         groups.push({
             name: 'transcript',
             label: 'Transcript passages',
@@ -62,6 +81,7 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
             ],
             rows:
                 video?.transcript?.segments.map((segment) => ({
+                    id: segment.id,
                     text: segment.text,
                     start: segment.timing
                         ? String(segment.timing.startSeconds)
@@ -112,7 +132,9 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
             field(
                 'translationLanguage',
                 'Translation language',
-                vocabulary?.translationLanguage ?? 'en',
+                vocabulary?.translationLanguage ??
+                    defaults?.translation ??
+                    'en',
             ),
         );
         groups.push({
@@ -142,7 +164,7 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
             field(
                 'translationLanguage',
                 'Translation language',
-                translation?.language ?? 'en',
+                translation?.language ?? defaults?.translation ?? 'en',
             ),
         );
         groups.push({
@@ -153,6 +175,7 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
                 field('translation', 'Translated passage', '', true),
             ],
             rows: bilingual?.segments.map((segment) => ({
+                id: segment.id,
                 text: segment.text,
                 translation:
                     translation?.segments.find(
@@ -176,6 +199,7 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
             ],
             rows:
                 audio?.transcript?.segments.map((segment) => ({
+                    id: segment.id,
                     text: segment.text,
                     start: segment.timing
                         ? String(segment.timing.startSeconds)
@@ -187,12 +211,17 @@ export function blockForm(kind: BlockKind, block?: LearningBlock): BlockForm {
         });
         const languageField = fields.find((item) => item.name === 'language');
         if (languageField)
-            languageField.value = audio?.transcript?.language ?? 'en';
+            languageField.value =
+                audio?.language ??
+                audio?.transcript?.language ??
+                defaults?.content ??
+                'en';
     }
     if (kind === 'exercise') {
         const exercise = block?.type === 'exercise' ? block : undefined;
         fields.push(
             field('question', 'Question', exercise?.question, true),
+            field('hint', 'Hint', exercise?.hint, true),
             field(
                 'referenceAnswer',
                 'Reference answer',
@@ -275,6 +304,10 @@ export function readBlockForm(
     data: FormData,
     counts: Record<string, number>,
     previous?: LearningBlock,
+    preparedDrafts?: Extract<
+        LearningBlock,
+        { type: 'bilingual-text' }
+    >['translations'],
 ): LearningBlock {
     const value = (name: string) => String(data.get(name) ?? '');
     const optional = (name: string) => value(name).trim() || undefined;
@@ -285,7 +318,7 @@ export function readBlockForm(
             ),
         ).filter((row) => Object.values(row).some((text) => text.trim()));
     const common = {
-        id: previous?.id ?? crypto.randomUUID(),
+        id: previous?.id ?? (value('blockId') || crypto.randomUUID()),
         ...(optional('title') ? { title: optional('title') } : {}),
     };
     let candidate: unknown;
@@ -341,10 +374,13 @@ export function readBlockForm(
         }
         const previousTranscript =
             previous?.type === 'video' ? previous.transcript : undefined;
-        const passages = rows('transcript', ['text', 'start', 'end']);
+        const passages = rows('transcript', ['id', 'text', 'start', 'end']);
         candidate = {
             ...common,
             type: kind,
+            ...(optional('description')
+                ? { description: value('description') }
+                : {}),
             source: videoId
                 ? { kind: 'youtube', videoId }
                 : { kind: 'url', url: value('video') },
@@ -354,7 +390,8 @@ export function readBlockForm(
                           language: value('language'),
                           segments: passages.map((row, index) => ({
                               id:
-                                  previousTranscript?.segments[index]?.id ??
+                                  row.id ||
+                                  previousTranscript?.segments[index]?.id ||
                                   crypto.randomUUID(),
                               text: row.text,
                               ...(row.start || row.end
@@ -379,6 +416,7 @@ export function readBlockForm(
             language: value('language'),
             translationLanguage: value('translationLanguage'),
             entries: rows('entries', [
+                'id',
                 'term',
                 'translation',
                 'pronunciation',
@@ -386,7 +424,7 @@ export function readBlockForm(
                 'example',
                 'exampleTranslation',
             ]).map((row, index) => ({
-                id: old?.entries[index]?.id ?? crypto.randomUUID(),
+                id: row.id || old?.entries[index]?.id || crypto.randomUUID(),
                 term: row.term,
                 translation: row.translation,
                 ...(row.definition ? { definition: row.definition } : {}),
@@ -402,43 +440,39 @@ export function readBlockForm(
     }
     if (kind === 'bilingual-text') {
         const old = previous?.type === kind ? previous : undefined;
-        const passages = rows('segments', ['text', 'translation']);
+        const passages = rows('segments', ['id', 'text', 'translation']);
         const segments = passages.map((row, index) => ({
-            id: old?.segments[index]?.id ?? crypto.randomUUID(),
+            id: row.id || old?.segments[index]?.id || crypto.randomUUID(),
             text: row.text,
         }));
         const translated = passages.some((row) => row.translation?.trim());
         const editedLanguage = value('translationLanguage');
-        // Unedited translations are valid only while every source passage remains unchanged.
-        const unchanged =
-            old &&
-            old.segments.length === segments.length &&
-            old.segments.every(
-                (segment, index) => segment.text === segments[index]?.text,
-            );
-        if (old && old.translations.length > 1 && !unchanged)
-            throw new Error(
-                'Update translations before changing a multilingual source.',
-            );
+        const prior = preparedDrafts ?? old?.translations ?? [];
+        const translations = prior.map((translation) => ({
+            language: translation.language,
+            segments: segments.map((segment) => ({
+                sourceSegmentId: segment.id,
+                text:
+                    translation.segments.find(
+                        (item) => item.sourceSegmentId === segment.id,
+                    )?.text ?? '',
+            })),
+        }));
+        const index = translations.findIndex(
+            (translation) =>
+                translation.language.toLowerCase() ===
+                editedLanguage.toLowerCase(),
+        );
         const replacement = {
-            language: editedLanguage,
+            language:
+                index >= 0 ? translations[index]!.language : editedLanguage,
             segments: passages.map((row, index) => ({
                 sourceSegmentId: segments[index]!.id,
                 text: row.translation ?? '',
             })),
         };
-        const prior = unchanged && old ? old.translations : [];
-        const translations = prior.flatMap((translation) => {
-            if (translation.language !== editedLanguage) return [translation];
-            return translated ? [replacement] : [];
-        });
-        if (
-            translated &&
-            !prior.some(
-                (translation) => translation.language === editedLanguage,
-            )
-        )
-            translations.push(replacement);
+        if (index >= 0) translations[index] = replacement;
+        else if (translated) translations.push(replacement);
         candidate = {
             ...common,
             type: kind,
@@ -448,25 +482,29 @@ export function readBlockForm(
         };
     }
     if (kind === 'audio') {
-        if (previous?.type !== 'audio')
-            throw new Error(
-                'Upload or generate audio before inserting an audio block.',
-            );
-        const passages = rows('transcript', ['text', 'start', 'end']);
+        const audio = previous?.type === 'audio' ? previous : undefined;
+        const passages = rows('transcript', ['id', 'text', 'start', 'end']);
         candidate = {
             ...common,
             type: kind,
-            assetId: previous.assetId,
+            language: value('language'),
+            ...(audio?.assetId ? { assetId: audio.assetId } : {}),
             ...(optional('sourceText')
                 ? { sourceText: value('sourceText') }
                 : {}),
             ...(passages.length
                 ? {
                       transcript: {
-                          language: value('language'),
+                          language:
+                              audio?.transcript &&
+                              value('language') ===
+                                  (audio.language ?? audio.transcript.language)
+                                  ? audio.transcript.language
+                                  : value('language'),
                           segments: passages.map((row, index) => ({
                               id:
-                                  previous.transcript?.segments[index]?.id ??
+                                  row.id ||
+                                  audio?.transcript?.segments[index]?.id ||
                                   crypto.randomUUID(),
                               text: row.text,
                               ...(row.start || row.end
@@ -499,6 +537,8 @@ export function readBlockForm(
             ...common,
             type: kind,
             question: value('question'),
+            ...(old?.group ? { group: old.group } : {}),
+            ...(optional('hint') ? { hint: value('hint') } : {}),
             referenceAnswer: value('referenceAnswer'),
             explanation: value('explanation'),
             ...(optional('evaluationCriteria')

@@ -1,3 +1,11 @@
+import {
+    preflightKnowledgeExerciseEvaluation,
+    runKnowledgeExerciseEvaluation,
+} from '../../../knowledge/infrastructure/ai/exercise-evaluation-provider';
+import {
+    preflightKnowledgeFieldAction,
+    runKnowledgeFieldAction,
+} from '../../../knowledge/infrastructure/ai/block-field-provider';
 import { withQueuedTextAiProviderAttempt } from '../../../text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt';
 import type { TextAiProviderRuntimeOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
 import { ProviderExecutionError } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
@@ -50,6 +58,25 @@ export function preflightTextsRequest(
     execution: TextAiExecutionSnapshot,
     budget: TextAiProviderBudgetPolicy,
 ) {
+    if (
+        input.kind === 'text-translation' &&
+        input.knowledgeExerciseEvaluation
+    ) {
+        preflightKnowledgeExerciseEvaluation(
+            input.knowledgeExerciseEvaluation,
+            execution,
+            budget,
+        );
+        return;
+    }
+    if (input.kind === 'text-translation' && input.knowledgeFieldAction) {
+        preflightKnowledgeFieldAction(
+            input.knowledgeFieldAction,
+            execution,
+            budget,
+        );
+        return;
+    }
     const schema =
         input.kind === 'text-translation'
             ? TextTranslationProviderOutputSchema
@@ -126,6 +153,24 @@ export function createTextsAiProvider(options: {
     return {
         async run(call) {
             call.signal.throwIfAborted();
+            if (
+                call.input.kind === 'text-translation' &&
+                call.input.knowledgeExerciseEvaluation
+            )
+                return runKnowledgeExerciseEvaluation(
+                    { ...options.runtime, ...options },
+                    call,
+                    call.input.knowledgeExerciseEvaluation,
+                );
+            if (
+                call.input.kind === 'text-translation' &&
+                call.input.knowledgeFieldAction
+            )
+                return runKnowledgeFieldAction(
+                    { ...options.runtime, ...options },
+                    call,
+                    call.input.knowledgeFieldAction,
+                );
             preflightTextsRequest(call.input, call.execution, call.budget);
             const resolved = resolveTextAiProviderOptions({
                 ...options.runtime,

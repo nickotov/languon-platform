@@ -1,0 +1,126 @@
+.audioPlayer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    border-radius: var(--radius-12);
+    background: var(--background-subtle);
+    padding: var(--space-8) var(--space-10);
+}
+
+.audioPlay {
+    border-radius: 50%;
+    min-width: var(--size-36);
+    min-height: var(--size-36);
+}
+
+.audioBody {
+    min-width: 0;
+    flex: 1;
+}
+
+.seek {
+    width: 100%;
+    height: var(--size-6);
+    accent-color: var(--primary-default);
+    cursor: pointer;
+}
+
+.audioMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    margin-top: var(--space-2);
+}
+
+.audioMeta > :first-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.audioMeta > :last-child {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.poster {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--neutral-900);
+    color: var(--neutral-300);
+    border: 0;
+    border-radius: var(--radius-12);
+    cursor: pointer;
+}
+
+.poster:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.posterTitle {
+    position: absolute;
+    inset-inline-start: var(--space-12);
+    top: var(--space-10);
+    max-width: 80%;
+    font-size: var(--size-12);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.posterPlay {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-48);
+    height: var(--size-48);
+    border-radius: 50%;
+    background: var(--neutral-50);
+    color: var(--neutral-900);
+}
+
+.source {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    font-size: var(--size-12);
+    color: var(--text-tertiary);
+}
+
+.source a {
+    color: var(--primary-default);
+}
+
+.description {
+    margin: 0;
+    font-size: var(--size-14);
+    color: var(--text-secondary);
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.unprepared {
+    border-radius: var(--radius-8);
+    background: var(--background-subtle);
+    padding: var(--space-8) var(--space-12);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    margin: 0;
+}
+
+@media (pointer: coarse) {
+    .audioPlay {
+        min-width: var(--size-44);
+        min-height: var(--size-44);
+    }
+}

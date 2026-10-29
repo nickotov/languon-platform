@@ -38,6 +38,7 @@ describe('learning block content contracts', () => {
                 id,
                 type: 'video',
                 source: { kind: 'youtube', videoId: 'abcdefghijk' },
+                description: 'Author-supplied scene description.',
             },
             {
                 id,
@@ -86,6 +87,55 @@ describe('learning block content contracts', () => {
         ];
         for (const block of blocks)
             expect(LearningBlockSchema.safeParse(block).success).toBe(true);
+    });
+
+    it('accepts unprepared audio without granting playback authority', () => {
+        const shell = { id, type: 'audio', title: 'Listening exercise' };
+        expect(LearningBlockSchema.parse(shell)).toEqual(shell);
+        for (const assetId of [null, '', 'not-an-asset'])
+            expect(
+                LearningBlockSchema.safeParse({ ...shell, assetId }).success,
+            ).toBe(false);
+        expect(
+            LearningBlockSchema.safeParse({
+                ...shell,
+                url: 'https://example.com/private.mp3',
+            }).success,
+        ).toBe(false);
+    });
+
+    it('preserves explicit audio source language before media or transcription exists', () => {
+        const value = {
+            id,
+            type: 'audio',
+            language: 'fr-CA',
+            sourceText: 'Bonjour.',
+        };
+        expect(LearningBlockSchema.parse(value)).toEqual(value);
+        for (const language of [null, '', 'French!', 'fr_<script>'])
+            expect(
+                LearningBlockSchema.safeParse({ ...value, language }).success,
+            ).toBe(false);
+    });
+
+    it('accepts bounded exercise grouping and prepared hints as content only', () => {
+        const value = {
+            ...exercise,
+            format: 'free-text',
+            group: { id: other, title: 'Practice' },
+            hint: '<script>literal hint</script>',
+        };
+        expect(LearningBlockSchema.parse(value)).toEqual(value);
+        for (const change of [
+            { group: { id: 'not-a-group' } },
+            { group: { id: other, title: 'x'.repeat(201) } },
+            { group: { id: other, onclick: 'alert(1)' } },
+            { hint: 'x'.repeat(8001) },
+            { hint: '   ' },
+        ])
+            expect(
+                LearningBlockSchema.safeParse({ ...value, ...change }).success,
+            ).toBe(false);
     });
 
     it('preserves literal markup as text but rejects executable fields', () => {

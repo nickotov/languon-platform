@@ -1,5 +1,7 @@
+import { contextualFixtureBlock } from './contextual-fixture-block';
 import { createKnowledgeSentenceComposition } from '../../src/modules/knowledge/infrastructure/knowledge-sentence-composition';
 import { eraseKnowledgeSentenceJobs } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-cleanup';
+import { createKnowledgeSpeechBrowserFixture } from './knowledge-speech-browser-fixture';
 import { createKnowledgePrivateTranslationFixture } from './knowledge-private-translation-fixture';
 import { eraseKnowledgeTranslationJobs } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle';
 import { VocabularyPracticeService } from '../../src/modules/knowledge/application/vocabulary-practice-service';
@@ -12,6 +14,8 @@ import { KnowledgeShareCrypto } from '../../src/modules/knowledge/infrastructure
 import { LearnerService } from '../../src/modules/knowledge/application/learner-service';
 import { DrizzleLearnerStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/learner-store';
 import { createLearnerRoutes } from '../../src/modules/knowledge/interface/http/learner-routes';
+import { createKnowledgeTranscriptionService } from '../../src/modules/knowledge/infrastructure/transcription-job-composition';
+import { createKnowledgeTranscriptionJobRoutes } from '../../src/modules/knowledge/interface/http/transcription-job-routes';
 import { KnowledgeMediaService } from '../../src/modules/knowledge/application/media-service';
 import { DrizzleKnowledgeMediaStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/media-store';
 import { verifyKnowledgeAudio } from '../../src/modules/knowledge/infrastructure/media-audio-validation';
@@ -126,6 +130,70 @@ function assertFixtureTarget() {
         );
 }
 
+function vocabularyProposal(prompt: unknown, updating: boolean) {
+    if (updating) {
+        const original = contextualFixtureBlock(prompt, 'vocabulary');
+        if (!original || original.type !== 'vocabulary')
+            throw new Error(
+                'Update fixture requires the actual authorized vocabulary tool result.',
+            );
+        return {
+            targetBlockId: original.id,
+            blocks: [
+                {
+                    ...original,
+                    title: 'Six French words updated',
+                    entries: original.entries.map((entry, index) =>
+                        index === 0
+                            ? { ...entry, translation: 'работа / труд' }
+                            : entry,
+                    ),
+                },
+            ],
+        };
+    }
+    return {
+        blocks: [
+            {
+                id: randomUUID(),
+                type: 'vocabulary',
+                title: 'Six French words',
+                language: 'fr',
+                translationLanguage: 'ru',
+                entries: [
+                    ['travail', 'работа'],
+                    ['joie', 'радость'],
+                    ['ménage', 'уборка'],
+                    ['carrelage', 'плитка'],
+                    ['poisson', 'рыба'],
+                    ['nourriture', 'корм'],
+                ].map(([term, translation]) => ({
+                    id: randomUUID(),
+                    term,
+                    translation,
+                })),
+            },
+        ],
+    };
+}
+
+function preparedAudioProposal(prompt: unknown) {
+    const original = contextualFixtureBlock(
+        prompt,
+        'audio',
+        (block) => block.type === 'audio' && !!block.assetId,
+    );
+    if (!original || original.type !== 'audio' || !original.assetId)
+        throw new Error(
+            'Audio fixture requires an authorized prepared recording from the context tool.',
+        );
+    return {
+        blocks: [
+            { ...original, id: randomUUID(), title: 'Prepared audio proposal' },
+        ],
+    };
+}
+
 /** Real SDK/tools/memory/accounting; replace only the paid external model boundary. */
 function deterministicModel(
     question: string,
@@ -157,10 +225,18 @@ function deterministicModel(
                         );
             }
             const ordinal = dispatched++;
+            const updating = question.startsWith(
+                'Update French vocabulary block fixture',
+            );
+            const audioProposal = question.startsWith(
+                'Copy prepared audio block fixture',
+            );
+            const readUpdate = (updating || audioProposal) && ordinal === 0;
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
             const blockProposal =
-                question.includes('French vocabulary block fixture') &&
-                ordinal === 0;
+                (question.includes('French vocabulary block fixture') ||
+                    audioProposal) &&
+                ordinal === (updating || audioProposal ? 1 : 0);
             const progressive = /progressively/iu.test(question);
             let text =
                 'A river bank is the land beside a river. This explanation uses your saved learning context.';
@@ -181,63 +257,33 @@ function deterministicModel(
                                 type: 'stream-start',
                                 warnings: [],
                             });
-                            if (draft || blockProposal) {
+                            if (draft || blockProposal || readUpdate) {
                                 controller.enqueue({
                                     type: 'tool-call',
                                     toolCallId: randomUUID(),
-                                    toolName: blockProposal
-                                        ? 'propose_learning_blocks'
-                                        : 'propose_knowledge_note',
+                                    toolName: readUpdate
+                                        ? 'read_source_context'
+                                        : blockProposal
+                                          ? 'propose_learning_blocks'
+                                          : 'propose_knowledge_note',
                                     input: JSON.stringify(
-                                        blockProposal
+                                        readUpdate
                                             ? {
-                                                  blocks: [
-                                                      {
-                                                          id: randomUUID(),
-                                                          type: 'vocabulary',
-                                                          title: 'Six French words',
-                                                          language: 'fr',
-                                                          translationLanguage:
-                                                              'ru',
-                                                          entries: [
-                                                              [
-                                                                  'travail',
-                                                                  'работа',
-                                                              ],
-                                                              [
-                                                                  'joie',
-                                                                  'радость',
-                                                              ],
-                                                              [
-                                                                  'ménage',
-                                                                  'уборка',
-                                                              ],
-                                                              [
-                                                                  'carrelage',
-                                                                  'плитка',
-                                                              ],
-                                                              [
-                                                                  'poisson',
-                                                                  'рыба',
-                                                              ],
-                                                              [
-                                                                  'nourriture',
-                                                                  'корм',
-                                                              ],
-                                                          ].map(
-                                                              ([
-                                                                  term,
-                                                                  translation,
-                                                              ]) => ({
-                                                                  id: randomUUID(),
-                                                                  term,
-                                                                  translation,
-                                                              }),
-                                                          ),
-                                                      },
-                                                  ],
+                                                  query: audioProposal
+                                                      ? 'Prepare recording later'
+                                                      : 'travail',
+                                                  limit: 5,
                                               }
-                                            : proposedContent,
+                                            : blockProposal
+                                              ? audioProposal
+                                                  ? preparedAudioProposal(
+                                                        options.prompt,
+                                                    )
+                                                  : vocabularyProposal(
+                                                        options.prompt,
+                                                        updating,
+                                                    )
+                                              : proposedContent,
                                     ),
                                 });
                                 controller.enqueue({
@@ -369,7 +415,10 @@ export async function createContextualAssistantFixture(
     );
     let privateTranslation:
         ReturnType<typeof createKnowledgePrivateTranslationFixture> | undefined;
+    let speech:
+        ReturnType<typeof createKnowledgeSpeechBrowserFixture> | undefined;
     async function close() {
+        await speech?.close();
         await privateTranslation?.close();
         await authentication.close();
         const redis = createTestRedisClient();
@@ -401,6 +450,14 @@ export async function createContextualAssistantFixture(
             return { userId: claims.userId };
         };
         privateTranslation = createKnowledgePrivateTranslationFixture({
+            database: d.database,
+            rateLimiter: d.rateLimiter,
+            secret,
+            authenticate,
+            policy: authentication.options.policy,
+            clock: d.clock,
+        });
+        speech = createKnowledgeSpeechBrowserFixture({
             database: d.database,
             rateLimiter: d.rateLimiter,
             secret,
@@ -489,7 +546,10 @@ export async function createContextualAssistantFixture(
             database: d.database,
         });
         const app = createApp({
+            speech: speech.speechRoutes,
             knowledgePrivateTranslations: privateTranslation.routes,
+            knowledgeBlockFields: privateTranslation.fieldRoutes,
+            knowledgeExerciseEvaluations: privateTranslation.evaluationRoutes,
             workbooks: createWorkbookRoutes({
                 service: new WorkbookService({
                     store: new DrizzleWorkbookStore(
@@ -533,6 +593,15 @@ export async function createContextualAssistantFixture(
                 }),
                 policy: authentication.options.policy,
             }),
+            knowledgeTranscription: createKnowledgeTranscriptionJobRoutes({
+                service: createKnowledgeTranscriptionService({
+                    database: d.database,
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                    executionReady: false,
+                }),
+                policy: authentication.options.policy,
+            }),
             knowledgeMedia: createKnowledgeMediaRoutes({
                 service: new KnowledgeMediaService({
                     store: new DrizzleKnowledgeMediaStore(
@@ -542,6 +611,7 @@ export async function createContextualAssistantFixture(
                     authenticate,
                     rateLimiter: d.rateLimiter,
                     verify: verifyKnowledgeAudio,
+                    readSpeech: speech.readSpeech,
                 }),
                 policy: authentication.options.policy,
             }),
@@ -662,6 +732,7 @@ export async function createContextualAssistantFixture(
             return accessToken;
         }
         const administrator = await authenticate(await signup());
+        await speech.start(administrator.userId);
         const model = textAiModelCatalog.find(
             (model) => model.id === 'deepseek-flash',
         )!;

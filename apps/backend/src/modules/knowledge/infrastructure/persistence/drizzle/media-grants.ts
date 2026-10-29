@@ -13,7 +13,11 @@ export function knowledgeAudioAssetIds(body: KnowledgeBody): string[] {
     const ids = new Set<string>();
     for (const node of body.document.content ?? []) {
         const block = node.attrs?.block;
-        if (node.type === 'learningBlock' && block?.type === 'audio')
+        if (
+            node.type === 'learningBlock' &&
+            block?.type === 'audio' &&
+            block.assetId
+        )
             ids.add(block.assetId);
     }
 

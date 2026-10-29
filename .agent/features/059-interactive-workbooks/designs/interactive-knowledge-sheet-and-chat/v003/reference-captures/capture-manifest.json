@@ -1,0 +1,64 @@
+{
+    "providerRevision": "v16",
+    "artifactId": "fb2e85d3-cf96-4a3f-b0e3-841f9057a4f8",
+    "method": "Existing authenticated private Magic Patterns Chrome preview; read-only GUI navigation, no provider writes or publishing",
+    "browserZoom": "80%",
+    "files": [
+        {
+            "path": "block-gallery-audio-desktop.png",
+            "bytes": 560410,
+            "sha256": "5fe38d73e88c51431b7686f9b377b3d2ba800f80c7b10fc8390b438163595a8a"
+        },
+        {
+            "path": "block-gallery-bilingual-desktop.png",
+            "bytes": 593444,
+            "sha256": "a7054e6e54d575ca469276162aa05b3b1472354173260b85cbdd275132a2e1a3"
+        },
+        {
+            "path": "block-gallery-exercises-dark-desktop.png",
+            "bytes": 501694,
+            "sha256": "2760d711e2a2799f0f33bc052a9af39add109b504abef86ca707c82dcc178a1d"
+        },
+        {
+            "path": "block-gallery-exercises-desktop.png",
+            "bytes": 502034,
+            "sha256": "e9a8f62934386063d7d2216a56ed79c431522ced5a440bf7398be586ee4e23ef"
+        },
+        {
+            "path": "block-gallery-grammar-desktop.png",
+            "bytes": 510398,
+            "sha256": "967fa383201d5253d9bf7981f73a06263f3d28e803345a791ac06eae9007ca68"
+        },
+        {
+            "path": "block-gallery-video-desktop.png",
+            "bytes": 360453,
+            "sha256": "00c871ca7aab2d01d28bd0025c5db6db213f9327580306f3b001c347d9b5ac0d"
+        },
+        {
+            "path": "block-gallery-vocabulary-desktop.png",
+            "bytes": 490610,
+            "sha256": "ab68f202516999d06453311718588f87a7abc753422d3d8decb44ec1d5851da4"
+        },
+        {
+            "path": "proposal-review-desktop.png",
+            "bytes": 657387,
+            "sha256": "edcba54f65938053970768c20bb18aedcb1f2286524f51f0740aafad760f57a3"
+        },
+        {
+            "path": "provider-workspace-default.png",
+            "bytes": 362067,
+            "sha256": "1a589c065d09261086ccc37f60a0e66b31b5249875d073fc6cdd75c9ce2c58ad"
+        },
+        {
+            "path": "vocabulary-mobile-bottom-sheet.png",
+            "bytes": 305274,
+            "sha256": "ff6c18a84a0742feae5ba656e45d5c92b65bf901144e9f9c82d95ccd8f739cec"
+        },
+        {
+            "path": "vocabulary-side-editor.png",
+            "bytes": 594612,
+            "sha256": "9986b12e063b2829638f231776213119bc7c710cb7cfe18c2be7120d1133e5e4"
+        }
+    ],
+    "captureDates": ["2026-10-29", "2026-10-30"]
+}

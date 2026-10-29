@@ -1,5 +1,7 @@
 const en = {
     workbookProgress: 'Workbook progress',
+    aiError:
+        'AI feedback is unavailable. Your answer is kept; retry or show the prepared answer.',
     completedNotes: 'Completed notes',
     saveAnswer: 'Save answer',
     unchecked: 'Answer saved. Not evaluated.',
@@ -27,6 +29,8 @@ const messages: Record<string, LearningLabels> = {
     en,
     ru: {
         workbookProgress: 'Прогресс рабочей тетради',
+        aiError:
+            'ИИ-проверка недоступна. Ответ сохранён: повторите проверку или откройте готовый ответ.',
         completedNotes: 'Завершённые заметки',
         saveAnswer: 'Сохранить ответ',
         unchecked: 'Ответ сохранён без оценки.',
@@ -51,6 +55,8 @@ const messages: Record<string, LearningLabels> = {
     },
     fr: {
         workbookProgress: 'Progression du cahier',
+        aiError:
+            'Le retour IA est indisponible. Votre réponse est conservée : réessayez ou affichez la réponse préparée.',
         completedNotes: 'Notes terminées',
         saveAnswer: 'Enregistrer la réponse',
         unchecked: 'Réponse enregistrée, non évaluée.',
@@ -75,6 +81,8 @@ const messages: Record<string, LearningLabels> = {
     },
     es: {
         workbookProgress: 'Progreso del cuaderno',
+        aiError:
+            'La revisión con IA no está disponible. Tu respuesta se conserva: reintenta o muestra la respuesta preparada.',
         completedNotes: 'Notas completadas',
         saveAnswer: 'Guardar respuesta',
         unchecked: 'Respuesta guardada sin evaluar.',

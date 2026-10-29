@@ -1,3 +1,6 @@
+import { resolveKnowledgeAudioDraftSource } from './knowledge-audio-draft-source';
+import { resolveKnowledgeSnippetSource } from './knowledge-snippet-source';
+import type { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import type { StoredSpeechSource } from '../application/ports';
 import { resolveKnowledgeSpeechSource } from './knowledge-speech-source';
 import { SpeechError } from '../domain/speech-policy';
@@ -29,6 +32,7 @@ export class DrizzleSpeechSourceResolver {
     constructor(
         private readonly database: Database,
         private readonly cryptography: DictionaryCryptography,
+        private readonly knowledgeCrypto?: KnowledgeShareCrypto,
     ) {}
 
     resolve(actorId: string, source: SpeechSource | StoredSpeechSource) {
@@ -52,6 +56,18 @@ export class DrizzleSpeechSourceResolver {
         exerciseId?: string;
         attemptId?: string;
     }> {
+        if (source.kind === 'knowledge-audio-draft')
+            return resolveKnowledgeAudioDraftSource(tx, actorId, source);
+        if (source.kind === 'knowledge-snippet') {
+            if (!this.knowledgeCrypto)
+                throw new SpeechError('speech_source_unavailable', 404);
+            return resolveKnowledgeSnippetSource(
+                tx,
+                actorId,
+                source,
+                this.knowledgeCrypto,
+            );
+        }
         if (source.kind === 'knowledge-block')
             return resolveKnowledgeSpeechSource(tx, actorId, source);
         const access: LearningAccess =

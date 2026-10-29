@@ -12,7 +12,95 @@ export const SpeechAccessSchema = z.discriminatedUnion('kind', [
         })
         .strict(),
 ]);
+/** Select prepared content by identity, never by caller-supplied speech text. */
+export const KnowledgeSpeechSnippetSelectorSchema = z.discriminatedUnion(
+    'kind',
+    [
+        z
+            .object({
+                kind: z.literal('vocabulary'),
+                entryId: id,
+                field: z.enum(['term', 'example']),
+            })
+            .strict(),
+        z
+            .object({
+                kind: z.literal('grammar-example'),
+                index: z.number().int().min(0).max(49),
+            })
+            .strict(),
+        z
+            .object({ kind: z.literal('bilingual'), segmentId: id.optional() })
+            .strict(),
+    ],
+);
+const KnowledgeSpeechSnippetSourceSchema = z
+    .object({
+        kind: z.literal('knowledge-snippet'),
+        noteId: id,
+        blockId: id,
+        origin: z.discriminatedUnion('kind', [
+            z
+                .object({
+                    kind: z.literal('working'),
+                    branchId: id,
+                    expectedBranchVersion: z.number().int().positive(),
+                })
+                .strict(),
+            z
+                .object({
+                    kind: z.literal('proposal'),
+                    conversationId: id,
+                    proposalId: id,
+                })
+                .strict(),
+            z
+                .object({
+                    kind: z.literal('saved'),
+                    expectedNoteVersion: z.number().int().positive(),
+                    access: z
+                        .object({
+                            kind: z.enum(['note', 'workbook']),
+                            locator: z
+                                .string()
+                                .regex(/^[A-Za-z0-9_-]{16,128}$/),
+                            key: z.string().min(1).max(512),
+                        })
+                        .strict()
+                        .optional(),
+                })
+                .strict(),
+        ]),
+        selector: KnowledgeSpeechSnippetSelectorSchema,
+    })
+    .strict();
+
 export const SpeechSourceSchema = z.discriminatedUnion('kind', [
+    z
+        .object({
+            kind: z.literal('knowledge-audio-draft'),
+            noteId: id,
+            branchId: id,
+            blockId: id,
+            sourceText: z
+                .string()
+                .min(1)
+                .max(8_000)
+                .refine(
+                    (value) =>
+                        value.trim().length > 0 &&
+                        !value.includes('\u0000') &&
+                        !/[\uD800-\uDFFF]/u.test(value),
+                    'Expected nonempty valid Unicode text.',
+                ),
+            language: z
+                .string()
+                .min(2)
+                .max(35)
+                .regex(/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u),
+        })
+        .strict(),
+    KnowledgeSpeechSnippetSourceSchema,
     z
         .object({
             kind: z.literal('knowledge-block'),

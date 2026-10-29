@@ -1,75 +1,45 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Input, Textarea } from '@/fsd/shared/ui';
-import type { BlockField, BlockGroup } from '../../lib/learning-block-form';
+import { Plus } from 'lucide-react';
+import type { BlockGroup } from '../../lib/learning-block-form';
 import type { BlockAuthoringLabels } from './block-labels';
+import type { BlockFieldEnhancement } from './block-field-input';
+import { GroupRow } from './block-group-row';
 import styles from './learning-block-authoring.module.css';
 
-export function BlockFieldInput({
-    field,
-    name,
-    value,
-    labels,
-}: {
-    field: BlockField;
-    name?: string;
-    value?: string;
-    labels: BlockAuthoringLabels;
-}) {
-    const label = labels.field(field.label);
-    const inputName = name ?? field.name;
-    const initial = value ?? field.value ?? '';
-    if (field.name === 'format')
-        return (
-            <label className={styles.field}>
-                {label}
-                <select name={inputName} defaultValue={initial}>
-                    <option value='free-text'>
-                        {labels.field('Free text')}
-                    </option>
-                    <option value='multiple-choice'>
-                        {labels.field('Multiple choice')}
-                    </option>
-                    <option value='fill-in-the-blank'>
-                        {labels.field('Fill in the blank')}
-                    </option>
-                </select>
-            </label>
-        );
-    if (field.multiline)
-        return (
-            <Textarea
-                name={inputName}
-                label={label}
-                defaultValue={initial}
-                rows={3}
-            />
-        );
-    return <Input name={inputName} label={label} defaultValue={initial} />;
-}
+export {
+    BlockFieldInput,
+    type BlockFieldEnhancement,
+} from './block-field-input';
 
 export function BlockRowGroup({
     group,
     labels,
     onCount,
+    enhance,
 }: {
     group: BlockGroup;
     labels: BlockAuthoringLabels;
     onCount(name: string, count: number): void;
+    enhance?: BlockFieldEnhancement | undefined;
 }) {
-    const [count, setCount] = useState(group.rows.length);
+    const [rows, setRows] = useState(() =>
+        group.rows.map((row) => ({
+            ...row,
+            id: row.id ?? crypto.randomUUID(),
+        })),
+    );
     function add() {
-        const next = count + 1;
-        setCount(next);
-        onCount(group.name, next);
+        const next = [...rows, { id: crypto.randomUUID() }];
+        setRows(next);
+        onCount(group.name, next.length);
     }
-    function remove() {
-        const next = Math.max(0, count - 1);
-        setCount(next);
-        onCount(group.name, next);
+    function remove(id: string) {
+        const next = rows.filter((row) => row.id !== id);
+        setRows(next);
+        onCount(group.name, next.length);
     }
-    const rows = Array.from({ length: count }, (_, index) => index);
     const limits: Record<string, number> = {
         examples: 50,
         mistakes: 50,
@@ -80,44 +50,35 @@ export function BlockRowGroup({
     };
     const maximum = limits[group.name] ?? 100;
     const legend = labels.field(group.label);
+    function renderRow(row: Record<string, string>, index: number) {
+        return (
+            <GroupRow
+                key={row.id}
+                group={group}
+                row={row}
+                index={index}
+                labels={labels}
+                onRemove={remove}
+                enhance={enhance}
+            />
+        );
+    }
     return (
-        <fieldset className={styles.group}>
-            <legend>{legend}</legend>
-            {rows.map((index) => (
-                <div className={styles.row} key={index}>
-                    {group.fields.map((field) => {
-                        const name = `${group.name}.${index}.${field.name}`;
-                        const value = group.rows[index]?.[field.name] ?? '';
-                        return (
-                            <BlockFieldInput
-                                key={name}
-                                field={field}
-                                name={name}
-                                value={value}
-                                labels={labels}
-                            />
-                        );
-                    })}
-                </div>
-            ))}
-            <div className={styles.actions}>
-                <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={add}
-                    disabled={count >= maximum}
-                >
-                    {labels.addRow}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    onClick={remove}
-                    disabled={count === 0}
-                >
-                    {labels.removeRow}
-                </Button>
-            </div>
+        <fieldset
+            className={styles.group}
+            aria-label={group.name === 'entries' ? legend : undefined}
+        >
+            {group.name !== 'entries' && <legend>{legend}</legend>}
+            {rows.map(renderRow)}
+            <button
+                type='button'
+                className={styles.addRow}
+                onClick={add}
+                disabled={rows.length >= maximum}
+            >
+                <Plus size={16} aria-hidden />
+                {labels.addRow}
+            </button>
         </fieldset>
     );
 }

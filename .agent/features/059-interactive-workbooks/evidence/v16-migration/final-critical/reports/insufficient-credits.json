@@ -1,0 +1,135 @@
+{
+  "config": {
+    "argv": [
+      "/Users/nickkotov/.nvm/versions/node/v24.8.0/bin/node",
+      "/Users/nickkotov/projects/languon/apps/web/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config",
+      "tests/e2e/support/learner-portrait-playwright.config.ts",
+      "learner-portrait.journeys.spec.ts",
+      "--grep",
+      "zero credits show a focused visible error",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output",
+      "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/insufficient-credits-artifacts"
+    ],
+    "configFile": "/Users/nickkotov/projects/languon/apps/web/tests/e2e/support/learner-portrait-playwright.config.ts",
+    "rootDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/insufficient-credits-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "learner-portrait.journeys.spec.ts"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "learner-portrait.journeys.spec.ts",
+      "file": "learner-portrait.journeys.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "zero credits show a focused visible error after consent and keep the answer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5483,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:28:18.738Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "portrait-low-credit-visible-1440",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/insufficient-credits-artifacts/learner-portrait.journeys--b596b-consent-and-keep-the-answer/attachments/portrait-low-credit-visible-1440-fad8e02888b978702104517392266750dfd78dc4.png"
+                    },
+                    {
+                      "name": "portrait-low-credit-visible-390",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/insufficient-credits-artifacts/learner-portrait.journeys--b596b-consent-and-keep-the-answer/attachments/portrait-low-credit-visible-390-5077dec216d8b80b898a28f1bec7b5d0c3f3e52d.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b40555ff5271eb1dac00-9cba374ad50b01de7cbd",
+          "file": "learner-portrait.journeys.spec.ts",
+          "line": 699,
+          "column": 9
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-29T22:28:09.841Z",
+    "duration": 14855.394,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

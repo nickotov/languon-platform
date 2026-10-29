@@ -3,7 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { KnowledgeBody } from '@languon/contracts';
 import { useNoteAudio } from '@/fsd/features/workbook-learning/hooks/use-note-audio';
 import { readKnowledgeAudio } from '@/fsd/entities/knowledge';
-vi.mock('@/fsd/entities/knowledge', () => ({ readKnowledgeAudio: vi.fn() }));
+import type * as KnowledgeMediaApi from '@/fsd/entities/knowledge/api/knowledge-media-api';
+vi.mock(
+    '@/fsd/entities/knowledge/api/knowledge-media-api',
+    async (importOriginal) => ({
+        ...(await importOriginal<typeof KnowledgeMediaApi>()),
+        readKnowledgeAudio: vi.fn(),
+    }),
+);
 const id = '11111111-1111-4111-8111-111111111111';
 const assetId = '22222222-2222-4222-8222-222222222222';
 const body: KnowledgeBody = {
