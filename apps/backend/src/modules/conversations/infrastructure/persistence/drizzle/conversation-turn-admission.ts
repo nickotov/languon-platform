@@ -393,6 +393,7 @@ export async function conversationSubmit(
                 conversationId: id,
                 requestId: input.requestId,
                 inputTokenBound,
+                reserveToolContinuation: Boolean(snapshot.blockTarget),
                 fingerprint,
                 ...(input.confirmedQuoteId
                     ? { confirmedQuoteId: input.confirmedQuoteId }

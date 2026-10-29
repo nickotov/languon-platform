@@ -158,9 +158,15 @@ function deterministicModel(
             }
             const ordinal = dispatched++;
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
+            const blockProposal =
+                question.includes('French vocabulary block fixture') &&
+                ordinal === 0;
             const progressive = /progressively/iu.test(question);
             let text =
                 'A river bank is the land beside a river. This explanation uses your saved learning context.';
+            if (question.includes('French vocabulary block fixture'))
+                text =
+                    'I prepared the six French words. Review the vocabulary block and apply it when ready.';
             if (fail) text = 'Partial explanation before interruption.';
             else if (question.includes('Markdown grammar mapping fixture'))
                 text =
@@ -175,12 +181,64 @@ function deterministicModel(
                                 type: 'stream-start',
                                 warnings: [],
                             });
-                            if (draft) {
+                            if (draft || blockProposal) {
                                 controller.enqueue({
                                     type: 'tool-call',
                                     toolCallId: randomUUID(),
-                                    toolName: 'propose_knowledge_note',
-                                    input: JSON.stringify(proposedContent),
+                                    toolName: blockProposal
+                                        ? 'propose_learning_blocks'
+                                        : 'propose_knowledge_note',
+                                    input: JSON.stringify(
+                                        blockProposal
+                                            ? {
+                                                  blocks: [
+                                                      {
+                                                          id: randomUUID(),
+                                                          type: 'vocabulary',
+                                                          title: 'Six French words',
+                                                          language: 'fr',
+                                                          translationLanguage:
+                                                              'ru',
+                                                          entries: [
+                                                              [
+                                                                  'travail',
+                                                                  'работа',
+                                                              ],
+                                                              [
+                                                                  'joie',
+                                                                  'радость',
+                                                              ],
+                                                              [
+                                                                  'ménage',
+                                                                  'уборка',
+                                                              ],
+                                                              [
+                                                                  'carrelage',
+                                                                  'плитка',
+                                                              ],
+                                                              [
+                                                                  'poisson',
+                                                                  'рыба',
+                                                              ],
+                                                              [
+                                                                  'nourriture',
+                                                                  'корм',
+                                                              ],
+                                                          ].map(
+                                                              ([
+                                                                  term,
+                                                                  translation,
+                                                              ]) => ({
+                                                                  id: randomUUID(),
+                                                                  term,
+                                                                  translation,
+                                                              }),
+                                                          ),
+                                                      },
+                                                  ],
+                                              }
+                                            : proposedContent,
+                                    ),
                                 });
                                 controller.enqueue({
                                     type: 'finish',

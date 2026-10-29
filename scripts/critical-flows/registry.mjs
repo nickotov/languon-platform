@@ -73,6 +73,12 @@ export const backendExecutionFiles = Object.freeze([
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
     {
+        file: 'tests/integration/modules/conversations/conversation-accounting.test.ts',
+        titles: [
+            'preserves reduced quotes and minimum output admission when reserving block continuation',
+        ],
+    },
+    {
         file: 'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         titles: [
             "'operator' 'success' survives admission through the default worker and SDK without widening its budget",
@@ -390,7 +396,7 @@ export const flows = [
     },
     {
         id: 'ai-execution-contracts',
-        minimumTests: 462,
+        minimumTests: 463,
         app: 'backend',
         files: [...backendExecutionFiles],
         prerequisite: 'disposable-backend-production-execution',

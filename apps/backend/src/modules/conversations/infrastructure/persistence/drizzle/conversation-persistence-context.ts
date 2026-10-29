@@ -131,6 +131,7 @@ export interface ConversationPersistenceDependencies {
             fingerprint?: string;
             confirmedQuoteId?: string;
             inputTokenBound?: number;
+            reserveToolContinuation?: boolean;
         },
     ) => Promise<Record<string, unknown>>) & {
         prepare?: (tx: ConversationsTransaction) => Promise<void>;

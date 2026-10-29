@@ -102,6 +102,11 @@ export function TutorMessage({
             part.type === 'tool-propose_knowledge_note',
     );
     const complete = !isUser && canonical.status === 'complete';
+    const hasBlockProposal = canonical.toolCalls.some(
+        (tool) =>
+            tool.name === 'propose_learning_blocks' &&
+            tool.state === 'succeeded',
+    );
     const workspaceMaterials = isUser && Boolean(onAcceptWorkspaceProposal);
     const copiedAttachments = materials.map((material) => material.data);
     const selectedPassage = workspaceMaterials
@@ -210,7 +215,7 @@ export function TutorMessage({
                         disabled={active}
                     />
                 )}
-                {complete && onAcceptWorkspaceProposal && (
+                {complete && onAcceptWorkspaceProposal && !hasBlockProposal && (
                     <WorkspaceProposal
                         content={text}
                         targetId={workspaceTargetId}

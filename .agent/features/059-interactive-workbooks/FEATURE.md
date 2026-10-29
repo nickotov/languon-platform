@@ -22,7 +22,7 @@ older pending-confirmation wording is historical, not a new approval requirement
 
 - AC-1 — **Reusable blocks:** Knowledge notes support video, vocabulary, bilingual text, audio comprehension, grammar and exercises. Each block retains its presentation and basic interactions in an independent learning context, with no dependency on the knowledge editor.
 
-- AC-2 — **Manual authoring:** An Add block menu and type-specific controls allow manual creation/editing, reorder, duplication, deletion and learner preview. Existing prose, private drafts, conflict recovery, explicit Save and revision behavior remain usable.
+- AC-2 — **Manual authoring:** An Add block menu and type-specific controls allow manual creation/editing, reorder, duplication, deletion and learner preview. Custom blocks share whole-block selection, manual drag reordering and a heading-right extensible settings popover for editing, copying, duplication, keyboard movement and deletion. Existing prose, private drafts, conflict recovery, explicit Save and revision behavior remain usable.
 
 - AC-3 — **AI proposals:** AI generates the same structured blocks as manual authoring, previews changes and requires explicit Apply. Apply changes only the working draft; Save publishes. Explanations require no Apply. Stale targets cannot silently overwrite newer content.
 

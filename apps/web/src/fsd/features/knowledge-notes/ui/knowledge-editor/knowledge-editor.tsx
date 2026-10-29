@@ -10,7 +10,7 @@ import {
     type LearningBlock,
 } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { InlineAlert } from '@/fsd/shared/ui';
+import { InlineAlert, type MenuItem } from '@/fsd/shared/ui';
 import {
     normalizeEditorDocument,
     toEditorDocument,
@@ -25,9 +25,11 @@ import { EditorToolbar } from './editor-toolbar';
 import styles from './knowledge-editor.module.css';
 import { WorkspaceEditorChrome } from './workspace-editor-chrome';
 import type { UploadBlockAudio } from '../learning-block-authoring/audio-block-upload';
+import { BlockAuthoringProvider } from '../learning-block-authoring/block-authoring-context';
 import { LearningBlockAuthoring } from '../learning-block-authoring/learning-block-authoring';
 import { LearningBlockNode } from '../learning-block-authoring/learning-block-node';
 import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
+import { rejectCopiedLearningBlockDrop } from '../../lib/learning-block-drop';
 import { pasteLearningBlock } from '../../lib/learning-block-paste';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 
@@ -72,6 +74,7 @@ export const KnowledgeEditor = forwardRef<
     KnowledgeEditorHandle,
     {
         value: KnowledgeBody;
+        getBlockActions?: ((block: LearningBlock) => MenuItem[]) | undefined;
         uploadAudio?: UploadBlockAudio | undefined;
         onChange(value: KnowledgeBody): void;
         workspace?: KnowledgeWorkspaceEditorOptions | undefined;
@@ -83,6 +86,7 @@ export const KnowledgeEditor = forwardRef<
 >(function KnowledgeEditor(
     {
         value,
+        getBlockActions,
         onChange,
         disabled = false,
         onValidityChange,
@@ -96,7 +100,11 @@ export const KnowledgeEditor = forwardRef<
     const { t, locale } = useI18n();
     const blockLabels = useMemo(() => localizedBlockLabels(locale), [locale]);
     const [invalid, setInvalid] = useState(false);
-    const acceptedValue = useRef(JSON.stringify(value));
+    // The block parser canonicalizes field order. Compare the same projection
+    // on both sides so selecting a node cannot mark an unchanged draft dirty.
+    const acceptedValue = useRef(
+        JSON.stringify(normalizeEditorDocument(value.document)),
+    );
     const targets = useRef(new Map<string, KnowledgeEditorTarget>());
     const extensions = useMemo(
         () => [
@@ -125,6 +133,8 @@ export const KnowledgeEditor = forwardRef<
         enableContentCheck: true,
         editable: !disabled,
         editorProps: {
+            handleDrop: (_view, _event, slice, moved) =>
+                rejectCopiedLearningBlockDrop(slice, moved),
             handlePaste: (view, event) => {
                 if (disabled) return false;
                 const result = pasteLearningBlock(view, event);
@@ -172,18 +182,29 @@ export const KnowledgeEditor = forwardRef<
     }, [invalid, onValidityChange]);
     useEffect(() => {
         if (!editor) return;
-        const serialized = JSON.stringify(value);
+        const serialized = JSON.stringify(
+            normalizeEditorDocument(value.document),
+        );
         if (serialized === acceptedValue.current) return;
-        try {
-            editor.commands.setContent(toEditorDocument(value.document), {
-                emitUpdate: false,
-                errorOnInvalidContent: true,
-            });
-            acceptedValue.current = serialized;
-            setInvalid(false);
-        } catch {
-            setInvalid(true);
-        }
+        let cancelled = false;
+        // React node views flush synchronously. Apply recovered content after
+        // this effect, and discard superseded/unmounted updates before dispatch.
+        queueMicrotask(() => {
+            if (cancelled || editor.isDestroyed) return;
+            try {
+                editor.commands.setContent(toEditorDocument(value.document), {
+                    emitUpdate: false,
+                    errorOnInvalidContent: true,
+                });
+                acceptedValue.current = serialized;
+                setInvalid(false);
+            } catch {
+                setInvalid(true);
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
     }, [editor, value]);
 
     const authoring =
@@ -198,8 +219,9 @@ export const KnowledgeEditor = forwardRef<
             />
         ) : null;
 
-    if (workspace && editor)
-        return (
+    let content;
+    if (workspace && editor) {
+        content = (
             <WorkspaceEditorChrome
                 editor={editor}
                 disabled={disabled}
@@ -217,24 +239,35 @@ export const KnowledgeEditor = forwardRef<
                 )}
             </WorkspaceEditorChrome>
         );
-
+    } else {
+        content = (
+            <div className={styles.root} aria-busy={!editor}>
+                {editor && (
+                    <EditorToolbar
+                        editor={editor}
+                        disabled={disabled}
+                        variant={toolbarVariant}
+                        label={label}
+                    />
+                )}
+                <EditorContent editor={editor} className={styles.content} />
+                {authoring}
+                {invalid && (
+                    <InlineAlert tone='error'>
+                        {t('knowledge.editorError')}
+                    </InlineAlert>
+                )}
+            </div>
+        );
+    }
+    const authoringEnabled = !disabled && toolbarVariant !== 'tutor';
     return (
-        <div className={styles.root} aria-busy={!editor}>
-            {editor && (
-                <EditorToolbar
-                    editor={editor}
-                    disabled={disabled}
-                    variant={toolbarVariant}
-                    label={label}
-                />
-            )}
-            <EditorContent editor={editor} className={styles.content} />
-            {authoring}
-            {invalid && (
-                <InlineAlert tone='error'>
-                    {t('knowledge.editorError')}
-                </InlineAlert>
-            )}
-        </div>
+        <BlockAuthoringProvider
+            enabled={authoringEnabled}
+            canDuplicateOnServer={Boolean(workspace?.blockCopy)}
+            additionalActions={getBlockActions}
+        >
+            {content}
+        </BlockAuthoringProvider>
     );
 });

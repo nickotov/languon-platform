@@ -210,8 +210,12 @@ describe('learning block editor', () => {
         expect(ref.current?.getSnapshot().content).toContain(
             'Use the past tense.',
         );
-        fireEvent.click(screen.getByText('Manage blocks'));
-        fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Block settings: Grammar' }),
+        );
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
+        );
         fireEvent.change(screen.getByLabelText('Rule'), {
             target: { value: 'Use the present tense.' },
         });
@@ -349,8 +353,12 @@ it('authors a manual exercise with selected source passages and retains them on 
             segmentId +
             '"]}',
     );
-    const editButtons = screen.getAllByRole('button', { name: 'Edit' });
-    fireEvent.click(editButtons[editButtons.length - 1]!);
+    fireEvent.click(
+        screen.getByRole('button', { name: 'Block settings: Exercise' }),
+    );
+    fireEvent.click(
+        await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
+    );
     expect(screen.getByRole('combobox', { name: 'Hint source' })).toHaveValue(
         sourceId,
     );
@@ -396,6 +404,7 @@ it('appends a validated generated block as one undoable draft edit', async () =>
 });
 
 it('refreshes block authoring controls after an externally recovered document replaces editor content', async () => {
+    const consoleError = vi.spyOn(console, 'error');
     const editor = createRef<KnowledgeEditorHandle>();
     const onChange = vi.fn();
     const { rerender } = render(
@@ -403,7 +412,7 @@ it('refreshes block authoring controls after an externally recovered document re
     );
     await waitFor(() => expect(editor.current).not.toBeNull());
     expect(
-        screen.getAllByRole('button', { name: 'Edit', exact: true }),
+        screen.getAllByRole('button', { name: /^Block settings:/ }),
     ).toHaveLength(1);
     const recovered = KnowledgeBodySchema.parse({
         schemaVersion: 2,
@@ -437,13 +446,20 @@ it('refreshes block authoring controls after an externally recovered document re
     );
     await waitFor(() =>
         expect(
-            screen.getAllByRole('button', { name: 'Edit', exact: true }),
+            screen.getAllByRole('button', { name: /^Block settings:/ }),
         ).toHaveLength(2),
     );
     expect(editor.current?.getSnapshot().content).toContain(
         'New content from the saved branch.',
     );
     expect(onChange).not.toHaveBeenCalled();
+    const renderWarnings = consoleError.mock.calls.filter((args) =>
+        args.some(
+            (value) => typeof value === 'string' && value.includes('flushSync'),
+        ),
+    );
+    consoleError.mockRestore();
+    expect(renderWarnings).toEqual([]);
 });
 
 it('applies a captured audio transcript atomically and rejects stale or retargeted replacements', async () => {

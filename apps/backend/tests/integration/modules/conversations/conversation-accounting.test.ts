@@ -563,6 +563,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 modelId: 'openai/gpt-6-luna',
                 routingAuthority: { flowId: 'conversation' },
             });
+            // Ordinary chat admission still uses its bounded initial context;
+            // only server-authorized block tools reserve continuation capacity.
+            expect(admitted.admittedMaxInputTokens).toBe(200);
             await client`update dictionary_ai_worker_observations set checked_at=now()-interval '2 minutes',expires_at=now()-interval '1 second'`;
             await expect(
                 db.transaction((tx) =>
@@ -577,6 +580,58 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 code: 'model_unavailable',
                 message: expect.stringContaining('Try again later'),
             });
+        });
+        it('preserves reduced quotes and minimum output admission when reserving block continuation', async () => {
+            await configured();
+            for (const [budget, outputTokens] of [
+                ['10', 3000],
+                ['1.003', 1],
+                ['1', 0],
+            ] as const) {
+                await db
+                    .insert(textAiPreferencesTable)
+                    .values({
+                        userId: ownerId,
+                        mode: 'auto',
+                        version: 1,
+                        maxCreditsPerAction: budget,
+                    })
+                    .onConflictDoUpdate({
+                        target: textAiPreferencesTable.userId,
+                        set: { maxCreditsPerAction: budget },
+                    });
+                for (const reserveToolContinuation of [false, true]) {
+                    const admitted = db.transaction((tx) =>
+                        conversationAdmission(policy)(tx, {
+                            ownerId,
+                            turnId,
+                            conversationId: chatId,
+                            requestId: randomUUID(),
+                            fingerprint: `synthetic-budget-${budget}`,
+                            inputTokenBound: 1000,
+                            reserveToolContinuation,
+                        }),
+                    );
+                    if (outputTokens === 0) {
+                        await expect(admitted).rejects.toMatchObject({
+                            code: 'credits_exhausted',
+                        });
+                    } else {
+                        await expect(admitted).resolves.toMatchObject({
+                            confirmationRequired: true,
+                            quote: {
+                                maximumCredits: budget,
+                                approximateOutputTokens: outputTokens,
+                            },
+                        });
+                    }
+                }
+            }
+            expect(
+                await db.execute(
+                    sql`select id from ai_credit_actions where id=${turnId}::uuid`,
+                ),
+            ).toHaveLength(0);
         });
         it('rejects missing or legacy chat readiness and zero-credit admission with model-neutral errors', async () => {
             await expect(

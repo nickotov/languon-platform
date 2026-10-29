@@ -6,10 +6,15 @@ import {
 
 // Small feature-owned vocabulary follows knowledgeProposalLabels, including forms.
 const words: Record<string, [string, string, string]> = {
-    'Manage blocks': [
-        'Управление блоками',
-        'Gestionar bloques',
-        'Gérer les blocs',
+    'Block settings': [
+        'Настройки блока',
+        'Opciones del bloque',
+        'Options du bloc',
+    ],
+    'Select or drag block': [
+        'Выбрать или перетащить блок',
+        'Seleccionar o arrastrar bloque',
+        'Sélectionner ou déplacer le bloc',
     ],
     'Prepared translation': [
         'Подготовленный перевод',

@@ -205,104 +205,160 @@ it('retains one frozen operation for uncertain-copy retries without reporting fa
     expect(requests[2]).toEqual(requests[1]);
 });
 
-it('routes audio duplication through the authorized same-note copy preview', async () => {
-    const { KnowledgeEditor } =
-        await import('../src/fsd/features/knowledge-notes');
-    const { KnowledgeBodySchema } = await import('@languon/contracts');
-    vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string, init: RequestInit) => {
-            if (url.includes('/workspaces?'))
-                return Response.json({
-                    workspaces: [
-                        {
-                            id: destinationId,
-                            title: 'Destination',
-                            status: 'draft',
-                            hasUnsavedChanges: false,
-                            updatedAt: branch.updatedAt,
-                        },
-                    ],
-                    total: 1,
-                    offset: 0,
-                    limit: 50,
-                });
-            if (url.endsWith('/workspace')) return Response.json({ workspace });
-            const request = JSON.parse(String(init.body));
-            expect(request).toMatchObject({
-                branchId,
-                source: {
-                    kind: 'owned-working',
-                    noteId: destinationId,
+it.each([
+    { action: 'Duplicate', kind: 'audio' },
+    { action: 'Copy block', kind: 'audio' },
+    { action: 'Duplicate', kind: 'exercise' },
+    { action: 'Copy block', kind: 'exercise' },
+])(
+    'routes $kind $action through the authorized copy preview',
+    async ({ action, kind }) => {
+        const { KnowledgeEditor } =
+            await import('../src/fsd/features/knowledge-notes');
+        const { KnowledgeBodySchema } = await import('@languon/contracts');
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (url: string, init: RequestInit) => {
+                if (url.includes('/workspaces?'))
+                    return Response.json({
+                        workspaces: [
+                            {
+                                id: destinationId,
+                                title: 'Destination',
+                                status: 'draft',
+                                hasUnsavedChanges: false,
+                                updatedAt: branch.updatedAt,
+                            },
+                        ],
+                        total: 1,
+                        offset: 0,
+                        limit: 50,
+                    });
+                if (url.endsWith('/workspace'))
+                    return Response.json({ workspace });
+                const request = JSON.parse(String(init.body));
+                expect(request).toMatchObject({
                     branchId,
-                    expectedVersion: 4,
-                },
-            });
-            return Response.json({
-                branch: null,
-                selectedCount: 1,
-                blockCount: 1,
-                dependencyCount: 0,
-                mediaCount: 1,
-                replayed: false,
-            });
-        }),
-    );
-    const block = LearningBlockSchema.parse({
-        id,
-        type: 'audio',
-        title: 'Uploaded recording',
-        assetId: id,
-    });
-    const body = KnowledgeBodySchema.parse({
-        schemaVersion: 2,
-        document: {
-            type: 'doc',
-            content: [
-                { type: 'paragraph' },
-                { type: 'learningBlock', attrs: { block } },
-            ],
-        },
-    });
-    const source = {
-        kind: 'owned-working' as const,
-        noteId: destinationId,
-        branchId,
-        expectedVersion: 4,
-    };
-    render(
-        <KnowledgeEditor
-            value={body}
-            onChange={vi.fn()}
-            workspace={{
-                toolbarRootId: 'audio-duplicate-toolbar',
-                editorId: 'audio-duplicate-editor',
-                proposalRootId: 'audio-duplicate-proposals',
-                onAskTutor: vi.fn(),
-                onAskOutline: vi.fn(),
-                blockCopy: {
-                    ...context,
-                    source,
-                    beforeCopy: async () => source,
-                },
-            }}
-        />,
-    );
-    const duplicate = await screen.findByRole('button', { name: 'Duplicate' });
-    expect(duplicate).toBeEnabled();
-    fireEvent.click(duplicate);
-    expect(
-        await screen.findByRole('checkbox', { name: 'Uploaded recording' }),
-    ).toBeChecked();
-    await waitFor(() =>
+                    source: {
+                        kind: 'owned-working',
+                        noteId: destinationId,
+                        branchId,
+                        expectedVersion: 4,
+                    },
+                });
+                return Response.json({
+                    branch: null,
+                    selectedCount: 1,
+                    blockCount: 1,
+                    dependencyCount: 0,
+                    mediaCount: 1,
+                    replayed: false,
+                });
+            }),
+        );
+        const audioId = '44444444-4444-4444-8444-444444444444';
+        const segmentId = '55555555-5555-4555-8555-555555555555';
+        const audio = LearningBlockSchema.parse({
+            id: audioId,
+            type: 'audio',
+            title: 'Source recording',
+            assetId: audioId,
+            transcript: {
+                language: 'en',
+                segments: [
+                    { id: segmentId, text: 'The train leaves at noon.' },
+                ],
+            },
+        });
+        const block = LearningBlockSchema.parse(
+            kind === 'audio'
+                ? {
+                      id,
+                      type: 'audio',
+                      title: 'Uploaded recording',
+                      assetId: id,
+                  }
+                : {
+                      id,
+                      type: 'exercise',
+                      title: 'Uploaded recording',
+                      format: 'free-text',
+                      question: 'When?',
+                      referenceAnswer: 'Noon',
+                      explanation: 'The transcript says noon.',
+                      source: { blockId: audioId, segmentIds: [segmentId] },
+                  },
+        );
+        const body = KnowledgeBodySchema.parse({
+            schemaVersion: 2,
+            document: {
+                type: 'doc',
+                content: [
+                    { type: 'paragraph' },
+                    ...(kind === 'exercise'
+                        ? [{ type: 'learningBlock', attrs: { block: audio } }]
+                        : []),
+                    { type: 'learningBlock', attrs: { block } },
+                ],
+            },
+        });
+        const source = {
+            kind: 'owned-working' as const,
+            noteId: destinationId,
+            branchId,
+            expectedVersion: 4,
+        };
+        render(
+            <KnowledgeEditor
+                value={body}
+                onChange={vi.fn()}
+                workspace={{
+                    toolbarRootId: 'audio-duplicate-toolbar',
+                    editorId: 'audio-duplicate-editor',
+                    proposalRootId: 'audio-duplicate-proposals',
+                    onAskTutor: vi.fn(),
+                    onAskOutline: vi.fn(),
+                    blockCopy: {
+                        ...context,
+                        source,
+                        beforeCopy: async () => source,
+                    },
+                }}
+            />,
+        );
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Block settings: Uploaded recording',
+            }),
+        );
+        const duplicate = await screen.findByRole('menuitem', {
+            name: action,
+        });
+        expect(duplicate).toBeEnabled();
+        fireEvent.click(duplicate);
         expect(
-            screen.getByRole('button', { name: 'Preview copy' }),
-        ).toBeEnabled(),
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Preview copy' }));
-    expect(
-        await screen.findByText(
-            'Uploaded audio assets copied independently: 1',
-        ),
-    ).toBeVisible();
-});
+            await screen.findByRole('checkbox', { name: 'Uploaded recording' }),
+        ).toBeChecked();
+        if (action === 'Copy block') {
+            await screen.findByRole('option', { name: 'Destination' });
+            expect(
+                screen.getByRole('button', { name: 'Preview copy' }),
+            ).toBeDisabled();
+            fireEvent.change(
+                screen.getByRole('combobox', { name: 'Destination note' }),
+                { target: { value: destinationId } },
+            );
+        }
+        await waitFor(() =>
+            expect(
+                screen.getByRole('button', { name: 'Preview copy' }),
+            ).toBeEnabled(),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Preview copy' }));
+        expect(
+            await screen.findByText(
+                'Uploaded audio assets copied independently: 1',
+            ),
+        ).toBeVisible();
+    },
+);

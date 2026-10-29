@@ -10,7 +10,16 @@
     padding: var(--space-16);
 }
 
+.heading {
+    align-items: center;
+    display: flex;
+    gap: var(--space-8);
+    min-width: 0;
+}
+
 .title {
+    flex: 1;
+    min-width: 0;
     font-size: var(--size-18);
     margin: 0;
 }

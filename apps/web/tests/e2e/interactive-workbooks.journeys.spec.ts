@@ -6,7 +6,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:9b82f864dfa04019
+// @user-flow-revision interactive-workbooks sha256:7714455deb2c9ee8
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -169,6 +169,85 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await page.setViewportSize({ width: 390, height: 844 });
     await capture(page, info, 'editor-empty-mobile');
     await page.setViewportSize({ width: 1440, height: 1000 });
+    // This paid AI scenario needs a prospective allowance above the fixture's
+    // synthetic 20-credit default; the wallet grant alone does not set it.
+    const preference = await api<{ version: number }>(
+        page,
+        '/users/me/ai-model-preference',
+    );
+    await api(
+        page,
+        '/users/me/ai-model-preference',
+        {
+            mode: 'auto',
+            expectedVersion: preference.version,
+            maxCreditsPerAction: '100',
+        },
+        'PUT',
+    );
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    if (!(await tutor.isVisible()))
+        await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    await tutor
+        .getByLabel('Your question')
+        .fill(
+            'French vocabulary block fixture: работа, радость, уборка, плитка, рыба, корм. French to Russian.',
+        );
+    const submitted = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/.test(
+                new URL(response.url()).pathname,
+            ),
+    );
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const submittedResponse = await submitted;
+    if (submittedResponse.status() === 409) {
+        expect((await submittedResponse.json()).error.code).toBe(
+            'action_confirmation_required',
+        );
+        await page
+            .getByRole('dialog', { name: 'Review this action’s budget' })
+            .getByRole('button', { name: 'Send', exact: true })
+            .click();
+    }
+    await expect(
+        tutor
+            .locator('[data-assistant-content]')
+            .getByText('I prepared the six French words.', { exact: false }),
+    ).toBeVisible();
+    await expect(
+        tutor.getByRole('button', { name: 'Use in document', exact: true }),
+    ).toHaveCount(0);
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+    await expect(
+        proposal.getByText('carrelage', { exact: true }),
+    ).toBeVisible();
+    const frame = await proposal.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { border: style.borderTopWidth, padding: style.paddingTop };
+    });
+    expect(frame).toEqual({ border: '0px', padding: '0px' });
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
+    await capture(page, info, 'chat-vocabulary-proposal');
+    await proposal
+        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .click();
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(1);
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Six French words',
+            exact: true,
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
 
     await page
         .getByLabel('Title', { exact: true })
@@ -199,12 +278,45 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         'Original passage': 'I visited Paris last year.',
         'Translated passage': 'J’ai visité Paris l’année dernière.',
     });
-    await page.getByText('Manage blocks', { exact: false }).click();
-    // The fourth authored block is the reading block; toolbar order is explicit.
+    const grammarHandle = page.getByRole('button', {
+        name: 'Select or drag block: Present simple',
+        exact: true,
+    });
+    await grammarHandle.focus();
+    await grammarHandle.press('Enter');
+    await expect(
+        page.getByRole('button', {
+            name: 'Select or drag block: Present simple',
+            exact: true,
+        }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await expect(
+        page.getByRole('toolbar', { name: 'Selection actions', exact: true }),
+    ).toHaveCount(0);
     await page
-        .getByRole('button', { name: 'Edit', exact: true })
-        .nth(3)
+        .getByRole('button', {
+            name: 'Block settings: Present simple',
+            exact: true,
+        })
         .click();
+    await expect(
+        page.getByRole('menuitem', { name: 'Edit', exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'editor-inline-block-settings');
+    await page.keyboard.press('Escape');
+    await expect(
+        page.getByRole('button', {
+            name: 'Block settings: Present simple',
+            exact: true,
+        }),
+    ).toBeFocused();
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Travel reading',
+            exact: true,
+        })
+        .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     const translationEditor = page.getByRole('dialog');
     await translationEditor
         .getByRole('combobox', { name: 'Prepared translation' })
@@ -219,9 +331,12 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         .getByRole('button', { name: 'Apply block', exact: true })
         .click();
     await page
-        .getByRole('button', { name: 'Edit', exact: true })
-        .nth(3)
+        .getByRole('button', {
+            name: 'Block settings: Travel reading',
+            exact: true,
+        })
         .click();
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await translationEditor
         .getByRole('combobox', { name: 'Prepared translation' })
         .selectOption('es');
@@ -237,6 +352,67 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await translationEditor
         .getByRole('button', { name: 'Apply block', exact: true })
         .click();
+    const authorBlocks = page.locator('[data-learning-block-id]');
+    const beforeDragIds = await authorBlocks.evaluateAll((elements) =>
+        elements.map((element) =>
+            element.getAttribute('data-learning-block-id'),
+        ),
+    );
+    expect(new Set(beforeDragIds).size).toBe(beforeDragIds.length);
+    const grammarBlock = authorBlocks.filter({
+        has: page.getByRole('heading', { name: 'Present simple', exact: true }),
+    });
+    const readingHandle = page.getByRole('button', {
+        name: 'Select or drag block: Travel reading',
+        exact: true,
+    });
+    await readingHandle.scrollIntoViewIfNeeded();
+    const sourceBox = await readingHandle.boundingBox();
+    if (!sourceBox) throw new Error('The block drag handle is unavailable.');
+    const sourceX = sourceBox.x + sourceBox.width / 2;
+    const sourceY = sourceBox.y + sourceBox.height / 2;
+    await page.mouse.move(sourceX, sourceY);
+    await page.mouse.down();
+    // Start the native drag before scrolling its distant destination into view.
+    // A single dragTo scrolls first and can retarget Chromium's initial dragstart.
+    await page.mouse.move(sourceX + 8, sourceY + 8, { steps: 4 });
+    await grammarBlock.scrollIntoViewIfNeeded();
+    const destinationBox = await grammarBlock.boundingBox();
+    if (!destinationBox)
+        throw new Error('The block destination is unavailable.');
+    await page.mouse.move(destinationBox.x + 20, destinationBox.y + 2, {
+        steps: 12,
+    });
+    await page.mouse.move(destinationBox.x + 21, destinationBox.y + 3);
+    await page.mouse.up();
+    await expect(
+        authorBlocks
+            .first()
+            .getByRole('heading', { name: 'Travel reading', exact: true }),
+    ).toBeVisible();
+    const afterDragIds = await authorBlocks.evaluateAll((elements) =>
+        elements.map((element) =>
+            element.getAttribute('data-learning-block-id'),
+        ),
+    );
+    expect([...afterDragIds].sort()).toEqual([...beforeDragIds].sort());
+    expect(new Set(afterDragIds).size).toBe(afterDragIds.length);
+    await expect(
+        page.getByRole('toolbar', { name: 'Selection actions', exact: true }),
+    ).toHaveCount(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Travel reading',
+            exact: true,
+        })
+        .click();
+    await expect(
+        page.getByRole('menuitem', { name: 'Copy block', exact: true }),
+    ).toBeVisible();
+    await capture(page, info, 'editor-block-settings-mobile');
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole('button', { name: 'Add block', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Audio', exact: true }).click();
     await page
@@ -256,6 +432,11 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         page.getByRole('button', { name: 'Save', exact: true }),
     ).toBeEnabled();
+    const savedBlockIds = await authorBlocks.evaluateAll((elements) =>
+        elements.map((element) =>
+            element.getAttribute('data-learning-block-id'),
+        ),
+    );
     const saved = page.waitForResponse(
         (response) =>
             response.url().endsWith(`/knowledge/${noteId}/save`) &&
@@ -264,6 +445,21 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await saved;
     await page.reload();
+    await expect
+        .poll(() =>
+            authorBlocks.evaluateAll((elements) =>
+                elements.map((element) =>
+                    element.getAttribute('data-learning-block-id'),
+                ),
+            ),
+        )
+        .toEqual(savedBlockIds);
+    await expect(
+        page
+            .locator('[data-learning-block-id]')
+            .first()
+            .getByRole('heading', { name: 'Travel reading', exact: true }),
+    ).toBeVisible();
     await expect(
         page.getByRole('heading', { name: 'Present simple', exact: true }),
     ).toBeVisible();

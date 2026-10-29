@@ -1,0 +1,52 @@
+.root {
+    border-radius: var(--radius-lg);
+    margin-block: var(--space-12);
+}
+
+.selected {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.dragHandle {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    align-self: stretch;
+    flex: 0 0 auto;
+    min-height: var(--size-36);
+    min-width: var(--size-32);
+    padding: var(--space-4);
+    border: 0;
+    border-radius: var(--radius-8);
+    color: var(--text-tertiary);
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+}
+
+/* Keep the HTML drag source on the handle, rather than its SVG decoration. */
+.dragHandle :where(svg) {
+    pointer-events: none;
+}
+
+.dragHandle:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.dragHandle:active {
+    cursor: grabbing;
+}
+
+.dragHandle:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+@media (max-width: 767px) {
+    .dragHandle {
+        min-height: var(--size-44);
+        min-width: var(--size-44);
+    }
+}

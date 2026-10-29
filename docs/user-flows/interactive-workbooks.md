@@ -74,6 +74,9 @@ real backend and Next.js application. Its assistant profile uses loopback
 PostgreSQL 55488, Redis 56488 database 1, backend 4006 and web 3336, with database
 `languon_auth_assistant_web_test`. No paid providers are invoked. Only the external
 model boundary is deterministic; authentication, storage and HTTP are real.
+The paid vocabulary-generation scenario explicitly configures its synthetic
+author’s existing per-action preference to 100 credits; its wallet is seeded
+by the guarded fixture. This does not change application defaults.
 
 Run the registered focused journey from the repository root:
 
@@ -89,9 +92,17 @@ synthetic accounts. API health must succeed before browser interaction.
 
 1. Sign up with a synthetic account and create a Knowledge note. Add grammar,
    vocabulary and an exercise through the **Add block** menu below the document.
+   A chat-generated vocabulary proposal previews without an extra outer card
+   frame, completes its follow-up response, and changes the draft only after
+   **Apply to working draft**. Its acknowledgement is not offered as a separate
+   plain-text document edit.
    An empty note keeps audio prerequisites and unavailable copying out of the
    writing area. Library insertion stays a compact secondary action. Existing
-   block editing/reordering is available under **Manage blocks**; relevant audio
+   blocks have a drag handle for whole-block selection/reordering and a heading-right
+   **Block settings** menu for Edit, Copy, Duplicate, Move up/down and Delete.
+   Selecting a block does not show prose-selection actions; these appear only
+   for selected text. The menu is keyboard accessible and usable on narrow screens.
+   Reload preserves the dragged order after explicit Save. Relevant audio
    preparation is under the collapsed **Audio tools** section. A pending
    request, confirmation or generated preview remains reachable if its last
    eligible source block is removed; changing a draft does not cancel or
@@ -163,7 +174,9 @@ synthetic accounts. API health must succeed before browser interaction.
 
 ## E2E coverage
 
-- `author-blocks-publish-practice`: real UI authoring, upload, explicit publication,
+- `author-blocks-publish-practice`: real chat-generated vocabulary preview/follow-up/explicit Apply and
+  UI authoring, whole-block selection, drag reordering, inline settings
+  and keyboard dismissal, mobile menus, upload, explicit publication,
   reload, bilingual original/translation rendering, explicit independent Text-library
   preview/commit, standalone practice, answer/reveal/completion persistence, direct vocabulary
   flashcard and prepared-example sentence practice without library publication, usable audio,

@@ -1,10 +1,9 @@
 'use client';
 
-import { editorLeafText } from '../../lib/learning-block-text';
-
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/react';
+import { TextSelection } from '@tiptap/pm/state';
 import { useI18n } from '@/fsd/shared/i18n';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 import { EditorToolbar } from './editor-toolbar';
@@ -35,9 +34,12 @@ export function WorkspaceEditorChrome({
         selection.from,
         selection.to,
         '\n',
-        editorLeafText,
     );
-    const hasSelection = passage.trim().length > 1 && !editor.isActive('table');
+    const hasSelection =
+        selection instanceof TextSelection &&
+        !selection.empty &&
+        passage.trim().length > 1 &&
+        !editor.isActive('table');
     const toolbar = (
         <EditorToolbar
             editor={editor}

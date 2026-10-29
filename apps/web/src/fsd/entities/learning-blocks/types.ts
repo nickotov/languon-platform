@@ -42,6 +42,8 @@ export type LearningInteraction =
 export interface LearningBlockViewProps {
     block: LearningBlock;
     actions?: ReactNode;
+    headingLeading?: ReactNode;
+    headingActions?: ReactNode;
     labels: LearningBlockLabels;
     audioUrl?: string | undefined;
     hintTranscript?: LearningTranscript | undefined;

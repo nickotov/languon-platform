@@ -33,6 +33,7 @@ import { capabilityPolicyRevisionsTable } from '../../../../src/modules/ai-credi
 import { dictionaryAiWorkerObservationsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { conversationExecutionObservationId } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { textAiModelCatalog } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
+import { textAiPreferencesTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/schema';
 import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
 import {
     fixtureRouteFingerprint,
@@ -183,8 +184,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     replace: true,
                     ...(funding === 'operator'
                         ? { omittedTariffFlows: ['conversation'] }
-                        : {}),
+                        : {
+                              tariff: {
+                                  inputCreditsPerMillionTokens: 1000,
+                                  outputCreditsPerMillionTokens: 500,
+                                  cachedInputCreditsPerMillionTokens: 1000,
+                              },
+                          }),
                 });
+                if (funding === 'customer')
+                    await db.insert(textAiPreferencesTable).values({
+                        userId: ownerId,
+                        mode: 'auto',
+                        maxCreditsPerAction: '60',
+                        version: 1,
+                    });
                 await db.insert(dictionaryAiWorkerObservationsTable).values({
                     id: conversationExecutionObservationId(
                         'production-conversation-regression',
@@ -238,7 +252,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const submitted = await store.submit({ ownerId }, chat.id, {
                     requestId: randomUUID(),
                     content:
-                        'Propose a French to English vocabulary block for travail.',
+                        'Propose a French to Russian vocabulary block for work, joy, cleaning, tile, fish and animal feed, with definitions and example translations.',
                     attachments: [],
                     editorContext: {
                         content: 'French vocabulary.',
@@ -261,13 +275,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(turns)
                     .where(eq(turns.id, submitted.id));
                 const execution = admitted!.execution as {
+                    admittedMaxInputTokens: number;
                     budget: {
                         maxCostMicrosPerAttempt: number;
+                        maxInputTokensPerAttempt: number;
+                        maxOutputTokensPerAttempt: number;
                         inputCostMicrosPerMillionTokens: number;
                         outputCostMicrosPerMillionTokens: number;
                     };
                     snapshot: {
                         aggregateBudget: { maxCostMicrosPerAttempt: number };
+                        perCallMaxInputTokens: number;
                         routingAuthority: { tariffPublished: boolean };
                     };
                 };
@@ -277,10 +295,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(execution.snapshot.aggregateBudget).toEqual(
                     execution.budget,
                 );
+                expect(execution.admittedMaxInputTokens).toBeLessThanOrEqual(
+                    execution.snapshot.perCallMaxInputTokens,
+                );
+                if (funding === 'operator')
+                    expect(execution.admittedMaxInputTokens).toBe(
+                        model.perCallMaxInputTokens,
+                    );
+                else {
+                    // The accepted 60-credit budget covers initial context and
+                    // this six-entry continuation, but not 64k input tokens.
+                    expect(execution.admittedMaxInputTokens).toBe(55_000);
+                }
                 expect(execution.budget).toMatchObject({
                     inputCostMicrosPerMillionTokens: 125000,
                     outputCostMicrosPerMillionTokens: 500000,
                 });
+                expect(execution.budget.maxInputTokensPerAttempt).toBe(
+                    model.aggregateBudget.maxInputTokensPerAttempt,
+                );
+                expect(execution.budget.maxOutputTokensPerAttempt).toBe(
+                    model.aggregateBudget.maxOutputTokensPerAttempt,
+                );
 
                 if (funding === 'operator')
                     expect(
@@ -293,14 +329,60 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         id: randomUUID(),
                         type: 'vocabulary',
                         language: 'fr',
-                        translationLanguage: 'en',
+                        translationLanguage: 'ru',
                         entries: [
-                            {
+                            [
+                                'travail',
+                                'работа',
+                                'Je vais au travail chaque matin.',
+                                'Я каждое утро иду на работу.',
+                            ],
+                            [
+                                'joie',
+                                'радость',
+                                'Cette nouvelle me donne beaucoup de joie.',
+                                'Эта новость приносит мне много радости.',
+                            ],
+                            [
+                                'ménage',
+                                'уборка',
+                                'Nous faisons le ménage dans la maison.',
+                                'Мы делаем уборку в доме.',
+                            ],
+                            [
+                                'carrelage',
+                                'плитка',
+                                'Le carrelage de la cuisine est bleu.',
+                                'Плитка на кухне синяя.',
+                            ],
+                            [
+                                'poisson',
+                                'рыба',
+                                'Le poisson nage dans la rivière.',
+                                'Рыба плавает в реке.',
+                            ],
+                            [
+                                'nourriture',
+                                'корм',
+                                'Cette nourriture est destinée aux animaux.',
+                                'Этот корм предназначен для животных.',
+                            ],
+                        ].map(
+                            ([
+                                term,
+                                translation,
+                                example,
+                                exampleTranslation,
+                            ]) => ({
                                 id: randomUUID(),
-                                term: 'travail',
-                                translation: 'work',
-                            },
-                        ],
+                                term,
+                                translation,
+                                pronunciation: '/synthetic pronunciation/',
+                                definition: `French vocabulary: ${term}. The meaning depends on its sentence context.`,
+                                example,
+                                exampleTranslation,
+                            }),
+                        ),
                     },
                 ];
                 const transport = vi.fn(
@@ -439,7 +521,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect(proposals.proposals).toHaveLength(1);
                     expect(proposals.proposals[0]?.blocks[0]).toMatchObject({
                         type: 'vocabulary',
-                        entries: [{ term: 'travail', translation: 'work' }],
+                        entries: blocks[0]!.entries.map((entry) => ({
+                            ...entry,
+                            // Publication deliberately replaces model-selected identities.
+                            id: expect.any(String),
+                        })),
                     });
                     expect(
                         (await knowledge.get(ownerId, note.id)).body
@@ -475,6 +561,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const expenses = await db.execute(
                     sql`select measurement,amount_usd_micros,provider_id,model_id from ai_provider_expense_records where action_id=${submitted.id}::uuid`,
                 );
+                const attempts = await db.execute(
+                    sql`select input_limit,output_limit,budget from ai_credit_action_attempts where action_id=${submitted.id}::uuid order by ordinal`,
+                );
+                expect(attempts).toHaveLength(outcome === 'success' ? 2 : 1);
+                for (const attempt of attempts) {
+                    expect(Number(attempt.input_limit)).toBeLessThanOrEqual(
+                        execution.admittedMaxInputTokens,
+                    );
+                    expect(Number(attempt.output_limit)).toBeLessThanOrEqual(
+                        4096,
+                    );
+                    expect(attempt.budget).toEqual(execution.budget);
+                }
                 expect(expenses).toHaveLength(outcome === 'success' ? 2 : 1);
                 for (const expense of expenses) {
                     expect(expense.provider_id).toBe(model.providerId);

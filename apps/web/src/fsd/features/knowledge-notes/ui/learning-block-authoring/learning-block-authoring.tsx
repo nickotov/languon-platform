@@ -16,7 +16,7 @@ import {
 import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
 import { InsertLibraryBlock } from '../library-copy/insert-library-block';
 import { AudioBlockUpload, type UploadBlockAudio } from './audio-block-upload';
-import { BlockActions } from './block-actions';
+import { useBlockAuthoring } from './block-authoring-context';
 import { BlockInsertMenu } from './block-insert-menu';
 import { BlockFormDialog } from './block-form-dialog';
 import {
@@ -40,15 +40,18 @@ export function LearningBlockAuthoring({
     library?: KnowledgeLibraryContext | undefined;
     blockCopy?: KnowledgeBlockCopyContext | undefined;
 }) {
-    const [serverDuplicate, setServerDuplicate] =
-        useState<LearningBlock | null>(null);
+    const authoring = useBlockAuthoring();
+    if (!authoring)
+        throw new Error('Block authoring requires its editor scope.');
+    const {
+        editing,
+        setEditing,
+        serverDuplicate,
+        setServerDuplicate,
+        copyToAnotherNote,
+    } = authoring;
     const [items, setItems] = useState(() => blocks(editor));
     const [audioPending, setAudioPending] = useState(false);
-    const [editing, setEditing] = useState<{
-        kind: BlockKind;
-        block?: LearningBlock;
-        existing?: boolean;
-    } | null>(null);
     const [error, setError] = useState(false);
     useEffect(() => {
         setItems(blocks(editor));
@@ -121,21 +124,15 @@ export function LearningBlockAuthoring({
             return false;
         }
     }
-    function edit(block: LearningBlock) {
-        setEditing({ kind: block.type, block, existing: true });
-    }
     function uploaded(block: Extract<LearningBlock, { type: 'audio' }>) {
         setAudioPending(false);
         setEditing({ kind: 'audio', block });
-    }
-    function duplicateOnServer(block: LearningBlock) {
-        setServerDuplicate(block);
     }
     function closeDuplicate() {
         setServerDuplicate(null);
     }
     const duplicateDestination =
-        blockCopy?.source.kind === 'owned-working'
+        !copyToAnotherNote && blockCopy?.source.kind === 'owned-working'
             ? {
                   noteId: blockCopy.source.noteId,
                   branchId: blockCopy.source.branchId,
@@ -195,31 +192,6 @@ export function LearningBlockAuthoring({
                         <InlineAlert>{labels.audioPending}</InlineAlert>
                     )}
                 </Dialog>
-            )}
-            {items.length > 0 && (
-                <details className={styles.management}>
-                    <summary>
-                        {labels.field('Manage blocks')}{' '}
-                        <span className={styles.count}>{items.length}</span>
-                    </summary>
-                    <div className={styles.blockList}>
-                        {items.map((item, index) => (
-                            <BlockActions
-                                key={item.block.id}
-                                item={item}
-                                index={index}
-                                total={items.length}
-                                editor={editor}
-                                labels={labels}
-                                disabled={disabled}
-                                onEdit={edit}
-                                onServerDuplicate={
-                                    blockCopy ? duplicateOnServer : undefined
-                                }
-                            />
-                        ))}
-                    </div>
-                </details>
             )}
             {error && <InlineAlert tone='error'>{labels.error}</InlineAlert>}
             {editing !== null && (

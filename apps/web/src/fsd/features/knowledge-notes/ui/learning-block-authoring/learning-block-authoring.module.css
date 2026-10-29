@@ -35,18 +35,6 @@
     color: var(--text-primary);
 }
 
-.block {
-    padding: var(--space-8);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
-    background: var(--background-surface);
-}
-
-.blockTitle {
-    overflow-wrap: anywhere;
-    flex: 1;
-}
-
 .preview {
     margin-top: var(--space-16);
 }
@@ -100,38 +88,32 @@
     border-color: var(--border-strong);
 }
 
-.insertTrigger:focus-visible,
-.management summary:focus-visible {
+.insertTrigger:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: var(--size-2);
 }
 
-.management {
+@media (max-width: 767px) {
+    .insertTrigger {
+        min-height: var(--size-44);
+    }
+}
+
+.blockMenu {
+    flex: 0 0 auto;
+}
+
+.settingsTrigger {
+    min-width: var(--size-36);
+    min-height: var(--size-36);
+    border: 0;
+    background: transparent;
     color: var(--text-secondary);
 }
 
-.management summary {
-    width: fit-content;
-    min-height: var(--size-36);
-    padding-block: var(--space-8);
-    cursor: pointer;
-}
-
-.count {
-    margin-inline-start: var(--space-6);
-    color: var(--text-tertiary);
-    font-variant-numeric: tabular-nums;
-}
-
-.blockList {
-    display: grid;
-    gap: var(--space-8);
-    margin-block-start: var(--space-4);
-}
-
 @media (max-width: 767px) {
-    .insertTrigger,
-    .management summary {
+    .settingsTrigger {
+        min-width: var(--size-44);
         min-height: var(--size-44);
     }
 }

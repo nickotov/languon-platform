@@ -1,7 +1,7 @@
 # ExecPlan: Interactive knowledge workbooks
 
 Feature: [FEATURE.md](FEATURE.md)
-Last updated: 2026-10-28
+Last updated: 2026-10-29
 
 ## Goal and specification
 
@@ -548,3 +548,88 @@ E45 bounded incident COMPLETE: independent final evidence approval received,
 all14reports774tests revalidated plus browser/source hashes. No material scoped
 finding. External liveprovider availability not tested; existingconfiguration
 factoryready and deterministic productioncomposition proved. ParentF059 open.
+
+## E46 — follow-up chat budget and block editing remediation
+
+User explicitly requested four corrections after the checkpoint commit ef53108:
+remove redundant chat-proposal framing; replace always-visible block management
+with selectable/draggable custom blocks and a heading-right extensible ellipsis
+menu; prevent prose selection actions appearing for a selected custom block;
+fix context_too_large after successful vocabulary generation.
+
+Acceptance: all six existing block types share editor controls, retain standalone
+learner UI and support keyboard-accessible settings/edit/copy/duplicate/delete,
+manual drag reorder plus keyboard alternative. Menu extension remains typed and
+local to authoring; no schema/API/permissions/provider additions. Selection
+bubble belongs to nonempty prose TextSelection, never NodeSelection/empty caret.
+Proposal preview retains explicit Apply/staleness/error behavior without nested
+outer card framing. Six-entry multilingual vocabulary must complete tool call
+AND follow-up under immutable admitted limits through production composition.
+No guard relaxation, budget increase after admission, live paid calls or userDB
+writes. Existing source/copy/upload authorization remains unchanged.
+
+Implementation split: backend followup_context_fix owns budgeting and its tests;
+block_controls_redesign owns NodeView/authoring/heading action slot; root owns
+selection chrome/proposal framing, docs, integration, verification and review.
+Required before handoff: focused red/green tests, web/browser authoring+drag/menu
+and chat-proposal journey, affected static checks, independent completion and
+risk-focused financial/security review; AI execution regression matrix applies
+(admission/context planning/worker follow-up). Full registered execution gate
+required after stabilized source; no provider/model/env changes.
+
+E46 checkpoint: UI source15files94bd01… approved incl REV1authorizedcopy, dropguard,
+and canonical noneditselection. Focused currentweb36tests/types pending terminal
+rootcapture. Nativebrowser964a… retained1pass1fail at newpaidAIstep prerequisite;
+fixture20budget cannot afford initial33192byte minimum evenpreE46. Explicit
+syntheticuser100budget nowprepared viaexistingAPI; proddefaults/wallet unchanged.
+REV2 differential valid: initial+continuation affordable, entire64kroute not.
+Backendworker refining prospective bound to preserve baseoutput allowance and
+caps. Initial34tests+backendtypepass are superseded where budgetcode changes.
+No fullgate until newbudgetcase, browserdrag, source review/remediation stabilize.
+
+E46 source stable: REV1+REV2 source/focusedreviewclosed; backend35tests/type93662,
+web36/type87032green. Final27filemanifest e8c716… freezesruntime/tests/guide/registry.
+Full14critical88393 nowrunning; expectedbackend67/749, otherbrowserflows complete
+plus authoredproposal/drag/menu/mobile mustactuallypass. Logs /tmp/languon-059-e46-critical-final.log.
+Hold finalapproval untilterminalgate+visualinspection; retain earlier964a failure.
+
+E46 latest resume checkpoint: allsource/focusedreviewsclosed inclREV3actualnative
+DnD and lifecyclewarning. Source30manifest9459f983819421d9066f3205f8c83fa896ca63d19e304700d25b709c96fcba6c.
+8webfiles62tests/type37121/styles/lint/format/docs33pass; backend35/type93662pass.
+No codeedits during finalgate. Clean85481/run0d838129-7006-4845-a8b7-c406837ddaa8
+currently backend67/749 after workbook2/chat1/insuff1/free1passed. Log
+/tmp/languon-059-e46-critical-final-frozen.log. Awaitterminalbackend +speech4 +
+adminMCP3 then independentlyvalidated14flow union with7earlierpasses3a5b0f2b.
+Earlierfailedcommandsretained; final0d8screens+browsermetadata retained in
+ evidence/block-controls-and-continuation/. Reviewer e46_completion_review holds
+onlyfinalevidenceapproval. E46notcompleteuntilremaininggates; parentF059open.
+
+E46 remaininggate checkpoint:0d8backend interruptedEXIT1 after2unchangedworker
+casefailures;4browserreportsvalid, nobackendJSON. Independenttester exact2cases
+passed separately andserial(originaltiming/retry0) onexclusive55559, no codefix.
+Classificationtransientbroadsetup/timing remainsinexactwithoutstack. Fresh49429
+3flowsAI67/749+speech4+adminMCP3 nowrunning /tmp/languon-059-e46-execution-final.log.
+Keepallfailedruns. WaitcompleteJSONifnewfailure. Then final14union with7flows3a5b
++4browser0d8+3final49429, verifyhash9459/source unchanged andobtainreviewapproval.
+
+E46 RESUMELATEST: c586 terminal67/749 with2Texts failures diagnosedexactly:
+Vitestimplicit5s cutsoffsecuritySDKcase, backgroundSQLcollidesnextquote(deadlock).
+Reviewedtest-only30s watchdog foroneit.each, productionworker10s/assertionsunchanged.
+Full17Texts55681PASS101.82s +lint/format/diff. Final31manifest9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d.
+Final86764/run75c427d8-2c41-477a-8dee-6145ba6dde21 ACTIVE:
+/tmp/languon-059-e46-execution-verified.log, AI67/749 then speech4/adminMCP3.
+KeepaliveuntilterminalJSONifnewfailure. Allsourcefrozen. Final14union uses7valid
+3a5b0f2b +4browser0d838129 +3from75c427d8whenpass. Finalcompletionreviewpending.
+Screens+browsermetadata under evidence/block-controls-and-continuation. ParentF059
+Inprogress; do not merge/claimwholefeaturecomplete. No additionalcommitrequested.
+
+E46 terminal:86764EXIT0/run75c427d8 backend67/749+speech4+adminMCP3allpass.
+critical-union.json currentvalidators14flows775tests+originalreporthashes; source31
+manifest9712b627… unchanged,next-envrestored,diffcheckpass,no temporaryprobes.
+Reviewer independentlyvalidatedallreports/source,no materialfinding; finalrecord
+approvalrequested. Requested4correctionsimplemented+verified; parentF059open.
+
+E46 COMPLETE — independent final bounded approval received. All4requested fixes,
+realnativebrowserproof,14flows775tests and exact31filemanifest9712b627… approved.
+No openmaterialscopedfinding. ParentF059 Inprogress and its unrelated remaining
+items unchanged. No env/provider switch, livepaidcall, commit/merge/push performed.

@@ -251,3 +251,68 @@ source authorization. No live/paid provider call was made, so external provider
 availability/model behavior is not established. Production composition and
 read-only current-config factory readiness are established. Approval applies
 only to owner-chat incident/remediation; parent F059 remains In progress.
+
+### E46 requested UI and continuation repairs — source review
+
+Boundary: checkpoint ef53108 plus the scoped source manifests; parent Feature059
+is not under completion approval. Independent e46_completion_review and
+financial/security review examined the requested changes.
+
+- E46-REV1 Medium: shared block menus disabled dependency-bearing Copy. Resolved
+  by the existing authorized destination preview flow for audio/source exercises;
+  Duplicate retains its same-note destination. Raw clipboard restrictions remain.
+- E46-REV2 High: unconditional full-route input reservation rejected affordable
+  customer actions. Resolved by a pre-hold bounded search that preserves initial
+  output allowance and per-call/aggregate/operator/customer/wallet limits. Paid60
+  credits admits55000 input units and completes both calls; operator64000 and
+  ordinary/reduced/minimum allowance cases retain their original behavior.
+- E46-REV3 High: native block drag failed in Chromium. Resolved by an explicitly
+  draggable grip, non-hit-testable decorative SVG and a faithful source-first
+  native mouse test before distant-target scrolling. Browser proves exact moved
+  identity set, no duplicates and exact saved/reloaded order. Temporary probes
+  removed. Modifier-copy rejection and HTML non-authority remain intact.
+- Controlled-content replacement no longer flushes React node views inside an
+  effect: a cancellable microtask preserves no-update behavior and discards stale/
+  destroyed work. Prose heading margins are excluded from custom blocks. A
+  successful typed-block reply no longer suggests its acknowledgement as a
+  separate prose document edit; failed/no-tool replies preserve existing behavior.
+
+Focused source evidence: backend35, web62, scoped type/lint/style/format checks,
+registered workbook browser2/2 and chat/credit/interview reports. Source approval
+has no open material finding; final evidence approval remains withheld until a
+complete valid execution gate and required remaining flows pass.
+
+#### Test-harness stability finding
+
+Terminal c586 report has747/749 passes. The restricted-role SDK/private-translation
+case hit Vitest's implicit5s body deadline; abandoned SQL overlapped the following
+quote fixture, causing its deadlock. Isolated unchanged cases pass, and no orphan
+critical worker or competing database writer was found. No production failure or
+runtime-deadline relaxation is inferred from that harness interruption.
+
+Both completion reviewer and independent tester approve only a testcase-local
+30000ms budget for this parameterized real-SDK/role/grant/copy/revocation journey.
+The worker timeout10000ms, all privilege/privacy/financial assertions, global
+Vitest defaults, retries and other testcase budgets remain unchanged. This case
+asserts functional security behavior, not a5s product SLO. Retain c586 as failed;
+full affected file and fresh complete67/749 gate are required after the repair.
+
+#### E46 terminal evidence checkpoint
+
+Final75c427d8 is terminalEXIT0: backend67/749, speech4, adminMCP3 all pass/no skips.
+Independent completion reviewer revalidated all14/775 current-validator reports
+in the truthful union, the unchanged31-file manifest9712b627…, and absence of
+temporary drag probes. No material scoped finding remains. Failed prior runs
+remain failed. Final record approval requested; F059 stays In progress.
+
+### Final bounded E46 approval — 2026-10-29
+
+Independent e46_completion_review approves the four requested repairs and their
+remediation/evidence, with no open material findings. Exact31-file manifest
+9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d
+and all14/775 union reports/hashes revalidated. Terminal backend67/749, speech4,
+adminMCP3 pass/no skips. REV1/2/3 closed; scoped harness watchdog approved with
+worker10s and all security/financial assertions unchanged. No DnD probes remain.
+External paid/live provider availability/model behavior was not exercised; real
+production composition uses deterministic external transport. Parent F059 remains
+In progress; this approval is E46-only.

@@ -49,7 +49,11 @@ export function LearningBlockView(props: LearningBlockViewProps) {
         );
     return (
         <section className={styles.root} aria-label={title}>
-            <h3 className={styles.title}>{title}</h3>
+            <div className={styles.heading}>
+                {props.headingLeading}
+                <h3 className={styles.title}>{title}</h3>
+                {props.headingActions}
+            </div>
             <div key={contentKey}>{content}</div>
             {props.actions}
         </section>

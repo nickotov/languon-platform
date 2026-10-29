@@ -75,6 +75,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             fingerprint?: string;
             confirmedQuoteId?: string;
             inputTokenBound?: number;
+            reserveToolContinuation?: boolean;
         },
     ): Promise<Record<string, unknown>> => {
         await lockTextAiCapacity(tx);
@@ -201,10 +202,68 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 'context_too_large',
                 'A bounded conversation context is required for admission.',
             );
-        const admittedMaxInputTokens = Math.min(
+        const tariff = {
+            ...(execution.snapshot.creditPricing
+                .cachedInputCreditsPerMillionTokens != null
+                ? {
+                      cachedInputCreditsPerMillionTokens: String(
+                          execution.snapshot.creditPricing
+                              .cachedInputCreditsPerMillionTokens,
+                      ),
+                  }
+                : {}),
+            inputCreditsPerMillionTokens: String(
+                execution.snapshot.creditPricing.inputCreditsPerMillionTokens,
+            ),
+            outputCreditsPerMillionTokens: String(
+                execution.snapshot.creditPricing.outputCreditsPerMillionTokens,
+            ),
+        };
+        const authorizedBudgetMilli = budget ? parseCreditMilli(budget) : 0n;
+        let admittedMaxInputTokens = Math.min(
             execution.snapshot.perCallMaxInputTokens,
             input.inputTokenBound!,
         );
+        if (input.reserveToolContinuation) {
+            const customerBudget =
+                authorizedBudgetMilli < account.availableCredits
+                    ? authorizedBudgetMilli
+                    : account.availableCredits;
+            const affordableOutput = (inputTokens: number) => {
+                const providerOutput = providerAffordableOutputTokens({
+                    inputTokens,
+                    outputLimit: 10000,
+                    budget: execution.budget,
+                });
+                if (funding !== 'customer' || zeroCustomerTariff)
+                    return providerOutput;
+                return Math.min(
+                    providerOutput,
+                    affordableActionOutput({
+                        budgetMilli: customerBudget,
+                        inputTokens,
+                        outputLimit: 10000,
+                        tariff,
+                    }),
+                );
+            };
+            // Tool arguments join the next prompt. Reserve prospective headroom
+            // without reducing the initial output allowance or exceeding funds.
+            // All pricing, holds and the immutable snapshot are finalized below.
+            const initialOutput = affordableOutput(admittedMaxInputTokens);
+            let ceiling = Math.min(
+                execution.snapshot.perCallMaxInputTokens,
+                execution.budget.maxInputTokensPerAttempt,
+            );
+            while (initialOutput > 0 && admittedMaxInputTokens < ceiling) {
+                const candidate = Math.ceil(
+                    (admittedMaxInputTokens + ceiling) / 2,
+                );
+                if (affordableOutput(candidate) >= initialOutput)
+                    admittedMaxInputTokens = candidate;
+                else ceiling = candidate - 1;
+            }
+        }
         const totalInputLimit = Math.min(
             execution.budget.maxInputTokensPerAttempt,
             admittedMaxInputTokens * 5,
@@ -229,30 +288,12 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 'capacity_unavailable',
                 'The AI request exceeds the available execution allowance. Try again later.',
             );
-        const tariff = {
-            ...(execution.snapshot.creditPricing
-                .cachedInputCreditsPerMillionTokens != null
-                ? {
-                      cachedInputCreditsPerMillionTokens: String(
-                          execution.snapshot.creditPricing
-                              .cachedInputCreditsPerMillionTokens,
-                      ),
-                  }
-                : {}),
-            inputCreditsPerMillionTokens: String(
-                execution.snapshot.creditPricing.inputCreditsPerMillionTokens,
-            ),
-            outputCreditsPerMillionTokens: String(
-                execution.snapshot.creditPricing.outputCreditsPerMillionTokens,
-            ),
-        };
         const plannedMaximumMilli = roundActionChargeMilli(
             maximumActionChargeNumerator(
                 { inputTokens: totalInputLimit, outputTokens: 10000 },
                 tariff,
             ),
         );
-        const authorizedBudgetMilli = budget ? parseCreditMilli(budget) : 0n;
         let acceptedBudgetMilli =
             authorizedBudgetMilli < plannedMaximumMilli
                 ? authorizedBudgetMilli

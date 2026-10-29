@@ -2,7 +2,16 @@
 import { useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { LearningBlock } from '@languon/contracts';
-import { Button, InlineAlert } from '@/fsd/shared/ui';
+import { Menu, InlineAlert, type MenuItem } from '@/fsd/shared/ui';
+import {
+    Copy,
+    CopyPlus,
+    Pencil,
+    ArrowUp,
+    ArrowDown,
+    Trash2,
+    Ellipsis,
+} from 'lucide-react';
 import { normalizeEditorDocument } from '../../lib/editor-document';
 import {
     copyLearningBlock,
@@ -24,6 +33,8 @@ export function BlockActions({
     disabled,
     onEdit,
     onServerDuplicate,
+    onServerCopy,
+    additionalActions = [],
 }: {
     item: PositionedBlock;
     index: number;
@@ -33,6 +44,8 @@ export function BlockActions({
     disabled: boolean;
     onEdit(block: LearningBlock): void;
     onServerDuplicate?: ((block: LearningBlock) => void) | undefined;
+    onServerCopy?: ((block: LearningBlock) => void) | undefined;
+    additionalActions?: MenuItem[] | undefined;
 }) {
     const [copyError, setCopyError] = useState(false);
     function current() {
@@ -41,10 +54,12 @@ export function BlockActions({
         );
     }
     function edit() {
+        if (disabled) return;
         const found = current();
         if (found) onEdit(found.block);
     }
     function remove() {
+        if (disabled) return;
         const found = current();
         if (!found) return;
         const transaction = editor.state.tr.delete(
@@ -61,6 +76,7 @@ export function BlockActions({
         }
     }
     function duplicate() {
+        if (disabled) return;
         const found = current();
         if (
             found &&
@@ -87,6 +103,7 @@ export function BlockActions({
         }
     }
     function move(direction: -1 | 1) {
+        if (disabled) return;
         const all = blocks(editor);
         const sourceIndex = all.findIndex(
             (candidate) => candidate.block.id === item.block.id,
@@ -113,9 +130,16 @@ export function BlockActions({
         move(1);
     }
     async function copy() {
+        const found = current();
+        if (!found) return;
+        if (copyUnavailable) {
+            if (!disabled) onServerCopy?.(found.block);
+            return;
+        }
         try {
             await navigator.clipboard.writeText(
-                learningBlockClipboardPrefix + JSON.stringify(item.block),
+                learningBlockClipboardPrefix +
+                    JSON.stringify(current()?.block ?? item.block),
             );
             setCopyError(false);
         } catch {
@@ -126,67 +150,59 @@ export function BlockActions({
         item.block.type === 'audio' ||
         (item.block.type === 'exercise' && Boolean(item.block.source));
     const title = item.block.title ?? labels.view.kinds[item.block.type];
+    const actions: MenuItem[] = [
+        {
+            label: labels.edit,
+            icon: <Pencil size={16} />,
+            disabled,
+            onSelect: edit,
+        },
+        {
+            label: labels.copy,
+            icon: <Copy size={16} />,
+            disabled: copyUnavailable && !onServerCopy,
+            onSelect: copy,
+        },
+        {
+            label: labels.duplicate,
+            icon: <CopyPlus size={16} />,
+            disabled: disabled || (copyUnavailable && !onServerDuplicate),
+            onSelect: duplicate,
+        },
+        {
+            label: labels.up,
+            icon: <ArrowUp size={16} />,
+            disabled: disabled || index === 0,
+            separatorBefore: true,
+            onSelect: up,
+        },
+        {
+            label: labels.down,
+            icon: <ArrowDown size={16} />,
+            disabled: disabled || index === total - 1,
+            onSelect: down,
+        },
+        ...additionalActions,
+        {
+            label: labels.remove,
+            icon: <Trash2 size={16} />,
+            disabled,
+            separatorBefore: true,
+            tone: 'danger',
+            onSelect: remove,
+        },
+    ];
+    const menuLabel = `${labels.field('Block settings')}: ${title}`;
     return (
-        <div className={styles.block}>
-            <div className={styles.actions}>
-                <strong className={styles.blockTitle}>{title}</strong>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    size='small'
-                    disabled={disabled}
-                    onClick={edit}
-                >
-                    {labels.edit}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    size='small'
-                    disabled={
-                        disabled || (copyUnavailable && !onServerDuplicate)
-                    }
-                    onClick={duplicate}
-                >
-                    {labels.duplicate}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    size='small'
-                    disabled={disabled || index === 0}
-                    onClick={up}
-                >
-                    {labels.up}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    size='small'
-                    disabled={disabled || index === total - 1}
-                    onClick={down}
-                >
-                    {labels.down}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    size='small'
-                    disabled={disabled}
-                    onClick={remove}
-                >
-                    {labels.remove}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    size='small'
-                    disabled={copyUnavailable}
-                    onClick={copy}
-                >
-                    {labels.copy}
-                </Button>
-            </div>
+        <div className={styles.blockMenu}>
+            <Menu
+                items={actions}
+                label={menuLabel}
+                trigger={<Ellipsis size={18} aria-hidden />}
+                triggerClassName={styles.settingsTrigger}
+                iconOnly
+                allowDisabledItems
+            />
             {copyError && (
                 <InlineAlert tone='error'>{labels.error}</InlineAlert>
             )}

@@ -21,7 +21,7 @@
     margin-top: 0.85em;
 }
 
-.prose :global(.tiptap) h2 {
+.prose :global(.tiptap) h2:not(:where([data-learning-block-id] *)) {
     font-size: var(--size-22);
     line-height: 1.35;
     font-weight: 650;
@@ -29,7 +29,7 @@
     margin-top: 1.8em;
 }
 
-.prose :global(.tiptap) h3 {
+.prose :global(.tiptap) h3:not(:where([data-learning-block-id] *)) {
     font-size: var(--size-18);
     line-height: 1.4;
     font-weight: 600;

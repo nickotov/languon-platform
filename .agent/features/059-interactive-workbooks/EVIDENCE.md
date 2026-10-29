@@ -1572,3 +1572,219 @@ E45 terminal verification — 2026-10-29:
   request or write to the user's existing conversation was used. Existing failed
   messages are retained; retry is explicit. Parent F059 remains In progress;
   this evidence closes only the reported chat incident and required remediation.
+
+## E46 — block controls and tool-continuation correction (in progress)
+
+Base checkpoint ef53108; no live paid calls or existing-user-data writes.
+
+- Backend first reproducer strengthens production vocabulary from one short entry
+  to six French/Russian entries with definitions/examples. Two success cases red
+  before second HTTP; controlled-failure cases pass. Initial reserve-to-route-cap
+  repair yields34/34 scoped tests,4files86.92s; backendtype92198pass and affected
+  lint/format pass. Financial/source review confirms server-derived capability,
+  immutable limits and prospectivehold. Further affordability correction pending
+  under E46-REV2: preserve working smaller budgets instead of unconditional cap.
+- Root selection test reproduces baseline:2fail/1pass for whole-block selection;
+  TextSelection-only repair plus existing initialization yields11/11 green.
+- UI replaces management panel with shared inline heading actions and native
+  drag handle, optional typed per-block menu extensions, and existing Edit dialog.
+  Canonical comparison prevents selecting identical content marking it dirty.
+  E46-REV1 resolved: media/source exercise Copy opens authorized destination
+  preview, Duplicate retains same-note destination. Modifier-copy block drops
+  are consumed unchanged; ordinary moves/text drops remain permitted.
+  Frozen15-file UI manifest94bd01cbd82d47750c0d172e1bfa105c43d65c468600e0f9f3ebeb87e788a305
+  at /tmp/languon-059-block-controls-manifest.json; reviewer verified source.
+- Focused native-browser check77930/run964a8907-e1b9-4fcc-b5f4-5f9bffc69fd1:
+  sharing1pass; author1fail before any AI dispatch. POST400 credits_exhausted
+  reflects NEW paid-AI scenario missing its synthetic per-action prerequisite:
+  legacy fixture default20credits cannot cover even baseline33192byte minimum
+  at1000credits/M input. Existing manual-only journey never needed an AI budget.
+  Explicit synthetic owner preference100 via existing API prepares that new step;
+  wallet grant and productiondefaults unchanged. This does not close REV2: a
+  separate production case must prove a budget sufficient for initial+continuation
+  but below fullroute ceiling. Failed run retained, no passingbrowserclaim.
+- An initial pnpm test invocation forwarded filters behind an extra separator and
+  accidentally expanded to allwebtests during activeworker edits; abortedCtrlC130,
+  not counted. Serial explicit `pnpm --filter @languon/web exec vitest run ...`
+  used thereafter. Earlier parallel5second timeouts retained; no timeout increase
+  or assertion weakening. Final source/evidence approvals pending actual gates.
+
+E46 stabilized preflight:
+
+- Final UI5files/36tests22391pass/no skips80.19s; webtype87032EXIT0.
+  Current root styles/fixture/browser test ESLint and formatting pass. Guide
+  revision297bf2776ed431ad/check and all33guidechecks/16validators pass.
+- REV2 refinement red: old unconditional-cap Paid cases2fail/Operator2pass;
+  final affordability run40621EXIT0,4files35tests27.91s. Paid60credits supports
+  exactly55000 prospectiveinput units and six-entry two-call completion while
+  full64000 would be unaffordable. Operator64000 retains existing ceiling.
+  Reduced quotes3000output,1tokenfloor,0outputrejection and nohold before explicit
+  confirmation checked for continuation flag bothfalse/true. Finalbackendtype
+  93662EXIT0; scopedlint/stylepass. No wallet, tariff or productiondefault change.
+- Initial input/output allowance is preserved; monotone search expands prospective
+  input only within route/aggregate/reviewedoperatorcost/customeraction/wallet
+  bounds. Final cost/quote/hold/snapshot follow. No runtime guard relaxation.
+- Completion reviewer closes REV1+REV2 on source/focused evidence; independent
+  financial/security review approves refined accounting hash7e4d44928d98d948da6e3e1e4bc5368351cf4ded0b1ace6dd72b06773ee00e0d.
+  Residual: successive calls share actionbudget; a percallcap is not a guarantee
+  all five calls can consume it. Existing failclosed dispatch remains intended.
+- Frozen27file source manifest aggregate
+  e8c716997a9bdac856a7e4a8fb21ddf77b991215b98abf804e44f0702f9eaece
+  at evidence/block-controls-and-continuation/source-manifest.json. Root full14flow
+  critical88393 now running /tmp/languon-059-e46-critical-final.log; new exact
+  accounting case mandatory, minimum463/expectedactual749. Final native drag,
+  proposal framing/Apply screenshots and final evidence approval still pending.
+
+E46 native-browser correction checkpoint:
+
+- Full88393/run3a5b0f2b-c36f-4b3b-937f-b20fa3315865 retained failed. Seven
+  precedingflows pass. Workbooksharing passes; author generation and followup
+  succeeded, then test hits strict locator ambiguity: actual answer plus legacy
+  WorkspaceSuggestionCard repeat same acknowledgement. No duplicate AI turn.
+- This exposed undesirable scoped UI: successful typed-block acknowledgements
+  were offered again as plain-text edits. TutorMessage now suppresses only that
+  prose WorkspaceProposal when canonical persisted propose_learning_blocks is
+  succeeded. Failure/no-tool behavior retained. New3-state regression red1/3,
+  green3files26tests6.01s (includes existing error/prose-review suites); final
+  webtype85827EXIT0, lintpass. Reviewer sourceapproves narrowdelta.
+- Browser asserts primary data-assistant-content and no prose Use-in-document
+  for typedsuccess. Guide7714455deb2c9ee8/check matches. Source manifest refreshed
+  to29files. Prior7 browserpasses remain valid: scopedtyped Knowledge-only UI
+  condition is not exercised by their authentication/admin/dictionary/sentence/
+  Text journeys; backend5files unchanged. Remaining7 criticalflows rerun on final
+  source, including workbook/assistant and full67/749 execution stage.
+
+E46 native drag, lifecycle and final frozen gate:
+
+- Browser5fe3d3ca… retained failed: generation/followup/framing/Apply/settings
+  work; DnD fails first-order assertion. Controlled external content replacement
+  also emits React flushSync warning. New recovered-content assertion reproduces
+  lifecycle warning red; queued cancellable microtask repair keeps emitUpdate:false,
+  checks destroyed/superseded editor, and passes22 full scoped tests/no skips.
+- REV3 native diagnostics retained2b920dee…, bc5f166f…, f4f46b1b…. Native
+  grip must itself be explicitly draggable and decorative SVG must not receive
+  pointer hits. Metadata-only probe establishes correct PM move/slice afterward.
+  Playwright dragTo then retargets a distant block when it scrolls before initial
+  held movement. Maintained test now initiates native drag before scrolling,
+  moves through real dragover events and asserts intended first block, exact
+  identity multiset/no duplicates, and exact order after Save/reload.
+- 22745/bc5f and81972/f4f46 remain failed, not waived. 11514/run8abbc13a-4ab6-
+  4887-9ad8-d56d42f088cf passes2/2/no skips39.7s with causal metadata witness.
+  Probe and temporary Editor import subsequently removed; no runtime/debug
+  instrumentation remains. Modifier-copy guard unchanged. Reviewer closes
+  REV3 on source/behavior, pending clean terminal final gate.
+- Visual inspection additionally found workspace prose h3 margins leaking into
+  typed-block headings. Scoped :not(:where([data-learning-block-id] *)) keeps
+  prose typography outside custom blocks. Current desktop/mobile headers align
+  title/grip/ellipsis; existing Menu handles focus, dismissal and viewport anchoring.
+- Final source30files manifest9459f983819421d9066f3205f8c83fa896ca63d19e304700d25b709c96fcba6c.
+  Full affectedweb8files62tests22296passed13.64s/no skips; finalwebtype37121,
+  globalstyles, scopedlint/format/diff pass. Full33guide/16validator54772pass.
+  Backend35/type93662 and financial review remain valid, code unchanged.
+- Clean final7flow85481/run0d838129-7006-4845-a8b7-c406837ddaa8 passes
+  interactive-workbooks2, chat-lifecycle1, insufficient-credits1, free-interview1.
+  Complete67-suite/expected749 execution stage running; speech/adminMCP follow.
+  Four screenshot artifacts and hashed browser-evidence.json copied under
+  evidence/block-controls-and-continuation/. Runtime assertions prove no page/
+  console errors or unexpected5xx. Root inspected aligned desktop/mobile menus
+  and clean typed proposal preview. Final evidence approval still pending.
+- Independent source review has no open material finding. E46 approvals are
+  bounded to these requested fixes; parent F059 remains In progress.
+
+E46 broad execution interruption and independent diagnosis:
+
+- Clean0d838129 browser reports remain passed (4flows/5tests), but broad backend
+  stdout reports two failures: unchanged sentence fallback(false)37069ms and
+  unchanged dictionary pinned-revision15057ms. Root stopped the already-failed
+  stage to bound diagnosis;85481 terminalEXIT1, summary records pnpm exitednull.
+  No ai-execution-contracts.json was written. No749/fullgatepass claimed.
+- Required independent tester e46_execution_gate_diagnosis reproduced the exact
+  cases only on separately confirmed55559/languon_auth_chat_execution_regression_test,
+  never activecritical55489 or userDB. Original test/hook limits and assertions
+  preserved. Each passes individually; serial combined original controls
+  --no-file-parallelism --hookTimeout=30000 --retry=0 passes2/2 with48 intentional
+  name-filter skips,10.72s total/7.19s tests. This is focused diagnosis, not a
+  substitute for the no-skip critical gate. Commands/results retained in agent
+  transcript (inline exit0, no disk logs/sessionIDs were generated).
+- Both test sources are byte-identical to checkpointef53108: sentence SHA256
+  f0899c93aca96d21de0b2020e82d608cfd66ad8a55da69b3bb25fcfa4c8ecdae;
+  dictionary e09c0dd4db18a198b7dc715bcc8202a0ed12ed537dfbf6f926bc60b8f4b48011.
+  No source or timeout/assertion change made. Evidence supports a transient
+  broad-run setup/timing condition, but missing interrupted error stacks mean
+  the exact phase cannot be proven. Fresh complete gate remains required.
+- Root resumed only required remaining3 flows in49429:
+  /tmp/languon-059-e46-execution-final.log (AI67/749 +speech4 +adminMCP3).
+  No competing builds, SDK tests or DB clients remain. Final30files9459… unchanged.
+  If repeated, retain terminal JSON before remediation. No final approval yet.
+
+E46 terminal diagnosis and bounded harness repair:
+
+- c58610bf-d261-4274-83a9-42952ff83467 completed67files749tests747pass2fail,
+  no pending,910.67s, EXIT1. Complete JSON retained. Stdout identifies first
+  failure as Vitest Test timed out in5000ms in the restricted-role SDK/private
+  translation case; the next fixture gets PostgreSQL deadlock. This is one
+  harness timeout/abandoned-work chain. No stale test process or blocked DB
+  writer was found; pg_stat_activity showed live progress without blockers.
+- Completion reviewer and independent tester approved a case-local30000ms
+  watchdog for this one parameterized functional real-DB security journey.
+  Only comment+it.each timeout argument changed. The worker10000ms deadline,
+  all security/financial/result assertions, global defaults, retries and all
+  other testcase budgets are untouched. No asserted5s product SLO existed here.
+- Root full17file run55681 on confirmed disposable55559 passed17/17/no skips
+  101.82s (96.83s tests). JSON/log retained at
+  /tmp/languon-059-e46-texts-harness-final.{json,log}. Scopedlint45043,
+  formatting and diff checks pass. Independent reviewer inspected exact patch
+  and fullfile result, approved narrow harness remediation. This supersedes
+  guesses about worker10s expiry; actual cause is the framework5s body limit.
+- Frozen source31files aggregate
+  9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d.
+  Earlier valid browser reports reuse unchanged runtime; later delta is only
+  a test-local watchdog. Browser metadata records tested/current manifests.
+- Final remaining3flow86764/run75c427d8-2c41-477a-8dee-6145ba6dde21 now runs
+  unchanged strict67/749 execution selection, speech4 and adminMCP3:
+  /tmp/languon-059-e46-execution-verified.log. No competing SDK/build/DB clients.
+  Do not mark complete until actual terminal gate/evidence approval. ParentF059open.
+
+E46 frontend composition preflight: KnowledgeEditor remains273 lines after its
+controlled-content timing repair. It owns one TipTap instance, canonical accepted
+value, proposal-target transaction mapping and the workspace/full rendering branch.
+The imperative handle, forms, menus and reusable block rendering are already
+extracted. Splitting the remaining lifecycle would pass coupled editor/ref/target
+state between hooks without separating a responsibility, increasing stale-update
+risk in this correction; no unrelated refactor was introduced. Other changed
+components remain below250 lines. No shared UI primitive or production dependency
+was added; existing Menu/Popover/token contracts are reused.
+
+### E46 terminal verification — 2026-10-29
+
+86764/run75c427d8-2c41-477a-8dee-6145ba6dde21 exited0: strict execution gate
+67/67 files,749/749 tests; speech4/4; adminMCP3/3. No skips, retries, expected
+failures or incomplete results. The corrected security integration harness
+completed normally; worker/runtime deadlines and assertions remain unchanged.
+
+`evidence/block-controls-and-continuation/critical-union.json` validates all14
+registered flows/775tests using current strict report validators and stores each
+original report SHA256. It truthfully reuses seven unaffected browser flows from
+3a5b0f2b, four final-runtime browser flows from0d838129, and the three terminal
+flows from75c427d8. Failed and interrupted commands remain failed/unmodified;
+no raw report was merged or rewritten. Later deltas were Knowledge-only rendering
+and one test-local watchdog, with reuse boundaries explicitly recorded.
+
+Final31-file manifest9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d
+matches every current source/test/guide/registry byte. Finalweb62, backend35,
+Texts17, type/lint/style/format/doc checks and actual desktop/mobile/native drag
+proof are current as detailed above. Tracked next-env.d.ts restored, finaldiff
+check passes. Temporary drag instrumentation and the owned Chrome backup removed.
+No user source data, model/provider/env configuration or paid/live provider calls
+were changed/performed. External live-model behavior is not established by the
+fake transports; production composition, limits, persistence and settlement are.
+
+Independent reviewer revalidated the14/775 union and all31 source hashes, found
+no open material finding, and is completing bounded E46 evidence sign-off.
+Parent Feature059 remains In progress; this is not whole-feature approval.
+
+E46 final independent verdict: APPROVED. Reviewer revalidated manifest9712b627…,
+all14/775 original report hashes, final terminal gate and durable records. No open
+material scoped finding; REV1/2/3 and the test-harness repair are closed. E46 is
+Complete. Parent Feature059 remains In progress; no whole-feature completion,
+merge or additional commit is claimed.

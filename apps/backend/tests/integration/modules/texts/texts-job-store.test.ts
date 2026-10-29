@@ -210,6 +210,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 context(),
             );
+        // SDK execution, restricted grants and capability probes are one real-DB
+        // journey. Budget the test independently of its unchanged 10s worker deadline.
         it.each([false, true])(
             'executes a private shared-note translation through the real SDK and persists only the requesting actor overlay (restricted=%s)',
             async (restrictedRole) => {
@@ -709,6 +711,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }
                 }
             },
+            30_000,
         );
 
         it('quotes paid translation before creating work and dispatches exactly the accepted allowance', async () => {
