@@ -35,6 +35,41 @@ it('offers a safe retry without revealing a model or sending learners to model s
     expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
 });
 
+it.each([
+    [
+        'en',
+        'AI could not complete this response. Your message is saved. You can retry.',
+    ],
+    [
+        'ru',
+        'ИИ не смог завершить ответ. Ваше сообщение сохранено. Можно повторить попытку.',
+    ],
+    [
+        'es',
+        'La IA no pudo completar esta respuesta. Tu mensaje está guardado. Puedes volver a intentarlo.',
+    ],
+    [
+        'fr',
+        'L’IA n’a pas pu terminer cette réponse. Votre message est conservé. Vous pouvez réessayer.',
+    ],
+] as const)(
+    'explains a generation failure in %s without mislabeling it as a conversation loading error',
+    (locale, message) => {
+        const retry = vi.fn();
+        render(
+            <ConversationErrorNotice
+                error={error('generation_failed')}
+                onRetry={retry}
+            />,
+            { locale },
+        );
+        expect(screen.getByRole('alert')).toHaveTextContent(message);
+        expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(retry).toHaveBeenCalledOnce();
+    },
+);
+
 it('directs exhausted credits to the balance instead of a model change or blind retry', () => {
     render(
         <ConversationErrorNotice
@@ -128,7 +163,12 @@ it('associates each failed/cancelled Retry with its original learner question', 
         ],
         turns: [
             { ...turn, id: firstId, status: 'cancelled' },
-            { ...turn, id: secondId, status: 'failed' },
+            {
+                ...turn,
+                id: secondId,
+                status: 'failed',
+                failureCode: 'generation_failed',
+            },
         ],
         drafts: [],
     });
@@ -145,6 +185,12 @@ it('associates each failed/cancelled Retry with its original learner question', 
     const failed = screen.getByRole('region', {
         name: 'Incomplete response: Provider failed question',
     });
+    expect(within(failed).getByRole('alert')).toHaveTextContent(
+        'AI could not complete this response. Your message is saved.',
+    );
+    expect(within(failed).getByRole('alert')).not.toHaveTextContent(
+        'Could not load or update',
+    );
     fireEvent.click(
         within(failed).getByRole('button', { name: 'Retry response' }),
     );

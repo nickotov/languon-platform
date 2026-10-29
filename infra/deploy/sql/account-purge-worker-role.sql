@@ -120,7 +120,9 @@ GRANT SELECT (id, conversation_id, owner_id, status, lease_until)
     ON TABLE conversation_turns TO :"account_purge_role";
 GRANT SELECT, DELETE ON TABLE conversation_provider_calls TO :"account_purge_role";
 GRANT SELECT (owner_id), DELETE ON TABLE conversation_settings TO :"account_purge_role";
-GRANT SELECT (id, owner_id), DELETE ON TABLE knowledge_notes TO :"account_purge_role";
+GRANT SELECT (id, owner_id) ON TABLE knowledge_notes TO :"account_purge_role";
+-- New private content erasure uses only its due, owner-scoped SECURITY DEFINER
+-- entrypoint: no raw content reads or direct cross-owner deletion privileges.
 GRANT SELECT (owner_id), DELETE ON TABLE knowledge_operation_receipts TO :"account_purge_role";
 GRANT SELECT (id) ON TABLE texts TO :"account_purge_role";
 
@@ -149,5 +151,9 @@ GRANT EXECUTE ON FUNCTION languon_assert_accounting_purge_claim(uuid,text,intege
     languon_complete_account_purge(uuid,text,integer),
     languon_purge_ai_credit_owner(uuid,text,integer),
     languon_finalize_speech_accounting_for_purge(uuid,text,integer),
+    languon_purge_private_knowledge_speech(uuid,text,integer),
+    languon_purge_knowledge_owner(uuid,text,integer),
+    languon_quiesce_knowledge_learning_for_purge(uuid,text,integer),
+    languon_purge_admin_mcp_owner(uuid,text,integer,timestamptz),
     languon_recover_purge_interview_action(uuid,text,integer,uuid)
 TO :"account_purge_role";

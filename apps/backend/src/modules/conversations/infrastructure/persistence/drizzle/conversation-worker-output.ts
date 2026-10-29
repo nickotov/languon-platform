@@ -1,3 +1,4 @@
+import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
     ConversationToolCallSchema,
     LegacyKnowledgeNoteContentSchema,
@@ -12,6 +13,7 @@ import {
     type SourceMaterial,
 } from '../../../domain/conversation';
 import { conversationEvent } from './conversation-events';
+import { assertLegacyNoteTarget } from './conversation-legacy-note-target';
 import {
     conflict,
     draftView,
@@ -165,6 +167,12 @@ export async function conversationPropose(
     target?: { noteId: string; version: number },
 ) {
     return conversationWithOperation(persistence, turn, async (tx) => {
+        if (isReadOnlyKnowledgeSource(turn.source))
+            throw conflict(
+                'Shared conversations cannot propose document changes.',
+            );
+        if (target)
+            await assertLegacyNoteTarget(tx, turn.ownerId, target.noteId);
         const now = persistence.now();
         const [row] = await tx
             .insert(drafts)

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, inArray, or } from 'drizzle-orm';
+import { eq, inArray, or, sql } from 'drizzle-orm';
 import { payloadHash, type AdminMcpTransaction } from './admin-mcp-persistence';
 import {
     adminMcpAuditTable,
@@ -14,7 +14,16 @@ export async function purgeAdminMcpForOwner(
     tx: AdminMcpTransaction,
     ownerUserId: string,
     at = new Date(),
+    authorization?: { workerId: string; fencingToken: number },
 ): Promise<void> {
+    if (authorization) {
+        await tx.execute(
+            sql`select languon_purge_admin_mcp_owner(${ownerUserId}::uuid, ${authorization.workerId}, ${authorization.fencingToken}, ${at.toISOString()}::timestamptz)`,
+        );
+
+        return;
+    }
+
     const tokens = await tx
         .select({ id: adminMcpTokensTable.id })
         .from(adminMcpTokensTable)

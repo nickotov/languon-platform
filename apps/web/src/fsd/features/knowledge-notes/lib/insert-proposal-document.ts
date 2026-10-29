@@ -10,6 +10,11 @@ export function prepareProposalDocument(
     range: { from: number; to: number },
     append: boolean,
 ): Transaction | null {
+    let touchesBlock = false;
+    editor.state.doc.nodesBetween(range.from, range.to, (node) => {
+        if (node.type.name === 'learningBlock') touchesBlock = true;
+    });
+    if (touchesBlock) return null;
     const nodes = (document.content ?? []).map((node) =>
         editor.schema.nodeFromJSON(node),
     );

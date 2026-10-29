@@ -1,9 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import {
-    createTextsAiProvider,
-    preflightTextsRequest,
-} from '../../../../src/modules/texts/infrastructure/ai/texts-ai-provider';
+import { createTextsAiProvider } from '../../../../src/modules/texts/infrastructure/ai/texts-ai-provider';
 import { segmentText } from '../../../../src/modules/texts/domain/text';
 import type { TextsProviderCall } from '../../../../src/modules/texts/application/ports/texts-ai-provider';
 import {
@@ -48,6 +45,7 @@ function call(): TextsProviderCall {
     };
 }
 beforeEach(() => vi.clearAllMocks());
+afterEach(() => vi.unstubAllGlobals());
 describe('Texts production AI adapter', () => {
     it('sends the entire source plus sentence mapping in one call with content tracing disabled', async () => {
         const c = call();
@@ -82,27 +80,45 @@ describe('Texts production AI adapter', () => {
             modelSettings: { maxRetries: 0 },
         });
     });
-    it('rejects model limits before invoking a provider', () => {
+    it('rejects model limits before invoking a provider', async () => {
         const c = call();
-        expect(() =>
-            preflightTextsRequest(
-                c.input,
-                { ...c.execution, perCallMaxInputTokens: 5 },
-                c.budget,
-            ),
-        ).toThrow('This model cannot safely translate');
+        const originalInput = structuredClone(c.input);
+        c.execution = { ...c.execution, perCallMaxInputTokens: 5 };
+        const http = vi.fn<typeof fetch>(async () => {
+            throw new Error('Unexpected HTTP during a rejected request');
+        });
+        vi.stubGlobal('fetch', http);
+        await expect(
+            createTextsAiProvider({
+                credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+            }).run(c),
+        ).rejects.toMatchObject({
+            name: 'TextsAiError',
+            code: 'model_capacity_exceeded',
+        });
         expect(mocks.generate).not.toHaveBeenCalled();
+        expect(http).not.toHaveBeenCalled();
+        expect(c.input).toEqual(originalInput);
     });
-    it('rejects output bounds without truncating source', () => {
+    it('rejects output bounds without truncating source', async () => {
         const c = call();
-        expect(() =>
-            preflightTextsRequest(
-                c.input,
-                { ...c.execution, perCallMaxOutputTokens: 5 },
-                c.budget,
-            ),
-        ).toThrow('This model cannot safely translate');
-        expect(c.input.sourceText).toContain('Second sentence');
+        const originalInput = structuredClone(c.input);
+        c.execution = { ...c.execution, perCallMaxOutputTokens: 5 };
+        const http = vi.fn<typeof fetch>(async () => {
+            throw new Error('Unexpected HTTP during a rejected request');
+        });
+        vi.stubGlobal('fetch', http);
+        await expect(
+            createTextsAiProvider({
+                credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
+            }).run(c),
+        ).rejects.toMatchObject({
+            name: 'TextsAiError',
+            code: 'model_capacity_exceeded',
+        });
+        expect(mocks.generate).not.toHaveBeenCalled();
+        expect(http).not.toHaveBeenCalled();
+        expect(c.input).toEqual(originalInput);
     });
     it('translates a complete French article with extended limits and exact JSON framing', async () => {
         const c = call();

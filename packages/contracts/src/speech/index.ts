@@ -15,6 +15,15 @@ export const SpeechAccessSchema = z.discriminatedUnion('kind', [
 export const SpeechSourceSchema = z.discriminatedUnion('kind', [
     z
         .object({
+            kind: z.literal('knowledge-block'),
+            noteId: id,
+            branchId: id,
+            blockId: id,
+            expectedBranchVersion: z.number().int().positive(),
+        })
+        .strict(),
+    z
+        .object({
             kind: z.literal('flashcard-field'),
             access: SpeechAccessSchema,
             cardId: id,

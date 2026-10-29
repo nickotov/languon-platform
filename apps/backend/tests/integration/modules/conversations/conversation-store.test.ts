@@ -1,7 +1,10 @@
+import { DrizzleWorkbookStore } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store';
 import { createHash, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { sql } from 'drizzle-orm';
 import {
     createDrizzleDatabase,
+    createPostgresClient,
     type PostgresClient,
     type PostgresJsDatabase,
 } from '@languon/database';
@@ -22,7 +25,10 @@ import {
     vi,
 } from 'vitest';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
-import { DrizzleConversationStore } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store';
+import {
+    DrizzleConversationStore,
+    type ConversationPersistenceDependencies,
+} from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store';
 import { ConversationSourceResolver } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-source';
 import { DrizzleKnowledgeTransactionParticipant } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-transaction';
 import { DrizzleKnowledgeStore } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/drizzle-knowledge-store';
@@ -38,6 +44,7 @@ import {
     isDatabaseIntegrationEnabled,
     migrateTestDatabase,
     resetTestDatabase,
+    getTestDatabaseUrl,
 } from '../../support/test-database';
 
 const content: KnowledgeNoteContent = {
@@ -113,6 +120,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         let client: PostgresClient;
         let db: PostgresJsDatabase<typeof databaseSchema>;
         let store: DrizzleConversationStore;
+        let dependencies: ConversationPersistenceDependencies;
         let sources: ConversationSourceResolver;
         let portraitPolicy: { enabled: boolean; portrait: unknown | null };
         let owner: string,
@@ -150,7 +158,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             learner = randomUUID();
             dictionary = randomUUID();
             card = randomUUID();
-            clock = new Date('2026-10-19T12:00:00Z');
+            clock = new Date();
             admitted.mockClear();
             interrupted.mockClear();
             beforePublish = undefined;
@@ -164,13 +172,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     cryptography.verifyShare(key, digest),
                 verifyTextShare: (key, digest) =>
                     cryptography.verifyShare(key, digest),
+                verifyKnowledgeShare: (key, digest) =>
+                    new KnowledgeShareCrypto(
+                        'conversation-knowledge-test-secret-47',
+                    ).verify(key, digest),
                 readNote: (tx, actor, id) =>
                     new DrizzleKnowledgeTransactionParticipant(tx).getForSource(
                         actor,
                         id,
                     ),
             });
-            store = new DrizzleConversationStore({
+            dependencies = {
                 database: db,
                 readPortrait: async () => portraitPolicy,
                 now: () => clock,
@@ -187,8 +199,399 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         tx,
                     ).publish(actor, input, clock);
                 },
-            });
+            };
+            store = new DrizzleConversationStore(dependencies);
         }, 120_000);
+        it.each(['knowledge', 'workbook'] as const)(
+            'uses saved shared %s content with private read-only AI and live revocation',
+            async (shareKind) => {
+                const crypto = new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                );
+                const knowledge = new DrizzleKnowledgeStore(
+                    db,
+                    { beforeNoteDeletion: async () => undefined },
+                    crypto,
+                );
+                const note = await knowledge.create(owner, {
+                    operationId: randomUUID(),
+                    content,
+                });
+                const workbooks = new DrizzleWorkbookStore(db, crypto);
+                const workbook = await workbooks.create(owner, {
+                    id: randomUUID(),
+                    title: 'Shared workbook',
+                });
+                await workbooks.setNotes(owner, workbook.id, {
+                    expectedVersion: 1,
+                    noteIds: [note.id],
+                    acknowledgeSharedAddition: false,
+                });
+                const proof =
+                    shareKind === 'knowledge'
+                        ? await knowledge.issueShare(owner, note.id)
+                        : await workbooks.issueShare(owner, workbook.id, 2);
+                const readerAccess = { ownerId: learner, shareKey: proof.key };
+                const chat = await store.create(readerAccess, {
+                    source: {
+                        kind: 'knowledge',
+                        id: note.id,
+                        shareKind,
+                        shareLocator: proof.locator,
+                    },
+                });
+                await expect(
+                    store.detail(access(), chat.id),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
+                await expect(
+                    store.submit(readerAccess, chat.id, {
+                        ...submit(),
+                        editorContext: workspaceContext('Forged owner draft'),
+                    }),
+                ).rejects.toMatchObject({ code: 'invalid_editor_context' });
+                await expect(
+                    store.submit(readerAccess, chat.id, {
+                        ...submit(),
+                        draftContext: { content: 'Forged source' },
+                    }),
+                ).rejects.toThrow();
+                await store.submit(
+                    readerAccess,
+                    chat.id,
+                    submit('Explain this shared rule'),
+                );
+                const turn = (await store.claim())!;
+                expect(turn.ownerId).toBe(learner);
+                expect(turn.authority.share?.id).toBe(
+                    `${shareKind}:${shareKind === 'knowledge' ? note.id : workbook.id}`,
+                );
+                expect(JSON.stringify(turn.sourceSnapshot)).toContain(
+                    'Ser describes identity',
+                );
+                expect(JSON.stringify(turn.authority)).not.toContain(proof.key);
+                await expect(
+                    store.propose(turn, content, {
+                        noteId: note.id,
+                        version: note.version,
+                    }),
+                ).rejects.toThrow('Shared conversations cannot propose');
+                const worker = new ConversationWorkerService({
+                    store,
+                    createRunner: () => ({
+                        run: async (input) => {
+                            expect(input.readOnlySource).toBe(true);
+                            await expect(
+                                input.onDraft(content),
+                            ).rejects.toThrow(
+                                'Shared conversations cannot propose',
+                            );
+                            await input.onDelta({
+                                messageId: 'ignored',
+                                text: 'Explanation only.',
+                            });
+                            return { text: 'Explanation only.' };
+                        },
+                    }),
+                });
+                // Existing claim is already fenced; finish it before the worker claims a new turn.
+                await store.finish(turn, 'succeeded');
+                await store.submit(
+                    readerAccess,
+                    chat.id,
+                    submit('Another explanation'),
+                );
+                expect(
+                    await worker.processNext(new AbortController().signal),
+                ).toBe(true);
+                const detail = await store.detail(readerAccess, chat.id);
+                expect(detail.drafts).toHaveLength(0);
+                await store.submit(
+                    readerAccess,
+                    chat.id,
+                    submit('Queued before revocation'),
+                );
+                const queued = (await store.claim())!;
+                if (shareKind === 'knowledge')
+                    await knowledge.revokeShare(owner, note.id);
+                else await workbooks.revokeShare(owner, workbook.id, 2);
+                await expect(
+                    store.append(queued, 'Must not publish'),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
+                await expect(
+                    store.detail(readerAccess, chat.id),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
+            },
+        );
+        it('keeps saved owner practice separate from editing chats and denies authoring', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const editing = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            const savedSource = {
+                kind: 'knowledge' as const,
+                id: note.id,
+                view: 'saved' as const,
+            };
+            const practice = await store.create(access(), {
+                source: savedSource,
+            });
+            expect(
+                (await store.list(access(), savedSource)).map(
+                    (chat) => chat.id,
+                ),
+            ).toEqual([practice.id]);
+            expect(
+                (
+                    await store.list(access(), {
+                        kind: 'knowledge',
+                        id: note.id,
+                    })
+                ).map((chat) => chat.id),
+            ).toEqual([editing.id]);
+            await store.submit(access(), practice.id, submit());
+            const turn = (await store.claim())!;
+            await expect(store.propose(turn, content)).rejects.toThrow(
+                'Shared conversations cannot propose',
+            );
+            await expect(
+                store.proposeBlocks(turn, {
+                    blocks: [
+                        {
+                            id: randomUUID(),
+                            type: 'grammar',
+                            language: 'es',
+                            rule: 'Rule.',
+                        },
+                    ],
+                }),
+            ).rejects.toThrow('authorized block proposal target');
+            await store.finish(turn, 'succeeded');
+        });
+        it('retains typed proposals separately and applies only to the frozen owner working branch without publishing', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            await store.submit(access(), chat.id, {
+                ...submit('Add a grammar block'),
+                editorContext: {
+                    ...workspaceContext('Ser describes identity.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+            const turn = (await store.claim())!;
+            const originalId = randomUUID();
+            const role = `knowledge_proposal_worker_${randomUUID().replaceAll('-', '')}`;
+            await client.unsafe(`create role ${role} nologin`);
+            const roleSql = await readFile(
+                new URL(
+                    '../../../../../../infra/deploy/sql/dictionary-worker-role.sql',
+                    import.meta.url,
+                ),
+                'utf8',
+            );
+            await client.unsafe(
+                roleSql
+                    .split('\n')
+                    .filter((line) => !line.startsWith('\\'))
+                    .join('\n')
+                    .replaceAll(':"dictionary_worker_role"', role),
+            );
+            const workerUrl = new URL(getTestDatabaseUrl());
+            workerUrl.searchParams.set('options', `-c role=${role}`);
+            const workerClient = createPostgresClient({
+                databaseUrl: workerUrl.toString(),
+                maxConnections: 2,
+            });
+            let proposal: { id: string };
+            try {
+                expect(
+                    (await workerClient`select current_user as role`)[0]!.role,
+                ).toBe(role);
+                await expect(
+                    workerClient`select content from knowledge_working_branches`,
+                ).rejects.toMatchObject({ code: '42501' });
+                await expect(
+                    workerClient`select * from knowledge_working_branches`,
+                ).rejects.toMatchObject({ code: '42501' });
+                await expect(
+                    workerClient`select * from knowledge_speech_recordings`,
+                ).rejects.toMatchObject({ code: '42501' });
+                await expect(
+                    workerClient`select * from conversation_block_proposals`,
+                ).rejects.toMatchObject({ code: '42501' });
+                const validBlocks = JSON.stringify([
+                    {
+                        id: randomUUID(),
+                        type: 'grammar',
+                        language: 'es',
+                        rule: 'Una regla.',
+                    },
+                ]);
+                await expect(
+                    workerClient`select public.languon_propose_learning_blocks(${turn.id}::uuid,${randomUUID()}::uuid,${validBlocks}::jsonb)`,
+                ).rejects.toMatchObject({ code: '23514' });
+                await expect(
+                    workerClient`insert into knowledge_speech_recordings(note_id,recording_id) values(${note.id}::uuid,${randomUUID()}::uuid)`,
+                ).rejects.toMatchObject({ code: '42501' });
+                const workerStore = new DrizzleConversationStore({
+                    ...dependencies,
+                    database: createDrizzleDatabase(
+                        workerClient,
+                        databaseSchema,
+                    ),
+                });
+                proposal = await workerStore.proposeBlocks(turn, {
+                    blocks: [
+                        {
+                            id: originalId,
+                            type: 'grammar',
+                            language: 'es',
+                            rule: 'Use ser for identity.',
+                        },
+                    ],
+                });
+            } finally {
+                await workerClient.end();
+                await client.unsafe(`drop owned by ${role}`);
+                await client.unsafe(`drop role ${role}`);
+            }
+            await expect(
+                store.proposeBlocks(turn, {
+                    blocks: [
+                        {
+                            id: randomUUID(),
+                            type: 'grammar',
+                            language: 'es',
+                            rule: 'Another.',
+                        },
+                    ],
+                }),
+            ).rejects.toThrow('already generated');
+            await store.finish(turn, 'succeeded');
+            const listed = await store.listBlockProposals(access(), chat.id);
+            expect(listed.proposals[0]?.id).toBe(proposal.id);
+            expect(listed.proposals[0]?.blocks[0]?.id).not.toBe(originalId);
+            expect(
+                (await knowledge.get(owner, note.id)).body.schemaVersion,
+            ).toBe(1);
+            const applied = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                proposal.id,
+                branch.version,
+            );
+            expect(applied.branch.version).toBe(branch.version + 1);
+            expect(applied.branch.content.body.document.content).toHaveLength(
+                2,
+            );
+            expect(
+                (await knowledge.get(owner, note.id)).body.schemaVersion,
+            ).toBe(1);
+            const replay = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                proposal.id,
+                branch.version,
+            );
+            expect(replay.branch.content.body.document.content).toHaveLength(2);
+            await expect(
+                store.listBlockProposals({ ownerId: learner }, chat.id),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
+            await store.submit(access(), chat.id, {
+                ...submit('More grammar'),
+                editorContext: {
+                    ...workspaceContext(
+                        'Ser describes identity. Use ser for identity.',
+                    ),
+                    workingBranch: {
+                        id: branch.id,
+                        version: applied.branch.version,
+                    },
+                },
+            });
+            const next = (await store.claim())!;
+            expect(
+                JSON.stringify(next.sourceSnapshot.blockTarget?.material),
+            ).toContain('Use ser for identity.');
+            const stale = await store.proposeBlocks(next, {
+                blocks: [
+                    {
+                        id: randomUUID(),
+                        type: 'grammar',
+                        language: 'es',
+                        rule: 'Next rule.',
+                    },
+                ],
+            });
+            await store.finish(next, 'succeeded');
+            await knowledge.updateWorking(owner, note.id, {
+                operationId: randomUUID(),
+                branchId: branch.id,
+                expectedVersion: applied.branch.version,
+                content: {
+                    ...applied.branch.content,
+                    title: 'New private title',
+                    body: {
+                        ...applied.branch.content.body,
+                        document: {
+                            ...applied.branch.content.body.document,
+                            content:
+                                applied.branch.content.body.document.content?.map(
+                                    (node) =>
+                                        node.type === 'learningBlock' &&
+                                        node.attrs?.block?.type === 'grammar'
+                                            ? {
+                                                  ...node,
+                                                  attrs: {
+                                                      block: {
+                                                          ...node.attrs.block,
+                                                          rule: 'Changed rule after admission.',
+                                                      },
+                                                  },
+                                              }
+                                            : node,
+                                ),
+                        },
+                    },
+                },
+            });
+            expect(
+                JSON.stringify(next.sourceSnapshot.blockTarget?.material),
+            ).not.toContain('Changed rule after admission.');
+            await expect(
+                store.applyBlockProposal(
+                    access(),
+                    chat.id,
+                    stale.id,
+                    applied.branch.version,
+                ),
+            ).rejects.toThrow('working document changed');
+        });
         it('freezes approved portrait at admission, applies next-message changes and removes terminal snapshots', async () => {
             portraitPolicy = {
                 enabled: true,
@@ -695,7 +1098,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
             await store.submit(access(), chat.id, {
                 ...submit('Why does this work?'),
-                editorContext: workspaceContext(''),
+                editorContext: {
+                    ...workspaceContext(''),
+                    workingBranch: {
+                        id: workspace.preferredBranchId,
+                        version: workspace.branches[0]!.version,
+                    },
+                },
             });
             const reopened = await knowledge.getWorkspace(
                 owner,
@@ -710,6 +1119,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await store.detail(access(), chat.id)).conversation.title,
             ).toBe('Why does this');
             const claimed = (await store.claim())!;
+            expect(claimed.sourceSnapshot.blockTarget?.version).toBe(
+                reopened.branches[0]?.version,
+            );
+            await expect(
+                store.proposeBlocks(claimed, {
+                    blocks: [
+                        {
+                            id: randomUUID(),
+                            type: 'grammar',
+                            language: 'es',
+                            rule: 'A first rule.',
+                        },
+                    ],
+                }),
+            ).resolves.toHaveProperty('id');
             expect(claimed.sourceSnapshot.scope).toBe('workspace');
             expect(claimed.sourceSnapshot.studiedLanguage).toBeNull();
             expect(JSON.stringify(claimed.message.modelContent)).toContain(
@@ -1022,6 +1446,86 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await store.detail(access(), chat.id)).turns[0]?.status,
             ).toBe('succeeded');
+        });
+        it('rejects prose proposals and old draft publication against interactive targets', async () => {
+            const note = await db.transaction((tx) =>
+                new DrizzleKnowledgeTransactionParticipant(tx).publish(
+                    owner,
+                    { operationId: randomUUID(), content },
+                    clock,
+                ),
+            );
+            const chat = await create();
+            await store.submit(access(), chat.id, submit());
+            const turn = (await store.claim())!;
+            const draft = await store.propose(turn, content, {
+                noteId: note.id,
+                version: note.version,
+            });
+            const interactive: KnowledgeNoteContent = {
+                ...content,
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'learningBlock',
+                                attrs: {
+                                    block: {
+                                        id: randomUUID(),
+                                        type: 'grammar',
+                                        language: 'es',
+                                        rule: 'Interactive grammar rule.',
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            };
+            const current = await db.transaction((tx) =>
+                new DrizzleKnowledgeTransactionParticipant(tx).publish(
+                    owner,
+                    {
+                        operationId: randomUUID(),
+                        noteId: note.id,
+                        expectedVersion: note.version,
+                        content: interactive,
+                    },
+                    clock,
+                ),
+            );
+            await expect(
+                store.propose(turn, content, {
+                    noteId: current.id,
+                    version: current.version,
+                }),
+            ).rejects.toMatchObject({
+                code: 'version_conflict',
+                message: expect.stringContaining('interactive blocks'),
+            });
+            await expect(
+                store.publishDraft(access(), chat.id, draft.id, {
+                    operationId: randomUUID(),
+                    expectedVersion: draft.version,
+                    mode: 'update',
+                    expectedNoteVersion: note.version,
+                }),
+            ).rejects.toMatchObject({
+                code: 'version_conflict',
+                message: expect.stringContaining('interactive blocks'),
+            });
+            const [retained] =
+                await client`select body from knowledge_notes where id=${note.id}`;
+            expect(retained?.body).toEqual(interactive.body);
+            const copy = await store.publishDraft(access(), chat.id, draft.id, {
+                operationId: randomUUID(),
+                expectedVersion: draft.version,
+                mode: 'new',
+            });
+            expect(copy.id).not.toBe(note.id);
+            expect(copy.body.schemaVersion).toBe(1);
         });
         it('publishes drafts once, retains stale revisions, and cannot resurrect a deleted saved target', async () => {
             const chat = await create();

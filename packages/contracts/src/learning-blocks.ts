@@ -120,6 +120,7 @@ export const VocabularyLearningBlockSchema = z
                         term: text(500),
                         translation: text(2_000),
                         pronunciation: text(500).optional(),
+                        definition: text(2_000).optional(),
                         example: text(2_000).optional(),
                         exampleTranslation: text(2_000).optional(),
                     })

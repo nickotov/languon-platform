@@ -24,6 +24,11 @@ source_paths:
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql
     - infra/deploy/sql/dictionary-worker-role.sql
     - infra/deploy/sql/account-purge-worker-role.sql
+    - apps/backend/src/modules/knowledge/infrastructure/knowledge-sentence-composition.ts
+    - apps/backend/src/modules/knowledge/application/private-translation-service.ts
+    - apps/backend/src/modules/knowledge/application/transcription-job-service.ts
+    - apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
 source_fingerprint: sha256:e584bc9c34366bf54cfedbb70344c4d808607e8179cc83d2f01c77d81dd0b0c9
 reviewed: 2026-10-22
 ---
@@ -51,7 +56,7 @@ Zod wire schemas"]
         Infra --> DB["Drizzle / PostgreSQL, Redis, providers"]
         Modules["Authentication • Users • Administration
 Dictionaries • Learning • Texts
-Conversations • Knowledge • Speech
+Conversations • Knowledge/workbooks/private learning • Speech
 Text AI • AI credits and accounting"] --- App
     end
     Contracts --- HTTP
@@ -65,8 +70,12 @@ coordinate cross-module invariants while application/domain code stays free of S
 and vendor SDKs. `app.ts` mounts the modules actually supplied by `index.ts`.
 The Knowledge and Conversations compositions share a typed note transaction
 participant for source reads, first-message draft naming and explicit proposal
-publication. Knowledge owns working branches and share capabilities; Conversations
-owns private turns and Mastra history.
+publication. Knowledge owns working branches, workbooks, share capabilities,
+media grants and private learner state; Conversations owns private turns and
+Mastra history. Knowledge sentence practice and private translations use source
+adapters to existing Learning/Texts execution instead of giving shared readers a
+document-writing path. Transcription is a Knowledge job service in the existing
+worker/runtime boundary, with a separate admin configuration surface.
 
 Web and admin share public framework-neutral packages rather than application source.
 Admin intentionally uses its own four-layer structure under ADR-0010. This diagram
@@ -114,3 +123,8 @@ app/pages/shared boundaries; public contract exports remain framework-neutral.
 - [infra/deploy/sql/dictionary-worker-role.sql](../../infra/deploy/sql/dictionary-worker-role.sql)
 
 - [infra/deploy/sql/account-purge-worker-role.sql](../../infra/deploy/sql/account-purge-worker-role.sql)
+- [apps/backend/src/modules/knowledge/infrastructure/knowledge-sentence-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/knowledge-sentence-composition.ts)
+- [apps/backend/src/modules/knowledge/application/private-translation-service.ts](../../apps/backend/src/modules/knowledge/application/private-translation-service.ts)
+- [apps/backend/src/modules/knowledge/application/transcription-job-service.ts](../../apps/backend/src/modules/knowledge/application/transcription-job-service.ts)
+- [apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts](../../apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts)
+- [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)

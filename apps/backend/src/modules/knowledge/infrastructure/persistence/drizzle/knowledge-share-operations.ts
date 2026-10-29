@@ -1,3 +1,6 @@
+import { syncLearningEpochs } from './learning-epochs';
+import { prepareMediaCopy } from './media-grants';
+import { copyWorkbookBody } from './workbook-copy';
 import { KnowledgeNoteContentSchema } from '@languon/contracts';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -101,7 +104,7 @@ export async function revokeShare(
 }
 
 export async function shared(
-    persistence: KnowledgeStoreContext,
+    persistence: Pick<KnowledgeStoreContext, 'shareCrypto'>,
     tx: KnowledgeTransaction,
     locator: string,
     key: string,
@@ -181,10 +184,11 @@ export async function copyShared(
                 'version_conflict',
                 'The shared note changed. Refresh it before copying.',
             );
+        const media = await prepareMediaCopy(tx, row.id, row.body);
         const content = KnowledgeNoteContentSchema.parse({
             title: row.title,
             summary: row.summary,
-            body: row.body,
+            body: copyWorkbookBody(row.body, media.assetIds),
             categories: row.categories,
             studiedLanguage: row.studiedLanguage,
             explanationLanguage: row.explanationLanguage,
@@ -207,6 +211,8 @@ export async function copyShared(
             })
             .returning();
 
+        await media.grant(id);
+        await syncLearningEpochs(tx, id, content.body, 1);
         await tx
             .insert(knowledgeNoteRevisionsTable)
             .values({ noteId: id, version: 1, content, createdAt: now });

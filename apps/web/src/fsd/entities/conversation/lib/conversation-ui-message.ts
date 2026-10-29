@@ -22,6 +22,10 @@ export type ConversationUIMessage = UIMessage<
             input: Record<string, never>;
             output: { state: 'succeeded' };
         };
+        propose_learning_blocks: {
+            input: Record<string, never>;
+            output: { state: 'succeeded' };
+        };
         propose_knowledge_note: {
             input: Record<string, never>;
             output: { state: 'succeeded' };
@@ -72,7 +76,7 @@ export function conversationUIMessages(
                 });
             } else {
                 parts.push({
-                    type: 'tool-propose_knowledge_note',
+                    type: `tool-${tool.name}`,
                     toolCallId: tool.id,
                     input: {},
                     state: 'output-available',

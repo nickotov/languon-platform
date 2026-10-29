@@ -26,3 +26,5 @@ export { loadTextAiProviderCredentials } from './text-ai-provider-environment';
 export { loadTextAiProbeEnvironment } from './text-ai-probe-environment';
 export { adminProbeFixtureEnabled } from './admin-probe-fixture-environment';
 export { loadAdminMcpEnvironment } from './admin-mcp-environment';
+
+export { loadKnowledgeTranscriptionEnvironment } from './knowledge-transcription-environment';

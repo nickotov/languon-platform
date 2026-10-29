@@ -9,7 +9,8 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ButtonLink, InlineAlert, LoadingState } from '@/fsd/shared/ui';
-import { NotePreview } from '../knowledge-detail-page/note-preview';
+import { SharedNoteLearning } from './shared-note-learning';
+import type { WorkbookLearningShareAccess } from '@languon/contracts';
 import styles from './shared-knowledge-page.module.css';
 
 export function SharedKnowledgePage({ locator }: { locator: string }) {
@@ -110,6 +111,11 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
         }
     }
 
+    const learningAccess: WorkbookLearningShareAccess = {
+        kind: 'note',
+        locator,
+        key: key ?? '',
+    };
     const signInQuery = new URLSearchParams({
         returnTo: `/shared/knowledge/${locator}`,
     });
@@ -165,7 +171,10 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
                 </InlineAlert>
             )}
             <article className={styles.article}>
-                <NotePreview content={shared.data} />
+                <SharedNoteLearning
+                    note={shared.data}
+                    access={learningAccess}
+                />
             </article>
         </main>
     );

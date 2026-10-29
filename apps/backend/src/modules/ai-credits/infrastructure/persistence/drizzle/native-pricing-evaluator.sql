@@ -64,7 +64,7 @@ CREATE OR REPLACE FUNCTION languon_native_meter_compatible(price_data jsonb, met
 LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog,public,pg_temp AS $$
 DECLARE v jsonb; c jsonb; allowed text[]; meters text[];
 BEGIN
- allowed:=CASE meter_value WHEN 'text-tokens' THEN ARRAY['inputTokens','uncachedInputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','requests'] WHEN 'speech-characters' THEN ARRAY['characters','requests'] WHEN 'speech-tokens' THEN ARRAY['inputTokens','audioOutputTokens','requests'] ELSE NULL END;
+ allowed:=CASE meter_value WHEN 'text-tokens' THEN ARRAY['inputTokens','uncachedInputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','requests'] WHEN 'speech-characters' THEN ARRAY['characters','requests'] WHEN 'speech-tokens' THEN ARRAY['inputTokens','audioOutputTokens','requests'] WHEN 'audio-duration' THEN ARRAY['audioInputMilliseconds','requests'] ELSE NULL END;
  IF octet_length((price_data->'nativeRules')::text)>131072 THEN RETURN false; END IF;
  IF allowed IS NULL OR jsonb_typeof(price_data->'nativeRules'->'variants')<>'array' OR jsonb_array_length(price_data->'nativeRules'->'variants')<1 THEN RETURN false; END IF;
  FOR v IN SELECT value FROM jsonb_array_elements(price_data->'nativeRules'->'variants') LOOP
@@ -75,7 +75,7 @@ BEGIN
    meters:=array_append(meters,c->>'meter');
   END LOOP;
   IF meters<@ARRAY['requests']::text[] THEN CONTINUE; END IF;
-  IF (meter_value='text-tokens' AND (NOT ('outputTokens'=ANY(meters)) OR NOT (meters && ARRAY['inputTokens','uncachedInputTokens']::text[]))) OR (meter_value='speech-characters' AND NOT ('characters'=ANY(meters))) OR (meter_value='speech-tokens' AND NOT (ARRAY['inputTokens','audioOutputTokens']::text[]<@meters)) THEN RETURN false; END IF;
+  IF (meter_value='text-tokens' AND (NOT ('outputTokens'=ANY(meters)) OR NOT (meters && ARRAY['inputTokens','uncachedInputTokens']::text[]))) OR (meter_value='speech-characters' AND NOT ('characters'=ANY(meters))) OR (meter_value='speech-tokens' AND NOT (ARRAY['inputTokens','audioOutputTokens']::text[]<@meters)) OR (meter_value='audio-duration' AND NOT ('audioInputMilliseconds'=ANY(meters))) THEN RETURN false; END IF;
  END LOOP;
  RETURN true;
 EXCEPTION WHEN OTHERS THEN RETURN false;
@@ -97,7 +97,7 @@ BEGIN
  -- Validate the entire closed structure before choosing a branch, including unreachable cards.
  IF evaluation_mode IS NULL OR evaluation_mode NOT IN ('actual','upper-bound') OR NOT public.languon_native_object(rules,ARRAY['version','validFrom','validUntil','currency','reportedCreditUsdPerCredit','variants']) OR NOT rules ?& ARRAY['version','validFrom','validUntil','variants'] OR rules->'version'<>'1'::jsonb
    OR NOT public.languon_native_object(execution_facts,ARRAY['dispatchedAt','endpointId','serviceTier','latestDispatchAt'])
-   OR NOT public.languon_native_object(usage,ARRAY['inputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','audioOutputTokens','characters','requests','providerCreditsConsumed','providerCostUsd']) THEN RAISE EXCEPTION 'Invalid native evidence'; END IF;
+   OR NOT public.languon_native_object(usage,ARRAY['inputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','audioOutputTokens','audioInputMilliseconds','characters','requests','providerCreditsConsumed','providerCostUsd']) THEN RAISE EXCEPTION 'Invalid native evidence'; END IF;
  IF NOT execution_facts ? 'dispatchedAt' OR jsonb_typeof(rules->'validFrom')<>'string' OR jsonb_typeof(execution_facts->'dispatchedAt')<>'string' OR rules->>'validFrom' !~ '^\d{4}-\d{2}-\d{2}T' OR execution_facts->>'dispatchedAt' !~ '^\d{4}-\d{2}-\d{2}T' OR (rules->>'validUntil' IS NOT NULL AND (jsonb_typeof(rules->'validUntil')<>'string' OR rules->>'validUntil' !~ '^\d{4}-\d{2}-\d{2}T')) OR rules->>'validFrom' ~ '\.\d{4}' OR rules->>'validUntil' ~ '\.\d{4}' OR execution_facts->>'dispatchedAt' ~ '\.\d{4}' OR execution_facts->>'latestDispatchAt' ~ '\.\d{4}' THEN RAISE EXCEPTION 'Invalid native validity'; END IF;
  first_value:=(execution_facts->>'dispatchedAt')::timestamptz;
  last_value:=coalesce((execution_facts->>'latestDispatchAt')::timestamptz,first_value);
@@ -142,7 +142,7 @@ BEGIN
   IF jsonb_typeof(v->'components')<>'array' OR jsonb_array_length(v->'components') NOT BETWEEN 1 AND 16 THEN RAISE EXCEPTION 'Invalid native components'; END IF;
   meters:=ARRAY[]::text[];
   FOR c IN SELECT value FROM jsonb_array_elements(v->'components') LOOP
-   IF NOT public.languon_native_object(c,ARRAY['meter','pricePerUnit','unitQuantity','minimum','chargeWhen','rounding']) OR NOT c ?& ARRAY['meter','pricePerUnit','unitQuantity','chargeWhen'] OR c->>'meter' NOT IN ('inputTokens','uncachedInputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','audioOutputTokens','characters','requests') OR c->>'meter'=ANY(meters) OR c->>'chargeWhen' NOT IN ('positive-usage','request') THEN RAISE EXCEPTION 'Invalid native component'; END IF;
+   IF NOT public.languon_native_object(c,ARRAY['meter','pricePerUnit','unitQuantity','minimum','chargeWhen','rounding']) OR NOT c ?& ARRAY['meter','pricePerUnit','unitQuantity','chargeWhen'] OR c->>'meter' NOT IN ('inputTokens','uncachedInputTokens','outputTokens','cacheReadTokens','cacheWriteTokens','audioOutputTokens','audioInputMilliseconds','characters','requests') OR c->>'meter'=ANY(meters) OR c->>'chargeWhen' NOT IN ('positive-usage','request') THEN RAISE EXCEPTION 'Invalid native component'; END IF;
    IF jsonb_typeof(c->'pricePerUnit')<>'string' THEN RAISE EXCEPTION 'Invalid native rate'; END IF;
    meters:=array_append(meters,c->>'meter'); part:=public.languon_native_decimal(c->>'pricePerUnit'); q:=public.languon_native_count(c->'unitQuantity'); IF q<1 THEN RAISE EXCEPTION 'Invalid native price unit'; END IF;
    IF c ? 'minimum' THEN IF jsonb_typeof(c->'minimum')<>'string' THEN RAISE EXCEPTION 'Invalid native minimum'; END IF; part:=public.languon_native_decimal(c->>'minimum'); END IF;

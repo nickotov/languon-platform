@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
-import { KnowledgeNoteContentSchema } from '@languon/contracts';
+import {
+    KnowledgeNoteContentSchema,
+    ListKnowledgeQuerySchema,
+} from '@languon/contracts';
 import { eq } from 'drizzle-orm';
 import {
     afterAll,
@@ -92,6 +95,56 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
         });
         afterAll(async () => client?.end(), 120_000);
+        it('round-trips interactive content through publication and revisions', async () => {
+            const interactive = KnowledgeNoteContentSchema.parse({
+                ...content,
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'learningBlock',
+                                attrs: {
+                                    block: {
+                                        id: randomUUID(),
+                                        type: 'grammar',
+                                        language: 'es',
+                                        rule: 'Use subjunctive for wishes.',
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            });
+            const note = await store.create(owner, {
+                operationId: randomUUID(),
+                content: interactive,
+            });
+            expect((await store.get(owner, note.id)).body).toEqual(
+                interactive.body,
+            );
+            const saved = await store.update(owner, note.id, {
+                operationId: randomUUID(),
+                expectedVersion: note.version,
+                content: { ...interactive, title: 'Updated grammar' },
+            });
+            expect(saved.body).toEqual(interactive.body);
+            const [revision] = await db
+                .select()
+                .from(knowledgeNoteRevisionsTable)
+                .where(eq(knowledgeNoteRevisionsTable.noteId, note.id));
+            expect(revision?.content.body).toEqual(interactive.body);
+            expect(
+                (
+                    await store.list(
+                        owner,
+                        ListKnowledgeQuerySchema.parse({ q: 'subjunctive' }),
+                    )
+                ).notes,
+            ).toHaveLength(1);
+        });
         it('isolates reads and mutations and searches derived content with literal wildcard escaping', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),

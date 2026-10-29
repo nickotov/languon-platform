@@ -1,4 +1,9 @@
 import {
+    captureConversationBlockTarget,
+    assertConversationEditorAuthority,
+    assertConversationRetryAuthority,
+} from './conversation-block-target';
+import {
     ChatPreferencesSchema,
     ConversationActionQuoteSchema,
     type SubmitConversationTurnRequest,
@@ -154,7 +159,15 @@ export async function conversationSubmit(
                     'response_active',
                     'A response is already active.',
                 );
-            const workspace = chat.sourceKind === 'knowledge' && !input.retryOf;
+            const sharedKnowledge = assertConversationEditorAuthority(
+                chat.source,
+                input,
+            );
+            const workspace =
+                chat.sourceKind === 'knowledge' &&
+                !sharedKnowledge &&
+                !input.retryOf;
+
             if (workspace)
                 assertWorkspaceTurnContext(
                     input,
@@ -166,6 +179,16 @@ export async function conversationSubmit(
                     'invalid_editor_context',
                     'Editor context is only available in a Knowledge workspace.',
                 );
+            if (workspace && input.editorContext?.workingBranch) {
+                const selectedBranch = input.editorContext.workingBranch;
+                snapshot.blockTarget = await captureConversationBlockTarget(
+                    tx,
+                    chat.sourceId,
+                    selectedBranch.id,
+                    selectedBranch.version,
+                );
+            }
+
             let learnerContent = input.content;
             let learnerAttachments = input.attachments;
             let retryModelContent: Record<string, unknown> | undefined;
@@ -203,6 +226,11 @@ export async function conversationSubmit(
                 learnerAttachments = original.attachments;
                 retryModelContent = original.modelContent?.[0]?.modelContent;
                 retryEditorTarget = original.editorTarget;
+                assertConversationRetryAuthority(
+                    chat.source,
+                    previous.sourceSnapshot,
+                );
+
                 Object.assign(snapshot, previous.sourceSnapshot);
                 if (snapshot.scope !== 'workspace')
                     assertTutorCurrentMessageFits(
@@ -240,7 +268,7 @@ export async function conversationSubmit(
                     })
                     .where(eq(chats.id, id));
 
-                if (chat.sourceKind === 'knowledge') {
+                if (chat.sourceKind === 'knowledge' && !sharedKnowledge) {
                     await persistence.dependencies.nameUntitledNote?.(
                         tx,
                         access.ownerId,
@@ -256,6 +284,16 @@ export async function conversationSubmit(
                             { authority },
                             false,
                         );
+
+                    if (snapshot.blockTarget) {
+                        // Server auto-title belongs to this admission; freeze its resulting version.
+                        snapshot.blockTarget =
+                            await captureConversationBlockTarget(
+                                tx,
+                                chat.sourceId,
+                                snapshot.blockTarget.branchId,
+                            );
+                    }
 
                     snapshot.title = updated.snapshot.title;
                     snapshot.version =

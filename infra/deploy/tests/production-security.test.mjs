@@ -203,7 +203,20 @@ test('account purge worker has isolated database and version-delete credentials'
     assert.doesNotMatch(role, /GRANT ALL|GRANT INSERT ON/);
     assert.match(
         role,
-        /GRANT UPDATE \(payer_id, reservation_id, billing_state\)/,
+        /GRANT EXECUTE ON FUNCTION[^;]*languon_finalize_speech_accounting_for_purge\(uuid,text,integer\)[^;]*languon_purge_private_knowledge_speech\(uuid,text,integer\)/,
+    );
+    assert.doesNotMatch(role, /GRANT[^;]*UPDATE[^;]*ON TABLE speech_jobs/);
+    const privateSpeechPurge = await readFile(
+        'apps/backend/src/modules/speech/infrastructure/knowledge-speech-purge.sql',
+        'utf8',
+    );
+    assert.match(
+        privateSpeechPurge,
+        /PERFORM public\.languon_assert_accounting_purge_claim\(owner_value,worker_value,fence_value\)/,
+    );
+    assert.match(
+        privateSpeechPurge,
+        /REVOKE ALL ON FUNCTION languon_purge_private_knowledge_speech\(uuid,text,integer\) FROM PUBLIC/,
     );
     assert.doesNotMatch(role, /GRANT[^;]*ON TABLE speech_recordings/);
     assert.doesNotMatch(role, /GRANT[^;]*ON TABLE model_price_revisions/);

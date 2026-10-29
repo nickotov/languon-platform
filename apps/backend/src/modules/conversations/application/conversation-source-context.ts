@@ -125,7 +125,7 @@ export function projectConversationSource(
 ) {
     const material =
         snapshot.scope === 'workspace'
-            ? []
+            ? boundedMaterial(snapshot.blockTarget?.material ?? [])
             : boundedMaterial(snapshot.material);
     function select(
         query: string,
@@ -175,6 +175,12 @@ export function projectConversationSource(
         sourceKind: kind,
         snapshotScope: snapshot.scope ?? 'complete',
         availableMaterialCount: material.length,
+        ...(snapshot.blockTarget
+            ? {
+                  blockProposalsAvailable: true,
+                  materialKind: 'structured-learning-blocks',
+              }
+            : {}),
     };
     const context = (items: SourceMaterial[]) => ({
         ...metadata,

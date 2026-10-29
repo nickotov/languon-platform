@@ -42,7 +42,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "frame-ancestors 'none'; media-src 'self' blob:",
+                        value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; frame-src https://www.youtube-nocookie.com; media-src 'self' blob: https:",
                     },
                     { key: 'X-Frame-Options', value: 'DENY' },
                 ],

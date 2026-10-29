@@ -109,7 +109,11 @@ export async function pinProviderPrice(
     input: {
         providerId: string;
         modelId: string;
-        meter: 'text-tokens' | 'speech-characters' | 'speech-tokens';
+        meter:
+            | 'text-tokens'
+            | 'speech-characters'
+            | 'speech-tokens'
+            | 'audio-duration';
         at: Date;
     },
 ): Promise<ProviderPrice | null> {

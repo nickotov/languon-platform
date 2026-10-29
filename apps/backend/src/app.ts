@@ -49,6 +49,16 @@ export function createApp(options?: {
     conversations?: OpenAPIHono;
     learnerPortraits?: OpenAPIHono;
     knowledge?: OpenAPIHono;
+    knowledgeTranscription?: OpenAPIHono;
+    transcriptionAdministration?: OpenAPIHono;
+    workbooks?: OpenAPIHono;
+    workbookLearning?: OpenAPIHono;
+    knowledgeMedia?: OpenAPIHono;
+    knowledgeLibrary?: OpenAPIHono;
+    knowledgeBlockCopy?: OpenAPIHono;
+    knowledgeVocabulary?: OpenAPIHono;
+    knowledgeSentences?: OpenAPIHono;
+    knowledgePrivateTranslations?: OpenAPIHono;
     navigation?: OpenAPIHono;
     textsAi?: OpenAPIHono;
     textSelections?: OpenAPIHono;
@@ -81,6 +91,20 @@ export function createApp(options?: {
     if (options?.textAiRouting) app.route('/', options.textAiRouting);
     if (options?.conversations) app.route('/', options.conversations);
     if (options?.learnerPortraits) app.route('/', options.learnerPortraits);
+    if (options?.workbooks) app.route('/', options.workbooks);
+    if (options?.workbookLearning) app.route('/', options.workbookLearning);
+    if (options?.knowledgePrivateTranslations)
+        app.route('/', options.knowledgePrivateTranslations);
+    if (options?.knowledgeMedia) app.route('/', options.knowledgeMedia);
+    if (options?.knowledgeLibrary) app.route('/', options.knowledgeLibrary);
+    if (options?.knowledgeBlockCopy) app.route('/', options.knowledgeBlockCopy);
+    if (options?.knowledgeSentences) app.route('/', options.knowledgeSentences);
+    if (options?.knowledgeVocabulary)
+        app.route('/', options.knowledgeVocabulary);
+    if (options?.knowledgeTranscription)
+        app.route('/', options.knowledgeTranscription);
+    if (options?.transcriptionAdministration)
+        app.route('/', options.transcriptionAdministration);
     if (options?.knowledge) app.route('/', options.knowledge);
     if (options?.textsAi) app.route('/', options.textsAi);
     if (options?.textSelections) app.route('/', options.textSelections);

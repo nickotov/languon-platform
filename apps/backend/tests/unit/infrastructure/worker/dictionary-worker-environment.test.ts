@@ -494,3 +494,26 @@ describe('dictionary worker environment', () => {
         ).toThrow(/only in tests/);
     });
 });
+
+it('registers transcription in the existing worker pool without requiring a text provider', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+        const configured = loadDictionaryWorkerEnvironment({
+            ...base,
+            DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS:
+                'knowledge-transcription:v1',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'knowledge-transcription:v1',
+            DICTIONARY_GENERATION_PROVIDER_MODE: 'unavailable',
+            OPENAI_API_KEY: 'synthetic-transcription-key',
+        });
+        expect(configured.supportedFormats).toEqual([
+            'knowledge-transcription:v1',
+        ]);
+        expect(configured.transcriptionApiKey).toBe(
+            'synthetic-transcription-key',
+        );
+        expect(configured.includeProviderReadiness).toBe(false);
+    } finally {
+        warn.mockRestore();
+    }
+});

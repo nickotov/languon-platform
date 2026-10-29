@@ -195,9 +195,13 @@ revision snapshots and untrusted review proposals. Each card belongs to one
 dictionary, and a fork creates independent identities rather than shared mutable
 content.
 
-Future workbook, lesson, course, and exercise modules compose vocabulary through
-explicit link tables to stable dictionary or card IDs. They may later pin an
-immutable revision for publication, but do not depend on a generic asset payload.
+Dictionary-backed composition uses explicit links to stable dictionary/card IDs.
+Interactive Knowledge vocabulary blocks instead contain independently authored
+entry snapshots: inserting library entries and saving entries to a library both
+copy content rather than establish synchronization. Their learner state is
+note/actor/entry-epoch scoped and does not create hidden dictionaries. Future
+lesson and course composition may pin immutable dictionary revisions, but does
+not depend on a generic asset payload.
 [ADR-0011](./adr/0011-dictionary-persistence-and-composition.md) defines this
 boundary.
 
@@ -418,8 +422,10 @@ propose validated note content; only authenticated application commands publish.
 Restoring a revision creates a new version; if unpublished prose differs, the
 restored publication appears as an alternative branch and Save waits for
 explicit resolution. A revocable unlisted capability reads
-only the last published note; signed-in readers copy that version before editing
-or chatting. Scheduling account deletion revokes those capabilities.
+only the last published note. Signed-in readers can explain or practice against
+that saved version; editing requires an independent copy. Shared-source chat
+authorization excludes authoring tools and working-branch content. Scheduling
+account deletion revokes those capabilities.
 
 Every Knowledge workspace turn freezes the complete current editor plain text,
 including unsaved changes, any selected passage, and a validated target anchor
@@ -451,6 +457,55 @@ work/tool/writing activity stays visible before text and during pauses. See
 [feature044](../.agent/features/044-contextual-language-assistant-and-knowledge/FEATURE.md)
 and [feature047](../.agent/features/047-knowledge-workspace/FEATURE.md)
 for decisions and implementation evidence.
+
+### Interactive notes and ordered workbooks
+
+The version-2 Knowledge body embeds bounded, typed learning blocks alongside
+existing rich text. Shared contracts define video, vocabulary, bilingual text,
+audio, grammar and exercise content; fixed React renderers supply independent
+presentation and interaction ports without importing the editor. Tiptap adapts
+those blocks to manual authoring. Legacy prose proposals retain their version-1
+writer contract. The separate typed block proposal tool requires owner authority,
+captures its target branch/version, and applies reviewed blocks only to the
+working branch. Explicit Save publishes them.
+
+Workbooks order existing notes with a unique note membership constraint.
+Standalone notes remain possible. Note and workbook unlisted grants are separate;
+removing a workbook member ends only the workbook-derived grant. Workbook deletion
+defaults to retaining notes. Read and copy operations check live grants against
+saved content, and shared readers receive no private branches or learner state.
+
+Attempts, hint/reveal events and explicit completion belong to the requesting
+learner. Saved publication advances monotonic learning epochs when exercise or
+vocabulary meaning changes; restoring earlier wording cannot revive older
+mastery. Historical attempts retain their answered content/version. Cosmetic
+changes preserve exercise progress, and changed completed notes report that
+they were updated since completion. Workbook summaries count the current
+learner's completed notes without author dashboards or course grades.
+
+Whole-note, workbook and complete-block copies receive fresh identities and no
+source learner history. Audio copies establish independent note grants to
+immutable bytes before committing; source removal cannot invalidate completed
+copies. Partial copies include required supporting blocks and apply to the
+destination working branch before Save. Dictionary/Text publication uses a
+preview and atomic retry-safe copy operation; destination edits do not change
+the original block. Permanent source deletion erases associated private state,
+while independent notes and library items survive.
+
+Only validated YouTube identifiers and direct playable HTTPS URLs become video
+players. Remote video playback does not imply transcript access. Uploaded audio
+is bounded and parsed before storage; shared playback requires both a live grant
+and an asset reference in saved content. Generated narration reuses the existing
+speech engine with note-private provenance. Transcription uses a separate native
+duration meter within existing action/attempt accounting, rather than treating
+milliseconds as tokens. Provider activation and processing readiness remain
+explicit operational gates, not consequences of having an API key.
+
+[ADR-0050](adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+records the extended content/authority model. Course generation, workbook-wide
+AI context, grammar-library saving and teacher dashboards remain deferred.
+The [feature record](../.agent/features/059-interactive-workbooks/FEATURE.md) and
+its evidence distinguish implementation from final verification.
 
 ## Learner portraits and guided interviews
 

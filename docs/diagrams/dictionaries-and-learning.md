@@ -21,6 +21,10 @@ source_paths:
     - apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts
     - apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts
     - apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-accounting.sql
+    - apps/backend/src/modules/knowledge/application/vocabulary-practice-service.ts
+    - apps/backend/src/modules/knowledge/application/knowledge-sentence-free-store.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
 source_fingerprint: sha256:9694b1466b30866af2e31487b58f2a065d3aebdf8a4937a91c65ea7f37cb43ce
 reviewed: 2026-10-22
 ---
@@ -64,6 +68,11 @@ free, no provider call or AI grade"]
     Content --> Change["Effective learning content changes"] --> Invalidate["Increment learning version
 prior-version progress becomes Unstudied"]
     Invalidate --> Progress
+    NoteBlock["Saved Knowledge vocabulary snapshots"] --> NoteEpoch["Note/block/entry epoch ledger"]
+    NoteEpoch --> NoteCards["Private flashcard attempts and preferences"]
+    NoteBlock --> NoteSentence["Prepared reference or existing sentence execution"]
+    NoteSentence --> NoteReviews["Private reveals and reviews"]
+    NoteBlock -->|"Explicit independent copy"| Dict
 ```
 
 Dictionary defaults and nullable card overrides resolve server-side; dormant values
@@ -88,6 +97,14 @@ read/Accept/cancellation/drain remain available; it never means free unaccounted
 Preparation children can spend only their current parent authorization; current action,
 lease/fence and mapped child identity are checked before creation and dispatch. Partial
 prepared output remains reusable; an exhausted parent cannot silently refill itself.
+Saved Knowledge vocabulary is a source adapter, rather than a dictionary alias:
+practice resolves live saved-note/share authority and stores actor-private attempts
+against note/block/entry epochs. Saving selected entries to a dictionary is an
+explicit independent copy. Prepared bilingual examples permit free manual reference
+practice; paid generation/checking uses the existing sentence engine, with source
+authority rechecked before dispatch and publication. Note deletion or revocation
+removes source-bound private work while independent dictionary copies survive.
+
 New selected dictionary and sentence jobs use shared action accounting: an immutable
 funding/tariff/provider snapshot, bounded hold and total output allowance, then settlement
 against validated usable results. Technical failures release customer funds while provider
@@ -120,3 +137,7 @@ Accept or personal-practice ownership edges shown above. See [AI job lifecycle](
 - [apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts](../../apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts)
 
 - [apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-accounting.sql](../../apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-accounting.sql)
+- [apps/backend/src/modules/knowledge/application/vocabulary-practice-service.ts](../../apps/backend/src/modules/knowledge/application/vocabulary-practice-service.ts)
+- [apps/backend/src/modules/knowledge/application/knowledge-sentence-free-store.ts](../../apps/backend/src/modules/knowledge/application/knowledge-sentence-free-store.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts)
+- [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)

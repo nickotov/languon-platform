@@ -1,0 +1,9 @@
+{
+  "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+  "flow": "chat-lifecycle",
+  "scenario": "durable-close-reopen-stop-retry",
+  "guide_revision": "75e5b518eae5d4e0",
+  "result": "passed, no skips",
+  "screenshot": "generation-failure-and-retry-mobile.png",
+  "sha256": "680d2cd37a6fb537ad7f3f4669932698d4cf65ec041234806c08ae6c58383584"
+}

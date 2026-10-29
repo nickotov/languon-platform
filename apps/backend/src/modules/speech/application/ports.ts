@@ -22,17 +22,20 @@ export type {
     SpeechSynthesisProvider,
     SpeechProviderObservation,
 };
-export type StoredSpeechSource = {
-    [Kind in SpeechSource['kind']]: Omit<
-        Extract<SpeechSource, { kind: Kind }>,
-        'access'
-    > & {
-        access:
-            | { kind: 'owner'; dictionaryId: string }
-            | { kind: 'shared'; shareId: string; keyDigest: string };
-    };
-}[SpeechSource['kind']];
+export type StoredSpeechSource =
+    | Extract<SpeechSource, { kind: 'knowledge-block' }>
+    | {
+          [Kind in Exclude<SpeechSource['kind'], 'knowledge-block'>]: Omit<
+              Extract<SpeechSource, { kind: Kind }>,
+              'access'
+          > & {
+              access:
+                  | { kind: 'owner'; dictionaryId: string }
+                  | { kind: 'shared'; shareId: string; keyDigest: string };
+          };
+      }[Exclude<SpeechSource['kind'], 'knowledge-block'>];
 export interface ResolvedSpeechSource {
+    privateKnowledgeSource?: { noteId: string; ownerId: string };
     text: string;
     language: string;
     revision: string;

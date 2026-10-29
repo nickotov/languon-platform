@@ -1,3 +1,4 @@
+import { editorLeafText } from './learning-block-text';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 
 export type EditorTargetAnchor = {
@@ -8,14 +9,14 @@ export type EditorTargetAnchor = {
 };
 
 export function editorPlainText(doc: ProseMirrorNode): string {
-    return doc.textBetween(0, doc.content.size, '\n', '\n');
+    return doc.textBetween(0, doc.content.size, '\n', editorLeafText);
 }
 
 export function editorPlainOffset(
     doc: ProseMirrorNode,
     position: number,
 ): number {
-    return doc.textBetween(0, position, '\n', '\n').length;
+    return doc.textBetween(0, position, '\n', editorLeafText).length;
 }
 
 export async function hashEditorText(content: string): Promise<string> {
@@ -83,7 +84,10 @@ export function restoreEditorPositions(
     for (const start of from) {
         for (const end of to) {
             if (start > end) continue;
-            if (doc.textBetween(start, end, '\n', '\n') === anchor.originalText)
+            if (
+                doc.textBetween(start, end, '\n', editorLeafText) ===
+                anchor.originalText
+            )
                 matches.push({ from: start, to: end });
         }
     }

@@ -135,6 +135,7 @@ DECLARE e jsonb;
 BEGIN
   IF TG_OP='INSERT' THEN
     IF NEW.source_kind='text-attempt' AND NEW.attempt_id IS NOT NULL THEN e:=public.languon_text_provider_expense_identity(NEW.attempt_id);
+    ELSIF NEW.source_kind='transcription-attempt' AND NEW.attempt_id IS NOT NULL THEN e:=public.languon_transcription_provider_expense_identity(NEW.attempt_id);
     ELSIF NEW.source_kind='speech-attempt' AND NEW.attempt_id IS NULL THEN e:=public.languon_speech_provider_expense_identity(NEW.action_id);
     ELSIF NEW.source_kind='admin-probe' AND NEW.attempt_id IS NULL THEN e:=public.languon_probe_provider_expense_identity(NEW.action_id);
     ELSE RAISE EXCEPTION 'Unbound provider expense facts are forbidden' USING ERRCODE='23514'; END IF;

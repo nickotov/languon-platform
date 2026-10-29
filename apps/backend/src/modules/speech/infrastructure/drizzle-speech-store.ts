@@ -12,7 +12,8 @@ import {
 } from './provider-observation';
 import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
 import type { CapabilityPolicy } from '@languon/contracts';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHmac } from 'node:crypto';
+import { knowledgeSpeechRecordingsTable } from './knowledge-speech-schema';
 import { usersTable } from '../../users/infrastructure/persistence/drizzle/schema';
 import { isDeepStrictEqual } from 'node:util';
 import {
@@ -152,6 +153,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         source: SpeechSource | StoredSpeechSource,
         resolved: ResolvedSpeechSource,
     ): StoredSpeechSource {
+        if (source.kind === 'knowledge-block') return source;
         if (resolved.authority) return resolved.authority;
         if (source.access.kind === 'shared' && !('keyDigest' in source.access))
             throw new SpeechError('speech_source_unavailable', 403);
@@ -172,14 +174,25 @@ export class DrizzleSpeechStore implements SpeechStore {
             this.options.fingerprintSecret,
             ...(this.options.retainedFingerprintSecrets ?? []),
         ];
-        const keys = secrets.map((secret) =>
-            speechTextIdentity(
+        const keys = secrets.map((secret) => {
+            const key = speechTextIdentity(
                 secret,
                 resolved.language,
                 inspected.normalized,
                 fixture ? 'fixture' : 'pronunciation',
-            ),
-        );
+            );
+            if (!resolved.privateKnowledgeSource) return key;
+            return createHmac('sha256', secret)
+                .update(
+                    JSON.stringify([
+                        'private-knowledge-narration-v1',
+                        resolved.privateKnowledgeSource.ownerId,
+                        resolved.privateKnowledgeSource.noteId,
+                        key,
+                    ]),
+                )
+                .digest('hex');
+        });
         return {
             ...inspected,
             keys,
@@ -615,6 +628,14 @@ export class DrizzleSpeechStore implements SpeechStore {
                 ? { ...response, billingState: 'free' as const }
                 : response;
         }
+        if (resolved.privateKnowledgeSource)
+            await tx
+                .insert(knowledgeSpeechRecordingsTable)
+                .values({
+                    recordingId,
+                    noteId: resolved.privateKnowledgeSource.noteId,
+                })
+                .onConflictDoNothing();
         const [binding] = await tx
             .insert(bindings)
             .values({
@@ -1692,6 +1713,9 @@ export async function purgeSpeechActor(
     await lockSpeechWalletOwner(tx, actorId);
     await tx.execute(
         sql`select languon_finalize_speech_accounting_for_purge(${actorId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer)`,
+    );
+    await tx.execute(
+        sql`select languon_purge_private_knowledge_speech(${actorId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer)`,
     );
 }
 

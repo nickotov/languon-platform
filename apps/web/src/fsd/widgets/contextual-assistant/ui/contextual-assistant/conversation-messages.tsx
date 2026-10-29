@@ -47,7 +47,7 @@ export function ConversationMessages({
     pending?: boolean;
     onRetry(turn: ConversationTurn): void;
     onContinue?: (() => void) | undefined;
-    onPropose(message?: ConversationUIMessage): void;
+    onPropose?: ((message?: ConversationUIMessage) => void) | undefined;
     onSuggest?: (text: string) => void;
     children?: ReactNode;
     sourceKind?: ConversationSource['kind'] | undefined;

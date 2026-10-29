@@ -4,7 +4,11 @@ import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
-import { KnowledgeLinkSchema, type KnowledgeBody } from '@languon/contracts';
+import {
+    KnowledgeLinkSchema,
+    type KnowledgeBody,
+    type LearningBlock,
+} from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
 import { InlineAlert } from '@/fsd/shared/ui';
 import {
@@ -20,9 +24,19 @@ import { useKnowledgeEditorHandle } from '../../hooks/use-knowledge-editor-handl
 import { EditorToolbar } from './editor-toolbar';
 import styles from './knowledge-editor.module.css';
 import { WorkspaceEditorChrome } from './workspace-editor-chrome';
+import type { UploadBlockAudio } from '../learning-block-authoring/audio-block-upload';
+import { LearningBlockAuthoring } from '../learning-block-authoring/learning-block-authoring';
+import { LearningBlockNode } from '../learning-block-authoring/learning-block-node';
+import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
+import { pasteLearningBlock } from '../../lib/learning-block-paste';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 
 export type KnowledgeEditorHandle = {
+    appendLearningBlock(block: LearningBlock): boolean;
+    replaceLearningBlock(
+        expected: LearningBlock,
+        replacement: LearningBlock,
+    ): 'applied' | 'changed' | 'missing' | 'invalid';
     getSnapshot(targetId?: string | null): {
         content: string;
         selectedPassage?: string;
@@ -58,6 +72,7 @@ export const KnowledgeEditor = forwardRef<
     KnowledgeEditorHandle,
     {
         value: KnowledgeBody;
+        uploadAudio?: UploadBlockAudio | undefined;
         onChange(value: KnowledgeBody): void;
         workspace?: KnowledgeWorkspaceEditorOptions | undefined;
         disabled?: boolean;
@@ -74,10 +89,12 @@ export const KnowledgeEditor = forwardRef<
         toolbarVariant = 'full',
         label,
         workspace,
+        uploadAudio,
     },
     ref,
 ) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
+    const blockLabels = useMemo(() => localizedBlockLabels(locale), [locale]);
     const [invalid, setInvalid] = useState(false);
     const acceptedValue = useRef(JSON.stringify(value));
     const targets = useRef(new Map<string, KnowledgeEditorTarget>());
@@ -96,8 +113,9 @@ export const KnowledgeEditor = forwardRef<
                 },
             }),
             TableKit.configure({ table: { resizable: false } }),
+            LearningBlockNode.configure({ labels: blockLabels }),
         ],
-        [],
+        [blockLabels],
     );
     const editor = useEditor({
         extensions,
@@ -107,6 +125,12 @@ export const KnowledgeEditor = forwardRef<
         enableContentCheck: true,
         editable: !disabled,
         editorProps: {
+            handlePaste: (view, event) => {
+                if (disabled) return false;
+                const result = pasteLearningBlock(view, event);
+                if (result !== 'none') setInvalid(result === 'invalid');
+                return result !== 'none';
+            },
             attributes: {
                 role: 'textbox',
                 'aria-multiline': 'true',
@@ -162,12 +186,25 @@ export const KnowledgeEditor = forwardRef<
         }
     }, [editor, value]);
 
+    const authoring =
+        editor && toolbarVariant !== 'tutor' ? (
+            <LearningBlockAuthoring
+                editor={editor}
+                disabled={disabled}
+                labels={blockLabels}
+                uploadAudio={uploadAudio ?? workspace?.uploadAudio}
+                library={workspace?.library}
+                blockCopy={workspace?.blockCopy}
+            />
+        ) : null;
+
     if (workspace && editor)
         return (
             <WorkspaceEditorChrome
                 editor={editor}
                 disabled={disabled}
                 workspace={workspace}
+                authoring={authoring}
             >
                 <EditorContent
                     editor={editor}
@@ -192,6 +229,7 @@ export const KnowledgeEditor = forwardRef<
                 />
             )}
             <EditorContent editor={editor} className={styles.content} />
+            {authoring}
             {invalid && (
                 <InlineAlert tone='error'>
                     {t('knowledge.editorError')}

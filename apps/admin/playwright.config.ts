@@ -80,6 +80,7 @@ export default defineConfig({
                 ADMIN_E2E_SYNTHETIC_PROBES: 'true',
                 DEEPSEEK_API_KEY: 'synthetic-test-key',
                 OPENROUTER_API_KEY: '',
+                OPENAI_API_KEY: '',
                 EVOLINK_API_KEY: '',
                 KIE_API_KEY: '',
                 APP_ENV: 'development',

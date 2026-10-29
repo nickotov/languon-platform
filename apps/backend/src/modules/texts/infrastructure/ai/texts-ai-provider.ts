@@ -142,7 +142,7 @@ export function createTextsAiProvider(options: {
                 call.input.kind === 'text-translation'
                     ? agents.textTranslationAgent
                     : agents.textDetectionAgent;
-            const schema =
+            const schema: z.ZodType =
                 call.input.kind === 'text-translation'
                     ? TextTranslationProviderOutputSchema
                     : TextDetectionResultSchema;
@@ -215,7 +215,12 @@ export function createTextsAiProvider(options: {
                 );
             if (result.tripwire || result.finishReason === 'length')
                 throw new TextsProviderInvalidOutputError(usage);
-            const parsed = schema.safeParse(result.object);
+            const parsed =
+                call.input.kind === 'text-translation'
+                    ? TextTranslationProviderOutputSchema.safeParse(
+                          result.object,
+                      )
+                    : TextDetectionResultSchema.safeParse(result.object);
             if (!parsed.success)
                 throw new TextsProviderInvalidOutputError(usage);
             return { draft: parsed.data, ...(usage ? { usage } : {}) };

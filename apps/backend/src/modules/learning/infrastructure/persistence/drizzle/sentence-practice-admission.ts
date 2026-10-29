@@ -1,3 +1,5 @@
+import { attachKnowledgeSentenceJobSource } from '../../../../knowledge/infrastructure/persistence/drizzle/knowledge-sentence-job-source';
+import type { KnowledgeLearningSourceBinding } from '../../../../knowledge/application/learning-source-binding';
 import type {
     SentenceDirection,
     SentencePrepareRequest,
@@ -25,10 +27,7 @@ import type {
     SentenceGenerationInput,
 } from '../../../domain/sentence-types';
 import { reserveSentenceAttempt } from './sentence-job-accounting';
-import {
-    sentenceLearner,
-    type SentenceTransaction,
-} from './sentence-persistence-support';
+import { type SentenceTransaction } from './sentence-persistence-support';
 import { type SentencePracticePersistenceContext } from './sentence-practice-context';
 import {
     sentencePracticePool,
@@ -105,8 +104,8 @@ export async function sentencePracticePrepare(
 export async function sentencePracticeAdmit(
     persistence: SentencePracticePersistenceContext,
     tx: SentenceTransaction,
-    access: LearningAccess,
-    dictionaryId: string,
+    access: Pick<LearningAccess, 'learnerId'>,
+    dictionaryId: string | null,
     input: { operationId: string; sessionId: string },
     payload: SentenceGenerationInput | SentenceCheckInput,
     kind: 'sentence-generation' | 'sentence-check',
@@ -114,12 +113,14 @@ export async function sentencePracticeAdmit(
     hash: string,
     now: Date,
     storedFormat?: 'sentence-preparation:v1' | 'sentence-preparation:v2',
+    knowledgeSource?: KnowledgeLearningSourceBinding,
 ) {
     await tx.execute(
         sql`select set_config('languon.learning_execution_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
     );
 
-    const learnerId = sentenceLearner(access);
+    const learnerId = access.learnerId;
+    if (!learnerId) throw new LearningInvalidRequestError();
     const format =
         kind === 'sentence-generation'
             ? (persistence.policy.generationFormat ?? 'sentence-generation:v1')
@@ -182,7 +183,7 @@ export async function sentencePracticeAdmit(
     const pricing = execution.snapshot.creditPricing!;
     const budget = execution.budget;
     const [referenceReview] =
-        kind === 'sentence-check'
+        kind === 'sentence-check' && !knowledgeSource
             ? await tx
                   .select({ id: manualReviews.id })
                   .from(manualReviews)
@@ -204,16 +205,37 @@ export async function sentencePracticeAdmit(
             id: randomUUID(),
             learnerId,
             dictionaryId,
+            ...(knowledgeSource
+                ? {
+                      sourceKind: 'knowledge-vocabulary' as const,
+                      sourceNoteId: knowledgeSource.noteId,
+                      knowledgeSource,
+                      sourceExerciseId:
+                          kind === 'sentence-check'
+                              ? (payload as SentenceCheckInput).exerciseId
+                              : null,
+                  }
+                : {}),
             jobKind: kind,
             format: storedFormat ?? format,
             direction,
             authority:
-                access.kind === 'owner'
+                !('kind' in access) || access.kind === 'owner'
                     ? { kind: 'owner' }
                     : {
                           kind: 'shared',
-                          shareId: access.shareId,
-                          keyDigest: access.keyDigest,
+                          shareId: (
+                              access as Extract<
+                                  LearningAccess,
+                                  { kind: 'shared' }
+                              >
+                          ).shareId,
+                          keyDigest: (
+                              access as Extract<
+                                  LearningAccess,
+                                  { kind: 'shared' }
+                              >
+                          ).keyDigest,
                       },
             operationId: input.operationId,
             sessionId: input.sessionId,
@@ -251,17 +273,27 @@ export async function sentencePracticeAdmit(
             aiCreditPricingRevision: pricing.revision,
         })
         .returning();
+
+    if (knowledgeSource)
+        await attachKnowledgeSentenceJobSource(tx, {
+            jobId: job!.id,
+            actorId: learnerId,
+            binding: knowledgeSource,
+            inputPayload: payload,
+        });
+
     const provenance =
         'candidates' in payload ? payload.candidates : payload.targets;
 
-    await tx.insert(jobEntries).values(
-        provenance.map((e) => ({
-            jobId: job!.id,
-            dictionaryId,
-            entryId: e.entryId,
-            learningVersion: e.learningVersion,
-        })),
-    );
+    if (!knowledgeSource)
+        await tx.insert(jobEntries).values(
+            provenance.map((e) => ({
+                jobId: job!.id,
+                dictionaryId: dictionaryId!,
+                entryId: e.entryId,
+                learningVersion: e.learningVersion,
+            })),
+        );
 
     await reserveSentenceAttempt(tx, job!, 1, now);
     const [updated] = await tx.select().from(jobs).where(eq(jobs.id, job!.id));

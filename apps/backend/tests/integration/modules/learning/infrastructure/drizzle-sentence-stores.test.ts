@@ -2003,10 +2003,13 @@ run('sentence persistence', () => {
     it('rejects missing/mismatched generation policies in persisted jobs and exercises', async () => {
         const { exercise } = await generated(owner, 1);
         const [job] = await db.select().from(sentenceAiJobsTable);
+        if (!job?.inputPayload || job.jobKind !== 'sentence-generation')
+            throw new Error('Expected retained generation payload');
+        const originalPayload = job.inputPayload;
         for (const inputPayload of [
-            { ...job!.inputPayload, generationPolicyVersion: 2 },
+            { ...originalPayload, generationPolicyVersion: 2 },
             Object.fromEntries(
-                Object.entries(job!.inputPayload).filter(
+                Object.entries(originalPayload).filter(
                     ([key]) => key !== 'generationPolicyVersion',
                 ),
             ),
@@ -2021,9 +2024,10 @@ run('sentence persistence', () => {
                         ...job!,
                         id: randomUUID(),
                         operationId: randomUUID(),
-                        inputPayload: inputPayload as NonNullable<
-                            typeof job
-                        >['inputPayload'],
+                        // Intentionally bypass the type boundary to exercise the
+                        // database constraint against a malformed persisted input.
+                        inputPayload:
+                            inputPayload as unknown as SentenceGenerationInput,
                     });
                 }),
             ).rejects.toMatchObject({

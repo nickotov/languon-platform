@@ -48,6 +48,31 @@ export interface CanonicalMastraOptions {
     };
 }
 
+/** Register exactly the operation-authorized tools, including typed block proposals.
+ * Default Studio has no authenticated learner/source and receives none of these tools. */
+function contextualTools(
+    contextualTutor: CanonicalMastraOptions['contextualTutor'],
+) {
+    const registered: NonNullable<
+        NonNullable<ConstructorParameters<typeof Mastra>[0]>['tools']
+    > = {};
+    for (const [name, tool] of Object.entries(contextualTutor?.tools ?? {})) {
+        if (!tool) continue;
+        if (!tool.execute || !tool.inputSchema || !tool.outputSchema)
+            throw new Error('Contextual tools require schemas and execution.');
+        // Mastra's Tool class declares optional methods with explicit undefined;
+        // its registration descriptor omits undefined under strict optionals.
+        registered[name] = {
+            id: tool.id,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+            outputSchema: tool.outputSchema,
+            execute: tool.execute,
+        };
+    }
+    return registered;
+}
+
 export function createCanonicalMastra(
     options: CanonicalMastraOptions & {
         developmentHarness: NonNullable<
@@ -114,7 +139,7 @@ export function createCanonicalMastra(
 
     if (!development) {
         return new Mastra({
-            tools: options.contextualTutor?.tools ?? {},
+            tools: contextualTools(options.contextualTutor),
             agents: {
                 ...(options.administrativeProbe
                     ? { administrativeProbe: options.administrativeProbe }
@@ -191,7 +216,7 @@ function createDevelopmentMastra(options: {
     };
 }) {
     return new Mastra({
-        tools: options.contextualTutor?.tools ?? {},
+        tools: contextualTools(options.contextualTutor),
         agents: {
             ...(options.administrativeProbe
                 ? { administrativeProbe: options.administrativeProbe }

@@ -9,6 +9,8 @@ import {
 } from '@languon/contracts';
 import { and, arrayContains, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
+import { deleteUnreferencedKnowledgeMedia } from './media-grants';
+import { eraseKnowledgeSpeech } from '../../../../speech/infrastructure/knowledge-speech-lifecycle';
 import { KnowledgeDomainError } from '../../../domain/knowledge';
 import { type KnowledgeStoreContext } from './knowledge-persistence-support';
 import {
@@ -224,6 +226,7 @@ export async function deleteNote(
                 'The knowledge note changed. Reload it before deleting.',
             );
         const now = new Date();
+        await eraseKnowledgeSpeech(tx, noteId);
         await persistence.lifecycle.beforeNoteDeletion(tx, {
             ownerId,
             noteId,
@@ -238,6 +241,8 @@ export async function deleteNote(
                     eq(knowledgeNotesTable.ownerId, ownerId),
                 ),
             );
+
+        await deleteUnreferencedKnowledgeMedia(tx);
 
         await writeKnowledgeReceipt(tx, {
             ownerId,

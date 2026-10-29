@@ -42,7 +42,7 @@ function SourceAssistant(
             ? placement.mode === 'focus'
             : folded;
     const handledRequest = useRef<string | null>(null);
-    const request = props.workspace?.request;
+    const request = props.request ?? props.workspace?.request;
     useEffect(() => {
         if (!request || handledRequest.current === request.id) return;
         handledRequest.current = request.id;

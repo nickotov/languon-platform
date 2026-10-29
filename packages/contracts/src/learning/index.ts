@@ -167,6 +167,7 @@ export const LearningCapabilitiesResponseSchema = z
 export const LearningErrorCodeSchema = z.enum([
     'authentication_required',
     'dictionary_not_found',
+    'source_not_found',
     'shared_dictionary_not_found',
     'entry_not_found',
     'invalid_request',

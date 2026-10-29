@@ -7,12 +7,15 @@ import {
     useState,
     type ChangeEvent,
     type MouseEvent,
+    type ReactNode,
 } from 'react';
 import {
     KnowledgeNoteContentSchema,
     type KnowledgeWorkingContent,
 } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
+import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
+import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
 import { Input } from '@/fsd/shared/ui';
 import {
     KnowledgeEditor,
@@ -26,6 +29,10 @@ export type KnowledgeTutorAction =
     'explain' | 'correct' | 'translate' | 'simplify' | 'rephrase' | 'examples';
 
 export type KnowledgeWorkspaceEditorOptions = {
+    blockCopy?: KnowledgeBlockCopyContext | undefined;
+    library?: KnowledgeLibraryContext | undefined;
+    uploadAudio?: ((file: File) => Promise<{ assetId: string }>) | undefined;
+    preparationTools?: ReactNode;
     toolbarRootId: string;
     editorId: string;
     proposalRootId: string;
@@ -155,6 +162,7 @@ export const KnowledgeNoteForm = forwardRef<
                         label={t('knowledge.document')}
                         onValidityChange={setEditorValid}
                     />
+                    {workspace?.preparationTools}
                 </div>
             </EditorContainer>
             {error && (

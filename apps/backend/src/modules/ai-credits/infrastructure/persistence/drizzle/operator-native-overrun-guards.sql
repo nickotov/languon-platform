@@ -10,6 +10,10 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp A
   SELECT 1 FROM public.ai_provider_expense_records f JOIN public.speech_jobs j ON j.id=f.action_id
   JOIN public.ai_provider_price_revisions p ON p.id=(j.provider_price_snapshot->>'id')::uuid
   WHERE f.action_id=attempt_value AND f.source_kind='speech-attempt' AND f.cost_source='calculated' AND f.amount_usd_micros=amount_value AND p.data ? 'nativeRules'
+ ) OR EXISTS(
+  SELECT 1 FROM public.ai_provider_expense_records f JOIN public.knowledge_transcription_jobs j ON j.id=f.action_id
+  JOIN public.ai_provider_price_revisions p ON p.id=(j.provider_price_snapshot->>'id')::uuid
+  WHERE f.attempt_id=attempt_value AND f.source_kind='transcription-attempt' AND f.cost_source='calculated' AND f.amount_usd_micros=amount_value AND p.data ? 'nativeRules'
  );
 $$;
 REVOKE ALL ON FUNCTION languon_native_overrun_authorized(uuid,bigint) FROM PUBLIC;

@@ -372,7 +372,8 @@ export async function eraseSentenceDerivedContent(
 
         // Check jobs have no Next receipt. Retain a content-free operation tombstone
         // so deletion cannot turn an old idempotency key into a fresh paid action.
-        for (const job of erasedJobs)
+        for (const job of erasedJobs) {
+            if (!job.dictionaryId) continue;
             await tx
                 .insert(receipts)
                 .values({
@@ -385,6 +386,8 @@ export async function eraseSentenceDerivedContent(
                     createdAt: scope.now,
                 })
                 .onConflictDoNothing();
+        }
+
         if (!scope.accountPurge)
             await tx
                 .update(receipts)

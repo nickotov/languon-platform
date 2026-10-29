@@ -69,8 +69,40 @@ GRANT SELECT (id, lifecycle, owner_id, share_key_digest, share_key_version,
 ON TABLE dictionaries TO :"dictionary_worker_role";
 GRANT SELECT (learning_version) ON TABLE dictionary_cards
 TO :"dictionary_worker_role";
-GRANT SELECT, UPDATE ON TABLE sentence_ai_jobs
+-- Base identifiers are needed only by existing UPDATE predicates/preparation joins.
+-- Provider input comes from the dictionary-compatible view or a private lease DTO.
+GRANT SELECT (id, execution_state, result_exercise_id) ON TABLE sentence_ai_jobs
 TO :"dictionary_worker_role";
+GRANT SELECT ON TABLE sentence_worker_jobs TO :"dictionary_worker_role";
+GRANT UPDATE (execution_state, failure_category, result_exercise_id,
+    result_attempt_id, attempt_count, fencing_token, worker_id, lease_deadline,
+    heartbeat_at, cancellation_requested_at, next_attempt_at, completed_at,
+    updated_at, ai_credit_reservation_id, ai_credit_policy_mode,
+    ai_credit_provider_dispatched_at, provider_reservation_state,
+    provider_reserved_attempts, provider_reserved_cost_micros,
+    provider_reserved_input_tokens, provider_reserved_output_tokens,
+    provider_reservation_settled_at, provider_actual_cost_micros,
+    provider_actual_input_tokens, provider_actual_output_tokens)
+ON TABLE sentence_ai_jobs TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION languon_sentence_worker_context(uuid),
+    languon_claim_private_sentence_job(uuid,text,integer),
+    languon_read_private_sentence_job(uuid,text,bigint,text),
+    languon_recover_private_sentence_job(uuid),
+    languon_sync_private_sentence_accounting(uuid)
+TO :"dictionary_worker_role";
+REVOKE ALL ON TABLE knowledge_sentence_exercises, knowledge_sentence_attempts,
+    knowledge_sentence_exposures FROM :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION
+    languon_publish_knowledge_sentence_generation(uuid,text,bigint,jsonb),
+    languon_publish_knowledge_sentence_check(uuid,text,bigint,jsonb)
+    TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION languon_knowledge_job_source_available(uuid,text,uuid) TO :"dictionary_worker_role";
+REVOKE EXECUTE ON FUNCTION languon_publish_private_knowledge_translation(uuid,uuid,text,bigint,jsonb,timestamptz) FROM :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION languon_issue_private_translation_lease(uuid,text,bigint),
+    languon_renew_private_translation_lease(uuid,text,bigint,uuid),
+    languon_complete_private_knowledge_translation(uuid,uuid,text,bigint,uuid,jsonb),
+    languon_cleanup_private_translation_results(integer)
+    TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE sentence_job_entries, sentence_manual_reviews
 TO :"dictionary_worker_role";
 GRANT SELECT, INSERT ON TABLE sentence_exercises, sentence_exercise_entries,
@@ -147,6 +179,42 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_messages,
     conversation_provider_calls TO :"dictionary_worker_role";
 GRANT USAGE, SELECT ON SEQUENCE conversation_events_id_seq TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE knowledge_notes, knowledge_note_revisions TO :"dictionary_worker_role";
+REVOKE SELECT ON TABLE knowledge_working_branches FROM :"dictionary_worker_role";
+GRANT SELECT (id, note_id, version) ON TABLE knowledge_working_branches TO :"dictionary_worker_role";
+GRANT UPDATE (updated_at) ON TABLE knowledge_working_branches TO :"dictionary_worker_role";
+-- Private narration provenance is created only by authenticated admission.
+REVOKE SELECT, INSERT ON TABLE knowledge_speech_recordings FROM :"dictionary_worker_role";
+REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_block_proposals FROM :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_propose_learning_blocks(uuid,uuid,jsonb) TO :"dictionary_worker_role";
+-- Transcription reads immutable admitted jobs and changes lifecycle only. Audio
+-- bytes require the exact live job lease; financial receipts use typed authority.
+-- Config revisions contain a private credential equality pin; only definer authority reads them.
+REVOKE SELECT ON TABLE knowledge_transcription_config_revisions,
+    knowledge_transcription_state FROM :"dictionary_worker_role";
+-- Finished transcripts are private author content, never queue metadata.
+GRANT SELECT (id, owner_id, note_id, asset_id, languages, state, worker_id,
+    fencing_token, lease_deadline, deadline_at, cancellation_requested_at,
+    source_duration_ms, byte_length, created_at)
+    ON TABLE knowledge_transcription_jobs TO :"dictionary_worker_role";
+REVOKE UPDATE ON TABLE knowledge_transcription_jobs FROM :"dictionary_worker_role";
+REVOKE UPDATE (state, worker_id, fencing_token, lease_deadline,
+    cancellation_requested_at, receipt_id, attempt_id, dispatched_at,
+    observed_audio_input_ms, result, failure_code, updated_at)
+    ON TABLE knowledge_transcription_jobs FROM :"dictionary_worker_role";
+REVOKE EXECUTE ON FUNCTION languon_authorize_transcription_dispatch(uuid,text,integer,text,integer,integer),
+    languon_observe_transcription_call(uuid,uuid,bigint),
+    languon_settle_transcription_attempt(uuid,boolean),
+    languon_read_transcription_audio(uuid,text,integer) FROM :"dictionary_worker_role";
+REVOKE EXECUTE ON FUNCTION languon_authorize_transcription_dispatch_fenced(uuid,text,integer,uuid,text,integer,integer) FROM :"dictionary_worker_role";
+
+GRANT EXECUTE ON FUNCTION
+    languon_authorize_transcription_dispatch_fenced(uuid,text,integer,uuid,text,integer,integer,text),
+    languon_claim_transcription(uuid,text),
+    languon_heartbeat_transcription(uuid,text,integer,uuid),
+    languon_finish_transcription(uuid,text,integer,uuid,jsonb,text),
+    languon_recover_transcription(uuid),
+    languon_read_transcription_audio_fenced(uuid,text,integer,uuid)
+    TO :"dictionary_worker_role";
 GRANT UPDATE (updated_at) ON TABLE knowledge_notes TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE dictionary_cards TO :"dictionary_worker_role";
 

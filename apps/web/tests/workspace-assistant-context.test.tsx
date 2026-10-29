@@ -266,3 +266,54 @@ it('removes the explicit passage and requests a collapsed cursor snapshot instea
     });
     expect(result.current.workspacePassage).toBeNull();
 });
+
+it('sends the actual recovered working branch together with its frozen editor snapshot', async () => {
+    const { chat, workspace, props } = fixture();
+    const branch = { id: '11111111-1111-4111-8111-111111111111', version: 8 };
+    workspace.beforeSend = vi.fn().mockResolvedValue(branch);
+    const { result } = renderHook(() => useAssistantPanel(props), {
+        wrapper: Wrapper,
+    });
+    await waitFor(() => expect(result.current.workspacePassage).not.toBeNull());
+    act(() => result.current.send());
+    await waitFor(() => expect(chat.submit.mutateAsync).toHaveBeenCalledOnce());
+    expect(workspace.beforeSend).toHaveBeenCalledTimes(1);
+    expect(chat.submit.mutateAsync.mock.calls[0]?.[0]).toMatchObject({
+        editorContext: {
+            workingBranch: branch,
+            content: `${passage}\nCurrent surrounding paragraph.`,
+        },
+    });
+});
+
+it('retains the question and rejects admission if the editor changes while recovery is pending', async () => {
+    const { chat, snapshot, workspace, props } = fixture();
+    let finish: ((branch: { id: string; version: number }) => void) | undefined;
+    workspace.beforeSend = vi.fn(
+        () =>
+            new Promise<{ id: string; version: number }>((resolve) => {
+                finish = resolve;
+            }),
+    );
+    const { result } = renderHook(() => useAssistantPanel(props), {
+        wrapper: Wrapper,
+    });
+    await waitFor(() => expect(result.current.workspacePassage).not.toBeNull());
+    act(() => result.current.send());
+    await waitFor(() => expect(workspace.beforeSend).toHaveBeenCalledOnce());
+    snapshot.mockReturnValue({
+        content: `${passage}\nNewer typing during recovery.`,
+        targetId: 'target-a',
+        editorTarget: anchor,
+    });
+    await act(async () => {
+        finish?.({ id: '11111111-1111-4111-8111-111111111111', version: 8 });
+    });
+    await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
+    expect((result.current.error as Error).message).toContain(
+        'document changed',
+    );
+    expect(chat.submit.mutateAsync).not.toHaveBeenCalled();
+    expect(chat.setQuestion).not.toHaveBeenCalled();
+    expect(result.current.workspacePassage?.content).toBe(passage);
+});

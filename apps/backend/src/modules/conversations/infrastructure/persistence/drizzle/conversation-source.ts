@@ -1,3 +1,4 @@
+import { readSharedConversationNote } from './conversation-knowledge-share';
 import { createHash } from 'node:crypto';
 import { and, eq, or, ilike } from 'drizzle-orm';
 import type { ConversationSource, KnowledgeBody } from '@languon/contracts';
@@ -35,6 +36,10 @@ export interface ConversationSourceDependencies {
         digest: string,
     ): boolean | Promise<boolean>;
     verifyTextShare(key: string, digest: string): boolean | Promise<boolean>;
+    verifyKnowledgeShare?(
+        key: string,
+        digest: string,
+    ): boolean | Promise<boolean>;
     readNote(
         tx: ConversationsTransaction,
         ownerId: string,
@@ -85,14 +90,23 @@ export class ConversationSourceResolver {
                 lockRows ? 'share' : 'none',
             );
         if (source.kind === 'knowledge') {
-            const note = await this.dependencies.readNote(
-                tx,
-                ownerId,
-                source.id,
-            );
+            const shared = source.shareLocator
+                ? await readSharedConversationNote(
+                      tx,
+                      source,
+                      access,
+                      this.dependencies.verifyKnowledgeShare,
+                  )
+                : undefined;
+            const note =
+                shared?.note ??
+                (await this.dependencies.readNote(tx, ownerId, source.id));
+
+            if (source.view === 'saved' && note.version < 1)
+                throw conversationUnavailable();
 
             return {
-                authority: { sourceOwnerId: ownerId },
+                authority: shared?.authority ?? { sourceOwnerId: ownerId },
                 snapshot: {
                     title: note.title || 'Untitled',
                     description: note.summary,
@@ -336,6 +350,9 @@ export class ConversationSourceResolver {
             };
         }
 
+        if (source.shareKind && !['text', 'folder'].includes(source.shareKind))
+            throw conversationUnavailable();
+
         const [candidate] = await tx
             .select()
             .from(textsTable)
@@ -382,7 +399,10 @@ export class ConversationSourceResolver {
                 .where(
                     and(
                         eq(textSharesTable.locator, source.shareLocator ?? ''),
-                        eq(textSharesTable.kind, source.shareKind ?? 'text'),
+                        eq(
+                            textSharesTable.kind,
+                            source.shareKind === 'folder' ? 'folder' : 'text',
+                        ),
                     ),
                 );
             const [share] = lockRows

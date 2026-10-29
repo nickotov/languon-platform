@@ -1,3 +1,7 @@
+import {
+    ProviderNativePricingRulesSchema,
+    nativeProviderPricingMatchesMeter,
+} from '@languon/contracts';
 import type {
     ProviderPrice,
     ProviderPricePublishRequestSchema,
@@ -8,7 +12,9 @@ import { Alert, Button, Form, Input, Modal, Select, Typography } from 'antd';
 import { NativeProviderPriceDialog } from './native-provider-price-dialog';
 
 type Request = (typeof ProviderPricePublishRequestSchema)['_input'];
-type Fields = Omit<Request, 'expectedVersion'>;
+type Fields = Omit<Request, 'expectedVersion' | 'nativeRules'> & {
+    nativeRulesJson?: string;
+};
 type Props = {
     price: ProviderPrice | null;
     pending: boolean;
@@ -45,10 +51,16 @@ function LegacyProviderPriceDialog({
         price?.meter ??
         'text-tokens';
     const speech = meter === 'speech-characters';
+    const duration = meter === 'audio-duration';
+    const nativeOnly = speech || duration;
     const editExisting = price !== null;
     const options = [
         { value: 'text-tokens', label: t('accounting.tokenMeter') },
         { value: 'speech-characters', label: t('accounting.characterMeter') },
+        {
+            value: 'audio-duration',
+            label: t('transcription.audioDurationMeter'),
+        },
     ];
     const initial = {
         ...price,
@@ -57,23 +69,50 @@ function LegacyProviderPriceDialog({
         reason: '',
     };
     const submit = async (values: Fields) => {
-        const inputUsdPerMillionTokens = speech
+        const inputUsdPerMillionTokens = nativeOnly
             ? null
             : values.inputUsdPerMillionTokens;
-        const outputUsdPerMillionTokens = speech
+        const outputUsdPerMillionTokens = nativeOnly
             ? null
             : values.outputUsdPerMillionTokens;
-        const cacheReadUsdPerMillionTokens = speech
+        const cacheReadUsdPerMillionTokens = nativeOnly
             ? null
             : values.cacheReadUsdPerMillionTokens || null;
-        const cacheWriteUsdPerMillionTokens = speech
+        const cacheWriteUsdPerMillionTokens = nativeOnly
             ? null
             : values.cacheWriteUsdPerMillionTokens || null;
         const usdPer1000Characters = speech
             ? values.usdPer1000Characters
             : null;
+        const { nativeRulesJson, ...fields } = values;
+        let nativeRules;
+        if (duration) {
+            try {
+                nativeRules = ProviderNativePricingRulesSchema.parse(
+                    JSON.parse(nativeRulesJson ?? ''),
+                );
+                if (
+                    !nativeProviderPricingMatchesMeter(
+                        'audio-duration',
+                        nativeRules,
+                    )
+                )
+                    throw new Error(
+                        'Duration pricing requires a duration component.',
+                    );
+            } catch {
+                form.setFields([
+                    {
+                        name: 'nativeRulesJson',
+                        errors: [t('transcription.nativeRulesInvalid')],
+                    },
+                ]);
+                return;
+            }
+        }
         await onSubmit({
-            ...values,
+            ...fields,
+            ...(duration ? { nativeRules } : {}),
             expectedVersion: price?.version ?? 0,
             sourceUrl: values.sourceUrl || null,
             inputUsdPerMillionTokens,
@@ -81,7 +120,7 @@ function LegacyProviderPriceDialog({
             cacheReadUsdPerMillionTokens,
             cacheWriteUsdPerMillionTokens,
             usdPer1000Characters,
-            minimumUsdPerRequest: speech
+            minimumUsdPerRequest: nativeOnly
                 ? null
                 : values.minimumUsdPerRequest || null,
         });
@@ -141,7 +180,20 @@ function LegacyProviderPriceDialog({
                 >
                     <Select disabled={editExisting} options={options} />
                 </Form.Item>
-                {speech ? (
+                {duration ? (
+                    <>
+                        <Typography.Paragraph>
+                            {t('transcription.nativeRulesHelp')}
+                        </Typography.Paragraph>
+                        <Form.Item
+                            name='nativeRulesJson'
+                            label={t('transcription.nativeRules')}
+                            rules={[{ required: true }]}
+                        >
+                            <Input.TextArea rows={8} maxLength={80_000} />
+                        </Form.Item>
+                    </>
+                ) : speech ? (
                     <UsdRateField
                         name='usdPer1000Characters'
                         label={t('accounting.usdCharacterField')}
@@ -192,8 +244,12 @@ function LegacyProviderPriceDialog({
                 </Form.Item>
                 <Form.Item
                     name='sourceUrl'
-                    label={t('accounting.sourceUrl')}
-                    rules={[{ pattern: /^https:\/\// }]}
+                    label={t(
+                        duration
+                            ? 'transcription.nativePriceSourceUrl'
+                            : 'accounting.sourceUrl',
+                    )}
+                    rules={[{ required: duration, pattern: /^https:\/\// }]}
                 >
                     <Input type='url' />
                 </Form.Item>

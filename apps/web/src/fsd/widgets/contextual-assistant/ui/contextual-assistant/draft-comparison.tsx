@@ -1,3 +1,4 @@
+import { KnowledgeDocumentView } from '@/fsd/features/knowledge-notes';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { KnowledgeNoteContent } from '@languon/contracts';
@@ -5,7 +6,7 @@ import {
     conversationCopy,
     type ConversationSessionRequest,
 } from '@/fsd/entities/conversation';
-import { KnowledgeBody, knowledgeApi } from '@/fsd/entities/knowledge';
+import { knowledgeApi } from '@/fsd/entities/knowledge';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button } from '@/fsd/shared/ui';
 import styles from './knowledge-draft-card.module.css';
@@ -61,13 +62,13 @@ export function DraftComparison({
                         <h4>{copy.savedContext}</h4>
                         <h3>{latest.data.title}</h3>
                         <p>{latest.data.summary}</p>
-                        <KnowledgeBody body={latest.data.body} />
+                        <KnowledgeDocumentView body={latest.data.body} />
                     </section>
                     <section>
                         <h4>{copy.draft}</h4>
                         <h3>{content.title}</h3>
                         <p>{content.summary}</p>
-                        <KnowledgeBody body={content.body} />
+                        <KnowledgeDocumentView body={content.body} />
                     </section>
                 </div>
             )}

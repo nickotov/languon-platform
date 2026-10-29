@@ -1,3 +1,4 @@
+import { editorLeafText } from '../lib/learning-block-text';
 import { useImperativeHandle, type ForwardedRef, type RefObject } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { Transaction } from '@tiptap/pm/state';
@@ -9,7 +10,9 @@ import {
     hashEditorText,
     restoreEditorPositions,
 } from '../lib/editor-target-anchor';
-import { inlineProposalPosition } from '../lib/inline-proposal-position';
+import { editorProposalPosition } from '../lib/editor-proposal-position';
+import { replaceLearningBlock } from '../lib/replace-learning-block';
+import { appendLearningBlock } from '../lib/append-learning-block';
 import {
     parseProposalMarkdown,
     proposalPlainTextDocument,
@@ -26,6 +29,14 @@ export function useKnowledgeEditorHandle(
     useImperativeHandle(
         ref,
         () => ({
+            replaceLearningBlock(expected, replacement) {
+                if (!editor || disabled) return 'missing';
+                return replaceLearningBlock(editor, expected, replacement);
+            },
+            appendLearningBlock(block) {
+                if (!editor || disabled) return false;
+                return appendLearningBlock(editor, block);
+            },
             getSnapshot(capturedTargetId) {
                 if (!editor)
                     throw new Error('The document editor is still loading.');
@@ -53,7 +64,7 @@ export function useKnowledgeEditorHandle(
                             from,
                             to,
                             '\n',
-                            '\n',
+                            editorLeafText,
                         ),
                         changed: false,
                     };
@@ -118,7 +129,7 @@ export function useKnowledgeEditorHandle(
                         target.from,
                         target.to,
                         '\n',
-                        '\n',
+                        editorLeafText,
                     );
                     if (current !== target.selectedText) return 'changed';
                     from = target.from;
@@ -167,7 +178,7 @@ export function useKnowledgeEditorHandle(
                     Math.max(target.from, target.to),
                     doc.content.size,
                 );
-                const current = doc.textBetween(from, to, '\n', '\n');
+                const current = doc.textBetween(from, to, '\n', editorLeafText);
                 return {
                     original: target.selectedText,
                     current,
@@ -175,49 +186,23 @@ export function useKnowledgeEditorHandle(
                         Math.max(0, from - 180),
                         from,
                         '\n',
-                        '\n',
+                        editorLeafText,
                     ),
                     after: doc.textBetween(
                         to,
                         Math.min(doc.content.size, to + 180),
                         '\n',
-                        '\n',
+                        editorLeafText,
                     ),
                     end: editorPlainText(doc).slice(-240),
                     changed: target.changed || current !== target.selectedText,
                 };
             },
             getProposalPosition(targetId) {
-                const target = targets.current.get(targetId);
-                if (!editor || !target || target.changed) return null;
-                const root = editor.view.dom.closest<HTMLElement>(
-                    '[data-workspace-editor]',
+                return editorProposalPosition(
+                    editor,
+                    targets.current.get(targetId),
                 );
-                if (!root) return null;
-                if (target.to > editor.state.doc.content.size) return null;
-                const current = editor.state.doc.textBetween(
-                    target.from,
-                    target.to,
-                    '\n',
-                    '\n',
-                );
-                if (current !== target.selectedText) return null;
-                const bounds = root.getBoundingClientRect();
-                const range = document.createRange();
-                const start = editor.view.domAtPos(target.from);
-                const end = editor.view.domAtPos(target.to);
-                range.setStart(start.node, start.offset);
-                range.setEnd(end.node, end.offset);
-                const rects = range.getClientRects();
-                const last =
-                    rects.item?.(rects.length - 1) ??
-                    rects[rects.length - 1] ??
-                    editor.view.coordsAtPos(target.to);
-                const fontSize =
-                    parseFloat(
-                        getComputedStyle(document.documentElement).fontSize,
-                    ) || 16;
-                return inlineProposalPosition(bounds, last, fontSize);
             },
             showTarget(targetId) {
                 const target = targets.current.get(targetId);
@@ -248,7 +233,7 @@ export function useKnowledgeEditorHandle(
                     from,
                     to,
                     '\n',
-                    '\n',
+                    editorLeafText,
                 );
                 return { original: target.selectedText, current };
             },

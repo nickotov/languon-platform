@@ -59,6 +59,10 @@ export async function conversationList(
                     eq(chats.ownerId, access.ownerId),
                     eq(chats.sourceKind, source.kind),
                     eq(chats.sourceId, source.id),
+                    eq(
+                        sql<string>`coalesce(${chats.source}->>'view','')`,
+                        source.view ?? '',
+                    ),
                 ),
             )
             .orderBy(desc(chats.updatedAt))
@@ -70,7 +74,8 @@ export async function conversationList(
         rows.every(
             (row) =>
                 row.source.shareLocator === source.shareLocator &&
-                row.source.shareKind === source.shareKind,
+                row.source.shareKind === source.shareKind &&
+                row.source.view === source.view,
         )
     )
         return rows.map(chatView);
@@ -94,6 +99,10 @@ export async function conversationList(
                     eq(chats.ownerId, access.ownerId),
                     eq(chats.sourceKind, source.kind),
                     eq(chats.sourceId, source.id),
+                    eq(
+                        sql<string>`coalesce(${chats.source}->>'view','')`,
+                        source.view ?? '',
+                    ),
                 ),
             );
 
@@ -106,6 +115,10 @@ export async function conversationList(
                         eq(chats.ownerId, access.ownerId),
                         eq(chats.sourceKind, source.kind),
                         eq(chats.sourceId, source.id),
+                        eq(
+                            sql<string>`coalesce(${chats.source}->>'view','')`,
+                            source.view ?? '',
+                        ),
                     ),
                 )
                 .orderBy(desc(chats.updatedAt))

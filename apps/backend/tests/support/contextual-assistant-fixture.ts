@@ -1,3 +1,22 @@
+import { createKnowledgeSentenceComposition } from '../../src/modules/knowledge/infrastructure/knowledge-sentence-composition';
+import { eraseKnowledgeSentenceJobs } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-cleanup';
+import { createKnowledgePrivateTranslationFixture } from './knowledge-private-translation-fixture';
+import { eraseKnowledgeTranslationJobs } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle';
+import { VocabularyPracticeService } from '../../src/modules/knowledge/application/vocabulary-practice-service';
+import { DrizzleVocabularyPracticeStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store';
+import { createVocabularyPracticeRoutes } from '../../src/modules/knowledge/interface/http/vocabulary-practice-routes';
+import { WorkbookService } from '../../src/modules/knowledge/application/workbook-service';
+import { DrizzleWorkbookStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store';
+import { createWorkbookRoutes } from '../../src/modules/knowledge/interface/http/workbook.routes';
+import { KnowledgeShareCrypto } from '../../src/modules/knowledge/infrastructure/knowledge-share-crypto';
+import { LearnerService } from '../../src/modules/knowledge/application/learner-service';
+import { DrizzleLearnerStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/learner-store';
+import { createLearnerRoutes } from '../../src/modules/knowledge/interface/http/learner-routes';
+import { KnowledgeMediaService } from '../../src/modules/knowledge/application/media-service';
+import { DrizzleKnowledgeMediaStore } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/media-store';
+import { verifyKnowledgeAudio } from '../../src/modules/knowledge/infrastructure/media-audio-validation';
+import { createKnowledgeMediaRoutes } from '../../src/modules/knowledge/interface/http/media.routes';
+import { createKnowledgeLibraryCopyComposition } from '../../src/modules/knowledge/infrastructure/library-copy-composition';
 import { fixtureRouteFingerprint } from './text-ai-routing-fixture';
 import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
@@ -290,7 +309,10 @@ export async function createContextualAssistantFixture(
             REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
         }),
     );
+    let privateTranslation:
+        ReturnType<typeof createKnowledgePrivateTranslationFixture> | undefined;
     async function close() {
+        await privateTranslation?.close();
         await authentication.close();
         const redis = createTestRedisClient();
         try {
@@ -320,6 +342,14 @@ export async function createContextualAssistantFixture(
             await d.authentication.requireActiveSession(claims);
             return { userId: claims.userId };
         };
+        privateTranslation = createKnowledgePrivateTranslationFixture({
+            database: d.database,
+            rateLimiter: d.rateLimiter,
+            secret,
+            authenticate,
+            policy: authentication.options.policy,
+            clock: d.clock,
+        });
         const failedConversations = new Set<string>();
         const conversations = createConversationsComposition({
             ...d,
@@ -377,19 +407,94 @@ export async function createContextualAssistantFixture(
             authenticate,
             rateLimiter: d.rateLimiter,
             lifecycle: {
-                beforeNoteDeletion: (tx, input) =>
-                    eraseConversationSource(
+                async beforeNoteDeletion(tx, input) {
+                    await eraseConversationSource(
                         tx,
                         'knowledge',
                         input.noteId,
                         input.now,
-                    ),
+                    );
+                    await eraseKnowledgeTranslationJobs(
+                        tx,
+                        input.noteId,
+                        input.now,
+                    );
+                    await eraseKnowledgeSentenceJobs(
+                        tx,
+                        input.noteId,
+                        input.now,
+                    );
+                },
             },
         });
         const learnerPortraits = createLearnerPortraitModule({
             database: d.database,
         });
         const app = createApp({
+            knowledgePrivateTranslations: privateTranslation.routes,
+            workbooks: createWorkbookRoutes({
+                service: new WorkbookService({
+                    store: new DrizzleWorkbookStore(
+                        d.database,
+                        new KnowledgeShareCrypto(secret),
+                    ),
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                }),
+                policy: authentication.options.policy,
+            }),
+            knowledgeSentences: createKnowledgeSentenceComposition({
+                database: d.database,
+                secret,
+                enabled: true,
+                generationFormat: 'sentence-generation:v2',
+                authenticate,
+                rateLimiter: d.rateLimiter,
+                policy: authentication.options.policy,
+            }).routes,
+            knowledgeVocabulary: createVocabularyPracticeRoutes({
+                service: new VocabularyPracticeService({
+                    store: new DrizzleVocabularyPracticeStore(
+                        d.database,
+                        new KnowledgeShareCrypto(secret),
+                    ),
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                    enabled: true,
+                }),
+                policy: authentication.options.policy,
+            }),
+            workbookLearning: createLearnerRoutes({
+                service: new LearnerService({
+                    store: new DrizzleLearnerStore(
+                        d.database,
+                        new KnowledgeShareCrypto(secret),
+                    ),
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                }),
+                policy: authentication.options.policy,
+            }),
+            knowledgeMedia: createKnowledgeMediaRoutes({
+                service: new KnowledgeMediaService({
+                    store: new DrizzleKnowledgeMediaStore(
+                        d.database,
+                        new KnowledgeShareCrypto(secret),
+                    ),
+                    authenticate,
+                    rateLimiter: d.rateLimiter,
+                    verify: verifyKnowledgeAudio,
+                }),
+                policy: authentication.options.policy,
+            }),
+            knowledgeLibrary: createKnowledgeLibraryCopyComposition({
+                ...d,
+                dictionaryHmacSecret: secret,
+                shareSecret: secret,
+                authenticate,
+                policy: authentication.options.policy,
+            }).routes,
+
             learnerPortraits: createLearnerPortraitRoutes({
                 portraits: learnerPortraits.portraits,
                 interviews: learnerPortraits.interviews,
@@ -572,6 +677,7 @@ export async function createContextualAssistantFixture(
                     expiresAt: new Date(now.getTime() + 3_600_000),
                 },
             });
+        await privateTranslation.start();
         return {
             app,
             request,

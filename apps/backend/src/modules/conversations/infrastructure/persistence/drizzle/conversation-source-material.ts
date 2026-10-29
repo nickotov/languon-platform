@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { KnowledgeBody, TextAlignment } from '@languon/contracts';
 import type { SourceMaterial } from '../../../domain/conversation';
+import { learningBlockPlainText } from '../../../../knowledge/domain/learning-block-text';
 
 /** Budget JSON-escaped UTF-8 rather than UTF-16 units; never split a code point. */
 function textChunks(text: string, maxEncodedBytes: number) {
@@ -132,6 +133,8 @@ export function noteSourceMaterial(input: {
     body: KnowledgeBody;
 }): SourceMaterial[] {
     const render = (node: KnowledgeBody['document']): string => {
+        if (node.type === 'learningBlock' && node.attrs?.block)
+            return `${learningBlockPlainText(node.attrs.block)}\n`;
         if (node.type === 'text') {
             const link = node.marks?.find((mark) => mark.type === 'link');
 

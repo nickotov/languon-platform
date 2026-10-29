@@ -254,3 +254,29 @@ describe('learning block content contracts', () => {
         ).toMatchObject({ rule: '  rule  ' });
     });
 });
+
+it('preserves bounded literal definitions in vocabulary entries', () => {
+    const value = {
+        id,
+        type: 'vocabulary',
+        language: 'en',
+        translationLanguage: 'fr',
+        entries: [
+            {
+                id: other,
+                term: 'cat',
+                translation: 'chat',
+                definition: '<script>literal</script>',
+            },
+        ],
+    };
+    expect(LearningBlockSchema.parse(value)).toMatchObject({
+        entries: [{ definition: '<script>literal</script>' }],
+    });
+    expect(
+        LearningBlockSchema.safeParse({
+            ...value,
+            entries: [{ ...value.entries[0], definition: 'x'.repeat(2001) }],
+        }).success,
+    ).toBe(false);
+});

@@ -1,5 +1,7 @@
 'use client';
 
+import { KnowledgeDocumentView } from '@/fsd/features/knowledge-notes';
+
 import { useEffect, useId, useMemo, useState, type ChangeEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,7 +15,6 @@ import { knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Input, Select, Textarea, type SelectOption } from '@/fsd/shared/ui';
 import { KnowledgeEditor } from '@/fsd/features/knowledge-notes';
-import { KnowledgeBody } from '@/fsd/entities/knowledge';
 import { Eye, Pencil } from 'lucide-react';
 import { messagesCopy } from '../../lib/messages-copy';
 import styles from './tutor-note-form.module.css';
@@ -136,7 +137,7 @@ export function TutorNoteForm({
                         {preview ? labels.edit : labels.preview}
                     </button>
                 </div>
-                {preview && <KnowledgeBody body={value.body} />}
+                {preview && <KnowledgeDocumentView body={value.body} />}
                 <div hidden={preview} className={styles.richEditor}>
                     <KnowledgeEditor
                         toolbarVariant='tutor'

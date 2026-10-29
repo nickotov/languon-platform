@@ -1,3 +1,4 @@
+import { privateSentenceQuery } from './sentence-worker-jobs';
 import type { SentenceFeedback } from '@languon/contracts';
 import { eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -127,6 +128,18 @@ export async function sentenceWorkerCompleteGeneration(
                     content.targets.length
             )
                 throw new Error('Invalid sentence targets');
+            if (job.sourceKind === 'knowledge-vocabulary') {
+                if (!job.knowledgeSource)
+                    throw new Error('Missing knowledge source');
+                await privateSentenceQuery(
+                    tx,
+                    sql`select public.languon_publish_knowledge_sentence_generation(${job.id}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${JSON.stringify(content)}::jsonb)`,
+                );
+
+                return;
+            }
+
+            if (!job.dictionaryId) throw new Error('Missing dictionary source');
             const id = randomUUID();
             const publicContent = {
                 id,
@@ -161,7 +174,7 @@ export async function sentenceWorkerCompleteGeneration(
             await tx.insert(exerciseEntries).values(
                 content.targets.map((t) => ({
                     exerciseId: id,
-                    dictionaryId: job.dictionaryId,
+                    dictionaryId: job.dictionaryId!,
                     ...t,
                 })),
             );
@@ -201,6 +214,18 @@ export async function sentenceWorkerCompleteCheck(
             if (job.jobKind !== 'sentence-check')
                 throw new Error('Wrong sentence job kind');
             const input = job.inputPayload as SentenceCheckInput;
+            if (job.sourceKind === 'knowledge-vocabulary') {
+                if (!job.knowledgeSource)
+                    throw new Error('Missing knowledge source');
+                await privateSentenceQuery(
+                    tx,
+                    sql`select public.languon_publish_knowledge_sentence_check(${job.id}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${JSON.stringify(result.feedback)}::jsonb)`,
+                );
+
+                return;
+            }
+
+            if (!job.dictionaryId) throw new Error('Missing dictionary source');
             const id = randomUUID();
             await tx.insert(attempts).values({
                 id,

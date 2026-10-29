@@ -1,5 +1,7 @@
 'use client';
 
+import { editorLeafText } from '../../lib/learning-block-text';
+
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/react';
@@ -15,11 +17,13 @@ export function WorkspaceEditorChrome({
     disabled,
     workspace,
     children,
+    authoring,
 }: {
     editor: Editor;
     disabled: boolean;
     workspace: KnowledgeWorkspaceEditorOptions;
     children: ReactNode;
+    authoring?: ReactNode;
 }) {
     const { t } = useI18n();
     const [toolbarRoot, setToolbarRoot] = useState<HTMLElement | null>(null);
@@ -31,7 +35,7 @@ export function WorkspaceEditorChrome({
         selection.from,
         selection.to,
         '\n',
-        '\n',
+        editorLeafText,
     );
     const hasSelection = passage.trim().length > 1 && !editor.isActive('table');
     const toolbar = (
@@ -65,6 +69,7 @@ export function WorkspaceEditorChrome({
                     disabled={disabled}
                 />
             )}
+            {authoring}
             {workspace.inlineProposalRootId && (
                 <div
                     id={workspace.inlineProposalRootId}

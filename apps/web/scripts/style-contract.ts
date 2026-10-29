@@ -133,6 +133,8 @@ function utilityClass(value: string, classContext: boolean): string[] {
             // Domain resource and copied-material discriminators are not color utilities.
             if (base === 'text-folders' || base === 'text-reference')
                 return false;
+            // Exercise formats are domain values, not SVG fill classes.
+            if (base === 'fill-in-the-blank') return false;
             // AI SDK protocol discriminants are not class names. JSX class contexts stay checked.
             if (/^text-(?:start|delta|end)$/.test(base)) return false;
             if (/^text-ai-(?:request|preference|catalog)$/.test(base))

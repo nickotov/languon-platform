@@ -1,6 +1,7 @@
 import type {
     ConversationActionQuote,
     CopiedAttachment,
+    ConversationSource,
 } from '@languon/contracts';
 
 export class ConversationError extends Error {
@@ -26,6 +27,11 @@ export type SourceAuthority = {
 
 export type SourceMaterial = CopiedAttachment;
 export type ConversationSourceSnapshot = {
+    blockTarget?: {
+        branchId: string;
+        version: number;
+        material?: SourceMaterial[];
+    };
     version: string;
     title: string;
     description: string | null;
@@ -43,3 +49,9 @@ export class ConversationActionConfirmationRequired extends ConversationError {
         );
     }
 }
+
+export const isReadOnlyKnowledgeSource = (
+    source: ConversationSource,
+): boolean =>
+    source.kind === 'knowledge' &&
+    (!!source.shareLocator || source.view === 'saved');

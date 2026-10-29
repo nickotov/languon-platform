@@ -16,6 +16,10 @@ import {
     knowledgeSharesTable,
 } from '../../../../knowledge/infrastructure/persistence/drizzle/schema';
 import { activeOwnerMutationLock } from '../../../../administration/infrastructure/persistence/drizzle/owner-lock';
+import {
+    knowledgeWorkbooksTable,
+    knowledgeWorkbookSharesTable,
+} from '../../../../knowledge/infrastructure/persistence/drizzle/workbook-schema';
 import { usersTable } from './schema';
 import { accountDeletionRequestsTable } from './account-deletion-schema';
 import {
@@ -217,6 +221,23 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                             .from(knowledgeNotesTable)
                             .where(
                                 eq(knowledgeNotesTable.ownerId, input.userId),
+                            ),
+                    ),
+                );
+
+            await transaction
+                .delete(knowledgeWorkbookSharesTable)
+                .where(
+                    inArray(
+                        knowledgeWorkbookSharesTable.workbookId,
+                        transaction
+                            .select({ id: knowledgeWorkbooksTable.id })
+                            .from(knowledgeWorkbooksTable)
+                            .where(
+                                eq(
+                                    knowledgeWorkbooksTable.ownerId,
+                                    input.userId,
+                                ),
                             ),
                     ),
                 );

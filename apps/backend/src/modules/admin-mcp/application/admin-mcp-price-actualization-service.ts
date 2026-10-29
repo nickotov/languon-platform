@@ -26,7 +26,12 @@ const targetSchema = z
     .object({
         providerId: z.string().trim().min(1).max(200),
         modelId: z.string().trim().min(1).max(200),
-        meter: z.enum(['text-tokens', 'speech-characters', 'speech-tokens']),
+        meter: z.enum([
+            'text-tokens',
+            'speech-characters',
+            'speech-tokens',
+            'audio-duration',
+        ]),
     })
     .strict();
 export const actualizeModelPricesSchema = z

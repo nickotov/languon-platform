@@ -99,6 +99,13 @@ export async function finish(
             .limit(1);
 
         if (user?.status !== 'deletion_pending') return false;
+
+        // Source ownership can revoke other learners' in-flight private work.
+        // This due-claim definer settles it before generic busy checks and cascades.
+        await tx.execute(
+            sql`select languon_quiesce_knowledge_learning_for_purge(${input.userId}::uuid,${input.workerId},${input.fencingToken}::integer)`,
+        );
+
         const ownedDictionaries = await tx
             .select({ id: dictionariesTable.id })
             .from(dictionariesTable)
@@ -202,17 +209,21 @@ export async function finish(
         });
 
         await eraseOwnerConversations(tx, input.userId, input.now);
-        await eraseOwnerKnowledge(tx, input.userId);
+        await purgeSpeechActor(tx, input.userId, input.now, {
+            workerId: input.workerId,
+            fencingToken: input.fencingToken,
+        });
+
+        await eraseOwnerKnowledge(tx, input.userId, {
+            workerId: input.workerId,
+            fencingToken: input.fencingToken,
+        });
+
         await eraseTextsOwnedContent(tx, input.userId, input.now);
         await eraseNavigationOwnedMetadata(tx, input.userId);
         await eraseSentenceDerivedContent(tx, {
             ...sentenceScope,
             now: input.now,
-        });
-
-        await purgeSpeechActor(tx, input.userId, input.now, {
-            workerId: input.workerId,
-            fencingToken: input.fencingToken,
         });
 
         // Preserve anonymous financial attribution before deleting grants;
@@ -290,7 +301,10 @@ export async function finish(
             .set({ metadata: {} })
             .where(eq(authSecurityEventsTable.userId, input.userId));
 
-        await purgeAdminMcpForOwner(tx, input.userId, input.now);
+        await purgeAdminMcpForOwner(tx, input.userId, input.now, {
+            workerId: input.workerId,
+            fencingToken: input.fencingToken,
+        });
 
         await tx
             .update(adminAuditEventsTable)

@@ -1,10 +1,22 @@
+import { KnowledgeDocumentView } from '@/fsd/features/knowledge-notes';
+import type { ComponentProps } from 'react';
 import type { KnowledgeWorkingContent } from '@languon/contracts';
-import { KnowledgeBody, knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
+import { knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge } from '@/fsd/shared/ui';
 import styles from './knowledge-detail-page.module.css';
 
-export function NotePreview({ content }: { content: KnowledgeWorkingContent }) {
+export function NotePreview({
+    content,
+    blockOptions,
+    library,
+    blockCopy,
+}: {
+    content: KnowledgeWorkingContent;
+    blockOptions?: ComponentProps<typeof KnowledgeDocumentView>['blockOptions'];
+    library?: ComponentProps<typeof KnowledgeDocumentView>['library'];
+    blockCopy?: ComponentProps<typeof KnowledgeDocumentView>['blockCopy'];
+}) {
     const { t, locale } = useI18n();
     const names = new Intl.DisplayNames([locale], { type: 'language' });
     function language(value: string) {
@@ -46,8 +58,11 @@ export function NotePreview({ content }: { content: KnowledgeWorkingContent }) {
                     )}
                 </dl>
             )}
-            <KnowledgeBody
+            <KnowledgeDocumentView
                 body={content.body}
+                blockOptions={blockOptions}
+                library={library}
+                blockCopy={blockCopy}
                 {...(content.explanationLanguage
                     ? { language: content.explanationLanguage }
                     : {})}

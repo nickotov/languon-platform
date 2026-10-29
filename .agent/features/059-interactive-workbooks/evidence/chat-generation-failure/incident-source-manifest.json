@@ -1,0 +1,61 @@
+{
+  "base": "5735593d57eb01932a990c42beb7d1d870016164",
+  "branch": "feature/interactive-workbooks",
+  "scope": "E45 owner-chat incident and required gate remediation",
+  "files": [
+    {
+      "path": "apps/admin/tests/e2e/text-ai-routing.journeys.spec.ts",
+      "sha256": "f05596f5f00b26fcdc95d4a9007d3ea464673462c6048051f050a2023f96d8d1"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts",
+      "sha256": "daf886cc511aa651a92f9ad7c7740aa64c47ec843be20cd50efbfe0be7540254"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+      "sha256": "6f70df3ee53192cff245bd1204d8c6a3df44739b4c2b5112ab530db141a7d6c5"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts",
+      "sha256": "9ffca3ca4e9731eedeea69f52e6f9c3492c2d7139871343371cec30783ff2e47"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-production-execution.test.ts",
+      "sha256": "b92c042583e19391809f0691d3b478c12d73cef417fe498748f76adae6fe98b1"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-job-store.test.ts",
+      "sha256": "4e1b19808a1300d3d3a299613144e3411d081ef056a2f71151d7bfa997333988"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/conversation/lib/copy.ts",
+      "sha256": "f17a9f37fcb0b5ae452c1a12c732279ab337b121fad62f13f92a9a4ed1eb54df"
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-error-notice.tsx",
+      "sha256": "6858897691e0ee8c3cbdbe50bccc81d346f11bef36312eb6ef01dfb5f9247b7d"
+    },
+    {
+      "path": "apps/web/tests/conversation-error-notice.test.tsx",
+      "sha256": "9a6564f0914ab0e429690e09bba37fd9d7f5356438c67630c0b2a1f0862d7b93"
+    },
+    {
+      "path": "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts",
+      "sha256": "b87b0882d339b58c964afed32ef34181278e1e9efa8b4d4f94642a8e9220d04c"
+    },
+    {
+      "path": "docs/user-flows/contextual-language-assistant-and-knowledge.md",
+      "sha256": "de3d2eab5990713b2d6ad251a2489940b9716f396dd369b4db328802ccf5f00e"
+    },
+    {
+      "path": "scripts/critical-flows/registry.mjs",
+      "sha256": "de7e20103d314e5c3bb1aa0863d88bbe550c4bbd7143aee48b5546b330238725"
+    },
+    {
+      "path": "scripts/critical-flows/registry.test.mjs",
+      "sha256": "3a511c12049892da21b36696dad5ffb2fee29554bc5669f710b9f5fd7c3b7e3a"
+    }
+  ],
+  "aggregate_sha256": "ed5b544c74a94061518662e92be08b2a663696b57b6d345e1955315b559acd4b",
+  "aggregate_algorithm": "SHA256 of JSON.stringify(files), sorted by path"
+}

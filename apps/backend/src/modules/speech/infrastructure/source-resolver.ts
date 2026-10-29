@@ -1,4 +1,5 @@
 import type { StoredSpeechSource } from '../application/ports';
+import { resolveKnowledgeSpeechSource } from './knowledge-speech-source';
 import { SpeechError } from '../domain/speech-policy';
 import { and, eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from '@languon/database';
@@ -45,11 +46,14 @@ export class DrizzleSpeechSourceResolver {
         language: string;
         revision: string;
         authority: StoredSpeechSource;
-        dictionaryId: string;
+        dictionaryId?: string;
+        privateKnowledgeSource?: { noteId: string; ownerId: string };
         cardId?: string;
         exerciseId?: string;
         attemptId?: string;
     }> {
+        if (source.kind === 'knowledge-block')
+            return resolveKnowledgeSpeechSource(tx, actorId, source);
         const access: LearningAccess =
             source.access.kind === 'owner'
                 ? {

@@ -1,11 +1,15 @@
+import type { KnowledgeLearningSourceBinding } from '../../../../knowledge/application/learning-source-binding';
+import { attachKnowledgeTranslationJob } from '../../../../knowledge/infrastructure/persistence/drizzle/private-translation-persistence';
 import type {
     EnqueueTextDetectionRequest,
     EnqueueTextTranslationRequest,
     TextAiJob,
+    TextSourceSegment,
 } from '@languon/contracts';
 import {
     EnqueueTextDetectionRequestSchema,
     EnqueueTextTranslationRequestSchema,
+    TextSourceSegmentSchema,
 } from '@languon/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import { createHmac, randomUUID } from 'node:crypto';
@@ -44,7 +48,7 @@ import {
 import { textsAiJobsTable as jobs } from './texts-job-schema';
 import {
     authorizeTextsJob,
-    exposeTextsJob,
+    exposeOwnedTextsJob,
     type TextsJobRow,
     type TextsTransaction,
 } from './texts-job-support';
@@ -69,6 +73,10 @@ export async function enqueue(
     kind: TextJobKind,
     raw: EnqueueTextDetectionRequest | EnqueueTextTranslationRequest,
     context: TextJobContext,
+    knowledge?: {
+        binding: KnowledgeLearningSourceBinding;
+        segments: TextSourceSegment[];
+    },
 ): Promise<TextAiJob> {
     context.signal.throwIfAborted();
     if (!persistence.policy) throw new TextsAiError('generation_not_available');
@@ -81,13 +89,45 @@ export async function enqueue(
                   return {
                       kind,
                       ...parsed,
-                      segments: segmentText(
-                          parsed.sourceText,
-                          parsed.sourceLanguage,
-                          randomUUID,
-                      ),
+                      ...(knowledge
+                          ? { knowledgeSource: knowledge.binding }
+                          : {}),
+                      segments: knowledge
+                          ? knowledge.segments.map((segment) =>
+                                TextSourceSegmentSchema.parse(segment),
+                            )
+                          : segmentText(
+                                parsed.sourceText,
+                                parsed.sourceLanguage,
+                                randomUUID,
+                            ),
                   };
               })();
+
+    if (knowledge) {
+        const snapshot = knowledge.binding.sourceSnapshot;
+        if (
+            input.kind !== 'text-translation' ||
+            input.folderId !== null ||
+            input.textId ||
+            input.knowledgeSource?.actorId !== ownerId ||
+            snapshot.type !== 'bilingual-text' ||
+            input.sourceLanguage !== snapshot.language ||
+            input.segments.length !== snapshot.segments.length ||
+            input.segments.some(
+                (segment, index) =>
+                    segment.pairId !== snapshot.segments[index]?.id ||
+                    segment.text !==
+                        (index === 0
+                            ? snapshot.segments[index]?.text
+                            : `\n\n${snapshot.segments[index]?.text}`),
+            ) ||
+            input.segments.map((segment) => segment.text).join('') !==
+                input.sourceText
+        )
+            throw new TextsAiError('invalid_request');
+    }
+
     const fingerprint = createHmac(
         'sha256',
         persistence.policy.fingerprintSecret,
@@ -96,6 +136,12 @@ export async function enqueue(
         .update(
             JSON.stringify({
                 kind,
+                ...(knowledge
+                    ? {
+                          knowledgeSource: knowledge.binding,
+                          segments: knowledge.segments,
+                      }
+                    : {}),
                 request:
                     kind === 'text-detection'
                         ? EnqueueTextDetectionRequestSchema.parse(raw)
@@ -125,7 +171,7 @@ export async function enqueue(
 
             return withActionBilling(
                 tx,
-                exposeTextsJob(previous),
+                await exposeOwnedTextsJob(tx, previous),
                 previous.id,
                 previous.ownerId,
             );
@@ -213,6 +259,7 @@ export async function enqueue(
                 operationId: input.operationId,
                 requestFingerprint: fingerprint,
                 jobKind: kind,
+                externalSourceKind: knowledge ? 'knowledge-block' : null,
                 format,
                 inputPayload: input,
                 expiresAt: new Date(context.now.getTime() + 86_400_000),
@@ -247,11 +294,19 @@ export async function enqueue(
             })
             .returning();
 
+        if (knowledge)
+            await attachKnowledgeTranslationJob(
+                tx,
+                ownerId,
+                job!.id,
+                knowledge.binding,
+                input.kind === 'text-translation' ? input.targetLanguage : '',
+            );
         await reserveTextsAttempt(tx, job!, 1, context.now);
 
         return withActionBilling(
             tx,
-            exposeTextsJob(job!),
+            await exposeOwnedTextsJob(tx, job!),
             job!.id,
             job!.ownerId,
         );
@@ -270,7 +325,15 @@ export async function find(
         .where(and(eq(jobs.id, jobId), eq(jobs.ownerId, ownerId)));
 
     if (!candidate) throw new TextsAiError('generation_job_not_found');
-    await authorizeTextsJob(tx, { ownerId, folderId: candidate.folderId });
+    // Reading or stopping an existing job must survive edits to its destination
+    // Text. Knowledge-backed jobs still require their current source grant.
+    await authorizeTextsJob(tx, {
+        ownerId,
+        folderId: candidate.folderId,
+        id: candidate.id,
+        externalSourceKind: candidate.externalSourceKind,
+    });
+
     const [job] = await tx
         .select()
         .from(jobs)
@@ -293,7 +356,12 @@ export async function get(
         if (job.expiresAt <= context.now)
             throw new TextsAiError('generation_proposal_expired');
 
-        return withActionBilling(tx, exposeTextsJob(job), job.id, job.ownerId);
+        return withActionBilling(
+            tx,
+            await exposeOwnedTextsJob(tx, job),
+            job.id,
+            job.ownerId,
+        );
     });
 }
 
@@ -321,7 +389,7 @@ export async function cancel(
 
             return withActionBilling(
                 tx,
-                exposeTextsJob(updated!),
+                await exposeOwnedTextsJob(tx, updated!),
                 updated!.id,
                 updated!.ownerId,
             );
@@ -344,13 +412,18 @@ export async function cancel(
 
             return withActionBilling(
                 tx,
-                exposeTextsJob(discarded!),
+                await exposeOwnedTextsJob(tx, discarded!),
                 discarded!.id,
                 discarded!.ownerId,
             );
         }
 
-        return withActionBilling(tx, exposeTextsJob(job), job.id, job.ownerId);
+        return withActionBilling(
+            tx,
+            await exposeOwnedTextsJob(tx, job),
+            job.id,
+            job.ownerId,
+        );
     });
 }
 

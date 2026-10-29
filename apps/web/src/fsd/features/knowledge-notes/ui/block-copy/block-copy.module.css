@@ -1,0 +1,42 @@
+.form,
+.preview {
+    display: grid;
+    gap: var(--space-12);
+    min-width: 0;
+}
+
+.form :where(label) {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.form :where(select) {
+    min-block-size: var(--size-44);
+    padding: var(--space-8);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    background: var(--background-surface);
+    font: inherit;
+}
+
+.selection {
+    display: grid;
+    gap: var(--space-8);
+    max-block-size: var(--size-240);
+    overflow-y: auto;
+}
+
+.selection :where(label) {
+    display: flex;
+    align-items: baseline;
+    min-block-size: var(--size-44);
+    gap: var(--space-8);
+}
+
+.preview {
+    margin-block: var(--space-12);
+    padding: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+}

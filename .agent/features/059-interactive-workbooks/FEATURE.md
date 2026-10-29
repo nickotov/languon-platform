@@ -1,6 +1,6 @@
 # Interactive knowledge workbooks
 
-Status: In progress — specification confirmed; foundational contracts in progress
+Status: In progress — independent review remediation and final verification
 Owner: Engineering agent
 Created: 2026-10-28
 
@@ -33,6 +33,13 @@ older pending-confirmation wording is historical, not a new approval requirement
 - AC-6 — **Shared learning authority:** Signed-in shared readers can practice, request explanation/evaluation and private translations without copying. Server authorization prevents them and their AI tools from editing original content. Copying, saved practice and AI require sign-in.
 
 - AC-7 — **Independent copies:** Users copy a whole note, a whole ordered workbook or selected complete blocks. Copies preserve content/settings/answers/translations and usable uploaded media, but receive fresh exercise identities and no original chats, revisions or learner history. Ordinary text selections copy as text. Completed copies survive original changes/revocation/deletion.
+
+    Workbook copying uses explicitly saved material. An owner's copy is blocked
+    with a clear notice when any member is still a draft, rather than silently
+    omitting it. Shared copies include only currently authorized saved members;
+    they do not disclose private drafts or publish them implicitly.
+
+**AC-7 publication boundary:** Copying an owned workbook requires every member note to have been explicitly saved; an unsaved member blocks the entire operation with a clear notice. No member is silently omitted or implicitly published. Shared-workbook copies include exactly the saved material available through that share and reveal no private draft inventory.
 
 - AC-8 — **Vocabulary:** Vocabulary blocks launch existing Languon flashcard and sentence practice directly without requiring library saving. Selected prepared entries can create a dictionary or extend an existing dictionary as independent copies. Existing dictionary entries can be inserted into notes as copies. Publication is atomic and retry-safe, without unnecessary AI generation.
 
@@ -79,7 +86,9 @@ understanding. Do not drop uploaded-audio transcription because it needs onboard
 
 - Preserve existing saved-only publication and private draft/chat boundaries.
 - Extend existing credit/execution authority; do not create parallel wallets/pools.
-- Transcription provider capability/pricing and media ownership design remain pending.
+- Transcription uses a fixed reviewed capability and native duration authority.
+  Activation requires explicit account-processing and compatible billing evidence;
+  no default tariff or production provider activation is inferred.
 - Partially supersede ADR-0042 explicitly for shared AI and media; do not rewrite
   its accepted decision. Other accepted constraints remain binding.
 - AI specialist tools/subagents are an implementation option, not permission to

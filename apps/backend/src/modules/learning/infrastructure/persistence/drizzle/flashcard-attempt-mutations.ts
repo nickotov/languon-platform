@@ -1,3 +1,4 @@
+import { canUndoFlashcardAttempt } from '../../../domain/flashcard-attempt-policy';
 import type {
     FlashcardAttemptRequest,
     FlashcardUndoRequest,
@@ -208,9 +209,12 @@ export async function flashcardUndo(
                 );
 
             if (
-                target.voidedAt ||
-                latestSession?.id !== target.id ||
-                current?.latestAttemptId !== target.id
+                !canUndoFlashcardAttempt({
+                    targetId: target.id,
+                    voided: !!target.voidedAt,
+                    latestSessionId: latestSession?.id,
+                    latestEntryId: current?.latestAttemptId,
+                })
             )
                 throw new LearningConflictError('undo_conflict');
             const [prior] = await tx

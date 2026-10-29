@@ -30,6 +30,7 @@ import { DrizzleAccountingStore } from '../../modules/ai-credits/infrastructure/
 import { DrizzleAiCreditTransactionParticipant } from '../../modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { AdminMcpPriceActualizationService } from '../../modules/admin-mcp/application/admin-mcp-price-actualization-service';
 import { createProviderPriceSources } from '../../modules/ai-credits/infrastructure/pricing/provider-price-sources';
+import { loadKnowledgeTranscriptionEnvironment } from '../../config/knowledge-transcription-environment';
 import { modelPriceCatalog } from './price-actualization';
 
 const local = new URL('../../../../../.env.local', import.meta.url);
@@ -49,6 +50,7 @@ const credentials = new AdminMcpCredentialService(
     new DrizzleAdminMcpStore(database),
 );
 const providerKeys = loadTextAiProviderCredentials();
+const transcriptionCredentials = loadKnowledgeTranscriptionEnvironment();
 const fingerprint = createTextAiRouteFingerprint(providerKeys);
 const routing = new DrizzleTextAiRoutingStore(
     database,
@@ -99,8 +101,11 @@ const app = createAdminMcpServer({
         new AdminMcpPriceActualizationService({
             sources: priceSources,
             targets: async () =>
-                modelPriceCatalog(providerKeys).map((entry) => entry.target),
-            catalog: async () => modelPriceCatalog(providerKeys),
+                modelPriceCatalog(providerKeys, transcriptionCredentials).map(
+                    (entry) => entry.target,
+                ),
+            catalog: async () =>
+                modelPriceCatalog(providerKeys, transcriptionCredentials),
             prices: () => new DrizzleProviderPriceStore(database).list(),
             administration,
             audit: administrationAdapter,
@@ -110,8 +115,11 @@ const app = createAdminMcpServer({
         new AdminMcpPriceActualizationService({
             sources: priceSources,
             targets: async () =>
-                modelPriceCatalog(providerKeys).map((entry) => entry.target),
-            catalog: async () => modelPriceCatalog(providerKeys),
+                modelPriceCatalog(providerKeys, transcriptionCredentials).map(
+                    (entry) => entry.target,
+                ),
+            catalog: async () =>
+                modelPriceCatalog(providerKeys, transcriptionCredentials),
             prices: () => new DrizzleProviderPriceStore(database).list(),
             administration,
             audit: administrationAdapter,

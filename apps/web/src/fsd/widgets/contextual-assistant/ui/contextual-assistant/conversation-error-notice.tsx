@@ -32,6 +32,9 @@ export function ConversationErrorNotice({
             {actionLabel}
         </Button>
     );
+    if (failureCode === 'generation_failed') {
+        message = copy.generationFailed;
+    }
     if (failureCode === 'model_unavailable') {
         message = copy.modelUnavailable;
     }

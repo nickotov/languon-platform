@@ -1,4 +1,5 @@
 export const knowledgeEn = {
+    'knowledge.practiceSaved': 'Practice saved note',
     'knowledge.proposalPlainText': 'Insert as plain text',
     'knowledge.proposalInvalid':
         'The reply could not be inserted. Check its formatting and document limits; your document has not changed.',
@@ -242,6 +243,7 @@ export const knowledgeEn = {
 } as const;
 
 export const knowledgeRu = {
+    'knowledge.practiceSaved': 'Практика по сохранённой заметке',
     'knowledge.proposalPlainText': 'Вставить как обычный текст',
     'knowledge.proposalInvalid':
         'Не удалось вставить ответ. Проверьте форматирование и ограничения документа; документ не изменён.',
@@ -482,6 +484,7 @@ export const knowledgeRu = {
 } as const;
 
 export const knowledgeEs = {
+    'knowledge.practiceSaved': 'Practicar la nota guardada',
     'knowledge.proposalPlainText': 'Insertar como texto sin formato',
     'knowledge.proposalInvalid':
         'No se pudo insertar la respuesta. Revisa el formato y los límites del documento; el documento no ha cambiado.',
@@ -727,6 +730,7 @@ export const knowledgeEs = {
 } as const;
 
 export const knowledgeFr = {
+    'knowledge.practiceSaved': 'Pratiquer la note enregistrée',
     'knowledge.proposalPlainText': 'Insérer en texte brut',
     'knowledge.proposalInvalid':
         'La réponse n’a pas pu être insérée. Vérifiez le format et les limites du document ; le document n’a pas changé.',

@@ -48,6 +48,8 @@ export class DrizzleActionAccountingParticipant {
         budgetMilli: bigint;
         holdMaximumMilli?: bigint;
         outputLimit?: number;
+        usageMeter?: 'text-tokens' | 'audio-duration';
+        audioInputLimitMilliseconds?: number;
         operatorMaximumMicros?: bigint;
         operatorSettings?: OperatorBudgetSettings;
         at: Date;
@@ -55,7 +57,8 @@ export class DrizzleActionAccountingParticipant {
     }) {
         if (
             !Number.isSafeInteger(input.outputLimit ?? 10000) ||
-            (input.outputLimit ?? 10000) < 1 ||
+            (input.outputLimit ?? 10000) <
+                (input.usageMeter === 'audio-duration' ? 0 : 1) ||
             (input.outputLimit ?? 10000) > 10000
         )
             throw new Error('Invalid action output allowance.');
@@ -70,6 +73,9 @@ export class DrizzleActionAccountingParticipant {
             if (
                 previous.ownerId !== input.ownerId ||
                 previous.capability !== input.capability ||
+                previous.usageMeter !== (input.usageMeter ?? 'text-tokens') ||
+                previous.audioInputLimitMilliseconds !==
+                    (input.audioInputLimitMilliseconds ?? null) ||
                 previous.budgetMilli !== input.budgetMilli ||
                 previous.outputLimit !== (input.outputLimit ?? 10000) ||
                 previous.funding !== input.funding ||
@@ -135,6 +141,7 @@ export class DrizzleActionAccountingParticipant {
                     : available
                 : 0n;
         const zeroTariff = [
+            input.tariff.audioCreditsPerMinute ?? '0',
             input.tariff.inputCreditsPerMillionTokens,
             input.tariff.outputCreditsPerMillionTokens,
             input.tariff.cachedInputCreditsPerMillionTokens ??
@@ -149,6 +156,9 @@ export class DrizzleActionAccountingParticipant {
                 id: input.id,
                 ownerId: input.ownerId,
                 capability: input.capability,
+                usageMeter: input.usageMeter ?? 'text-tokens',
+                audioInputLimitMilliseconds:
+                    input.audioInputLimitMilliseconds ?? null,
                 funding: input.funding,
                 policyVersion: input.policyVersion,
                 tariff: input.tariff,
@@ -279,10 +289,14 @@ export class DrizzleActionAccountingParticipant {
             .from(attempts)
             .where(eq(attempts.id, input.callId));
 
-        if (!attempt)
-            throw new Error('Provider dispatch authorization is missing.');
+        if (
+            !attempt ||
+            attempt.usageMeter !== 'text-tokens' ||
+            'usageMeter' in attempt.budget
+        )
+            throw new Error('Text provider dispatch authorization is missing.');
 
-        return attempt;
+        return { ...attempt, budget: attempt.budget };
     }
 
     async recordAttempt(input: {

@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Interactive workbooks](./interactive-workbooks.md) — typed learning blocks, ordered saved sharing, private practice and independent copies (verification in progress).
+
 - [Native provider pricing coverage and onboarding](./model-price-coverage-and-onboarding.md) —
   all-catalog native price verification, scoped publication and truthful readiness.
 
@@ -81,8 +83,9 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Admin User Management](./admin-user-management.md) — owner authentication,
   user inspection, safe disable/restore operations, audit history, and guarded
   membership commands.
-- [Admin-owned text AI routing](./admin-text-ai-routing.md) — reviewed per-flow
-  routes, explicit operator checks, flow tariffs and emergency disabling.
+- [Admin AI routing and audio transcription](./admin-text-ai-routing.md) — reviewed per-flow
+  routes, explicit operator checks, flow tariffs, emergency disabling and reviewed
+  audio transcription configuration.
 - [AI Provider and Model Management](./ai-provider-management.md) — curated
   server-owned routing, immutable job snapshots, credentials, and admin audit.
 - [AI accounting and action budgets](./ai-accounting.md) — exact learner budgets, explicit affordable-output consent, canonical billing states and owner financial records.

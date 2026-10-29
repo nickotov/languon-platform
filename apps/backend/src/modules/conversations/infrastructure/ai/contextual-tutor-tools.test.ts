@@ -22,14 +22,17 @@ const proposal = {
 };
 
 describe('legacy Knowledge proposal authority', () => {
-    const tool = createContextualTutorTools({
+    const tools = createContextualTutorTools({
         signal: new AbortController().signal,
         readContext: async () => ({ material: [], total: 0 }),
         onDraft: async () => ({ id: 'draft-1' }),
-    }).propose_knowledge_note;
+    });
+    if (!('propose_knowledge_note' in tools))
+        throw new Error('Owner conversations must expose prose proposals.');
+    const tool = tools.propose_knowledge_note;
 
     async function accepts(value: unknown) {
-        if (!tool.inputSchema)
+        if (!tool?.inputSchema)
             throw new Error('Proposal tool must validate input.');
         const result = await tool.inputSchema['~standard'].validate(value);
         return !result.issues;
@@ -63,5 +66,20 @@ describe('legacy Knowledge proposal authority', () => {
                 },
             }),
         ).toBe(false);
+    });
+    it('omits the authoring tool for a read-only shared source', () => {
+        const tools = createContextualTutorTools({
+            signal: new AbortController().signal,
+            readOnlySource: true,
+            canProposeBlocks: true,
+            onBlockProposal: async () => {
+                throw new Error('Must not execute');
+            },
+            readContext: async () => ({ material: [], total: 0 }),
+            onDraft: async () => {
+                throw new Error('Must not execute');
+            },
+        });
+        expect(Object.keys(tools)).toEqual(['read_source_context']);
     });
 });

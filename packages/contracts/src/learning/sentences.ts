@@ -158,7 +158,11 @@ export const SentenceHintSchema = z
 export const SentenceExerciseSchema = z
     .object({
         id,
-        dictionaryId: id,
+        dictionaryId: id.nullable(),
+        knowledgeSource: z
+            .object({ noteId: id, blockId: id })
+            .strict()
+            .optional(),
         direction: SentenceDirectionSchema,
         sourceLanguage: DictionaryLanguageTagSchema,
         targetLanguage: DictionaryLanguageTagSchema,
@@ -179,6 +183,14 @@ export const SentenceExerciseSchema = z
     })
     .strict()
     .superRefine((exercise, context) => {
+        if (
+            (exercise.dictionaryId === null) !==
+            (exercise.knowledgeSource !== undefined)
+        )
+            context.addIssue({
+                code: 'custom',
+                message: 'Exactly one sentence vocabulary source is required.',
+            });
         if (exercise.generationPolicyVersion === 1) {
             if (
                 exercise.hints.length > SENTENCE_LIMITS.requiredTargets ||

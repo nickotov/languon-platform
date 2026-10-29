@@ -1,3 +1,7 @@
+import {
+    publishPrivateKnowledgeTranslation,
+    renewPrivateKnowledgeTranslation,
+} from '../../../../knowledge/infrastructure/persistence/drizzle/private-translation-persistence';
 import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { lockJob } from './texts-job-admission';
@@ -61,6 +65,9 @@ export async function heartbeat(
                 leaseDeadline: new Date(context.now.getTime() + leaseMs),
             })
             .where(eq(jobs.id, lease.jobId));
+
+        if (locked.job.externalSourceKind === 'knowledge-block')
+            await renewPrivateKnowledgeTranslation(tx, lease);
 
         return { owned: true, cancellationRequested: false };
     });
@@ -190,18 +197,28 @@ export async function complete(
 
         await settleTextsAttempt(tx, job, context.now, usage, 'success');
         await recordTextAiCircuitSuccess(tx, scope(job, context.now));
-        await tx
-            .update(jobs)
-            .set({
-                ...clearLease,
-                executionState: 'completed',
-                resultPayload: validated,
-                inputPayload: null,
-                completedAt: context.now,
-                updatedAt: context.now,
-                failureCategory: null,
-            })
-            .where(eq(jobs.id, job.id));
+        if (job.externalSourceKind === 'knowledge-block') {
+            await publishPrivateKnowledgeTranslation(
+                tx,
+                job.id,
+                job.ownerId,
+                TextTranslationProposalSchema.parse(validated),
+                lease,
+            );
+        } else {
+            await tx
+                .update(jobs)
+                .set({
+                    ...clearLease,
+                    executionState: 'completed',
+                    resultPayload: validated,
+                    inputPayload: null,
+                    completedAt: context.now,
+                    updatedAt: context.now,
+                    failureCategory: null,
+                })
+                .where(eq(jobs.id, job.id));
+        }
 
         return true;
     });

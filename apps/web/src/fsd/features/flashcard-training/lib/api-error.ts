@@ -45,6 +45,7 @@ export function isAccessLoss(error: ApiError): boolean {
     return [
         'authentication_required',
         'dictionary_not_found',
+        'source_not_found',
         'shared_dictionary_not_found',
     ].includes(error.code);
 }

@@ -756,3 +756,40 @@ it('shares a bounded slot with portrait interviews and releases their worker on 
     await runtime.shutdown('SIGTERM');
     expect(release).toHaveBeenCalledTimes(2);
 });
+
+it('runs transcription in the existing slot rotation and releases its lease recovery on shutdown', async () => {
+    const order: string[] = [];
+    const release = vi.fn(async () => undefined);
+    const run = (kind: string) => async () => {
+        order.push(kind);
+        if (order.length === 4) void runtime.shutdown('SIGTERM');
+        return true;
+    };
+    const runtime = new DictionaryWorkerRuntime({
+        concurrency: 1,
+        drainTimeoutMs: 100,
+        pollIntervalMs: 1,
+        readinessTimeoutMs: 100,
+        supportedFormats: ['knowledge-transcription:v1'],
+        workerId: 'transcription-worker',
+        logger: { info: vi.fn(), error: vi.fn() },
+        service: {
+            readiness: async () => undefined,
+            processNext: run('dictionary'),
+            releaseWorkerLeases: release,
+        },
+        transcriptionService: {
+            processNext: run('transcription'),
+            releaseWorkerLeases: release,
+        },
+    });
+    await runtime.run();
+    expect(order).toEqual([
+        'dictionary',
+        'transcription',
+        'dictionary',
+        'transcription',
+    ]);
+    await runtime.shutdown('SIGTERM');
+    expect(release).toHaveBeenCalledTimes(2);
+});

@@ -1,6 +1,7 @@
 import type { JSONContent } from '@tiptap/core';
 import {
     KnowledgeBodySchema,
+    LearningBlockSchema,
     type KnowledgeBody,
     type KnowledgeNode,
 } from '@languon/contracts';
@@ -8,6 +9,7 @@ import {
 /** Tiptap presentation defaults are not part of the stored content contract. */
 export function normalizeEditorDocument(document: unknown): KnowledgeBody {
     let count = 0;
+    let hasBlocks = false;
     function node(value: unknown, depth = 0): unknown {
         count += 1;
         if (depth > 12 || count > 5_000)
@@ -19,6 +21,21 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
             input.attrs && typeof input.attrs === 'object'
                 ? (input.attrs as Record<string, unknown>)
                 : {};
+        if (input.type === 'learningBlock') {
+            hasBlocks = true;
+            if (
+                Object.keys(input).some(
+                    (key) => !['type', 'attrs'].includes(key),
+                )
+            )
+                throw new Error('Atomic blocks cannot contain inline content');
+            if (Object.keys(attrs).some((key) => key !== 'block'))
+                throw new Error('Unsupported block attributes');
+            return {
+                type: 'learningBlock',
+                attrs: { block: LearningBlockSchema.parse(attrs.block) },
+            };
+        }
         let names: string[] = [];
         if (input.type === 'heading') names = ['level'];
         if (input.type === 'orderedList') names = ['start'];
@@ -58,9 +75,10 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
                 : {}),
         };
     }
+    const normalized = node(document);
     return KnowledgeBodySchema.parse({
-        schemaVersion: 1,
-        document: node(document),
+        schemaVersion: hasBlocks ? 2 : 1,
+        document: normalized,
     });
 }
 

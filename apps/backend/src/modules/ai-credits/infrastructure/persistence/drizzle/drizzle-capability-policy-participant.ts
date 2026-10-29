@@ -303,6 +303,7 @@ export function capabilityForJob(
             return 'portrait-interview';
         case 'conversation-turn':
             return 'conversation';
+        case 'knowledge-transcription':
         case 'speech-generation':
             return 'speech';
         case 'dictionary-generation':

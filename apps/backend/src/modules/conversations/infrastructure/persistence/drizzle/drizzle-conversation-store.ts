@@ -1,10 +1,16 @@
 import {
+    conversationProposeBlocks,
+    conversationListBlockProposals,
+    conversationApplyBlockProposal,
+} from './conversation-block-proposals';
+import {
     type ChatPreferences,
     type ConversationEvent,
     type ConversationSource,
     type ConversationToolCall,
     type CreateConversationRequest,
     type KnowledgeNoteContent,
+    type LearningBlockProposalInput,
     type PublishKnowledgeDraftRequest,
     type SubmitConversationTurnRequest,
     type UpdateConversationRequest,
@@ -70,6 +76,36 @@ export class DrizzleConversationStore implements ConversationStore {
             dependencies,
             now: dependencies.now ?? (() => new Date()),
         };
+    }
+
+    proposeBlocks(
+        turn: ClaimedConversationTurn,
+        input: LearningBlockProposalInput,
+    ) {
+        return conversationProposeBlocks(this.persistence, turn, input);
+    }
+
+    listBlockProposals(access: ConversationAccess, conversationId: string) {
+        return conversationListBlockProposals(
+            this.persistence,
+            access,
+            conversationId,
+        );
+    }
+
+    applyBlockProposal(
+        access: ConversationAccess,
+        conversationId: string,
+        proposalId: string,
+        expectedBranchVersion: number,
+    ) {
+        return conversationApplyBlockProposal(
+            this.persistence,
+            access,
+            conversationId,
+            proposalId,
+            expectedBranchVersion,
+        );
     }
 
     async list(access: ConversationAccess, source: ConversationSource) {

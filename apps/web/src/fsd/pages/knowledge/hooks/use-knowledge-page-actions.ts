@@ -238,7 +238,11 @@ export function useKnowledgePageActions(noteId: string) {
     }
 
     async function beforeSend() {
-        await state.flush();
+        const flushed = await state.flush();
+        return { id: flushed.branchId, version: flushed.version };
+    }
+    function setProposalApplying(applying: boolean) {
+        setBusy(applying ? 'resolve' : null);
     }
 
     return {
@@ -277,5 +281,6 @@ export function useKnowledgePageActions(noteId: string) {
         retry,
         refreshAfterSend,
         beforeSend,
+        setProposalApplying,
     };
 }

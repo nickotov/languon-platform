@@ -119,17 +119,32 @@ export function useAssistantPanel(
     const lastPassage = useRef<string | null>(null);
     const lastRequest = useRef<string | null>(null);
     const workspaceRequest = props.workspace?.request;
+    const composerRequest = props.request ?? workspaceRequest;
     useEffect(() => {
-        if (!workspaceRequest || workspaceRequest.id === lastRequest.current)
+        if (!composerRequest || composerRequest.id === lastRequest.current)
             return;
-        lastRequest.current = workspaceRequest.id;
-        if (workspaceRequest.prompt !== undefined)
-            chat.setQuestion(workspaceRequest.prompt);
+        lastRequest.current = composerRequest.id;
+        if (composerRequest.prompt !== undefined)
+            chat.setQuestion(composerRequest.prompt);
         setAttachmentError((current) =>
             current === workspaceCopy(locale).selectionChanged ? null : current,
         );
         setHistory(false);
-    }, [workspaceRequest, chat.setQuestion, locale]);
+        setEditingDraft(null);
+        setPicker(false);
+    }, [composerRequest, chat.setQuestion, locale]);
+    const lastGenericPassage = useRef<string | null>(null);
+    useEffect(() => {
+        const request = props.request;
+        if (!request || lastGenericPassage.current === request.id) return;
+        lastGenericPassage.current = request.id;
+        if (request.passage)
+            attach({
+                id: request.id,
+                label: copy.selection,
+                content: request.passage,
+            });
+    }, [props.request, copy.selection, attach]);
     const [unread, setUnread] = useState(false);
     const active = Boolean(chat.active);
     const wasActive = useRef(active);
@@ -275,8 +290,17 @@ export function useAssistantPanel(
             setPreparing(true);
             void (async () => {
                 let editorTarget;
+                let workingBranch;
                 try {
-                    await props.workspace?.beforeSend?.();
+                    workingBranch = await props.workspace?.beforeSend?.();
+                    if (
+                        workingBranch &&
+                        props.workspace?.getSnapshot(targetId ?? null)
+                            .content !== snapshot.content
+                    )
+                        throw new Error(
+                            'The document changed while preparing this request. Send it again using the current document.',
+                        );
                     const documentHash = await hashEditorContent(
                         snapshot.content,
                     );
@@ -298,6 +322,7 @@ export function useAssistantPanel(
                         content: question,
                         copiedAttachments,
                         editorContext: {
+                            ...(workingBranch ? { workingBranch } : {}),
                             content: snapshot.content,
                             selectedText: selectedPassage?.content,
                             editorTarget,

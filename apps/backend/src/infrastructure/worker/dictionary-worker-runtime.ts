@@ -57,6 +57,10 @@ export interface DictionaryWorkerRuntimeOptions {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
     };
+    transcriptionService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
     supportedFormats: readonly string[];
     workerId: string;
     logger?: DictionaryWorkerLogger;
@@ -245,6 +249,7 @@ export class DictionaryWorkerRuntime {
                         this.#options.selectionService,
                         this.#options.conversationService,
                         this.#options.portraitInterviewService,
+                        this.#options.transcriptionService,
                     ]
                         .filter((service) => service !== undefined)
                         .map((service) =>
@@ -342,6 +347,10 @@ export class DictionaryWorkerRuntime {
                           ]
                         : []),
                 ];
+                if (this.#options.transcriptionService)
+                    services.push(() =>
+                        this.#options.transcriptionService!.processNext(signal),
+                    );
                 const first = turn++ % services.length;
                 let processed = false;
                 // Each slot rotates the first domain and tries idle fallbacks sequentially.

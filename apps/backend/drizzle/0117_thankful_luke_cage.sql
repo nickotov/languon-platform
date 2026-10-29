@@ -1,0 +1,2 @@
+ALTER TABLE "knowledge_notes" DROP CONSTRAINT "knowledge_notes_body_version";--> statement-breakpoint
+ALTER TABLE "knowledge_notes" ADD CONSTRAINT "knowledge_notes_body_version" CHECK ("knowledge_notes"."body"->>'schemaVersion' in ('1','2'));

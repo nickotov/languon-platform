@@ -1,3 +1,4 @@
+import { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import type { AccessTokenSigner } from '../../authentication/application/ports/access-token';
 import type { AuthenticationService } from '../../authentication/application/authentication-service';
 import type { AuthHttpPolicy } from '../../authentication/interface/http/auth-http-policy';
@@ -54,6 +55,11 @@ export function createConversationsComposition(
         verifyDictionaryShare: (key, digest) =>
             dictionary.verifyShare(key, digest),
         verifyTextShare: (key, digest) => text.verifyShare(key, digest),
+        verifyKnowledgeShare: (key, digest) =>
+            new KnowledgeShareCrypto(dependencies.dictionaryHmacSecret).verify(
+                key,
+                digest,
+            ),
         readNote: (tx, ownerId, id) =>
             new DrizzleKnowledgeTransactionParticipant(tx).getForSource(
                 ownerId,

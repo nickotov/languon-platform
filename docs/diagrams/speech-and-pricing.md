@@ -26,6 +26,11 @@ source_paths:
     - apps/backend/src/modules/speech/infrastructure/speech-accounting.ts
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql
+    - apps/backend/src/modules/speech/infrastructure/knowledge-speech-lifecycle.ts
+    - apps/backend/src/modules/knowledge/application/transcription-job-service.ts
+    - apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts
+    - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
 source_fingerprint: sha256:4989eb6a1160490c30d0d6feecab5146c6605a99ff20615019fc89bfe930c9c1
 reviewed: 2026-10-22
 ---
@@ -69,6 +74,11 @@ release hold permanently"]
     Admin["Authorized admin confirmed erasure"] --> Delete["Revoke playback immediately
 durable deletion of every object version"]
     Success --> Delete
+    NoteText["Saved Knowledge block/source text"] --> Narration["Private speech preview via existing engine"]
+    Narration --> AudioGrant["Explicit copy to note-owned audio asset"]
+    Upload["Bounded uploaded audio asset / verified duration"] --> STTGate{"Transcription controls and confirmation?"}
+    STTGate -->|"Yes"| STTJob["Duration-metered fenced transcription job"] --> Transcript["Preview transcript; author applies to working note"]
+    STTGate -->|"No"| STTBlocked["No provider dispatch"]
 ```
 
 Recording reuse precedes today's default model selection. The first new paid
@@ -104,9 +114,20 @@ obsolete assets/jobs/bindings tables. The physical `dictionary_audio_blobs` byte
 table remains owned by speech for the live PostgreSQL test-storage adapter; its
 name does not make the stored references obsolete. No remote-object deletion is
 implied. Current retained key/provider/storage configuration protects pending
-tasks and reusable recordings. The worker coordinator now alternates dictionary
-generation with shared speech only.
-No arbitrary-text synthesis API is represented.
+tasks and reusable recordings.
+
+Knowledge narration supplies source-bound private previews through the existing speech
+engine, then explicitly copies accepted bytes into a note-owned audio grant. It is not a
+global arbitrary-text synthesis endpoint. Uploaded Knowledge audio uses a separate
+transcription path: verified source duration is a native meter, distinct from token or
+character accounting. Dispatch is fail-closed until code-owned processing controls,
+reviewed pricing/tariff, bounded confirmation, a live worker observation and current
+source/lease authority all exist. A usable transcript can have unknown provider expense;
+late/cancelled work cannot publish it. Remote video playback is outside this processing
+path and does not imply transcript acquisition.
+
+The worker coordinator now alternates dictionary generation with shared speech and, when
+enabled, transcription.
 
 ## Sources
 
@@ -137,3 +158,8 @@ No arbitrary-text synthesis API is represented.
 - [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts)
 
 - [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql)
+- [apps/backend/src/modules/speech/infrastructure/knowledge-speech-lifecycle.ts](../../apps/backend/src/modules/speech/infrastructure/knowledge-speech-lifecycle.ts)
+- [apps/backend/src/modules/knowledge/application/transcription-job-service.ts](../../apps/backend/src/modules/knowledge/application/transcription-job-service.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts)
+- [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)

@@ -1,0 +1,137 @@
+.root,
+.form,
+.group,
+.row {
+    display: grid;
+    gap: var(--space-12);
+    min-width: 0;
+}
+
+.root {
+    margin-block-start: var(--space-16);
+    padding-block: var(--space-8);
+    font-size: var(--size-14);
+    line-height: 1.5;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    align-items: center;
+}
+
+.group,
+.row,
+.preview {
+    padding: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+}
+
+.field {
+    display: grid;
+    gap: var(--space-8);
+    color: var(--text-primary);
+}
+
+.block {
+    padding: var(--space-8);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--background-surface);
+}
+
+.blockTitle {
+    overflow-wrap: anywhere;
+    flex: 1;
+}
+
+.preview {
+    margin-top: var(--space-16);
+}
+
+.root :where(select),
+.field :where(select) {
+    min-block-size: var(--size-44);
+    max-inline-size: 100%;
+    padding: var(--space-8);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    background: var(--background-surface);
+    font: inherit;
+}
+
+.passages {
+    display: grid;
+    gap: var(--space-8);
+    max-block-size: var(--size-240);
+    overflow-y: auto;
+    border: 0;
+}
+
+.passage {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+    min-block-size: var(--size-44);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.insertTrigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--size-36);
+    padding-inline: var(--space-10);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    color: var(--text-secondary);
+    background: var(--background-surface);
+    font-size: var(--size-14);
+    font-weight: 500;
+}
+
+.insertTrigger:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--background-subtle);
+    border-color: var(--border-strong);
+}
+
+.insertTrigger:focus-visible,
+.management summary:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.management {
+    color: var(--text-secondary);
+}
+
+.management summary {
+    width: fit-content;
+    min-height: var(--size-36);
+    padding-block: var(--space-8);
+    cursor: pointer;
+}
+
+.count {
+    margin-inline-start: var(--space-6);
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.blockList {
+    display: grid;
+    gap: var(--space-8);
+    margin-block-start: var(--space-4);
+}
+
+@media (max-width: 767px) {
+    .insertTrigger,
+    .management summary {
+        min-height: var(--size-44);
+    }
+}

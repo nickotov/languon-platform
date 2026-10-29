@@ -30,7 +30,6 @@
     color: var(--text-secondary);
     margin: 0 0 var(--space-8);
 }
-.actions,
 .saveActions,
 .revisions {
     display: flex;
@@ -203,10 +202,6 @@
     overscroll-behavior: contain;
 }
 
-.notices {
-    padding: var(--space-12) var(--space-24) 0;
-}
-
 .statusFooter {
     display: flex;
     align-items: center;
@@ -231,9 +226,6 @@
     }
     .statusFooter {
         display: none;
-    }
-    .notices {
-        padding-inline: var(--space-16);
     }
 }
 

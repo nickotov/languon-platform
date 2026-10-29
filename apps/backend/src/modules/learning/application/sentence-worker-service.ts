@@ -111,7 +111,9 @@ export class SentenceWorkerService {
                 input: job.input,
                 execution: job.execution,
                 providerAttempt: {
-                    ...job.lease,
+                    jobId: job.lease.jobId,
+                    workerId: job.lease.workerId,
+                    attempt: job.lease.attempt,
                     fencingToken: String(job.lease.fencingToken),
                 },
                 budget: job.budget,

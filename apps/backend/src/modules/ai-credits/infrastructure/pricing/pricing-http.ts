@@ -5,6 +5,7 @@ const origins = new Set([
     'https://api.evolink.ai',
     'https://kie.ai',
     'https://api.kie.ai',
+    'https://developers.openai.com',
 ]);
 
 /** Fixed official URLs are constructed by adapters, never accepted from an MCP argument. */

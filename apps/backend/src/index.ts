@@ -1,3 +1,35 @@
+import { createKnowledgeSentenceComposition } from './modules/knowledge/infrastructure/knowledge-sentence-composition';
+import { eraseKnowledgeSentenceJobs } from './modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-cleanup';
+import { eraseKnowledgeTranslationJobs } from './modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle';
+import { KnowledgePrivateTranslationService } from './modules/knowledge/application/private-translation-service';
+import { DrizzleKnowledgePrivateTranslationStore } from './modules/knowledge/infrastructure/persistence/drizzle/private-translation-store';
+import { createKnowledgePrivateTranslationRoutes } from './modules/knowledge/interface/http/private-translation-routes';
+import { transcriptionCredentialFingerprint } from './modules/knowledge/infrastructure/transcription-credential-fingerprint';
+import { createKnowledgeTranscriptionService } from './modules/knowledge/infrastructure/transcription-job-composition';
+import { createKnowledgeTranscriptionJobRoutes } from './modules/knowledge/interface/http/transcription-job-routes';
+import { TranscriptionAdminService } from './modules/knowledge/application/transcription-admin-service';
+import { DrizzleTranscriptionAdminStore } from './modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store';
+import { TranscriptionAdminProof } from './modules/knowledge/infrastructure/transcription-admin-proof';
+import { createTranscriptionAdminRoutes } from './modules/knowledge/interface/http/transcription-admin-routes';
+import { knowledgeTranscriptionExecutionReady } from './modules/knowledge/infrastructure/transcription-worker-readiness';
+import { WorkbookService } from './modules/knowledge/application/workbook-service';
+import { VocabularyPracticeService } from './modules/knowledge/application/vocabulary-practice-service';
+import { DrizzleVocabularyPracticeStore } from './modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store';
+import { createVocabularyPracticeRoutes } from './modules/knowledge/interface/http/vocabulary-practice-routes';
+import { KnowledgeBlockCopyService } from './modules/knowledge/application/block-copy-service';
+import { DrizzleKnowledgeBlockCopyStore } from './modules/knowledge/infrastructure/persistence/drizzle/block-copy-store';
+import { createKnowledgeBlockCopyRoutes } from './modules/knowledge/interface/http/block-copy.routes';
+import { createKnowledgeLibraryCopyComposition } from './modules/knowledge/infrastructure/library-copy-composition';
+import { KnowledgeMediaService } from './modules/knowledge/application/media-service';
+import { DrizzleKnowledgeMediaStore } from './modules/knowledge/infrastructure/persistence/drizzle/media-store';
+import { verifyKnowledgeAudio } from './modules/knowledge/infrastructure/media-audio-validation';
+import { createKnowledgeMediaRoutes } from './modules/knowledge/interface/http/media.routes';
+import { LearnerService } from './modules/knowledge/application/learner-service';
+import { DrizzleLearnerStore } from './modules/knowledge/infrastructure/persistence/drizzle/learner-store';
+import { createLearnerRoutes } from './modules/knowledge/interface/http/learner-routes';
+import { DrizzleWorkbookStore } from './modules/knowledge/infrastructure/persistence/drizzle/workbook-store';
+import { KnowledgeShareCrypto } from './modules/knowledge/infrastructure/knowledge-share-crypto';
+import { createWorkbookRoutes } from './modules/knowledge/interface/http/workbook.routes';
 import { createAdminMcpTokenRoutes } from './modules/admin-mcp/interface/http/admin-mcp-token.routes';
 import { AdminMcpCredentialService } from './modules/admin-mcp/application/admin-mcp-credential-service';
 import { DrizzleAdminMcpStore } from './modules/admin-mcp/infrastructure/persistence/drizzle/drizzle-admin-mcp-store';
@@ -318,6 +350,8 @@ const knowledge = createKnowledgeService({
                     'Stop the active conversation before deleting this note.',
                 );
             await eraseConversationSource(tx, 'knowledge', noteId, now);
+            await eraseKnowledgeTranslationJobs(tx, noteId, now);
+            await eraseKnowledgeSentenceJobs(tx, noteId, now);
         },
     },
 });
@@ -358,6 +392,135 @@ const app = createApp({
     }),
     navigation,
     conversations: conversations.routes,
+    workbooks: createWorkbookRoutes({
+        service: new WorkbookService({
+            store: new DrizzleWorkbookStore(
+                authentication.productDependencies.database,
+                new KnowledgeShareCrypto(environment.DICTIONARY_HMAC_SECRET),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgePrivateTranslations: createKnowledgePrivateTranslationRoutes({
+        service: new KnowledgePrivateTranslationService({
+            store: new DrizzleKnowledgePrivateTranslationStore({
+                database: authentication.productDependencies.database,
+                crypto: new KnowledgeShareCrypto(
+                    environment.DICTIONARY_HMAC_SECRET,
+                ),
+                jobs: textsAi.store,
+                enabled: textsEnabled,
+            }),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+            burstLimiter: generationBurstLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgeSentences: createKnowledgeSentenceComposition({
+        database: authentication.productDependencies.database,
+        secret: environment.DICTIONARY_HMAC_SECRET,
+        enabled: environment.LEARNING_SENTENCES_ENABLED,
+        generationFormat: environment.LEARNING_SENTENCE_GENERATION_FORMAT,
+        authenticate: authenticateTextActor,
+        rateLimiter: authentication.productDependencies.rateLimiter,
+        policy: authentication.options.policy,
+    }).routes,
+    knowledgeVocabulary: createVocabularyPracticeRoutes({
+        service: new VocabularyPracticeService({
+            store: new DrizzleVocabularyPracticeStore(
+                authentication.productDependencies.database,
+                new KnowledgeShareCrypto(environment.DICTIONARY_HMAC_SECRET),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+            enabled: environment.LEARNING_FLASHCARDS_ENABLED,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgeBlockCopy: createKnowledgeBlockCopyRoutes({
+        service: new KnowledgeBlockCopyService({
+            store: new DrizzleKnowledgeBlockCopyStore(
+                authentication.productDependencies.database,
+                new KnowledgeShareCrypto(environment.DICTIONARY_HMAC_SECRET),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgeLibrary: createKnowledgeLibraryCopyComposition({
+        ...authentication.productDependencies,
+        dictionaryHmacSecret: environment.DICTIONARY_HMAC_SECRET,
+        shareSecret: environment.DICTIONARY_HMAC_SECRET,
+        authenticate: authenticateTextActor,
+        policy: authentication.options.policy,
+    }).routes,
+    knowledgeMedia: createKnowledgeMediaRoutes({
+        service: new KnowledgeMediaService({
+            store: new DrizzleKnowledgeMediaStore(
+                authentication.productDependencies.database,
+                new KnowledgeShareCrypto(environment.DICTIONARY_HMAC_SECRET),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+            verify: verifyKnowledgeAudio,
+            readSpeech: (actorId, playbackId, signal) =>
+                speech.service.content(actorId, playbackId, signal),
+        }),
+        policy: authentication.options.policy,
+    }),
+    workbookLearning: createLearnerRoutes({
+        service: new LearnerService({
+            store: new DrizzleLearnerStore(
+                authentication.productDependencies.database,
+                new KnowledgeShareCrypto(environment.DICTIONARY_HMAC_SECRET),
+            ),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    knowledgeTranscription: createKnowledgeTranscriptionJobRoutes({
+        service: createKnowledgeTranscriptionService({
+            database: authentication.productDependencies.database,
+            ...(environment.OPENAI_API_KEY
+                ? { apiKey: environment.OPENAI_API_KEY }
+                : {}),
+            authenticate: authenticateTextActor,
+            rateLimiter: authentication.productDependencies.rateLimiter,
+        }),
+        policy: authentication.options.policy,
+    }),
+    transcriptionAdministration: createTranscriptionAdminRoutes({
+        administration: administration.administration,
+        policy: authentication.options.policy,
+        service: new TranscriptionAdminService(
+            new DrizzleTranscriptionAdminStore(
+                authentication.productDependencies.database,
+                async () => ({
+                    credentialsConfigured: !!environment.OPENAI_API_KEY,
+                    credentialFingerprint: transcriptionCredentialFingerprint(
+                        environment.OPENAI_API_KEY,
+                    ),
+                    executionReady:
+                        !!environment.OPENAI_API_KEY &&
+                        (await knowledgeTranscriptionExecutionReady(
+                            authentication.productDependencies.database,
+                        )),
+                }),
+            ),
+            new TranscriptionAdminProof(
+                environment.DICTIONARY_HMAC_SECRET,
+                () =>
+                    transcriptionCredentialFingerprint(
+                        environment.OPENAI_API_KEY,
+                    ),
+            ),
+        ),
+    }),
     knowledge: createKnowledgeRoutes({
         service: knowledge,
         policy: authentication.options.policy,

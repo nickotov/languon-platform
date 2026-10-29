@@ -1,4 +1,4 @@
-// @user-flow-revision admin-text-ai-routing sha256:86900ede05e932e9
+// @user-flow-revision admin-text-ai-routing sha256:371ea751a0458c2d
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve } from 'node:path';
@@ -17,6 +17,8 @@ import {
     adminOrigin,
 } from './support/setup-runtime';
 
+let preparedOwnerEmail: string | null = null;
+
 // @user-flow admin-text-ai-routing/admin-checks-and-disables-reviewed-route
 test('admin inspects route evidence and explicitly approves synthetic check costs', async ({
     page,
@@ -30,6 +32,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     const email = `routing-owner-${Date.now()}-${process.pid}@example.test`;
     const ownerId = await createUser(request, email);
     await bootstrapOwner(email);
+    preparedOwnerEmail = email;
     const errors: string[] = [];
     let probePosts = 0;
     page.on('pageerror', (error) => errors.push(error.message));
@@ -292,4 +295,207 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     ).toBeVisible();
     await expect(recovery).not.toBeVisible();
     expect(errors).toEqual([]);
+});
+
+// @user-flow admin-text-ai-routing/owner-reviews-disabled-transcription-configuration
+test('owner reviews disabled audio transcription configuration without provider execution', async ({
+    page,
+    request,
+}, testInfo) => {
+    const email =
+        preparedOwnerEmail ??
+        `transcription-owner-${Date.now()}-${process.pid}@example.test`;
+    if (!preparedOwnerEmail) {
+        await createUser(request, email);
+        await bootstrapOwner(email);
+        preparedOwnerEmail = email;
+    }
+    const failures: string[] = [];
+    let providerRequests = 0;
+    let pricePublications = 0;
+    page.on('pageerror', (error) => failures.push(error.message));
+    page.on('response', (response) => {
+        if (
+            response.url().includes('/admin/ai/transcription') &&
+            response.status() >= 400
+        )
+            failures.push(
+                `${response.status()} ${new URL(response.url()).pathname}`,
+            );
+    });
+    page.on('request', (request) => {
+        if (
+            request.method() === 'POST' &&
+            request.url().endsWith('/admin/ai/accounting/provider-prices')
+        )
+            pricePublications++;
+        if (
+            request.method() === 'POST' &&
+            (/\/knowledge\/[^/]+\/transcriptions/.test(request.url()) ||
+                request.url().endsWith('/admin/ai-settings/probes'))
+        )
+            providerRequests++;
+    });
+    await page.goto('/login');
+    await page.getByLabel('Email', { exact: true }).fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    const loaded = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'GET' &&
+            response.url().endsWith('/admin/ai/transcription'),
+    );
+    await page.getByRole('menuitem', { name: 'AI settings' }).click();
+    const initial = await loaded;
+    expect(initial.status()).toBe(200);
+    const before = await initial.json();
+    const panel = page.getByRole('region', {
+        name: 'Audio transcription',
+        exact: true,
+    });
+    await expect(
+        panel.getByRole('checkbox', {
+            name: 'I verified data sharing for training is disabled for the configured OpenAI organization/project',
+            exact: true,
+        }),
+    ).not.toBeChecked();
+    await expect(
+        panel.getByLabel('Organization/project data-sharing review evidence', {
+            exact: true,
+        }),
+    ).toHaveValue('');
+    await expect(
+        panel.getByRole('switch', {
+            name: 'Enable transcription for new requests',
+        }),
+    ).not.toBeChecked();
+    await expect(
+        panel.getByLabel('Customer credits per minute of source audio', {
+            exact: true,
+        }),
+    ).toHaveValue('');
+    await expect(
+        panel.getByText(/Provider credentials are not configured/, {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await panel
+        .getByLabel('Maximum provider expense per action (USD micros)', {
+            exact: true,
+        })
+        .fill('10000');
+    await panel
+        .getByLabel('Reason for this configuration change', { exact: true })
+        .fill('Prepare disabled synthetic transcription configuration');
+    const reviewed = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith('/admin/ai/transcription/preview'),
+    );
+    await panel
+        .getByRole('button', { name: 'Review configuration', exact: true })
+        .click();
+    expect((await reviewed).status()).toBe(200);
+    await expect(
+        panel.getByRole('button', {
+            name: 'Publish reviewed configuration',
+            exact: true,
+        }),
+    ).toBeEnabled();
+    expect(providerRequests).toBe(0);
+    const published = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith('/admin/ai/transcription/apply'),
+    );
+    await panel
+        .getByRole('button', {
+            name: 'Publish reviewed configuration',
+            exact: true,
+        })
+        .click();
+    const applied = await published;
+    expect(applied.status()).toBe(200);
+    const state = await applied.json();
+    expect(state.version).toBe(before.version + 1);
+    expect(state.current).toMatchObject({
+        enabled: false,
+        creditsPerMinute: null,
+        providerPriceRevisionId: null,
+        billingRulesVerified: false,
+    });
+    await expect(
+        panel.getByText('The immutable configuration revision was published.', {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+        panel.getByLabel('Customer credits per minute of source audio', {
+            exact: true,
+        }),
+    ).toHaveValue('');
+    await expect(
+        panel.getByRole('switch', {
+            name: 'Enable transcription for new requests',
+        }),
+    ).not.toBeChecked();
+    await panel.screenshot({
+        path: testInfo.outputPath('transcription-admin-desktop.png'),
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+        panel.getByRole('button', {
+            name: 'Review configuration',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await panel.screenshot({
+        path: testInfo.outputPath('transcription-admin-narrow.png'),
+    });
+    await expect
+        .poll(() =>
+            panel.evaluate(
+                (element) => element.scrollWidth <= element.clientWidth + 1,
+            ),
+        )
+        .toBe(true);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.getByRole('menuitem', { name: /AI accounting$/ }).click();
+    await page
+        .getByRole('button', { name: 'Add provider cost rate', exact: true })
+        .click();
+    const priceDialog = page.getByRole('dialog', {
+        name: 'Publish provider cost revision',
+        exact: true,
+    });
+    const meter = priceDialog.getByRole('combobox', { name: /Meter$/ });
+    // Ant Design exposes only the active virtual option to accessibility APIs.
+    // Select the third, non-searchable option with the real keyboard controls.
+    await meter.press('ArrowDown');
+    await meter.press('ArrowDown');
+    await meter.press('ArrowDown');
+    await meter.press('Enter');
+    const nativeRules = priceDialog.getByRole('textbox', {
+        name: /Reviewed native pricing rules \(JSON\)$/,
+    });
+    await expect(nativeRules).toHaveValue('');
+    await expect(
+        priceDialog.getByRole('textbox', {
+            name: /USD per million input tokens$/,
+        }),
+    ).toHaveCount(0);
+    await priceDialog
+        .getByRole('button', {
+            name: 'Publish provider cost revision',
+            exact: true,
+        })
+        .click();
+    await expect(nativeRules).toHaveAttribute('aria-invalid', 'true');
+    expect(pricePublications).toBe(0);
+    await priceDialog
+        .getByRole('button', { name: 'Close', exact: true })
+        .click();
+    expect(providerRequests).toBe(0);
+    expect(failures).toEqual([]);
 });

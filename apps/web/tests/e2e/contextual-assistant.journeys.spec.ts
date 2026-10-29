@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:8be6ba4653144cd2
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:75e5b518eae5d4e0
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -1958,6 +1958,12 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
         .getByRole('button', { name: 'Retry response', exact: true });
     await expect(retry).toBeEnabled();
     const failedArticle = page.locator('article').filter({ has: retry });
+    await expect(failedArticle).toContainText(
+        'AI could not complete this response. Your message is saved. You can retry.',
+    );
+    await expect(failedArticle).not.toContainText(
+        'Could not load or update the conversation.',
+    );
     await expect(
         failedArticle.getByRole('button', {
             name: 'Hold released · no charge',

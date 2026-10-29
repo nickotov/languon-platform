@@ -165,6 +165,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 generationEnabled: true,
                 playbackEnabled: true,
                 revalidateSource: async (actor, _source, tx) => {
+                    if (_source.kind === 'knowledge-block')
+                        throw new SpeechError('speech_source_unavailable', 404);
                     const [user] = await tx
                         .select()
                         .from(usersTable)
@@ -964,12 +966,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         typeof value === 'bigint' ? value.toString() : value,
                 ),
             ).not.toContain('synthetic-private-share-key-never-store');
-            for (const row of [...bindingRows, ...quoteRows])
+            for (const row of [...bindingRows, ...quoteRows]) {
+                if (!('access' in row.source))
+                    throw new Error('Expected a shared saved speech source.');
                 expect(row.source.access).toMatchObject({
                     kind: 'shared',
                     keyDigest: expect.stringMatching(/^hmac-sha256:v1:/),
                 });
-            expect(bindingRows.map((row) => row.source.access)).not.toEqual(
+            }
+            expect(
+                bindingRows.map((row) => {
+                    if (!('access' in row.source))
+                        throw new Error(
+                            'Expected a shared saved speech source.',
+                        );
+                    return row.source.access;
+                }),
+            ).not.toEqual(
                 expect.arrayContaining([
                     expect.objectContaining({ shareKey: expect.any(String) }),
                 ]),

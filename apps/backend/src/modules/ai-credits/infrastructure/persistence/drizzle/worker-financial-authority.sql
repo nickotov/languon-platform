@@ -195,6 +195,10 @@ BEGIN
  IF feature_value IS NULL OR (expected_value IS NOT NULL AND expected_value<>outcome_value) THEN RAISE EXCEPTION 'Action outcome conflicts with its typed feature' USING ERRCODE='23514'; END IF;
  -- Callers publish their validated terminal feature in this same transaction.
  -- Deferred mandatory feature authority rejects any missing/mismatched publication.
+ IF kind_value='knowledge-transcription' THEN
+  SELECT CASE WHEN outcome_value='success' AND j.state='completed' AND j.result IS NOT NULL AND EXISTS(SELECT 1 FROM public.ai_credit_action_attempts t WHERE t.action_id=j.id AND t.usage_meter='audio-duration' AND t.state='settled' AND t.successful=1) THEN j.source_duration_ms::numeric*(a.tariff->>'audioCreditsPerMinute')::numeric*1000*1000000/60000 ELSE 0 END INTO numerator FROM public.knowledge_transcription_jobs j WHERE j.id=action_value;
+  IF numerator IS NULL THEN RAISE EXCEPTION 'Transcription settlement requires its typed duration job' USING ERRCODE='23514'; END IF;
+ ELSE
  SELECT coalesce(sum((input_tokens-coalesce(cache_read_tokens,0))*(a.tariff->>'inputCreditsPerMillionTokens')::numeric+coalesce(cache_read_tokens,0)*coalesce((a.tariff->>'cachedInputCreditsPerMillionTokens')::numeric,(a.tariff->>'inputCreditsPerMillionTokens')::numeric)+output_tokens*(a.tariff->>'outputCreditsPerMillionTokens')::numeric),0)*1000 INTO numerator FROM public.ai_credit_action_attempts WHERE action_id=action_value AND purpose='answer' AND successful=1 AND input_tokens IS NOT NULL AND output_tokens IS NOT NULL AND outcome_value<>'failure' AND (
    NOT EXISTS(SELECT 1 FROM public.sentence_preparation_actions WHERE action_id=action_value) OR EXISTS(
      SELECT 1 FROM public.sentence_ai_jobs j JOIN public.sentence_preparation_children c ON c.job_id=j.id
@@ -203,6 +207,7 @@ BEGIN
        AND ((j.execution_state='completed' AND j.result_exercise_id IS NOT NULL)
          OR (outcome_value='stopped' AND j.execution_state='cancelled' AND j.cancellation_requested_at IS NOT NULL AND j.failure_category='explicit_stop'))
    ));
+ END IF;
  charge_value:=CASE WHEN a.funding='customer' THEN least(a.held_milli,ceil(numerator/1000000)::bigint) ELSE 0 END;
  remaining:=charge_value;
  FOR lot IN SELECT * FROM public.ai_credit_action_allocations WHERE action_id=action_value ORDER BY grant_id FOR UPDATE LOOP
@@ -211,9 +216,9 @@ BEGIN
  IF remaining<>0 THEN RAISE EXCEPTION 'Action hold allocations are inconsistent' USING ERRCODE='23514'; END IF;
  UPDATE public.ai_operator_attempt_costs SET consumed_micros=reserved_micros,measurement='conservative',settled_at=clock_timestamp() WHERE action_id=action_value AND settled_at IS NULL;
  UPDATE public.ai_operator_action_budgets SET state='settled',consumed_micros=coalesce((SELECT sum(coalesce(consumed_micros,reserved_micros)) FROM public.ai_operator_attempt_costs WHERE action_id=action_value),0),settled_at=clock_timestamp() WHERE action_id=action_value AND state='active';
- SELECT CASE WHEN bool_and(input_tokens IS NOT NULL AND output_tokens IS NOT NULL) IS DISTINCT FROM false THEN 'measured' ELSE 'unknown' END INTO measurement_value FROM public.ai_credit_action_attempts WHERE action_id=action_value;
+ SELECT CASE WHEN kind_value='knowledge-transcription' OR bool_and(input_tokens IS NOT NULL AND output_tokens IS NOT NULL) IS DISTINCT FROM false THEN 'measured' ELSE 'unknown' END INTO measurement_value FROM public.ai_credit_action_attempts WHERE action_id=action_value;
  UPDATE public.ai_credit_actions SET state='settled',outcome=outcome_value,charged_milli=charge_value,measurement=measurement_value,settled_at=settled_value WHERE id=action_value;
- INSERT INTO public.ai_credit_history(id,owner_id,amount,kind,measurement,created_at) VALUES(gen_random_uuid(),owner_value,-charge_value,'settlement',CASE WHEN charge_value>0 THEN 'provider_reported'::public.ai_credit_measurement ELSE NULL END,settled_value);
+ INSERT INTO public.ai_credit_history(id,owner_id,amount,kind,measurement,created_at) VALUES(gen_random_uuid(),owner_value,-charge_value,'settlement',CASE WHEN charge_value>0 THEN CASE WHEN kind_value='knowledge-transcription' THEN 'estimated'::public.ai_credit_measurement ELSE 'provider_reported'::public.ai_credit_measurement END ELSE NULL END,settled_value);
  IF a.held_milli>charge_value THEN INSERT INTO public.ai_credit_history(id,owner_id,amount,kind,created_at) VALUES(gen_random_uuid(),owner_value,a.held_milli-charge_value,'release',settled_value); END IF;
 END $$;
 REVOKE ALL ON FUNCTION languon_settle_credit_action(uuid,text,timestamptz) FROM PUBLIC;

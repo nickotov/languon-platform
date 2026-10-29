@@ -1,3 +1,4 @@
+import type { KnowledgeLearningSourceBinding } from '../../../knowledge/application/learning-source-binding';
 import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type { TextAiProviderLeaseContext } from '../../../text-ai/application/ports/text-ai-provider-lease-context';
 import type {
@@ -18,6 +19,7 @@ export type TextJobInput =
     | ({
           kind: 'text-translation';
           segments: TextSourceSegment[];
+          knowledgeSource?: KnowledgeLearningSourceBinding;
       } & EnqueueTextTranslationRequest);
 export type TextJobResult = TextDetectionResult | TextTranslationProposal;
 export type TextsTokenUsage = TextAiProviderUsage;

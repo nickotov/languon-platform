@@ -544,6 +544,9 @@ describe('sentence structured provider boundary', () => {
                 {
                     code: 'invalid_model_output',
                     retryAt: null,
+                    // Completed provider output is conclusive evidence; this
+                    // classification does not request a retry for this check.
+                    retryDisposition: 'conclusive-provider-failure',
                     ...(usage ? { usage } : {}),
                 },
                 { now, signal: expect.any(AbortSignal) },

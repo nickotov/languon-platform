@@ -4,6 +4,14 @@ title: Conversations and Knowledge workspace
 summary: Source chat and note workspaces share durable tutor turns while working drafts, publication and unlisted sharing have separate boundaries.
 source_paths:
     - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
+    - packages/contracts/src/knowledge-interactive.ts
+    - packages/contracts/src/learning-blocks.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-access.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-grants.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.ts
     - docs/user-flows/knowledge-workspace.md
     - apps/backend/src/config/environment.ts
     - apps/backend/src/modules/conversations/application/workspace-turn-context.ts
@@ -51,7 +59,7 @@ publication and unlisted sharing have separate boundaries.
 
 ```mermaid
 flowchart TB
-    Source["Live primary dictionary or text"] --> Open["Open private source conversation
+    Source["Live primary dictionary, text or saved shared note"] --> Open["Open private source conversation
 current source authority"]
     Open --> Send["Send question + explicit copied cards or draft"]
     New["New Knowledge note"] --> Workspace["Stable private Draft ID
@@ -83,8 +91,8 @@ application Drizzle storage and lease fences"]
     Tutor --> Reply["Persist batched prose: 100ms or 4KiB
 and durable tool exchanges"] --> Replay["Durable replay to useChat transport
 reconnect without duplicate generation"]
-    Tutor --> Propose["propose_knowledge_note
-validated structured private draft"]
+    Tutor --> Propose["Owner-only prose or typed block proposal
+validated content + target authority"]
     Propose --> Review["Conversation-owned editable proposal"]
     Review --> Publish["Explicit legacy draft publication"]
     Workspace --> Apply["Review reply proposal
@@ -92,15 +100,24 @@ Insert / Append / Replace with target check"] --> Auto
     Auto --> Save["Explicit Save
 title + nonempty body + version checks"]
     Publish --> Note[("Saved Knowledge note
-restricted rich text + revisions")]
+restricted rich text + typed learning blocks + revisions")]
     Save --> Note
     Save -->|"Stale saved version"| Resolve
     Note -->|"Restore with unpublished edits"| Resolve
     Workspace --> Copy["Save a copy of current working branch"] --> Note
     Note --> Share["Unlisted locator + fragment key
 read saved version only"]
-    Share --> Reader["Signed-in reader copies saved version
-independent note; no chat or branches"] --> Note
+    Share --> Reader["Anonymous saved reading
+signed-in private practice and read-only tutor"]
+    Reader --> Independent["Copy before editing
+fresh identities and independent media grants"] --> Note
+    Workbook["Ordered workbook; at most one per note
+independent revocable workbook grant"] --> Share
+    Workbook --> Note
+    Reader --> Learning["Private attempts, hints and reveals
+explicit completion; no author access"]
+    Save --> Epoch["Semantic publication advances learning epoch
+cosmetic edits preserve progress"] --> Learning
     Share -->|"Disable or account deletion"| Revoke["Delete capability
 old link remains invalid"]
     Note --> Workspace
@@ -140,8 +157,21 @@ edits create branches; the learner chooses which to continue and explicitly
 resolves alternatives. Restoring a saved revision while unpublished prose exists
 also creates an alternative, and Save waits for resolution. Only a published
 version is visible through an unlisted
-share; disabling sharing deletes the capability, and a recipient copy is a new
-note with no private chat or draft branches.
+share. Shared-source conversations expose reading/explanation tools and reject
+authoring callbacks. Disabling sharing deletes that capability; workbook membership
+and independent note shares remain separate grants. A recipient copy is a new
+note with fresh block identities and no private chat, progress or draft branches.
+Copied uploaded audio has an independent grant, so source deletion does not break
+playback.
+
+Version-2 blocks use strict bounded schemas and fixed escaped renderers; arbitrary
+HTML and embed code are rejected. Typed AI block proposals capture the owner
+working target and require preview/Apply before a separate explicit Save.
+Private learner state is stored separately from document content. Publication
+maintains monotonic semantic epochs; earlier wording restored later cannot revive
+old mastery. Workbook progress summarizes only the current learner's explicit
+note completions, including updated-since-completion notices. Course generation
+and workbook-wide AI context remain deferred under ADR-0050.
 
 Explicit attachments are personal copies authorized when read, not extra live source
 links. A saved note has no origin dependency and survives conversation deletion.

@@ -20,6 +20,9 @@ source_paths:
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts
     - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts
     - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts
+    - apps/backend/src/modules/knowledge/application/private-translation-service.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-store.ts
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
 source_fingerprint: sha256:cece3fd4b09ca3c02648b83c5569965549dc6e7be05ec92645f840be18a4d5f1
 reviewed: 2026-10-22
 ---
@@ -52,6 +55,11 @@ and output still valid?"}
     Check -->|"Yes"| Publish["One transaction: optional new dictionary,
 settings, card, revision, idempotent outcome"]
     Check -->|"No"| Fail["Fail without partial publication"]
+    SharedNote["Saved shared Knowledge segment"] --> PrivateRequest["Reader requests private target language"]
+    PrivateRequest --> Admission
+    Admission --> PrivateOverlay["Actor-private translation overlay\nsource fingerprint + target language"]
+    PrivateOverlay --> PrivateRead["Private bilingual rendering"]
+    PrivateOverlay -->|"Explicit preview + commit"| Text
 ```
 
 The content module always composes its routes; new detection/translation/selection
@@ -74,6 +82,14 @@ New selected Texts and dictionary-selection jobs join shared action accounting w
 customer/provider prices, bounded output and operator budgets. Invalid or technically failed
 results do not charge learners; provider expense remains separate. This changes financial
 settlement, not the explicit Save/Add publication edges. See [AI job lifecycle](ai-job-lifecycle.md).
+
+Knowledge private translation reuses the Texts job and accounting path without creating
+a hidden Text item. Admission pins the saved source segment identity and rechecks live
+note/workbook authority at claim, dispatch and publication. The durable overlay belongs
+only to the requesting actor and becomes unreadable when its source fingerprint or grant
+changes. A learner may explicitly publish its current overlay as an independent Text;
+the shared note and other readers' overlays remain unchanged. Source deletion cancels or
+fences pending work and erases attached overlays, while independent Text copies survive.
 
 ## Sources
 
@@ -98,3 +114,6 @@ settlement, not the explicit Save/Add publication edges. See [AI job lifecycle](
 - [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts)
 
 - [apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts](../../apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts)
+- [apps/backend/src/modules/knowledge/application/private-translation-service.ts](../../apps/backend/src/modules/knowledge/application/private-translation-service.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-store.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-store.ts)
+- [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)

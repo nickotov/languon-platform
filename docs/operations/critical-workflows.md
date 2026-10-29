@@ -62,6 +62,8 @@ Use `--list` for current entries. The initial registry covers:
   shared readers.
 - Text generation, saving, reload and independent/folder organization.
 - Chat reconnection, Stop and explicit retry after failure.
+- Interactive workbook block authoring and uploaded audio, saved private practice,
+  ordered shared reading, independent copies, revocation and inert hostile text.
 - Zero-credit rejection for paid work, with a visible error and preserved input.
 - Free interview completion with zero learner credits.
 - Shared speech playback, Free/Paid confirmation and cache reuse. Its browser

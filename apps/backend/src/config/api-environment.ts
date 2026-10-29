@@ -1,3 +1,4 @@
+import { knowledgeTranscriptionEnvironmentShape } from './knowledge-transcription-environment';
 import { Buffer } from 'node:buffer';
 import { isIP } from 'node:net';
 
@@ -56,6 +57,7 @@ const OptionalNonEmptyStringSchema = z.preprocess(
 const RawEnvironmentSchema = z
     .object({
         APP_ENV: z.enum(['development', 'test', 'staging', 'production']),
+        ...knowledgeTranscriptionEnvironmentShape,
         AUTH_ACCESS_TOKEN_TTL: z.string().optional(),
         AUTH_ALLOWED_ORIGINS: z.string().optional(),
         AUTH_ALLOW_INSECURE_FIXED_CODE: z.string().optional(),

@@ -1,7 +1,4 @@
-import type {
-    FlashcardAttemptRequest,
-    FlashcardConfiguration,
-} from '@languon/contracts';
+import type { FlashcardConfiguration } from '@languon/contracts';
 import type { LanguageTag } from '@languon/languages';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { z } from 'zod';
@@ -75,19 +72,7 @@ export function undoResult(row: Attempt) {
     };
 }
 
-export function sameAttempt(row: Attempt, input: FlashcardAttemptRequest) {
-    return (
-        row.entryId === input.entryId &&
-        row.sessionId === input.sessionId &&
-        row.round === input.round &&
-        row.learningVersion === input.expectedLearningVersion &&
-        row.rating === input.rating &&
-        JSON.stringify(row.configuration.front) ===
-            JSON.stringify(input.configuration.front) &&
-        JSON.stringify(row.configuration.back) ===
-            JSON.stringify(input.configuration.back)
-    );
-}
+export { sameFlashcardAttempt as sameAttempt } from '../../../domain/flashcard-attempt-policy';
 
 export interface FlashcardPersistenceContext {
     database: Database;

@@ -1,5 +1,6 @@
+import { claimPrivateKnowledgeTranslation } from '../../../../knowledge/infrastructure/persistence/drizzle/private-translation-persistence';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
-import { and, asc, eq, inArray, isNotNull, lte, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, lte, or, sql } from 'drizzle-orm';
 import {
     readTextAiCapacity,
     textAiProviderBudgetAllows,
@@ -37,6 +38,10 @@ export async function claimNext(
     context.signal.throwIfAborted();
     if (!input.supportedFormats.length) return null;
     await transaction(persistence, async (tx) => {
+        await tx.execute(
+            sql`select languon_cleanup_private_translation_results(100)`,
+        );
+
         // Bounded retention cleanup preserves operation receipts and accounting while removing text.
         const expiredTerminal = await tx
             .select({ id: jobs.id })
@@ -262,12 +267,23 @@ export async function claimNext(
                 continue;
             }
 
+            const privateCompletionToken =
+                job.externalSourceKind === 'knowledge-block'
+                    ? await claimPrivateKnowledgeTranslation(tx, job.id, {
+                          workerId: input.workerId,
+                          fencingToken: String(fence),
+                      })
+                    : undefined;
+
             return {
                 lease: {
                     jobId: job.id,
                     workerId: input.workerId,
                     fencingToken: String(fence),
                     attempt,
+                    ...(privateCompletionToken
+                        ? { privateCompletionToken }
+                        : {}),
                 },
                 input: job.inputPayload!,
                 execution: usesLegacyAction(job.selectedExecutionSnapshot)

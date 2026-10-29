@@ -1,0 +1,9 @@
+.preview {
+    display: grid;
+    gap: var(--space-12);
+    min-width: 0;
+    padding: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow-wrap: anywhere;
+}

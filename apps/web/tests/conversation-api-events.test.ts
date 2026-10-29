@@ -244,3 +244,40 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
         await completion;
     }
 });
+
+it.each(['running', 'succeeded', 'failed'] as const)(
+    'preserves typed block tool identity for %s public events',
+    (state) => {
+        const projection = ConversationDetailSchema.parse({
+            ...detail,
+            messages: [
+                {
+                    id: '206e752e-d69c-439c-8e74-20ef69cfd907',
+                    conversationId: id,
+                    role: 'assistant',
+                    content: '',
+                    attachments: [],
+                    toolCalls: [
+                        {
+                            id: 'block-call',
+                            name: 'propose_learning_blocks',
+                            state,
+                        },
+                    ],
+                    status: 'complete',
+                    sourceVersion: '1',
+                    sourceProvenance: 'saved',
+                    createdAt: date,
+                    turnId: null,
+                },
+            ],
+        });
+        const [message] = conversationUIMessages(projection);
+        expect(
+            message?.parts.find((part) => part.type.startsWith('tool-'))?.type,
+        ).toBe('tool-propose_learning_blocks');
+        expect(JSON.stringify(message)).not.toContain(
+            'tool-propose_knowledge_note',
+        );
+    },
+);

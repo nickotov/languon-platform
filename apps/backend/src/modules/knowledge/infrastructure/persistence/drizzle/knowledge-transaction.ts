@@ -1,3 +1,4 @@
+import { syncLearningEpochs } from './learning-epochs';
 import { createHash, randomUUID } from 'node:crypto';
 import {
     KnowledgeNoteContentSchema,
@@ -6,6 +7,7 @@ import {
     type KnowledgeNoteContent,
 } from '@languon/contracts';
 import { and, eq } from 'drizzle-orm';
+import { assertKnowledgeMediaGrants } from './media-grants';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
@@ -337,6 +339,7 @@ async function createKnowledgeContent(
     now: Date,
 ): Promise<KnowledgeNote> {
     const id = randomUUID();
+    await assertKnowledgeMediaGrants(tx, id, content.body);
     const [row] = await tx
         .insert(knowledgeNotesTable)
         .values({
@@ -350,6 +353,7 @@ async function createKnowledgeContent(
         })
         .returning();
 
+    await syncLearningEpochs(tx, id, content.body, 1);
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId: id, version: 1, content, createdAt: now });
@@ -381,6 +385,7 @@ export async function replaceKnowledgeContent(
     now: Date,
 ): Promise<KnowledgeNote> {
     const current = await getOwnedKnowledgeNote(tx, ownerId, noteId);
+    await assertKnowledgeMediaGrants(tx, noteId, content.body);
     if (current.version !== expectedVersion)
         throw new KnowledgeDomainError(
             'version_conflict',
@@ -408,6 +413,7 @@ export async function replaceKnowledgeContent(
             'version_conflict',
             'The knowledge note changed. Reload it before saving.',
         );
+    await syncLearningEpochs(tx, noteId, content.body, row.version);
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId, version: row.version, content, createdAt: now });

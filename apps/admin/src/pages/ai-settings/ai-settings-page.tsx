@@ -4,6 +4,7 @@ import { LoadErrorAlert } from '@/shared/ui/load-error-alert';
 import sharedStyles from '../shared/page.module.css';
 import type { AiSettingsResponse } from './types';
 import { ModelPricesPanel } from './ui/model-prices/model-prices-panel';
+import { TranscriptionSettingsPanel } from './ui/transcription-settings/transcription-settings-panel';
 import { TextAiRoutingPanel } from './ui/text-ai-routing/text-ai-routing-panel';
 
 export function AiSettingsPage() {
@@ -54,6 +55,7 @@ export function AiSettingsPage() {
                 ) : null}
             </Skeleton>
             <ModelPricesPanel />
+            <TranscriptionSettingsPanel />
         </main>
     );
 }

@@ -141,6 +141,11 @@ export class SpeechService {
         if (latest.revision !== handle.revision)
             throw new SpeechError('speech_source_changed');
         await this.options.store.playback(actorId, playbackId, this.now());
-        return { audio, fixture: handle.fixture };
+        return {
+            audio,
+            fixture: handle.fixture,
+            text: resolved.text,
+            language: resolved.language,
+        };
     }
 }

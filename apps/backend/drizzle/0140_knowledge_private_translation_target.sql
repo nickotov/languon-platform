@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_text_job_sources" ADD COLUMN "requested_target_language" text;

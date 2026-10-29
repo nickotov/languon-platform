@@ -1,3 +1,4 @@
+import { sentenceWorkerJobs } from './sentence-worker-jobs';
 import { SentenceExerciseSchema } from '@languon/contracts';
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
@@ -129,8 +130,8 @@ export async function sentencePreparationTick(
         if (row.activeJobId) {
             const [job] = await tx
                 .select()
-                .from(jobs)
-                .where(eq(jobs.id, row.activeJobId));
+                .from(sentenceWorkerJobs)
+                .where(eq(sentenceWorkerJobs.id, row.activeJobId));
 
             if (job && ['queued', 'running'].includes(job.executionState)) {
                 await tx

@@ -1,0 +1,48 @@
+{
+    "baseCommit": "5735593d57eb01932a990c42beb7d1d870016164",
+    "command": "pnpm web-dev-panel:check",
+    "outcome": "failed; unchanged baseline catalog and package scripts require review",
+    "issues": [
+        "check: package script 'check' changed after review",
+        "test: package script 'test' changed after review",
+        "test:e2e:ai-provider-management: package script 'test:e2e:ai-provider-management' changed after review",
+        "check:setup-docs: package script 'check:setup-docs' has not been reviewed",
+        "critical-flows:check: package script 'critical-flows:check' has not been reviewed",
+        "dev:admin-mcp: package script 'dev:admin-mcp' has not been reviewed",
+        "dev:configure: package script 'dev:configure' has not been reviewed",
+        "dev:doctor: package script 'dev:doctor' has not been reviewed",
+        "test:critical-tooling: package script 'test:critical-tooling' has not been reviewed",
+        "test:e2e:critical: package script 'test:e2e:critical' has not been reviewed",
+        "test:e2e:learner-portrait: package script 'test:e2e:learner-portrait' has not been reviewed",
+        "test:persistence-readability: package script 'test:persistence-readability' has not been reviewed"
+    ],
+    "logSha256": "7cb4cf39ca3ef1a3f011e0f11692491d95de47cb3798e017ef916927cdc84ce8",
+    "featureChangedPaths": [],
+    "files": [
+        {
+            "path": "package.json",
+            "mainSha256": "5da3eacbe61243518f5b9e0f795cda042a680f150ce7f56ed1aea5ceb1b706bd",
+            "worktreeSha256": "5da3eacbe61243518f5b9e0f795cda042a680f150ce7f56ed1aea5ceb1b706bd"
+        },
+        {
+            "path": "web-dev-panel/commands.json",
+            "mainSha256": "ea7eb1b9d51ff12f4bb159a89eaad1da603050730c9e1832548f65363583559f",
+            "worktreeSha256": "ea7eb1b9d51ff12f4bb159a89eaad1da603050730c9e1832548f65363583559f"
+        },
+        {
+            "path": "web-dev-panel/src/catalog.mjs",
+            "mainSha256": "cb100b2f392d1460dd0ee32d346c254699a83ca51b0c0c2b280ec96868724d8f",
+            "worktreeSha256": "cb100b2f392d1460dd0ee32d346c254699a83ca51b0c0c2b280ec96868724d8f"
+        },
+        {
+            "path": "web-dev-panel/src/catalog-check.mjs",
+            "mainSha256": "8fb7a8a1cc4de8c1933acfaaab3d61b9d3ffe519136964e12c970751f2aa63da",
+            "worktreeSha256": "8fb7a8a1cc4de8c1933acfaaab3d61b9d3ffe519136964e12c970751f2aa63da"
+        },
+        {
+            "path": "web-dev-panel/src/source-revision.mjs",
+            "mainSha256": "aa61770f558ca41c15083d7058ef534f86cccdd5bda62343e9203b92cc42bfe0",
+            "worktreeSha256": "aa61770f558ca41c15083d7058ef534f86cccdd5bda62343e9203b92cc42bfe0"
+        }
+    ]
+}

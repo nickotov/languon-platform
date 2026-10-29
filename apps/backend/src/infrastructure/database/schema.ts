@@ -1,3 +1,9 @@
+import * as knowledgeSentenceJobSourceSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-job-source-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-job-source-schema';
+import * as knowledgeSentenceNextSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-next-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-next-schema';
+import * as knowledgePrivateTranslationSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/private-translation-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/private-translation-schema';
 import * as adminMcpSchema from '../../modules/admin-mcp/infrastructure/persistence/drizzle/schema';
 export * from '../../modules/admin-mcp/infrastructure/persistence/drizzle/schema';
 import * as textAiRouteHealthSchema from '../../modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
@@ -26,7 +32,12 @@ import { navigationResourcesTable } from '../../modules/navigation/infrastructur
 export { navigationResourcesTable } from '../../modules/navigation/infrastructure/persistence/drizzle/schema';
 export { speechAudioBlobsTable } from '../../modules/speech/infrastructure/blob-schema';
 import * as knowledgeSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/schema';
+import * as workbookSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/workbook-schema';
+import * as workbookLearnerSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/learner-schema';
+import * as knowledgeLearningEpochSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/learning-epoch-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/learning-epoch-schema';
 import * as conversationSchema from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
+import * as blockProposalSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema';
 import * as conversationCallSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema';
 import * as dictionaryTextSelectionSchema from '../../modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema';
 import * as textsJobSchema from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
@@ -179,7 +190,14 @@ export const databaseSchema = {
     navigationResources: navigationResourcesTable,
     speechAudioBlobs: speechAudioBlobsTable,
     ...knowledgeSchema,
+    ...knowledgeSentenceNextSchema,
+    ...workbookSchema,
+    ...workbookLearnerSchema,
+    ...knowledgeLearningEpochSchema,
+    ...knowledgePrivateTranslationSchema,
+    ...knowledgeSentenceJobSourceSchema,
     ...conversationSchema,
+    ...blockProposalSchema,
     ...conversationCallSchema,
     ...dictionaryTextSelectionSchema,
     ...textsJobSchema,
@@ -270,3 +288,12 @@ export * from '../text-ai/capacity-schema';
 export { aiCreditGrantBalancesTable, aiCreditWalletTotalsTable };
 
 export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-authority-schema';
+
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/workbook-schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/learner-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/media-schema';
+export * from '../../modules/speech/infrastructure/knowledge-speech-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/transcription-accounting-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-schema';
+export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-schema';

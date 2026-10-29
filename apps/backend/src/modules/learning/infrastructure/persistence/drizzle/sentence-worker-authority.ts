@@ -1,5 +1,10 @@
+import { lockSentenceWorkerRow } from './sentence-worker-jobs';
+import {
+    sentenceWorkerJobs as workerJobs,
+    authorizePrivateSentenceLease,
+} from './sentence-worker-jobs';
 import type { SentenceJobFailure } from '@languon/contracts';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { dictionaryCardsTable as cards } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
 import type { SentenceLease } from '../../../application/ports/sentence-worker-store';
 import { SentenceUnavailableError } from '../../../domain/sentence-errors';
@@ -30,6 +35,25 @@ export async function sentenceWorkerValid(
     tx: SentenceTransaction,
     job: SentenceJobRow,
 ): Promise<SentenceJobFailure | null> {
+    if (job.sourceKind === 'knowledge-vocabulary') {
+        try {
+            const [valid] = await tx.execute(
+                sql`select public.languon_knowledge_job_source_available(${job.id}::uuid,${job.jobKind},${job.learnerId}::uuid) as available`,
+            );
+
+            if (valid?.available !== true) return 'access_revoked';
+
+            return null;
+        } catch (error) {
+            const cause = error as { code?: string; cause?: { code?: string } };
+            if (cause.code === '23514' || cause.cause?.code === '23514')
+                return 'access_revoked';
+
+            throw error;
+        }
+    }
+
+    if (!job.dictionaryId) return 'access_revoked';
     try {
         const access =
             job.authority.kind === 'owner'
@@ -166,17 +190,23 @@ export async function sentenceWorkerLocked(
 ) {
     const [candidate] = await tx
         .select()
-        .from(jobs)
-        .where(eq(jobs.id, lease.jobId));
+        .from(workerJobs)
+        .where(eq(workerJobs.id, lease.jobId));
 
     if (!candidate) return null;
     const invalid = await sentenceWorkerValid(tx, candidate);
     await lockSentenceLearner(tx, candidate.learnerId);
-    const [job] = await tx
+    await lockSentenceWorkerRow(tx, lease.jobId);
+    let [job] = await tx
         .select()
-        .from(jobs)
-        .where(eq(jobs.id, lease.jobId))
-        .for('update');
+        .from(workerJobs)
+        .where(eq(workerJobs.id, lease.jobId));
+
+    if (job?.sourceKind === 'knowledge-vocabulary') {
+        const authorized = await authorizePrivateSentenceLease(tx, job, lease);
+        if (!authorized) return null;
+        job = authorized;
+    }
 
     if (!job || !leased(job, lease, now)) return null;
 

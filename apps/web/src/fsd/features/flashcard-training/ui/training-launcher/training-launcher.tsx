@@ -19,6 +19,7 @@ import type {
     RequestWithSession,
     StartPayload,
     TrainingTarget,
+    LearningApi,
 } from '../../types';
 import type { TrainingLanguage } from '../manual-selection/manual-selection';
 import { PracticeSession } from '../practice-session/practice-session';
@@ -62,12 +63,38 @@ export function TrainingLauncher(props: TrainingLauncherProps) {
 
     const key = `${props.identity}:${props.signedIn}:${targetIdentity}`;
 
-    return <Launcher key={key} {...props} />;
+    return <DictionaryLauncher key={key} {...props} />;
+}
+
+export type FlashcardPracticeLauncherProps = Omit<
+    TrainingLauncherProps,
+    'target' | 'requestWithSession'
+> & { api: LearningApi };
+
+function DictionaryLauncher(props: TrainingLauncherProps) {
+    const targetRef = useRef(props.target);
+    const { signedIn, requestWithSession } = props;
+    const api = useMemo(
+        () =>
+            createLearningApi({
+                target: targetRef.current,
+                signedIn,
+                requestWithSession,
+            }),
+        [signedIn, requestWithSession],
+    );
+    return <FlashcardPracticeLauncher {...props} api={api} />;
+}
+
+/** Source adapters supply transport; setup, rounds, gestures, Undo and progress stay shared. */
+export function FlashcardPracticeLauncher(
+    props: FlashcardPracticeLauncherProps,
+) {
+    return <Launcher key={`${props.identity}:${props.signedIn}`} {...props} />;
 }
 
 function Launcher({
-    target,
-    requestWithSession,
+    api,
     renderAudio,
     signedIn,
     dictionaryTitle,
@@ -80,20 +107,8 @@ function Launcher({
     placement = 'bottom',
     desktopIconOnly = false,
     additionalItems,
-}: TrainingLauncherProps) {
+}: FlashcardPracticeLauncherProps) {
     const { t } = useI18n();
-
-    const targetRef = useRef(target);
-
-    const api = useMemo(
-        () =>
-            createLearningApi({
-                target: targetRef.current,
-                signedIn,
-                requestWithSession,
-            }),
-        [signedIn, requestWithSession],
-    );
 
     const capability = useTrainingCapabilities(api);
 

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
+import type { LearningBlock } from './learning-blocks';
 
 const validAssistantText = (value: string) =>
     !/[\uD800-\uDFFF]/u.test(value) && !value.includes('\u0000');
@@ -71,6 +73,7 @@ export const KnowledgeMarkSchema = z.discriminatedUnion('type', [
 export type KnowledgeMark = z.infer<typeof KnowledgeMarkSchema>;
 export interface KnowledgeNode {
     type:
+        | 'learningBlock'
         | 'doc'
         | 'paragraph'
         | 'heading'
@@ -87,6 +90,7 @@ export interface KnowledgeNode {
     text?: string | undefined;
     attrs?:
         | {
+              block?: LearningBlock | undefined;
               level?: 2 | 3 | undefined;
               start?: number | undefined;
               colspan?: 1 | undefined;
@@ -311,7 +315,12 @@ const BoundedDocumentSchema = z
 export const LegacyKnowledgeBodySchema = z
     .object({ schemaVersion: z.literal(1), document: BoundedDocumentSchema })
     .strict();
-export const KnowledgeBodySchema = LegacyKnowledgeBodySchema;
+export const InteractiveKnowledgeBodySchema =
+    createInteractiveKnowledgeBodySchema(BoundedDocumentSchema);
+export const KnowledgeBodySchema = z.union([
+    LegacyKnowledgeBodySchema,
+    InteractiveKnowledgeBodySchema,
+]);
 export type KnowledgeBody = z.infer<typeof KnowledgeBodySchema>;
 export const KnowledgeNoteContentSchema = z
     .object({
@@ -608,6 +617,7 @@ export const ChatPreferencesResponseSchema = z.object({
 export const ConversationSourceSchema = z
     .object({
         kind: z.enum(['dictionary', 'text', 'knowledge']),
+        view: z.literal('saved').optional(),
         id: z.uuid(),
         shareLocator: z
             .string()
@@ -615,7 +625,9 @@ export const ConversationSourceSchema = z
             .max(200)
             .regex(/^[A-Za-z0-9_-]+$/u)
             .optional(),
-        shareKind: z.enum(['text', 'folder']).optional(),
+        shareKind: z
+            .enum(['text', 'folder', 'knowledge', 'workbook'])
+            .optional(),
     })
     .strict();
 const CopiedCardTextSchema = z.string().max(8_000).refine(validAssistantText);
@@ -776,7 +788,11 @@ export const ConversationSchema = z
 export const ConversationToolCallSchema = z
     .object({
         id: z.string().min(1).max(200).refine(validAssistantText),
-        name: z.enum(['read_source_context', 'propose_knowledge_note']),
+        name: z.enum([
+            'read_source_context',
+            'propose_knowledge_note',
+            'propose_learning_blocks',
+        ]),
         state: z.enum(['running', 'succeeded', 'failed']),
     })
     .strict();
@@ -919,6 +935,13 @@ export const SubmitConversationTurnRequestSchema = z
             .object({
                 content: longAssistantText(),
                 selectedText: longAssistantText().optional(),
+                workingBranch: z
+                    .object({
+                        id: z.uuid(),
+                        version: z.number().int().positive(),
+                    })
+                    .strict()
+                    .optional(),
                 editorTarget: ConversationEditorAnchorSchema,
                 proposalTarget: ConversationEditorAnchorSchema.extend({
                     mode: z.enum(['insert', 'append', 'replace']),

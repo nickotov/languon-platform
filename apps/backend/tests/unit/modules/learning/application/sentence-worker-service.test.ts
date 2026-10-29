@@ -71,12 +71,21 @@ describe('sentence worker fencing and failure publication', () => {
         'forwards only conclusive provider retry evidence (%s)',
         async (executionOutcome) => {
             const f = setup();
+            f.job.lease.capability = 'synthetic-private-sentence-lease-secret';
             f.provider.generate.mockRejectedValue(
                 Object.assign(new Error('Synthetic provider HTTP failure'), {
                     executionOutcome,
                 }),
             );
             await f.service.processNext(new AbortController().signal);
+            expect(
+                JSON.stringify(
+                    f.provider.generate.mock.calls[0]?.[0].providerAttempt,
+                ),
+            ).not.toContain('synthetic-private-sentence-lease-secret');
+            expect(f.store.fail.mock.calls[0]?.[0].capability).toBe(
+                'synthetic-private-sentence-lease-secret',
+            );
             const failure = f.store.fail.mock.calls[0]![1];
             expect(failure.retryDisposition).toBe(
                 executionOutcome === 'rejected'

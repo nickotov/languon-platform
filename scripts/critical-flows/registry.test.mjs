@@ -291,7 +291,9 @@ test('backend gate is in the full registry, runs exact real execution suites ser
     for (const file of backendExecutionFiles) assert.ok(command.includes(file));
     assert.ok(command.includes('--no-file-parallelism'));
     assert.ok(command.includes('--hookTimeout=30000'));
-    assert.ok(!command.some((argument) => argument.startsWith('--testTimeout')));
+    assert.ok(
+        !command.some((argument) => argument.startsWith('--testTimeout')),
+    );
     assert.ok(command.includes('--retry=0'));
     assert.ok(!command.includes('--grep') && !command.includes('-t'));
     for (const mutation of [
@@ -396,6 +398,25 @@ test('backend gate rejects a removed completion regression despite a passing agg
         () => assertPassingBackendReport(report, backendFlow),
         /did not pass cleanly/,
     );
+});
+
+test('backend gate requires both private sentence generation policy versions', () => {
+    for (const version of [1, 2]) {
+        const report = backendReport();
+        const result = report.testResults.find((entry) =>
+            entry.name.endsWith('knowledge-sentence-paid.database.test.ts'),
+        );
+        const title = `uses the existing provider and financial engine for private generation v${version} and answer feedback`;
+        assert.ok(
+            result.assertionResults.some((entry) => entry.title === title),
+        );
+        result.assertionResults.find((entry) => entry.title === title).title =
+            'unrelated passing policy test';
+        assert.throws(
+            () => assertPassingBackendReport(report, backendFlow),
+            /did not pass cleanly/,
+        );
+    }
 });
 
 test('speech playback requires real backend speech execution, not browser fixtures alone', () => {

@@ -70,7 +70,9 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0048](./0048-official-provider-price-actualization.md) | Official provider price actualization through reviewed adapters | Accepted |
 | [ADR-0049](./0049-native-provider-pricing-and-accounting.md) | Native provider pricing and authoritative usage accounting | Accepted |
 
-| [ADR-0050](./0050-interactive-workbook-content-and-learning-boundaries.md) | Interactive workbook content and learning boundaries | Proposed |
+| [ADR-0050](./0050-interactive-workbook-content-and-learning-boundaries.md) | Interactive workbook content and learning boundaries | Accepted |
+
+| [ADR-0051](./0051-duration-based-transcription-accounting.md) | Duration-based transcription authority and accounting | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

@@ -16,7 +16,8 @@ export interface SentenceCandidate extends SentenceEntry {
 export interface SentenceGenerationInput {
     schemaVersion: 1;
     generationPolicyVersion: 1 | 2;
-    dictionaryId: string;
+    dictionaryId: string | null;
+    knowledgeSource?: { noteId: string; blockId: string };
     direction: SentenceDirection;
     sourceLanguage: SentenceExercise['sourceLanguage'];
     targetLanguage: SentenceExercise['targetLanguage'];

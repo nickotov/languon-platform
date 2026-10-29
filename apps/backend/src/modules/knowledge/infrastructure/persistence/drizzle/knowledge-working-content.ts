@@ -1,4 +1,7 @@
+import { syncLearningEpochs } from './learning-epochs';
 import { readWorkingBranch } from './knowledge-workspace-access';
+import { assertKnowledgeMediaGrants, prepareMediaCopy } from './media-grants';
+import { copyWorkbookBody } from './workbook-copy';
 import {
     KnowledgeNoteContentSchema,
     KnowledgeWorkingContentSchema,
@@ -95,6 +98,8 @@ export async function updateWorking(
         if (!current) throw knowledgeUnavailable();
         const content = KnowledgeWorkingContentSchema.parse(input.content),
             now = new Date();
+
+        await assertKnowledgeMediaGrants(tx, noteId, content.body);
         const conflict = current.version !== input.expectedVersion;
         const id = conflict ? randomUUID() : current.id;
         const branch = conflict
@@ -360,6 +365,7 @@ export async function saveWorkspace(
                 'The saved note changed. Compare versions before saving.',
             );
         const savedContent = assertSaveable(persistence, branch.content);
+        await assertKnowledgeMediaGrants(tx, noteId, savedContent.body);
         const now = new Date(),
             version = row.version + 1;
         const [saved] = await tx
@@ -376,6 +382,7 @@ export async function saveWorkspace(
             .where(eq(knowledgeNotesTable.id, noteId))
             .returning();
 
+        await syncLearningEpochs(tx, noteId, savedContent.body, version);
         await tx.insert(knowledgeNoteRevisionsTable).values({
             noteId,
             version,
@@ -434,7 +441,12 @@ export async function saveWorkspaceCopy(
             input.branchId,
             input.expectedVersion,
         );
-        const savedContent = assertSaveable(persistence, branch.content);
+        const original = assertSaveable(persistence, branch.content);
+        const media = await prepareMediaCopy(tx, noteId, original.body);
+        const savedContent = {
+            ...original,
+            body: copyWorkbookBody(original.body, media.assetIds),
+        };
         const now = new Date(),
             id = randomUUID(),
             copyBranchId = randomUUID();
@@ -453,6 +465,8 @@ export async function saveWorkspaceCopy(
             })
             .returning();
 
+        await media.grant(id);
+        await syncLearningEpochs(tx, id, savedContent.body, 1);
         await tx.insert(knowledgeNoteRevisionsTable).values({
             noteId: id,
             version: 1,

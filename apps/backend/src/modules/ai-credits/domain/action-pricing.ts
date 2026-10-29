@@ -1,6 +1,8 @@
 import { MAX_CREDIT_MILLI, parseCreditMilli } from './exact-credit-amount';
 
 export interface ActionTariff {
+    /** Dedicated audio actions use this tariff for verified source duration, independent of provider billing. */
+    audioCreditsPerMinute?: string;
     inputCreditsPerMillionTokens: string;
     outputCreditsPerMillionTokens: string;
     cachedInputCreditsPerMillionTokens?: string | null;
@@ -80,4 +82,18 @@ export function affordableActionOutput(input: {
     const rate = parseCreditMilli(input.tariff.outputCreditsPerMillionTokens);
     const affordable = rate === 0n ? maximum : remaining / rate;
     return Number(affordable < maximum ? affordable : maximum);
+}
+
+/** Customer audio tariff is independent of provider USD and uses integer source milliseconds. */
+export function audioActionChargeMilli(
+    durationMs: number,
+    creditsPerMinute: string,
+): bigint {
+    if (!Number.isSafeInteger(durationMs) || durationMs < 0)
+        throw new Error('Invalid audio duration.');
+    const numerator = BigInt(durationMs) * parseCreditMilli(creditsPerMinute);
+    const charge = (numerator + 59_999n) / 60_000n;
+    if (charge > MAX_CREDIT_MILLI)
+        throw new Error('Audio action charge exceeds supported bound.');
+    return charge;
 }

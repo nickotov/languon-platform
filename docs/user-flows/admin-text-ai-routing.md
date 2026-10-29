@@ -1,8 +1,8 @@
 ---
 feature: admin-text-ai-routing
-title: Admin-owned Text AI Routing
-status: current
-last_verified: 2026-10-26
+title: Admin AI routing and audio transcription configuration
+status: draft
+last_verified: 2026-10-28
 surfaces:
     - browser
     - admin
@@ -14,19 +14,25 @@ source_paths:
     - apps/backend/src/modules/text-ai/**
     - packages/contracts/src/text-ai-routing.ts
     - packages/contracts/src/routing-probes.ts
+    - packages/contracts/src/knowledge-transcription-admin.ts
+    - apps/backend/src/modules/knowledge/**/transcription-admin*.ts
+    - apps/admin/src/shared/api/transcription-admin-api.ts
+    - apps/admin/src/pages/accounting/ui/provider-prices/**
     - apps/admin/tests/e2e/text-ai-routing.journeys.spec.ts
 e2e_command: admin-text-ai-routing
 e2e_tests:
     - apps/admin/tests/e2e/text-ai-routing.journeys.spec.ts
 e2e_scenarios:
     - admin-checks-and-disables-reviewed-route
+    - owner-reviews-disabled-transcription-configuration
 related_features:
+    - interactive-workbooks
     - ai-provider-management
     - ai-accounting
     - user-ai-model-preferences-backend
 ---
 
-# Admin-owned Text AI Routing
+# Admin AI routing and audio transcription configuration
 
 ## What this verifies
 
@@ -82,6 +88,47 @@ for new dispatch, including queued work; an already-running request retains its
 admitted policy. Re-enabling requires explicit audited publication and valid
 checks. Do not delete immutable configuration, charges or check history.
 
+## Audio transcription configuration
+
+In **AI settings → Audio transcription**, an active owner can prepare a separate
+OpenAI `gpt-transcribe` configuration. An owner must review an immutable native
+audio-duration provider price, explicitly enter a customer tariff in credits per
+minute of source audio, set finite upload/duration/provider-expense bounds, and
+record evidence for the provider billing rules. Provider USD prices and customer
+credits remain independent. No customer rate or provider pin is invented.
+
+The technical processing route has a code-owned review. Separately verify the
+actual configured OpenAI organization/project has training data sharing disabled,
+check its explicit account-setting attestation and record evidence without secrets.
+The checkbox starts unchecked on every preparation; previous settings do not
+renew it. Account evidence expires after30days and is privately bound to the
+current server credential. Rotation invalidates the preview and readiness. The
+screen never reveals the equality pin or promises regional processing, ZDR
+activation or external contractual approval.
+
+**Review configuration** produces a five-minute preview bound to the exact
+values and owner session. Editing a field invalidates the preview. **Publish
+reviewed configuration** creates an immutable audited revision with optimistic
+version checks; it does not call a provider. A disabled configuration can be
+prepared while prerequisites are missing. Enabling requires credentials,
+compatible observed execution, reviewed billing evidence and a calculable
+provider expense bound. A per-minute rate alone does not establish rounding or
+minimum billing. Credentials stay in ignored backend/worker environment files;
+this screen never accepts or displays API keys.
+
+The deterministic browser scenario leaves transcription disabled, leaves the
+customer tariff/provider price blank, explicitly reviews and publishes the
+preparation, observes the unchecked account attestation and empty evidence field,
+reloads it, and checks narrow controls. It makes no transcription
+request and activates no transcription provider. Full production transcription
+quality and provider billing precision are separate evidence.
+
+For a reviewed duration price, **AI accounting → Provider cost rates → Add
+provider cost rate** offers **Audio duration (native rules only)**. The native
+pricing JSON field starts blank, is required, and replaces legacy token/character
+rate inputs. Rates, minimums and rounding are never inferred. The mapped scenario
+observes these controls and required-field validation without publishing a price.
+
 ## API verification
 
 Owner-only GET `/api/admin/ai/routing` exposes reviewed catalog and current
@@ -90,6 +137,12 @@ and a reason. POST `/api/admin/ai-settings/probes` runs only approved synthetic
 checks with an explicit displayed maximum cost. POST
 `/api/admin/ai/routing/disable` disables a selected route with optimistic version
 and reason. No arbitrary endpoint, key or model identifier is accepted.
+
+Owner-only GET `/api/admin/ai/transcription` reads transcription readiness and the
+current configuration. POST `/api/admin/ai/transcription/preview` reviews a
+versioned candidate; POST `/api/admin/ai/transcription/apply` requires its signed
+preview and recent owner authentication. Preview/application accept no provider
+credentials or arbitrary model overrides.
 
 ## Expected failure and edge cases
 
@@ -137,3 +190,9 @@ revision; never reset accounts or financial history to repair a route.
   controls, publication with omitted tariffs for Free flows, audited emergency
   disable and explicit restoration through real
   admin controls with a guarded deterministic probe executor.
+
+- `owner-reviews-disabled-transcription-configuration` verifies real owner
+  authentication, explicit disabled preparation without an invented tariff,
+  fresh unchecked account-data-sharing attestation and empty evidence, signed
+  preview/apply, persistence/reload, narrow controls and absence of
+  transcription/provider-check requests.

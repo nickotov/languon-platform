@@ -15,12 +15,15 @@ import {
     LoadingState,
 } from '@/fsd/shared/ui';
 import { useKnowledgePageActions } from '../../hooks/use-knowledge-page-actions';
+import { useKnowledgeLearningIntegrations } from '../../hooks/use-knowledge-learning-integrations';
 import { useWorkspacePresentation } from '../../hooks/use-workspace-presentation';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
 import { WorkspaceDocumentPane } from './workspace-document-pane';
 import { WorkspaceDialogs } from './workspace-dialogs';
+import { WorkspaceNotices } from '../workspace-notices/workspace-notices';
 import { WorkspaceHeader } from './workspace-header';
 import { WorkspaceShareControls } from './workspace-share-controls';
+import { KnowledgeMediaTools } from './knowledge-media-tools';
 import styles from './knowledge-detail-page.module.css';
 
 export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
@@ -35,6 +38,7 @@ export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
 function DetailContent({ noteId }: { noteId: string }) {
     const { t, href } = useI18n();
     const actions = useKnowledgePageActions(noteId);
+    const integrations = useKnowledgeLearningIntegrations(noteId, actions);
     const view = useWorkspacePresentation(actions);
     const {
         state,
@@ -84,12 +88,18 @@ function DetailContent({ noteId }: { noteId: string }) {
             </main>
         );
 
+    const noticeState = {
+        alternatives: workspace.branches.length > 1,
+        recoveryError: state.status === 'error',
+        retargeting: Boolean(actions.retargetProposal),
+    };
     const assistant = (
         <ContextualAssistant
             source={{ kind: 'knowledge', id: noteId }}
             contextLabel={title}
             selectionRootId='knowledge-workspace-editor'
             workspace={{
+                blockProposalContext: integrations.blockProposalContext,
                 getSnapshot: actions.getSnapshot,
                 onBusyChange: view.setTutorBusy,
                 onAcceptProposal: actions.acceptProposal,
@@ -136,6 +146,11 @@ function DetailContent({ noteId }: { noteId: string }) {
             <main className={styles.workspace} data-workspace-page>
                 <WorkspaceHeader
                     title={title}
+                    practiceHref={
+                        workspace.published
+                            ? href(`/knowledge/${noteId}/practice`)
+                            : undefined
+                    }
                     recovery={state.status}
                     savedAt={workspace.published?.updatedAt}
                     draft={workspace.status === 'draft'}
@@ -170,65 +185,15 @@ function DetailContent({ noteId }: { noteId: string }) {
                         className={styles.documentScroll}
                         data-workspace-scroll
                     >
-                        {(workspace.branches.length > 1 ||
-                            state.status === 'error' ||
-                            actionError ||
-                            actions.retargetProposal) && (
-                            <div className={styles.notices}>
-                                {workspace.branches.length > 1 && (
-                                    <InlineAlert tone='warning'>
-                                        {t('knowledge.resolveBeforeSave')}
-                                    </InlineAlert>
-                                )}
-                                {state.status === 'error' && (
-                                    <InlineAlert
-                                        tone='error'
-                                        actions={
-                                            <Button
-                                                onClick={state.retryRecovery}
-                                            >
-                                                {t('knowledge.retry')}
-                                            </Button>
-                                        }
-                                    >
-                                        {t('knowledge.recoveryError')}
-                                    </InlineAlert>
-                                )}
-                                {actionError && (
-                                    <InlineAlert tone='error'>
-                                        {t('knowledge.saveError')}
-                                    </InlineAlert>
-                                )}
-                                {actions.retargetProposal && (
-                                    <InlineAlert
-                                        tone='warning'
-                                        actions={
-                                            <div className={styles.actions}>
-                                                <Button
-                                                    variant='secondary'
-                                                    onClick={
-                                                        actions.cancelRetarget
-                                                    }
-                                                >
-                                                    {t('knowledge.cancel')}
-                                                </Button>
-                                                <Button
-                                                    onClick={
-                                                        actions.applyRetarget
-                                                    }
-                                                >
-                                                    {t(
-                                                        'knowledge.applyNewTarget',
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        }
-                                    >
-                                        {t('knowledge.retargetHelp')}
-                                    </InlineAlert>
-                                )}
-                            </div>
-                        )}
+                        <WorkspaceNotices
+                            alternatives={noticeState.alternatives}
+                            recoveryError={noticeState.recoveryError}
+                            actionError={actionError}
+                            retargeting={noticeState.retargeting}
+                            onRetryRecovery={state.retryRecovery}
+                            onCancelRetarget={actions.cancelRetarget}
+                            onApplyRetarget={actions.applyRetarget}
+                        />
                         <WorkspaceDialogs actions={actions} />
                         <KnowledgeNoteForm
                             ref={actions.editor}
@@ -237,7 +202,18 @@ function DetailContent({ noteId }: { noteId: string }) {
                             onValidityChange={actions.setValid}
                             disabled={busy !== null}
                             workspace={{
+                                preparationTools: (
+                                    <KnowledgeMediaTools
+                                        narration={integrations.narration}
+                                        transcription={
+                                            integrations.transcription
+                                        }
+                                    />
+                                ),
                                 toolbarRootId: 'knowledge-workspace-toolbar',
+                                uploadAudio: integrations.uploadAudio,
+                                library: integrations.library,
+                                blockCopy: integrations.blockCopy,
                                 editorId: 'knowledge-workspace-editor',
                                 proposalRootId: 'knowledge-workspace-proposal',
                                 inlineProposalRootId:

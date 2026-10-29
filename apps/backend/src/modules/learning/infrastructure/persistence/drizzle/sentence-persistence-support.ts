@@ -1,3 +1,4 @@
+import { presentKnowledgeSentenceJob } from '../../../../knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid-presentation';
 import { readActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
 import { usesLegacyAction } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
@@ -88,7 +89,7 @@ export async function authorizeSentence(
 
 export async function lockSentenceActorBatch(
     tx: SentenceTransaction,
-    rows: readonly { learnerId: string; dictionaryId: string }[],
+    rows: readonly { learnerId: string; dictionaryId: string | null }[],
 ) {
     if (!rows.length) return;
     const owners = await tx
@@ -96,7 +97,11 @@ export async function lockSentenceActorBatch(
         .from(dictionariesTable)
         .where(
             inArray(dictionariesTable.id, [
-                ...new Set(rows.map((r) => r.dictionaryId)),
+                ...new Set(
+                    rows.flatMap((r) =>
+                        r.dictionaryId ? [r.dictionaryId] : [],
+                    ),
+                ),
             ]),
         );
     const ids = [
@@ -326,6 +331,10 @@ export async function presentSentenceJob(
     row: SentenceJobRow,
 ): Promise<SentenceJob> {
     let result: SentenceJob['result'] = null;
+    if (row.sourceKind === 'knowledge-vocabulary') {
+        return presentKnowledgeSentenceJob(tx, row);
+    }
+
     if (row.executionState === 'completed') {
         if (row.resultExerciseId) {
             const [exercise] = await tx

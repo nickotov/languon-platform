@@ -1,3 +1,4 @@
+import { registerConversationBlockProposalRoutes } from './conversation-block-proposal.routes';
 import { randomUUID } from 'node:crypto';
 import type { Context } from 'hono';
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
@@ -806,5 +807,6 @@ export function createConversationRoutes({
             }
         },
     );
+    registerConversationBlockProposalRoutes(app, service.store, access);
     return app;
 }

@@ -1,3 +1,8 @@
+import { lockSentenceWorkerRow } from './sentence-worker-jobs';
+import {
+    sentenceWorkerJobs as workerJobs,
+    authorizePrivateSentenceLease,
+} from './sentence-worker-jobs';
 import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import type { SentenceJobFailure } from '@languon/contracts';
@@ -37,11 +42,25 @@ export async function sentenceWorkerHeartbeat(
     context.signal.throwIfAborted();
 
     return modelPricingTransaction(persistence.database, async (tx) => {
-        const [job] = await tx
+        await lockSentenceWorkerRow(tx, lease.jobId);
+        let [job] = await tx
             .select()
-            .from(jobs)
-            .where(eq(jobs.id, lease.jobId))
-            .for('update');
+            .from(workerJobs)
+            .where(eq(workerJobs.id, lease.jobId));
+
+        if (job?.sourceKind === 'knowledge-vocabulary') {
+            const authorized = await authorizePrivateSentenceLease(
+                tx,
+                job,
+                lease,
+            );
+
+            if (!authorized)
+                return { owned: false, cancellationRequested: false };
+            job = authorized;
+            if (!job.inputPayload)
+                return { owned: true, cancellationRequested: true };
+        }
 
         if (!job || !leased(job, lease, context.now))
             return { owned: false, cancellationRequested: false };
@@ -244,11 +263,11 @@ export async function sentenceWorkerReleaseWorkerLeases(
 ) {
     const rows = await persistence.database
         .select()
-        .from(jobs)
+        .from(workerJobs)
         .where(
             and(
-                eq(jobs.workerId, workerId),
-                eq(jobs.executionState, 'running'),
+                eq(workerJobs.workerId, workerId),
+                eq(workerJobs.executionState, 'running'),
             ),
         );
 

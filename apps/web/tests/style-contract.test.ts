@@ -9,6 +9,19 @@ import {
 } from '../scripts/style-contract';
 
 describe('CSS-only styling contract', () => {
+    it('allows the exercise format discriminator while retaining fill utility checks', () => {
+        expect(inspectMarkup('const format = "fill-in-the-blank";')).toEqual(
+            [],
+        );
+        expect(
+            inspectMarkup('<div className="fill-in-the-blank fill-current" />'),
+        ).toEqual(
+            expect.arrayContaining([
+                'Tailwind utility: fill-in-the-blank',
+                'Tailwind utility: fill-current',
+            ]),
+        );
+    });
     it('permits AI SDK protocol literals while still rejecting alignment utilities in class attributes', () => {
         expect(
             inspectMarkup(

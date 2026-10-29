@@ -1,10 +1,12 @@
 import type { I18nProvider } from '@refinedev/core';
 import { adminMcpMessages } from './admin-mcp-messages';
+import { transcriptionMessages } from './transcription-messages';
 import { nativePriceMessages } from './native-price-messages';
 
 export const adminMessages = {
     ...adminMcpMessages,
     ...nativePriceMessages,
+    ...transcriptionMessages,
     'routing.processing': 'Processing eligibility',
     'routing.retired': 'Retired',
     'routing.processingEligible': 'Reviewed controls',

@@ -40,6 +40,7 @@ export interface TextsLease {
     workerId: string;
     fencingToken: string;
     attempt: number;
+    privateCompletionToken?: string;
 }
 export interface ClaimedTextsJob {
     lease: TextsLease;

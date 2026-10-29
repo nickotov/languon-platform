@@ -1,3 +1,4 @@
+import { knowledgeTranscriptionEnvironmentShape } from '../../config/knowledge-transcription-environment';
 import { textAiProviderEnvironmentShape } from '../../config/text-ai-provider-environment';
 import { z } from 'zod';
 import { aiGenerationEnvironmentShape } from '../../config/ai-generation-environment';
@@ -70,6 +71,7 @@ const WorkerEnvironmentSchema = z.object({
     DICTIONARY_GENERATION_MODEL_BASE_URL: optionalValue,
     DICTIONARY_GENERATION_MODEL_ID: optionalValue,
     ...textAiProviderEnvironmentShape,
+    ...knowledgeTranscriptionEnvironmentShape,
     DICTIONARY_GENERATION_PROVIDER_MODE: z
         .enum(['unavailable', 'deterministic', 'mastra'])
         .default('unavailable'),
@@ -103,6 +105,7 @@ const WorkerEnvironmentSchema = z.object({
 });
 
 export interface DictionaryWorkerEnvironment {
+    transcriptionApiKey?: string;
     sentenceAiTimeoutMs: number;
     textAiTimeoutMs: number;
     appEnvironment: 'development' | 'test' | 'staging' | 'production';
@@ -214,14 +217,17 @@ export function loadDictionaryWorkerEnvironment(
             'DICTIONARY_JOB_API_ENQUEUED_FORMATS must be supported by this worker.',
         );
     }
+    const textFormats = supportedFormats.filter(
+        (format) => format !== 'knowledge-transcription:v1',
+    );
     const providerMode = environment.DICTIONARY_GENERATION_PROVIDER_MODE;
-    if (supportedFormats.length > 0 && providerMode === 'unavailable')
+    if (textFormats.length > 0 && providerMode === 'unavailable')
         throw new Error(
             deployed
                 ? 'Worker-processable dictionary formats require Mastra provider mode until all queued work drains.'
                 : 'Worker-processable dictionary formats require an available provider until all queued work drains.',
         );
-    if (deployed && supportedFormats.length > 0 && providerMode !== 'mastra')
+    if (deployed && textFormats.length > 0 && providerMode !== 'mastra')
         throw new Error(
             'Worker-processable dictionary formats require Mastra provider mode until all queued work drains.',
         );
@@ -285,13 +291,14 @@ export function loadDictionaryWorkerEnvironment(
     );
     assertDictionaryGenerationProviderBudgetSupportsFormats(
         providerBudget,
-        supportedFormats,
+        textFormats,
     );
     if (provider.mode === 'mastra') {
         const unsupportedFormats = supportedFormats.filter(
             (format) =>
                 format !== 'conversation:v1' &&
                 format !== 'portrait-interview:v1' &&
+                format !== 'knowledge-transcription:v1' &&
                 !provider.catalogModel.supportedFormats.includes(format),
         );
         if (unsupportedFormats.length > 0) {
@@ -366,6 +373,9 @@ export function loadDictionaryWorkerEnvironment(
         }
     }
     return {
+        ...(environment.OPENAI_API_KEY
+            ? { transcriptionApiKey: environment.OPENAI_API_KEY }
+            : {}),
         sentenceAiTimeoutMs: environment.SENTENCE_AI_TIMEOUT_MS,
         textAiTimeoutMs: environment.TEXT_AI_TIMEOUT_MS,
         appEnvironment: environment.APP_ENV,
@@ -374,7 +384,7 @@ export function loadDictionaryWorkerEnvironment(
         databaseUrl,
         document,
         drainTimeoutMs: environment.DICTIONARY_WORKER_DRAIN_TIMEOUT_MS,
-        includeProviderReadiness: supportedFormats.length > 0,
+        includeProviderReadiness: textFormats.length > 0,
         pollIntervalMs: environment.DICTIONARY_WORKER_POLL_INTERVAL_MS,
         providerFixtureMode: environment.DICTIONARY_AI_PROVIDER_FIXTURE_MODE,
         providerCredentials: {

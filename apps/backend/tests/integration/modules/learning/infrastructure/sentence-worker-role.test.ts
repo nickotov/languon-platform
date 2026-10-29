@@ -179,7 +179,6 @@ run('restricted sentence worker role', () => {
     });
     beforeEach(async () => {
         await client.unsafe('truncate users cascade');
-        await seedLegacyActionFixture(db, '100');
         owner = randomUUID();
         reader = randomUUID();
         dictionaryId = randomUUID();
@@ -256,6 +255,7 @@ run('restricted sentence worker role', () => {
             version: 1,
             catalogSnapshot: snapshot,
         });
+        await seedLegacyActionFixture(db, '100');
         store = new DrizzleSentencePracticeStore(db, {
             resolveExecution: async (_tx, _user, format) => ({
                 budget: snapshot.aggregateBudget,

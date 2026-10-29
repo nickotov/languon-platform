@@ -17,7 +17,7 @@ import {
     accessFor,
     type SentencePreparationPersistenceContext,
 } from './sentence-preparation-state';
-import { sentenceAiJobsTable as jobs } from './sentence-schema';
+import { sentenceWorkerJobs as jobs } from './sentence-worker-jobs';
 
 export async function sentencePreparationAuthorizeParent(
     persistence: SentencePreparationPersistenceContext,

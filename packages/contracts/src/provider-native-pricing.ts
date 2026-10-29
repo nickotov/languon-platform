@@ -29,6 +29,7 @@ export const ProviderNativeUsageMeterSchema = z.enum([
     'outputTokens',
     'cacheReadTokens',
     'cacheWriteTokens',
+    'audioInputMilliseconds',
     'audioOutputTokens',
     'characters',
     'requests',
@@ -171,6 +172,7 @@ export const ProviderNativeUsageSchema = z
         outputTokens: quantity.optional(),
         cacheReadTokens: quantity.optional(),
         cacheWriteTokens: quantity.optional(),
+        audioInputMilliseconds: quantity.optional(),
         audioOutputTokens: quantity.optional(),
         characters: quantity.optional(),
         requests: z.union([z.literal(0), z.literal(1)]),
@@ -217,7 +219,9 @@ export function nativeProviderPricingMatchesMeter(
               ? ['characters', 'requests']
               : meter === 'speech-tokens'
                 ? ['inputTokens', 'audioOutputTokens', 'requests']
-                : [];
+                : meter === 'audio-duration'
+                  ? ['audioInputMilliseconds', 'requests']
+                  : [];
     return rules.variants.every((variant) => {
         const meters = new Set(
             variant.components.map((component) => component.meter),
@@ -240,6 +244,8 @@ export function nativeProviderPricingMatchesMeter(
         if (meter === 'speech-characters') return meters.has('characters');
         if (meter === 'speech-tokens')
             return meters.has('inputTokens') && meters.has('audioOutputTokens');
+        if (meter === 'audio-duration')
+            return meters.has('audioInputMilliseconds');
         return false;
     });
 }
@@ -267,3 +273,35 @@ export type ProviderNativeCallObservation = z.infer<
 export type ProviderNativeCallObservations = z.infer<
     typeof ProviderNativeCallObservationsSchema
 >;
+
+/** A provider-reported duration observation is never inferred from uploaded asset metadata. */
+export const ProviderAudioDurationObservationSchema = z
+    .object({
+        provenance: z.literal('provider-reported'),
+        audioInputMilliseconds: quantity,
+    })
+    .strict();
+/** Source inspection can justify a reservation ceiling, never an actual billed duration. */
+export const ProviderAudioDurationBoundSchema = z
+    .object({
+        provenance: z.literal('verified-media-bound'),
+        maximumAudioInputMilliseconds: quantity.refine((value) => value > 0),
+    })
+    .strict();
+
+/** Exact decimal conversion without floating multiplication or duration quantization. */
+export function providerSecondsToAudioMilliseconds(
+    seconds: number,
+): number | null {
+    if (!Number.isFinite(seconds) || seconds < 0) return null;
+    const decimal = seconds.toString();
+    if (!/^\d+(?:\.\d+)?$/u.test(decimal)) return null;
+    const [whole = '0', rawFraction = ''] = decimal.split('.');
+    const fraction = rawFraction.replace(/0+$/u, '');
+    if (fraction.length > 3) return null;
+    const milliseconds =
+        BigInt(whole) * 1000n + BigInt(fraction.padEnd(3, '0') || '0');
+    return milliseconds <= BigInt(Number.MAX_SAFE_INTEGER)
+        ? Number(milliseconds)
+        : null;
+}

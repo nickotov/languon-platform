@@ -1,3 +1,4 @@
+import { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import { createTextAiProviderRuntime } from '../../../infrastructure/text-ai/provider-runtime';
 import { runPinnedFallback } from '../../text-ai/infrastructure/ai/run-pinned-fallback';
 import { randomBytes } from 'node:crypto';
@@ -50,6 +51,11 @@ export function createConversationWorkerComposition(input: {
             verifyDictionaryShare: (key, digest) =>
                 dictionary.verifyShare(key, digest),
             verifyTextShare: (key, digest) => text.verifyShare(key, digest),
+            verifyKnowledgeShare: (key, digest) =>
+                new KnowledgeShareCrypto(input.dictionaryHmacSecret).verify(
+                    key,
+                    digest,
+                ),
             readNote: (tx, ownerId, id) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).getForSource(
                     ownerId,

@@ -452,6 +452,13 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             );
         return {
             ...execution,
+            // Selection precedes reviewed pricing and action/context clamps.
+            // Pin the final admitted allowance in both execution representations;
+            // the provider factory deliberately rejects a mismatched budget.
+            snapshot: {
+                ...execution.snapshot,
+                aggregateBudget: { ...execution.budget },
+            },
             actionAccountingVersion: 1,
             providerPrice,
             admittedMaxInputTokens,

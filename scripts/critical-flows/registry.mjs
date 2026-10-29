@@ -18,6 +18,7 @@ export const backendExecutionFiles = Object.freeze([
     'src/modules/ai-credits/infrastructure/pricing/provider-price-sources.test.ts',
     'tests/integration/database/model-price-actualization.journeys.test.ts',
     'tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts',
+    'tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts',
     'tests/integration/modules/texts/text-selection.test.ts',
     'tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts',
     'tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts',
@@ -33,6 +34,7 @@ export const backendExecutionFiles = Object.freeze([
     'tests/unit/modules/text-ai/infrastructure/provider-runtime-observer.test.ts',
     'tests/integration/database/provider-minimum-cost.test.ts',
     'tests/integration/modules/conversations/conversation-accounting.test.ts',
+    'tests/integration/modules/conversations/conversation-production-execution.test.ts',
     'tests/integration/database/dictionary-worker-accounting-role.test.ts',
     'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
     'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
@@ -45,11 +47,173 @@ export const backendExecutionFiles = Object.freeze([
     'tests/unit/modules/speech/openrouter-speech-configuration.test.ts',
     'tests/unit/modules/dictionaries/infrastructure/audio-adapters.test.ts',
     'tests/integration/modules/speech/speech-accounting.test.ts',
+    'tests/integration/modules/speech/knowledge-speech-execution.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.database.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store.test.ts',
+    'tests/integration/modules/conversations/conversation-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.database.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid.database.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-retention.database.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store.test.ts',
+    'src/modules/knowledge/infrastructure/persistence/drizzle/private-translation.database.test.ts',
+    'tests/integration/modules/texts/texts-job-store.test.ts',
+    'tests/integration/modules/knowledge/knowledge-account-purge.test.ts',
+    'tests/integration/modules/knowledge/knowledge-learning-purge.test.ts',
+    'tests/integration/modules/users/infrastructure/drizzle-account-purge-store.test.ts',
+    'tests/integration/modules/users/infrastructure/recovery/account-deletion-recovery-store.test.ts',
     'tests/unit/modules/speech/speech-worker.test.ts',
 ]);
 
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
+    {
+        file: 'tests/integration/modules/conversations/conversation-production-execution.test.ts',
+        titles: [
+            "'operator' 'success' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'failure' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'failure' survives admission through the default worker and SDK without widening its budget",
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-retention.database.test.ts',
+        titles: [
+            'retains live-authorized app history after completed, failed and cancelled parent bodies are physically scrubbed',
+            'deletes source-bound links on permanent note deletion while an independently copied note keeps its own private job',
+            'erases a purged actor private source on a foreign note and preserves another actor independent material',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.test.ts',
+        titles: [
+            'pins actual credential review privately and exposes only the attestation time and evidence',
+            'replays an identical published operation without creating another revision or audit',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts',
+        titles: [
+            'claims, dispatches, settles and publishes through least privilege grants',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/conversations/conversation-store.test.ts',
+        titles: [
+            'retains typed proposals separately and applies only to the frozen owner working branch without publishing',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.database.test.ts',
+        titles: [
+            'copies bilingual text with new identities and atomically appends while preserving manual pairs',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store.test.ts',
+        titles: [
+            'rejects owner workbook copies with draft members atomically while shared copies expose only saved material',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts',
+        titles: [
+            'previews dependency closure and copies hints/audio with fresh identities and independent lifetime',
+            'rejects foreign working sources, missing blocks and stale destinations without changing the draft',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts',
+        titles: [
+            'isolates drafts and foreign IDs, publishes only saved media, revokes playback live',
+            'grants copied media independent ownership and deletes bytes only after the last copy disappears',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/speech/knowledge-speech-execution.test.ts',
+        titles: [
+            'authorizes immutable branches, isolates private cache and explicitly copies preview audio to owned media',
+            'persists technical failure without a customer charge and permits source cleanup',
+            'restricts private narration account erasure to its due fenced purge lease',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts',
+        titles: [
+            'runs production admission, worker and actual adapter through fake HTTP to usable transcript and exact settlement',
+            'blocks dispatch without code-owned processing approval despite valid billing and credentials',
+            'retains issued receipt identity and rejects foreign observations or changed replay',
+            'runs the real worker with deployed restricted grants and refuses raw media and forged receipts',
+            'serializes confirmed admission against permanent source deletion without deadlock or stranded holds',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.database.test.ts',
+        titles: [
+            'A → B → restored A never resurrects a previous attempt revision',
+            'copies start independent epochs and source deletion cascades only source history',
+            'epoch updates roll back with failed publication and constraints reject invalid counters',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-store.test.ts',
+        titles: [
+            'privately seeds prepared examples, replays next and records free reveals without an AI check',
+            'keeps learner history private and unavailable after revocation',
+            'keeps historical reviews outdated across material changes and deletes them with source',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid.database.test.ts',
+        titles: [
+            'uses the existing provider and financial engine for private generation v1 and answer feedback',
+            'uses the existing provider and financial engine for private generation v2 and answer feedback',
+            'rejects revoked reads and settles a deleted source while an old worker fence cannot publish',
+            'quiesces foreign-reader sentence jobs for a due source-owner purge while independent copies survive',
+            'publishes private exercises under the deployment worker role and denies sheet editing',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store.test.ts',
+        titles: [
+            'uses existing projections with no library publication and isolates each learner behind live shared access',
+            'allows only latest-session latest-entry Undo and keeps retries idempotent',
+            'does not resurrect mastery when published vocabulary changes A to B to A',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/private-translation.database.test.ts',
+        titles: [
+            'isolates actor overlays, hides stale source fingerprints, and denies revoked grants',
+            'pins verified source text/segment identity and bills the requester without accepting authored substitutions',
+            'pins the selected private translation through preview/publication and keeps the saved Text independent',
+            'erases an actor private overlays on another owner source without deleting its content',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/texts/texts-job-store.test.ts',
+        titles: [
+            'executes a private shared-note translation through the real SDK and persists only the requesting actor overlay (restricted=false)',
+            'executes a private shared-note translation through the real SDK and persists only the requesting actor overlay (restricted=true)',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/knowledge/knowledge-account-purge.test.ts',
+        titles: [
+            'erases owner content and foreign-source learner state under a due lease while preserving independent copies',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/knowledge/knowledge-learning-purge.test.ts',
+        titles: [
+            'fences and refunds foreign-reader work on deleted sources, removes actor work, and preserves independent copies',
+        ],
+    },
     {
         file: 'tests/integration/database/native-financial-admission.test.ts',
         titles: [
@@ -123,7 +287,7 @@ export const flows = [
     },
     {
         id: 'admin-text-ai-routing',
-        minimumTests: 1,
+        minimumTests: 2,
         app: 'admin',
         file: 'text-ai-routing.journeys.spec.ts',
         grep: '.',
@@ -174,6 +338,14 @@ export const flows = [
         dependsOn: ['setup-to-generation'],
     },
     {
+        id: 'interactive-workbooks',
+        minimumTests: 2,
+        app: 'assistant',
+        file: 'interactive-workbooks.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'chat-lifecycle',
         minimumTests: 1,
         app: 'assistant',
@@ -218,7 +390,7 @@ export const flows = [
     },
     {
         id: 'ai-execution-contracts',
-        minimumTests: 300,
+        minimumTests: 462,
         app: 'backend',
         files: [...backendExecutionFiles],
         prerequisite: 'disposable-backend-production-execution',

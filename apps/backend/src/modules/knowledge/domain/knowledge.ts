@@ -1,4 +1,5 @@
 import type { KnowledgeBody, KnowledgeErrorCode } from '@languon/contracts';
+import { learningBlockPlainText } from './learning-block-text';
 
 export class KnowledgeDomainError extends Error {
     constructor(
@@ -14,6 +15,8 @@ export class KnowledgeDomainError extends Error {
 export function knowledgeBodyPlainText(body: KnowledgeBody): string {
     const parts: string[] = [];
     const walk = (node: KnowledgeBody['document']) => {
+        if (node.type === 'learningBlock' && node.attrs?.block)
+            parts.push('\n', learningBlockPlainText(node.attrs.block), '\n');
         if (node.text) parts.push(node.text);
         node.content?.forEach(walk);
         if (

@@ -44,6 +44,7 @@ export function isAccessLoss(error: ApiError): boolean {
         'authentication_required',
         'email_verification_required',
         'dictionary_not_found',
+        'source_not_found',
         'shared_dictionary_not_found',
         'entry_not_found',
         'job_not_found',

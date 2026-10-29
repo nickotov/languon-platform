@@ -11,7 +11,7 @@ import {
     roundActionChargeMilli,
 } from '../../../../ai-credits/domain/action-pricing';
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { AiCreditInsufficientBalanceError } from '../../../../ai-credits/domain/ai-credit';
 import {
@@ -43,6 +43,10 @@ export async function reserveSentenceAttempt(
     now: Date,
 ) {
     if (usesLegacyAction(job.selectedExecutionSnapshot)) {
+        if (!job.inputPayload)
+            throw new Error(
+                'Active sentence admission requires its retained input',
+            );
         try {
             if (attempt === 1 && !job.selectedExecutionSnapshot.actionParentId)
                 await reserveLegacyAction(tx, {
@@ -134,6 +138,14 @@ export async function settleSentenceAttempt(
                 outcome,
                 at: now,
             });
+    }
+
+    if (job.sourceKind === 'knowledge-vocabulary') {
+        await tx.execute(
+            sql`select public.languon_sync_private_sentence_accounting(${job.id}::uuid)`,
+        );
+
+        return;
     }
 
     if (job.providerReservationState !== 'active') return;

@@ -10,6 +10,7 @@ import {
 import { useSessionStore } from '@/fsd/entities/session';
 import { knowledgeApi, knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
 import { useAuth } from '@/fsd/features/auth';
+import { workbookLabels } from '@/fsd/features/workbooks';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -85,6 +86,9 @@ function LibraryContent() {
     }
     return (
         <main className={styles.page}>
+            <Link href={href('/workbooks')}>
+                {workbookLabels(locale).title}
+            </Link>
             <header className={styles.header}>
                 <div>
                     <h1 className={styles.title}>{t('knowledge.title')}</h1>

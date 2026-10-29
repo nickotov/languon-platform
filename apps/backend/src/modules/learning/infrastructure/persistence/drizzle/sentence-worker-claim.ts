@@ -1,3 +1,9 @@
+import { lockSentenceWorkerRow } from './sentence-worker-jobs';
+import {
+    sentenceWorkerJobs as workerJobs,
+    authorizePrivateSentenceRecovery,
+    claimPrivateSentenceInput,
+} from './sentence-worker-jobs';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import { sentenceActionInputOverhead } from '../../ai/sentence-provider-envelope';
 import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
@@ -68,29 +74,29 @@ export async function sentenceWorkerClaimNext(
         // Recover a bounded expired lease first, settling its reserved attempt once.
         const expired = await tx
             .select()
-            .from(jobs)
+            .from(workerJobs)
             .where(
                 and(
-                    eq(jobs.executionState, 'running'),
-                    lte(jobs.leaseDeadline, context.now),
+                    eq(workerJobs.executionState, 'running'),
+                    lte(workerJobs.leaseDeadline, context.now),
                 ),
             )
-            .orderBy(asc(jobs.leaseDeadline))
+            .orderBy(asc(workerJobs.leaseDeadline))
             .limit(10);
         const pendingActors = await tx
             .select({
-                learnerId: jobs.learnerId,
-                dictionaryId: jobs.dictionaryId,
+                learnerId: workerJobs.learnerId,
+                dictionaryId: workerJobs.dictionaryId,
             })
-            .from(jobs)
+            .from(workerJobs)
             .where(
                 and(
-                    eq(jobs.executionState, 'queued'),
-                    lte(jobs.nextAttemptAt, context.now),
-                    inArray(jobs.format, [...input.supportedFormats]),
+                    eq(workerJobs.executionState, 'queued'),
+                    lte(workerJobs.nextAttemptAt, context.now),
+                    inArray(workerJobs.format, [...input.supportedFormats]),
                 ),
             )
-            .orderBy(asc(jobs.createdAt), asc(jobs.id))
+            .orderBy(asc(workerJobs.createdAt), asc(workerJobs.id))
             .limit(25);
 
         // Recovery may process several learners. Lock their complete bounded
@@ -102,17 +108,21 @@ export async function sentenceWorkerClaimNext(
             await lockSentenceLearner(tx, candidate.learnerId);
             const [job] = await tx
                 .select()
-                .from(jobs)
+                .from(workerJobs)
                 .where(
                     and(
-                        eq(jobs.id, candidate.id),
-                        eq(jobs.executionState, 'running'),
-                        lte(jobs.leaseDeadline, context.now),
+                        eq(workerJobs.id, candidate.id),
+                        eq(workerJobs.executionState, 'running'),
+                        lte(workerJobs.leaseDeadline, context.now),
                     ),
-                )
-                .for('update');
+                );
 
             if (!job) continue;
+            if (
+                job.sourceKind === 'knowledge-vocabulary' &&
+                !(await authorizePrivateSentenceRecovery(tx, job))
+            )
+                continue;
             if (invalid || job.cancellationRequestedAt) {
                 await sentenceWorkerTerminal(tx, job, context.now, invalid);
 
@@ -182,35 +192,50 @@ export async function sentenceWorkerClaimNext(
 
         const candidates = await tx
             .select()
-            .from(jobs)
+            .from(workerJobs)
             .where(
                 and(
-                    eq(jobs.executionState, 'queued'),
-                    lte(jobs.nextAttemptAt, context.now),
-                    inArray(jobs.format, [...input.supportedFormats]),
+                    eq(workerJobs.executionState, 'queued'),
+                    lte(workerJobs.nextAttemptAt, context.now),
+                    inArray(workerJobs.format, [...input.supportedFormats]),
                 ),
             )
-            .orderBy(asc(jobs.createdAt), asc(jobs.id))
+            .orderBy(asc(workerJobs.createdAt), asc(workerJobs.id))
             .limit(25);
 
         for (const candidate of candidates) {
             const invalid = await sentenceWorkerValid(tx, candidate);
 
             await lockSentenceLearner(tx, candidate.learnerId);
-            const [job] = await tx
+            await lockSentenceWorkerRow(tx, candidate.id);
+            let [job] = await tx
                 .select()
-                .from(jobs)
+                .from(workerJobs)
                 .where(
                     and(
-                        eq(jobs.id, candidate.id),
-                        eq(jobs.executionState, 'queued'),
+                        eq(workerJobs.id, candidate.id),
+                        eq(workerJobs.executionState, 'queued'),
                     ),
-                )
-                .for('update');
+                );
 
             if (!job) continue;
-            if (job.cancellationRequestedAt || invalid) {
-                await sentenceWorkerTerminal(tx, job, context.now, invalid);
+            if (
+                (job.sourceKind === 'dictionary' && !job.inputPayload) ||
+                job.cancellationRequestedAt ||
+                invalid
+            ) {
+                if (
+                    job.sourceKind === 'knowledge-vocabulary' &&
+                    !(await authorizePrivateSentenceRecovery(tx, job))
+                )
+                    continue;
+                await sentenceWorkerTerminal(
+                    tx,
+                    job,
+                    context.now,
+                    invalid ??
+                        (!job.inputPayload ? 'invalid_model_output' : null),
+                );
 
                 continue;
             }
@@ -234,6 +259,22 @@ export async function sentenceWorkerClaimNext(
                 )
             )
                 continue;
+            let capability: string | undefined;
+            if (job.sourceKind === 'knowledge-vocabulary') {
+                const claimed = await claimPrivateSentenceInput(
+                    tx,
+                    job,
+                    input.workerId,
+                    input.leaseMs,
+                );
+
+                if (!claimed) continue;
+                job = claimed;
+                capability = claimed.capability;
+            }
+
+            if (!job.inputPayload)
+                throw new Error('Claimed sentence job requires provider input');
             if (job.attemptCount > 0) {
                 try {
                     await reserveSentenceAttempt(
@@ -257,24 +298,25 @@ export async function sentenceWorkerClaimNext(
                     throw error;
                 }
 
-                await tx
-                    .update(jobs)
-                    .set({
-                        providerReservationState: 'active',
-                        providerReservedAttempts:
-                            job.providerReservedAttempts + 1,
-                        providerReservedCostMicros:
-                            (job.providerActualCostMicros ?? 0) +
-                            budget.maxCostMicrosPerAttempt,
-                        providerReservedInputTokens:
-                            (job.providerActualInputTokens ?? 0) +
-                            budget.maxInputTokensPerAttempt,
-                        providerReservedOutputTokens:
-                            (job.providerActualOutputTokens ?? 0) +
-                            budget.maxOutputTokensPerAttempt,
-                        providerReservationSettledAt: null,
-                    })
-                    .where(eq(jobs.id, job.id));
+                if (job.sourceKind === 'dictionary')
+                    await tx
+                        .update(jobs)
+                        .set({
+                            providerReservationState: 'active',
+                            providerReservedAttempts:
+                                job.providerReservedAttempts + 1,
+                            providerReservedCostMicros:
+                                (job.providerActualCostMicros ?? 0) +
+                                budget.maxCostMicrosPerAttempt,
+                            providerReservedInputTokens:
+                                (job.providerActualInputTokens ?? 0) +
+                                budget.maxInputTokensPerAttempt,
+                            providerReservedOutputTokens:
+                                (job.providerActualOutputTokens ?? 0) +
+                                budget.maxOutputTokensPerAttempt,
+                            providerReservationSettledAt: null,
+                        })
+                        .where(eq(jobs.id, job.id));
             }
 
             const fencingToken = Number(job.fencingToken + 1n);
@@ -286,18 +328,19 @@ export async function sentenceWorkerClaimNext(
                 context.now.getTime() + input.leaseMs,
             );
 
-            await tx
-                .update(jobs)
-                .set({
-                    executionState: 'running',
-                    workerId: input.workerId,
-                    fencingToken: BigInt(fencingToken),
-                    attemptCount: job.attemptCount + 1,
-                    leaseDeadline,
-                    heartbeatAt: context.now,
-                    updatedAt: context.now,
-                })
-                .where(eq(jobs.id, job.id));
+            if (job.sourceKind === 'dictionary')
+                await tx
+                    .update(jobs)
+                    .set({
+                        executionState: 'running',
+                        workerId: input.workerId,
+                        fencingToken: BigInt(fencingToken),
+                        attemptCount: job.attemptCount + 1,
+                        leaseDeadline,
+                        heartbeatAt: context.now,
+                        updatedAt: context.now,
+                    })
+                    .where(eq(jobs.id, job.id));
 
             let routeUnavailable = false;
             const actionBudget = usesLegacyAction(job.selectedExecutionSnapshot)
@@ -348,6 +391,7 @@ export async function sentenceWorkerClaimNext(
                     workerId: input.workerId,
                     fencingToken,
                     attempt: job.attemptCount + 1,
+                    ...(capability ? { capability } : {}),
                 },
                 leaseDeadline,
                 execution: usesLegacyAction(job.selectedExecutionSnapshot)

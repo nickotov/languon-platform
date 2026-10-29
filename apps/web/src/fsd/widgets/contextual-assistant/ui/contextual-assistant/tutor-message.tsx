@@ -54,7 +54,7 @@ export function TutorMessage({
     question: string;
     onRetry(turn: ConversationTurn): void;
     onContinue?: (() => void) | undefined;
-    onPropose(message?: ConversationUIMessage): void;
+    onPropose?: ((message?: ConversationUIMessage) => void) | undefined;
     workspaceTargetId?: string | undefined;
     workspaceAnchor?: ConversationEditorTarget | undefined;
     proposalRootId?: string | undefined;
@@ -113,8 +113,9 @@ export function TutorMessage({
     const failedBeforeAnswer = isUser && failed && !hasAssistant;
     const failureLabel = `${copy.incomplete}: ${question}`;
     function propose() {
-        onPropose(message);
+        onPropose?.(message);
     }
+    const proposalAction = onPropose ? propose : undefined;
     function retry() {
         if (turn) onRetry(turn);
     }
@@ -228,7 +229,7 @@ export function TutorMessage({
                     <div className={styles.actions}>
                         <ResponseActions
                             text={text}
-                            onPropose={propose}
+                            onPropose={proposalAction}
                             canPropose={!onAcceptWorkspaceProposal}
                             disabled={active}
                         />

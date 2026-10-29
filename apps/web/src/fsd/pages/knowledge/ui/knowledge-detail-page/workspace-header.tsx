@@ -44,8 +44,10 @@ export function WorkspaceHeader({
     onHistory,
     onDelete,
     onRetryRecovery,
+    practiceHref,
 }: {
     title: string;
+    practiceHref?: string | undefined;
     titleVisible?: boolean;
     stats?: string;
     savedAt?: string | undefined;
@@ -164,6 +166,11 @@ export function WorkspaceHeader({
         </span>
     );
     const sharingMenu = share ? share(shareOpen, setShareOpen, menu) : menu;
+    const practice = practiceHref ? (
+        <ButtonLink href={practiceHref} variant='ghost' size='compact'>
+            {t('knowledge.practiceSaved')}
+        </ButtonLink>
+    ) : null;
     return (
         <header className={styles.header}>
             <div className={styles.topbar} data-workspace-topbar>
@@ -217,6 +224,7 @@ export function WorkspaceHeader({
                             </Button>
                         </span>
                     </Tooltip>
+                    {practice}
                     {sharingMenu}
                 </div>
                 <span className={styles.divider} aria-hidden />

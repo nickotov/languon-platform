@@ -25,6 +25,8 @@ source_paths:
     - apps/backend/src/index.ts
     - apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts
     - apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts
+    - apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts
+    - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
 source_fingerprint: sha256:c12dd6224dda562da927c9611a75cb8587986f80cd5d064ee6a02f622a7d1432
 reviewed: 2026-10-22
 ---
@@ -40,7 +42,7 @@ flowchart TB
         Dev --> Admin["Admin 3001"]
         Dev --> API["Backend 4000
 /livez process health; /readyz dependencies"]
-        Separate["Explicit worker command"] --> Worker["Dictionary + learning + texts + chat + speech worker"]
+        Separate["Explicit worker command"] --> Worker["Dictionary + learning + texts + chat + speech\noptional transcription worker"]
         Separate --> Purge["Account purge worker command"]
         API --> PG[("PostgreSQL 17")]
         API --> Accounting["In-process accounting timers
@@ -78,7 +80,11 @@ The root Compose default provides loopback PostgreSQL, Redis and MinIO; app
 containers are an optional `apps` profile. Ordinary development runs applications
 on the host. Root `dev` does not implicitly prove a separate durable worker is
 running: use its explicit command when a journey needs jobs. The account-purge
-worker is also a separate command with its own authority.
+worker is also a separate command with its own authority. The shared worker can
+compose a transcription handler, but it dispatches only when reviewed
+transcription configuration, processing approval, worker observation and local
+credential/configuration gates are all satisfied; development topology does not
+activate external processing.
 
 The user states this project is in development and has no production deployment.
 OCI/NGINX/blue-green nodes describe repository tooling and accepted deployment
@@ -133,3 +139,5 @@ and a fresh empty ledger; it is not a deployable conversion of old credit units.
 - [apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts](../../apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts)
 
 - [apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts](../../apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts)

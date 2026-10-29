@@ -1,5 +1,6 @@
+import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
-    KnowledgeNoteContentSchema,
+    LegacyKnowledgeNoteContentSchema,
     type KnowledgeNoteContent,
     type PublishKnowledgeDraftRequest,
 } from '@languon/contracts';
@@ -7,6 +8,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { ConversationAccess } from '../../../application/ports/conversation-store';
 import { conversationUnavailable } from '../../../domain/conversation';
 import { conversationEvent } from './conversation-events';
+import { assertLegacyNoteTarget } from './conversation-legacy-note-target';
 import {
     conversationAuthorize,
     conversationTransaction,
@@ -27,11 +29,21 @@ export async function conversationUpdateDraft(
     content: KnowledgeNoteContent,
 ) {
     return conversationTransaction(persistence, async (tx) => {
-        await conversationAuthorize(persistence, tx, access, id);
+        const { chat } = await conversationAuthorize(
+            persistence,
+            tx,
+            access,
+            id,
+        );
+
+        if (isReadOnlyKnowledgeSource(chat.source))
+            throw conflict(
+                'Shared conversations cannot modify or publish document proposals.',
+            );
         const [row] = await tx
             .update(drafts)
             .set({
-                content: KnowledgeNoteContentSchema.parse(content),
+                content: LegacyKnowledgeNoteContentSchema.parse(content),
                 version: sql`${drafts.version}+1`,
                 updatedAt: persistence.now(),
             })
@@ -60,7 +72,17 @@ export async function conversationDiscardDraft(
     draftId: string,
 ) {
     await conversationTransaction(persistence, async (tx) => {
-        await conversationAuthorize(persistence, tx, access, id);
+        const { chat } = await conversationAuthorize(
+            persistence,
+            tx,
+            access,
+            id,
+        );
+
+        if (isReadOnlyKnowledgeSource(chat.source))
+            throw conflict(
+                'Shared conversations cannot modify or publish document proposals.',
+            );
         await tx
             .delete(drafts)
             .where(
@@ -85,7 +107,17 @@ export async function conversationPublishDraft(
     input: PublishKnowledgeDraftRequest,
 ) {
     return conversationTransaction(persistence, async (tx) => {
-        await conversationAuthorize(persistence, tx, access, id);
+        const { chat } = await conversationAuthorize(
+            persistence,
+            tx,
+            access,
+            id,
+        );
+
+        if (isReadOnlyKnowledgeSource(chat.source))
+            throw conflict(
+                'Shared conversations cannot modify or publish document proposals.',
+            );
         const [row] = await tx
             .select()
             .from(drafts)
@@ -103,6 +135,8 @@ export async function conversationPublishDraft(
                 row.expectedNoteVersion !== input.expectedNoteVersion)
         )
             throw conflict('Compare the changed note before updating it.');
+        if (input.mode === 'update')
+            await assertLegacyNoteTarget(tx, access.ownerId, row.targetNoteId!);
         const note = await persistence.dependencies.publishNote(
             tx,
             access.ownerId,

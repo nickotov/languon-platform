@@ -145,6 +145,7 @@ describe('complete official pricing source coverage', () => {
             'deepseek',
             'evolink',
             'kie',
+            'openai',
             'openrouter',
         ]);
         const results = (

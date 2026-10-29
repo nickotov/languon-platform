@@ -1,3 +1,8 @@
+import { createKnowledgeTranscriptionWorker } from '../../modules/knowledge/infrastructure/transcription-job-composition';
+import {
+    publishKnowledgeTranscriptionWorkerObservation,
+    knowledgeTranscriptionWorkerFormat,
+} from '../../modules/knowledge/infrastructure/transcription-worker-readiness';
 import type { TextsAiProvider } from '../../modules/texts/application/ports/texts-ai-provider';
 import { createTextAiProviderRuntime } from '../text-ai/provider-runtime';
 import type { TextAiProviderRuntimeOptions } from '../../modules/text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
@@ -135,11 +140,13 @@ export function publishWorkerTextAiObservations(
         | 'supportedFormats'
         | 'providerCredentials'
         | 'readinessTimeoutMs'
+        | 'transcriptionApiKey'
     >,
     database: Parameters<typeof publishTextAiWorkerObservations>[0]['database'],
     workerId: string,
+    transcriptionWorkerId = workerId,
 ): Promise<void> {
-    return publishTextAiWorkerObservations({
+    const textPublication = publishTextAiWorkerObservations({
         conversationCapacityEnabled: true,
         portraitInterviewExecutionEnabled:
             environment.providerFixtureMode !== 'deterministic' &&
@@ -162,6 +169,18 @@ export function publishWorkerTextAiObservations(
         readinessTimeoutMs: environment.readinessTimeoutMs,
         workerId,
     });
+    const transcriptionPublication = environment.supportedFormats.includes(
+        knowledgeTranscriptionWorkerFormat,
+    )
+        ? publishKnowledgeTranscriptionWorkerObservation(
+              database,
+              transcriptionWorkerId,
+              !!environment.transcriptionApiKey,
+          )
+        : Promise.resolve();
+    return Promise.all([textPublication, transcriptionPublication]).then(
+        () => undefined,
+    );
 }
 
 class DictionaryWorkerConfigurationError extends Error {}
@@ -544,6 +563,17 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                   credentials: environment.providerCredentials,
               })
             : undefined;
+    const transcriptionWorker = environment.supportedFormats.includes(
+        knowledgeTranscriptionWorkerFormat,
+    )
+        ? createKnowledgeTranscriptionWorker({
+              database,
+              workerId,
+              ...(environment.transcriptionApiKey
+                  ? { apiKey: environment.transcriptionApiKey }
+                  : {}),
+          })
+        : undefined;
     const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
@@ -552,6 +582,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         pollIntervalMs: environment.pollIntervalMs,
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
+        ...(transcriptionWorker
+            ? { transcriptionService: transcriptionWorker }
+            : {}),
         sentenceService: sentenceWorker,
         ...(portraitInterviewWorker
             ? { portraitInterviewService: portraitInterviewWorker }
@@ -598,12 +631,14 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         environment,
         database,
         observationWorkerId,
+        workerId,
     );
     const observationTimer = setInterval(() => {
         void publishWorkerTextAiObservations(
             environment,
             database,
             observationWorkerId,
+            workerId,
         ).catch(() => {
             process.stderr.write(
                 'Dictionary AI readiness observation failed.\n',

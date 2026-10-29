@@ -2,9 +2,9 @@
 type: adr
 id: ADR-0050
 title: 'Interactive workbook content and learning boundaries'
-status: proposed
+status: accepted
 date: 2026-10-28
-supersedes: 'Proposed partial extension of ADR-0037 restricted document content and ADR-0042 media and shared-reader conversation boundaries'
+supersedes: 'Partial extension of ADR-0037 restricted document content and ADR-0042 media and shared-reader conversation boundaries'
 ---
 
 # ADR-0050: Interactive workbook content and learning boundaries
@@ -24,8 +24,10 @@ confirmed extension permits interactive content and read-only explanation and
 evaluation on shared originals. Their remaining ownership, proposal acceptance,
 publication, source lifecycle and accounting constraints remain applicable.
 
-This record is proposed engineering design for the confirmed product scope. It
-does not claim implementation, verification or acceptance of the architecture.
+This record captures the confirmed product scope and the necessary extension of
+established Knowledge boundaries. The user authorized implementation on
+2026-10-28. Acceptance does not claim implementation or verification, authorize
+a paid provider, or change deployment policy.
 
 ## Decision
 
@@ -186,8 +188,8 @@ schemas and provider-specific renderers bound the supported behavior.
   actual browser safety or database lifecycle behavior.
 - Course generation, group-wide AI context, teacher dashboards, grammar-library
   saving and automatic remote-video understanding remain out of scope.
-- Proposed status does not supersede accepted ADRs until explicitly accepted
-  and indexed by the integrating agent under repository policy.
+- This record partially supersedes only the explicitly identified document/media
+  and shared-reader boundaries. Existing publication and accounting rules remain.
 
 ## Related
 
