@@ -14,7 +14,7 @@
     font-size: var(--size-16);
     line-height: 1.75;
     margin: 0;
-    white-space: pre-wrap;
+    /* white-space: pre-wrap; */
 }
 
 .compact .rule {
