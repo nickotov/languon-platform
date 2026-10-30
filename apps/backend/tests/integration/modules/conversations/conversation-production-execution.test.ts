@@ -169,6 +169,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             { funding: 'customer', outcome: 'failure', operation: 'append' },
             { funding: 'operator', outcome: 'success', operation: 'update' },
             { funding: 'customer', outcome: 'success', operation: 'update' },
+            {
+                funding: 'operator',
+                outcome: 'success',
+                operation: 'multi-update',
+            },
+            {
+                funding: 'customer',
+                outcome: 'success',
+                operation: 'multi-update',
+            },
         ] as const)(
             '$funding $outcome $operation survives admission through the default worker and SDK without widening its budget',
             async ({ funding, outcome, operation }) => {
@@ -237,6 +247,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         }),
                     );
                 const targetBlockId = randomUUID();
+                const secondTargetBlockId = randomUUID();
                 const initialBlock = {
                     id: targetBlockId,
                     type: 'vocabulary' as const,
@@ -251,7 +262,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 };
                 const noteContent =
-                    operation === 'update'
+                    operation !== 'append'
                         ? {
                               ...content,
                               body: {
@@ -264,6 +275,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                               type: 'learningBlock' as const,
                                               attrs: { block: initialBlock },
                                           },
+                                          ...(operation === 'multi-update'
+                                              ? [
+                                                    {
+                                                        type: 'learningBlock' as const,
+                                                        attrs: {
+                                                            block: {
+                                                                ...initialBlock,
+                                                                id: secondTargetBlockId,
+                                                            },
+                                                        },
+                                                    },
+                                                ]
+                                              : []),
                                       ],
                                   },
                               },
@@ -289,6 +313,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content:
                         'Propose a French to Russian vocabulary block for work, joy, cleaning, tile, fish and animal feed, with definitions and example translations.',
                     attachments: [],
+                    ...(operation !== 'append'
+                        ? {
+                              blockReferences:
+                                  operation === 'multi-update'
+                                      ? [targetBlockId, secondTargetBlockId]
+                                      : [targetBlockId],
+                          }
+                        : {}),
                     editorContext: {
                         content: 'French vocabulary.',
                         editorTarget: {
@@ -451,15 +483,36 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         const delta = tool
                             ? {
                                   tool_calls: [
+                                      ...(operation === 'multi-update'
+                                          ? [
+                                                {
+                                                    index: 0,
+                                                    id: 'synthetic-second-target-tool',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'propose_learning_blocks',
+                                                        arguments:
+                                                            JSON.stringify({
+                                                                blocks,
+                                                                targetBlockId:
+                                                                    secondTargetBlockId,
+                                                            }),
+                                                    },
+                                                },
+                                            ]
+                                          : []),
                                       {
-                                          index: 0,
+                                          index:
+                                              operation === 'multi-update'
+                                                  ? 1
+                                                  : 0,
                                           id: 'synthetic-vocabulary-tool',
                                           type: 'function',
                                           function: {
                                               name: 'propose_learning_blocks',
                                               arguments: JSON.stringify({
                                                   blocks,
-                                                  ...(operation === 'update'
+                                                  ...(operation !== 'append'
                                                       ? { targetBlockId }
                                                       : {}),
                                               }),
@@ -556,7 +609,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         { ownerId },
                         chat.id,
                     );
-                    expect(proposals.proposals).toHaveLength(1);
+                    expect(proposals.proposals).toHaveLength(
+                        operation === 'multi-update' ? 2 : 1,
+                    );
                     expect(proposals.proposals[0]?.blocks[0]).toMatchObject({
                         type: 'vocabulary',
                         entries: blocks[0]!.entries.map((entry) => ({
@@ -568,8 +623,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect(
                         (await knowledge.get(ownerId, note.id)).body
                             .schemaVersion,
-                    ).toBe(operation === 'update' ? 2 : 1);
-                    if (operation === 'update') {
+                    ).toBe(operation !== 'append' ? 2 : 1);
+                    if (operation === 'multi-update') {
+                        let version = branch.version;
+                        for (const proposal of proposals.proposals) {
+                            const applied = await store.applyBlockProposal(
+                                { ownerId },
+                                chat.id,
+                                proposal.id,
+                                version,
+                            );
+                            version = applied.branch.version;
+                        }
+                        expect(
+                            (
+                                await store.listBlockProposals(
+                                    { ownerId },
+                                    chat.id,
+                                )
+                            ).proposals.every((proposal) => proposal.appliedAt),
+                        ).toBe(true);
+                    } else if (operation !== 'append') {
                         expect(proposals.proposals[0]?.target).toMatchObject({
                             blockId: targetBlockId,
                         });

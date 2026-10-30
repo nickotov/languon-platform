@@ -74,6 +74,7 @@ export const messageView = (r: MessageRow) => ({
     role: r.role,
     content: r.content,
     attachments: r.attachments,
+    blockReferences: r.blockReferences,
     ...(r.editorTarget ? { editorTarget: r.editorTarget } : {}),
     toolCalls: r.toolCalls,
     status: r.status,

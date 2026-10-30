@@ -37,6 +37,7 @@ export function BlockProposalCard({
     const placement = useCompanionLayout();
     const labels = blockProposalLabels(locale);
     const blockLabels = localizedBlockLabels(locale).view;
+    const [dismissed, setDismissed] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(false);
     const [changed, setChanged] = useState(false);
@@ -60,7 +61,7 @@ export function BlockProposalCard({
     const typeLabel = blockLabels.kinds[first.type];
     const count = learningBlockCount(first) ?? proposal.blocks.length;
     const summary = `${typeLabel} · ${count}`;
-    async function accept(mode: 'proposal' | 'add-separately') {
+    async function accept(mode: 'proposal' | 'add-separately' | 'cursor') {
         if (
             busy ||
             disabled ||
@@ -69,6 +70,12 @@ export function BlockProposalCard({
             (mode === 'proposal' && isStale)
         )
             return;
+        const insertion =
+            mode === 'cursor' ? context.captureInsertion?.() : null;
+        if (mode === 'cursor' && !insertion) {
+            setChanged(true);
+            return;
+        }
         context.onApplyingChange?.(true);
         setBusy(true);
         setError(false);
@@ -79,12 +86,18 @@ export function BlockProposalCard({
                 setChanged(true);
                 return;
             }
+            const insertionPosition = insertion?.resolve();
+            if (insertion && insertionPosition === null) {
+                setChanged(true);
+                return;
+            }
             const result = await blockProposalsApi.apply(
                 context.requestWithSession,
                 context.conversationId,
                 proposal.id,
                 branch.version,
-                mode === 'proposal' ? undefined : mode,
+                mode === 'proposal' ? undefined : 'add-separately',
+                insertionPosition ?? undefined,
             );
             setAppliedIds(result.proposal.blocks.map((block) => block.id));
             setApplied(true);
@@ -98,6 +111,7 @@ export function BlockProposalCard({
                 setChanged(true);
             else setError(true);
         } finally {
+            insertion?.release();
             context.onApplyingChange?.(false);
             setBusy(false);
         }
@@ -107,6 +121,16 @@ export function BlockProposalCard({
     }
     function addSeparately() {
         void accept('add-separately');
+    }
+    function addAtCursor() {
+        void accept('cursor');
+    }
+    function dismiss() {
+        setReview(false);
+        setDismissed(true);
+    }
+    function restore() {
+        setDismissed(false);
     }
     function openReview() {
         setReview(true);
@@ -138,11 +162,30 @@ export function BlockProposalCard({
             element?.focus({ preventScroll: true });
         });
     }
-    const applyLabel = error ? labels.retry : labels.apply;
+    const targetIdentity = proposal.target
+        ? context.getBlockLabel?.(proposal.target.blockId) ||
+          `${labels.blockIdentity} ${proposal.target.blockId}`
+        : undefined;
+    const applyLabel = error
+        ? labels.retry
+        : proposal.target
+          ? labels.update
+          : labels.apply;
     const badge = isApplied ? labels.appliedShort : labels.notInSheet;
     const panelClass = fullHeight
         ? `${styles.review} ${styles.fullHeight}`
         : styles.review;
+    if (dismissed)
+        return (
+            <article className={styles.preview} aria-label={labels.title}>
+                <p>{labels.dismissed}</p>
+                <Button variant='ghost' size='compact' onClick={restore}>
+                    {labels.restore}
+                </Button>
+            </article>
+        );
+    const canInsertAtCursor =
+        Boolean(context.captureInsertion) && !isApplied && !wrongBranch;
     return (
         <article
             ref={media.ref}
@@ -159,7 +202,10 @@ export function BlockProposalCard({
             </header>
             <div className={styles.content}>
                 {proposal.target && (
-                    <p className={styles.caption}>{labels.updates}</p>
+                    <p className={styles.caption}>
+                        {labels.updates}:{' '}
+                        <strong dir='auto'>{targetIdentity}</strong>
+                    </p>
                 )}
                 <ProposalBlockContent
                     blocks={proposal.blocks}
@@ -194,6 +240,28 @@ export function BlockProposalCard({
                         }
                     >
                         {applyLabel}
+                    </Button>
+                )}
+                {canInsertAtCursor && (
+                    <Button
+                        type='button'
+                        size='compact'
+                        variant='secondary'
+                        onClick={addAtCursor}
+                        disabled={disabled || busy}
+                    >
+                        {labels.addAtCursor}
+                    </Button>
+                )}
+                {!isApplied && (
+                    <Button
+                        type='button'
+                        size='compact'
+                        variant='ghost'
+                        onClick={dismiss}
+                        disabled={disabled || busy}
+                    >
+                        {labels.dismiss}
                     </Button>
                 )}
                 {isStale && !wrongBranch && (
@@ -273,6 +341,26 @@ export function BlockProposalCard({
                         >
                             {labels.close}
                         </Button>
+                        {canInsertAtCursor && (
+                            <Button
+                                size='compact'
+                                variant='secondary'
+                                onClick={addAtCursor}
+                                disabled={disabled || busy}
+                            >
+                                {labels.addAtCursor}
+                            </Button>
+                        )}
+                        {!isApplied && (
+                            <Button
+                                size='compact'
+                                variant='ghost'
+                                onClick={dismiss}
+                                disabled={disabled || busy}
+                            >
+                                {labels.dismiss}
+                            </Button>
+                        )}
                         {canApply && (
                             <Button
                                 type='button'

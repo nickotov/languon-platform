@@ -1,4 +1,5 @@
 'use client';
+import { BlockContextPicker } from './block-context-picker';
 import type { KnowledgeBlockProposal } from '@languon/contracts';
 import { KnowledgeBlockProposals } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
@@ -100,6 +101,12 @@ export function AssistantPanel(
                   requestWithSession: panel.requestWithSession,
                   conversationId: chat.id,
                   onAskAgain: askForBlocksAgain,
+                  getBlockLabel: (blockId: string) =>
+                      workspace.blockProposalContext?.getBlockLabel?.(
+                          blockId,
+                      ) ??
+                      props.blocks?.find((block) => block.id === blockId)
+                          ?.title,
               }
             : undefined;
     const blockProposalRefresh = `${detail?.conversation.updatedAt ?? ''}:${lastTurn?.id ?? ''}:${lastTurn?.status ?? ''}`;
@@ -109,7 +116,7 @@ export function AssistantPanel(
         origins: detail?.conversation.preferenceOrigins,
         onFreshChat: panel.createWithoutPortrait,
     };
-    const contextPicker =
+    const libraryPicker =
         panel.picker && chat.id ? (
             workspace ? (
                 <WorkspaceReferencePicker
@@ -131,6 +138,19 @@ export function AssistantPanel(
                 />
             )
         ) : undefined;
+    const contextPicker =
+        props.blocks && panel.picker ? (
+            <BlockContextPicker
+                available={props.blocks}
+                selected={panel.blockReferences.selected}
+                onAdd={panel.blockReferences.add}
+                onRemove={panel.blockReferences.remove}
+                onClose={panel.closePicker}
+                libraryPicker={libraryPicker}
+            />
+        ) : (
+            libraryPicker
+        );
     return (
         <TutorShell
             workspace={Boolean(workspace)}
@@ -207,6 +227,7 @@ export function AssistantPanel(
                         >
                             <ConversationMessages
                                 detail={detail}
+                                blocks={props.blocks}
                                 sourceKind={props.source.kind}
                                 contextLabel={props.contextLabel}
                                 uiMessages={chat.stream.messages}
@@ -329,6 +350,17 @@ export function AssistantPanel(
                                 workspace={Boolean(workspace)}
                                 editorCharacters={workspace?.editorCharacters}
                                 editorLimit={workspace?.editorLimit}
+                                blockReferences={panel.blockReferences.selected}
+                                availableBlocks={props.blocks}
+                                onRemoveBlockReference={
+                                    panel.blockReferences.remove
+                                }
+                                blockReferenceLimitReached={
+                                    panel.blockReferences.limitReached
+                                }
+                                missingBlockReference={
+                                    panel.blockReferences.missing
+                                }
                                 workspacePassage={panel.workspacePassage}
                                 onRemoveWorkspacePassage={
                                     panel.removeWorkspacePassage

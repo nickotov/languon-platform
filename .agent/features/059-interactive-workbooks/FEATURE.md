@@ -157,3 +157,36 @@ include fake local results/timers. Implement real existing services and bounded
 new action contracts; never port their fake success paths. Preview state controls,
 prototype navigation and boards are verification references only. New schemas must
 not weaken shared-source authority, XSS validation, asset grants or AI budgets.
+
+## Follow-up: readable content and block mentions — 2026-10-30
+
+Authorized by the user's explicit request to fix formatting/loading and extend
+block references when needed. Reuse this active feature branch and its existing
+proposal/authority contracts; no unrelated redesign or provider activation.
+
+- REF-1: Generated narrative rule/pattern/explanation fields use readable safe
+  Markdown in chat previews, editor and reading views. Verbatim source texts,
+  examples, answers, translations and speech input retain their literal content.
+  Raw HTML, executable links and embeds cannot execute.
+- REF-2: Slash picker and editor block settings attach removable typed references
+  to any supported custom block in the current authorized note. Multiple unique
+  references (at most eight) may be included in a request. Read-only readers can
+  reference/explain but cannot acquire author mutation authority.
+- REF-3: References are server-resolved against the authorized frozen source.
+  Compact type/title/ID descriptors discover content; bounded exact-ID retrieval
+  provides only needed block material, with explicit incomplete/oversize behavior.
+  User data cannot grant tool permissions or silently overwrite newer material.
+- REF-4: Explain requests reply directly. Requested updates produce distinct
+  per-target preview proposals, with explicit Update, Dismiss and insert-at-cursor
+  alternatives. Multiple mentioned targets may each receive a bounded proposal;
+  updating one does not invalidate another unchanged target. Stale/deleted targets
+  cannot be overwritten. Apply changes working draft only; Save still publishes.
+- REF-5: Initial successful workspace hydration shows loading rather than a false
+  unavailable error. Cancellation/remount is not an error; genuine failures and
+  invalid branches remain explicit with existing recovery behavior.
+
+Scoped follow-up status: **Complete**, 2026-10-30. REF-1–REF-5 implementation,
+canonical14-flow/816-case verification and independent correctness/security
+evidence reviews are approved. Exact source and report identities are recorded
+in EVIDENCE.md and REVIEW.md. This does not complete parent F059 or activate a
+new provider/model or live uploaded-audio transcription.

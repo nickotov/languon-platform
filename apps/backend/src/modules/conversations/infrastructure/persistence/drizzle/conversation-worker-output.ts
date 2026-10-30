@@ -1,6 +1,7 @@
 import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
     ConversationToolCallSchema,
+    conversationToolCallLimit,
     LegacyKnowledgeNoteContentSchema,
     type ConversationToolCall,
     type KnowledgeNoteContent,
@@ -142,7 +143,7 @@ export async function conversationRecordTool(
             call,
         ];
 
-        if (toolCalls.length > 10)
+        if (toolCalls.length > conversationToolCallLimit)
             throw conflict('The response tool limit was reached.');
         const [updated] = await tx
             .update(messages)

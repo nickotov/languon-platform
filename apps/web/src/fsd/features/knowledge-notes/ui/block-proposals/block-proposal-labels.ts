@@ -1,5 +1,31 @@
 import type { Locale } from '@/fsd/shared/i18n';
 const values = {
+    blockIdentity: ['Block', 'Блок', 'Bloque', 'Bloc'],
+    update: [
+        'Update block',
+        'Обновить блок',
+        'Actualizar bloque',
+        'Mettre à jour le bloc',
+    ],
+    addAtCursor: [
+        'Add at cursor',
+        'Добавить у курсора',
+        'Añadir en el cursor',
+        'Ajouter au curseur',
+    ],
+    dismiss: ['Dismiss', 'Отклонить', 'Descartar', 'Ignorer'],
+    dismissed: [
+        'Proposal dismissed',
+        'Предложение отклонено',
+        'Propuesta descartada',
+        'Proposition ignorée',
+    ],
+    restore: [
+        'Show proposal',
+        'Показать предложение',
+        'Mostrar propuesta',
+        'Afficher la proposition',
+    ],
     blocks: ['blocks', 'блоков', 'bloques', 'blocs'],
     entries: ['entries', 'слов', 'entradas', 'entrées'],
     segments: ['segments', 'фрагментов', 'segmentos', 'segments'],

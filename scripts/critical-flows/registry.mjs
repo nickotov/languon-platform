@@ -101,6 +101,8 @@ export const requiredBackendScenarios = Object.freeze([
             "'customer' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
             "'operator' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
             "'customer' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
         ],
     },
     {
@@ -108,7 +110,14 @@ export const requiredBackendScenarios = Object.freeze([
         titles: [
             'retains typed proposals separately and applies only to the frozen owner working branch without publishing',
             'updates only an unchanged target and copies a stale update separately with fresh identities',
+            'fences selected update identities in the repository and privileged SQL boundary',
             'captures exercise source passages and copies stale grounding independently',
+        ],
+    },
+    {
+        file: 'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
+        titles: [
+            'retains authorized source tools across sequential multi-proposal turns and pre-answer observation',
         ],
     },
     {

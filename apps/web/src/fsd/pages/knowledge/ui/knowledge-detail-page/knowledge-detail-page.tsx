@@ -1,4 +1,5 @@
 'use client';
+import { knowledgeBlockReferences } from '@/fsd/features/knowledge-notes';
 
 import { useState, type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
@@ -71,7 +72,7 @@ function DetailContent({ noteId }: { noteId: string }) {
             {t('knowledge.back')}
         </ButtonLink>
     );
-    if (!workspace && state.query.isPending)
+    if (!workspace && (state.query.isPending || state.isInitializing))
         return (
             <main className={styles.page}>
                 {back}
@@ -161,6 +162,7 @@ function DetailContent({ noteId }: { noteId: string }) {
         <ContextualAssistant
             source={{ kind: 'knowledge', id: noteId }}
             contextLabel={title}
+            blocks={knowledgeBlockReferences(draft.content.body.document)}
             selectionRootId='knowledge-workspace-editor'
             workspace={{
                 blockProposalContext: integrations.blockProposalContext,
@@ -296,6 +298,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                                 fieldAi: integrations.fieldAi,
                                 blockViewOptions: integrations.blockViewOptions,
                                 onAskTutor: view.askTutor,
+                                onMentionBlock: view.mentionBlock,
                                 onTutorAction: view.tutorAction,
                                 tutorBusy: view.tutorBusy,
                                 onTitleVisibilityChange: view.setTitleVisible,

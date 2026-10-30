@@ -75,6 +75,7 @@ export const blockProposalsApi = {
         proposalId: string,
         expectedBranchVersion: number,
         mode?: 'proposal' | 'add-separately',
+        insertionPosition?: number,
     ) => {
         const id = c.KnowledgeBlockProposalSchema.shape.id.parse(proposalId);
         return request(
@@ -85,6 +86,9 @@ export const blockProposalsApi = {
             c.ApplyKnowledgeBlockProposalRequestSchema.parse({
                 expectedBranchVersion,
                 mode,
+                ...(insertionPosition === undefined
+                    ? {}
+                    : { insertionPosition }),
             }),
         );
     },

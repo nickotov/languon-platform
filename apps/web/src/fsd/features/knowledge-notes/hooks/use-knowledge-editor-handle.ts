@@ -1,3 +1,4 @@
+import { captureBlockInsertion } from '../lib/block-insertion-bookmark';
 import { editorLeafText } from '../lib/learning-block-text';
 import { useImperativeHandle, type ForwardedRef, type RefObject } from 'react';
 import type { Editor } from '@tiptap/react';
@@ -29,6 +30,9 @@ export function useKnowledgeEditorHandle(
     useImperativeHandle(
         ref,
         () => ({
+            captureBlockInsertion() {
+                return disabled ? null : captureBlockInsertion(editor);
+            },
             replaceLearningBlock(expected, replacement) {
                 if (!editor || disabled) return 'missing';
                 return replaceLearningBlock(editor, expected, replacement);

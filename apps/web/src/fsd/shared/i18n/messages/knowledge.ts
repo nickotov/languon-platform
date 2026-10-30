@@ -1,5 +1,6 @@
 export const knowledgeEn = {
     'knowledge.highlightLearningBlocks': 'Highlight learning blocks',
+    'knowledge.addBlockToChat': 'Add block to chat',
     'knowledge.practiceSaved': 'Practice saved note',
     'knowledge.proposalPlainText': 'Insert as plain text',
     'knowledge.proposalInvalid':
@@ -245,6 +246,7 @@ export const knowledgeEn = {
 
 export const knowledgeRu = {
     'knowledge.highlightLearningBlocks': 'Выделять учебные блоки',
+    'knowledge.addBlockToChat': 'Добавить блок в чат',
     'knowledge.practiceSaved': 'Практика по сохранённой заметке',
     'knowledge.proposalPlainText': 'Вставить как обычный текст',
     'knowledge.proposalInvalid':
@@ -487,6 +489,7 @@ export const knowledgeRu = {
 
 export const knowledgeEs = {
     'knowledge.highlightLearningBlocks': 'Resaltar bloques de aprendizaje',
+    'knowledge.addBlockToChat': 'Añadir bloque al chat',
     'knowledge.practiceSaved': 'Practicar la nota guardada',
     'knowledge.proposalPlainText': 'Insertar como texto sin formato',
     'knowledge.proposalInvalid':
@@ -735,6 +738,7 @@ export const knowledgeEs = {
 export const knowledgeFr = {
     'knowledge.highlightLearningBlocks':
         'Mettre les blocs pédagogiques en évidence',
+    'knowledge.addBlockToChat': 'Ajouter le bloc au chat',
     'knowledge.practiceSaved': 'Pratiquer la note enregistrée',
     'knowledge.proposalPlainText': 'Insérer en texte brut',
     'knowledge.proposalInvalid':

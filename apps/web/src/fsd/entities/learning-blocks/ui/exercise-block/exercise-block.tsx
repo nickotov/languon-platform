@@ -1,3 +1,4 @@
+import { LearningNarrative } from '../learning-narrative/learning-narrative';
 import { useRef, type FormEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { ExerciseLearningBlock } from '@languon/contracts';
@@ -181,7 +182,9 @@ export function ExerciseBlock(
                                         ? labels.correct
                                         : labels.incorrect}
                                 </strong>
-                                <p>{block.explanation}</p>
+                                <LearningNarrative
+                                    content={block.explanation}
+                                />
                             </div>
                         ) : null}
                         {visibleFeedback ? (
@@ -204,9 +207,10 @@ export function ExerciseBlock(
                                     {labels.answer}
                                 </p>
                                 <p dir='auto'>{block.referenceAnswer}</p>
-                                <p className={styles.secondary} dir='auto'>
-                                    {block.explanation}
-                                </p>
+                                <LearningNarrative
+                                    className={styles.secondary}
+                                    content={block.explanation}
+                                />
                             </div>
                         ) : null}
                         {props.error ? (

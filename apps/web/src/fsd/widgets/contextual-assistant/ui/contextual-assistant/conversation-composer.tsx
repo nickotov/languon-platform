@@ -1,3 +1,6 @@
+import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
+import { BlockReferenceChips } from './block-reference-controls';
+import { blockReferenceCopy } from '../../lib/block-reference-copy';
 import type { ReactNode } from 'react';
 import { ArrowUp, FileText, Plus, Square, TextSelect } from 'lucide-react';
 import type { ChatPreferences, CopiedAttachment } from '@languon/contracts';
@@ -33,6 +36,11 @@ export function ConversationComposer({
     workspace = false,
     editorCharacters,
     editorLimit = 40_000,
+    blockReferences = [],
+    availableBlocks = [],
+    onRemoveBlockReference,
+    blockReferenceLimitReached = false,
+    missingBlockReference = false,
     workspacePassage,
     onRemoveWorkspacePassage,
 }: {
@@ -59,6 +67,11 @@ export function ConversationComposer({
     workspace?: boolean;
     editorCharacters?: number | undefined;
     editorLimit?: number | undefined;
+    blockReferences?: KnowledgeBlockReference[] | undefined;
+    availableBlocks?: KnowledgeBlockReference[] | undefined;
+    onRemoveBlockReference?: ((id: string) => void) | undefined;
+    blockReferenceLimitReached?: boolean | undefined;
+    missingBlockReference?: boolean | undefined;
     workspacePassage?: WorkspacePendingPassage | null | undefined;
     onRemoveWorkspacePassage?: (() => void) | undefined;
 }) {
@@ -80,7 +93,12 @@ export function ConversationComposer({
             : workspaceText.placeholder;
     const documentCount = `${workspaceText.document} ${(editorCharacters ?? 0).toLocaleString(locale)} / ${editorLimit.toLocaleString(locale)}`;
     const overLimit = workspace && (editorCharacters ?? 0) > editorLimit;
-    const canSend = Boolean(question.trim()) && !busy && !active && !overLimit;
+    const canSend =
+        Boolean(question.trim()) &&
+        !busy &&
+        !active &&
+        !overLimit &&
+        !missingBlockReference;
     const hint = question.trim() ? text.pendingQuestion : text.continueTyping;
     const { id, input, hintId, change, key, submit } =
         useConversationComposerInput({
@@ -99,6 +117,12 @@ export function ConversationComposer({
             data-workspace={workspace}
         >
             {contextPicker}
+            {blockReferenceLimitReached && (
+                <p role='alert'>{blockReferenceCopy(locale).limit}</p>
+            )}
+            {missingBlockReference && (
+                <p role='alert'>{blockReferenceCopy(locale).missing}</p>
+            )}
             {overLimit && (
                 <p role='alert' className={styles.limitError}>
                     {workspaceText.limit}: {documentCount}
@@ -131,6 +155,13 @@ export function ConversationComposer({
                         attachments={attachments}
                         onRemove={onRemove}
                         workspace
+                    />
+                )}
+                {onRemoveBlockReference && (
+                    <BlockReferenceChips
+                        selected={blockReferences}
+                        available={availableBlocks}
+                        onRemove={onRemoveBlockReference}
                     />
                 )}
                 <textarea

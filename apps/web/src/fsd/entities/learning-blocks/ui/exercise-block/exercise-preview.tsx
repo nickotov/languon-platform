@@ -1,6 +1,7 @@
 import type { ExerciseLearningBlock } from '@languon/contracts';
 import type { LearningBlockViewProps } from '../../types';
 import { ExerciseHint } from './exercise-hint';
+import { LearningNarrative } from '../learning-narrative/learning-narrative';
 import styles from './exercise-block.module.css';
 
 export function ExercisePreview(
@@ -24,7 +25,10 @@ export function ExercisePreview(
             </p>
             {!compact ? (
                 <>
-                    <p className={styles.secondary}>{block.explanation}</p>
+                    <LearningNarrative
+                        className={styles.secondary}
+                        content={block.explanation}
+                    />
                     {block.format === 'free-text' &&
                     block.acceptedAnswers?.length ? (
                         <p className={styles.secondary}>

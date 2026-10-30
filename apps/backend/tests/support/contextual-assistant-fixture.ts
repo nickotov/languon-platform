@@ -1,4 +1,8 @@
 import { contextualFixtureBlock } from './contextual-fixture-block';
+import {
+    markdownGrammarProposal,
+    mentionedBlockIds,
+} from './contextual-block-proposal-fixture';
 import { createKnowledgeSentenceComposition } from '../../src/modules/knowledge/infrastructure/knowledge-sentence-composition';
 import { eraseKnowledgeSentenceJobs } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-cleanup';
 import { createKnowledgeSpeechBrowserFixture } from './knowledge-speech-browser-fixture';
@@ -27,6 +31,7 @@ import { createLearnerPortraitModule } from '../../src/modules/learner-portraits
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
 import { seedLegacyActionFixture } from './legacy-action-fixture';
 import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { setTimeout as delay } from 'node:timers/promises';
 import { max } from 'drizzle-orm';
 import {
@@ -50,6 +55,10 @@ import {
 } from '../../src/modules/conversations/infrastructure/conversation-accounting';
 import { createContextualTutorRunner } from '../../src/modules/conversations/infrastructure/ai/contextual-tutor-runner';
 import type { TutorProviderModel } from '../../src/modules/conversations/infrastructure/ai/accounted-tutor-model';
+import type {
+    TutorAccountingPort,
+    TutorCallPurpose,
+} from '../../src/modules/conversations/application/ports/tutor-runner';
 import { createKnowledgeService } from '../../src/modules/knowledge/infrastructure/knowledge-composition';
 import { createKnowledgeRoutes } from '../../src/modules/knowledge/interface/http/knowledge.routes';
 import { eraseConversationSource } from '../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-deletion-participant';
@@ -177,6 +186,54 @@ function vocabularyProposal(prompt: unknown, updating: boolean) {
     };
 }
 
+function mentionedBlockProposals(prompt: unknown) {
+    const vocabulary = contextualFixtureBlock(prompt, 'vocabulary');
+    const reading = contextualFixtureBlock(prompt, 'bilingual-text');
+    if (
+        !vocabulary ||
+        vocabulary.type !== 'vocabulary' ||
+        !reading ||
+        reading.type !== 'bilingual-text'
+    )
+        throw new Error(
+            'Mention fixture requires authorized vocabulary and bilingual-text tool results.',
+        );
+    return [
+        {
+            targetBlockId: vocabulary.id,
+            blocks: [
+                {
+                    ...vocabulary,
+                    title: 'Mentioned vocabulary updated',
+                    entries: vocabulary.entries.map((entry, index) =>
+                        index === 0
+                            ? { ...entry, translation: 'travail amélioré' }
+                            : entry,
+                    ),
+                },
+            ],
+        },
+        {
+            targetBlockId: reading.id,
+            blocks: [
+                {
+                    ...reading,
+                    title: 'Mentioned reading updated',
+                    translations: [
+                        {
+                            language: 'ru',
+                            segments: reading.segments.map((segment) => ({
+                                sourceSegmentId: segment.id,
+                                text: 'Упомянутый текст.',
+                            })),
+                        },
+                    ],
+                },
+            ],
+        },
+    ];
+}
+
 function preparedAudioProposal(prompt: unknown) {
     const original = contextualFixtureBlock(
         prompt,
@@ -194,10 +251,25 @@ function preparedAudioProposal(prompt: unknown) {
     };
 }
 
+export function purposeAwareFixtureAccounting(
+    accounting: TutorAccountingPort,
+    purpose: AsyncLocalStorage<TutorCallPurpose>,
+): TutorAccountingPort {
+    return {
+        admit(call) {
+            purpose.enterWith(call.purpose);
+            return accounting.admit(call);
+        },
+        settle: (call, usage) => accounting.settle(call, usage),
+        fail: (call, reason, usage) => accounting.fail(call, reason, usage),
+    };
+}
+
 /** Real SDK/tools/memory/accounting; replace only the paid external model boundary. */
 function deterministicModel(
     question: string,
     fail: boolean,
+    purpose: AsyncLocalStorage<TutorCallPurpose>,
 ): TutorProviderModel {
     let dispatched = 0;
     return {
@@ -206,9 +278,59 @@ function deterministicModel(
         modelId: 'deepseek-flash',
         supportedUrls: {},
         doGenerate: async () => {
+            if (purpose.getStore() !== 'answer')
+                return {
+                    content: [
+                        {
+                            type: 'text' as const,
+                            text: 'Internal memory pass completed.',
+                        },
+                    ],
+                    finishReason: 'stop' as const,
+                    usage: {
+                        inputTokens: 1,
+                        outputTokens: 1,
+                        totalTokens: 2,
+                    },
+                    warnings: [],
+                };
             throw new Error('Unexpected generate dispatch in browser fixture.');
         },
         async doStream(options) {
+            if (purpose.getStore() !== 'answer')
+                return {
+                    stream: new ReadableStream({
+                        start(controller) {
+                            controller.enqueue({
+                                type: 'stream-start',
+                                warnings: [],
+                            });
+                            controller.enqueue({
+                                type: 'text-start',
+                                id: 'memory-pass',
+                            });
+                            controller.enqueue({
+                                type: 'text-delta',
+                                id: 'memory-pass',
+                                delta: 'Internal memory pass completed.',
+                            });
+                            controller.enqueue({
+                                type: 'text-end',
+                                id: 'memory-pass',
+                            });
+                            controller.enqueue({
+                                type: 'finish',
+                                finishReason: 'stop',
+                                usage: {
+                                    inputTokens: 1,
+                                    outputTokens: 1,
+                                    totalTokens: 2,
+                                },
+                            });
+                            controller.close();
+                        },
+                    }),
+                };
             if (question.includes('two copied cards')) {
                 const prompt = JSON.stringify(options.prompt);
                 for (const field of [
@@ -231,11 +353,20 @@ function deterministicModel(
             const audioProposal = question.startsWith(
                 'Copy prepared audio block fixture',
             );
+            const markdownGrammarRequested = question.startsWith(
+                'Markdown grammar block fixture',
+            );
+            const mentionedBlocks = question.startsWith(
+                'Mentioned blocks update fixture',
+            );
             const readUpdate = (updating || audioProposal) && ordinal === 0;
+            const readMentioned = mentionedBlocks && ordinal === 0;
+            const mentionedProposals = mentionedBlocks && ordinal === 1;
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
             const blockProposal =
                 (question.includes('French vocabulary block fixture') ||
-                    audioProposal) &&
+                    audioProposal ||
+                    markdownGrammarRequested) &&
                 ordinal === (updating || audioProposal ? 1 : 0);
             const progressive = /progressively/iu.test(question);
             let text =
@@ -257,35 +388,57 @@ function deterministicModel(
                                 type: 'stream-start',
                                 warnings: [],
                             });
-                            if (draft || blockProposal || readUpdate) {
-                                controller.enqueue({
-                                    type: 'tool-call',
-                                    toolCallId: randomUUID(),
-                                    toolName: readUpdate
-                                        ? 'read_source_context'
-                                        : blockProposal
-                                          ? 'propose_learning_blocks'
-                                          : 'propose_knowledge_note',
-                                    input: JSON.stringify(
-                                        readUpdate
-                                            ? {
-                                                  query: audioProposal
-                                                      ? 'Prepare recording later'
-                                                      : 'travail',
-                                                  limit: 5,
-                                              }
-                                            : blockProposal
-                                              ? audioProposal
-                                                  ? preparedAudioProposal(
+                            if (
+                                draft ||
+                                blockProposal ||
+                                readUpdate ||
+                                readMentioned ||
+                                mentionedProposals
+                            ) {
+                                const inputs = mentionedProposals
+                                    ? mentionedBlockProposals(options.prompt)
+                                    : [
+                                          readMentioned
+                                              ? {
+                                                    query: 'mentioned blocks',
+                                                    limit: 8,
+                                                    blockIds: mentionedBlockIds(
                                                         options.prompt,
-                                                    )
-                                                  : vocabularyProposal(
-                                                        options.prompt,
-                                                        updating,
-                                                    )
-                                              : proposedContent,
-                                    ),
-                                });
+                                                    ),
+                                                }
+                                              : readUpdate
+                                                ? {
+                                                      query: audioProposal
+                                                          ? 'Prepare recording later'
+                                                          : 'travail',
+                                                      limit: 5,
+                                                  }
+                                                : blockProposal
+                                                  ? audioProposal
+                                                      ? preparedAudioProposal(
+                                                            options.prompt,
+                                                        )
+                                                      : markdownGrammarRequested
+                                                        ? markdownGrammarProposal()
+                                                        : vocabularyProposal(
+                                                              options.prompt,
+                                                              updating,
+                                                          )
+                                                  : proposedContent,
+                                      ];
+                                for (const input of inputs)
+                                    controller.enqueue({
+                                        type: 'tool-call',
+                                        toolCallId: randomUUID(),
+                                        toolName:
+                                            readUpdate || readMentioned
+                                                ? 'read_source_context'
+                                                : blockProposal ||
+                                                    mentionedProposals
+                                                  ? 'propose_learning_blocks'
+                                                  : 'propose_knowledge_note',
+                                        input: JSON.stringify(input),
+                                    });
                                 controller.enqueue({
                                     type: 'finish',
                                     finishReason: 'tool-calls',
@@ -485,10 +638,9 @@ export async function createContextualAssistantFixture(
                     /fail once/iu.test(turn.message.content) &&
                     !failedConversations.has(turn.conversationId);
                 if (fail) failedConversations.add(turn.conversationId);
-                const runner = createContextualTutorRunner({
-                    model: deterministicModel(turn.message.content, fail),
-                    maxInputTokens: snapshot.perCallMaxInputTokens,
-                    accounting: createConversationAccounting({
+                const purpose = new AsyncLocalStorage<TutorCallPurpose>();
+                const accounting = purposeAwareFixtureAccounting(
+                    createConversationAccounting({
                         database: d.database,
                         ownerId: turn.ownerId,
                         turnId: turn.id,
@@ -497,6 +649,16 @@ export async function createContextualAssistantFixture(
                         withOperation: (work) =>
                             store.withOperation(turn, work),
                     }),
+                    purpose,
+                );
+                const runner = createContextualTutorRunner({
+                    model: deterministicModel(
+                        turn.message.content,
+                        fail,
+                        purpose,
+                    ),
+                    maxInputTokens: snapshot.perCallMaxInputTokens,
+                    accounting,
                 });
                 return {
                     async run(input) {

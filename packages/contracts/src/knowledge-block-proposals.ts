@@ -46,8 +46,15 @@ export const ApplyKnowledgeBlockProposalRequestSchema = z
     .object({
         expectedBranchVersion: z.number().int().positive(),
         mode: z.enum(['proposal', 'add-separately']).optional(),
+        insertionPosition: z.number().int().min(0).max(1_000_000).optional(),
     })
-    .strict();
+    .strict()
+    .refine(
+        (value) =>
+            value.insertionPosition === undefined ||
+            value.mode === 'add-separately',
+        'Cursor insertion requires adding an independent copy.',
+    );
 export const ApplyKnowledgeBlockProposalResponseSchema = z
     .object({
         proposal: KnowledgeBlockProposalSchema,

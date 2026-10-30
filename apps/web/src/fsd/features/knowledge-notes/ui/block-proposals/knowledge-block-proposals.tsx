@@ -1,4 +1,5 @@
 'use client';
+import type { BlockInsertionBookmark } from '../../lib/block-insertion-bookmark';
 import {
     createContext,
     useContext,
@@ -24,10 +25,12 @@ export type KnowledgeBlockProposalContext = {
     branchId: string;
     branchVersion: number;
     disabled?: boolean | undefined;
+    captureInsertion?(): BlockInsertionBookmark | null;
     beforeApply(): Promise<{ branchId: string; version: number }>;
     onApplied(branch: KnowledgeWorkingBranch): void | Promise<void>;
     onApplyingChange?(busy: boolean): void;
     onShowBlocks?(blockIds: string[]): void;
+    getBlockLabel?(blockId: string): string | undefined;
     getPlayback?(
         proposal: KnowledgeBlockProposal,
     ): LearningBlockPlayback | undefined;

@@ -47,8 +47,9 @@ export const Grammar: Story = {
             type: 'grammar',
             language: 'en',
             title: 'Past simple',
-            rule: 'Use the past simple for a completed action.',
-            pattern: 'Subject + past tense verb',
+            rule: 'Use the **past simple** for a completed action.\n\n- **Completed time:** yesterday, last week.\n- **Sequence:** one finished action after another.',
+            pattern:
+                '**Affirmative**\n\n`Subject + past tense verb`\n\n**Negative**\n\n`Subject + did not + base verb`',
             examples: [
                 {
                     text: 'I visited Rome last year.',

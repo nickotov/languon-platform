@@ -129,18 +129,16 @@ changed paths are known. Validate `pnpm docs:user-flows:check` and affected
   Feature branch and four artifacts created. Acceptance and risk records written.
 - 2026-10-28 — Foundation committed as `bb9b40b`; ADR-0050 accepted for
   confirmed content/learning boundaries, with no provider commitment.
-- Current work: M1 version-2 contracts, reusable block views, editor integration
-  and persistence are being integrated; M2 workbook API work is also in progress.
-  Initial component/domain and real persistence checks are recorded in E6–E10.
-  Workbook web management routes are implemented with API/component tests (E11).
-  M1 remains incomplete
-  until required browser/database evidence and integrated behavior pass.
-- Next action: complete integrated editor and workbook real-browser journeys,
-  then remaining practice/AI/library journeys. Learner persistence and private web
-  state wiring have focused proof (E13, E17). Version-2 persistence and legacy
-  target guards have real database proof (E8). Preserve exact version-1 authority;
-  audio-copy ownership now has DB proof; transcription/provider execution remain
-  prerequisites for generated-media slices.
+- Current work (2026-10-30): the reviewed v16 design migration is complete;
+  REF-1–REF-5 implementation and verification pass. Canonical44f4f1fb completed
+  all14 flows/816 tests; full web1295, contracts233, final static and product build
+  proof is recorded in EVIDENCE.md. All86 source hashes match and the generated
+  Next declaration is restored. Failed runs remain explicitly separate.
+- Scoped follow-up: **Complete**; both independent final evidence reviews are
+  approved. Parent F059 remains In progress:
+  successful live uploaded-audio transcription still requires approval and
+  activation of a compatible provider/model. Do not activate or merge the parent
+  feature as part of this follow-up.
 
 ## Workbook web composition
 
@@ -835,3 +833,217 @@ Record a local milestone commit on the existing feature branch; no main merge
 or push while parent F059 remains In progress. The outstanding parent work is
 approved live transcription activation; the operational local handoff is an
 API/worker restart, not a new provider/model or credit configuration change.
+
+### Block references/readability follow-up — Complete 2026-10-30
+
+Explicitly authorized feature extension and associated corrections, REF-1–REF-5
+in FEATURE.md. Base HEAD f0e299c; initial Git worktree clean. Remain on existing
+feature/interactive-workbooks branch; do not merge parent F059 while its separate
+unapproved transcription activation is unfinished. No new model/provider/key or
+billing configuration. Preserve existing milestone evidence as historical.
+
+Risk-focused discovery: grammar narrative renderer uses plain paragraphs; prompt
+must distinguish safe narrative Markdown from immutable source. Workspace query
+success precedes local effect hydration and can falsely render unavailable;
+development StrictMode cancellation itself is expected. Existing block proposal
+schema/persistence already supports target hashes, per-target stale checks and
+insert-as-independent-copy; one-proposal-per-turn constraint needs bounded
+expansion for multi-target requests. Share source remains immutable to readers.
+
+Implementation ownership: readable_grammar_blocks (narrative prompt/rendering),
+knowledge_loading_abort_fix (hydration), mentions_backend (contracts, server
+resolution/budgets/tools and bounded proposal persistence), mentions_frontend
+(slash picker/chips/settings/composer/proposal integration). They preserve each
+other's work. mentions_e2e owns deterministic browser tests/harness planning.
+Main agent integrates, maintains docs, final gates and review.
+
+Consequential choices: UUID references, max8 unique current-note blocks; resolve
+server-side on frozen source, compact descriptors plus exact-ID bounded reads.
+Multiple target-specific proposals retain explicit individual apply and snapshots
+instead of a new multi-document mutation authority. Forward migration only if
+needed for existing one-per-turn constraint; no application to the user's local
+DB or production without a separate deployment action. No silent data truncation.
+
+AI regression matrix: changed prompt/tool schema/admission context must retain
+faithful real-provider-factory normal/reduced budget tests and actual worker
+composition, with external transports deterministic. Proposal persistence change
+requires disposable PostgreSQL integration authority/stale/idempotency/cap tests.
+Final critical gate includes affected workbook, assistant and workspace journeys;
+shared AI admission/worker/accounting changes trigger full critical gate. Root
+static/build checks for affected contracts/backend/web after stabilized source.
+Source/security independent completion review follows focused preflight, final
+evidence approval follows required gates. Complex multi-app journey tester is
+assigned. No skips can be claimed as completion.
+
+Next: finish bounded implementations, integrate deterministic fixture responses,
+update matched guides/markers and related BL-006 partial evidence if applicable,
+then source/security review, remediation, final gates and evidence approval.
+
+#### Focused preflight and review remediation
+
+- Narrative61, loading6, frontend32, backend28 and final contracts233 tests pass.
+  SDK tool record cap is explicitly16 (8 proposals plus reads/legacy headroom),
+  without increasing provider steps, financial admission or routing authority.
+- Initial root web run was interrupted after timeout failures amid concurrent
+  package clean/rebuild + type/lint jobs. A bounded2-worker attempt still exposed
+  the node-limit insertion case; tester is reproducing it alone before attributing
+  it to implementation or environment. Neither run is valid final green evidence.
+  Early typecheck found exactOptional/test fixture seams subsequently repaired;
+  rerun required after stable packages. Do not change test deadlines/assertions.
+- Independent security/correctness review found unmentioned-target proposal scope.
+  Fix: when frozen references exist, proposal targets must belong to that list,
+  enforced both in application and restricted SQL definer. Legacy no-reference
+  flows and append proposals retain established behavior. Preview shows original
+  target identity separately from proposed content.
+- Readonly exact source retrieval may include authorized dependencies not directly
+  selected (exercise->audio/text transcript grounding), consistent with existing
+  frozen-primary-source read authority. Reading does not confer mutation scope;
+  no arbitrary note IDs or externally supplied source content is accepted. This
+  local choice preserves useful evidence retrieval while limiting writes.
+- Cursor insertion is an optional mode-specific position guarded by latest branch
+  version. Server helper preserves marks/valid ancestors, rejects invalid UTF-16
+  boundaries and group interiors, and validates the resulting body before writes.
+  Copied blocks/source links get fresh IDs; dependencies and originals remain safe.
+
+#### Complete-context invariant restored
+
+REV-REF-01 identified that focused references omitted surrounding unsaved prose,
+contradicting ADR-0042. Remediation retains the complete editor plaintext snapshot
+exactly once with every workspace question, even when references are selected.
+References focus identity and provide compact descriptors; exact tool retrieval
+adds canonical structured fields only when needed. Full structured block payloads
+are not duplicated into reference chips/history. Existing message/admission/context
+limits remain explicit; overbudget turns are rejected, never silently truncated.
+Regressions preserve surrounding register guidance plus mentioned grammar and
+reject oversize references without stripping context.19 focused tests pass.
+No ADR supersession or new product context mode is introduced.
+
+#### Verification environment checkpoint
+
+Root typecheck14 tasks and repository lint pass. First full critical run
+3ca62a29 passed setup/admin routing then failed authentication startup because
+its synthetic worker's processable formats disagree with API_ENQUEUED formats.
+No product test was skipped and no worker guard was weakened. Tester is tracing
+fixture/environment precedence and will isolate synthetic allowlists from local
+development settings. Root never changes user.env to make tests pass. This is a
+verification prerequisite repair; original failed report remains intact. Root
+runs full web tests serially while that fixture diagnosis is read-only; no
+concurrent package clean/build or browser/database runners.
+
+#### Final gates underway
+
+Serial web185/1295 passed in204.03s after all competing compilation/tests stopped;
+no timeout/assertion was increased. Root types14 tasks and lint pass. Auth fixture
+mismatch isolated by one explicit API_ENQUEUED worker flag matching its existing
+processable dictionaryJobFormats; user's local settings remain unchanged. Full
+critical rerun log `/tmp/languon-block-refs-critical-final.log`, session53742.
+Next after that gate: production build (serial), final source/evidence hash,
+reviewers' evidence approval, scoped milestone closure without completing parent
+F059 or activating transcription. BL-006 partial bookkeeping synchronized; no
+new BL-003 progress/BL-007 manual authoring scope was completed by this follow-up.
+
+#### Browser fixture calibration before final gate
+
+Full rerun98b7147c passed7 flows and workbook's first2 cases, then the new loading
+probe failed before mention/Markdown assertions. Probe used body.textContent,
+which includes Next serialized translations/scripts, not just visible alerts.
+Tester is scoping it to rendered role=alert content. The new grammar fake response
+also needs a JSON roundtrip check: source contains literal double-backslash n
+instead of actual Markdown newlines. Test-only pure helper smoke tests are being
+added. No product condition/timeout/assertion is weakened. Preserve failedreport.
+
+Revised smallest-proof sequence: complete fixture tests, run focused registered
+interactive-workbooks3 journeys to resolve new UI/fixtures, then one clean full14
+critical gate and serial production builds. Earlier finalweb185/1295, contracts233,
+root14-task typecheck/lint, Drizzle/registry/docs checks remain valid for unchanged
+product source. Fixture-only changes require affected type/lint/mapping rechecks.
+
+Focused proof scheduling reassessed: the long backend gate uses only dedicated
+55489/56489 containers, one test worker and no shared user DB. Focused workbook
+browser proof uses separate55488/56488 containers and3336/4006 services. Run these
+two independent fixtures in bounded parallel after all compiler/build/unit jobs
+have ended; no same-port resets or package cleans. Final full canonical14 gate
+remains separate and serial. Logs backend critical above and
+`/tmp/languon-block-refs-workbooks-focused.log` (root session returned in tool).
+
+Scheduler correction: canonical runner has a workspace-wide lock even when ports
+are disjoint. Focused workbook overlap was refused before any service/container
+started (7d1510e2); no lock was removed and no runner guard was bypassed. Keep
+remaining checks serial. Backend f38e remains active and its ownership intact.
+
+Focused workbook ad2ba5a5 failed late in the new multi-reference scenario after
+visible-alert loading check and Markdown preview/apply succeeded. History shows
+both typed references, exact-read phase completes, then deterministic generation
+fails. Tester is inspecting captured synthetic prompt/tool outputs to distinguish
+fixture parsing from product error; no timeout extension or production guess.
+Root web production build runs in separate ignored AUTH_E2E_DIST_DIR to preserve
+user dev.next; generated next-env declaration restored byte-for-byte in finally.
+No package clean/rebuild or another browser runner during fixture diagnosis.
+
+Focused browser iterations now prove typedmultiple refs/proposal creation,
+Dismiss+restore/Addatcursor/Update; ae2b49ee later failed the old single-target
+fake-model continuation. Tester is diagnosing canonical source-result parsing;
+no product timeout/assertion is weakened. Locators account for collapsed proposals
+and duplicate preview/sheet headings. Web production build passed with isolated
+ignored dist and tracked declaration restoration; backend production DTS pending.
+
+#### Live sequential-turn tool registration defect discovered
+
+Final diagnostic3ed2/next synthetic continuation proves a real production SDK
+issue: after successful Markdown/multi-reference turns, later legacy update gets
+`Tool "read_source_context" not found` before source read executes. Not a parser,
+query size or stale UI assumption. Backend worker reactivated to diagnose SDK
+registration/active-tool lifecycle across sequential operations of the same
+conversation, with faithful real-SDK/default composition regression. Do not fix
+this by disabling source reads, fabricating blocks or raising budgets. Tester
+will remove temporary shape/error diagnostics after the real repair. Production
+source change requires focused checks plus source/security remediation review
+before the one clean full canonical14 gate. Current788 gate is historical proof
+of the pre-remediation source and must not be represented as final patched proof.
+
+Diagnosis correction: ToolNotFound alone did NOT establish lost production tool
+registration. Pinned SDK has deliberately tool-less OM observer/reflection calls;
+browser fixture reuses one actor-only scripted model/counter for all purposes.
+Long history after multi updates may trigger observer first, receiving a forced
+actor tool call. Backend is adding a faithful sequential/parallel proposal plus
+forced OM regression; tester will verify dispatch role/tool names. No production
+registration, budget or tool permission change is authorized by speculation.
+Earlier 'real production issue' wording above is superseded pending this proof.
+
+#### Final gate fixture regression — bounded remediation
+
+Canonical run12679581-2984-4539-878e-62a1760d6848 passed the first11 registered
+flows, including all3 workbook browser cases, then failed1/789 backend cases.
+The exact mismatch is the existing native proposal test's synthetic tool ID:
+expected `call-1`, received `call-1-0`. Parallel-tool fixture support changed the
+single-tool ID; proposal execution itself succeeded and the new sequential/OM
+regression passed. Preserve this failed report without aggregation. Backend owner
+will preserve legacy single-call identity while indexing parallel calls, run the
+complete26-case real-SDK file, then root final types/static and a fresh source
+freeze. Both reviewers require one new unaggregated canonical14 run after that
+bounded fixture repair; no production permission/budget change is indicated.
+
+Fixture correction approved in bounded independent remediation review. All26
+real-SDK cases and5 support fixtures pass together31/31 in7.09s, original strict
+callbacks unchanged. Root final typecheck14/14 passes in1m21.083s; lint/styles/
+registry/docs/mappings pass. Source-final manifest freezes86 files, fingerprint
+`1b0ed22f3d20136f50eb46c11d64ecf17e2d509b90ee6ffce8b877289ce970b2`;
+only the test helper differs from the previous freeze. Canonical14 rerun
+44f4f1fb-cd1b-47f1-b5cf-68ca86f2ef30 was started at that checkpoint, log
+`/tmp/languon-block-refs-critical-complete.log`, shell session70132. Earlier
+sandbox-only7070222e stopped at loopback permission preflight before any journey;
+the approved local-port/Docker rerun preserves all checks. No source edits during
+this gate. Next at that checkpoint: completed reports, source hash/restoration
+audit, reviewers' final evidence approval and scoped closure. The completed
+result follows; parent F059 remains In progress.
+
+Canonical44f4f1fb completed14/14 flows and816/816 cases with no skips/retries/
+flakes. Backend68/789 includes all26 real-SDK cases and migrations0160/0161;
+workbook3/3 covers the changed UI. EVIDENCE.md's final canonical section and
+retained report identity manifest own the final checks. Source-final86/86 hashes
+are unchanged and next-env is restored. Both independent final evidence reviews
+are **Approved**; REV-REF-01/02 and the Low documentation checkpoint inconsistency
+REV-REF-03 are closed. REF-1–REF-5 are Complete. No scoped implementation or
+required verification remains. The user restarts `pnpm dev:all` for the new code
+and local migrations; no new environment values are needed. No merge/push or
+user-service restart performed; parent F059 remains In progress.

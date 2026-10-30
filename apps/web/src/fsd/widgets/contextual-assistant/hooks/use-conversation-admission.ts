@@ -16,6 +16,7 @@ import { ConversationApiError } from '@/fsd/entities/conversation';
 
 type Submission = {
     content: string;
+    blockReferences?: string[] | undefined;
     draftContext?: string | undefined;
     editorContext?: SubmitConversationTurnRequest['editorContext'];
     copiedAttachments?: CopiedAttachment[];
@@ -49,6 +50,7 @@ export function useConversationAdmission({
             content,
             draftContext,
             editorContext,
+            blockReferences,
             copiedAttachments,
             retryOf,
             confirmedQuoteId,
@@ -61,6 +63,7 @@ export function useConversationAdmission({
                     ? { content: draftContext }
                     : undefined,
                 editorContext,
+                blockReferences: blockReferences ?? [],
                 retryOf,
             };
             const signature = JSON.stringify(candidate);
@@ -129,6 +132,7 @@ export function useConversationAdmission({
             copiedAttachments: input.attachments,
             draftContext: input.draftContext?.content,
             editorContext: input.editorContext,
+            blockReferences: input.blockReferences,
             retryOf: input.retryOf,
             confirmedQuoteId: quote.id,
             onAccepted: submit.variables?.onAccepted,

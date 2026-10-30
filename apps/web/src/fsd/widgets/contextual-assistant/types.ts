@@ -1,4 +1,7 @@
-import type { KnowledgeBlockProposalContext } from '@/fsd/features/knowledge-notes';
+import type {
+    KnowledgeBlockReference,
+    KnowledgeBlockProposalContext,
+} from '@/fsd/features/knowledge-notes';
 import type {
     ConversationEditorTarget,
     ConversationSource,
@@ -6,13 +9,15 @@ import type {
 
 export type AssistantRequest = {
     id: string;
-    prompt: string;
+    prompt?: string | undefined;
     passage?: string | undefined;
+    blockIds?: string[] | undefined;
 };
 
 export type ContextualAssistantProps = {
     /** Prefills a question for explicit Send; never grants editing or auto-send authority. */
     request?: AssistantRequest | undefined;
+    blocks?: KnowledgeBlockReference[] | undefined;
     source: ConversationSource;
     contextLabel?: string | undefined;
     shareKey?: string | undefined;
@@ -57,6 +62,7 @@ export type WorkspaceAssistantProps = {
               passage?: string;
               prompt?: string;
               autoSend?: boolean;
+              blockIds?: string[];
               targetId?: string;
           }
         | undefined;

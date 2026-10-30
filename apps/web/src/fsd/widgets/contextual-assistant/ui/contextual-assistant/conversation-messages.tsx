@@ -1,3 +1,4 @@
+import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowDown } from 'lucide-react';
 import type {
@@ -24,6 +25,7 @@ import type {
 import styles from './conversation-messages.module.css';
 
 export function ConversationMessages({
+    blocks,
     detail,
     uiMessages,
     active,
@@ -41,6 +43,7 @@ export function ConversationMessages({
     onReviewProposal,
     workspace,
 }: {
+    blocks?: KnowledgeBlockReference[] | undefined;
     detail: ConversationDetail;
     uiMessages: ConversationUIMessage[];
     active: boolean;
@@ -171,6 +174,7 @@ export function ConversationMessages({
                         <TutorMessage
                             key={message.id}
                             message={message}
+                            blocks={blocks}
                             changed={changed}
                             turn={turn}
                             active={active || pending}

@@ -19,6 +19,8 @@
 
 .compact .rule {
     font-size: var(--size-14);
+    max-height: var(--size-96);
+    overflow: hidden;
 }
 
 .label {
@@ -34,7 +36,6 @@
     display: inline-block;
     background: var(--background-subtle);
     border-radius: var(--radius-8);
-    font-family: monospace;
     font-size: var(--size-14);
     margin: 0;
     padding: var(--space-6) var(--space-12);
@@ -43,6 +44,8 @@
 
 .compact .pattern {
     font-size: var(--size-12);
+    max-height: var(--size-96);
+    overflow: hidden;
 }
 
 .examples {

@@ -1,0 +1,64 @@
+.root {
+    line-height: inherit;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+.root :where(p, ul, ol, blockquote, pre, table, h1, h2, h3, h4, h5, h6) {
+    margin: 0;
+}
+
+.root > :where(* + *) {
+    margin-block-start: var(--space-8);
+}
+
+.root :where(ul, ol) {
+    padding-inline-start: var(--space-24);
+}
+
+.root :where(ul) {
+    list-style: disc;
+}
+
+.root :where(ol) {
+    list-style: decimal;
+}
+
+.root :where(li + li) {
+    margin-block-start: var(--space-4);
+}
+
+.root :where(h1, h2, h3, h4, h5, h6) {
+    font: inherit;
+    font-weight: 600;
+}
+
+.root :where(strong) {
+    font-weight: 600;
+}
+
+.root :where(blockquote) {
+    padding-inline-start: var(--space-12);
+    border-inline-start: var(--size-2) solid var(--border-default);
+}
+
+.root :where(pre, table) {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.root :where(table) {
+    display: block;
+    border-collapse: collapse;
+}
+
+.root :where(th, td) {
+    padding: var(--space-4) var(--space-8);
+    text-align: start;
+    border: 1px solid var(--border-default);
+}
+
+.root :where(a) {
+    color: var(--primary-default);
+    text-decoration: underline;
+}

@@ -17,6 +17,7 @@ import { showToast } from '@/fsd/shared/ui';
 import { useConversation } from './use-conversation';
 import { useAssistantNavigation } from './use-assistant-navigation';
 import { useConversationDeletion } from './use-conversation-deletion';
+import { useBlockReferences } from './use-block-references';
 import { useWorkspacePassage } from './use-workspace-passage';
 import { useWorkspaceAutoSend } from './use-workspace-auto-send';
 import { workspaceCopy } from '../lib/workspace-copy';
@@ -119,6 +120,11 @@ export function useAssistantPanel(
     const lastPassage = useRef<string | null>(null);
     const lastRequest = useRef<string | null>(null);
     const workspaceRequest = props.workspace?.request;
+    const blockReferences = useBlockReferences(
+        chat.id,
+        props.request ?? workspaceRequest,
+        props.blocks,
+    );
     const composerRequest = props.request ?? workspaceRequest;
     useEffect(() => {
         if (!composerRequest || composerRequest.id === lastRequest.current)
@@ -250,6 +256,7 @@ export function useAssistantPanel(
         if (chat.id) deleteFromHistory(chat.id);
     }
     function send() {
+        if (blockReferences.missing) return;
         if (props.workspace) {
             if (preparationLock.current) return;
             let snapshot;
@@ -285,6 +292,10 @@ export function useAssistantPanel(
             const question = chat.question;
             const copiedAttachments = [...chat.attachments];
             const selectedPassage = workspaceSelection.passage;
+            const referencedIds = blockReferences.selected.map(
+                (item) => item.id,
+            );
+            if (blockReferences.missing) return;
             setAttachmentError(null);
             preparationLock.current = true;
             setPreparing(true);
@@ -321,6 +332,7 @@ export function useAssistantPanel(
                     await chat.submit.mutateAsync({
                         content: question,
                         copiedAttachments,
+                        blockReferences: referencedIds,
                         editorContext: {
                             ...(workingBranch ? { workingBranch } : {}),
                             content: snapshot.content,
@@ -334,6 +346,7 @@ export function useAssistantPanel(
                                 );
                             props.workspace?.onSent?.();
                             workspaceSelection.sent(selectedPassage?.id);
+                            blockReferences.sent(referencedIds);
                         },
                     });
                 } catch {
@@ -347,6 +360,12 @@ export function useAssistantPanel(
         }
         chat.submit.mutate({
             content: chat.question,
+            blockReferences: blockReferences.selected.map((item) => item.id),
+            onAccepted() {
+                blockReferences.sent(
+                    blockReferences.selected.map((item) => item.id),
+                );
+            },
             draftContext: chat.useDraft ? props.currentDraft : undefined,
         });
     }
@@ -423,7 +442,11 @@ export function useAssistantPanel(
             (item) => item.turnId === turn.id && item.role === 'user',
         );
         if (message)
-            chat.submit.mutate({ content: message.content, retryOf: turn.id });
+            chat.submit.mutate({
+                content: message.content,
+                retryOf: turn.id,
+                blockReferences: message.blockReferences ?? [],
+            });
     }
     function context() {
         setPicker((value) => !value);
@@ -519,6 +542,7 @@ export function useAssistantPanel(
         retryDefaults,
         updatePreferences,
         attachmentError,
+        blockReferences,
         workspacePassage: workspaceSelection.passage,
         removeWorkspacePassage,
         requestWithSession,

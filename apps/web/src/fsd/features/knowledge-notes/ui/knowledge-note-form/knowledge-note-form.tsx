@@ -60,6 +60,7 @@ export type KnowledgeWorkspaceEditorOptions = {
     editorId: string;
     proposalRootId: string;
     inlineProposalRootId?: string;
+    onMentionBlock?: ((blockId: string) => void) | undefined;
     onAskTutor(passage: string): void;
     onAskOutline(): void;
     onTutorAction?(action: KnowledgeTutorAction, passage: string): void;

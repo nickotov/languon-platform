@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:9962330712df3ba9
+// @user-flow-revision interactive-workbooks sha256:6d8962c81eecb50e
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -1597,10 +1597,44 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         },
         'POST',
     );
+    await page.addInitScript(() => {
+        const state = window as typeof window & {
+            knowledgeWorkspaceUnavailableFlash?: boolean;
+        };
+        const unavailable = 'Knowledge is unavailable. Try again.';
+        state.knowledgeWorkspaceUnavailableFlash = false;
+        const observeVisibleAlert = () => {
+            const alert = Array.from(
+                document.querySelectorAll<HTMLElement>('[role="alert"]'),
+            ).find(
+                (element) =>
+                    element.textContent?.includes(unavailable) &&
+                    element.getClientRects().length > 0,
+            );
+            if (alert) state.knowledgeWorkspaceUnavailableFlash = true;
+        };
+        new MutationObserver(observeVisibleAlert).observe(document, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+    });
     await page.goto(`${origin}/knowledge/${note.id}`);
     await expect(
         page.locator(`[data-learning-block-id="${vocabularyId}"]`),
     ).toBeVisible();
+    await expect
+        .poll(() =>
+            page.evaluate(
+                () =>
+                    (
+                        window as typeof window & {
+                            knowledgeWorkspaceUnavailableFlash?: boolean;
+                        }
+                    ).knowledgeWorkspaceUnavailableFlash === true,
+            ),
+        )
+        .toBe(false);
     await page
         .getByRole('button', {
             name: 'Block settings: Review vocabulary',
@@ -1851,6 +1885,156 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     });
     if (!(await tutor.isVisible()))
         await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    // The generated proposal must retain safe narrative structure in both
+    // compact chat preview and the applied sheet, rather than flattening it.
+    await tutor
+        .getByLabel('Your question')
+        .fill('Markdown grammar block fixture');
+    await aiAction(
+        page,
+        tutor.getByRole('button', { name: 'Send', exact: true }),
+        /\/conversations\/[^/]+\/turns$/u,
+    );
+    const grammarProposal = tutor
+        .getByRole('article', {
+            name: 'Proposed learning blocks',
+            exact: true,
+        })
+        .filter({
+            has: page.getByRole('heading', {
+                name: 'Subjonctif: readable pattern',
+                exact: true,
+            }),
+        });
+    await expect(grammarProposal).toBeVisible({ timeout: 30_000 });
+    await expect(
+        grammarProposal.locator('strong', { hasText: 'le subjonctif' }),
+    ).toBeVisible();
+    await expect(grammarProposal.locator('ul > li')).toHaveCount(2);
+    await expect(grammarProposal.locator('table')).toBeVisible();
+    await grammarProposal
+        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .click();
+    const grammarSheet = page.locator('[data-learning-block-id]').filter({
+        has: page.getByRole('heading', {
+            name: 'Subjonctif: readable pattern',
+            exact: true,
+        }),
+    });
+    await expect(
+        grammarSheet.locator('strong', { hasText: 'le subjonctif' }),
+    ).toBeVisible();
+    await expect(grammarSheet.locator('ul > li')).toHaveCount(2);
+    await expect(grammarSheet.locator('table')).toBeVisible();
+
+    // Settings and the slash picker feed the same removable, server-resolved
+    // references. The request itself carries IDs, never client block material.
+    await page
+        .getByRole('button', {
+            name: 'Block settings: Review vocabulary',
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole('menuitem', { name: 'Add block to chat', exact: true })
+        .click();
+    await expect(
+        tutor.getByRole('button', {
+            name: 'Remove block reference: Review vocabulary',
+            exact: true,
+        }),
+    ).toBeVisible();
+    const question = tutor.getByLabel('Your question');
+    await question.focus();
+    await question.press('/');
+    const blockPicker = page.getByRole('dialog', {
+        name: 'Blocks in this note',
+        exact: true,
+    });
+    await expect(blockPicker).toBeVisible();
+    await blockPicker
+        .getByRole('button', { name: /^Reading to translate/u })
+        .click();
+    await blockPicker
+        .getByRole('button', { name: 'Done', exact: true })
+        .click();
+    await expect(
+        tutor.getByRole('button', {
+            name: 'Remove block reference: Reading to translate',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await question.fill('Mentioned blocks update fixture');
+    await aiAction(
+        page,
+        tutor.getByRole('button', { name: 'Send', exact: true }),
+        /\/conversations\/[^/]+\/turns$/u,
+    );
+    const mentionedVocabulary = tutor
+        .getByRole('article', {
+            name: 'Proposed learning blocks',
+            exact: true,
+        })
+        .filter({ hasText: 'travail amélioré' });
+    const mentionedReading = tutor
+        .getByRole('article', {
+            name: 'Proposed learning blocks',
+            exact: true,
+        })
+        .filter({
+            has: page.getByRole('heading', {
+                name: 'Mentioned reading updated',
+                exact: true,
+            }),
+        });
+    await expect(mentionedVocabulary).toBeVisible({ timeout: 30_000 });
+    await expect(mentionedReading).toBeVisible({ timeout: 30_000 });
+    await mentionedVocabulary
+        .getByRole('button', { name: 'Dismiss', exact: true })
+        .click();
+    const dismissedProposal = tutor
+        .getByRole('article', { name: 'Proposed learning blocks', exact: true })
+        .filter({ hasText: 'Proposal dismissed' });
+    await expect(
+        dismissedProposal.getByText('Proposal dismissed', { exact: true }),
+    ).toBeVisible();
+    expect(
+        JSON.stringify(
+            (await api<{ note: KnowledgeNote }>(page, `/knowledge/${note.id}`))
+                .note.body,
+        ),
+    ).not.toContain('travail amélioré');
+    await dismissedProposal
+        .getByRole('button', { name: 'Show proposal', exact: true })
+        .click();
+    const proseEditor = page.locator(
+        '[data-workspace-editor] [role="textbox"]',
+    );
+    await proseEditor.locator(':scope > p').last().click();
+    await mentionedReading
+        .getByRole('button', { name: 'Add at cursor', exact: true })
+        .click();
+    await expect(
+        proseEditor.getByRole('heading', {
+            name: 'Mentioned reading updated',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await mentionedVocabulary
+        .getByRole('button', { name: 'Update block', exact: true })
+        .click();
+    await expect(
+        page.getByRole('button', {
+            name: 'Block settings: Mentioned vocabulary updated',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('button', {
+            name: 'Block settings: Reading to translate',
+            exact: true,
+        }),
+    ).toBeVisible();
     await tutor
         .getByLabel('Your question')
         .fill(
@@ -1861,10 +2045,12 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         tutor.getByRole('button', { name: 'Send', exact: true }),
         /\/conversations\/[^/]+\/turns$/u,
     );
-    const proposal = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
-        exact: true,
-    });
+    const proposal = tutor
+        .getByRole('article', {
+            name: 'Proposed learning blocks',
+            exact: true,
+        })
+        .filter({ hasText: 'работа / труд' });
     await expect(
         proposal.getByText('работа / труд', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
@@ -1903,13 +2089,13 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         .getByLabel('Title', { exact: true })
         .fill('Block review laboratory updated');
     await proposal
-        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .getByRole('button', { name: 'Update block', exact: true })
         .click();
     await expect(
         proposal.getByRole('button', { name: 'Show in sheet', exact: true }),
     ).toBeVisible();
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(
-        blocks.length,
+        blocks.length + 2,
     );
     const stillPublished = await api<{ note: KnowledgeNote }>(
         page,

@@ -6,6 +6,7 @@ import type {
     LearningBlockVariant,
 } from '../../types';
 import { BlockPlayButton } from '../block-play-button/block-play-button';
+import { LearningNarrative } from '../learning-narrative/learning-narrative';
 import styles from './grammar-block.module.css';
 
 type Grammar = Extract<LearningBlock, { type: 'grammar' }>;
@@ -24,17 +25,22 @@ export function GrammarBlock({
 }) {
     const compact = variant === 'compact';
     const examples = compact ? block.examples?.slice(0, 1) : block.examples;
-    const rule = compact ? block.rule?.split(/(?<=[.!?])\s/u)[0] : block.rule;
+    const rule = block.rule;
     const className = compact ? styles.compact : styles.root;
     return (
         <div className={className} lang={block.language} dir='auto'>
-            {rule ? <p className={styles.rule}>{rule}</p> : null}
+            {rule ? (
+                <LearningNarrative className={styles.rule} content={rule} />
+            ) : null}
             {block.pattern ? (
                 <div>
                     {!compact ? (
                         <p className={styles.label}>{labels.pattern}</p>
                     ) : null}
-                    <p className={styles.pattern}>{block.pattern}</p>
+                    <LearningNarrative
+                        className={styles.pattern}
+                        content={block.pattern}
+                    />
                 </div>
             ) : null}
             {examples?.length ? (
@@ -97,9 +103,10 @@ export function GrammarBlock({
                                     </span>
                                 </p>
                                 {mistake.explanation ? (
-                                    <p className={styles.explanation}>
-                                        {mistake.explanation}
-                                    </p>
+                                    <LearningNarrative
+                                        className={styles.explanation}
+                                        content={mistake.explanation}
+                                    />
                                 ) : null}
                             </li>
                         ))}

@@ -1,4 +1,5 @@
 import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
+import { assertReferencedProposalTarget } from '../../../application/conversation-block-references';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import {
     KnowledgeBlockProposalSchema,
@@ -33,6 +34,7 @@ import {
     freshProposalBlocks,
     replaceProposalBlock,
 } from './block-proposal-content';
+import { insertProposalBlocks } from './block-proposal-insertion';
 
 function view(row: typeof proposals.$inferSelect, currentDocument?: unknown) {
     const captured = [...row.dependencySnapshots];
@@ -121,6 +123,11 @@ export async function conversationProposeBlocks(
                 'The working document changed during generation. Request a new proposal.',
             );
         const parsed = LearningBlockProposalInputSchema.parse(input);
+        assertReferencedProposalTarget(
+            turn.sourceSnapshot,
+            parsed.targetBlockId,
+        );
+
         const blocks = parsed.targetBlockId
             ? parsed.blocks.map((block) => ({
                   ...block,
@@ -206,7 +213,11 @@ export async function conversationApplyBlockProposal(
     proposalId: string,
     expectedBranchVersion: number,
     mode: 'proposal' | 'add-separately' = 'proposal',
+    insertionPosition?: number,
 ) {
+    if (insertionPosition !== undefined && mode !== 'add-separately')
+        throw conflict('Cursor insertion requires adding an independent copy.');
+
     return conversationTransaction(persistence, async (tx) => {
         const { chat } = await ownerContext(persistence, tx, access, id);
         const [proposal] = await tx
@@ -313,16 +324,23 @@ export async function conversationApplyBlockProposal(
                     : proposal.blocks;
 
             appliedBlocks = added.slice(sources.length);
-            document = {
-                ...branch.content.body.document,
-                content: [
-                    ...(branch.content.body.document.content ?? []),
-                    ...added.map((block) => ({
-                        type: 'learningBlock',
-                        attrs: { block },
-                    })),
-                ],
-            };
+            document =
+                insertionPosition !== undefined
+                    ? insertProposalBlocks(
+                          branch.content.body.document,
+                          added,
+                          insertionPosition,
+                      )
+                    : {
+                          ...branch.content.body.document,
+                          content: [
+                              ...(branch.content.body.document.content ?? []),
+                              ...added.map((block) => ({
+                                  type: 'learningBlock',
+                                  attrs: { block },
+                              })),
+                          ],
+                      };
         }
 
         const body = KnowledgeBodySchema.parse({ schemaVersion: 2, document });

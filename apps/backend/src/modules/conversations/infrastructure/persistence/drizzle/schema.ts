@@ -144,6 +144,10 @@ export const conversationMessagesTable = pgTable(
             .default([])
             .$type<ConversationToolCall[]>(),
         modelContent: jsonb('model_content').$type<TutorMemoryMessage[]>(),
+        blockReferences: jsonb('block_references')
+            .$type<string[]>()
+            .notNull()
+            .default(sql`'[]'::jsonb`),
         editorTarget: jsonb('editor_target').$type<ConversationEditorTarget>(),
         status: text('status')
             .notNull()

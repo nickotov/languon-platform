@@ -8,6 +8,7 @@ import {
     pgTable,
     timestamp,
     uuid,
+    uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import {
     knowledgeNotesTable,
@@ -23,7 +24,6 @@ export const conversationBlockProposalsTable = pgTable(
             .references(() => conversationsTable.id, { onDelete: 'cascade' }),
         turnId: uuid('turn_id')
             .notNull()
-            .unique()
             .references(() => conversationTurnsTable.id, {
                 onDelete: 'cascade',
             }),
@@ -48,6 +48,10 @@ export const conversationBlockProposalsTable = pgTable(
         appliedBranchVersion: integer('applied_branch_version'),
     },
     (t) => [
+        uniqueIndex('conversation_block_proposals_turn_target_unique').on(
+            t.turnId,
+            sql`coalesce(${t.targetBlockId}, '00000000-0000-0000-0000-000000000000'::uuid)`,
+        ),
         index('conversation_block_proposals_conversation_idx').on(
             t.conversationId,
             t.createdAt,

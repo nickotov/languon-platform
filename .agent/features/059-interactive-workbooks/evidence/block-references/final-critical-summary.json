@@ -1,0 +1,97 @@
+{
+    "run": "44f4f1fb-cd1b-47f1-b5cf-68ca86f2ef30",
+    "command": "pnpm test:e2e:critical",
+    "sourceFingerprint": "1b0ed22f3d20136f50eb46c11d64ecf17e2d509b90ee6ffce8b877289ce970b2",
+    "sourceFiles": 86,
+    "sourceHashMismatches": [],
+    "generatedDeclarationRestored": true,
+    "selectedFlows": 14,
+    "passedFlows": 14,
+    "totalTests": 816,
+    "reports": [
+        {
+            "id": "setup-to-generation",
+            "status": "passed",
+            "tests": 1,
+            "reportSha256": "b85323da64006d0b07e2566e0ae7de53a95f3059bdeb2435d595fefe773023a2"
+        },
+        {
+            "id": "admin-text-ai-routing",
+            "status": "passed",
+            "tests": 2,
+            "reportSha256": "58da6751697007f75ed12d7ab9d0ffd88f8d32d882798c363325224adf8e36db"
+        },
+        {
+            "id": "authentication",
+            "status": "passed",
+            "tests": 3,
+            "reportSha256": "a8aa901c49b80be5ec0174806e002aea9c3512a7ae3e541a205acf7729d6e70c"
+        },
+        {
+            "id": "admin-session-refresh",
+            "status": "passed",
+            "tests": 3,
+            "reportSha256": "5ce0d4c55109f01f2a0d2d19c4afa117b7831f50234d53f927350ae7282bb3b4"
+        },
+        {
+            "id": "dictionary-generation",
+            "status": "passed",
+            "tests": 1,
+            "reportSha256": "fd2bf4b70af2e6ec3ca7eeb233fab6c3745e445907dbc86e1e888cf71dc530ed"
+        },
+        {
+            "id": "sentence-practice",
+            "status": "passed",
+            "tests": 2,
+            "reportSha256": "980576a1e277fe6422f6c002667d24de8c079e92568a7203991b35c64dc1c7f4"
+        },
+        {
+            "id": "text-generation",
+            "status": "passed",
+            "tests": 2,
+            "reportSha256": "b50322a31899ca61a685c507893b8b0f62f822009d2399bb3d4f371c27d2b4ce"
+        },
+        {
+            "id": "interactive-workbooks",
+            "status": "passed",
+            "tests": 3,
+            "reportSha256": "4a219cdfc3947b9b68fa9a699a7a139ba6692ab9f0fb963520f63ba002b0650a"
+        },
+        {
+            "id": "chat-lifecycle",
+            "status": "passed",
+            "tests": 1,
+            "reportSha256": "1c23864b9209001c2ce7d8dd0b209e2cb4a57198c123689c80c42bc4b1342279"
+        },
+        {
+            "id": "insufficient-credits",
+            "status": "passed",
+            "tests": 1,
+            "reportSha256": "d203eed17b06e515c77de237796b6014351d87d9eeada7b4ff09dc1a7f43257b"
+        },
+        {
+            "id": "free-interview",
+            "status": "passed",
+            "tests": 1,
+            "reportSha256": "b1b7cd3a37b0b308c2c093450fc76f93b18877a37b9ca91822c62fdfc0abdbbf"
+        },
+        {
+            "id": "ai-execution-contracts",
+            "status": "passed",
+            "tests": 789,
+            "reportSha256": "84847d769eae4585204ca657c5bbae1c3b5b13a38104cb5162e767d028e2eb9b"
+        },
+        {
+            "id": "speech-playback",
+            "status": "passed",
+            "tests": 4,
+            "reportSha256": "4f5625de82aa7fe296364f41d6435ecc7468f5d563695263ed6431a3c0b287aa"
+        },
+        {
+            "id": "admin-mcp",
+            "status": "passed",
+            "tests": 3,
+            "reportSha256": "5b08b41b02586be484be47a841fb1bb85fea58f9053226e41e4d2a602d77adc0"
+        }
+    ]
+}

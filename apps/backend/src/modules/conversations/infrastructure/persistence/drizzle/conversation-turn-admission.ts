@@ -3,6 +3,7 @@ import {
     assertConversationEditorAuthority,
     assertConversationRetryAuthority,
 } from './conversation-block-target';
+import { prepareReferencedTutorMessage } from '../../../application/conversation-block-references';
 import {
     ChatPreferencesSchema,
     ConversationActionQuoteSchema,
@@ -305,19 +306,12 @@ export async function conversationSubmit(
 
             const modelContent =
                 retryModelContent ??
-                projectTutorUserMessage({
+                prepareReferencedTutorMessage({
+                    snapshot,
+                    sourceKind: chat.sourceKind,
+                    request: input,
                     content: learnerContent,
                     attachments: learnerAttachments,
-                    ...(input.editorContext && !input.retryOf
-                        ? { editorContext: input.editorContext }
-                        : {}),
-                    source: {
-                        sourceKind: chat.sourceKind,
-                        version: snapshot.version,
-                        provenance: snapshot.provenance,
-                        title: snapshot.title,
-                        studiedLanguage: snapshot.studiedLanguage,
-                    },
                 });
             const editorTarget = input.retryOf
                 ? retryEditorTarget
@@ -467,6 +461,7 @@ export async function conversationSubmit(
                         content: learnerContent,
                         attachments: learnerAttachments,
                         modelContent: [modelUserMessage],
+                        blockReferences: snapshot.blockReferences ?? [],
                         editorTarget,
                         status: 'complete',
                         sourceVersion: snapshot.version,

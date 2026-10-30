@@ -27,6 +27,8 @@ export type SourceAuthority = {
 
 export type SourceMaterial = CopiedAttachment;
 export type ConversationSourceSnapshot = {
+    blockReferences?: string[];
+    learningBlocks?: SourceMaterial[];
     blockTarget?: {
         branchId: string;
         version: number;

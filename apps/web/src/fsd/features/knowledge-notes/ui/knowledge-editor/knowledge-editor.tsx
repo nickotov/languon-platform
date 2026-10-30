@@ -1,4 +1,6 @@
 'use client';
+import type { BlockInsertionBookmark } from '../../lib/block-insertion-bookmark';
+import { MessageSquarePlus } from 'lucide-react';
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -37,6 +39,7 @@ import { pasteLearningBlock } from '../../lib/learning-block-paste';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 
 export type KnowledgeEditorHandle = {
+    captureBlockInsertion(): BlockInsertionBookmark | null;
     appendLearningBlock(block: LearningBlock): boolean;
     replaceLearningBlock(
         expected: LearningBlock,
@@ -286,6 +289,18 @@ export const KnowledgeEditor = forwardRef<
             </div>
         );
     }
+    function blockActions(block: LearningBlock): MenuItem[] {
+        const actions = [...(getBlockActions?.(block) ?? [])];
+        if (workspace?.onMentionBlock)
+            actions.push({
+                label: t('knowledge.addBlockToChat'),
+                icon: <MessageSquarePlus size={16} aria-hidden />,
+                onSelect() {
+                    workspace.onMentionBlock?.(block.id);
+                },
+            });
+        return actions;
+    }
     const authoringEnabled = !disabled && toolbarVariant !== 'tutor';
     return (
         <BlockAuthoringProvider
@@ -298,7 +313,7 @@ export const KnowledgeEditor = forwardRef<
             renderAudioPreparation={workspace?.renderAudioPreparation}
             blockViewOptions={workspace?.blockViewOptions}
             canDuplicateOnServer={Boolean(workspace?.blockCopy)}
-            additionalActions={getBlockActions}
+            additionalActions={blockActions}
         >
             {content}
         </BlockAuthoringProvider>

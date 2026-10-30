@@ -317,3 +317,42 @@ it('retains the question and rejects admission if the editor changes while recov
     expect(chat.setQuestion).not.toHaveBeenCalled();
     expect(result.current.workspacePassage?.content).toBe(passage);
 });
+
+it('freezes selected block references at Send and preserves references added during draft flushing', async () => {
+    const { chat, props, workspace } = fixture();
+    const blocks = [1, 2, 3].map((index) => ({
+        id: `11111111-1111-4111-8111-${String(index).padStart(12, '0')}`,
+        type: 'grammar' as const,
+        title: `Rule ${index}`,
+    }));
+    workspace.request = {
+        ...workspace.request!,
+        blockIds: [blocks[0]!.id, blocks[1]!.id],
+    };
+    let complete!: (branch: { id: string; version: number }) => void;
+    workspace.beforeSend = vi.fn(
+        () =>
+            new Promise((resolve) => {
+                complete = resolve;
+            }),
+    );
+    const { result } = renderHook(
+        () => useAssistantPanel({ ...props, blocks }),
+        { wrapper: Wrapper },
+    );
+    await waitFor(() =>
+        expect(result.current.blockReferences.selected).toHaveLength(2),
+    );
+    act(() => result.current.send());
+    act(() => result.current.blockReferences.add(blocks[2]!.id));
+    await act(async () => {
+        complete({ id: 'branch', version: 1 });
+    });
+    await waitFor(() => expect(chat.submit.mutateAsync).toHaveBeenCalledOnce());
+    expect(chat.submit.mutateAsync.mock.calls[0]?.[0]).toMatchObject({
+        blockReferences: [blocks[0]!.id, blocks[1]!.id],
+    });
+    expect(
+        result.current.blockReferences.selected.map((item) => item.id),
+    ).toEqual([blocks[2]!.id]);
+});

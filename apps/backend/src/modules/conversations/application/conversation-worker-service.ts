@@ -128,10 +128,14 @@ export class ConversationWorkerService {
                             : undefined,
                     );
                 },
-                readContext: async ({ query, limit }) => {
+                readContext: async ({ query, limit, blockIds }) => {
                     combined.throwIfAborted();
                     await this.dependencies.store.heartbeat(turn);
-                    const selected = source.read({ query, limit });
+                    const selected = source.read({
+                        query,
+                        limit,
+                        ...(blockIds ? { blockIds } : {}),
+                    });
                     await this.dependencies.store.recordMaterial(
                         turn,
                         selected.material,

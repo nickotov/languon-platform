@@ -1,3 +1,5 @@
+import { MessageBlockReferences } from './block-reference-controls';
+import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { Check } from 'lucide-react';
 import { KnowledgeBlockProposalsForTurn } from '@/fsd/features/knowledge-notes';
 import type {
@@ -29,6 +31,7 @@ import {
 import styles from './conversation-messages.module.css';
 
 export function TutorMessage({
+    blocks = [],
     message,
     changed,
     turn,
@@ -47,6 +50,7 @@ export function TutorMessage({
     reviewingProposalId,
     onReviewingProposal,
 }: {
+    blocks?: KnowledgeBlockReference[] | undefined;
     message: ConversationUIMessage;
     changed: boolean;
     turn: ConversationTurn | undefined;
@@ -130,6 +134,12 @@ export function TutorMessage({
         <article className={styles.message}>
             {changed && <div className={styles.divider}>{copy.changed}</div>}
             <div className={isUser ? styles.userGroup : styles.answer}>
+                {isUser && (canonical.blockReferences?.length ?? 0) > 0 && (
+                    <MessageBlockReferences
+                        ids={canonical.blockReferences!}
+                        available={blocks}
+                    />
+                )}
                 {selectedPassage && (
                     <WorkspaceMessagePassage content={selectedPassage} />
                 )}

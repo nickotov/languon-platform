@@ -5,6 +5,7 @@ import { safeAudioUrl } from '../../lib/safe-audio-url';
 import type { LearningBlockViewProps } from '../../types';
 import { AudioPlayer } from './audio-player';
 import { Transcript } from './transcript';
+import { LearningNarrative } from '../learning-narrative/learning-narrative';
 import { VideoPlayer, type VideoSeek } from './video-player';
 import mediaStyles from './media-block.module.css';
 export { Transcript } from './transcript';
@@ -145,7 +146,10 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
             {block.type === 'video' &&
             block.description &&
             props.variant !== 'compact' ? (
-                <p className={mediaStyles.description}>{block.description}</p>
+                <LearningNarrative
+                    className={mediaStyles.description}
+                    content={block.description}
+                />
             ) : null}
             {sourceUrl && props.variant !== undefined ? (
                 <div className={mediaStyles.source}>

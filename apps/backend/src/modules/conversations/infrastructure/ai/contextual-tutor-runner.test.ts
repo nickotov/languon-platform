@@ -45,6 +45,114 @@ function runInput(memory = tutorMemoryFixture()): TutorRunInput {
 }
 
 describe('contextual tutor with the real pinned Mastra SDK', () => {
+    it('retains authorized source tools across sequential multi-proposal turns and pre-answer observation', async () => {
+        const memory = tutorMemoryFixture();
+        const first = {
+            id: '01900000-0000-4000-8000-000000000091',
+            type: 'grammar',
+            language: 'fr',
+            rule: 'Use the prepared first rule.',
+        };
+        const second = {
+            ...first,
+            id: '01900000-0000-4000-8000-000000000092',
+            rule: 'Use the prepared second rule.',
+        };
+        const read = {
+            toolName: 'read_source_context',
+            input: {
+                query: 'prepared grammar',
+                blockIds: [first.id],
+                limit: 1,
+            },
+        };
+        const proposal = (block: typeof first) => ({
+            toolName: 'propose_learning_blocks',
+            input: { targetBlockId: block.id, blocks: [block] },
+        });
+        const provider = scriptedTutorModel([
+            proposal(first),
+            proposal(second),
+            'Review both independent proposals.',
+            read,
+            proposal(first),
+            'Review the updated first rule.',
+            '<observations>\n- The learner reviewed two grammar blocks and requested an update to the first rule.\n</observations>',
+            read,
+            proposal(first),
+            'The source tool remains available after observation.',
+        ]);
+        for (let turn = 0; turn < 3; turn++) {
+            if (turn === 2)
+                memory.messages.set('retained-context-before-third-turn', {
+                    id: 'retained-context-before-third-turn',
+                    role: 'assistant',
+                    content: 'Earlier prepared learning explanation. '.repeat(
+                        300,
+                    ),
+                    createdAt: new Date(Date.now() - 1).toISOString(),
+                });
+            const input = runInput(memory);
+            memory.messages.delete(input.message.id);
+            input.message = {
+                ...input.message,
+                id: `sequential-user-${turn}`,
+                createdAt: new Date().toISOString(),
+            };
+            memory.messages.set(input.message.id, input.message);
+            input.operationId = `sequential-operation-${turn}`;
+            input.canProposeBlocks = true;
+            input.sourceContext = {
+                ...input.sourceContext,
+                blockProposalsAvailable: true,
+            };
+            input.onBlockProposal = vi.fn(async () => ({
+                id: '01900000-0000-4000-8000-000000000093',
+            }));
+            input.readContext = vi.fn(async () => ({
+                material: [
+                    {
+                        id: first.id,
+                        label: 'Prepared grammar',
+                        kind: 'text' as const,
+                        content: JSON.stringify(first),
+                    },
+                ],
+                total: 1,
+            }));
+            const accounting = tutorAccountingFixture();
+            await createContextualTutorRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 64_000,
+                memoryThresholds: {
+                    messageTokens: turn === 2 ? 1_000 : 10_000,
+                    observationTokens: 10_000,
+                    maxTokensPerBatch: 10_000,
+                },
+            }).run(input);
+            expect(input.onBlockProposal).toHaveBeenCalledTimes(
+                turn === 0 ? 2 : 1,
+            );
+            expect(input.readContext).toHaveBeenCalledTimes(turn === 0 ? 0 : 1);
+            expect(
+                accounting.admit.mock.calls.map(([call]) => call.purpose),
+            ).toEqual(
+                turn === 2
+                    ? ['observation', 'answer', 'answer', 'answer']
+                    : ['answer', 'answer', 'answer'],
+            );
+        }
+        expect(provider.requests[6]?.tools).toBeUndefined();
+        expect(provider.requests[6]?.toolChoice).toBeUndefined();
+        for (const index of [0, 3, 7])
+            expect(
+                provider.requests[index]?.tools?.map((tool) => tool.name),
+            ).toContain('read_source_context');
+        expect(JSON.stringify([...memory.messages.values()])).not.toContain(
+            'ToolNotFoundError',
+        );
+    });
     it('delivers an explicitly authorized typed block proposal through the real SDK tool path', async () => {
         const input = runInput();
         input.canProposeBlocks = true;

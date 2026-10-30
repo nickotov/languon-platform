@@ -221,6 +221,10 @@ export default defineConfig({
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DEEPSEEK_API_KEY: 'synthetic-test-key',
                 DICTIONARY_GENERATION_MODEL_ID: '',
+                // The worker process otherwise inherits a developer's API
+                // admission allowlist. Keep this disposable fixture's queue
+                // contract identical to its worker capability declaration.
+                DICTIONARY_JOB_API_ENQUEUED_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_DOCUMENT_OCR_MODE: documentServicesEnabled
                     ? 'deterministic'

@@ -1,3 +1,4 @@
+import { knowledgeBlockMentionIds } from '@/fsd/features/knowledge-notes';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { knowledgePlainText } from '../lib/workspace-document';
@@ -9,6 +10,7 @@ type TutorRequest = {
     prompt?: string;
     targetId?: string;
     autoSend?: boolean;
+    blockIds?: string[];
 };
 
 /** Local presentation state; publication and recovery remain in page actions. */
@@ -33,6 +35,17 @@ export function useWorkspacePresentation(
         );
     }
 
+    function mentionBlock(blockId: string) {
+        setRequest({
+            id: crypto.randomUUID(),
+            blockIds: actions.draft
+                ? knowledgeBlockMentionIds(
+                      actions.draft.content.body.document,
+                      blockId,
+                  )
+                : [blockId],
+        });
+    }
     function askTutor(passage: string) {
         const snapshot = actions.getSnapshot();
         setRequest({
@@ -97,6 +110,7 @@ export function useWorkspacePresentation(
         titleVisible,
         setTitleVisible,
         tutorAction,
+        mentionBlock,
         askTutor,
         askOutline,
         preview,

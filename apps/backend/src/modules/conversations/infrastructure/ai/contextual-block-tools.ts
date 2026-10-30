@@ -18,7 +18,10 @@ export function createLearningBlockProposalTool(
         | 'onTool'
     >,
 ) {
-    let proposed = false;
+    const proposed = new Map<
+        string,
+        { content: string; result: Promise<{ id: string }> }
+    >();
     return createTool({
         id: 'propose_learning_blocks',
         description: learningBlockToolDescription,
@@ -44,15 +47,37 @@ export function createLearningBlockProposalTool(
                     throw new Error(
                         'This source does not authorize block proposals.',
                     );
-                if (proposed)
+                const parsed =
+                    LearningBlockProposalInputSchema.parse(candidate);
+                const key = parsed.targetBlockId ?? 'append';
+                const content = JSON.stringify(parsed);
+                const previous = proposed.get(key);
+                if (previous && previous.content === content) {
+                    const result = await previous.result;
+                    input.signal.throwIfAborted();
+                    await input.onTool?.({
+                        id: callId,
+                        name: 'propose_learning_blocks',
+                        state: 'succeeded',
+                    });
+                    return {
+                        id: result.id,
+                        requiresLearnerApply: true as const,
+                    };
+                }
+                if (previous || proposed.size >= 8)
                     throw new Error(
-                        'A block proposal was already generated in this turn.',
+                        'At most eight distinct block proposals may be generated per turn, with one proposal per target.',
                     );
-                const result = await input.onBlockProposal(
-                    LearningBlockProposalInputSchema.parse(candidate),
-                );
+                const creation = input
+                    .onBlockProposal(parsed)
+                    .catch((error: unknown) => {
+                        proposed.delete(key);
+                        throw error;
+                    });
+                proposed.set(key, { content, result: creation });
+                const result = await creation;
                 input.signal.throwIfAborted();
-                proposed = true;
                 await input.onTool?.({
                     id: callId,
                     name: 'propose_learning_blocks',

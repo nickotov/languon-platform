@@ -6,12 +6,17 @@ import type {
 } from '../../application/ports/tutor-runner.js';
 import type { TutorProviderModel } from './accounted-tutor-model.js';
 
+type ScriptedToolCall = { toolName: string; input: Record<string, unknown> };
+type ScriptedResponse =
+    string | ScriptedToolCall | { toolCalls: ScriptedToolCall[] };
+
+function scriptedToolCalls(response: ScriptedResponse): ScriptedToolCall[] {
+    if (typeof response === 'string') return [];
+    return 'toolCalls' in response ? response.toolCalls : [response];
+}
+
 /** Deterministic provider boundary: no network, environment credentials or provider SDK. */
-export function scriptedTutorModel(
-    responses: (
-        string | { toolName: string; input: Record<string, unknown> }
-    )[],
-) {
+export function scriptedTutorModel(responses: ScriptedResponse[]) {
     let index = 0;
     const requests: Parameters<TutorProviderModel['doStream']>[0][] = [];
     const next = (input: Parameters<TutorProviderModel['doStream']>[0]) => {
@@ -30,18 +35,20 @@ export function scriptedTutorModel(
         supportedUrls: {},
         doGenerate: async (input) => {
             const response = next(input);
+            const toolCalls = scriptedToolCalls(response);
             return {
                 content:
                     typeof response === 'string'
                         ? [{ type: 'text' as const, text: response }]
-                        : [
-                              {
-                                  type: 'tool-call' as const,
-                                  toolCallId: `call-${index}`,
-                                  toolName: response.toolName,
-                                  input: JSON.stringify(response.input),
-                              },
-                          ],
+                        : toolCalls.map((call, callIndex) => ({
+                              type: 'tool-call' as const,
+                              toolCallId:
+                                  'toolCalls' in response
+                                      ? `call-${index}-${callIndex}`
+                                      : `call-${index}`,
+                              toolName: call.toolName,
+                              input: JSON.stringify(call.input),
+                          })),
                 finishReason:
                     typeof response === 'string'
                         ? ('stop' as const)
@@ -52,6 +59,7 @@ export function scriptedTutorModel(
         },
         doStream: async (input) => {
             const text = next(input);
+            const toolCalls = scriptedToolCalls(text);
             return {
                 stream: new ReadableStream({
                     start(controller) {
@@ -74,12 +82,16 @@ export function scriptedTutorModel(
                                 id: 'text-1',
                             });
                         } else
-                            controller.enqueue({
-                                type: 'tool-call',
-                                toolCallId: `call-${index}`,
-                                toolName: text.toolName,
-                                input: JSON.stringify(text.input),
-                            });
+                            for (const [callIndex, call] of toolCalls.entries())
+                                controller.enqueue({
+                                    type: 'tool-call',
+                                    toolCallId:
+                                        'toolCalls' in text
+                                            ? `call-${index}-${callIndex}`
+                                            : `call-${index}`,
+                                    toolName: call.toolName,
+                                    input: JSON.stringify(call.input),
+                                });
                         controller.enqueue({
                             type: 'finish',
                             finishReason:

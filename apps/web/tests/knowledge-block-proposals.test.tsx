@@ -231,7 +231,7 @@ it('uses target staleness rather than unrelated document revisions for update pr
     };
     render(<KnowledgeBlockProposals context={current} />);
     fireEvent.click(
-        await screen.findByRole('button', { name: 'Apply to working draft' }),
+        await screen.findByRole('button', { name: 'Update block' }),
     );
     await waitFor(() => expect(current.onApplied).toHaveBeenCalled());
 });
@@ -391,4 +391,94 @@ it('reviews stale source dependencies before an explicit independent copy and re
         await screen.findByRole('button', { name: 'Show in sheet' }),
     );
     expect(current.onShowBlocks).toHaveBeenCalledWith([copiedId]);
+});
+
+it('dismisses a proposal reversibly without applying any content', async () => {
+    const fetch = vi.fn(async () => Response.json({ proposals: [proposal] }));
+    vi.stubGlobal('fetch', fetch);
+    render(<KnowledgeBlockProposals context={context()} />);
+    fireEvent.click(
+        await screen.findByRole('button', { name: 'Dismiss', exact: true }),
+    );
+    expect(screen.getByText('Proposal dismissed')).toBeVisible();
+    expect(
+        screen.queryByRole('button', { name: 'Apply to working draft' }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show proposal' }));
+    expect(
+        screen.getByRole('button', { name: 'Apply to working draft' }),
+    ).toBeVisible();
+    expect(
+        fetch.mock.calls.every(
+            (call) =>
+                call.length < 2 || (call[1] as RequestInit).method !== 'POST',
+        ),
+    ).toBe(true);
+});
+it('captures the insertion cursor before flush and sends its mapped position with the current version', async () => {
+    const posts: unknown[] = [];
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url: string, init: RequestInit) => {
+            if (init.method !== 'POST')
+                return Response.json({ proposals: [proposal] });
+            posts.push(JSON.parse(String(init.body)));
+            return Response.json({
+                proposal: {
+                    ...proposal,
+                    appliedAt: '2026-10-28T00:00:00.000Z',
+                    appliedBranchVersion: 4,
+                },
+                branch,
+            });
+        }),
+    );
+    const bookmark = { resolve: vi.fn(() => 7), release: vi.fn() };
+    const captureInsertion = vi.fn(() => bookmark);
+    const current = {
+        ...context(),
+        captureInsertion,
+        beforeApply: vi.fn(async () => {
+            expect(captureInsertion).toHaveBeenCalledOnce();
+            return { branchId, version: 4 };
+        }),
+    };
+    render(<KnowledgeBlockProposals context={current} />);
+    fireEvent.click(
+        await screen.findByRole('button', {
+            name: 'Add at cursor',
+            exact: true,
+        }),
+    );
+    await waitFor(() => expect(current.onApplied).toHaveBeenCalled());
+    expect(posts).toEqual([
+        {
+            expectedBranchVersion: 4,
+            mode: 'add-separately',
+            insertionPosition: 7,
+        },
+    ]);
+    expect(bookmark.release).toHaveBeenCalledOnce();
+});
+
+it('identifies the original target independently of the proposed block title', async () => {
+    const update = {
+        ...proposal,
+        target: { blockId: id, blockHash: 'a'.repeat(64) },
+    };
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => Response.json({ proposals: [update] })),
+    );
+    render(
+        <KnowledgeBlockProposals
+            context={{
+                ...context(),
+                getBlockLabel: (blockId) =>
+                    blockId === id ? 'Original grammar material' : undefined,
+            }}
+        />,
+    );
+    expect(await screen.findByText('Original grammar material')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Update block' })).toBeVisible();
 });

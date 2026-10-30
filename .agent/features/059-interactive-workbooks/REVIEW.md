@@ -451,3 +451,70 @@ passes; migration0159 retains its tested hash. Canonical staged patch
 is independently reproduced for the339-file runtime/test/configuration manifest
 scope, excluding delivery/design/docs. This tracking-state clarification changes
 no verified source byte and requires no repeated execution gate.
+
+## Block reference follow-up initial source review — 2026-10-30
+
+Independent `block_references_completion_review` and
+`block_references_security_review` reviewed base f0e299c/current follow-up source.
+
+- REV-REF-01 Medium, closed: references originally removed surrounding editor
+  prose, contrary to ADR-0042. Full editor snapshot now stays exactly once even
+  with references, selected passage remains focus, structured reads are bounded,
+  and overbudget input rejects without silent stripping.19 focused regressions.
+- REV-REF-02 / security Medium, closed: referenced turns could propose a different
+  unmentioned target. Conditional selected-target fences now apply in application
+  and SECURITY DEFINER SQL; legacy no-reference/append behavior remains. Preview
+  displays original target identity from actual integration plus safe fallback.
+  Repository/direct-definer/idempotence tests retained for disposable execution.
+
+Initial correctness and security source phases approved; no material source
+finding remains. Final approval is pending the full critical/disposable database,
+production AI/financial envelope, serial web/static/build and real-browser gates.
+Transcription activation remains separately unapproved; do not complete parent
+F059 or merge to main merely when this scoped follow-up is verified.
+
+Sequential-turn diagnosis resolved without production permission changes:
+real pinned-SDK regression with two target proposals, subsequent retrieval/update,
+and forced pre-answer observation passes. It confirms observer tool lists are
+empty by design while actor retains read_source_context and accounting purposes
+are observation+3 answers. The browser fake actor script had been dispatched into
+that observer. This is fixture execution-purpose isolation, not a production
+registration defect. New exact regression is required by critical registry;
+focused1-pass/25-filtered run is not represented as whole-suite evidence. Final
+full gate must execute all26 runner cases. Tester owns purpose-aware fixture fix.
+
+## Block reference follow-up final evidence review — 2026-10-30
+
+Boundary: base f0e299c plus all86 runtime/test/configuration files in
+`evidence/block-references/source-final.json`, fingerprint
+`1b0ed22f3d20136f50eb46c11d64ecf17e2d509b90ee6ffce8b877289ce970b2`.
+Initial source reviews and closed REV-REF-01/02 are reused; bounded remediation
+review additionally approves the single/parallel synthetic tool-ID helper repair.
+The strict existing callback assertion remains unchanged; full26 SDK plus5
+fixture cases pass. No production permission/budget change arose from that fix.
+
+Security reviewer final evidence verdict: **Approved**, no remaining material
+security finding. Independently verified all86 source hashes, base-equivalent
+Next declaration, clean diff whitespace, all14 raw report hashes and canonical
+run44f4f1fb's14/14 flows/816 tests. Actual AI/DB789/789 includes all26 SDK cases,
+restricted SQL and selected-target fences, stale/frozen source authority,
+revocation, actor isolation and purge. Hostile Markdown unit coverage verifies
+literal HTML, rejected executable/data URLs, absent remote images/event attrs
+and hardened safe links; browser3/3 renders chat/sheet Markdown under runtime
+page/console/server guards. No skips/flakes or failed-run aggregation accepted.
+
+General independent final evidence audit confirms all14 raw report identities,
+816/816 cases, all26 SDK cases, zero retry/skip/flake/failure metadata, complete
+86-file source inventory and restored Next declaration. REV-REF-03 Low identified
+two checkpoint paragraphs whose present tense implied the completed gate was
+still running. Both now explicitly describe historical checkpoints; source and
+reports are unchanged. Independent final correctness evidence verdict:
+**Approved** after confirming this bounded documentation correction.
+REV-REF-01/02/03 are closed; no material finding or required scoped evidence gap
+remains. All27 browser cases have a single retry-0 passing result; all86 frozen
+file hashes and all14 raw-report identities were independently verified again.
+REF-1–REF-5 are Complete.
+
+Scope remains REF-1–REF-5 only. No live paid-provider generation was exercised;
+no new provider/model/key/configuration or transcription activation is approved.
+Parent F059 stays In progress; no merge/push or user-service restart performed.

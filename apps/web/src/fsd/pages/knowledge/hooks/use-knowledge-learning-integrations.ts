@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { LearningBlock, KnowledgeBlockProposal } from '@languon/contracts';
+import { knowledgeBlockReferences } from '@/fsd/features/knowledge-notes';
 import type {
     KnowledgeBlockCopyContext,
     KnowledgeLibraryContext,
@@ -30,12 +31,19 @@ export function useKnowledgeLearningIntegrations(
     async function proposalApplied() {
         await state.reload();
     }
+    const referenceCatalog = draft
+        ? knowledgeBlockReferences(draft.content.body.document)
+        : [];
     const blockProposalContext = draft
         ? {
               disabled: actions.busy !== null,
               branchId: draft.branchId,
               branchVersion: draft.version,
+              getBlockLabel: (blockId: string) =>
+                  referenceCatalog.find((item) => item.id === blockId)?.title,
               beforeApply: state.flush,
+              captureInsertion: () =>
+                  actions.editor.current?.captureBlockInsertion() ?? null,
               onApplied: proposalApplied,
               onApplyingChange: actions.setProposalApplying,
               getPlayback: (proposal: KnowledgeBlockProposal) =>

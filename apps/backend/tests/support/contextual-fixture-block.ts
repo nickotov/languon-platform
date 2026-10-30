@@ -78,6 +78,69 @@ export function contextualFixtureBlock(
                     },
                 });
         }
+        if (
+            !block.success &&
+            candidate.type === 'bilingual-text' &&
+            Number.isSafeInteger(candidate.segmentCount) &&
+            Array.isArray(candidate.translationLanguages)
+        ) {
+            const {
+                segmentCount: _segmentCount,
+                translationLanguages: _translationLanguages,
+                ...metadata
+            } = candidate;
+            const segments = objects
+                .filter(
+                    (item) =>
+                        item.blockId === candidate.id &&
+                        item.segment &&
+                        typeof item.segment === 'object',
+                )
+                .map((item) => item);
+            const unique = [
+                ...new Map(
+                    segments.map((item) => [
+                        (item.segment as { id?: unknown }).id,
+                        item,
+                    ]),
+                ).values(),
+            ];
+            const languages = candidate.translationLanguages.filter(
+                (language): language is string => typeof language === 'string',
+            );
+            if (
+                candidate.segmentCount === unique.length &&
+                unique.length > 0 &&
+                languages.length === candidate.translationLanguages.length
+            )
+                block = LearningBlockSchema.safeParse({
+                    ...metadata,
+                    segments: unique.map((item) => item.segment),
+                    translations: languages.map((language) => ({
+                        language,
+                        segments: unique.map((item) => ({
+                            sourceSegmentId: (item.segment as { id: string })
+                                .id,
+                            text:
+                                (
+                                    (
+                                        (item.translations as
+                                            unknown[] | undefined) ?? []
+                                    ).find(
+                                        (translation) =>
+                                            translation &&
+                                            typeof translation === 'object' &&
+                                            (
+                                                translation as {
+                                                    language?: unknown;
+                                                }
+                                            ).language === language,
+                                    ) as { text?: unknown } | undefined
+                                )?.text ?? '',
+                        })),
+                    })),
+                });
+        }
         if (block.success && block.data.type === kind && accept(block.data))
             return block.data;
     }

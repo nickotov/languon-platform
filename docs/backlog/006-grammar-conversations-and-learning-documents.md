@@ -567,3 +567,18 @@ and its [fidelity observations](../../.agent/features/059-interactive-workbooks/
 The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
 this broader backlog task remain **in progress**; this is partial-delivery evidence,
 not a terminal task disposition.
+
+## Referenced custom-block refinement — 2026-10-30
+
+Feature059's REF-1–REF-5 follow-up adds readable safe narrative Markdown,
+current-note block mentions from slash/settings menus, multiple target-specific
+review proposals and explicit cursor insertion while preserving source authority,
+complete editor context and learner-controlled publication. It also corrects the
+workspace's initial false unavailable state. Source/security review and serial
+web185/1295 are verified. The final canonical gate passes14/14 flows and816/816
+tests, including789 backend cases and3 workbook browser journeys; final static
+checks and product builds pass. Exact source and evidence are recorded in the
+[F059 verification record](../../.agent/features/059-interactive-workbooks/EVIDENCE.md).
+This is partial BL-006 delivery; guided lessons, shared workbook AI context,
+grammar-library saving and unapproved live transcription activation remain
+outside this slice. Status remains in-progress.

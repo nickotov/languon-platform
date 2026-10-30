@@ -30,3 +30,9 @@ export { BlockLibrarySave } from './ui/library-copy/block-library-save';
 export { localizedBlockLabels as knowledgeLearningBlockLabels } from './ui/learning-block-authoring/block-locales';
 
 export type { KnowledgeReadingBlockOverrides } from './ui/knowledge-document-view/reader-learning-block';
+
+export {
+    knowledgeBlockReferences,
+    knowledgeBlockMentionIds,
+} from './lib/knowledge-block-references';
+export type { KnowledgeBlockReference } from './lib/knowledge-block-references';

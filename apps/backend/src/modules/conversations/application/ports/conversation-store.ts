@@ -49,6 +49,7 @@ export interface ConversationStore {
         proposalId: string,
         expectedBranchVersion: number,
         mode?: 'proposal' | 'add-separately',
+        insertionPosition?: number,
     ): Promise<{
         proposal: KnowledgeBlockProposal;
         branch: KnowledgeWorkingBranch;

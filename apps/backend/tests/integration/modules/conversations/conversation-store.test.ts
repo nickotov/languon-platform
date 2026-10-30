@@ -377,6 +377,76 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).rejects.toThrow('authorized block proposal target');
             await store.finish(turn, 'succeeded');
         });
+        it('fences selected update identities in the repository and privileged SQL boundary', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const first = {
+                id: randomUUID(),
+                type: 'grammar' as const,
+                language: 'fr',
+                rule: 'First rule.',
+            };
+            const second = { ...first, id: randomUUID(), rule: 'Second rule.' };
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: {
+                    ...content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [first, second].map((block) => ({
+                                type: 'learningBlock',
+                                attrs: { block },
+                            })),
+                        },
+                    },
+                },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+            await store.submit(access(), chat.id, {
+                ...submit('Update the mentioned block'),
+                blockReferences: [first.id],
+                editorContext: {
+                    ...workspaceContext('Rules.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+            const turn = (await store.claim())!;
+            await expect(
+                store.proposeBlocks(turn, {
+                    targetBlockId: second.id,
+                    blocks: [second],
+                }),
+            ).rejects.toThrow('explicitly mentioned');
+            await expect(
+                client`select public.languon_propose_learning_block_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify([second])}::jsonb,${second.id}::uuid)`,
+            ).rejects.toThrow('explicitly mentioned');
+            const selected = await store.proposeBlocks(turn, {
+                targetBlockId: first.id,
+                blocks: [first],
+            });
+            const repeated =
+                await client`select public.languon_propose_learning_block_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify([first])}::jsonb,${first.id}::uuid) as id`;
+            expect(repeated[0]?.['id']).toBe(selected.id);
+            const detail = await store.detail(access(), chat.id);
+            expect(
+                detail.messages.find((message) => message.role === 'user')
+                    ?.blockReferences,
+            ).toEqual([first.id]);
+            await store.finish(turn, 'succeeded');
+        });
         it('retains typed proposals separately and applies only to the frozen owner working branch without publishing', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,

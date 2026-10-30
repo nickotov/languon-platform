@@ -297,6 +297,11 @@ export function useKnowledgeWorkspace(noteId: string) {
 
     return {
         query,
+        // Query success precedes the effect that hydrates the local draft. Keep
+        // that render in loading state; a branchless response still fails closed.
+        isInitializing:
+            query.isPending ||
+            (!workspace && query.isSuccess && query.data.branches.length > 0),
         workspace,
         edit,
         status,

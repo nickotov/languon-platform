@@ -97,6 +97,7 @@ export interface TutorRunInput {
     readContext(input: {
         query: string;
         limit: number;
+        blockIds?: string[] | undefined;
     }): Promise<{ material: TutorContextMaterial[]; total: number }>;
 }
 

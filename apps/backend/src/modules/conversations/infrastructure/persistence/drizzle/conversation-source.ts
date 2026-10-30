@@ -1,4 +1,5 @@
 import { readSharedConversationNote } from './conversation-knowledge-share';
+import { learningBlockSourceMaterial } from '../../../application/learning-block-source-material';
 import { createHash } from 'node:crypto';
 import { and, eq, or, ilike } from 'drizzle-orm';
 import type { ConversationSource, KnowledgeBody } from '@languon/contracts';
@@ -123,6 +124,19 @@ export class ConversationSourceResolver {
                           })
                         : [],
                     scope: 'complete',
+                    ...(includeMaterial
+                        ? {
+                              learningBlocks: learningBlockSourceMaterial(
+                                  (note.body.document.content ?? []).flatMap(
+                                      (node) =>
+                                          node.type === 'learningBlock' &&
+                                          node.attrs?.block
+                                              ? [node.attrs.block]
+                                              : [],
+                                  ),
+                              ),
+                          }
+                        : {}),
                 },
             };
         }

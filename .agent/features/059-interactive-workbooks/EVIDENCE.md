@@ -2017,3 +2017,176 @@ records the pre-stage snapshot and canonical staged patch hash for the339-file
 runtime/test/configuration scope (excluding delivery/design/docs)
 `cce2b58262d085164d40bd57d8985209d5f6a3fa50981a68bfa533da52957d18`.
 No conflicts or staged environment secrets are present.
+
+## Block reference/readability follow-up — final verification
+
+Base f0e299c; source manifest at `evidence/block-references/source-pre-gate.json`.
+Focused evidence: safe narrative61, loading6, frontend32 plus target integration12,
+backend28 plus security7, insertion5, complete-context19, contracts233 all pass.
+Root typecheck passes14 tasks (serial concurrency1). Drizzle metadata check passes;
+registered critical selector tests16/16 and docs mapping33 guides pass. Root lint
+is running at `/tmp/languon-block-refs-lint-final.log`.
+
+Initial broad web attempts are not passing evidence: package clean/rebuild and
+concurrent compilation caused resolution/timeouts. Tester reproduced unchanged
+node-limit file alone7/7 in5.17s without deadline/assertion changes. Final full web
+suite must run serially after heavy verification jobs complete.
+
+Full14-flow critical gate running: command `pnpm test:e2e:critical`, shell session
+83462, log `/tmp/languon-block-refs-critical.log`, artifacts
+`test-results/critical-flows/3ca62a29-94e2-46b7-a254-c0b413450718/`.
+Disposable DB/Redis only; no user database migration, service restart or paid
+provider call. Migrations0160/0161 must be exercised by this gate, including
+repository/raw-definer target fences and Free/Paid multi-update realworker/SDK
+cases. Builds and final serial web suite remain pending.
+
+Final serial web suite: `pnpm --filter @languon/web exec vitest run --maxWorkers=1
+--no-file-parallelism`,185 files/1295 tests passed, no skips,204.03s; log
+`/tmp/languon-block-refs-web-tests-serial.log`. Root repository lint exit0;
+root typecheck14/14 tasks passed, serial concurrency1. Contracts28/233 pass;
+Drizzle metadata check, registry16/16 and guide mapping33 all pass.
+
+First critical run failed its auth fixture prerequisite: worker inherited local
+API_ENQUEUED allowlist while processable formats were fixture-bounded. Minimal
+test-only explicit worker override now matches dictionaryJobFormats; no production
+or user-env change. Reviewed one-line config correction, type/format checks pass.
+Full gate rerun at `/tmp/languon-block-refs-critical-final.log`, shell session
+returned by root tool; old failed report remains intact.
+
+Rerun98b7147c passed7 flows plus2/3 workbook cases, then failed test-only initial
+loading probe before new mention assertions. body.textContent observes serialized
+Next translations, so it falsely identifies stored load-error wording as UI.
+Tester is correcting visible-alert scope and new Markdown JSON escaping fixtures;
+product source unchanged. Full rerun remains failed, never merged as green.
+Targeted DB/provider-composition gate started while fixture smoke is repaired:
+`pnpm test:e2e:critical -- --flow ai-execution-contracts`, session16091,
+`/tmp/languon-block-refs-backend-critical.log`. This verifies actual migrations,
+worker roles and raw SQL assertions before another expensive browser sequence.
+Do not run competing browser runners. Next focused workbook3, then full14 and
+serial builds, final reviewers and evidence closure.
+
+Targeted production execution/disposable DB gate f38e6823 passed68 files/788 tests,
+no skips/retries,822.32s. Both operator/customer multi-update defaultworker+SDK
+cases passed with admitted budgets intact; migrations0160/0161 and repository/
+restricted-role/source/stale/media/accounting cases were executed in disposable
+PostgreSQL55489/Redis56489 only. This is actual execution evidence, not a fixture
+runner substitute. Raw report `test-results/critical-flows/f38e6823-d4e2-4511-a544-0af71ff9ad42/ai-execution-contracts.json`.
+
+Fixture smoke helpers now2/2 pass after JSON-roundtrip correction; loading probe
+checks visible role=alert containing error message (including optional Retry
+text), never serialized page payload. Focused workbook browser gate running at
+`/tmp/languon-block-refs-workbooks-final.log` after backend runner cleanup.
+Canonical runner has no reuse/resume/aggregate mechanism; reviewer requires one
+clean full14 gate after focusedbrowser succeeds. Do not merge previous reports
+to fabricate a full passing result.
+
+Product production builds passed independently: isolated web Next build
+`/tmp/languon-block-refs-web-build.log` (23 static pages and dynamic route output),
+backend JS+DTS `/tmp/languon-block-refs-backend-build.log`. Root now runs remaining
+non-web turbo builds serially (`--filter=!@languon/web --concurrency=1`), no browser
+runner/unit compilation in parallel; notify tester when contract-dist stable.
+
+All product production builds are green: root non-web8 tasks passed in3m38.472s
+(`/tmp/languon-block-refs-production-builds.log`) plus isolated web build above.
+No package rebuild/clean remains active. Focused workbook diagnostic rerun now
+uses shape-only synthetic source-result diagnostics after legacy fake-model
+continuation failure; no real content/prompts are logged and no product override.
+
+Focused workbook gate with purpose-aware deterministic model passed3/3, no skips:
+`/tmp/languon-block-refs-workbooks-purpose.log`, including Markdown chat/sheet,
+no visible initial load-error, slash/settingsmulti references, source-authorized
+target previews, Dismiss/restore, mapped Add-at-cursor, target Update, legacyupdate,
+media playback and private practice. Fixture5/5 tests ensure actor context reaches
+native provider and memory responses do not consume actor steps. Temporary source
+shape/error diagnostics removed. No production runtime/provider/budget patch was
+needed for the synthetic observer failure.
+
+One final full canonical14 gate now runs against frozen source:
+`/tmp/languon-block-refs-critical-verified.log` (root session returned in tool).
+No concurrent builds/compiler/browser jobs. New realSDKsequential+forcedOM test
+is explicitly required by registry and adds one runner case to prior788; final
+report must show789 currentbackendcases and all26 runner tests, without filters.
+
+Canonical12679581-2984-4539-878e-62a1760d6848 is **failed**, never final passing
+evidence: first11 registered flows passed, then backend67/68 files and788/789
+cases passed in978.19s. The one failure is the existing native proposal test's
+synthetic tool-call ID (`call-1` expected, `call-1-0` received) after adding
+parallel-call fixture support. It does not indicate a failed proposal execution;
+the new sequential SDK/forced-observation case passed. Fixture remediation and
+the complete26-case SDK file must pass before a fresh canonical14 run.
+
+Final static checkpoint before that remediation: root lint exit0
+(`/tmp/languon-block-refs-lint-verified.log`), styles contract pass, all33 guide
+mappings and the interactive-workbooks mapping pass, registry16/16 pass
+(`/tmp/languon-block-refs-{styles,docs,mapping,registry}-verified.log`). Source
+freeze still matched86/86 files at the failed gate; next-env was restored by the
+runner. Any fixture repair gets a new manifest rather than rewriting this freeze.
+
+Bounded fixture repair now preserves single-object tool call IDs while explicit
+parallel arrays have indexed IDs, in both generation/streaming. Independent
+remediation review approved; full26 SDK +5 fixture cases passed31/31
+(`/tmp/mentions-scripted-call-ids.log`). Final root typecheck14/14 passed in
+1m21.083s (`/tmp/languon-block-refs-typecheck-verified.log`). Prettier checks all
+affected non-generated source/docs; historical raw manifests retain their original
+bytes. Product production-build evidence remains valid: only test/fixture code
+changed after those builds.
+
+Fresh86-file `evidence/block-references/source-final.json` fingerprint
+`1b0ed22f3d20136f50eb46c11d64ecf17e2d509b90ee6ffce8b877289ce970b2`
+identified the then-started canonical14 rerun44f4f1fb-cd1b-47f1-b5cf-68ca86f2ef30
+at `/tmp/languon-block-refs-critical-complete.log`. Sandbox preflight7070222e
+required the documented local-port permission before journeys; the approved
+rerun used loopback/Docker access and no user services or data. Completion
+remained pending at that checkpoint; its final result is recorded below.
+
+### Final canonical evidence — 2026-10-30
+
+The single canonical run **44f4f1fb-cd1b-47f1-b5cf-68ca86f2ef30** completed
+successfully: **14/14 flows,816/816 tests**, no skipped, flaky, retried or unexpected
+tests. This run alone proves the combined gate; earlier failed reports are not
+aggregated into it. Command: `pnpm test:e2e:critical`; log
+`/tmp/languon-block-refs-critical-complete.log`. Raw reports remain in
+`test-results/critical-flows/44f4f1fb-cd1b-47f1-b5cf-68ca86f2ef30/`.
+[Retained report identities and totals](evidence/block-references/final-critical-summary.json)
+record each report's SHA-256 and the exact source fingerprint.
+
+- Production AI/disposable database:68 files,789/789 cases,830.94s, including
+  all26 pinned-SDK runner tests, normal/reduced admitted budgets, operator/customer
+  multi-target updates, repository and direct restricted-SQL target fences,
+  idempotency, stale authority, media ownership, cancellations and settlement.
+  Actual migrations0160/0161 and deployed role boundaries were exercised against
+  dedicated PostgreSQL/Redis; no user database or paid provider was used.
+- Workbook Chromium:3/3 journeys, including REF-1–REF-5. Rendered Markdown
+  paragraphs/lists, chat preview and sheet apply; typed multiple slash/settings
+  references; removable chips and target identity; Dismiss/restore, mapped cursor
+  insertion, explicit Update; historical legacy update after real SDK memory
+  observation; no visible unavailable alert during hydration. Runtime assertions
+  reject page errors, unexpected console errors and unexpected server failures.
+  Existing responsive authoring/practice/media captures were retained by this
+  run. No claim is made of a separate slash-picker screenshot or live provider
+  generation; deterministic transport still uses real application composition.
+- Final web suite185 files/1295 cases and contracts28/233 remain valid for the
+  unchanged production source. Final whole SDK/fixture smoke31/31 additionally
+  proves the corrected single/parallel test protocol.
+- Root final typecheck14/14 tasks (`/tmp/languon-block-refs-typecheck-verified.log`),
+  lint, styling contract, registry16/16, Drizzle metadata,33 guide mappings and
+  the interactive-workbooks revision/mapping pass. Prettier passes affected
+  non-generated source/docs (`/tmp/languon-block-refs-format-current.log`);
+  historical machine manifests and generated Drizzle metadata preserve bytes.
+- Production builds:all9 task targets pass via isolated Next web build and
+  serial non-web8-target build. These are reused because only tests/fixtures
+  changed afterward; no runtime/build dependency changed. The user's development
+  Next directory and existing servers were preserved.
+
+Post-gate audit: all86 `source-final.json` file hashes still match fingerprint
+`1b0ed22f3d20136f50eb46c11d64ecf17e2d509b90ee6ffce8b877289ce970b2`.
+`apps/web/next-env.d.ts` is restored byte-for-byte to base f0e299c; diff whitespace
+check passes. No new environment setting, provider/model/key or live transcription
+activation. No user database migration, server restart, merge or push performed.
+Independent final evidence sign-offs are recorded in REVIEW.md.
+
+REF-1–REF-5 implementation and verification are complete. Existing plain-text
+grammar is not automatically rewritten: reference it and request reformatting,
+then explicitly Update. To load the new code and apply local migrations0160/0161,
+the user restarts `pnpm dev:all`; no new `.env` value is required. Parent F059 and
+BL-006 remain In progress for their separately deferred work.

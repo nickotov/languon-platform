@@ -813,6 +813,8 @@ export const ConversationEditorTargetSchema =
 export type ConversationEditorTarget = z.infer<
     typeof ConversationEditorTargetSchema
 >;
+/** Eight selected-target proposals, four bounded reads and legacy tool headroom. */
+export const conversationToolCallLimit = 16;
 export const ConversationMessageSchema = z
     .object({
         id: z.uuid(),
@@ -820,7 +822,11 @@ export const ConversationMessageSchema = z
         role: z.enum(['user', 'assistant']),
         content: z.string().max(160_000),
         attachments: z.array(CopiedAttachmentSchema),
-        toolCalls: z.array(ConversationToolCallSchema).max(10).default([]),
+        blockReferences: z.array(z.uuid()).max(8).optional(),
+        toolCalls: z
+            .array(ConversationToolCallSchema)
+            .max(conversationToolCallLimit)
+            .default([]),
         status: z.enum(['complete', 'streaming', 'incomplete']),
         sourceVersion: z.string().max(100).nullable(),
         sourceProvenance: z.enum(['saved', 'draft']),
@@ -931,6 +937,14 @@ export const SubmitConversationTurnRequestSchema = z
             .max(20_000)
             .refine(validAssistantText),
         attachments: z.array(CopiedAttachmentSchema).default([]),
+        blockReferences: z
+            .array(z.uuid())
+            .max(8)
+            .refine(
+                (ids) => new Set(ids).size === ids.length,
+                'Mention each learning block only once.',
+            )
+            .optional(),
         editorContext: z
             .object({
                 content: longAssistantText(),

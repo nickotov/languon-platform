@@ -203,6 +203,30 @@ synthetic accounts. API health must succeed before browser interaction.
    translation for one segment without overwriting its original wording or other
    languages. Discarding accepted local suggestions leaves the document unchanged.
 8. Ask the tutor to update an existing vocabulary block. The update proposal
+   supports current-note references: type `/`, choose the note's custom blocks,
+   or choose **Add block to chat** from a custom block's settings. Both entrypoints
+   add removable reference chips to the same composer. Mention up to eight unique
+   blocks; adding more reports the limit without silently dropping an earlier
+   choice. Grammar, vocabulary, bilingual text, exercises, audio and video use
+   their own type/title descriptors. The server resolves IDs from the authorized
+   frozen source; chips do not grant access to another note or private draft.
+   Ask for an explanation to receive ordinary chat, or request updates to several
+   referenced blocks to receive individual review proposals. Each update requires
+   explicit **Update block**, can be dismissed without modifying the draft (and
+   reopened through **Show proposal**), or inserted with **Add at cursor** at
+   the cursor as an independent copy. Other unchanged targets remain applicable
+   after applying one proposal. Shared readers can explain referenced saved
+   material but cannot update the author's note.
+   Grammar rule/pattern and other explanatory narrative fields support safe
+   Markdown paragraphs, emphasis, lists and tables in chat previews and the sheet.
+   Source passages, examples, answers, translations and transcripts remain literal.
+   HTML and executable links do not run. Existing plain-text content remains valid;
+   formatting guidance applies to newly generated material without rewriting old
+   saved content automatically.
+   During initial workspace hydration the page stays loading; normal request
+   cancellation during development remounts must not flash an unavailable error.
+   Genuine failed or inaccessible workspaces still show the existing error state.
+   The update proposal
    captures that block’s content. An unrelated title/prose edit does not invalidate
    it; a changed/deleted target or existing source passage does. **Show in sheet**
    reveals applied material; retrying Apply cannot duplicate it. A stale proposal

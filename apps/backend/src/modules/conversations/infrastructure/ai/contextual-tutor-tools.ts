@@ -47,6 +47,7 @@ export function createContextualTutorTools(
                 .object({
                     query: z.string().trim().min(1).max(300),
                     limit: z.number().int().min(1).max(10).default(5),
+                    blockIds: z.array(z.uuid()).min(1).max(8).optional(),
                 })
                 .strict(),
             outputSchema: z.object({

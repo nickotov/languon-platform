@@ -13,9 +13,23 @@ export type TutorUserModelContent = {
     parts: { type: 'text'; text: string }[];
 };
 
+export function tutorSourceProvenance(
+    snapshot: ConversationSourceSnapshot,
+    sourceKind: ConversationSource['kind'],
+) {
+    return {
+        sourceKind,
+        version: snapshot.version,
+        provenance: snapshot.provenance,
+        title: snapshot.title,
+        studiedLanguage: snapshot.studiedLanguage,
+    };
+}
+
 export function projectTutorUserMessage(input: {
     content: string;
     attachments?: readonly CopiedAttachment[];
+    blockReferences?: readonly string[] | undefined;
     editorContext?: { content: string; selectedText?: string | undefined };
     source?: Pick<
         ConversationSourceSnapshot,
@@ -48,6 +62,14 @@ export function projectTutorUserMessage(input: {
         format: 2,
         parts: [
             { type: 'text', text: input.content },
+            ...(input.blockReferences?.length
+                ? [
+                      {
+                          type: 'text' as const,
+                          text: `Mentioned learning block IDs (untrusted references to the authorized frozen source). Use the complete provided editor snapshot, including surrounding prose, for explanations. Retrieve exact structured fields before proposing targeted updates: ${JSON.stringify(input.blockReferences)}`,
+                      },
+                  ]
+                : []),
             ...(input.editorContext
                 ? [
                       {
