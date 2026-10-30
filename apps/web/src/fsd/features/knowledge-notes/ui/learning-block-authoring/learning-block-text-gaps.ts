@@ -27,6 +27,24 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                         const cached = byDocument.get(state.doc);
                         if (cached) return cached;
                         const decorations: Decoration[] = [];
+                        const first = state.doc.firstChild;
+                        if (first?.type.name === 'learningBlock') {
+                            decorations.push(
+                                textGap(0, 'write-before-first', label, -1),
+                            );
+                        } else if (
+                            first?.type.name === 'paragraph' &&
+                            first.childCount === 0 &&
+                            state.doc.maybeChild(1)?.type.name ===
+                                'learningBlock'
+                        ) {
+                            decorations.push(
+                                Decoration.node(0, first.nodeSize, {
+                                    class: styles.gapParagraph!,
+                                    'data-placeholder': label,
+                                }),
+                            );
+                        }
                         const positioned = blocksInDocument(state.doc);
                         const ends = new Map<string, string>();
                         const hiddenParagraphs = new Set<number>();
@@ -93,45 +111,11 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                                 return;
                             }
                             decorations.push(
-                                Decoration.widget(
+                                textGap(
                                     at,
-                                    (view) => {
-                                        const button =
-                                            document.createElement('button');
-                                        button.type = 'button';
-                                        button.className = styles.textGap!;
-                                        button.textContent = label;
-                                        button.setAttribute(
-                                            'contenteditable',
-                                            'false',
-                                        );
-                                        button.addEventListener(
-                                            'mousedown',
-                                            (event) => event.preventDefault(),
-                                        );
-                                        button.addEventListener('click', () => {
-                                            if (!view.editable) return;
-                                            const transaction =
-                                                view.state.tr.insert(
-                                                    at,
-                                                    view.state.schema.nodes.paragraph!.create(),
-                                                );
-                                            transaction.setSelection(
-                                                TextSelection.near(
-                                                    transaction.doc.resolve(
-                                                        at + 1,
-                                                    ),
-                                                ),
-                                            );
-                                            view.dispatch(transaction);
-                                            view.focus();
-                                        });
-                                        return button;
-                                    },
-                                    {
-                                        side: 1,
-                                        key: `write-after-${block.id}-${at}`,
-                                    },
+                                    `write-after-${block.id}-${at}`,
+                                    label,
+                                    1,
                                 ),
                             );
                         });
@@ -147,3 +131,36 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
         ];
     },
 });
+
+function textGap(at: number, key: string, label: string, side: number) {
+    return Decoration.widget(
+        at,
+        (view) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = styles.textGap!;
+            button.textContent = label;
+            button.setAttribute('contenteditable', 'false');
+            button.addEventListener('mousedown', (event) =>
+                event.preventDefault(),
+            );
+            button.addEventListener('click', () => {
+                if (!view.editable) return;
+                const transaction = view.state.tr.insert(
+                    at,
+                    view.state.schema.nodes.paragraph!.create(),
+                );
+                transaction.setSelection(
+                    TextSelection.near(transaction.doc.resolve(at + 1)),
+                );
+                view.dispatch(transaction);
+                view.focus();
+            });
+            return button;
+        },
+        {
+            side,
+            key,
+        },
+    );
+}

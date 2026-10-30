@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:2f9228d962ec94a6
+// @user-flow-revision interactive-workbooks sha256:9962330712df3ba9
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -333,6 +333,109 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         .getByRole('button', { name: 'Apply to working draft', exact: true })
         .click();
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(1);
+    const proseEditor = page.locator(
+        '[data-workspace-editor] [role="textbox"]',
+    );
+    await proseEditor.locator(':scope > p').first().click();
+    await page.keyboard.press('Delete');
+    const leadingGap = proseEditor
+        .getByRole('button', {
+            name: 'Write here…',
+            exact: true,
+        })
+        .first();
+    await expect(leadingGap).toBeVisible();
+    await leadingGap.click();
+    const introduction = 'Introduction.';
+    await page.keyboard.type(introduction);
+    await expect(proseEditor.locator(':scope > p').first()).toHaveText(
+        introduction,
+    );
+    for (const _character of introduction)
+        await page.keyboard.press('Backspace');
+    await page.keyboard.press('Delete');
+    await expect(leadingGap).toBeVisible();
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(1);
+    await leadingGap.click();
+    await page.keyboard.type('Move this paragraph.');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('## Section to move');
+    const paragraph = proseEditor
+        .locator(':scope > p')
+        .filter({ hasText: 'Move this paragraph.' });
+    const heading = proseEditor.getByRole('heading', {
+        name: 'Section to move',
+        exact: true,
+    });
+    for (const [source, kind, destination] of [
+        [paragraph, 'Paragraph', heading],
+        [heading, 'Heading', paragraph],
+    ] as const) {
+        await source.hover();
+        const handle = page.getByRole('button', {
+            name: `Select or drag block: ${kind}`,
+            exact: true,
+        });
+        await expect(handle).toBeVisible();
+        const from = await handle.boundingBox();
+        const to = await destination.boundingBox();
+        if (!from || !to)
+            throw new Error('Prose drag geometry is unavailable.');
+        const x = from.x + from.width / 2;
+        const y = from.y + from.height / 2;
+        const blockBox = (await source.boundingBox())!;
+        await page.mouse.move(blockBox.x + 8, y, { steps: 8 });
+        await page.mouse.move((from.x + from.width + blockBox.x) / 2, y, {
+            steps: 8,
+        });
+        // Deliberate pointer dwell tests hover stability, not app readiness.
+        // A fast jump skips the gutter mouseleave that originally hid the grip.
+        await page.waitForTimeout(600);
+        await expect(handle).toBeVisible();
+        expect(from.x + from.width).toBeLessThanOrEqual(
+            (await source.boundingBox())!.x,
+        );
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(300);
+        await expect(handle).toBeVisible();
+        await page.mouse.down();
+        await page.mouse.move(x + 8, y + 8, { steps: 4 });
+        await page.mouse.move(to.x + 80, to.y + to.height - 2, { steps: 12 });
+        await page.mouse.move(to.x + 81, to.y + to.height - 1);
+        await page.mouse.up();
+        await expect(
+            proseEditor.locator(':scope > p, :scope > h2').first(),
+        ).toHaveText(
+            kind === 'Paragraph' ? 'Section to move' : 'Move this paragraph.',
+        );
+    }
+    await capture(page, info, 'ordinary-block-drag-handles');
+    await paragraph.click();
+    await page.keyboard.press('Shift+Tab');
+    await expect(
+        page.getByRole('button', {
+            name: 'Select or drag block: Paragraph',
+            exact: true,
+        }),
+    ).toBeFocused();
+    await page.keyboard.press('Enter');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await paragraph.dispatchEvent('pointerdown', { pointerType: 'touch' });
+    const narrowHandle = page.getByRole('button', {
+        name: 'Select or drag block: Paragraph',
+        exact: true,
+    });
+    const narrowBox = await narrowHandle.boundingBox();
+    if (!narrowBox)
+        throw new Error('The narrow-screen prose handle is unavailable.');
+    expect(narrowBox.width).toBeGreaterThanOrEqual(44);
+    expect(narrowBox.height).toBeGreaterThanOrEqual(44);
+    expect(narrowBox.x).toBeGreaterThanOrEqual(0);
+    expect(narrowBox.x + narrowBox.width).toBeLessThanOrEqual(
+        (await paragraph.boundingBox())!.x,
+    );
+    await capture(page, info, 'ordinary-block-handle-mobile');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page
         .getByRole('button', {
             name: 'Block settings: Six French words',
@@ -467,6 +570,12 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await readingHandle.scrollIntoViewIfNeeded();
     const sourceBox = await readingHandle.boundingBox();
     if (!sourceBox) throw new Error('The block drag handle is unavailable.');
+    const readingFrame = await readingHandle
+        .locator('xpath=ancestor::*[@data-learning-block-id]')
+        .boundingBox();
+    if (!readingFrame)
+        throw new Error('The custom block frame is unavailable.');
+    expect(sourceBox.x + sourceBox.width).toBeLessThanOrEqual(readingFrame.x);
     const sourceX = sourceBox.x + sourceBox.width / 2;
     const sourceY = sourceBox.y + sourceBox.height / 2;
     await page.mouse.move(sourceX, sourceY);
@@ -521,6 +630,17 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
             buffer: syntheticWav(),
         });
     const audioDialog = page.getByRole('dialog');
+    // Upload completion updates the draft asynchronously. Applying the shell
+    // before this finishes intentionally saves an audio block without an asset.
+    await expect(
+        audioDialog.getByLabel('Upload audio (WAV or MP3, up to 5 MiB)'),
+    ).toBeEnabled();
+    await expect(
+        audioDialog.getByRole('button', {
+            name: 'Prepare transcription',
+            exact: true,
+        }),
+    ).toBeVisible();
     await audioDialog
         .getByLabel('Title', { exact: true })
         .fill('Listening sample');
@@ -530,6 +650,13 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         page.getByRole('button', { name: 'Save', exact: true }),
     ).toBeEnabled();
+    const saveIcon = page.getByRole('button', { name: 'Save', exact: true });
+    await expect(saveIcon).toHaveText('');
+    await expect(saveIcon.locator('svg')).toBeVisible();
+    await saveIcon.hover();
+    await expect(
+        page.getByRole('tooltip', { name: 'Save to Knowledge', exact: true }),
+    ).toBeVisible();
     const savedBlockIds = await authorBlocks.evaluateAll((elements) =>
         elements.map((element) =>
             element.getAttribute('data-learning-block-id'),
@@ -543,6 +670,16 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await saved;
     await page.reload();
+    const practiceIcon = page.getByRole('link', {
+        name: 'Practice saved note',
+        exact: true,
+    });
+    await expect(practiceIcon).toHaveText('');
+    await expect(practiceIcon.locator('svg')).toBeVisible();
+    await practiceIcon.focus();
+    await expect(
+        page.getByRole('tooltip', { name: 'Practice saved note', exact: true }),
+    ).toBeVisible();
     await expect
         .poll(() =>
             authorBlocks.evaluateAll((elements) =>
@@ -1545,7 +1682,9 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         .fill('Independent corrected words');
     await library.getByRole('button', { name: 'Preview', exact: true }).click();
     await expect(
-        library.getByText('travail — работа', { exact: true }),
+        library
+            .getByLabel('Preview', { exact: true })
+            .getByText('travail — работа', { exact: true }),
     ).toBeVisible();
     await expect(library.getByText(/BAD translation/u)).toHaveCount(0);
     await library

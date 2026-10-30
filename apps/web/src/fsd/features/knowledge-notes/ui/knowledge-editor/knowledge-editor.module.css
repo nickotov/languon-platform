@@ -49,6 +49,7 @@
 }
 
 .content {
+    position: relative;
     min-width: 0;
     max-width: 100%;
     overflow-x: auto;
@@ -57,6 +58,7 @@
 .content :global(.tiptap) {
     min-height: var(--size-240);
     padding: var(--space-16);
+    padding-inline-start: var(--space-40);
     outline: none;
     color: var(--text-primary);
     font-size: var(--size-16);
@@ -142,7 +144,18 @@
 }
 
 .workspaceContent {
+    position: relative;
     min-width: 0;
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+    .workspaceContent {
+        padding-inline-start: var(--space-48);
+    }
+
+    .content :global(.tiptap) {
+        padding-inline-start: calc(var(--space-16) + var(--space-48));
+    }
 }
 
 .workspaceContent :global(.tiptap) {

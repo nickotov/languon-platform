@@ -62,6 +62,27 @@ function capabilityEnabled(capability, env) {
     );
 }
 
+function documentPipelineConfigured(env) {
+    if (
+        (env.DICTIONARY_DOCUMENT_RUNTIME_MODE || 'unavailable') !==
+            'unavailable' ||
+        (env.DICTIONARY_DOCUMENT_STORAGE_MODE || 'unavailable') !==
+            'unavailable'
+    )
+        return true;
+    return Object.entries(env).some(
+        ([key, value]) =>
+            /^DICTIONARY_JOB_(?:API_\w+|WORKER_PROCESSABLE)_FORMATS$/u.test(
+                key,
+            ) &&
+            String(value)
+                .split(',')
+                .some((format) =>
+                    /^document-terms:v[12]$/u.test(format.trim()),
+                ),
+    );
+}
+
 export function selectCapabilities(
     env,
     requested = [],
@@ -74,11 +95,22 @@ export function selectCapabilities(
                 'Unknown readiness capability. Use dictionary, texts, knowledge-actions, conversation, interview or sentences.',
             );
     }
-    return registry.filter((capability) =>
-        ids.length
-            ? ids.includes(capability.id)
-            : capabilityEnabled(capability, env),
-    );
+    return registry
+        .filter((capability) =>
+            ids.length
+                ? ids.includes(capability.id)
+                : capabilityEnabled(capability, env),
+        )
+        .map((capability) =>
+            capability.id === 'dictionary' && !documentPipelineConfigured(env)
+                ? {
+                      ...capability,
+                      formats: capability.formats.filter(
+                          (format) => !format.startsWith('document-terms:'),
+                      ),
+                  }
+                : capability,
+        );
 }
 
 export function validateLocalEnvironment(env) {

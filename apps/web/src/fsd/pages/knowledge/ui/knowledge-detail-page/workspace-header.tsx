@@ -8,6 +8,8 @@ import {
     Link2,
     Sparkles,
     Highlighter,
+    GraduationCap,
+    Save,
     Trash2,
 } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -180,9 +182,16 @@ export function WorkspaceHeader({
     );
     const sharingMenu = share ? share(shareOpen, setShareOpen, menu) : menu;
     const practice = practiceHref ? (
-        <ButtonLink href={practiceHref} variant='ghost' size='compact'>
-            {t('knowledge.practiceSaved')}
-        </ButtonLink>
+        <Tooltip content={t('knowledge.practiceSaved')} placement='bottom'>
+            <ButtonLink
+                href={practiceHref}
+                variant='ghost'
+                size='compact'
+                className={styles.iconAction}
+                aria-label={t('knowledge.practiceSaved')}
+                leadingIcon={<GraduationCap size={16} aria-hidden />}
+            />
+        </Tooltip>
     ) : null;
     return (
         <header className={styles.header}>
@@ -228,13 +237,14 @@ export function WorkspaceHeader({
                             <Button
                                 size='compact'
                                 variant={saveDisabled ? 'secondary' : 'primary'}
-                                className={styles.save}
+                                className={styles.iconAction}
+                                aria-label={t('knowledge.saveDocument')}
                                 disabled={saveDisabled}
                                 loading={busy === 'save'}
+                                leadingIcon={<Save size={16} aria-hidden />}
+                                children={null}
                                 onClick={onSave}
-                            >
-                                {t('knowledge.saveDocument')}
-                            </Button>
+                            />
                         </span>
                     </Tooltip>
                     {practice}

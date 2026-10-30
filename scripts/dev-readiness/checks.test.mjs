@@ -239,6 +239,37 @@ test('migration hashes distinguish pending from incompatible history', () => {
     );
 });
 
+test('dictionary readiness does not require an unconfigured document pipeline', () => {
+    const local = {
+        ...env,
+        DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS:
+            'single-card:v2,card-authoring:v3,pasted-terms:v2,import-pairs:v2',
+    };
+    const formats = selectCapabilities(local, ['dictionary'])[0].formats;
+    assert.ok(formats.includes('pasted-terms:v2'));
+    assert.ok(!formats.includes('document-terms:v2'));
+    for (const configured of [
+        ...[
+            'ACCEPTABLE',
+            'ENQUEUED',
+            'READABLE',
+            'CANCELLABLE',
+            'DISCARDABLE',
+        ].map((operation) => ({
+            [`DICTIONARY_JOB_API_${operation}_FORMATS`]: 'document-terms:v2',
+        })),
+        { DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'document-terms:v2' },
+        { DICTIONARY_DOCUMENT_RUNTIME_MODE: 'production' },
+        { DICTIONARY_DOCUMENT_STORAGE_MODE: 's3' },
+    ]) {
+        assert.ok(
+            selectCapabilities({ ...local, ...configured }, [
+                'dictionary',
+            ])[0].formats.includes('document-terms:v2'),
+        );
+    }
+});
+
 test('optional disabled capabilities are omitted unless explicitly requested', () => {
     const disabled = {
         ...env,

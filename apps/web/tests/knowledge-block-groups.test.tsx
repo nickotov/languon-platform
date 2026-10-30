@@ -179,8 +179,8 @@ describe('exercise set authoring', () => {
         await waitFor(() => expect(editor.current).not.toBeNull());
         expect(change).not.toHaveBeenCalled();
         const gaps = screen.getAllByRole('button', { name: 'Write here…' });
-        expect(gaps).toHaveLength(2);
-        fireEvent.click(gaps[0]!);
+        expect(gaps).toHaveLength(3);
+        fireEvent.click(gaps[1]!);
         await waitFor(() => expect(change).toHaveBeenCalledOnce());
         const content = change.mock.lastCall![0].document.content;
         expect(content[2]).toMatchObject({ type: 'paragraph' });
@@ -275,7 +275,7 @@ it('joins only empty paragraph gaps and provides one writable line after a logic
         screen.getAllByRole('button', { name: 'Block settings: Practice set' }),
     ).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Write here…' })).toHaveLength(
-        1,
+        2,
     );
     expect(change).not.toHaveBeenCalled();
 });
@@ -319,7 +319,7 @@ it('does not show writable gaps inside legacy source-linked audio questions', as
         screen.getAllByRole('button', { name: /^Block settings:/ }),
     ).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Write here…' })).toHaveLength(
-        1,
+        2,
     );
     expect(change).not.toHaveBeenCalled();
 });
@@ -415,3 +415,42 @@ it.each(['paragraph', 'table', 'hard-break', 'added-question'] as const)(
         );
     },
 );
+
+it('restores a writable leading line after deleting prose before the first custom block', async () => {
+    const change = vi.fn();
+    const { container } = render(
+        <KnowledgeEditor value={body} onChange={change} />,
+    );
+    const gaps = await screen.findAllByRole('button', { name: 'Write here…' });
+    expect(change).not.toHaveBeenCalled();
+    const host = container.querySelector('[role="textbox"]') as HTMLElement & {
+        editor: Editor;
+    };
+    const editor = host.editor;
+    const initial = editor.getJSON();
+    fireEvent.click(gaps[0]!);
+    expect(editor.state.doc.firstChild?.type.name).toBe('paragraph');
+    expect(editor.state.selection.from).toBe(1);
+    act(() => {
+        editor.commands.insertContent('Prose before the exercise set.');
+    });
+    expect(editor.state.doc.firstChild?.textContent).toBe(
+        'Prose before the exercise set.',
+    );
+    const firstSize = editor.state.doc.firstChild!.nodeSize;
+    act(() => {
+        editor.commands.deleteRange({ from: 0, to: firstSize });
+    });
+    expect(editor.state.doc.firstChild?.type.name).toBe('learningBlock');
+    expect(
+        editor
+            .getJSON()
+            .content?.filter((node) => node.type === 'learningBlock'),
+    ).toEqual(initial.content?.filter((node) => node.type === 'learningBlock'));
+    expect(screen.getAllByRole('button', { name: 'Write here…' })).toHaveLength(
+        2,
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Write here…' })[0]!);
+    expect(editor.state.selection.from).toBe(1);
+    expect(editor.state.doc.child(1).attrs.block.id).toBe(question1.id);
+});

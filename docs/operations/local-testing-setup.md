@@ -32,6 +32,11 @@ PostgreSQL in a read-only transaction, checks migration history, admin-owned rou
 required worker formats, effective customer/provider prices and operator limits.
 Runtime checks include fresh worker evidence. Explicit capability selection also
 checks its enable flag; disabled optional capabilities are omitted by default.
+Dictionary readiness includes document-file ingestion only when document storage,
+the document runtime, or an explicit API/worker format allowlist configures it.
+Do not add `document-terms` formats merely to satisfy readiness when the document
+pipeline is intentionally unavailable: those formats require private storage and
+the document processing dependencies before a worker can start.
 The optional learner check uses exact balance and saved action budget.
 
 A ready report does not prove Redis connectivity, provider connectivity, available

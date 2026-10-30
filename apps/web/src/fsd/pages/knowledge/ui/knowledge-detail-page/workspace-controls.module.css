@@ -92,10 +92,12 @@
     gap: var(--space-4);
 }
 
-.save {
+.iconAction {
     min-height: var(--size-32);
     height: var(--size-32);
-    padding-inline: var(--space-14);
+    width: var(--size-32);
+    min-width: var(--size-32);
+    padding: 0;
 }
 
 .recovery,

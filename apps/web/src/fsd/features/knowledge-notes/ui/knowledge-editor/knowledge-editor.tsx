@@ -31,6 +31,7 @@ import { LearningBlockTextGaps } from '../learning-block-authoring/learning-bloc
 import { LearningBlockNode } from '../learning-block-authoring/learning-block-node';
 import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
 import { ExerciseGroupDrag } from '../../lib/exercise-group-drag';
+import { ProseBlockDrag } from './prose-block-drag';
 import { rejectCopiedLearningBlockDrop } from '../../lib/learning-block-drop';
 import { pasteLearningBlock } from '../../lib/learning-block-paste';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
@@ -122,14 +123,33 @@ export const KnowledgeEditor = forwardRef<
                         KnowledgeLinkSchema.safeParse(url).success,
                 },
             }),
-            TableKit.configure({ table: { resizable: false } }),
+            TableKit.configure({
+                table: { resizable: false, allowTableNodeSelection: true },
+            }),
             LearningBlockNode.configure({ labels: blockLabels }),
             ExerciseGroupDrag,
+            ProseBlockDrag.configure({
+                label: (node) => {
+                    const names: Record<string, string> = {
+                        paragraph: t('knowledge.paragraph'),
+                        heading: t(
+                            node.attrs.level === 3
+                                ? 'knowledge.heading3'
+                                : 'knowledge.heading2',
+                        ),
+                        bulletList: t('knowledge.bulletList'),
+                        orderedList: t('knowledge.orderedList'),
+                        blockquote: t('knowledge.blockquote'),
+                        table: t('knowledge.table'),
+                    };
+                    return `${blockLabels.field('Select or drag block')}: ${names[node.type.name] ?? node.type.name}`;
+                },
+            }),
             LearningBlockTextGaps.configure({
                 label: blockLabels.field('Write here…'),
             }),
         ],
-        [blockLabels],
+        [blockLabels, t],
     );
     const editor = useEditor({
         extensions,

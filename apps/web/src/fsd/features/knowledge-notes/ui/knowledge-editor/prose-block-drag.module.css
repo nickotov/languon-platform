@@ -1,0 +1,47 @@
+.handle {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-20);
+    height: var(--size-28);
+    border-radius: var(--radius-4);
+    color: var(--text-tertiary);
+    background: var(--background-surface);
+    cursor: grab;
+    touch-action: none;
+    translate: calc(-100% - var(--space-4)) 0;
+}
+
+.handle:where([hidden]) {
+    display: none;
+}
+
+.handle:hover {
+    color: var(--text-primary);
+    background: var(--background-subtle);
+}
+
+.handle:active {
+    cursor: grabbing;
+}
+
+.handle:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.handle svg {
+    width: var(--size-18);
+    height: var(--size-18);
+    fill: currentColor;
+    pointer-events: none;
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+    .handle {
+        width: var(--size-44);
+        height: var(--size-44);
+    }
+}

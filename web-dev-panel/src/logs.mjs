@@ -4,11 +4,31 @@ import { stripVTControlCharacters } from 'node:util';
 const sensitiveKeyPattern =
     /(?:^PGPASSWORD$|(?:^|_)(?:AUTH|COOKIE|CREDENTIALS?|DATABASE_URL|DSN|KEY|PASS(?:WORD)?|PAT|PWD|REDIS_URL|SECRET|TOKEN)(?:$|_))/iu;
 
+// Public configuration is not a credential. Keep this list explicit: unknown
+// sensitive-looking names and actual credentials still use the default mask.
+const publicConfigurationKeys = new Set([
+    'AUTH_ACCESS_TOKEN_TTL',
+    'AUTH_REFRESH_TOKEN_TTL',
+    'AUTH_ALLOWED_ORIGINS',
+    'AUTH_ARGON2_MEMORY_COST_KIB',
+    'AUTH_ARGON2_PARALLELISM',
+    'AUTH_ARGON2_TIME_COST',
+    'AUTH_JWT_AUDIENCE',
+    'AUTH_JWT_ISSUER',
+    'AUTH_TRUST_PROXY',
+    'AUTH_WEBAUTHN_RP_ID',
+    'AUTH_WEBAUTHN_RP_NAME',
+    'HF_HUB_DISABLE_IMPLICIT_TOKEN',
+    'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED',
+    'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED',
+]);
+
 export function createEnvironmentRedactor(environment = process.env) {
     const values = Object.entries(environment)
         .filter(
             ([key, value]) =>
                 sensitiveKeyPattern.test(key) &&
+                !publicConfigurationKeys.has(key) &&
                 typeof value === 'string' &&
                 value.length > 0,
         )

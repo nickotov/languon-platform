@@ -109,6 +109,17 @@ synthetic accounts. API health must succeed before browser interaction.
    writing area. Library insertion stays a compact secondary action. Existing
    blocks have a drag handle for whole-block selection/reordering and a heading-right
    **Block settings** menu for Edit, Copy, Duplicate, Move up/down and Delete.
+   Drag handles sit in the left gutter, outside custom content. Hover an ordinary
+   paragraph, heading, list, quotation or table to reveal its handle. Drag it as
+   a whole block; lists and tables preserve their nested contents. Enter/Space
+   selects that block and Alt+Up/Down moves it with the keyboard.
+   Focus prose and use Shift+Tab to reach its handle directly; Alt+Up/Down also
+   works from the current prose selection without hovering. Read-only notes
+   expose no author drag controls. A document edit during dragging cancels a stale
+   ordinary-block drop rather than inserting older content.
+   A **Write here…** line before a first custom block lets the author insert prose
+   above it. It returns when the leading paragraph is removed and is not saved as
+   synthetic content. Existing writable lines after logical blocks remain usable.
    Selecting a block does not show prose-selection actions; these appear only
    for selected text. The menu is keyboard accessible and usable on narrow screens.
    Reload preserves the dragged order after explicit Save. **Edit** opens the
@@ -124,7 +135,10 @@ synthetic accounts. API health must succeed before browser interaction.
    eligible source block is removed; changing a draft does not cancel or
    discard the operation. Supply the exercise question,
    reference answer and short explanation. Upload a synthetic WAV audio file.
-2. Select **Save**, reload, and open **Practice saved note**. The published blocks
+2. The topbar uses icon-only **Save** and **Practice saved note** controls with
+   localized accessible names and tooltips. Save retains its disabled/loading
+   states and explanatory tooltip. Select **Save**, reload, and open
+   **Practice saved note**. The published blocks
    and playable uploaded audio persist. With transcription deliberately unavailable,
    **Prepare transcription** shows an honest provider/pricing/credit-configuration
    warning. Manual speech source and transcript fields remain usable without

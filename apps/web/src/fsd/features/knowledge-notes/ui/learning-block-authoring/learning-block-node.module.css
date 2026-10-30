@@ -23,6 +23,7 @@
     background: transparent;
     cursor: grab;
     touch-action: none;
+    translate: calc(var(--size-20) * -1) 0;
 }
 
 /* Keep the HTML drag source on the handle, rather than its SVG decoration. */

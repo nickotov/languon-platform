@@ -269,14 +269,20 @@ test('runner redacts secrets loaded from its own file across output chunks', asy
     const secret = 'fixture-secret-not-in-parent';
     await writeFile(
         join(options.cwd, '.env.local'),
-        Object.entries({ ...environment, PROVIDER_API_KEY: secret })
+        Object.entries({
+            ...environment,
+            AUTH_JWT_ISSUER: 'languon',
+            AUTH_ARGON2_PARALLELISM: '1',
+            HF_HUB_DISABLE_IMPLICIT_TOKEN: '1',
+            PROVIDER_API_KEY: secret,
+        })
             .map(([key, value]) => `${key}=${value}`)
             .join('\n'),
     );
     options.commands.infrastructure = [
         process.execPath,
         '-e',
-        `process.stdout.write(${JSON.stringify(secret.slice(0, 12))}); setTimeout(() => process.stdout.write(${JSON.stringify(secret.slice(12))} + '\\n'), 20);`,
+        `process.stdout.write('@languon/backend http://127.0.0.1:4000 document-terms:v2 ' + ${JSON.stringify(secret.slice(0, 12))}); setTimeout(() => process.stdout.write(${JSON.stringify(secret.slice(12))} + '\\n'), 20);`,
     ];
     options.commands.dependencies = [process.execPath, '-e', 'process.exit(1)'];
     let output = '';
@@ -286,7 +292,10 @@ test('runner redacts secrets loaded from its own file across output chunks', asy
         },
     };
     await assert.rejects(runDevelopment(options), /dependencies failed/);
-    assert.equal(output, '[REDACTED]\n');
+    assert.equal(
+        output,
+        '@languon/backend http://127.0.0.1:4000 document-terms:v2 [REDACTED]\n',
+    );
 });
 
 test('quiet startup hides successful output and flushes redacted opaque failure details', async (t) => {
