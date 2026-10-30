@@ -136,7 +136,15 @@ synthetic accounts. API health must succeed before browser interaction.
    discard the operation. Supply the exercise question,
    reference answer and short explanation. Upload a synthetic WAV audio file.
 2. The topbar uses icon-only **Save** and **Practice saved note** controls with
-   localized accessible names and tooltips. Save retains its disabled/loading
+   localized accessible names and tooltips. In **Document actions**, select
+   **Learner preview** to read the current draft using the shared-note presentation.
+   The title, prose and custom blocks are read-only; author editing/drag controls
+   and the formatting toolbar are hidden. Prepared exercises can be expanded,
+   answered and revealed locally without writing practice history or requesting
+   AI feedback. Shared links still show only the last saved version. The checked
+   menu option toggles back, and **Back to editing** restores the mounted editor
+   with its unsaved content and history intact. Verify this on desktop and mobile.
+   Save retains its disabled/loading
    states and explanatory tooltip. Select **Save**, reload, and open
    **Practice saved note**. The published blocks
    and playable uploaded audio persist. With transcription deliberately unavailable,
@@ -256,6 +264,8 @@ synthetic accounts. API health must succeed before browser interaction.
 
 - `author-blocks-publish-practice`: real chat-generated vocabulary preview/follow-up/explicit Apply and
   UI authoring, whole-block selection, drag reordering, inline settings
+  and current-draft learner preview with desktop/mobile entry and return,
+  local prepared-answer reveal and preserved editor content/identity,
   and keyboard dismissal, mobile menus, upload, explicit publication,
   reload, bilingual original/translation rendering, explicit independent Text-library
   preview/commit, standalone practice, answer/reveal/completion persistence, direct vocabulary

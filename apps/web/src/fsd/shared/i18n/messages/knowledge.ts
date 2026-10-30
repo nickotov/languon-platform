@@ -1,4 +1,8 @@
 export const knowledgeEn = {
+    'knowledge.learnerPreview': 'Learner preview',
+    'knowledge.backToEditing': 'Back to editing',
+    'knowledge.learnerPreviewHint':
+        'Preview your current draft. Practice here is not saved. Shared links show the last saved version.',
     'knowledge.highlightLearningBlocks': 'Highlight learning blocks',
     'knowledge.addBlockToChat': 'Add block to chat',
     'knowledge.practiceSaved': 'Practice saved note',
@@ -245,6 +249,10 @@ export const knowledgeEn = {
 } as const;
 
 export const knowledgeRu = {
+    'knowledge.learnerPreview': 'Предпросмотр для ученика',
+    'knowledge.backToEditing': 'Вернуться к редактированию',
+    'knowledge.learnerPreviewHint':
+        'Предпросмотр текущего черновика. Ответы здесь не сохраняются. По общей ссылке доступна последняя сохранённая версия.',
     'knowledge.highlightLearningBlocks': 'Выделять учебные блоки',
     'knowledge.addBlockToChat': 'Добавить блок в чат',
     'knowledge.practiceSaved': 'Практика по сохранённой заметке',
@@ -488,6 +496,10 @@ export const knowledgeRu = {
 } as const;
 
 export const knowledgeEs = {
+    'knowledge.learnerPreview': 'Vista de estudiante',
+    'knowledge.backToEditing': 'Volver a editar',
+    'knowledge.learnerPreviewHint':
+        'Vista del borrador actual. La práctica aquí no se guarda. Los enlaces compartidos muestran la última versión guardada.',
     'knowledge.highlightLearningBlocks': 'Resaltar bloques de aprendizaje',
     'knowledge.addBlockToChat': 'Añadir bloque al chat',
     'knowledge.practiceSaved': 'Practicar la nota guardada',
@@ -736,6 +748,10 @@ export const knowledgeEs = {
 } as const;
 
 export const knowledgeFr = {
+    'knowledge.learnerPreview': 'Aperçu élève',
+    'knowledge.backToEditing': 'Revenir à la rédaction',
+    'knowledge.learnerPreviewHint':
+        'Aperçu du brouillon actuel. La pratique ici n’est pas enregistrée. Les liens partagés affichent la dernière version enregistrée.',
     'knowledge.highlightLearningBlocks':
         'Mettre les blocs pédagogiques en évidence',
     'knowledge.addBlockToChat': 'Ajouter le bloc au chat',

@@ -3,6 +3,7 @@ import {
     ArrowLeft,
     CopyPlus,
     EllipsisVertical,
+    Eye,
     Globe,
     History,
     Link2,
@@ -50,10 +51,14 @@ export function WorkspaceHeader({
     practiceHref,
     blockAccents = true,
     onBlockAccentsChange,
+    learnerPreview = false,
+    onLearnerPreviewChange,
 }: {
     title: string;
     blockAccents?: boolean;
     onBlockAccentsChange?: ((enabled: boolean) => void) | undefined;
+    learnerPreview?: boolean;
+    onLearnerPreviewChange?: ((enabled: boolean) => void) | undefined;
     practiceHref?: string | undefined;
     titleVisible?: boolean;
     stats?: string;
@@ -100,6 +105,9 @@ export function WorkspaceHeader({
     function ignoreStats() {
         return undefined;
     }
+    function toggleLearnerPreview() {
+        onLearnerPreviewChange?.(!learnerPreview);
+    }
     const actions: MenuItem[] = [
         {
             label: t('knowledge.saveCopy'),
@@ -120,6 +128,14 @@ export function WorkspaceHeader({
             onSelect: openSharing,
         },
     ];
+    if (onLearnerPreviewChange) {
+        actions.unshift({
+            label: t('knowledge.learnerPreview'),
+            icon: <Eye size={16} aria-hidden />,
+            checked: learnerPreview,
+            onSelect: toggleLearnerPreview,
+        });
+    }
     if (onBlockAccentsChange) {
         actions.push({
             label: t('knowledge.highlightLearningBlocks'),

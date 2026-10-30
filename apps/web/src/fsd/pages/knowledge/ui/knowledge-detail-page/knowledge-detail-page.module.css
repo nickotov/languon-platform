@@ -194,6 +194,10 @@
     min-height: var(--size-40);
 }
 
+.formatting[hidden] {
+    display: none;
+}
+
 .documentScroll {
     position: relative;
     flex: 1;

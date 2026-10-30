@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:6d8962c81eecb50e
+// @user-flow-revision interactive-workbooks sha256:a8cfdde30a544410
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -142,6 +142,89 @@ async function addBlock(
         .getByRole('button', { name: 'Apply changes', exact: true })
         .click();
     await expect(dialog).not.toBeVisible();
+}
+async function verifyLearnerPreview(page: Page, info: TestInfo) {
+    const editor = page.locator('#knowledge-workspace-editor [role="textbox"]');
+    const scroll = page.locator('[data-workspace-scroll]');
+    const previousScrollTop = await scroll.evaluate(
+        (element) => element.scrollTop,
+    );
+    await editor.evaluate((element) => {
+        element.setAttribute('data-preview-preserved', 'true');
+    });
+    const documentBefore = await editor.innerText();
+    await page
+        .getByRole('button', { name: 'Document actions', exact: true })
+        .click();
+    const toggle = page.getByRole('menuitemcheckbox', {
+        name: 'Learner preview',
+        exact: true,
+    });
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+    await toggle.click();
+    const preview = page.getByRole('region', {
+        name: 'Learner preview',
+        exact: true,
+    });
+    await expect(preview).toBeVisible();
+    await expect(
+        preview.getByRole('button', { name: 'Back to editing', exact: true }),
+    ).toBeInViewport();
+    await expect(preview.getByRole('heading', { level: 1 })).toHaveText(
+        'First interactive lesson',
+    );
+    await expect(editor).toBeHidden();
+    await expect(
+        page.getByRole('button', { name: 'Add block', exact: true }),
+    ).toBeHidden();
+    await expect(
+        preview.getByRole('button', { name: /Select or drag block/u }),
+    ).toHaveCount(0);
+    const practice = preview.getByRole('region', {
+        name: 'Verb practice',
+        exact: true,
+    });
+    await expandExercise(practice, 'Complete: I ___ English.');
+    await practice
+        .getByRole('button', { name: 'Show answer', exact: true })
+        .click();
+    await expect(
+        practice.getByText('I takes the base verb.', { exact: true }),
+    ).toBeVisible();
+    await expect(
+        practice.getByRole('button', { name: 'Check with AI', exact: true }),
+    ).toHaveCount(0);
+    await scroll.evaluate((element) => {
+        element.scrollTop = 0;
+    });
+    await capture(page, info, 'document-learner-preview-desktop');
+    await page
+        .getByRole('button', { name: 'Document actions', exact: true })
+        .click();
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await toggle.click();
+    await expect(editor).toBeVisible();
+    await expect
+        .poll(() => scroll.evaluate((element) => element.scrollTop))
+        .toBe(previousScrollTop);
+    await page
+        .getByRole('button', { name: 'Document actions', exact: true })
+        .click();
+    await toggle.click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await scroll.evaluate((element) => {
+        element.scrollTop = 0;
+    });
+    await capture(page, info, 'document-learner-preview-mobile');
+    await preview
+        .getByRole('button', { name: 'Back to editing', exact: true })
+        .click();
+    await expect(preview).toHaveCount(0);
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveAttribute('data-preview-preserved', 'true');
+    expect(await editor.innerText()).toBe(documentBefore);
+    await expect(editor).toBeFocused();
+    await page.setViewportSize({ width: 1440, height: 1000 });
 }
 async function fillEditorLanguage(
     dialog: Locator,
@@ -769,6 +852,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         .getByRole('button', { name: 'Discard', exact: true })
         .click();
     await capture(page, info, 'editor-populated-desktop');
+    await verifyLearnerPreview(page, info);
     await page.getByRole('button', { name: /Account menu/u }).click();
     await page.getByRole('button', { name: 'Dark', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

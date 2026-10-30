@@ -25,12 +25,14 @@ import {
 import { useKnowledgePageActions } from '../../hooks/use-knowledge-page-actions';
 import { useKnowledgeLearningIntegrations } from '../../hooks/use-knowledge-learning-integrations';
 import { useWorkspacePresentation } from '../../hooks/use-workspace-presentation';
+import { useWorkspaceLearnerPreview } from '../../hooks/use-workspace-learner-preview';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
 import { WorkspaceDocumentPane } from './workspace-document-pane';
 import { WorkspaceDialogs } from './workspace-dialogs';
 import { WorkspaceNotices } from '../workspace-notices/workspace-notices';
 import { WorkspaceHeader } from './workspace-header';
 import { WorkspaceShareControls } from './workspace-share-controls';
+import { WorkspaceLearnerPreview } from './workspace-learner-preview/workspace-learner-preview';
 import styles from './knowledge-detail-page.module.css';
 
 export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
@@ -46,6 +48,7 @@ function DetailContent({ noteId }: { noteId: string }) {
     const { t, href } = useI18n();
     const actorId = useSessionStore((state) => state.user?.id);
     const [blockAccents, setBlockAccents] = useState(true);
+    const learnerPreview = useWorkspaceLearnerPreview();
     const { requestWithSession } = useAuth();
     const actions = useKnowledgePageActions(noteId);
     const integrations = useKnowledgeLearningIntegrations(noteId, actions);
@@ -238,6 +241,8 @@ function DetailContent({ noteId }: { noteId: string }) {
                     }
                     blockAccents={blockAccents}
                     onBlockAccentsChange={setBlockAccents}
+                    learnerPreview={learnerPreview.active}
+                    onLearnerPreviewChange={learnerPreview.change}
                     onSave={actions.save}
                     onSaveCopy={actions.saveCopy}
                     onHistory={actions.openHistory}
@@ -248,6 +253,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                     <div
                         id='knowledge-workspace-toolbar'
                         className={styles.formatting}
+                        hidden={learnerPreview.active}
                     />
                     <div
                         className={styles.documentScroll}
@@ -269,42 +275,55 @@ function DetailContent({ noteId }: { noteId: string }) {
                             onSend={integrations.evaluationConsent.confirm}
                             onClose={integrations.evaluationConsent.cancel}
                         />
-                        <KnowledgeNoteForm
-                            ref={actions.editor}
-                            value={draft.content}
-                            onChange={state.change}
-                            onValidityChange={actions.setValid}
-                            disabled={busy !== null}
-                            workspace={{
-                                toolbarRootId: 'knowledge-workspace-toolbar',
-                                editorId: 'knowledge-workspace-editor',
-                                proposalRootId: 'knowledge-workspace-proposal',
-                                inlineProposalRootId:
-                                    'knowledge-workspace-inline-proposal',
-                                languageDefaults: {
-                                    content:
-                                        draft.content.studiedLanguage ??
-                                        undefined,
-                                    translation:
-                                        draft.content.explanationLanguage ??
-                                        undefined,
-                                },
-                                library: integrations.library,
-                                blockCopy: integrations.blockCopy,
-                                uploadAudio: integrations.uploadAudio,
-                                blockAccents,
-                                renderBlockMenu,
-                                renderAudioPreparation,
-                                fieldAi: integrations.fieldAi,
-                                blockViewOptions: integrations.blockViewOptions,
-                                onAskTutor: view.askTutor,
-                                onMentionBlock: view.mentionBlock,
-                                onTutorAction: view.tutorAction,
-                                tutorBusy: view.tutorBusy,
-                                onTitleVisibilityChange: view.setTitleVisible,
-                                onAskOutline: view.askOutline,
-                            }}
-                        />
+                        {learnerPreview.active && (
+                            <WorkspaceLearnerPreview
+                                content={draft.content}
+                                blockOptions={integrations.blockViewOptions}
+                                onClose={learnerPreview.close}
+                            />
+                        )}
+                        <div hidden={learnerPreview.active}>
+                            <KnowledgeNoteForm
+                                ref={actions.editor}
+                                value={draft.content}
+                                onChange={state.change}
+                                onValidityChange={actions.setValid}
+                                disabled={busy !== null}
+                                workspace={{
+                                    toolbarRootId:
+                                        'knowledge-workspace-toolbar',
+                                    editorId: 'knowledge-workspace-editor',
+                                    proposalRootId:
+                                        'knowledge-workspace-proposal',
+                                    inlineProposalRootId:
+                                        'knowledge-workspace-inline-proposal',
+                                    languageDefaults: {
+                                        content:
+                                            draft.content.studiedLanguage ??
+                                            undefined,
+                                        translation:
+                                            draft.content.explanationLanguage ??
+                                            undefined,
+                                    },
+                                    library: integrations.library,
+                                    blockCopy: integrations.blockCopy,
+                                    uploadAudio: integrations.uploadAudio,
+                                    blockAccents,
+                                    renderBlockMenu,
+                                    renderAudioPreparation,
+                                    fieldAi: integrations.fieldAi,
+                                    blockViewOptions:
+                                        integrations.blockViewOptions,
+                                    onAskTutor: view.askTutor,
+                                    onMentionBlock: view.mentionBlock,
+                                    onTutorAction: view.tutorAction,
+                                    tutorBusy: view.tutorBusy,
+                                    onTitleVisibilityChange:
+                                        view.setTitleVisible,
+                                    onAskOutline: view.askOutline,
+                                }}
+                            />
+                        </div>
                     </div>
                 </WorkspaceDocumentPane>
             </main>
