@@ -35,9 +35,12 @@ as the work being reviewed.
 
 Inspect relevant runtime tokens, primitives and variants, colocated stories,
 comparable screens, routing/overlay conventions, and state patterns. Name the
-sources selected for reuse. Ordinary composition can proceed without an
-external design artifact. Explicit fidelity needs the supplied source inspected
-before it can be claimed.
+sources selected for reuse. Before substantive implementation, follow
+[design direction](../../../.agent/DESIGN_HANDOFF.md#choose-the-ui-direction-before-implementation):
+extend an identified approved pattern, obtain approval of a concrete agent preview,
+or implement the user-selected external design. Ordinary approved-pattern work
+and small corrections need no external artifact or repeated approval. Explicit
+fidelity needs the supplied source inspected before it can be claimed.
 
 Record only material decisions in the active work record: primary task, entry
 and exit behavior, primary/secondary/destructive actions, required states, and

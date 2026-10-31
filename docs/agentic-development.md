@@ -6,8 +6,10 @@ title: Agentic development
 # Agentic development
 
 Use [critical workflow verification](./operations/critical-workflows.md) for
-the mandatory reusable browser gate and registration of future important
-features. Use [local testing setup](./operations/local-testing-setup.md) for
+affected core smoke selection and registration of future important features.
+A feature does not automatically run the full regression suite; shared impact,
+release/scheduled validation or an explicit request must justify its breadth.
+Use [local testing setup](./operations/local-testing-setup.md) for
 read-only readiness checks and repeatable admin configuration. Feature delivery
 must verify the setup path as well as the behavior in preconfigured fixtures.
 
@@ -34,6 +36,14 @@ then request review or implementation of that version. Updated prompts/designs
 append revisions, including edits at the same URL; prior approvals and implemented
 versions remain recorded. See [handoff rules](../.agent/DESIGN_HANDOFF.md).
 Reconcile the returned design against its requirements before integration.
+
+Before substantive UI implementation, choose the direction under
+[ADR-0054](./adr/0054-ui-direction-before-implementation.md): extend an approved
+existing pattern, approve an agent-created concrete preview, or select an external
+design (with a detailed prompt when needed). An explicit request to implement the
+selected design is sufficient approval. Small corrections and approved-pattern
+extensions stay autonomous; missing external tooling does not prevent a local
+preview or work within the existing direction.
 
 Repository-scoped workflows are documented in
 [`agent-skills.md`](./agent-skills.md), including invocation, authority, locally
@@ -274,12 +284,12 @@ decision is based on conceptual behavior, risk, and reversibility—not the numb
 of edited files. Tests, docs, and matching configuration can support one small
 correction or focused improvement without turning it into a feature.
 
-| Use correction development               | Use improvement development                               | Use feature development                               |
-| ---------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
-| Adjust an established behavior or defect | Deliver one cohesive developer or UX enhancement          | User explicitly asks to create a feature/lifecycle    |
-| Low-risk, reversible, existing pattern   | Existing product contract and architecture stay unchanged | New capability, journey, or feature milestones        |
-| No dependency or abstraction change      | May add a development-only dependency or local tooling    | Public API/schema, data, security, deployment, ADR    |
-| Targeted verification is reliable        | A focused record and proportional proof are sufficient    | Feature artifacts, review, and broad proof are needed |
+| Use correction development               | Use improvement development                               | Use feature development                                       |
+| ---------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------- |
+| Adjust an established behavior or defect | Deliver one cohesive developer or UX enhancement          | User explicitly asks to create a feature/lifecycle            |
+| Low-risk, reversible, existing pattern   | Existing product contract and architecture stay unchanged | New capability, journey, or feature milestones                |
+| No dependency or abstraction change      | May add a development-only dependency or local tooling    | Public API/schema, data, security, deployment, ADR            |
+| Targeted verification is reliable        | A focused record and proportional proof are sufficient    | Feature artifacts, review, and risk-selected proof are needed |
 
 Examples:
 
@@ -496,8 +506,13 @@ correct.
 Use the lowest-cost reliable verification layer. During development, select affected
 unit/contract/integration cases and scoped static checks, including shared consumers.
 Use a small real integration or browser proof early when it resolves a consequential
-assumption. Defer broad workspace and critical gates until implementation and source
-review fixes stabilize; preserve every required final layer. An interactive browser
+assumption. Before substantial implementation, record exact selected commands,
+the risk each covers, setup prerequisites and estimated elapsed time; distinguish
+estimates from measurements. Use affected core smoke and risk-triggered final
+layers for features as well as smaller work. Run a full regression only for
+justified shared impact, release/scheduled validation or an explicit request,
+after implementation and source review fixes stabilize. Preserve required real
+browser/device, database and security evidence. An interactive browser
 session is evidence for real user behavior; it does not replace automated regression
 tests. Record actual setup/body timings when a new test environment is costly and
 keep contending builds or resets off the same resources.
@@ -511,6 +526,44 @@ keep contending builds or resets off the same resources.
 | Guide-to-E2E synchronization      | `$user-flow-e2e` + stable scenario/revision markers   |
 | Native mobile behavior            | Expo simulator/device verification                    |
 | Independent implementation review | `$code-review` and risk-triggered security review     |
+
+### Select critical checks without executing them
+
+Inspect the selection before launching expensive infrastructure or tests:
+
+```sh
+pnpm test:e2e:critical -- --plan --flow ai-conversation
+```
+
+The plan reports exact commands, files and dependencies without running checks.
+Select affected entries from the [critical registry](./operations/critical-workflows.md);
+shared AI changes select the common invariants and affected consumers. An
+unfiltered invocation is the comprehensive gate, so do not use it as shorthand
+for a bounded task. After a failure, diagnose the smallest reproducer and rerun
+only invalidated evidence plus any newly exposed risk; retain valid results.
+
+### Separate AI implementation, readiness and live proof
+
+For an AI change, capture the affected capability doctor's baseline before editing
+and its final result against the intended running local environment. Deterministic
+regressions must retain the real production composition with controlled external
+transport. They prove implementation behavior, not provider availability.
+
+[AI smoke policy](../.agent/AI_SMOKE_POLICY.md) is the authoritative standing
+authorization and budget for separate live checks with approved models and the
+dedicated synthetic account. Apply its limits and stop conditions without asking
+again when the action remains covered. Report implementation verified, local-ready
+and live-verified separately; missing credentials, stale activation or an exhausted
+budget remain explicit gaps. Automated tests never make paid provider calls.
+
+### Learn after acceptance
+
+After the user accepts the result, add a few lines to the existing work record:
+separate investigation, coding, environment/setup, test execution and rework time
+(label estimates), the largest avoidable delay or escaped defect, and one concrete
+prevention action when evidenced. Technical handoff need not wait for this later
+entry. The [evaluation protocol](./agentic-workflow-evaluation.md) provides optional
+controlled measurement; it adds no per-task artifact or checklist.
 
 ### Agent browser verification
 

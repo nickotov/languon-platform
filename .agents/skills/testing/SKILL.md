@@ -12,7 +12,8 @@ implementation diff, applicable instructions, and neighboring tests. List the
 behaviors that could regress and select the lowest-cost reliable layer for each.
 Record required and deliberately omitted layers with rationale in the active
 durable work state before substantial implementation. Separate development checks
-from final gates. Trace shared contracts to their readers/writers and affected
+from final gates. Include exact commands/selections, reasons, setup prerequisites
+and estimated duration early; label estimates and unknowns. Trace shared contracts to their readers/writers and affected
 consumers; file edits alone do not define the regression surface. For consequential
 uncertainty, name and prove a small real integration seam early under
 [discovery](../../../.agent/DELIVERY.md#1-establish-the-outcome-and-risk), then extend
@@ -47,7 +48,8 @@ markers do not justify promoting exhaustive lower-layer cases into E2E.
 
 For bounded corrections and focused improvements, apply the
 [small-fix fast path](../../../.agent/DELIVERY.md#small-fix-fast-path).
-Choose test files/cases by affected behavior rather than automatically running
+For every flow, including features, choose test files/cases by affected behavior
+rather than automatically running
 the whole workspace or repository suite. Keep required static checks and
 risk-triggered layers; widen the selection for affected callers, shared
 primitives/contracts, configuration changes, or unresolved regression risk.
@@ -65,14 +67,22 @@ changes. Validate fixture shapes through their real boundary schemas. A smaller
 selection must still exercise the behavior at risk; mock only external transport
 when real internal composition/persistence is required.
 
-Schedule broad workspace suites, builds and critical gates after focused preflight
-and source-review fixes stabilize, using the
+Select affected core smoke through the [critical workflow policy](../../../docs/operations/critical-workflows.md).
+Full repository or critical regressions require evidenced shared impact, a
+release/scheduled run, or an explicit request; feature completion is not a trigger.
+When justified, schedule broad suites after focused preflight and source-review
+fixes stabilize, using the
 [final readiness check](../../../.agent/DELIVERY.md#5-run-final-gates-and-approve-evidence).
 Record a specific risk/selection for an earlier broad check. A targeted production
 integration or rendered observation can run early to settle an assumption; this
 does not move the whole-app gate into every development iteration. Resolve exact
 mapped E2E files and reviewed commands; verify argument forwarding so a filter
 does not silently run the entire suite.
+
+For AI changes, keep deterministic production-composition proof, baseline/final
+doctor readiness and bounded live smoke separate under
+[AI smoke policy](../../../.agent/AI_SMOKE_POLICY.md). Automated tests never call
+paid providers; standing live authorization applies only within that policy.
 
 If a check fails, distinguish implementation, fixture, environment and assumption
 errors. Repair and rerun the focused reproducer before a justified broader check.

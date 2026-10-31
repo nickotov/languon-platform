@@ -138,7 +138,7 @@ the complete sanitized environment reference.
    Enter approved customer input/output credits per million tokens for each paid
    flow. These are independent of provider USD costs. Review operator probe caps
    before running any checks: checks spend operator funds and need explicit
-   authorization when operated by an agent.
+   authorization when operated by an agent. The user-approved [standing local smoke allowance](../../.agent/AI_SMOKE_POLICY.md) supplies that authorization only within its fixed account, route, task and cost bounds.
 4. Use **Quick response** for basic connectivity, then **Test selected flow** for
    every route/flow to be activated. A quick response is insufficient to activate
    structured work. Successful matching checks are required within 24 hours when
@@ -186,6 +186,27 @@ new API key, provider, model selection or production activation is implied. Revi
 [ADR-0052](../adr/0052-source-bound-knowledge-ai-actions.md) for source/credit
 boundaries. The interactive-workbooks critical flow provides deterministic local
 browser coverage; tests must not call paid providers.
+
+## Dedicated live smoke verification
+
+The [standing policy](../../.agent/AI_SMOKE_POLICY.md) defines the current synthetic
+account, route and cost allowance. It is separate from deterministic automated
+verification. Credentials are kept only in ignored `.env.ai-smoke.local` with
+restricted file permissions; the normal application `.env.local` is unchanged.
+
+Run `pnpm ai:smoke` to inspect readiness without generating content. After the
+one-time unused-account journal initialization (`pnpm ai:smoke -- --initialize`),
+`pnpm ai:smoke -- --run --task <work-record-slug>` makes one bounded ordinary
+learner request and verifies persisted output, expected learner billing and settled
+provider expense. Operator-funded conversations legitimately show free learner
+billing; this does not mean the provider call was free. Missing/corrupt quota
+state, changed route, unavailable funding or exhausted limits stop dispatch.
+Do not delete journal/marker/lock files to recover quota or retry an unknown call.
+The runner never replenishes credits, changes routing or invokes activation checks.
+
+A passing conversation smoke does not prove other AI capabilities. Select affected
+deterministic journeys and run only separately covered live actions when needed.
+Keep implementation proof, doctor readiness and live result separate at handoff.
 
 ## Multilingual reference evaluation
 

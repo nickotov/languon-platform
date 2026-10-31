@@ -15,9 +15,30 @@ repeated omissions and repair cycles. It is not a per-task delivery gate.
 [design fidelity](../.agents/skills/ui-ux-composition/references/design-fidelity.md)
 defines the supplied-design workflow.
 
+## Lightweight learning after accepted delivery
+
+The [shared delivery procedure](../.agent/DELIVERY.md#after-user-acceptance) owns
+the short retrospective after user acceptance. Keep it in the existing work
+record; this optional evaluation protocol does not add a completion gate or a
+second artifact. Separate investigation, implementation, environment/setup,
+test execution and rework time, labeling estimates or unavailable measurements.
+Choose one concrete prevention action for the largest evidenced avoidable cost;
+do not manufacture a new checklist when no recurring problem was observed.
+
+For workflow experiments, record the planned exact checks, their reasons and
+duration estimates alongside actual selections and setup/body timings. Compare
+quality as well as cost: choosing affected core smoke is valid only when all
+required browser/device, database, security and affected-consumer evidence remains.
+A shorter run alone is not evidence of preserved quality. Record full-suite
+justifications and whether failed runs were narrowed before invalidated checks
+were rerun. For AI tasks, distinguish deterministic production-composition proof,
+baseline/final doctor readiness and live results under
+[AI smoke policy](../.agent/AI_SMOKE_POLICY.md); its standing authorization does
+not authorize arbitrary evaluation traffic.
+
 ## Start with bounded decision probes
 
-The [case directory](../.agent/evals/workflow/cases/) contains eight offline
+The [case directory](../.agent/evals/workflow/cases/) contains nine offline
 scenarios. Each file is a complete request plus synthetic raw task facts. They
 test routing, evidence selection, design inventory, and review scope without
 running application code. They do **not** prove implementation quality, visual

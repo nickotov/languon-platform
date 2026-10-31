@@ -33,7 +33,31 @@ whether reported input includes cached input; do not add cached input twice.
 | <ID>                    | unavailable | unavailable  | unavailable    | unavailable | <reference>         |
 | Total                   | unavailable | unavailable  | unavailable    | unavailable | <aggregation notes> |
 
+Separate phase timings; label measured versus estimated and use `unavailable`
+where absent. Assign work once to avoid double-counting rework in other phases;
+parallel phase totals need not equal elapsed wall time.
+
+| Phase                                         | Duration | Measured / estimated / unavailable | Evidence or basis |
+| --------------------------------------------- | -------- | ---------------------------------- | ----------------- |
+| Investigation                                 |          |                                    |                   |
+| Implementation                                |          |                                    |                   |
+| Environment/setup                             |          |                                    |                   |
+| Test execution (excluding setup)              |          |                                    |                   |
+| Rework after failed checks/review/user repair |          |                                    |                   |
+
+- Early planned checks, selection/reason and estimated setup/execution duration:
+- Actual selected commands and durations; reason for any full regression:
 - Elapsed wall time (includes waiting):
 - Human intervention time (measured or estimate, label which):
 - Monetary cost, only if pricing/model/cache accounting is known:
 - Missing measurements, unresolved risks, and comparison limitations:
+
+## Retrospective after user acceptance
+
+Keep the actual brief retrospective in the existing work record and link it here.
+Do not infer acceptance from technical completion or create a new gate.
+
+- User acceptance reference/date; pending until accepted:
+- Largest avoidable delay or escaped defect and cause:
+- One concrete prevention action, or no evidenced prevention need:
+- Existing work record retrospective link:

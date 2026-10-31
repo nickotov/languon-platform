@@ -202,65 +202,69 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 
 ## Canonical commands
 
-| Command                                       | Purpose                                                                             |
-| --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm dev:all`                                | Prepare infra/migrations and run apps plus workers; add `--verbose` for full logs   |
-| `pnpm dev`                                    | Run backend, web, and admin development servers                                     |
-| `pnpm dev:infra`                              | Start PostgreSQL, Redis and private development MinIO                               |
-| `pnpm dev:mastra`                             | Provision and run isolated Mastra Studio                                            |
-| `pnpm dev:backend`                            | Run only the backend                                                                |
-| `pnpm dev:web`                                | Run only the user-facing web application                                            |
-| `pnpm dev:admin-mcp`                          | Run the opt-in localhost admin MCP server ([guide](docs/user-flows/admin-mcp.md))   |
-| `pnpm dev:admin`                              | Run only the administration application                                             |
-| `pnpm dev:mobile`                             | Run only the Expo development server                                                |
-| `pnpm dev:panel`                              | Run the local reviewed-command web panel                                            |
-| `pnpm diagrams`                               | Browse source-backed architecture and data-flow diagrams locally                    |
-| `pnpm diagrams:check`                         | Check diagram syntax and source freshness                                           |
-| `pnpm test:diagrams`                          | Test the diagram catalog and read-only HTTP boundary                                |
-| `pnpm test:e2e:diagrams`                      | Verify the real diagram viewer in Chromium                                          |
-| `pnpm dev:doctor`                             | Inspect local capability, worker, pricing and budget readiness without mutations    |
-| `pnpm dev:configure -- --help`                | Preview/apply reviewed local setup profiles through admin APIs                      |
-| `pnpm test:e2e:critical`                      | Run critical browser and backend AI execution checks on owned disposable infra      |
-| `pnpm critical-flows:check`                   | Validate the extensible critical workflow registry                                  |
-| `pnpm check:setup-docs`                       | Check documented setup values against reviewed profile definitions                  |
-| `pnpm browser:install`                        | Install Chrome for agent-led browser checks                                         |
-| `pnpm browser:check`                          | Test the safe wrapper and live browser launch                                       |
-| `pnpm agent-skills:check`                     | Validate repository-scoped agent skill packages                                     |
-| `pnpm styles:check`                           | Validate web CSS Modules, geometry tokens and utility-free markup                   |
-| `pnpm search:ast`                             | Read-only structural code search using the pinned ast-grep CLI                      |
-| `pnpm test:code-search`                       | Verify TypeScript/TSX structural search behavior                                    |
-| `pnpm db:generate`                            | Generate reviewed Drizzle SQL migrations                                            |
-| `pnpm db:check`                               | Validate Drizzle migration history                                                  |
-| `pnpm db:migrate`                             | Explicitly apply pending PostgreSQL migrations                                      |
-| `pnpm test:e2e:shared-pronunciation`          | Run guarded learner/admin pronunciation and pricing journeys                        |
-| `pnpm test:e2e:texts-backend`                 | Run guarded Texts API journeys against disposable PostgreSQL and Redis              |
-| `pnpm test:e2e:texts-web`                     | Run guarded Texts real-browser journeys                                             |
-| `node scripts/run-ai-accounting-e2e.mjs`      | Run guarded learner budget/quote and owner accounting browser journeys sequentially |
-| `pnpm test:e2e:contextual-assistant`          | Run guarded contextual chat and Knowledge journeys with deterministic models        |
-| `pnpm test:e2e:learner-portrait`              | Run guarded portrait API and real-browser journeys with deterministic models        |
-| `pnpm test:e2e:texts`                         | Run Texts backend and web journeys against exclusive disposable targets             |
-| `pnpm db:studio`                              | Inspect the local database with Drizzle Studio                                      |
-| `pnpm mastra:playground:reset`                | Guarded destructive Mastra playground reset                                         |
-| `pnpm lint`                                   | Run repository lint rules                                                           |
-| `pnpm typecheck`                              | Type-check every workspace                                                          |
-| `pnpm test`                                   | Run all automated tests                                                             |
-| `pnpm test:frontend-architecture`             | Test web/admin FSD import boundaries                                                |
-| `pnpm test:persistence-readability`           | Test backend persistence size and spacing lint rules                                |
-| `pnpm test:coverage`                          | Run tests with coverage                                                             |
-| `pnpm test:web-dev-panel`                     | Test the local command panel                                                        |
-| `pnpm test:e2e:web-dev-panel`                 | Run panel Playwright journeys against fixtures                                      |
-| `pnpm web-dev-panel:check`                    | Validate reviewed panel command sources                                             |
-| `pnpm build`                                  | Build all workspaces in dependency order                                            |
-| `pnpm check`                                  | Run formatting, lint, types, tests, and builds                                      |
-| `pnpm deploy:remote`                          | Deploy a verified manifest to a remote VPS over SSH                                 |
-| `pnpm admin:membership`                       | Guarded local admin owner/list/prune operations                                     |
-| `pnpm admin:membership:stdin`                 | Run a local admin operation from private JSON stdin                                 |
-| `pnpm admin:membership:remote`                | Run guarded admin operations on an active VPS image                                 |
-| `pnpm docs:user-flows:check`                  | Validate user-flow guide metadata and sections                                      |
-| `pnpm user-flow:e2e -- inspect <slug>`        | Inspect guide-to-E2E scenario traceability                                          |
-| `pnpm user-flow:e2e -- check [slug]`          | Validate guide-to-E2E scenario traceability                                         |
-| `node scripts/run-flashcard-training-e2e.mjs` | Run backend flashcard HTTP journeys in owned ephemeral PostgreSQL/Redis containers  |
-| `pnpm feature:new -- <slug> "<title>"`        | Create the next numbered feature evidence workspace                                 |
+| Command                                                   | Purpose                                                                                |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `pnpm dev:all`                                            | Prepare infra/migrations and run apps plus workers; add `--verbose` for full logs      |
+| `pnpm dev`                                                | Run backend, web, and admin development servers                                        |
+| `pnpm dev:infra`                                          | Start PostgreSQL, Redis and private development MinIO                                  |
+| `pnpm dev:mastra`                                         | Provision and run isolated Mastra Studio                                               |
+| `pnpm dev:backend`                                        | Run only the backend                                                                   |
+| `pnpm dev:web`                                            | Run only the user-facing web application                                               |
+| `pnpm dev:admin-mcp`                                      | Run the opt-in localhost admin MCP server ([guide](docs/user-flows/admin-mcp.md))      |
+| `pnpm dev:admin`                                          | Run only the administration application                                                |
+| `pnpm dev:mobile`                                         | Run only the Expo development server                                                   |
+| `pnpm dev:panel`                                          | Run the local reviewed-command web panel                                               |
+| `pnpm diagrams`                                           | Browse source-backed architecture and data-flow diagrams locally                       |
+| `pnpm diagrams:check`                                     | Check diagram syntax and source freshness                                              |
+| `pnpm test:diagrams`                                      | Test the diagram catalog and read-only HTTP boundary                                   |
+| `pnpm test:e2e:diagrams`                                  | Verify the real diagram viewer in Chromium                                             |
+| `pnpm dev:doctor`                                         | Inspect local capability, worker, pricing and budget readiness without mutations       |
+| `pnpm dev:configure -- --help`                            | Preview/apply reviewed local setup profiles through admin APIs                         |
+| `pnpm test:e2e:critical`                                  | Run critical browser and backend AI execution checks on owned disposable infra         |
+| `pnpm critical-flows:check`                               | Validate the extensible critical workflow registry                                     |
+| `pnpm test:e2e:critical -- --plan --flow ai-conversation` | Preview a focused critical selection without executing                                 |
+| `pnpm ai:smoke`                                           | Read-only preflight for the dedicated local synthetic learner                          |
+| `pnpm ai:smoke -- --run --task <work-record-slug>`        | Explicit paid learner smoke within the [standing allowance](.agent/AI_SMOKE_POLICY.md) |
+| `pnpm test:ai-smoke-tooling`                              | Offline tests for live-smoke limits and orchestration; no paid calls                   |
+| `pnpm check:setup-docs`                                   | Check documented setup values against reviewed profile definitions                     |
+| `pnpm browser:install`                                    | Install Chrome for agent-led browser checks                                            |
+| `pnpm browser:check`                                      | Test the safe wrapper and live browser launch                                          |
+| `pnpm agent-skills:check`                                 | Validate repository-scoped agent skill packages                                        |
+| `pnpm styles:check`                                       | Validate web CSS Modules, geometry tokens and utility-free markup                      |
+| `pnpm search:ast`                                         | Read-only structural code search using the pinned ast-grep CLI                         |
+| `pnpm test:code-search`                                   | Verify TypeScript/TSX structural search behavior                                       |
+| `pnpm db:generate`                                        | Generate reviewed Drizzle SQL migrations                                               |
+| `pnpm db:check`                                           | Validate Drizzle migration history                                                     |
+| `pnpm db:migrate`                                         | Explicitly apply pending PostgreSQL migrations                                         |
+| `pnpm test:e2e:shared-pronunciation`                      | Run guarded learner/admin pronunciation and pricing journeys                           |
+| `pnpm test:e2e:texts-backend`                             | Run guarded Texts API journeys against disposable PostgreSQL and Redis                 |
+| `pnpm test:e2e:texts-web`                                 | Run guarded Texts real-browser journeys                                                |
+| `node scripts/run-ai-accounting-e2e.mjs`                  | Run guarded learner budget/quote and owner accounting browser journeys sequentially    |
+| `pnpm test:e2e:contextual-assistant`                      | Run guarded contextual chat and Knowledge journeys with deterministic models           |
+| `pnpm test:e2e:learner-portrait`                          | Run guarded portrait API and real-browser journeys with deterministic models           |
+| `pnpm test:e2e:texts`                                     | Run Texts backend and web journeys against exclusive disposable targets                |
+| `pnpm db:studio`                                          | Inspect the local database with Drizzle Studio                                         |
+| `pnpm mastra:playground:reset`                            | Guarded destructive Mastra playground reset                                            |
+| `pnpm lint`                                               | Run repository lint rules                                                              |
+| `pnpm typecheck`                                          | Type-check every workspace                                                             |
+| `pnpm test`                                               | Run all automated tests                                                                |
+| `pnpm test:frontend-architecture`                         | Test web/admin FSD import boundaries                                                   |
+| `pnpm test:persistence-readability`                       | Test backend persistence size and spacing lint rules                                   |
+| `pnpm test:coverage`                                      | Run tests with coverage                                                                |
+| `pnpm test:web-dev-panel`                                 | Test the local command panel                                                           |
+| `pnpm test:e2e:web-dev-panel`                             | Run panel Playwright journeys against fixtures                                         |
+| `pnpm web-dev-panel:check`                                | Validate reviewed panel command sources                                                |
+| `pnpm build`                                              | Build all workspaces in dependency order                                               |
+| `pnpm check`                                              | Run formatting, lint, types, tests, and builds                                         |
+| `pnpm deploy:remote`                                      | Deploy a verified manifest to a remote VPS over SSH                                    |
+| `pnpm admin:membership`                                   | Guarded local admin owner/list/prune operations                                        |
+| `pnpm admin:membership:stdin`                             | Run a local admin operation from private JSON stdin                                    |
+| `pnpm admin:membership:remote`                            | Run guarded admin operations on an active VPS image                                    |
+| `pnpm docs:user-flows:check`                              | Validate user-flow guide metadata and sections                                         |
+| `pnpm user-flow:e2e -- inspect <slug>`                    | Inspect guide-to-E2E scenario traceability                                             |
+| `pnpm user-flow:e2e -- check [slug]`                      | Validate guide-to-E2E scenario traceability                                            |
+| `node scripts/run-flashcard-training-e2e.mjs`             | Run backend flashcard HTTP journeys in owned ephemeral PostgreSQL/Redis containers     |
+| `pnpm feature:new -- <slug> "<title>"`                    | Create the next numbered feature evidence workspace                                    |
 
 The backend build gives the TypeScript declaration compiler a 6 GB heap ceiling.
 This is a build-time limit; application and worker runtime commands are unchanged.

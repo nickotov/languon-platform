@@ -127,7 +127,7 @@ section/control/state inventory and matched rendered comparisons through
 `ui-ux-composition`; runtime architecture does not justify silent omissions.
 Visual changes synchronize
 runtime code, affected stories/tests, and browser evidence; design artifacts are
-updated only when explicitly in scope. ADR-0016 defines this ownership boundary.
+updated only when explicitly in scope. ADR-0016 defines this ownership boundary. [ADR-0054](adr/0054-ui-direction-before-implementation.md) adds an explicit visual-direction decision before substantive new or redesigned UI; small corrections within an approved design remain autonomous.
 
 The same design sources contain a separate Administration application variant
 for dense operational screens. Admin maps those tokens to Ant Design light and
