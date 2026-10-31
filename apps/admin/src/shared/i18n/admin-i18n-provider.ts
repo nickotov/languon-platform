@@ -69,10 +69,18 @@ export const adminMessages = {
     'routing.failure.model_unavailable':
         'This model is unavailable at the provider. Run a check before using it again.',
     'routing.runtimeHealth': 'Observed worker readiness',
-    'routing.evidence': 'Flow check evidence',
+    'routing.evidence': 'Recorded evidence window',
     'routing.checked': 'Checked at',
     'routing.separateStates':
-        'Configured routes, flow-check evidence and runtime observations are separate signals. A quick response does not establish flow compatibility.',
+        'This table shows the latest historical flow check per route, including failures. Configured routes, check history and runtime observations are separate signals. A historical pass does not establish current readiness or compatibility with other flows.',
+    'routing.readinessTitle': 'Check current readiness after AI changes',
+    'routing.readinessHelp':
+        'Changing a prompt/schema, adapter, credential or processing policy can invalidate earlier checks and block requests with model_unavailable (503). History below does not certify the current execution contract. For local development, run this read-only command to identify the exact route, flow and blocking prerequisite:',
+    'routing.readinessRecovery':
+        'For transient failures, wait for bounded recovery and rerun the doctor first. Missing or invalidated evidence and hard failures require Test selected flow for the reported route and flow. Review the maximum operator expense, explicitly approve it and run once, then rerun the doctor. Quick response is insufficient. No paid check runs automatically. Age alone does not block an unchanged active route.',
+    'routing.refreshHistory': 'Refresh check history',
+    'routing.noSelectedCheck':
+        'No recorded check for this selection. A check for another flow or Quick response does not verify this flow.',
     'routing.evidence.none': 'Not verified',
     'routing.evidence.fresh': 'Within evidence window',
     'routing.evidence.stale': 'Stale — recheck before changing',

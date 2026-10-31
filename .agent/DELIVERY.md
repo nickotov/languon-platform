@@ -189,6 +189,16 @@ Before broad workspace/critical execution:
   run affected fast checks. Select all required risk-triggered layers, not just
   edited files. Use the root full-critical triggers unchanged.
 - Verify reviewed setup/profile commands, infrastructure ownership and readiness.
+  After changing an AI prompt/schema, adapter, credential or processing policy,
+  run `pnpm dev:doctor -- --capability <affected-capability>` against the intended
+  running local environment (capability names are listed by the doctor). Record
+  its result separately from deterministic tests. If matching flow evidence is
+  invalidated, use the existing Admin **Test selected flow** or bounded MCP check
+  only with explicit operator-expense authorization, then rerun the doctor.
+  Without that authorization, finish deterministic verification and report live
+  activation as blocked; do not claim the local AI flow is ready, bypass admission,
+  or run a paid check automatically. See
+  [local testing setup](../docs/operations/local-testing-setup.md#admin-activation).
   For new or changed test infrastructure, measure cold setup separately from test
   bodies and use justified bounded setup watchdogs. Keep product deadlines and
   cancellation assertions intact; a timeout needs diagnosis, not an automatic

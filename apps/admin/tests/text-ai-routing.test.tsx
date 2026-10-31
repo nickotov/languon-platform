@@ -10,11 +10,14 @@ import { EmergencyDisableDialog } from '../src/pages/ai-settings/ui/text-ai-rout
 import { ProbeControls } from '../src/pages/ai-settings/ui/text-ai-routing/probe-controls';
 import { ProbeRecovery } from '../src/pages/ai-settings/ui/text-ai-routing/probe-recovery';
 import { ProbeResult } from '../src/pages/ai-settings/ui/text-ai-routing/probe-result';
+import { ProviderRouteTable } from '../src/pages/ai-settings/ui/text-ai-routing/provider-route-table';
+import { RoutingReadinessNotice } from '../src/pages/ai-settings/ui/text-ai-routing/routing-readiness-notice';
 import { RoutingConfigurationForm } from '../src/pages/ai-settings/ui/text-ai-routing/routing-configuration-form';
 import {
     probeEvidenceAge,
     reviewedRouteOptions,
     routingInitialValues,
+    latestRouteProbe,
 } from '../src/pages/ai-settings/lib/text-ai-routing-form';
 import { adminI18nProvider } from '../src/shared/i18n/admin-i18n-provider';
 import { adminApi } from '../src/shared/api/admin-api';
@@ -109,6 +112,90 @@ function json(body: unknown, status = 200) {
 }
 
 describe('admin routing safety and API boundary', () => {
+    it('identifies history as insufficient for current readiness and keeps rechecks explicitly paid', () => {
+        render(<RoutingReadinessNotice />);
+        expect(screen.getByText('pnpm dev:doctor')).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                /History below does not certify the current execution contract/,
+            ),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(/No paid check runs automatically/),
+        ).toBeInTheDocument();
+    });
+
+    it('selects the latest check for exactly the requested kind and flow', () => {
+        const olderPass = {
+            ...probe,
+            state: 'passed' as const,
+            startedAt: '2026-10-24T10:00:00.000Z',
+        };
+        const newerOtherFlow = {
+            ...probe,
+            flowId: 'conversation',
+            startedAt: '2026-10-26T10:00:00.000Z',
+        };
+        const newestQuick = {
+            ...probe,
+            kind: 'quick' as const,
+            flowId: null,
+            startedAt: '2026-10-27T10:00:00.000Z',
+        };
+        const history = [olderPass, newestQuick, newerOtherFlow, probe];
+        expect(
+            latestRouteProbe(history, probe.routeId, {
+                kind: 'flow',
+                flowId: 'sentence-check',
+            }),
+        ).toBe(probe);
+        expect(
+            latestRouteProbe(history, probe.routeId, {
+                kind: 'flow',
+                flowId: 'conversation',
+            }),
+        ).toBe(newerOtherFlow);
+        expect(
+            latestRouteProbe(history, probe.routeId, {
+                kind: 'flow',
+                flowId: 'text-detection',
+            }),
+        ).toBeUndefined();
+        expect(
+            latestRouteProbe(history, probe.routeId, { kind: 'quick' }),
+        ).toBe(newestQuick);
+        expect(latestRouteProbe(history, 'another/route')).toBeUndefined();
+    });
+
+    it('shows a newer failed flow check instead of promoting an older success in the table', () => {
+        render(
+            <ProviderRouteTable
+                providers={[]}
+                catalog={catalog}
+                enabledRouteIds={[probe.routeId]}
+                probes={[
+                    {
+                        ...probe,
+                        id: '00000000-0000-4000-8000-000000000003',
+                        state: 'passed',
+                        startedAt: '2026-10-24T10:00:00.000Z',
+                        evidenceExpiresAt: '2099-10-25T10:00:00.000Z',
+                    },
+                    probe,
+                ]}
+                pending={false}
+                onDisable={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('failed', { exact: true })).toBeInTheDocument();
+        expect(
+            screen.queryByText('Within evidence window'),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByText(/latest historical flow check per route/),
+        ).toBeInTheDocument();
+    });
+
     it('submits routing with omitted tariffs instead of inventing prices for free flows', async () => {
         const publish = vi.fn().mockResolvedValue(undefined);
         render(
@@ -232,6 +319,41 @@ describe('admin routing safety and API boundary', () => {
                 name: 'I approve this operator expense up to the displayed maximum.',
             }),
         );
+        expect(screen.getByRole('button', { name: 'Run check' })).toBeEnabled();
+        expect(run).not.toHaveBeenCalled();
+    });
+
+    it('requires renewed approval when refreshed limits change the displayed maximum cost', () => {
+        const run = vi.fn();
+        const props = {
+            catalog,
+            probes: [],
+            limits,
+            pending: false,
+            onRun: run,
+            onRecover: vi.fn(),
+        };
+        const { rerender } = render(<ProbeControls {...props} />);
+        const approval = screen.getByRole('checkbox', {
+            name: /I approve this operator expense/,
+        });
+        fireEvent.click(approval);
+        expect(screen.getByRole('button', { name: 'Run check' })).toBeEnabled();
+        rerender(
+            <ProbeControls
+                {...props}
+                limits={{ ...limits, maximumCostUsd: '0.02' }}
+            />,
+        );
+        expect(approval).not.toBeChecked();
+        expect(
+            screen.getByRole('button', { name: 'Run check' }),
+        ).toBeDisabled();
+        expect(
+            screen.getByText(/Maximum USD 0.02 per check/),
+        ).toBeInTheDocument();
+        expect(run).not.toHaveBeenCalled();
+        fireEvent.click(approval);
         expect(screen.getByRole('button', { name: 'Run check' })).toBeEnabled();
         expect(run).not.toHaveBeenCalled();
     });

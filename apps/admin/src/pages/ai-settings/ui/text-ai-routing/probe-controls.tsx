@@ -11,6 +11,7 @@ import type { RoutingCatalog } from '../../lib/text-ai-routing-form';
 import {
     reviewedRouteOptions,
     textAiFlows,
+    latestRouteProbe,
 } from '../../lib/text-ai-routing-form';
 import { ProbeRecovery } from './probe-recovery';
 import { ProbeResult } from './probe-result';
@@ -37,16 +38,26 @@ export function ProbeControls({
 }) {
     const t = useTranslate();
     const [form] = Form.useForm<TextAiProbeRequest>();
-    const [approved, setApproved] = useState(false);
+    const [approvedSelection, setApprovedSelection] = useState<string | null>(
+        null,
+    );
     const routeId = Form.useWatch('routeId', form);
     const kind = Form.useWatch('kind', form) ?? 'quick';
+    const flowId = Form.useWatch('flowId', form);
+    const approvalSelection = JSON.stringify([
+        routeId ?? null,
+        kind,
+        kind === 'flow' ? (flowId ?? null) : null,
+        limits.maximumCostUsd,
+    ]);
+    const approved = approvedSelection === approvalSelection;
     const options = reviewedRouteOptions(catalog, false);
     const flowOptions = textAiFlows.map((value) => ({ value, label: value }));
     const kindOptions = [
         { value: 'quick', label: t('routing.quick') },
         { value: 'flow', label: t('routing.testFlow') },
     ];
-    const result = probes.find((probe) => probe.routeId === routeId);
+    const result = latestRouteProbe(probes, routeId, { kind, flowId });
     const isFlow = kind === 'flow';
     const canRecover =
         result !== undefined &&
@@ -60,8 +71,9 @@ export function ProbeControls({
         cooldown: limits.cooldownSeconds,
     });
 
-    const handleApprovalChange = () => setApproved((current) => !current);
-    const handleValuesChange = () => setApproved(false);
+    const handleApprovalChange = () =>
+        setApprovedSelection(approved ? null : approvalSelection);
+    const handleValuesChange = () => setApprovedSelection(null);
     const handleFinish = async (values: TextAiProbeRequest) => {
         if (!approved) return;
         const request: TextAiProbeRequest = {
@@ -71,7 +83,7 @@ export function ProbeControls({
         };
         if (values.kind === 'flow') request.flowId = values.flowId;
         await onRun(request);
-        setApproved(false);
+        setApprovedSelection(null);
     };
 
     return (
@@ -141,7 +153,15 @@ export function ProbeControls({
                     {t('routing.runCheck')}
                 </Button>
             </Form>
-            {result ? <ProbeResult probe={result} /> : null}
+            {result ? (
+                <ProbeResult probe={result} />
+            ) : routeId && (!isFlow || flowId) ? (
+                <Alert
+                    type='warning'
+                    showIcon
+                    message={t('routing.noSelectedCheck')}
+                />
+            ) : null}
             {result && canRecover ? (
                 <ProbeRecovery
                     probe={result}

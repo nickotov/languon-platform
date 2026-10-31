@@ -80,7 +80,11 @@ export function probeEvidence(
     try {
         fingerprint = createTextAiRouteFingerprint(env)(routeId, flowId);
     } catch {
-        return { ready: false, stale: false };
+        return {
+            ready: false,
+            stale: false,
+            reason: 'The current execution identity could not be resolved.',
+        };
     }
     const evidence = snapshot.probes?.find(
         (probe) =>
@@ -92,8 +96,34 @@ export function probeEvidence(
     // The database function is the same authority used for real dispatch. It
     // retains prior matching successes and provider/route-wide hard failures;
     // elapsed time alone must never create activation evidence.
-    if (!evidence || evidence.dispatch_allowed !== true)
-        return { ready: false, stale: false };
+    if (!evidence) {
+        const flowHistory = snapshot.probes?.some(
+            (probe) =>
+                probe.route_id === routeId &&
+                probe.flow_id === flowId &&
+                probe.kind === 'flow',
+        );
+        return {
+            ready: false,
+            stale: false,
+            reason: flowHistory
+                ? 'Existing flow checks do not match the current execution identity. Credentials, prompt/schema, adapter or processing-policy changes can invalidate earlier passes.'
+                : 'No selected-flow check exists for this route and flow. A quick response or a check for another flow does not activate it.',
+        };
+    }
+    if (evidence.dispatch_allowed !== true)
+        return {
+            ready: false,
+            stale: false,
+            reviewCurrent: true,
+            reason:
+                'Current matching evidence does not permit dispatch. Review the latest check and route-wide failures in Admin → AI routing' +
+                (evidence.state === 'failed'
+                    ? ' (the last matching check failed).'
+                    : evidence.state === 'running'
+                      ? ' (the last matching check is still running).'
+                      : '.'),
+        };
     return {
         ready: true,
         stale:

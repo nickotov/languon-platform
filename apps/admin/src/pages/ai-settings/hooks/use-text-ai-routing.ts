@@ -19,12 +19,14 @@ export function useTextAiRouting() {
     const [mutationError, setMutationError] = useState<Error | null>(null);
     const [pending, setPending] = useState(false);
     const inFlight = useRef(false);
+    const refreshing = useRef(false);
     const controller = useRef<AbortController | null>(null);
 
     const refresh = useCallback(async () => {
         controller.current?.abort();
         const nextController = new AbortController();
         controller.current = nextController;
+        refreshing.current = true;
         setLoading(true);
         setError(null);
         try {
@@ -37,7 +39,10 @@ export function useTextAiRouting() {
         } catch (caught) {
             if (!nextController.signal.aborted) setError(asError(caught));
         } finally {
-            if (!nextController.signal.aborted) setLoading(false);
+            if (!nextController.signal.aborted) {
+                refreshing.current = false;
+                setLoading(false);
+            }
         }
     }, []);
 
@@ -46,8 +51,13 @@ export function useTextAiRouting() {
         return () => controller.current?.abort();
     }, [refresh]);
 
-    const publish = async (request: TextAiRoutingPublishRequest) => {
+    const reload = useCallback(async () => {
         if (inFlight.current) return;
+        await refresh();
+    }, [refresh]);
+
+    const publish = async (request: TextAiRoutingPublishRequest) => {
+        if (inFlight.current || refreshing.current) return;
         inFlight.current = true;
         setPending(true);
         setMutationError(null);
@@ -63,7 +73,7 @@ export function useTextAiRouting() {
     };
 
     const disable = async (request: TextAiRoutingDisableRequest) => {
-        if (inFlight.current) return;
+        if (inFlight.current || refreshing.current) return;
         inFlight.current = true;
         setPending(true);
         setMutationError(null);
@@ -82,7 +92,7 @@ export function useTextAiRouting() {
         probeId: string,
         request: TextAiProbeRecoveryRequest,
     ) => {
-        if (inFlight.current) return;
+        if (inFlight.current || refreshing.current) return;
         inFlight.current = true;
         setPending(true);
         setMutationError(null);
@@ -98,7 +108,7 @@ export function useTextAiRouting() {
     };
 
     const runProbe = async (request: TextAiProbeRequest) => {
-        if (inFlight.current) return;
+        if (inFlight.current || refreshing.current) return;
         inFlight.current = true;
         setPending(true);
         setMutationError(null);
@@ -134,7 +144,7 @@ export function useTextAiRouting() {
         error,
         mutationError,
         pending,
-        refresh,
+        refresh: reload,
         clearMutationError: () => setMutationError(null),
         publish,
         disable,

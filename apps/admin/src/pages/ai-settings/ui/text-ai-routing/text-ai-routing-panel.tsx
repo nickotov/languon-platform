@@ -7,6 +7,7 @@ import { EmergencyDisableDialog } from './emergency-disable-dialog';
 import { ProviderRouteTable } from './provider-route-table';
 import { ProbeControls } from './probe-controls';
 import { RoutingConfigurationForm } from './routing-configuration-form';
+import { RoutingReadinessNotice } from './routing-readiness-notice';
 import styles from '../../ai-settings-page.module.css';
 
 export function TextAiRoutingPanel({
@@ -21,6 +22,7 @@ export function TextAiRoutingPanel({
     const revision = snapshot?.routing.revision ?? null;
     const failure = routing.mutationError ?? routing.error;
     const version = revision?.version ?? 0;
+    const busy = routing.pending || routing.loading;
     const [disablingRoute, setDisablingRoute] = useState<string | null>(null);
 
     useEffect(() => {
@@ -79,7 +81,20 @@ export function TextAiRoutingPanel({
             <Skeleton active loading={routing.loading && !snapshot}>
                 {snapshot ? (
                     <>
-                        <Card title={t('routing.title')}>
+                        <RoutingReadinessNotice />
+                        <Card
+                            title={t('routing.title')}
+                            extra={
+                                <Button
+                                    aria-label={t('routing.refreshHistory')}
+                                    onClick={handleRefresh}
+                                    disabled={busy}
+                                    loading={routing.loading}
+                                >
+                                    {t('routing.refreshHistory')}
+                                </Button>
+                            }
+                        >
                             <ProviderRouteTable
                                 providers={providers}
                                 catalog={snapshot.routing.catalog}
@@ -88,7 +103,7 @@ export function TextAiRoutingPanel({
                                     []
                                 }
                                 probes={snapshot.checks.probes}
-                                pending={routing.pending}
+                                pending={busy}
                                 onDisable={handleDisable}
                             />
                         </Card>
@@ -96,7 +111,7 @@ export function TextAiRoutingPanel({
                             catalog={snapshot.routing.catalog}
                             probes={snapshot.checks.probes}
                             limits={snapshot.checks.limits}
-                            pending={routing.pending}
+                            pending={busy}
                             onRun={routing.runProbe}
                             onRecover={routing.recoverProbe}
                         />
@@ -104,7 +119,7 @@ export function TextAiRoutingPanel({
                             key={version}
                             revision={revision}
                             catalog={snapshot.routing.catalog}
-                            pending={routing.pending}
+                            pending={busy}
                             onPublish={routing.publish}
                         />
                     </>

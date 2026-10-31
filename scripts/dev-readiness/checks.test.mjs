@@ -466,6 +466,77 @@ test('EvoLink credential and routing alone cannot approve learner data processin
     assert.match(check.message, /processing\/privacy/);
 });
 
+test('flow-check diagnostics distinguish missing, invalidated and blocked evidence without changing admission', () => {
+    const registry = selectCapabilities(env, ['conversation']);
+    const flowCheck = (value, environment = env) =>
+        evaluateReadiness(value, environment, 'configuration', registry).find(
+            (check) => check.id === 'flow-check',
+        );
+    const missing = snapshot();
+    missing.probes = missing.probes.filter(
+        (probe) => probe.flow_id !== 'conversation',
+    );
+    expectBlocked(flowCheck(missing), /No selected-flow check exists/);
+
+    const quickOnly = snapshot();
+    quickOnly.probes = quickOnly.probes.map((probe) => ({
+        ...probe,
+        kind: 'quick',
+    }));
+    expectBlocked(flowCheck(quickOnly), /quick response.*does not activate/);
+
+    const changed = flowCheck(snapshot(), {
+        ...env,
+        DEEPSEEK_API_KEY: 'changed-key',
+    });
+    expectBlocked(changed, /do not match the current execution identity/);
+    assert.match(
+        changed.message,
+        /Affected route: deepseek\/deepseek-flash; flow: conversation/,
+    );
+    assert.match(changed.message, /explicitly approve its operator expense/);
+    assert.ok(!changed.message.includes('changed-key'));
+
+    const failed = snapshot();
+    failed.probes = failed.probes.map((probe) => ({
+        ...probe,
+        state: 'failed',
+        dispatch_allowed: false,
+    }));
+    expectBlocked(flowCheck(failed), /last matching check failed/);
+    assert.match(
+        flowCheck(failed).message,
+        /Hard failures require a successful explicit recheck/,
+    );
+    const transient = snapshot();
+    transient.probes = transient.probes.map((probe) => ({
+        ...probe,
+        state: 'failed',
+        failure: 'timeout',
+        dispatch_allowed: false,
+    }));
+    const temporaryBlock = flowCheck(transient);
+    expectBlocked(
+        temporaryBlock,
+        /wait for bounded recovery.*before considering another paid check/,
+    );
+    assert.ok(
+        !temporaryBlock.message.includes(
+            'then explicitly approve its operator expense and run',
+        ),
+    );
+    // The database authority, not diagnostic wording or elapsed time here,
+    // decides whether a prior matching success permits recovery.
+    transient.probes.forEach((probe) => (probe.dispatch_allowed = true));
+    assert.equal(flowCheck(transient).status, 'pass');
+    assert.equal(flowCheck(snapshot()).status, 'pass');
+});
+
+function expectBlocked(check, message) {
+    assert.equal(check.status, 'blocked');
+    assert.match(check.message, message);
+}
+
 test('only database-authorized recovery with a prior matching pass can restore readiness', () => {
     const registry = selectCapabilities(env, ['interview']);
     const check = (value) =>

@@ -2,7 +2,7 @@
 feature: admin-text-ai-routing
 title: Admin AI routing and audio transcription configuration
 status: draft
-last_verified: 2026-10-28
+last_verified: 2026-10-31
 surfaces:
     - browser
     - admin
@@ -19,6 +19,8 @@ source_paths:
     - apps/admin/src/shared/api/transcription-admin-api.ts
     - apps/admin/src/pages/accounting/ui/provider-prices/**
     - apps/admin/tests/e2e/text-ai-routing.journeys.spec.ts
+    - scripts/dev-readiness/**
+    - scripts/dev-doctor.mjs
 e2e_command: admin-text-ai-routing
 e2e_tests:
     - apps/admin/tests/e2e/text-ai-routing.journeys.spec.ts
@@ -64,12 +66,19 @@ A key alone never authorizes an agent to spend money.
 1. Sign in as an active owner and open **AI settings → Text AI routes**.
 2. Inspect processing eligibility and observed worker readiness. Neither a
    configured key nor a fresh worker is proof of a successful flow response.
+   Read **Check current readiness after AI changes**. The table reports the latest
+   historical flow check per route, including failures; recorded evidence age
+   does not certify the current execution identity. **Refresh check history**
+   reloads existing records without running a provider check.
 3. Select a provider/model and **Quick response**. Confirm **Run check** is
    disabled until the displayed maximum operator expense is explicitly approved.
 4. Run it once. Inspect passed/failed state, evidence window, latency, usage
    measurement and provider expense. Approval resets after the request.
 5. Select **Test selected flow → sentence-check**, approve the displayed cap
    again and run. A quick response alone cannot approve a structured flow.
+   The result below the form must match the selected route, check type and flow.
+   A selection with no recorded check shows a warning, rather than another flow's
+   result. Switching a selection resets expense approval and never starts a check.
 6. Verify the controls at desktop and narrow viewport widths.
 
 ## Admin verification
@@ -177,6 +186,28 @@ matching selected-flow evidence. A stale version requires reloading the latest
 configuration. Inspect safe provider error codes without recording raw prompts,
 responses or credential values.
 
+For local development, run `pnpm dev:doctor -- --capability conversation` after
+conversation prompt/schema, adapter, credential or processing-policy changes.
+Use the affected capability for other flows, or run `pnpm dev:doctor` for all
+enabled capabilities. The read-only doctor identifies the route and flow, and
+distinguishes no selected-flow evidence, checks for an older execution identity,
+and current evidence that denies dispatch. It does not spend operator funds.
+An invalidated check can cause `model_unavailable` (503) even with valid keys.
+For transient failures, wait for bounded recovery and rerun the doctor first.
+Missing or invalidated evidence and hard failures require **Test selected flow**
+for the reported route/flow with explicit expense approval, then rerun the doctor.
+Changing environment keys or routing is not
+required merely to refresh evidence. Age alone does not block an unchanged
+active route. Historical records in this screen do not expose current fingerprint
+validity; use the doctor for current local admission prerequisites. Doctor unit
+tests cover identity changes; synthetic browser checks do not prove live provider
+availability.
+
+While history reloads, mutation controls are busy so a stale refresh cannot hide
+a newly completed paid check. Expense approval is bound to the selected route,
+check type, flow and maximum cost; changing the displayed maximum requires new
+approval.
+
 ## Cleanup
 
 Stop only owned E2E processes and remove only the disposable infrastructure
@@ -187,7 +218,8 @@ revision; never reset accounts or financial history to repair a route.
 
 - `admin-checks-and-disables-reviewed-route` verifies explicit operator expense
   approval, quick and selected-flow checks, evidence display, desktop/narrow
-  controls, publication with omitted tariffs for Free flows, audited emergency
+  controls, readiness guidance, selection-specific check history and read-only
+  history refresh without paid calls, publication with omitted tariffs for Free flows, audited emergency
   disable and explicit restoration through real
   admin controls with a guarded deterministic probe executor.
 

@@ -1,4 +1,4 @@
-// @user-flow-revision admin-text-ai-routing sha256:371ea751a0458c2d
+// @user-flow-revision admin-text-ai-routing sha256:63e835b7246654c4
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve } from 'node:path';
@@ -85,6 +85,24 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         routing.getByText(/Maximum USD 0\.010* per check/),
     ).toBeVisible();
     await expect(
+        routing.getByText('Check current readiness after AI changes', {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        routing.getByText('pnpm dev:doctor', { exact: true }),
+    ).toBeVisible();
+    await routing
+        .getByRole('button', { name: 'Refresh check history', exact: true })
+        .click();
+    await expect(
+        routing.getByRole('button', {
+            name: 'Refresh check history',
+            exact: true,
+        }),
+    ).toBeEnabled();
+    expect(probePosts).toBe(0);
+    await expect(
         routing.getByRole('columnheader', { name: 'Processing eligibility' }),
     ).toBeVisible();
     await expect(
@@ -128,6 +146,14 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         checks.getByLabel('AI flow', { exact: true }),
         'sentence-check',
     );
+    await expect(
+        checks.getByText(/No recorded check for this selection/),
+    ).toBeVisible();
+    await expect(
+        checks.getByText('Within evidence window', { exact: true }),
+    ).toHaveCount(0);
+    await expect(run).toBeDisabled();
+    expect(probePosts).toBe(1);
     await approve.check();
     const flowResponse = page.waitForResponse(
         (response) =>
@@ -141,12 +167,33 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     await expect(
         checks.getByText('Within evidence window', { exact: true }),
     ).toBeVisible();
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+    ).toBe(true);
     await page.screenshot({
         path: testInfo.outputPath('routing-desktop.png'),
         fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+        routing.getByText('Check current readiness after AI changes', {
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        routing.getByRole('button', {
+            name: 'Refresh check history',
+            exact: true,
+        }),
+    ).toBeVisible();
     await expect(run).toBeVisible();
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+    ).toBe(true);
     await expect(
         routing.getByLabel('Reason for change', { exact: true }),
     ).toBeAttached();
@@ -260,6 +307,24 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         page,
         checks.getByLabel('Provider / model route', { exact: true }),
         /deepseek.*DeepSeek Flash/,
+    );
+    // Recovery belongs to the exact flow reserved by the fixture. The quick
+    // selection must not display or recover a different flow's request.
+    await expect(
+        checks.getByRole('button', {
+            name: 'Confirm provider recovery',
+            exact: true,
+        }),
+    ).toHaveCount(0);
+    await selectAdminOption(
+        page,
+        checks.getByLabel('Check type', { exact: true }),
+        'Test selected flow',
+    );
+    await selectAdminOption(
+        page,
+        checks.getByLabel('AI flow', { exact: true }),
+        'sentence-check',
     );
     const recovery = checks.getByRole('button', {
         name: 'Confirm provider recovery',
