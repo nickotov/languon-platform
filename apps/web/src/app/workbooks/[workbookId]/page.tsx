@@ -5,5 +5,6 @@ export default async function Page({
     params: Promise<{ workbookId: string }>;
 }) {
     const { workbookId } = await params;
+
     return <WorkbookPage workbookId={workbookId} />;
 }

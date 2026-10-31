@@ -40,6 +40,7 @@ export function permissionForWrite(
         ? 'provider-prices.write'
         : operation;
 }
+
 export interface AdminMcpPreview {
     id: string;
     tokenId: string;
@@ -60,24 +61,31 @@ export interface AdminMcpReservation {
 }
 /** Decimal values use exact millionths for both USD and credit ceilings. */
 export function amountUnits(value: string): bigint {
-    if (!/^(?:0|[1-9]\d{0,11})(?:\.\d{1,6})?$/.test(value))
+    if (!/^(?:0|[1-9]\d{0,11})(?:\.\d{1,6})?$/.test(value)) {
         throw new AdminMcpError('invalid_amount', 'Invalid exact amount.');
+    }
+
     const [whole = '0', fraction = ''] = value.split('.');
+
     return BigInt(whole) * 1_000_000n + BigInt(fraction.padEnd(6, '0'));
 }
+
 export function unitsAmount(value: bigint): string {
     return `${value / 1_000_000n}.${(value % 1_000_000n).toString().padStart(6, '0')}`;
 }
+
 export function requirePermission(
     actor: AdminMcpActor,
     permission: AdminMcpPermission,
 ): void {
-    if (!actor.permissions.includes(permission))
+    if (!actor.permissions.includes(permission)) {
         throw new AdminMcpError(
             'permission_denied',
             'The credential does not permit this operation.',
         );
+    }
 }
+
 export function utcDay(at: Date): string {
     return at.toISOString().slice(0, 10);
 }
@@ -119,12 +127,14 @@ export function snapshotAllowedActions(
         ),
     ];
 }
+
 export function requireAction(actor: AdminMcpActor, action: string): void {
-    if (!actor.allowedActions.includes(action))
+    if (!actor.allowedActions.includes(action)) {
         throw new AdminMcpError(
             'permission_denied',
             'The credential does not grant this action.',
         );
+    }
 }
 
 /** UUID keys carry no caller prose and cannot become a covert audit channel. */
@@ -133,22 +143,26 @@ export function requireOperationKey(value: string): void {
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
             value,
         )
-    )
+    ) {
         throw new AdminMcpError(
             'idempotency_conflict',
             'A UUID operation key is required.',
         );
+    }
 }
+
 export function redactCredentialMaterial(value: string): string {
     return value
         .replace(/lmcp_[A-Za-z0-9_-]{43}/g, '[REDACTED]')
         .replace(/\bbearer[ \t]+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]');
 }
+
 export function assertSafeAuditContext(value: unknown): void {
     const text = JSON.stringify(value);
-    if (redactCredentialMaterial(text) !== text)
+    if (redactCredentialMaterial(text) !== text) {
         throw new AdminMcpError(
             'permission_denied',
             'Do not include credentials in audit context.',
         );
+    }
 }

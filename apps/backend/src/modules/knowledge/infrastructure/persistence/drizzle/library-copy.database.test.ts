@@ -89,6 +89,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => {} },
                 new KnowledgeShareCrypto(secret),
             );
+
             library = createKnowledgeLibraryCopyComposition({
                 database: db,
                 ids: { generate: randomUUID },
@@ -113,6 +114,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             }).store;
         }, 120_000);
+
         beforeEach(async () => {
             owner = randomUUID();
             reader = randomUUID();
@@ -121,6 +123,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: reader, status: 'active' },
             ]);
         });
+
         afterAll(async () => client?.end(), 120_000);
         async function note(block: LearningBlock) {
             return knowledge.create(owner, {
@@ -143,6 +146,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             });
         }
+
         const vocabRequest = (noteId: string, noteVersion: number) =>
             CopyKnowledgeVocabularyRequestSchema.parse({
                 operationId: randomUUID(),
@@ -166,6 +170,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 translationLanguage: 'ru',
                 destination: { kind: 'new', title: 'Copied text' },
             });
+
         async function working(block: LearningBlock) {
             const workspace = await knowledge.createDraft(owner, {
                 operationId: randomUUID(),
@@ -197,6 +202,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content,
                 },
             );
+
             return {
                 noteId: workspace.noteId,
                 branch: updated.branch,
@@ -206,6 +212,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             };
         }
+
         it('copies prepared vocabulary from an unpublished owned working branch without publishing it', async () => {
             const draft = await working(vocabulary);
             const request = CopyKnowledgeVocabularyRequestSchema.parse({
@@ -213,10 +220,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteVersion: undefined,
                 workingSource: draft.workingSource,
             });
+
             expect(
                 (await library.previewVocabulary(owner, request, signal()))
                     .entries[0]?.pronunciation,
             ).toBe('kæt');
+
             const copied = await library.copyVocabulary(
                 owner,
                 request,
@@ -226,6 +235,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, draft.noteId));
+
             expect(noteRow?.status).toBe('draft');
             expect(noteRow?.version).toBe(0);
             expect(JSON.stringify(noteRow?.body)).not.toContain('cat');
@@ -235,20 +245,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(
                     eq(dictionaryCardsTable.dictionaryId, copied.dictionary.id),
                 );
+
             expect(card).toMatchObject({
                 source: 'cat',
                 translation: 'кот',
                 definition: 'A small animal.',
                 transcription: 'kæt',
             });
+
             await db
                 .delete(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, draft.noteId));
+
             expect(
                 (await library.copyVocabulary(owner, request, signal()))
                     .dictionary.id,
             ).toBe(copied.dictionary.id);
         });
+
         it('previews and creates or appends aligned Text from an unpublished working text block', async () => {
             const draft = await working(bilingual);
             const request = CopyKnowledgeTextRequestSchema.parse({
@@ -261,6 +275,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(preview.text.alignment?.translation[0]?.text).toBe(
                 'Кот спит.',
             );
+
             const created = await library.copyText(owner, request, signal());
             const append = {
                 ...request,
@@ -271,10 +286,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedVersion: created.version,
                 },
             };
+
             expect(
                 (await library.previewText(owner, append, signal())).text
                     .sourceText,
             ).toBe('A cat sleeps.\n\nA cat sleeps.');
+
             const copied = await library.copyText(owner, append, signal());
             expect(copied.sourceText).toBe('A cat sleeps.\n\nA cat sleeps.');
             expect(copied.alignment?.source).toHaveLength(2);
@@ -282,9 +299,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, draft.noteId));
+
             expect(noteRow?.status).toBe('draft');
             expect(noteRow?.version).toBe(0);
         });
+
         it('rejects stale and foreign working snapshots atomically while retaining completed independent copies', async () => {
             const draft = await working(vocabulary);
             const request = CopyKnowledgeVocabularyRequestSchema.parse({
@@ -292,10 +311,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteVersion: undefined,
                 workingSource: draft.workingSource,
             });
+
             await library.previewVocabulary(owner, request, signal());
             await expect(
                 library.copyVocabulary(reader, request, signal()),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             await expect(
                 library.copyVocabulary(owner, request, signal(), {
                     kind: 'note',
@@ -303,6 +324,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     key: 'b'.repeat(43),
                 }),
             ).rejects.toMatchObject({ code: 'invalid_request' });
+
             await knowledge.updateWorking(owner, draft.noteId, {
                 operationId: randomUUID(),
                 branchId: draft.branch.id,
@@ -312,15 +334,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     title: 'A later private edit',
                 },
             });
+
             await expect(
                 library.copyVocabulary(owner, request, signal()),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             expect(
                 await db
                     .select()
                     .from(dictionariesTable)
                     .where(eq(dictionariesTable.ownerId, owner)),
             ).toHaveLength(0);
+
             expect(
                 await db
                     .select()
@@ -328,6 +353,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(textsTable.ownerId, owner)),
             ).toHaveLength(0);
         });
+
         it('atomically retains prepared fields, revision and independent replay after original deletion', async () => {
             const source = await note(vocabulary);
             const request = vocabRequest(source.id, source.version);
@@ -336,6 +362,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 request,
                 signal(),
             );
+
             expect(preview.entries[0]?.pronunciation).toBe('kæt');
             expect(preview.entries[0]?.definition).toBe('A small animal.');
             const result = await library.copyVocabulary(
@@ -349,6 +376,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(
                     eq(dictionaryCardsTable.dictionaryId, result.dictionary.id),
                 );
+
             expect(card).toMatchObject({
                 source: 'cat',
                 translation: 'кот',
@@ -357,6 +385,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 example: 'A cat sleeps.',
                 exampleTranslation: 'Кот спит.',
             });
+
             const revisions = await db
                 .select()
                 .from(dictionaryCardRevisionsTable)
@@ -366,15 +395,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         result.dictionary.id,
                     ),
                 );
+
             expect(revisions).toHaveLength(1);
             await db
                 .delete(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, source.id));
+
             const replay = await library.copyVocabulary(
                 owner,
                 request,
                 signal(),
             );
+
             expect(replay.dictionary.id).toBe(result.dictionary.id);
             expect(
                 await db
@@ -388,6 +420,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
             ).toHaveLength(1);
         });
+
         it('rolls back new dictionaries/settings on language or stale source conflicts', async () => {
             const source = await note(vocabulary);
             const request = vocabRequest(source.id, source.version);
@@ -398,7 +431,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     signal(),
                 ),
             ).rejects.toMatchObject({ code: 'version_conflict' });
-            if (request.destination.kind !== 'new') throw new Error('fixture');
+
+            if (request.destination.kind !== 'new') {
+                throw new Error('fixture');
+            }
+
             await expect(
                 library.copyVocabulary(
                     owner,
@@ -412,6 +449,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     signal(),
                 ),
             ).rejects.toThrow();
+
             expect(
                 await db
                     .select()
@@ -419,6 +457,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(dictionariesTable.ownerId, owner)),
             ).toHaveLength(0);
         });
+
         it('rechecks shared source access before collection but retains completed copies', async () => {
             const source = await note(vocabulary);
             const share = await knowledge.issueShare(owner, source.id);
@@ -434,11 +473,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 signal(),
                 proof,
             );
+
             await knowledge.revokeShare(owner, source.id);
             expect(
                 (await library.copyVocabulary(reader, request, signal(), proof))
                     .dictionary.id,
             ).toBe(copied.dictionary.id);
+
             await expect(
                 library.copyVocabulary(
                     reader,
@@ -447,6 +488,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     proof,
                 ),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             expect(
                 await db
                     .select()
@@ -454,6 +496,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(dictionariesTable.ownerId, reader)),
             ).toHaveLength(1);
         });
+
         it('holds the source lock through destination publication so revocation cannot interleave', async () => {
             const source = await note(vocabulary);
             const share = await knowledge.issueShare(owner, source.id);
@@ -497,11 +540,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         block,
                         request.entryIds,
                     );
+
                     locked();
                     await gate;
+
                     return prepared;
                 },
             );
+
             await Promise.race([
                 held,
                 pending.then(() => {
@@ -510,6 +556,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     );
                 }),
             ]);
+
             try {
                 await expect(
                     db.execute(
@@ -519,6 +566,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             } finally {
                 release();
             }
+
             const copied = await pending;
             await knowledge.revokeShare(owner, source.id);
             expect(
@@ -533,8 +581,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
             ).toHaveLength(1);
         });
+
         it('copies bilingual text with new identities and atomically appends while preserving manual pairs', async () => {
-            if (bilingual.type !== 'bilingual-text') throw new Error('fixture');
+            if (bilingual.type !== 'bilingual-text') {
+                throw new Error('fixture');
+            }
+
             const secondId = randomUUID();
             const source = await note({
                 ...bilingual,
@@ -563,11 +615,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .map((pair) => pair.text)
                     .join(''),
             ).toBe('Кот спит.\n\nСобака бежит.');
+
             expect(created.alignment?.source[1]).toMatchObject({
                 startOffset: 13,
                 endOffset: 26,
                 paragraphIndex: 1,
             });
+
             expect(created.alignment?.source[0]?.pairId).not.toBe(segmentId);
             const oldPair = created.alignment!.source[0]!;
             const appendedRequest = CopyKnowledgeTextRequestSchema.parse({
@@ -584,24 +638,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 appendedRequest,
                 signal(),
             );
+
             expect(preview.text.sourceText).toBe(
                 'A cat sleeps.\n\nA dog runs.\n\nA cat sleeps.\n\nA dog runs.',
             );
+
             const appended = await library.copyText(
                 owner,
                 appendedRequest,
                 signal(),
             );
+
             expect(appended.alignment?.source).toHaveLength(4);
             expect(appended.alignment?.source[0]).toEqual(oldPair);
             expect(appended.alignment?.source[2]?.pairId).not.toBe(
                 oldPair.pairId,
             );
+
             expect(appended.alignment?.translation[0]?.text).toBe('Кот спит.');
             expect(
                 (await library.copyText(owner, appendedRequest, signal()))
                     .version,
             ).toBe(appended.version);
+
             await expect(
                 library.copyText(
                     owner,
@@ -609,10 +668,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     signal(),
                 ),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             const [persisted] = await db
                 .select()
                 .from(textsTable)
                 .where(eq(textsTable.id, created.id));
+
             expect(persisted?.version).toBe(appended.version);
             expect(persisted?.alignment?.source).toHaveLength(4);
             expect(
@@ -622,8 +683,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(textRevisionsTable.textId, created.id)),
             ).toHaveLength(2);
         });
+
         it('copies and appends untranslated source as drafts without inventing translations', async () => {
-            if (bilingual.type !== 'bilingual-text') throw new Error('fixture');
+            if (bilingual.type !== 'bilingual-text') {
+                throw new Error('fixture');
+            }
+
             const source = await note({ ...bilingual, translations: [] });
             const request = textRequest(source.id, source.version);
             const preview = await library.previewText(owner, request, signal());
@@ -645,10 +710,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 signal(),
             );
+
             expect(appended.sourceText).toBe('A cat sleeps.\n\nA cat sleeps.');
             expect(appended.status).toBe('draft');
             expect(appended.alignment).toBeNull();
         });
+
         it('refuses another learner destination and idempotency key substitution', async () => {
             const source = await note(bilingual);
             const request = textRequest(source.id, source.version);
@@ -670,6 +737,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { kind: 'note', locator: shared.locator, key: shared.key },
                 ),
             ).rejects.toThrow();
+
             await expect(
                 library.copyText(
                     owner,
@@ -680,6 +748,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     signal(),
                 ),
             ).rejects.toMatchObject({ code: 'idempotency_conflict' });
+
             expect(
                 await db
                     .select()

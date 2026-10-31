@@ -37,10 +37,12 @@ export function createAdminTextAiRoutingComposition(input: {
         input.database,
         async (tx, request) => {
             const identity = fingerprint(request.routeId, request.flowId);
-            if (!identity)
+            if (!identity) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
+            }
+
             await requireProbeReady(tx, { ...request, fingerprint: identity });
         },
         (providerId) =>
@@ -74,5 +76,6 @@ export function createAdminTextAiRoutingComposition(input: {
             policy: input.policy,
         }),
     );
+
     return { routes, probes, store };
 }

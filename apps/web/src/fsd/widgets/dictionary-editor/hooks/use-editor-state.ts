@@ -46,8 +46,9 @@ export function useEditorState(
         if (
             new URLSearchParams(window.location.search).get('settings') ===
             'open'
-        )
+        ) {
             setSettingsOpen(true);
+        }
     }, [dictionaryId]);
 
     const [cardLifecycle, setCardLifecycle] =
@@ -65,8 +66,11 @@ export function useEditorState(
                 typeof action === 'function' ? action(previous) : action;
             const identity = (value: typeof previous) =>
                 value && typeof value === 'object' ? value.id : value;
-            if (identity(previous) !== identity(next))
+
+            if (identity(previous) !== identity(next)) {
                 editingSession.current += 1;
+            }
+
             editingValue.current = next;
             updateEditing(next);
         },
@@ -137,10 +141,12 @@ export function useEditorState(
                 ...(jobId && UUID_PATTERN.test(jobId) ? { jobId } : {}),
             });
         }
+
         if (batchJobId && UUID_PATTERN.test(batchJobId)) {
             setBatchGenerationJobId(batchJobId);
             setBatchGenerationOpen(true);
         }
+
         if (documentJobId && UUID_PATTERN.test(documentJobId)) {
             setDocumentGenerationJobId(documentJobId);
             setDocumentGenerationOpen(true);

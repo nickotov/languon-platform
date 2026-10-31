@@ -30,16 +30,19 @@ export function BlockRowGroup({
             id: row.id ?? crypto.randomUUID(),
         })),
     );
+
     function add() {
         const next = [...rows, { id: crypto.randomUUID() }];
         setRows(next);
         onCount(group.name, next.length);
     }
+
     function remove(id: string) {
         const next = rows.filter((row) => row.id !== id);
         setRows(next);
         onCount(group.name, next.length);
     }
+
     const limits: Record<string, number> = {
         examples: 50,
         mistakes: 50,
@@ -63,6 +66,7 @@ export function BlockRowGroup({
             />
         );
     }
+
     return (
         <fieldset
             className={styles.group}

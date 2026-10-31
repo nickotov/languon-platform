@@ -32,6 +32,7 @@ async function setup(text: string | KnowledgeBody = '') {
     const value = typeof text === 'string' ? body(text) : text;
     render(<KnowledgeEditor ref={ref} value={value} onChange={onChange} />);
     await waitFor(() => expect(ref.current).not.toBeNull());
+
     return { ref, onChange };
 }
 
@@ -41,6 +42,7 @@ async function target(
     to: number,
 ) {
     const content = ref.current!.getSnapshot().content;
+
     return (await ref.current!.restoreTarget({
         documentHash: await hashEditorText(content),
         from,
@@ -60,6 +62,7 @@ function apply(
     act(() => {
         result = ref.current!.applyProposal(text, action, id, format);
     });
+
     return result;
 }
 
@@ -82,6 +85,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(apply(ref, source, 'replace', id, 'plain-text')).toBe('applied');
         expect(ref.current!.getSnapshot().content).toBe(source);
     });
+
     it('includes editor plugin-added paragraphs in atomic node-limit validation', async () => {
         const value = KnowledgeBodySchema.parse({
             schemaVersion: 1,
@@ -112,8 +116,10 @@ describe('Markdown proposals in the real Knowledge editor', () => {
             document.descendants(() => {
                 count += 1;
             });
+
             return count;
         };
+
         expect(countNodes(editor.state.doc)).toBe(4_998);
         const original = editor.state.doc.toJSON();
         const heading = editor.schema.nodes.heading!.create(
@@ -123,6 +129,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         const candidate = editor.state.applyTransaction(
             editor.state.tr.insert(editor.state.doc.content.size, heading),
         );
+
         expect(countNodes(candidate.state.doc)).toBe(5_001);
         expect(apply(ref, '## Heading', 'append')).toBe('invalid');
         expect(onChange).not.toHaveBeenCalled();
@@ -131,6 +138,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(apply(ref, 'OK', 'append')).toBe('applied');
         expect(countNodes(editor.state.doc)).toBe(5_000);
     });
+
     it('inserts French Markdown as editable rich JSON, and undo/redo restore the entire change', async () => {
         const { ref, onChange } = await setup();
         expect(
@@ -140,13 +148,16 @@ describe('Markdown proposals in the real Knowledge editor', () => {
                 'append',
             ),
         ).toBe('applied');
+
         const editor = screen.getByRole('textbox', {
             name: 'Explanation',
             exact: true,
         });
+
         expect(editor.querySelector('h1')?.textContent).toBe(
             'Времена во французском',
         );
+
         expect(editor.querySelector('strong')?.textContent).toBe('время');
         expect(editor.querySelector('em')?.textContent).toBe('вид');
         expect(editor.querySelectorAll('li')).toHaveLength(2);
@@ -155,13 +166,16 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(
             KnowledgeBodySchema.safeParse(onChange.mock.calls[0]![0]).success,
         ).toBe(true);
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Undo', exact: true }),
         );
+
         expect(ref.current!.getSnapshot().content).toBe('');
         fireEvent.click(
             screen.getByRole('button', { name: 'Redo', exact: true }),
         );
+
         expect(editor.querySelector('strong')?.textContent).toBe('время');
     });
 
@@ -173,22 +187,27 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(apply(ref, '**New** wording.', 'replace', selected)).toBe(
             'applied',
         );
+
         const editor = screen.getByRole('textbox', {
             name: 'Explanation',
             exact: true,
         });
+
         expect(editor.querySelectorAll('p')).toHaveLength(1);
         expect(editor.textContent).toContain(
             'Intro. Before. New wording. After.',
         );
+
         expect(
             Array.from(editor.querySelectorAll('strong')).map(
                 (node) => node.textContent,
             ),
         ).toEqual(['Intro.', 'New']);
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Undo', exact: true }),
         );
+
         expect(editor.textContent).toContain(
             'Intro. Before. Old wording. After.',
         );
@@ -201,6 +220,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(
             apply(ref, '## New heading\n\nNew paragraph.', 'replace', original),
         ).toBe('applied');
+
         expect(ref.current!.getSnapshot().content).toContain('Before.');
         expect(ref.current!.getSnapshot().content).toContain('After.');
         expect(apply(ref, '**Unsafe** overwrite', 'replace', same)).toBe(
@@ -218,6 +238,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(apply(ref, markdown, 'replace', id, 'plain-text')).toBe(
             'applied',
         );
+
         expect(ref.current!.getSnapshot().content).toContain('```js');
         expect(document.querySelector('script')).toBeNull();
     });
@@ -227,6 +248,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
         expect(apply(ref, '**Too many characters here**', 'append')).toBe(
             'invalid',
         );
+
         expect(onChange).not.toHaveBeenCalled();
         expect(ref.current!.getSnapshot().content.length).toBe(79_990);
         expect(apply(ref, '**OK**', 'append')).toBe('applied');
@@ -277,15 +299,18 @@ it('retains the pinned editor HR node size and plain offsets through insertion, 
         { from: 4, to: 4 },
         true,
     );
+
     expect(atBoundary).not.toBeNull();
     act(() => {
         editor.view.dispatch(atBoundary!);
     });
+
     expect(editor.state.doc.child(1).type.name).toBe('horizontalRule');
     expect(editor.state.doc.child(1).nodeSize).toBe(1);
     expect(editor.state.doc.child(2).textContent).toBe(
         'Inserted after separator',
     );
+
     expect(editor.state.doc.child(3).textContent).toBe('B');
     fireEvent.click(screen.getByRole('button', { name: 'Undo', exact: true }));
     expect(ref.current!.getSnapshot().content).toBe('A\n\n\nB');
@@ -297,6 +322,7 @@ it('retains the pinned editor HR node size and plain offsets through insertion, 
     expect(
         KnowledgeBodySchema.safeParse(onChange.mock.lastCall?.[0]).success,
     ).toBe(true);
+
     fireEvent.click(screen.getByRole('button', { name: 'Undo', exact: true }));
     expect(ref.current!.getSnapshot().content).toBe('A\n\n\nB');
     fireEvent.click(screen.getByRole('button', { name: 'Redo', exact: true }));
@@ -314,6 +340,7 @@ it('exposes Heading 1–3 and a usable horizontal-rule command in the editor too
                 exact: true,
             }),
         ).toBeVisible();
+
         fireEvent.change(selector, { target: { value: String(level) } });
         expect(
             screen
@@ -321,14 +348,17 @@ it('exposes Heading 1–3 and a usable horizontal-rule command in the editor too
                 .querySelector(`h${level}`)?.textContent,
         ).toBe('A');
     }
+
     fireEvent.click(
         screen.getByRole('button', { name: 'Horizontal rule', exact: true }),
     );
+
     expect(
         screen
             .getByRole('textbox', { name: 'Explanation' })
             .querySelector('hr'),
     ).not.toBeNull();
+
     expect(ref.current!.getSnapshot().content).toContain('A');
     expect(
         KnowledgeBodySchema.safeParse(onChange.mock.lastCall?.[0]).success,

@@ -14,11 +14,14 @@ import {
 export function blockReferenceCatalog(snapshot: ConversationSourceSnapshot) {
     const material =
         snapshot.blockTarget?.material ?? snapshot.learningBlocks ?? [];
+
     return material.flatMap((item) => {
         try {
             const block = JSON.parse(item.content) as Record<string, unknown>;
-            if (block.id !== item.id || typeof block.type !== 'string')
+            if (block.id !== item.id || typeof block.type !== 'string') {
                 return [];
+            }
+
             return [
                 {
                     id: item.id,
@@ -41,20 +44,26 @@ export function captureBlockReferences(
     ids: readonly string[],
     kind: string,
 ) {
-    if (!ids.length) return;
+    if (!ids.length) {
+        return;
+    }
+
     const available = new Set(
         blockReferenceCatalog(snapshot).map((block) => block.id),
     );
+
     if (
         kind !== 'knowledge' ||
         ids.length > 8 ||
         new Set(ids).size !== ids.length ||
         ids.some((id) => !available.has(id))
-    )
+    ) {
         throw new ConversationError(
             'invalid_block_reference',
             'A mentioned block is no longer available in this source. Select it again.',
         );
+    }
+
     snapshot.blockReferences = [...ids];
 }
 
@@ -66,11 +75,12 @@ export function assertReferencedProposalTarget(
         targetBlockId &&
         snapshot.blockReferences?.length &&
         !snapshot.blockReferences.includes(targetBlockId)
-    )
+    ) {
         throw new ConversationError(
             'invalid_block_reference',
             'An update must target a block explicitly mentioned in this question.',
         );
+    }
 }
 
 /** Prepare the single admitted projection after source authorization and retry selection. */
@@ -81,12 +91,14 @@ export function prepareReferencedTutorMessage(input: {
     content: string;
     attachments: CopiedAttachment[];
 }) {
-    if (!input.request.retryOf)
+    if (!input.request.retryOf) {
         captureBlockReferences(
             input.snapshot,
             input.request.blockReferences ?? [],
             input.sourceKind,
         );
+    }
+
     return projectTutorUserMessage({
         content: input.content,
         attachments: input.attachments,

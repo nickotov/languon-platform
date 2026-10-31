@@ -24,9 +24,12 @@ export function knowledgeBlockReferences(
                 title: blockReferenceTitle(block, references.length + 1),
             });
         }
+
         node.content?.forEach(visit);
     }
+
     visit(document);
+
     return references;
 }
 
@@ -35,8 +38,12 @@ function excerpt(value: string) {
         .slice(0, 120)
         .join('');
 }
+
 function blockReferenceTitle(block: LearningBlock, ordinal: number): string {
-    if (block.title?.trim()) return excerpt(block.title);
+    if (block.title?.trim()) {
+        return excerpt(block.title);
+    }
+
     switch (block.type) {
         case 'exercise':
             return excerpt(
@@ -94,10 +101,17 @@ export function knowledgeBlockMentionIds(
                     ? { joinsAfter: previous.block.id }
                     : {}),
             });
+
             emptyGap = true;
-        } else if (node.type !== 'paragraph' || (node.content?.length ?? 0) > 0)
+        } else if (
+            node.type !== 'paragraph' ||
+            (node.content?.length ?? 0) > 0
+        ) {
             emptyGap = false;
+        }
     });
+
     const group = authoringBlockGroup(positioned, id);
+
     return group.length ? group.map((item) => item.block.id) : [id];
 }

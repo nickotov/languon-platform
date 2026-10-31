@@ -33,6 +33,7 @@ export function SentenceWithHints({
     const popoverId = useId();
     const hintFor = (index: number) => {
         const segment = exercise.segments[index];
+
         return exercise.hints.find(
             (hint) =>
                 hint.id ===
@@ -51,31 +52,44 @@ export function SentenceWithHints({
         revealedHintIds.includes(item.id),
     );
     const close = (restore = false) => {
-        if (restore && open) triggers.current.get(open.index)?.focus();
+        if (restore && open) {
+            triggers.current.get(open.index)?.focus();
+        }
+
         setOpen(null);
     };
     const activate = (index: number, hover = false) => {
         const selected = hintFor(index);
-        if (!selected || (hover && openRef.current && !openRef.current.hover))
+        if (!selected || (hover && openRef.current && !openRef.current.hover)) {
             return;
+        }
+
         onReveal(selected.id);
         setOpen((previous) =>
             hover && previous && !previous.hover ? previous : { index, hover },
         );
     };
+
     useEffect(
         () => () => {
-            if (timer.current) clearTimeout(timer.current);
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
         },
         [],
     );
+
     const virtualReference = useMemo(() => {
         const trigger = open ? triggers.current.get(open.index) : undefined;
-        if (!trigger) return undefined;
+        if (!trigger) {
+            return undefined;
+        }
+
         return {
             contextElement: trigger,
             getBoundingClientRect() {
                 const rects = trigger.getClientRects();
+
                 return (
                     rects[rects.length - 1] ?? trigger.getBoundingClientRect()
                 );
@@ -87,7 +101,9 @@ export function SentenceWithHints({
         <Popover
             open={Boolean(open)}
             onOpenChange={(next) => {
-                if (!next) close(false);
+                if (!next) {
+                    close(false);
+                }
             }}
         >
             <div className={styles.hintRoot}>
@@ -103,8 +119,10 @@ export function SentenceWithHints({
                     >
                         {exercise.segments.map((item, index) => {
                             const itemHint = hintFor(index);
-                            if (!itemHint)
+                            if (!itemHint) {
                                 return <span key={item.id}>{item.text}</span>;
+                            }
+
                             const dictionary = itemHint.kind !== 'contextual';
                             const wordClasses = [styles.hintWord];
                             wordClasses.push(
@@ -112,6 +130,7 @@ export function SentenceWithHints({
                                     ? styles.dictionaryWord
                                     : styles.contextualWord,
                             );
+
                             if (revealedHintIds.includes(itemHint.id)) {
                                 wordClasses.push(
                                     dictionary
@@ -119,16 +138,22 @@ export function SentenceWithHints({
                                         : styles.contextualRevealed,
                                 );
                             }
-                            if (open?.index === index)
+
+                            if (open?.index === index) {
                                 wordClasses.push(styles.wordOpen);
+                            }
+
                             const wordClassName = wordClasses.join(' ');
+
                             return (
                                 <span
                                     key={item.id}
                                     ref={(node) => {
-                                        if (node)
+                                        if (node) {
                                             triggers.current.set(index, node);
-                                        else triggers.current.delete(index);
+                                        } else {
+                                            triggers.current.delete(index);
+                                        }
                                     }}
                                     role='button'
                                     tabIndex={0}
@@ -153,6 +178,7 @@ export function SentenceWithHints({
                                             event.preventDefault();
                                             activate(index);
                                         }
+
                                         if (event.key === 'Escape' && open) {
                                             event.preventDefault();
                                             event.stopPropagation();
@@ -160,16 +186,20 @@ export function SentenceWithHints({
                                         }
                                     }}
                                     onMouseEnter={() => {
-                                        if (timer.current)
+                                        if (timer.current) {
                                             clearTimeout(timer.current);
+                                        }
+
                                         timer.current = setTimeout(
                                             () => activate(index, true),
                                             350,
                                         );
                                     }}
                                     onMouseLeave={() => {
-                                        if (timer.current)
+                                        if (timer.current) {
                                             clearTimeout(timer.current);
+                                        }
+
                                         setOpen((previous) =>
                                             previous?.hover ? null : previous,
                                         );

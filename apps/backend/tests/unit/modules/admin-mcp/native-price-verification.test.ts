@@ -108,12 +108,14 @@ function fixture(actor = readActor) {
         reauthenticate: vi.fn(async () => actor),
         now: () => new Date(at),
     };
+
     return {
         deps,
         fetchPrices,
         service: new AdminMcpPriceActualizationService(deps),
     };
 }
+
 describe('native model price verification authority and separation', () => {
     it('verifies unconfigured catalog entries with read authority and never creates a preview', async () => {
         const f = fixture();
@@ -140,6 +142,7 @@ describe('native model price verification authority and separation', () => {
                 },
             ],
         });
+
         expect(f.deps.administration.preview).not.toHaveBeenCalled();
         expect(f.deps.audit.recordRead).toHaveBeenCalledWith(
             readActor,
@@ -149,6 +152,7 @@ describe('native model price verification authority and separation', () => {
             input.reason,
         );
     });
+
     it('reports retired exact identities without copying a replacement price', async () => {
         const f = fixture();
         vi.mocked(f.deps.catalog!).mockResolvedValue([
@@ -159,6 +163,7 @@ describe('native model price verification authority and separation', () => {
                 executionBlockers: ['Retired identity.'],
             },
         ]);
+
         f.fetchPrices.mockResolvedValue([
             {
                 target,
@@ -166,6 +171,7 @@ describe('native model price verification authority and separation', () => {
                 reason: 'The product page names a different exact model.',
             },
         ]);
+
         expect(
             (await f.service.verify(readActor, input)).results,
         ).toMatchObject([
@@ -175,17 +181,21 @@ describe('native model price verification authority and separation', () => {
                 publication: 'retired',
             },
         ]);
+
         expect(f.deps.administration.preview).not.toHaveBeenCalled();
     });
+
     it('does not delegate verification or native writes to legacy action snapshots', async () => {
         const f = fixture();
         const oldReader = {
             ...readActor,
             allowedActions: ['providers.inspect'],
         };
+
         await expect(f.service.verify(oldReader, input)).rejects.toMatchObject({
             code: 'permission_denied',
         });
+
         const oldWriter: AdminMcpActor = {
             ...writeActor,
             allowedActions: [
@@ -193,37 +203,45 @@ describe('native model price verification authority and separation', () => {
                 'provider-prices.actualize',
             ],
         };
+
         await expect(
             f.service.actualize(oldWriter, input),
         ).rejects.toMatchObject({ code: 'permission_denied' });
+
         expect(f.fetchPrices).not.toHaveBeenCalled();
     });
+
     it('uses only the separately delegated native writer and rejects native data in the flat writer', async () => {
         const f = fixture(writeActor);
         const result = await f.service.actualize(writeActor, input);
         expect(result.results).toMatchObject([
             { status: 'preview', verification: 'verified' },
         ]);
+
         expect(f.deps.administration.preview).toHaveBeenCalledWith(
             writeActor,
             'provider-prices.native-write',
             expect.objectContaining({ nativeRules: rules }),
         );
+
         const body = {
             ...price,
             expectedVersion: 0,
             effectiveAt: at,
             reason: input.reason,
         };
+
         expect(
             adminMcpWriteSchemas['provider-prices.native-write'].safeParse(body)
                 .success,
         ).toBe(true);
+
         expect(
             adminMcpWriteSchemas['provider-prices.write'].safeParse(body)
                 .success,
         ).toBe(false);
     });
+
     it('ignores retrieval-only validFrom changes but preserves expired or changed native rules', async () => {
         const f = fixture(writeActor);
         const current: ProviderPrice = {
@@ -236,10 +254,12 @@ describe('native model price verification authority and separation', () => {
             reason: input.reason,
             nativeRules: { ...rules, validFrom: '2026-10-27T00:00:00.000Z' },
         };
+
         vi.mocked(f.deps.prices).mockResolvedValue([current]);
         expect(
             (await f.service.actualize(writeActor, input)).results,
         ).toMatchObject([{ status: 'unchanged', comparison: 'matches' }]);
+
         expect(f.deps.administration.preview).not.toHaveBeenCalled();
         vi.mocked(f.deps.prices).mockResolvedValue([
             {
@@ -250,18 +270,22 @@ describe('native model price verification authority and separation', () => {
                 },
             },
         ]);
+
         expect(
             (await f.service.actualize(writeActor, input)).results,
         ).toMatchObject([{ status: 'preview', comparison: 'differs' }]);
     });
+
     it('rechecks credential authority after fetching even for verification without financial mutation', async () => {
         const f = fixture();
         vi.mocked(f.deps.reauthenticate).mockRejectedValue(
             new Error('Revoked'),
         );
+
         await expect(f.service.verify(readActor, input)).rejects.toThrow(
             'Revoked',
         );
+
         expect(f.deps.administration.preview).not.toHaveBeenCalled();
     });
 });
@@ -295,16 +319,20 @@ describe('MCP price verification discovery', () => {
             const event = text
                 .split('\n')
                 .find((line) => line.startsWith('data: '));
+
             return JSON.parse(event ? event.slice(6) : text);
         };
+
         return { rpc, verifyPrices };
     }
+
     it('discovers and executes the read-only method for a newly delegated reader', async () => {
         const f = server(readActor);
         const listing = await f.rpc('tools/list');
         const tool = listing.result.tools.find(
             (tool: { name: string }) => tool.name === 'verify_model_prices',
         );
+
         expect(tool.annotations.readOnlyHint).toBe(true);
         expect(
             listing.result.tools.some(
@@ -312,13 +340,16 @@ describe('MCP price verification discovery', () => {
                     tool.name === 'actualize_model_prices',
             ),
         ).toBe(false);
+
         const result = await f.rpc('tools/call', {
             name: 'verify_model_prices',
             arguments: input,
         });
+
         expect(result.result.isError).not.toBe(true);
         expect(f.verifyPrices).toHaveBeenCalledOnce();
     });
+
     it('keeps both new pricing operations hidden from old action snapshots', async () => {
         const f = server({
             ...writeActor,
@@ -331,6 +362,7 @@ describe('MCP price verification discovery', () => {
         const names = (await f.rpc('tools/list')).result.tools.map(
             (tool: { name: string }) => tool.name,
         );
+
         expect(names).not.toContain('verify_model_prices');
         expect(names).not.toContain('actualize_model_prices');
         expect(names).not.toContain('preview_provider_prices_native_write');

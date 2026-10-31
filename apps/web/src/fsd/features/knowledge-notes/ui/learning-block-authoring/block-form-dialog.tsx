@@ -52,18 +52,25 @@ export function BlockFormDialog(props: {
     function apply(block: LearningBlock) {
         if (block.type === 'audio' && props.onApplyAudio) {
             const next = questions.current?.read();
-            if (!next) return false;
+            if (!next) {
+                return false;
+            }
+
             return props.onApplyAudio(block, next);
         }
+
         return props.onApply(block);
     }
+
     const draft = useBlockFormDraft({ ...props, onApply: apply });
     function markDirty() {
         draft.setDirty(true);
     }
+
     function submitAudio() {
         draft.form.current?.requestSubmit();
     }
+
     const audioDraft = draft.getAudioDraft();
     const questionSources = audioDraft
         ? [
@@ -82,6 +89,7 @@ export function BlockFormDialog(props: {
             requestClose={draft.requestClose}
         />
     );
+
     return (
         <>
             <BlockEditorPanel

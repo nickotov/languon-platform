@@ -73,6 +73,7 @@ export class CardProposalGeneratorExecutionError extends CardProposalGeneratorEr
                 ? 'invalid_model_output'
                 : 'provider_unavailable',
         );
+
         this.name = 'CardProposalGeneratorExecutionError';
     }
 }
@@ -119,11 +120,15 @@ export function createMastraCardProposalGenerator(options: {
                 >[0],
             ) => {
                 const result = new CardProposalGeneratorExecutionError(reason);
-                if (meteredUsage) result.usage = meteredUsage;
+                if (meteredUsage) {
+                    result.usage = meteredUsage;
+                }
+
                 result.executionOutcome =
                     outputReceived && result.category === 'invalid_model_output'
                         ? 'completed'
                         : 'ambiguous';
+
                 return result;
             };
 
@@ -139,6 +144,7 @@ export function createMastraCardProposalGenerator(options: {
                         request.providerBudget.maxOutputTokensPerAttempt,
                 },
             });
+
             if (
                 Buffer.byteLength(message, 'utf8') +
                     dictionaryCardGenerationFixedInputBytes >
@@ -173,6 +179,7 @@ export function createMastraCardProposalGenerator(options: {
                             },
                         }),
                 );
+
                 outputReceived = true;
                 request.signal.throwIfAborted();
 
@@ -187,6 +194,7 @@ export function createMastraCardProposalGenerator(options: {
                         throw failure('invalid_output');
                     }
                 }
+
                 if (result.error || result.tripwire) {
                     throw withProviderExecutionOutcome(
                         failure('provider_failure'),
@@ -196,7 +204,10 @@ export function createMastraCardProposalGenerator(options: {
                 }
 
                 const proposal = validatedOutput(result.object);
-                if (!result.usage) return proposal;
+                if (!result.usage) {
+                    return proposal;
+                }
+
                 let usage;
                 try {
                     usage = readProviderTokenUsage(
@@ -228,8 +239,13 @@ export function createMastraCardProposalGenerator(options: {
                         /* Invalid/missing provider meters remain unknown. */
                     }
                 }
-                if (error instanceof CardProposalGeneratorError && meteredUsage)
+
+                if (
+                    error instanceof CardProposalGeneratorError &&
+                    meteredUsage
+                ) {
                     error.usage = meteredUsage;
+                }
 
                 if (request.signal.aborted) {
                     throw (
@@ -237,15 +253,19 @@ export function createMastraCardProposalGenerator(options: {
                         new DOMException('Aborted', 'AbortError')
                     );
                 }
+
                 if (
                     outputReceived &&
                     error instanceof CardProposalGeneratorError &&
                     error.category === 'invalid_model_output'
-                )
+                ) {
                     error.executionOutcome = 'completed';
+                }
+
                 if (error instanceof CardProposalGeneratorExecutionError) {
                     throw error;
                 }
+
                 throw withProviderExecutionOutcome(
                     failure('provider_failure'),
                     error,
@@ -255,12 +275,15 @@ export function createMastraCardProposalGenerator(options: {
         },
         readiness(signal) {
             signal.throwIfAborted();
-            if (!options.providerReadiness)
+            if (!options.providerReadiness) {
                 return Promise.reject(
                     new CardProposalGeneratorUnavailableError(),
                 );
+            }
+
             return options.providerReadiness(signal).catch(() => {
                 signal.throwIfAborted();
+
                 throw new CardProposalGeneratorUnavailableError();
             });
         },
@@ -286,6 +309,7 @@ export class DeterministicCardProposalGenerator implements CardProposalGenerator
         try {
             const proposal = await this.resolve(request);
             request.signal.throwIfAborted();
+
             return validatedOutput(proposal);
         } catch (error) {
             if (request.signal.aborted) {
@@ -294,15 +318,18 @@ export class DeterministicCardProposalGenerator implements CardProposalGenerator
                     new DOMException('Aborted', 'AbortError')
                 );
             }
+
             if (error instanceof CardProposalGeneratorExecutionError) {
                 throw error;
             }
+
             throw new CardProposalGeneratorExecutionError('provider_failure');
         }
     }
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -312,11 +339,13 @@ export class UnavailableCardProposalGenerator implements CardProposalGenerator {
         request: CardProposalGeneratorRequest,
     ): Promise<DictionaryGenerationProposalPayload> {
         request.signal.throwIfAborted();
+
         return Promise.reject(new CardProposalGeneratorUnavailableError());
     }
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.reject(new CardProposalGeneratorUnavailableError());
     }
 }
@@ -346,6 +375,7 @@ export function createCardProposalGenerator(
     if (options.mode === 'unavailable') {
         return new UnavailableCardProposalGenerator();
     }
+
     if (options.mode === 'deterministic') {
         return new DeterministicCardProposalGenerator(options.proposal);
     }
@@ -362,6 +392,7 @@ export function createCardProposalGenerator(
             options.model,
             options.providerProbeFetch ?? globalThis.fetch,
         );
+
     return createMastraCardProposalGenerator({
         agent: runtime.listAgents().dictionaryCardGenerationAgent,
         ...(options.modelRequestLimits
@@ -384,8 +415,10 @@ function openAICompatibleProviderReadiness(
         !('url' in model) ||
         !model.url ||
         !model.apiKey
-    )
+    ) {
         return undefined;
+    }
+
     const baseUrl = new URL(model.url);
     const hostname = baseUrl.hostname.replace(/^\[|\]$/g, '').toLowerCase();
     if (
@@ -399,9 +432,12 @@ function openAICompatibleProviderReadiness(
         hostname.endsWith('.local') ||
         hostname.endsWith('.internal') ||
         isPrivateIpAddress(hostname)
-    )
+    ) {
         return undefined;
+    }
+
     baseUrl.pathname = `${baseUrl.pathname.replace(/\/$/, '')}/models`;
+
     return async (signal) => {
         const response = await fetchProvider(baseUrl, {
             cache: 'no-store',
@@ -415,14 +451,19 @@ function openAICompatibleProviderReadiness(
             referrerPolicy: 'no-referrer',
             signal,
         });
-        if (!response.ok) throw new CardProposalGeneratorUnavailableError();
+
+        if (!response.ok) {
+            throw new CardProposalGeneratorUnavailableError();
+        }
     };
 }
 
 function isPrivateIpAddress(hostname: string): boolean {
     if (isIP(hostname) === 6) {
-        if (hostname.startsWith('::ffff:'))
+        if (hostname.startsWith('::ffff:')) {
             return isPrivateIpAddress(hostname.slice('::ffff:'.length));
+        }
+
         return (
             hostname === '::' ||
             hostname === '::1' ||
@@ -431,8 +472,13 @@ function isPrivateIpAddress(hostname: string): boolean {
             /^fe[89ab]/.test(hostname)
         );
     }
-    if (isIP(hostname) !== 4) return false;
+
+    if (isIP(hostname) !== 4) {
+        return false;
+    }
+
     const [first = 0, second = 0] = hostname.split('.').map(Number);
+
     return (
         first === 0 ||
         first === 10 ||
@@ -451,6 +497,7 @@ function validatedInput(value: unknown) {
     if (!parsed.success) {
         throw new CardProposalGeneratorExecutionError('invalid_input');
     }
+
     return parsed.data;
 }
 
@@ -459,6 +506,7 @@ function validatedOutput(value: unknown): DictionaryGenerationProposalPayload {
     if (!parsed.success) {
         throw new CardProposalGeneratorExecutionError('invalid_output');
     }
+
     return parsed.data;
 }
 

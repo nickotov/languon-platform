@@ -37,6 +37,7 @@ import styles from './knowledge-detail-page.module.css';
 
 export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
     const actorId = useSessionStore((state) => state.user?.id);
+
     return (
         <KnowledgeAuthBoundary returnTo={`/knowledge/${noteId}`}>
             <DetailContent key={`${actorId}:${noteId}`} noteId={noteId} />
@@ -75,14 +76,17 @@ function DetailContent({ noteId }: { noteId: string }) {
             {t('knowledge.back')}
         </ButtonLink>
     );
-    if (!workspace && (state.query.isPending || state.isInitializing))
+
+    if (!workspace && (state.query.isPending || state.isInitializing)) {
         return (
             <main className={styles.page}>
                 {back}
                 <LoadingState>{t('knowledge.loading')}</LoadingState>
             </main>
         );
-    if (!workspace || !draft)
+    }
+
+    if (!workspace || !draft) {
         return (
             <main className={styles.page}>
                 {back}
@@ -100,6 +104,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                 </InlineAlert>
             </main>
         );
+    }
 
     function renderAudioPreparation(
         block: Extract<LearningBlock, { type: 'audio' }>,
@@ -107,12 +112,16 @@ function DetailContent({ noteId }: { noteId: string }) {
             replacement: Extract<LearningBlock, { type: 'audio' }>,
         ) => void,
     ) {
-        if (!draft) return null;
+        if (!draft) {
+            return null;
+        }
+
         const language =
             block.language ||
             block.transcript?.language ||
             draft.content.studiedLanguage ||
             'en';
+
         return (
             <>
                 <KnowledgeAudioPreparation
@@ -135,16 +144,26 @@ function DetailContent({ noteId }: { noteId: string }) {
             </>
         );
     }
+
     function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
-        if (block.type !== 'vocabulary' || !workspace?.published) return null;
+        if (block.type !== 'vocabulary' || !workspace?.published) {
+            return null;
+        }
+
         const saved = workspace.published.body.document.content?.find(
             (node) => node.attrs?.block?.id === block.id,
         )?.attrs?.block;
-        if (saved?.type !== 'vocabulary') return null;
+
+        if (saved?.type !== 'vocabulary') {
+            return null;
+        }
+
         const { title: _workingTitle, ...currentMaterial } = block;
         const { title: _savedTitle, ...savedMaterial } = saved;
-        if (JSON.stringify(currentMaterial) !== JSON.stringify(savedMaterial))
+        if (JSON.stringify(currentMaterial) !== JSON.stringify(savedMaterial)) {
             return null;
+        }
+
         return actorId ? (
             <KnowledgeVocabularyPractice
                 noteId={noteId}
@@ -156,6 +175,7 @@ function DetailContent({ noteId }: { noteId: string }) {
             />
         ) : null;
     }
+
     const noticeState = {
         alternatives: workspace.branches.length > 1,
         recoveryError: state.status === 'error',
@@ -206,6 +226,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                   />
               )
             : undefined;
+
     return (
         <CompanionLayout
             companion={assistant}

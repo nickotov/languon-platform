@@ -26,12 +26,15 @@ export function WorkspaceLearnerPreview({
     useEffect(() => {
         heading.current?.focus({ preventScroll: true });
     }, []);
+
     function readerOptions(block: LearningBlock) {
         const { audioUrl, hintTranscript, hintVideoSource, playback } =
             blockOptions(block);
+
         // Deliberately omit saved learner state, attempt callbacks and AI actions.
         return { audioUrl, hintTranscript, hintVideoSource, playback };
     }
+
     return (
         <section
             className={styles.root}

@@ -33,6 +33,7 @@ class SerialLocks {
             () => undefined,
             () => undefined,
         );
+
         return result;
     }
 }
@@ -50,6 +51,7 @@ describe('BrowserRefreshCoordinator', () => {
                 coordinator.refresh(action),
             ]),
         ).resolves.toEqual([response, response]);
+
         expect(action).toHaveBeenCalledOnce();
         coordinator.destroy();
     });

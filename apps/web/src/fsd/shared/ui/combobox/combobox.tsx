@@ -53,7 +53,9 @@ export function Combobox({
     const activeOption = matches[activeIndex];
 
     function update(next: string) {
-        if (value === undefined) setInternalValue(next);
+        if (value === undefined) {
+            setInternalValue(next);
+        }
 
         onValueChange?.(next);
     }
@@ -87,14 +89,17 @@ export function Combobox({
             return;
         }
 
-        if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key))
+        if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
             return;
+        }
 
         event.preventDefault();
 
         setOpen(true);
 
-        if (matches.length === 0) return;
+        if (matches.length === 0) {
+            return;
+        }
 
         setActiveIndex((current) => {
             if (event.key === 'ArrowDown') {

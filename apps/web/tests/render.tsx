@@ -17,6 +17,7 @@ export function render(
     options?: RenderOptions & { locale?: Locale },
 ) {
     const { locale = 'en', ...renderOptions } = options ?? {};
+
     return testingLibraryRender(
         <I18nProvider locale={locale} messages={catalogs[locale]}>
             {ui}

@@ -26,21 +26,23 @@ export function requireLearningEpoch(
     if (
         !row?.active ||
         (fingerprint !== undefined && row.semanticFingerprint !== fingerprint)
-    )
+    ) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The saved learning version is unavailable. Save or reload the note before continuing.',
         );
+    }
 
     return row;
 }
 
 export function learningExerciseRevision(noteId: string, epoch: LearningEpoch) {
-    if (epoch.noteId !== noteId || epoch.kind !== 'exercise' || !epoch.active)
+    if (epoch.noteId !== noteId || epoch.kind !== 'exercise' || !epoch.active) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The exercise is unavailable.',
         );
+    }
 
     return createHash('sha256')
         .update(
@@ -144,25 +146,33 @@ export async function syncLearningEpochs(
         };
     });
 
-    for (const row of active)
-        if (!wanted.has(learningEpochKey(row.kind, row.blockId, row.itemId)))
+    for (const row of active) {
+        if (!wanted.has(learningEpochKey(row.kind, row.blockId, row.itemId))) {
             writes.push({
                 ...row,
                 active: false,
                 epoch: row.epoch + 1,
                 lastPublishedVersion: publishedVersion,
             });
+        }
+    }
+
     if (
         writes.some(
             (row) =>
                 !Number.isSafeInteger(row.epoch) || row.epoch > 2_147_483_647,
         )
-    )
+    ) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The learning history limit has been reached.',
         );
-    if (writes.length === 0) return;
+    }
+
+    if (writes.length === 0) {
+        return;
+    }
+
     await tx
         .insert(epochs)
         .values(writes)

@@ -29,8 +29,10 @@ export function sourceSentenceEntries(
         scope.entryIds.some(
             (id) => !source.entries.some((entry) => entry.entryId === id),
         )
-    )
+    ) {
         throw new LearningEntryUnavailableError();
+    }
+
     const selected = source.entries.filter(
         (entry) =>
             scope.type === 'all' || scope.entryIds.includes(entry.entryId),
@@ -88,7 +90,10 @@ export function currentKnowledgeSentence(
     row: StoredKnowledgeSentence,
     source: VocabularyPracticeContent,
 ) {
-    if (!row.provenance.length) return false;
+    if (!row.provenance.length) {
+        return false;
+    }
+
     const forward = row.publicContent.direction === 'source-to-target';
 
     return (
@@ -154,8 +159,9 @@ export function assertRequestedHints(
     exercise: SentenceExercise,
     hintIds: readonly string[],
 ) {
-    if (hintIds.some((id) => !exercise.hints.some((hint) => hint.id === id)))
+    if (hintIds.some((id) => !exercise.hints.some((hint) => hint.id === id))) {
         throw new LearningInvalidRequestError();
+    }
 }
 
 export function sourceEpochs(entries: readonly SentenceEntry[]) {

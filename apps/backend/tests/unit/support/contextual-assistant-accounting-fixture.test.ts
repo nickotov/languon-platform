@@ -14,6 +14,7 @@ const tariff = {
     inputCreditsPerMillionTokens: '1000',
     outputCreditsPerMillionTokens: '3000',
 };
+
 it('proves the old twenty-credit action cap cannot admit current proposal framing even with ample wallet credits', () => {
     const schemaBytes =
         Buffer.byteLength(
@@ -39,6 +40,7 @@ it('proves the old twenty-credit action cap cannot admit current proposal framin
             tariff,
         }),
     ).toBe(0);
+
     expect(
         affordableActionOutput({
             budgetMilli: parseCreditMilli(
@@ -50,6 +52,7 @@ it('proves the old twenty-credit action cap cannot admit current proposal framin
         }),
     ).toBe(8192);
 });
+
 it('derives a finite whole-action fixture cap from aggregate token limits and exact customer tariff', () => {
     const allowance = contextualAssistantFixtureAllowance(model, tariff);
     expect(allowance).toBe('385.024');
@@ -61,6 +64,7 @@ it('derives a finite whole-action fixture cap from aggregate token limits and ex
             tariff,
         }),
     ).toBe(model.aggregateBudget.maxOutputTokensPerAttempt);
+
     expect(parseCreditMilli(allowance)).toBeLessThan(1_000_000_000n);
     expect(
         affordableActionOutput({
@@ -71,6 +75,7 @@ it('derives a finite whole-action fixture cap from aggregate token limits and ex
         }),
     ).toBe(0);
 });
+
 it('keeps zero-tariff fixtures free and reserves the higher input tariff for unknown cache use', () => {
     expect(
         contextualAssistantFixtureAllowance(model, {
@@ -78,6 +83,7 @@ it('keeps zero-tariff fixtures free and reserves the higher input tariff for unk
             outputCreditsPerMillionTokens: '0',
         }),
     ).toBe('0');
+
     expect(
         contextualAssistantFixtureAllowance(model, {
             ...tariff,

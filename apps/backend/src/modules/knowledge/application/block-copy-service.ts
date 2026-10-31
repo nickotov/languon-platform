@@ -14,6 +14,7 @@ export class KnowledgeBlockCopyService {
             rateLimiter: RateLimiter;
         },
     ) {}
+
     async copy(
         token: string,
         context: KnowledgeRequestContext,
@@ -29,11 +30,14 @@ export class KnowledgeBlockCopyService {
             windowMs: 60000,
             signal: context.signal,
         });
-        if (!rate.allowed)
+
+        if (!rate.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many copy requests.',
             );
+        }
+
         return this.dependencies.store.copy(
             userId,
             KnowledgeNoteIdParamsSchema.parse({ noteId }).noteId,

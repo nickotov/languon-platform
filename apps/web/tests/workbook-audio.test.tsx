@@ -11,6 +11,7 @@ vi.mock(
         readKnowledgeAudio: vi.fn(),
     }),
 );
+
 const id = '11111111-1111-4111-8111-111111111111';
 const assetId = '22222222-2222-4222-8222-222222222222';
 const body: KnowledgeBody = {
@@ -42,10 +43,12 @@ beforeEach(() => {
         'URL',
         Object.assign(URL, { createObjectURL, revokeObjectURL }),
     );
+
     vi.mocked(readKnowledgeAudio).mockResolvedValue(
         new Blob(['audio'], { type: 'audio/wav' }),
     );
 });
+
 afterEach(() => vi.unstubAllGlobals());
 describe('authorized audio lifecycle', () => {
     it('uses a public source grant for anonymous bytes and revokes the ephemeral player URL', async () => {
@@ -59,22 +62,27 @@ describe('authorized audio lifecycle', () => {
                 unavailable: false,
             }),
         );
+
         await waitFor(() =>
             expect(result.current[assetId]).toBe(
                 'blob:http://localhost/test-audio',
             ),
         );
+
         expect(vi.mocked(readKnowledgeAudio).mock.calls[0]![2]).toMatchObject({
             access,
         });
+
         expect(
             vi.mocked(readKnowledgeAudio).mock.calls[0]![2],
         ).not.toHaveProperty('token');
+
         unmount();
         expect(revokeObjectURL).toHaveBeenCalledWith(
             'blob:http://localhost/test-audio',
         );
     });
+
     it('removes player URLs when source access becomes unavailable', async () => {
         const { result, rerender } = renderHook(
             ({ unavailable }) =>
@@ -88,6 +96,7 @@ describe('authorized audio lifecycle', () => {
                 }),
             { initialProps: { unavailable: false } },
         );
+
         await waitFor(() => expect(result.current[assetId]).toBeDefined());
         rerender({ unavailable: true });
         expect(result.current).toEqual({});

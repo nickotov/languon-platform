@@ -52,10 +52,14 @@ export const capabilityRequirements = [
 ];
 
 function capabilityEnabled(capability, env) {
-    if (!capability.flag) return true;
+    if (!capability.flag) {
+        return true;
+    }
+
     const fallback =
         capability.flag === 'LEARNING_SENTENCES_ENABLED' &&
         ['development', 'test'].includes(env.APP_ENV);
+
     return (
         env[capability.flag] === 'true' ||
         (env[capability.flag] === undefined && fallback)
@@ -68,8 +72,10 @@ function documentPipelineConfigured(env) {
             'unavailable' ||
         (env.DICTIONARY_DOCUMENT_STORAGE_MODE || 'unavailable') !==
             'unavailable'
-    )
+    ) {
         return true;
+    }
+
     return Object.entries(env).some(
         ([key, value]) =>
             /^DICTIONARY_JOB_(?:API_\w+|WORKER_PROCESSABLE)_FORMATS$/u.test(
@@ -90,11 +96,13 @@ export function selectCapabilities(
 ) {
     const ids = requested.flatMap((value) => value.split(','));
     for (const id of ids) {
-        if (!registry.some((capability) => capability.id === id))
+        if (!registry.some((capability) => capability.id === id)) {
             throw new Error(
                 'Unknown readiness capability. Use dictionary, texts, knowledge-actions, conversation, interview or sentences.',
             );
+        }
     }
+
     return registry
         .filter((capability) =>
             ids.length
@@ -122,12 +130,14 @@ export function validateLocalEnvironment(env) {
             'Use an explicit development or test APP_ENV. Production is refused.',
         );
     }
+
     let url;
     try {
         url = new URL(env.DATABASE_URL);
     } catch {
         throw new Error('DATABASE_URL must be a valid local PostgreSQL URL.');
     }
+
     if (
         !['postgres:', 'postgresql:'].includes(url.protocol) ||
         !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
@@ -138,12 +148,14 @@ export function validateLocalEnvironment(env) {
             'DATABASE_URL must use loopback PostgreSQL without query overrides.',
         );
     }
+
     const database = decodeURIComponent(url.pathname.slice(1));
     if (!database || (env.POSTGRES_DB && env.POSTGRES_DB !== database)) {
         throw new Error(
             'DATABASE_URL database must match POSTGRES_DB when supplied.',
         );
     }
+
     return { host: url.hostname, port: url.port || '5432', database };
 }
 
@@ -165,6 +177,7 @@ export function evaluateReadiness(
                 const routes = policy
                     ? [policy.primaryRouteId, ...policy.fallbackRouteIds]
                     : [null];
+
                 for (const routeId of routes) {
                     const item = { ...capability, formats: [format], routeId };
                     const key = `${routeId ?? 'unconfigured'}/${flow}`;
@@ -172,6 +185,7 @@ export function evaluateReadiness(
                 }
             }
         }
+
         return [...groups.entries()].flatMap(([model, capabilities]) =>
             evaluateReadiness(snapshot, env, phase, capabilities, true).map(
                 (check) => ({
@@ -181,6 +195,7 @@ export function evaluateReadiness(
             ),
         );
     }
+
     const results = [];
     const check = (id, ok, message, remedy) =>
         results.push({
@@ -188,12 +203,14 @@ export function evaluateReadiness(
             status: ok ? 'pass' : 'blocked',
             message: ok ? message : remedy,
         });
+
     check(
         'routing',
         env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED === 'true',
         'Managed AI routing enabled.',
         'Set DICTIONARY_AI_MANAGED_ROUTING_ENABLED=true and restart backend and workers.',
     );
+
     const configuration = snapshot.routing?.configuration;
     check(
         'model',
@@ -201,6 +218,7 @@ export function evaluateReadiness(
         'Admin routing is published.',
         'Admin → AI routing: publish a default route and flow overrides after successful checks. Legacy learner/default model settings do not authorize new work.',
     );
+
     const model = selectedModel(snapshot, registry[0]);
     const modelId = model?.id;
     const providerId = model?.providerId;
@@ -221,7 +239,8 @@ export function evaluateReadiness(
         'Selected flow route is enabled and reviewed.',
         'Admin → AI routing: enable a reviewed compatible primary/fallback route; retired routes cannot run. EvoLink learner processing remains blocked pending its processing/privacy review.',
     );
-    if (model)
+
+    if (model) {
         check(
             'credential',
             Boolean(env[model.credentialReference]?.trim()) ||
@@ -231,6 +250,8 @@ export function evaluateReadiness(
             'Provider credential is configured (value hidden).',
             `Configure ${model.credentialReference} in the ignored backend/worker environment and restart. Never paste keys into reports.`,
         );
+    }
+
     const evidence = probeEvidence(snapshot, env, registry[0], model);
     check(
         'flow-check',
@@ -244,9 +265,11 @@ export function evaluateReadiness(
                 : 'Admin → AI routing: select this route and Test selected flow, then explicitly approve its operator expense and run the check.'
         } Do not change routing or add API keys merely to refresh evidence. Rerun pnpm dev:doctor after recovery.`,
     );
+
     const price = snapshot.prices.find(
         (p) => p.model_id === modelId && p.provider_id === providerId,
     );
+
     check(
         'provider-price',
         price?.data?.inputUsdPerMillionTokens != null &&
@@ -256,6 +279,7 @@ export function evaluateReadiness(
         'Effective provider input/output/cache prices exist.',
         'Admin → Accounting → Provider prices: publish current text-token input/output and required cache-read prices for the selected model. Future-dated prices are not active.',
     );
+
     check(
         'customer-tariff',
         registry.every(
@@ -270,6 +294,7 @@ export function evaluateReadiness(
         'Paid flow customer tariff exists; free flows need no learner tariff.',
         'Admin → AI routing: publish a per-flow customer tariff for every paid flow. Model-specific legacy tariffs do not satisfy this requirement.',
     );
+
     const settings = snapshot.settings;
     check(
         'budgets',
@@ -287,25 +312,30 @@ export function evaluateReadiness(
         'Application and operator budgets configured.',
         'Admin → Accounting: set default action credits and all three positive operator USD limits.',
     );
+
     const override = env.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS?.trim();
     const configuredFormats = override ? override.split(',') : [];
     for (const capability of registry) {
-        if (capability.flag)
+        if (capability.flag) {
             check(
                 `${capability.id}:enabled`,
                 capabilityEnabled(capability, env),
                 'Capability admission enabled.',
                 `Set ${capability.flag}=true to enable the requested capability.`,
             );
+        }
+
         const missing = capability.formats.filter(
             (f) => !configuredFormats.includes(f),
         );
+
         check(
             `${capability.id}:environment`,
             missing.length === 0,
             'Worker format override permits this capability.',
             `DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS lacks ${missing.join(', ')}. Add these formats to the comma-separated list without spaces; restart workers.`,
         );
+
         if (phase === 'runtime') {
             const absent = capability.formats.filter(
                 (format) =>
@@ -313,6 +343,7 @@ export function evaluateReadiness(
                         workerSupports(worker, model, capability, format),
                     ),
             );
+
             check(
                 `${capability.id}:worker`,
                 absent.length === 0,
@@ -321,6 +352,7 @@ export function evaluateReadiness(
             );
         }
     }
+
     if (snapshot.learnerRequested) {
         check(
             'learner',
@@ -328,6 +360,7 @@ export function evaluateReadiness(
             'Requested learner exists.',
             'Create the requested local learner account first.',
         );
+
         if (
             snapshot.learner &&
             !snapshot.learner.unlimited &&
@@ -342,6 +375,7 @@ export function evaluateReadiness(
                 'Learner action budget permits paid work.',
                 'Learner → AI settings: set a positive maximum credits per action.',
             );
+
             const milli = BigInt(snapshot.learner.available_milli ?? '0');
             check(
                 'learner-balance',
@@ -353,5 +387,6 @@ export function evaluateReadiness(
             );
         }
     }
+
     return results;
 }

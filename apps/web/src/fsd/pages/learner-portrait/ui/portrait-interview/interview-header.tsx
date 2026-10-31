@@ -39,9 +39,11 @@ export function InterviewHeader({
     function toggle() {
         setExpanded((value) => !value);
     }
+
     function changeLocale(event: ChangeEvent<HTMLSelectElement>) {
         onLocale(event.target.value as InterviewLocale);
     }
+
     const topics =
         update || topic === 'hobbies' || topic === 'age'
             ? interviewAllTopics
@@ -57,6 +59,7 @@ export function InterviewHeader({
         { value: 'fr', label: 'Français' },
         { value: 'es', label: 'Español' },
     ];
+
     return (
         <header className={styles.header}>
             <div className={styles.headerInner}>
@@ -79,10 +82,14 @@ export function InterviewHeader({
                         <span className={styles.dots} aria-hidden>
                             {topics.map((value) => {
                                 let dotClass = styles.dot;
-                                if (completed.includes(value))
+                                if (completed.includes(value)) {
                                     dotClass = styles.dotComplete;
-                                if (value === topic)
+                                }
+
+                                if (value === topic) {
                                     dotClass = styles.dotCurrent;
+                                }
+
                                 return (
                                     <span key={value} className={dotClass} />
                                 );

@@ -12,6 +12,7 @@ const identifier = z.string().trim().min(1).max(200);
 const canonicalDecimal = (value: string) => {
     const [integer, fractional = ''] = value.split('.');
     const digits = fractional.replace(/0+$/, '');
+
     return digits ? `${integer}.${digits}` : integer;
 };
 // JS and database evaluation share millisecond precision; finer boundaries must not be rounded silently.
@@ -69,6 +70,7 @@ const dispatchWindow = z
         (value) => Date.parse(value.from) < Date.parse(value.until),
         'Dispatch window must be nonempty.',
     );
+
 export const ProviderNativeVariantSchema = z
     .object({
         id: identifier,
@@ -222,30 +224,45 @@ export function nativeProviderPricingMatchesMeter(
                 : meter === 'audio-duration'
                   ? ['audioInputMilliseconds', 'requests']
                   : [];
+
     return rules.variants.every((variant) => {
         const meters = new Set(
             variant.components.map((component) => component.meter),
         );
+
         if (
             variant.components.some(
                 (component) => !allowed.includes(component.meter),
             )
-        )
+        ) {
             return false;
+        }
+
         // A provider may bill a fixed amount per request irrespective of usage.
-        if (allowed.length && meters.size === 1 && meters.has('requests'))
+        if (allowed.length && meters.size === 1 && meters.has('requests')) {
             return true;
-        if (meter === 'text-tokens')
+        }
+
+        if (meter === 'text-tokens') {
             return (
                 (meters.has('inputTokens') ||
                     meters.has('uncachedInputTokens')) &&
                 meters.has('outputTokens')
             );
-        if (meter === 'speech-characters') return meters.has('characters');
-        if (meter === 'speech-tokens')
+        }
+
+        if (meter === 'speech-characters') {
+            return meters.has('characters');
+        }
+
+        if (meter === 'speech-tokens') {
             return meters.has('inputTokens') && meters.has('audioOutputTokens');
-        if (meter === 'audio-duration')
+        }
+
+        if (meter === 'audio-duration') {
             return meters.has('audioInputMilliseconds');
+        }
+
         return false;
     });
 }
@@ -293,14 +310,24 @@ export const ProviderAudioDurationBoundSchema = z
 export function providerSecondsToAudioMilliseconds(
     seconds: number,
 ): number | null {
-    if (!Number.isFinite(seconds) || seconds < 0) return null;
+    if (!Number.isFinite(seconds) || seconds < 0) {
+        return null;
+    }
+
     const decimal = seconds.toString();
-    if (!/^\d+(?:\.\d+)?$/u.test(decimal)) return null;
+    if (!/^\d+(?:\.\d+)?$/u.test(decimal)) {
+        return null;
+    }
+
     const [whole = '0', rawFraction = ''] = decimal.split('.');
     const fraction = rawFraction.replace(/0+$/u, '');
-    if (fraction.length > 3) return null;
+    if (fraction.length > 3) {
+        return null;
+    }
+
     const milliseconds =
         BigInt(whole) * 1000n + BigInt(fraction.padEnd(3, '0') || '0');
+
     return milliseconds <= BigInt(Number.MAX_SAFE_INTEGER)
         ? Number(milliseconds)
         : null;

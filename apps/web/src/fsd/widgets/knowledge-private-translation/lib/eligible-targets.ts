@@ -16,6 +16,7 @@ export function eligiblePrivateTranslationTargets(
             ...TextLanguageSchema.options,
         ]),
     ];
+
     return candidates.filter(
         (language) => !existing.has(language.toLowerCase()),
     );

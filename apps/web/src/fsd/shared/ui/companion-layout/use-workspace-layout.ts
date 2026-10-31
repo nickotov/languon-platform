@@ -16,16 +16,22 @@ export function useWorkspaceLayout(
     const [inline, setInline] = useState(false);
     const [mobile, setMobile] = useState(false);
     useEffect(() => {
-        if (!workspace) return;
+        if (!workspace) {
+            return;
+        }
+
         try {
             const value: unknown = JSON.parse(
                 localStorage.getItem(key) ?? 'null',
             );
-            if (value === 'focus' || value === 'split' || value === 'chat')
+
+            if (value === 'focus' || value === 'split' || value === 'chat') {
                 setModeState(value);
+            }
         } catch {
             /* Storage may be unavailable. */
         }
+
         setReady(true);
         const query = window.matchMedia('(min-width: 1024px)');
         const update = () => {
@@ -36,33 +42,45 @@ export function useWorkspaceLayout(
                 query.matches &&
                 (root.current?.getBoundingClientRect().width ?? 0) >=
                     font * 51.25;
+
             setInline(fits);
             setAllowChatLayout(fits);
             setMobile(window.matchMedia('(max-width: 767px)').matches);
         };
+
         update();
         const observer = new ResizeObserver(update);
-        if (root.current) observer.observe(root.current);
+        if (root.current) {
+            observer.observe(root.current);
+        }
+
         query.addEventListener('change', update);
         const small = window.matchMedia('(max-width: 767px)');
         small.addEventListener('change', update);
+
         return () => {
             observer.disconnect();
             query.removeEventListener('change', update);
             small.removeEventListener('change', update);
         };
     }, [workspace, root]);
+
     useEffect(() => {
-        if (!workspace || !ready) return;
+        if (!workspace || !ready) {
+            return;
+        }
+
         try {
             localStorage.setItem(key, JSON.stringify(mode));
         } catch {
             /* The current session still works without storage. */
         }
     }, [workspace, ready, mode]);
+
     const setMode = useCallback((value: WorkspaceLayoutMode) => {
         setModeState(value);
     }, []);
+
     return {
         mode: mode === 'chat' && !allowChatLayout ? 'split' : mode,
         setMode,

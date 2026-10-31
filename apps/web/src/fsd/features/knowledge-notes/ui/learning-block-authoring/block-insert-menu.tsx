@@ -37,6 +37,7 @@ export function BlockInsertMenu({
         function choose() {
             onChoose(kind);
         }
+
         return {
             label: labels.view.kinds[kind],
             disabled,
@@ -50,6 +51,7 @@ export function BlockInsertMenu({
             {labels.add}
         </>
     );
+
     return (
         <Menu
             label={labels.add}

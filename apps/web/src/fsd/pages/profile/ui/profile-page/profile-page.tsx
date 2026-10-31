@@ -90,7 +90,7 @@ export function ProfilePage() {
     }
 
     if (status === 'signed-out' || !user) {
-        if (deletionReceipt)
+        if (deletionReceipt) {
             return (
                 <main className={styles.centered}>
                     <Card className={styles.signedOut} variant='outlined'>
@@ -111,6 +111,7 @@ export function ProfilePage() {
                     </Card>
                 </main>
             );
+        }
 
         return (
             <main className={styles.centered}>
@@ -165,6 +166,7 @@ function AuthenticatedProfile({
         () => preferenceNavigation.setDirty(modelDirty || chatDirty),
         [modelDirty, chatDirty, preferenceNavigation.setDirty],
     );
+
     const modelCopy = preferenceCopy(locale);
 
     const router = useRouter();
@@ -183,8 +185,12 @@ function AuthenticatedProfile({
 
     function navigateTab(value: ProfileTab) {
         const nextParams = new URLSearchParams(searchParams.toString());
-        if (value === 'account') nextParams.delete('tab');
-        else nextParams.set('tab', value);
+        if (value === 'account') {
+            nextParams.delete('tab');
+        } else {
+            nextParams.set('tab', value);
+        }
+
         const query = nextParams.toString();
         router.replace(href(`/profile${query ? `?${query}` : ''}`), {
             scroll: false,
@@ -192,7 +198,10 @@ function AuthenticatedProfile({
     }
 
     function handleTabChange(value: string) {
-        if (!isProfileTab(value) || value === activeTab) return;
+        if (!isProfileTab(value) || value === activeTab) {
+            return;
+        }
+
         preferenceNavigation.request(() => navigateTab(value));
     }
 

@@ -57,14 +57,17 @@ describe('Workbook independent content copies', () => {
             first?.type !== 'bilingual-text' ||
             exercise?.type !== 'exercise' ||
             exercise.format !== 'multiple-choice'
-        )
+        ) {
             throw new Error('Unexpected fixture');
+        }
+
         expect(first.segments[0]?.text).toBe(blockId);
         expect(exercise.source?.blockId).toBe(first.id);
         expect(exercise.source?.segmentIds).toEqual([first.segments[0]?.id]);
         expect(exercise.correctChoiceId).toBe(exercise.choices[0]?.id);
         expect(exercise.correctChoiceId).not.toBe(choiceId);
     });
+
     it('copies unprepared audio without fabricating an asset grant', () => {
         const blockId = randomUUID();
         const body = KnowledgeBodySchema.parse({
@@ -91,6 +94,7 @@ describe('Workbook independent content copies', () => {
             type: 'audio',
             sourceText: 'Listen later.',
         });
+
         expect(copy).not.toHaveProperty('assetId');
     });
 
@@ -123,8 +127,10 @@ describe('Workbook independent content copies', () => {
         );
         const first = copied?.[0];
         const second = copied?.[1];
-        if (first?.type !== 'exercise' || second?.type !== 'exercise')
+        if (first?.type !== 'exercise' || second?.type !== 'exercise') {
             throw new Error('Unexpected fixture');
+        }
+
         expect(first.group?.id).not.toBe(groupId);
         expect(second.group?.id).toBe(first.group?.id);
         expect(first.group?.title).toBe(groupId);
@@ -153,6 +159,7 @@ describe('Workbook independent content copies', () => {
                 ],
             },
         });
+
         expect(() => copyWorkbookBody(body)).toThrow(
             'independent asset ownership',
         );

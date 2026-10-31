@@ -39,15 +39,19 @@ async function main() {
             'Speech credit fixtures require a disposable loopback E2E database.',
         );
     }
+
     const sql = createPostgresClient({
         databaseUrl: url.href,
         maxConnections: 1,
     });
+
     try {
         const database = drizzle(sql, { schema: databaseSchema });
         if (input.action === 'setup' || input.action === 'setup-provider') {
-            if (input.action === 'setup')
+            if (input.action === 'setup') {
                 await seedLegacyActionFixture(database);
+            }
+
             const at = new Date('2026-01-01T00:00:00.000Z');
             const [customer] = await database
                 .select()
@@ -60,7 +64,8 @@ async function main() {
                 )
                 .orderBy(desc(customerPrices.version))
                 .limit(1);
-            if (customer?.rates.minimumCredits !== 0.125)
+
+            if (customer?.rates.minimumCredits !== 0.125) {
                 await database.insert(customerPrices).values({
                     id: randomUUID(),
                     providerId: 'fixture',
@@ -78,6 +83,8 @@ async function main() {
                         provisional: true,
                     },
                 });
+            }
+
             const [provider] = await database
                 .select()
                 .from(providerPrices)
@@ -90,7 +97,8 @@ async function main() {
                 )
                 .orderBy(desc(providerPrices.version))
                 .limit(1);
-            if (!provider)
+
+            if (!provider) {
                 await database.insert(providerPrices).values({
                     id: randomUUID(),
                     providerId: 'fixture',
@@ -115,11 +123,14 @@ async function main() {
                         reason: 'Synthetic reviewed pronunciation provider price',
                     },
                 });
+            }
         }
+
         const summary = await database.transaction(async (transaction) => {
             const participant = new DrizzleAiCreditTransactionParticipant(
                 transaction,
             );
+
             if (input.action === 'grant') {
                 await participant.issueGrant({
                     ownerId: input.ownerId,
@@ -130,19 +141,23 @@ async function main() {
                     sourceReference: `speech-e2e-finite:${input.ownerId}`,
                 });
             }
+
             const result = await participant.accountSummary(
                 input.ownerId,
                 new Date(),
             );
+
             if (result.policy.effectiveMode !== 'limited') {
                 throw new Error('Paid speech E2E requires a finite wallet.');
             }
+
             return {
                 availableCredits: formatCreditMilli(result.availableCredits),
                 consumedCredits: formatCreditMilli(result.consumedCredits),
                 reservedCredits: formatCreditMilli(result.reservedCredits),
             };
         });
+
         process.stdout.write(JSON.stringify(summary));
     } finally {
         await sql.end();

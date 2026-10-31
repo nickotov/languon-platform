@@ -91,24 +91,30 @@ export const KnowledgeNoteForm = forwardRef<
     const [editorValid, setEditorValid] = useState(true);
     const valid =
         editorValid && KnowledgeNoteContentSchema.safeParse(value).success;
+
     useEffect(() => {
         onValidityChange?.(valid);
     }, [onValidityChange, valid]);
+
     function field<Key extends keyof KnowledgeWorkingContent>(
         key: Key,
         next: KnowledgeWorkingContent[Key],
     ) {
         onChange((current) => ({ ...current, [key]: next }));
     }
+
     function changeTitle(event: ChangeEvent<HTMLInputElement>) {
         field('title', event.target.value);
     }
+
     function changeWorkspaceTitle(title: string) {
         field('title', title);
     }
+
     function changeBody(body: KnowledgeWorkingContent['body']) {
         field('body', body);
     }
+
     function focusDocument(event: MouseEvent<HTMLElement>) {
         if (workspace && event.target === event.currentTarget) {
             event.currentTarget
@@ -116,11 +122,13 @@ export const KnowledgeNoteForm = forwardRef<
                 ?.focus();
         }
     }
+
     const EditorContainer = workspace ? 'article' : 'div';
     const formClassName = workspace ? styles.workspaceForm : styles.form;
     const explanationClassName = workspace
         ? styles.article
         : styles.explanation;
+
     return (
         <div className={formClassName}>
             {!workspace && (

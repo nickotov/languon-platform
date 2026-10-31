@@ -36,7 +36,10 @@ async function view(tx: TextsTransaction, job: TextsJobRow) {
             and(eq(sources.jobId, job.id), eq(sources.actorId, job.ownerId)),
         );
 
-    if (!source) throw new TextsAiError('generation_job_not_found');
+    if (!source) {
+        throw new TextsAiError('generation_job_not_found');
+    }
+
     const state =
         job.executionState === 'completed' && job.cancellationRequestedAt
             ? 'cancelled'
@@ -95,8 +98,10 @@ export class DrizzleKnowledgeExerciseEvaluationStore {
                     previous.source.attemptId !== request.attemptId ||
                     previous.source.input.replyLanguage !==
                         (request.replyLanguage ?? 'en')
-                )
+                ) {
                     throw new TextsAiError('idempotency_conflict');
+                }
+
                 await authorizeKnowledgeExerciseJobSource(tx, {
                     ownerId: actorId,
                     knowledgeExerciseEvaluation: previous.source.input,
@@ -166,8 +171,9 @@ export class DrizzleKnowledgeExerciseEvaluationStore {
         return transaction(this.persistence, async (tx) => {
             await this.authorize(tx, actorId, noteId, jobId, access);
             const job = await find(this.persistence, tx, actorId, jobId);
-            if (job.expiresAt <= context.now)
+            if (job.expiresAt <= context.now) {
                 throw new TextsAiError('generation_proposal_expired');
+            }
 
             return view(tx, job);
         });
@@ -219,7 +225,10 @@ export class DrizzleKnowledgeExerciseEvaluationStore {
                 ),
             );
 
-        if (!source) throw new TextsAiError('generation_job_not_found');
+        if (!source) {
+            throw new TextsAiError('generation_job_not_found');
+        }
+
         await authorizeKnowledgeExerciseJobSource(tx, {
             ownerId: actorId,
             id: jobId,

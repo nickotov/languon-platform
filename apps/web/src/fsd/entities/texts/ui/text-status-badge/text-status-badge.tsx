@@ -30,6 +30,7 @@ export function TextStatusBadge({
           : status === 'edited'
             ? t('texts.manage.edited')
             : t('texts.manage.translated');
+
     return (
         <Badge
             size='sm'

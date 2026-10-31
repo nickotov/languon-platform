@@ -94,8 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(
         () =>
             coordinator.subscribe((outcome) => {
-                if (outcome) authenticate(outcome);
-                else signOut();
+                if (outcome) {
+                    authenticate(outcome);
+                } else {
+                    signOut();
+                }
             }),
         [authenticate, signOut],
     );
@@ -118,7 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        if (bootstrapped.current) return;
+        if (bootstrapped.current) {
+            return;
+        }
 
         bootstrapped.current = true;
 
@@ -153,7 +158,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             let ownerId = useSessionStore.getState().user?.id ?? null;
             let token = currentAccessToken();
 
-            if (!token) token = (await refreshSession())?.accessToken ?? null;
+            if (!token) {
+                token = (await refreshSession())?.accessToken ?? null;
+            }
 
             ownerId ??= useSessionStore.getState().user?.id ?? null;
             function assertOwner() {
@@ -181,18 +188,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 const result = await operation(token);
                 assertOwner();
+
                 return result;
             } catch (error) {
                 assertOwner();
-                if (!isAuthenticationRequiredError(error)) throw error;
+                if (!isAuthenticationRequiredError(error)) {
+                    throw error;
+                }
 
                 const refreshed = await refreshSession();
 
-                if (!refreshed) throw error;
+                if (!refreshed) {
+                    throw error;
+                }
 
                 assertOwner();
                 const result = await operation(refreshed.accessToken);
                 assertOwner();
+
                 return result;
             }
         },
@@ -210,7 +223,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOutEverywhere = useCallback(async () => {
         let token = currentAccessToken();
 
-        if (!token) token = (await refreshSession())?.accessToken ?? null;
+        if (!token) {
+            token = (await refreshSession())?.accessToken ?? null;
+        }
 
         if (!token) {
             throw new AuthApiError(401, {
@@ -264,7 +279,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextValue {
     const context = useContext(AuthContext);
 
-    if (!context) throw new Error('useAuth must be used within AuthProvider');
+    if (!context) {
+        throw new Error('useAuth must be used within AuthProvider');
+    }
 
     return context;
 }

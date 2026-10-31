@@ -14,7 +14,10 @@ export async function readActionBilling(
         .where(and(eq(actions.id, actionId), eq(actions.ownerId, ownerId)))
         .limit(1);
 
-    if (!action) return undefined;
+    if (!action) {
+        return undefined;
+    }
+
     const free =
         action.funding !== 'customer' ||
         (action.heldMilli === 0n &&

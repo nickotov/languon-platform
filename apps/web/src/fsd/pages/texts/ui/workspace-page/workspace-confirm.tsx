@@ -40,6 +40,7 @@ export function WorkspaceConfirm({
         description = copy('conflictHint');
         confirm = copy('keepMine');
     }
+
     async function accept() {
         if (kind === 'close') {
             if (ws.proposal) {
@@ -49,32 +50,52 @@ export function WorkspaceConfirm({
                     return;
                 }
             }
+
             if (running) {
                 try {
-                    if (ws.cancelAi) await ws.cancelAi();
-                    else await ws.translation.cancel();
+                    if (ws.cancelAi) {
+                        await ws.cancelAi();
+                    } else {
+                        await ws.translation.cancel();
+                    }
                 } catch {
                     return;
                 }
             }
+
             onLeave();
+
             return;
         }
+
         if (kind === 'retranslate') {
             onClose();
             await ws.translate();
+
             return;
         }
+
         if (kind === 'conflict') {
-            if (await ws.save(true)) onClose();
+            if (await ws.save(true)) {
+                onClose();
+            }
+
             return;
         }
-        if (kind === 'cancel-edit') ws.cancelEdit();
-        else await ws.discardProposal();
+
+        if (kind === 'cancel-edit') {
+            ws.cancelEdit();
+        } else {
+            await ws.discardProposal();
+        }
+
         onClose();
     }
+
     async function saveClose() {
-        if (await ws.save()) onLeave();
+        if (await ws.save()) {
+            onLeave();
+        }
     }
 
     function newer() {

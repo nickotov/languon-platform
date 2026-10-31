@@ -13,9 +13,16 @@ export function WorkbookProgress(
     function reload() {
         void query.refetch();
     }
-    if (!props.actorId) return null;
-    if (query.isPending) return <LoadingState>{labels.loading}</LoadingState>;
-    if (query.isError)
+
+    if (!props.actorId) {
+        return null;
+    }
+
+    if (query.isPending) {
+        return <LoadingState>{labels.loading}</LoadingState>;
+    }
+
+    if (query.isError) {
         return (
             <InlineAlert
                 tone='error'
@@ -24,6 +31,8 @@ export function WorkbookProgress(
                 {labels.loadError}
             </InlineAlert>
         );
+    }
+
     return (
         <section className={styles.panel} aria-label={labels.workbookProgress}>
             <p>{labels.private}</p>

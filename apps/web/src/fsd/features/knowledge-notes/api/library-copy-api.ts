@@ -57,6 +57,7 @@ async function request<T>(
         const payload: unknown = await response.json();
         if (!response.ok) {
             const parsed = c.KnowledgeErrorResponseSchema.safeParse(payload);
+
             throw new KnowledgeApiError(
                 response.status,
                 parsed.success
@@ -68,9 +69,11 @@ async function request<T>(
                       },
             );
         }
+
         return schema.parse(payload);
     });
 }
+
 export const libraryCopyApi = {
     previewVocabulary: (
         context: KnowledgeLibraryContext,

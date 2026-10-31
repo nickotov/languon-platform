@@ -45,11 +45,13 @@ export class DrizzleKnowledgeMediaStore implements KnowledgeMediaStore {
             if (
                 quota!.count >= 50 ||
                 quota!.bytes + audio.bytes.length > 25 * 1024 * 1024
-            )
+            ) {
                 throw new KnowledgeDomainError(
                     'invalid_request',
                     'This note has reached its audio storage allowance.',
                 );
+            }
+
             const blobId = randomUUID(),
                 id = randomUUID();
 
@@ -83,20 +85,20 @@ export class DrizzleKnowledgeMediaStore implements KnowledgeMediaStore {
     ): Promise<VerifiedKnowledgeAudio> {
         return this.database.transaction(async (tx) => {
             let note;
-            if (authority.ownerId && !authority.access)
+            if (authority.ownerId && !authority.access) {
                 note = await getOwnedKnowledgeRow(
                     tx,
                     authority.ownerId,
                     noteId,
                 );
-            else if (authority.access?.kind === 'workbook')
+            } else if (authority.access?.kind === 'workbook') {
                 note = await readWorkbookSharedNote(
                     tx,
                     this.crypto,
                     noteId,
                     authority.access,
                 );
-            else if (authority.access?.kind === 'note') {
+            } else if (authority.access?.kind === 'note') {
                 note = await shared(
                     { shareCrypto: this.crypto },
                     tx,
@@ -104,13 +106,20 @@ export class DrizzleKnowledgeMediaStore implements KnowledgeMediaStore {
                     authority.access.key,
                 );
 
-                if (note.id !== noteId) throw knowledgeUnavailable();
-            } else throw knowledgeUnavailable();
+                if (note.id !== noteId) {
+                    throw knowledgeUnavailable();
+                }
+            } else {
+                throw knowledgeUnavailable();
+            }
+
             if (
                 authority.access &&
                 !knowledgeAudioAssetIds(note.body).includes(assetId)
-            )
+            ) {
                 throw knowledgeUnavailable();
+            }
+
             const [row] = await tx
                 .select({
                     bytes: blobs.bytes,
@@ -121,7 +130,9 @@ export class DrizzleKnowledgeMediaStore implements KnowledgeMediaStore {
                 .innerJoin(blobs, eq(assets.blobId, blobs.id))
                 .where(and(eq(assets.id, assetId), eq(assets.noteId, noteId)));
 
-            if (!row) throw knowledgeUnavailable();
+            if (!row) {
+                throw knowledgeUnavailable();
+            }
 
             return row;
         });

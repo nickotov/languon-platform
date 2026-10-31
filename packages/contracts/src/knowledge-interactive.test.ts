@@ -62,9 +62,11 @@ describe('interactive knowledge document compatibility and safety', () => {
                     ],
                 },
             };
+
             expect(KnowledgeBodySchema.parse(value)).toEqual(value);
         },
     );
+
     it.each([1, 2])(
         'keeps rule leaves, placement, heading attributes and limits strict in body version %i',
         (schemaVersion) => {
@@ -73,6 +75,7 @@ describe('interactive knowledge document compatibility and safety', () => {
                     schemaVersion,
                     document: { type: 'doc', content },
                 }).success;
+
             for (const invalid of [
                 { type: 'horizontalRule', attrs: {} },
                 { type: 'horizontalRule', attrs: { style: 'color:red' } },
@@ -95,8 +98,10 @@ describe('interactive knowledge document compatibility and safety', () => {
                     content: [{ type: 'horizontalRule' }],
                 },
                 { type: 'bulletList', content: [{ type: 'horizontalRule' }] },
-            ])
+            ]) {
                 expect(parse([invalid])).toBe(false);
+            }
+
             expect(
                 parse(
                     Array.from({ length: 5_001 }, () => ({
@@ -104,6 +109,7 @@ describe('interactive knowledge document compatibility and safety', () => {
                     })),
                 ),
             ).toBe(false);
+
             expect(
                 parse([
                     {
@@ -115,18 +121,22 @@ describe('interactive knowledge document compatibility and safety', () => {
             ).toBe(false);
         },
     );
+
     it('retains v1 round trips unchanged', () => {
         const legacy = {
             schemaVersion: 1,
             document: { type: 'doc', content: [paragraph] },
         };
+
         expect(KnowledgeBodySchema.parse(legacy)).toEqual(legacy);
         expect(LegacyKnowledgeBodySchema.parse(legacy)).toEqual(legacy);
     });
+
     it('round trips mixed prose and typed learning blocks', () => {
         const input = body([paragraph, node(audio), node(exercise)]);
         expect(KnowledgeBodySchema.parse(input)).toEqual(input);
     });
+
     it('allows a source block later in the document', () => {
         expect(
             InteractiveKnowledgeBodySchema.safeParse(
@@ -134,10 +144,12 @@ describe('interactive knowledge document compatibility and safety', () => {
             ).success,
         ).toBe(true);
     });
+
     it('keeps legacy proposal authority constrained to v1', () => {
         expect(
             LegacyKnowledgeBodySchema.safeParse(body([node(audio)])).success,
         ).toBe(false);
+
         expect(
             LegacyKnowledgeNoteContentSchema.safeParse({
                 title: 'Test',
@@ -148,6 +160,7 @@ describe('interactive knowledge document compatibility and safety', () => {
                 body: body([node(audio)]),
             }).success,
         ).toBe(false);
+
         expect(
             KnowledgeBodySchema.safeParse({
                 schemaVersion: 1,
@@ -155,6 +168,7 @@ describe('interactive knowledge document compatibility and safety', () => {
             }).success,
         ).toBe(false);
     });
+
     it('requires consistent titles for one exercise group without replacing question identities', () => {
         const first = {
             ...exercise,
@@ -166,6 +180,7 @@ describe('interactive knowledge document compatibility and safety', () => {
                 body([node(audio), node(first), node(second)]),
             ).success,
         ).toBe(true);
+
         expect(
             KnowledgeBodySchema.safeParse(
                 body([
@@ -186,31 +201,37 @@ describe('interactive knowledge document compatibility and safety', () => {
                 .success,
         ).toBe(false);
     });
+
     it('rejects missing and wrong-type exercise source references', () => {
         expect(
             KnowledgeBodySchema.safeParse(body([node(exercise)])).success,
         ).toBe(false);
+
         const wrong = {
             type: 'grammar',
             id: audioId,
             language: 'en',
             rule: 'A rule',
         };
+
         expect(
             KnowledgeBodySchema.safeParse(body([node(wrong), node(exercise)]))
                 .success,
         ).toBe(false);
     });
+
     it('rejects nonexistent source segments', () => {
         const invalid = {
             ...exercise,
             source: { blockId: audioId, segmentIds: [exerciseId] },
         };
+
         expect(
             KnowledgeBodySchema.safeParse(body([node(audio), node(invalid)]))
                 .success,
         ).toBe(false);
     });
+
     it('rejects blocks nested in prose containers', () => {
         for (const container of [
             'paragraph',
@@ -225,12 +246,14 @@ describe('interactive knowledge document compatibility and safety', () => {
             ).toBe(false);
         }
     });
+
     it('rejects arbitrary attrs and child content on atomic blocks', () => {
         expect(
             KnowledgeBodySchema.safeParse(
                 body([{ ...node(audio), content: [paragraph] }]),
             ).success,
         ).toBe(false);
+
         expect(
             KnowledgeBodySchema.safeParse(
                 body([
@@ -241,12 +264,14 @@ describe('interactive knowledge document compatibility and safety', () => {
                 ]),
             ).success,
         ).toBe(false);
+
         expect(
             KnowledgeBodySchema.safeParse(
                 body([node({ ...audio, html: '<script>alert(1)</script>' })]),
             ).success,
         ).toBe(false);
     });
+
     it('preserves literal markup as text while rejecting executable media URLs', () => {
         const literal = body([
             {
@@ -254,6 +279,7 @@ describe('interactive knowledge document compatibility and safety', () => {
                 content: [{ type: 'text', text: '<script>alert(1)</script>' }],
             },
         ]);
+
         expect(KnowledgeBodySchema.parse(literal)).toEqual(literal);
         expect(
             KnowledgeBodySchema.safeParse(
@@ -267,6 +293,7 @@ describe('interactive knowledge document compatibility and safety', () => {
             ).success,
         ).toBe(false);
     });
+
     it('bounds cumulative block payload before recursive parsing', () => {
         const grammar = (id: string) =>
             node({
@@ -280,13 +307,16 @@ describe('interactive knowledge document compatibility and safety', () => {
                 `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
             ),
         );
+
         expect(KnowledgeBodySchema.safeParse(body(blocks)).success).toBe(false);
     });
+
     it('rejects cyclic inputs and invalid prose topology without stack overflow', () => {
         const cyclic: { type: string; content: unknown[] } = {
             type: 'doc',
             content: [],
         };
+
         cyclic.content.push(cyclic);
         expect(
             InteractiveKnowledgeBodySchema.safeParse({
@@ -294,6 +324,7 @@ describe('interactive knowledge document compatibility and safety', () => {
                 document: cyclic,
             }).success,
         ).toBe(false);
+
         expect(
             KnowledgeBodySchema.safeParse(
                 body([{ type: 'heading', attrs: { level: 9 }, content: [] }]),

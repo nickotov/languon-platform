@@ -38,6 +38,7 @@ export function isOfflineFailure(error: unknown): boolean {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         return true;
     }
+
     return (
         typeof error === 'object' &&
         error !== null &&

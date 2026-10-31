@@ -15,19 +15,23 @@ function execute(binary, args, options, input) {
             args,
             options,
             (error, stdout, stderr) => {
-                if (error)
+                if (error) {
                     reject(
                         new Error(
                             `PostgreSQL role verification failed: ${stderr}`,
                             { cause: error },
                         ),
                     );
-                else resolve({ stdout });
+                } else {
+                    resolve({ stdout });
+                }
             },
         );
+
         child.stdin.end(input);
     });
 }
+
 const databaseUrl = process.env.SPEECH_DEPLOY_ROLE_TEST_DATABASE_URL;
 
 // Explicit opt-in against the isolated, migrated authentication/speech test DB.
@@ -172,9 +176,12 @@ ROLLBACK;
             .split('\n')
             .filter((line) => line.startsWith('{'))
             .map((line) => JSON.parse(line));
+
         assert.equal(rows.length, 5);
-        for (const row of rows)
-            for (const [capability, supported] of Object.entries(row))
+        for (const row of rows) {
+            for (const [capability, supported] of Object.entries(row)) {
                 assert.equal(supported, true, capability);
+            }
+        }
     },
 );

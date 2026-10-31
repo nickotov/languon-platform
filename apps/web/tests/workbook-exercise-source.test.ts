@@ -13,6 +13,7 @@ const exercise: LearningBlock = {
     explanation: 'Departure.',
     source: { blockId: mediaId, segmentIds: [segmentId] },
 };
+
 describe('exercise media source replay projection', () => {
     it.each([
         { kind: 'youtube' as const, videoId: 'abcdefghijk' },
@@ -55,6 +56,7 @@ describe('exercise media source replay projection', () => {
                     ],
                 },
             });
+
             expect(exerciseSource(exercise, body)).toMatchObject({
                 videoSource: source,
                 transcript: {
@@ -67,9 +69,11 @@ describe('exercise media source replay projection', () => {
                     ],
                 },
             });
+
             expect(exerciseSource(exercise, body).audioAssetId).toBeUndefined();
         },
     );
+
     it('does not create a playback descriptor without a resolvable media source', () => {
         const body = KnowledgeBodySchema.parse({
             schemaVersion: 2,
@@ -88,8 +92,10 @@ describe('exercise media source replay projection', () => {
                 ],
             },
         });
+
         expect(exerciseSource(exercise, body)).toEqual({});
     });
+
     it('projects selected bilingual originals in document order and includes only those passages in feedback', () => {
         const later = '44444444-4444-4444-8444-444444444444';
         const hidden = '55555555-5555-4555-8555-555555555555';
@@ -135,20 +141,26 @@ describe('exercise media source replay projection', () => {
                 { id: later, text: 'Second selected passage' },
             ],
         });
+
         expect(projected.videoSource).toBeUndefined();
         expect(projected.audioAssetId).toBeUndefined();
-        if (linked.type !== 'exercise') throw new Error('exercise required');
+        if (linked.type !== 'exercise') {
+            throw new Error('exercise required');
+        }
+
         const request = buildExerciseFeedbackRequest(
             linked,
             'My alternative answer',
             projected.block,
         );
+
         expect(request.prompt).toContain('First selected passage');
         expect(request.prompt).toContain('Second selected passage');
         expect(request.prompt).toContain('Primer pasaje');
         expect(request.prompt).not.toContain('UNSELECTED SECRET PASSAGE');
         expect(request.prompt).not.toContain('UNSELECTED TRANSLATION');
     });
+
     it('fails closed rather than showing a partially resolved bilingual hint', () => {
         const body = KnowledgeBodySchema.parse({
             schemaVersion: 2,
@@ -172,6 +184,7 @@ describe('exercise media source replay projection', () => {
                 ],
             },
         });
+
         expect(
             exerciseSource(
                 {

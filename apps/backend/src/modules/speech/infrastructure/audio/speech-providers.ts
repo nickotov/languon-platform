@@ -26,15 +26,18 @@ export class FixtureSpeechProvider implements SpeechSynthesisProvider {
             estimatedCostUnitsPerCharacter: 0,
         };
     }
+
     async submit(
         input: Parameters<SpeechSynthesisProvider['submit']>[0],
     ): Promise<SpeechSynthesisResult> {
         input.signal?.throwIfAborted();
+
         return {
             state: 'ready',
             audio: { ...createFixtureAudio(), durationMs: 1000 },
         };
     }
+
     async poll(): Promise<SpeechSynthesisResult> {
         throw new Error('Fixture tasks are synchronous.');
     }
@@ -77,8 +80,12 @@ export function findConfiguredSpeechProfile(
     profiles: Readonly<Record<string, SpeechProfile>>,
     language: string,
 ): SpeechProfile | null {
-    for (const key of [language, language.split('-')[0]!])
-        if (Object.hasOwn(profiles, key)) return profiles[key] ?? null;
+    for (const key of [language, language.split('-')[0]!]) {
+        if (Object.hasOwn(profiles, key)) {
+            return profiles[key] ?? null;
+        }
+    }
+
     return null;
 }
 
@@ -87,17 +94,22 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
     constructor(private readonly options: KieSpeechProviderOptions) {
         this.configurationId = options.configurationId;
     }
+
     supports(language: string): SpeechProfile | null {
         return findConfiguredSpeechProfile(this.options.profiles, language);
     }
+
     private assertProfile(profile: SpeechProfile) {
         if (
             profile.configurationId !== this.configurationId ||
             profile.provider !== 'kie'
-        )
+        ) {
             throw new Error('Unsupported speech configuration.');
+        }
+
         return resolveKieModelStrategy(profile);
     }
+
     private async request(
         path: string,
         signal: AbortSignal | undefined,
@@ -123,24 +135,33 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
         const reader = response.body?.getReader();
         let size = 0;
         const chunks: Uint8Array[] = [];
-        if (reader)
+        if (reader) {
             try {
                 while (true) {
                     const next = await reader.read();
-                    if (next.done) break;
+                    if (next.done) {
+                        break;
+                    }
+
                     size += next.value.length;
-                    if (size > 65536)
+                    if (size > 65536) {
                         throw new Error('Invalid provider response.');
+                    }
+
                     chunks.push(next.value);
                 }
             } finally {
                 await reader.cancel();
             }
+        }
+
         const parsed = envelopeSchema.parse(
             JSON.parse(Buffer.concat(chunks).toString('utf8')),
         );
+
         return { status: response.status, ...parsed };
     }
+
     async submit(
         input: Parameters<SpeechSynthesisProvider['submit']>[0],
     ): Promise<SpeechSynthesisResult> {
@@ -151,12 +172,15 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
                 input.text.length > 5000 ||
                 Array.from(input.text).length >
                     findSpeechModel('kie', input.profile.model)!.maxCharacters
-            )
+            ) {
                 throw new Error('Invalid input.');
+            }
+
             input.signal?.throwIfAborted();
         } catch {
             throw new SpeechSubmissionError('not_submitted', false);
         }
+
         try {
             const result = await this.request('createTask', input.signal, {
                 model: input.profile.model,
@@ -165,29 +189,38 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
                     input.profile,
                 ),
             });
+
             if (
                 [400, 401, 402, 404, 422, 429, 433, 455, 505].includes(
                     result.code,
                 ) &&
                 result.status < 500
-            )
+            ) {
                 throw new SpeechSubmissionError(
                     'not_submitted',
                     [429, 455].includes(result.code),
                 );
-            if (result.status !== 200 || result.code !== 200)
+            }
+
+            if (result.status !== 200 || result.code !== 200) {
                 throw new SpeechSubmissionError('unknown', false);
+            }
+
             return {
                 state: 'pending',
                 taskId: taskSchema.parse(result.data).taskId,
                 retryAfterMs: 2500,
             };
         } catch (error) {
-            if (error instanceof SpeechSubmissionError) throw error;
+            if (error instanceof SpeechSubmissionError) {
+                throw error;
+            }
+
             // A timeout/malformed success could have followed accepted paid work.
             throw new SpeechSubmissionError('unknown', false);
         }
     }
+
     async poll(
         input: Parameters<SpeechSynthesisProvider['poll']>[0],
     ): Promise<SpeechSynthesisResult> {
@@ -196,11 +229,19 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
             `recordInfo?taskId=${encodeURIComponent(input.taskId)}`,
             input.signal,
         );
-        if (result.status !== 200 || result.code !== 200)
+
+        if (result.status !== 200 || result.code !== 200) {
             throw new Error('Speech task status unavailable.');
+        }
+
         const data = statusSchema.parse(result.data);
-        if (data.taskId !== input.taskId || data.model !== input.profile.model)
+        if (
+            data.taskId !== input.taskId ||
+            data.model !== input.profile.model
+        ) {
             throw new Error('Mismatched speech task.');
+        }
+
         const observation =
             data.creditsConsumed === undefined
                 ? undefined
@@ -212,25 +253,31 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
                           ),
                       },
                   };
+
         if (data.state === 'fail') {
             const unavailable = ['429', '500', '502', '503', '504'].includes(
                 String(data.failCode),
             );
+
             throw new SpeechTaskFailedError(
                 unavailable ? 'provider_unavailable' : 'generation_failed',
                 observation,
             );
         }
-        if (data.state !== 'success')
+
+        if (data.state !== 'success') {
             return {
                 state: 'pending',
                 taskId: input.taskId,
                 retryAfterMs: 2500,
             };
+        }
+
         try {
             const urls = resultSchema.parse(
                 JSON.parse(data.resultJson ?? ''),
             ).resultUrls;
+
             return {
                 state: 'ready',
                 ...observation,
@@ -241,8 +288,10 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
                 ),
             };
         } catch (error) {
-            if (observation)
+            if (observation) {
                 throw new SpeechOutputUnavailableError(observation);
+            }
+
             throw error;
         }
     }
@@ -251,7 +300,9 @@ export class KieSpeechProvider implements SpeechSynthesisProvider {
 /** Kie reports JSON numbers; accept only its bounded, decimal credit observation. */
 function exactReportedCredits(value: number): string {
     const decimal = value.toString();
-    if (!/^(0|[1-9]\d{0,6})(\.\d{1,6})?$/.test(decimal))
+    if (!/^(0|[1-9]\d{0,6})(\.\d{1,6})?$/.test(decimal)) {
         throw new Error('Unsupported provider credit precision.');
+    }
+
     return decimal;
 }

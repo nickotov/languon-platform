@@ -42,14 +42,16 @@ export function preflightKnowledgeFieldAction(
             'utf8',
         ) +
         1024;
+
     if (
         inputBytes >
         Math.min(
             execution.perCallMaxInputTokens,
             budget.maxInputTokensPerAttempt,
         )
-    )
+    ) {
         throw new TextsAiError('model_capacity_exceeded');
+    }
 }
 
 export function validateKnowledgeFieldResult(
@@ -62,8 +64,10 @@ export function validateKnowledgeFieldResult(
         (result.status === 'suggested' &&
             input.field.kind === 'vocabulary' &&
             result.proposedValue.length > 2_000)
-    )
+    ) {
         throw new TextsProviderInvalidOutputError();
+    }
+
     return result;
 }
 
@@ -133,10 +137,13 @@ export async function runKnowledgeFieldAction(
                     /* Invalid reported usage remains unknown, never a fabricated zero. */
                 }
             }
+
             throw new TextsProviderInvalidOutputError(usage);
         }
+
         throw new ProviderExecutionError(error, call.execution.providerId);
     }
+
     call.signal.throwIfAborted();
     let usage;
     try {
@@ -147,13 +154,18 @@ export async function runKnowledgeFieldAction(
     } catch {
         throw new TextsProviderInvalidOutputError();
     }
-    if (result.error)
+
+    if (result.error) {
         throw new ProviderExecutionError(
             result.error,
             call.execution.providerId,
         );
-    if (result.tripwire || result.finishReason === 'length')
+    }
+
+    if (result.tripwire || result.finishReason === 'length') {
         throw new TextsProviderInvalidOutputError(usage);
+    }
+
     try {
         return {
             draft: validateKnowledgeFieldResult(input, result.object),

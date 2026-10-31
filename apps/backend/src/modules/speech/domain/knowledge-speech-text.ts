@@ -9,17 +9,21 @@ export function knowledgeNarrationText(
 ) {
     let text = '',
         language: string | null = null;
+
     if (block.type === 'bilingual-text') {
         text = block.segments.map((segment) => segment.text).join('\n');
         language = block.language;
     }
+
     if (block.type === 'vocabulary') {
         text = block.entries
             .flatMap((entry) => [entry.term, entry.example ?? ''])
             .filter(Boolean)
             .join('\n');
+
         language = block.language;
     }
+
     if (block.type === 'grammar') {
         if (block.examples?.length) {
             text = block.examples.map((example) => example.text).join('\n');
@@ -32,12 +36,16 @@ export function knowledgeNarrationText(
             language = explanationLanguage;
         }
     }
+
     if (block.type === 'audio') {
         text = block.sourceText ?? '';
         language =
             block.language ?? block.transcript?.language ?? studiedLanguage;
     }
-    if (!language || !text.trim())
+
+    if (!language || !text.trim()) {
         throw new SpeechError('speech_text_unavailable', 400);
+    }
+
     return { text, language };
 }

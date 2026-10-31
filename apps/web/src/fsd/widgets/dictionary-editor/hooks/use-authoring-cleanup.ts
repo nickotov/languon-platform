@@ -28,17 +28,22 @@ export function useAuthoringCleanup({
     const authoringCleanupRequested = useRef(false);
     const retainedReviewIds = useRef(new Set<string>());
     useEffect(() => {
-        if (authoringReviewJob?.state === 'review')
+        if (authoringReviewJob?.state === 'review') {
             retainedReviewIds.current.add(authoringReviewJob.id);
-        if (authoringJob.data?.state === 'review')
+        }
+
+        if (authoringJob.data?.state === 'review') {
             retainedReviewIds.current.add(authoringJob.data.id);
+        }
     }, [authoringReviewJob, authoringJob.data]);
 
     function flushCardAuthoringCleanup(): Promise<void> {
         if (authoringCleanupInFlight.current) {
             authoringCleanupRequested.current = true;
+
             return authoringCleanupInFlight.current;
         }
+
         const cleanup = async () => {
             do {
                 authoringCleanupRequested.current = false;
@@ -49,19 +54,26 @@ export function useAuthoringCleanup({
                         await requestWithSession((token) =>
                             dictionaryApi.cancelGenerationJob(token, jobId),
                         );
+
                         authoringCleanup.current.cancelJobIds.delete(jobId);
                     } catch {
                         try {
                             const { job } = await requestWithSession((token) =>
                                 dictionaryApi.readGenerationJob(token, jobId),
                             );
-                            if (job.kind !== 'card-authoring') continue;
+
+                            if (job.kind !== 'card-authoring') {
+                                continue;
+                            }
+
                             const resolution =
                                 resolveCardAuthoringCleanupRead(job);
+
                             if (resolution === 'discard') {
                                 authoringCleanup.current.cancelJobIds.delete(
                                     jobId,
                                 );
+
                                 authoringCleanup.current.discardJobIds.add(
                                     jobId,
                                 );
@@ -75,6 +87,7 @@ export function useAuthoringCleanup({
                         }
                     }
                 }
+
                 for (const jobId of [
                     ...authoringCleanup.current.discardJobIds,
                 ]) {
@@ -82,33 +95,45 @@ export function useAuthoringCleanup({
                         const { job } = await requestWithSession((token) =>
                             dictionaryApi.readGenerationJob(token, jobId),
                         );
-                        if (job.kind !== 'card-authoring') continue;
+
+                        if (job.kind !== 'card-authoring') {
+                            continue;
+                        }
+
                         if (
                             resolveCardAuthoringCleanupRead(job) === 'complete'
                         ) {
                             authoringCleanup.current.discardJobIds.delete(
                                 jobId,
                             );
+
                             continue;
                         }
-                        if (job.state !== 'review') continue;
+
+                        if (job.state !== 'review') {
+                            continue;
+                        }
+
                         await requestWithSession((token) =>
                             dictionaryApi.discardGenerationJob(token, jobId),
                         );
+
                         authoringCleanup.current.discardJobIds.delete(jobId);
                     } catch {
                         try {
                             const { job } = await requestWithSession((token) =>
                                 dictionaryApi.readGenerationJob(token, jobId),
                             );
+
                             if (
                                 job.kind === 'card-authoring' &&
                                 resolveCardAuthoringCleanupRead(job) ===
                                     'complete'
-                            )
+                            ) {
                                 authoringCleanup.current.discardJobIds.delete(
                                     jobId,
                                 );
+                            }
                         } catch {
                             // Keep the review ID for the next bounded retry.
                         }
@@ -119,7 +144,9 @@ export function useAuthoringCleanup({
         const running = cleanup().finally(() => {
             authoringCleanupInFlight.current = null;
         });
+
         authoringCleanupInFlight.current = running;
+
         return running;
     }
 
@@ -129,22 +156,28 @@ export function useAuthoringCleanup({
             authoringReviewJob,
             authoringJobId,
         );
+
         plan.cancelJobIds.forEach((jobId) =>
             authoringCleanup.current.cancelJobIds.add(jobId),
         );
+
         plan.discardJobIds.forEach((jobId) =>
             authoringCleanup.current.discardJobIds.add(jobId),
         );
+
         retainedReviewIds.current.forEach((jobId) =>
             authoringCleanup.current.discardJobIds.add(jobId),
         );
+
         retainedReviewIds.current.clear();
+
         return flushCardAuthoringCleanup();
     }
 
     useEffect(() => {
         const retry = () => void flushCardAuthoringCleanup();
         window.addEventListener('online', retry);
+
         return () => window.removeEventListener('online', retry);
     }, []);
 

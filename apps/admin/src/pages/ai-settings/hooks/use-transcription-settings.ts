@@ -26,25 +26,40 @@ export function useTranscriptionSettings() {
         transcriptionAdminApi
             .read(controller.signal)
             .then((value) => {
-                if (!controller.signal.aborted) setState(value);
+                if (!controller.signal.aborted) {
+                    setState(value);
+                }
             })
             .catch(() => {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             })
             .finally(() => {
-                if (!controller.signal.aborted) setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             });
+
         return () => controller.abort();
     }, [generation]);
+
     function refresh() {
-        if (!lock.current) setGeneration((value) => value + 1);
+        if (!lock.current) {
+            setGeneration((value) => value + 1);
+        }
     }
+
     function clearPreview() {
         setPreview(null);
         setPublished(false);
     }
+
     async function review(input: KnowledgeTranscriptionAdminPreviewRequest) {
-        if (lock.current) return;
+        if (lock.current) {
+            return;
+        }
+
         lock.current = true;
         setPending(true);
         setError(false);
@@ -59,8 +74,12 @@ export function useTranscriptionSettings() {
             setPending(false);
         }
     }
+
     async function apply() {
-        if (lock.current || !preview) return;
+        if (lock.current || !preview) {
+            return;
+        }
+
         lock.current = true;
         setPending(true);
         setError(false);
@@ -71,6 +90,7 @@ export function useTranscriptionSettings() {
                     proof: preview.proof,
                 }),
             );
+
             setPreview(null);
             setPublished(true);
         } catch {
@@ -81,6 +101,7 @@ export function useTranscriptionSettings() {
             setPending(false);
         }
     }
+
     return {
         state,
         preview,

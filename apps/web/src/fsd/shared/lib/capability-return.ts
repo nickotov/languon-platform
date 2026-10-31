@@ -16,7 +16,9 @@ export function capabilityReturnFragment(
     ) {
         return '';
     }
+
     const key = hash.slice(1);
+
     return SHARE_KEY.test(key) ? `#${key}` : '';
 }
 

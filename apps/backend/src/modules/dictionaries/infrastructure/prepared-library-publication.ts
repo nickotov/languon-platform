@@ -31,6 +31,7 @@ export function createPreparedDictionaryLibraryPublication(options: {
         ids: options.ids,
         ownerLimits: options.ownerLimits ?? dictionaryLimits,
     };
+
     return {
         async preview(
             input: Omit<Input, 'rows'>,
@@ -52,15 +53,19 @@ export function createPreparedDictionaryLibraryPublication(options: {
                               source: current.dictionary.sourceLanguageTag,
                               target: current.dictionary.targetLanguageTag,
                           }));
+
                 if (
                     languages.source !== prepared.sourceLanguage ||
                     languages.target !== prepared.targetLanguage
-                )
+                ) {
                     throw new InvalidDictionaryRequestError();
+                }
+
                 const capacity = await previewDictionaryImport(context, {
                     ...input,
                     rows: prepared.rows,
                 });
+
                 return { prepared, capacity };
             });
         },
@@ -80,6 +85,7 @@ export function createPreparedDictionaryLibraryPublication(options: {
         },
     };
 }
+
 export type PreparedDictionaryLibraryPublication = ReturnType<
     typeof createPreparedDictionaryLibraryPublication
 >;

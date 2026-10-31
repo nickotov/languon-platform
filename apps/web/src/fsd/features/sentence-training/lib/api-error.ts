@@ -14,21 +14,28 @@ export class ApiError extends BrowserApiError<SentenceErrorResponse['error']> {
             ? Date.now() + detail.retryAfterSeconds * 1000
             : undefined;
     }
+
     public get code(): SentenceErrorCode | 'network_timeout' {
         return this.status === 0 ? 'network_timeout' : this.detail.code;
     }
+
     public get retryAfterSeconds(): number | undefined {
         return this.detail.retryAfterSeconds;
     }
 }
 export function toApiError(error: unknown): ApiError {
-    if (error instanceof ActionConsentCancelledError)
+    if (error instanceof ActionConsentCancelledError) {
         return new ApiError(409, {
             code: 'action_confirmation_required',
             correlationId: 'client-budget-cancelled',
             message: error.message,
         });
-    if (error instanceof ApiError) return error;
+    }
+
+    if (error instanceof ApiError) {
+        return error;
+    }
+
     return new ApiError(error instanceof BrowserApiError ? error.status : 0, {
         code:
             error instanceof BrowserApiError && error.status === 401
@@ -39,6 +46,7 @@ export function toApiError(error: unknown): ApiError {
             'The request could not be confirmed. Retry to recover its result.',
     });
 }
+
 export function isAccessLoss(error: ApiError): boolean {
     return [
         'authentication_required',
@@ -51,6 +59,7 @@ export function isAccessLoss(error: ApiError): boolean {
         'feature_disabled',
     ].includes(error.code);
 }
+
 export function isUncertain(error: ApiError): boolean {
     return (
         error.status === 0 ||

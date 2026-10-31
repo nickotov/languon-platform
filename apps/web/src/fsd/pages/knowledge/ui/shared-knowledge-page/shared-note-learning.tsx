@@ -33,10 +33,12 @@ export function SharedNoteLearning({
 }) {
     const actorId = useSessionStore((state) => state.user?.id);
     const identity = `${actorId}:${note.id}:${note.version}:${access.locator}:${access.key}`;
+
     return (
         <Content key={identity} note={note} access={access} actorId={actorId} />
     );
 }
+
 function Content({
     note,
     access,
@@ -102,6 +104,7 @@ function Content({
               access,
           }
         : undefined;
+
     function blockOptions(block: LearningBlock) {
         return {
             ...model.options(block),
@@ -109,10 +112,14 @@ function Content({
             playback: blockPlayback,
         };
     }
+
     const wrapBlock: NonNullable<
         ComponentProps<typeof NotePreview>['wrapBlock']
     > = (block, render) => {
-        if (!actorId || block.type !== 'bilingual-text') return render();
+        if (!actorId || block.type !== 'bilingual-text') {
+            return render();
+        }
+
         return (
             <KnowledgeBilingualStudy
                 actorId={actorId}
@@ -128,8 +135,12 @@ function Content({
             </KnowledgeBilingualStudy>
         );
     };
+
     function getBlockActions(block: LearningBlock): MenuItem[] {
-        if (!actorId) return [];
+        if (!actorId) {
+            return [];
+        }
+
         return [
             {
                 label: t('knowledge.addBlockToChat'),
@@ -146,8 +157,12 @@ function Content({
             },
         ];
     }
+
     function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
-        if (!actorId || block.type !== 'vocabulary') return null;
+        if (!actorId || block.type !== 'vocabulary') {
+            return null;
+        }
+
         return (
             <KnowledgeVocabularyPractice
                 noteId={note.id}
@@ -160,6 +175,7 @@ function Content({
             />
         );
     }
+
     return (
         <>
             {playback.confirmation}

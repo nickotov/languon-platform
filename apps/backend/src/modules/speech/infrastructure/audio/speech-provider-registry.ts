@@ -21,6 +21,7 @@ const providers: Readonly<Record<string, ProviderDefinition>> = Object.freeze({
     fixture: {
         resolve: (env) => {
             const fixture = new FixtureSpeechProvider();
+
             return {
                 configurationId: fixture.configurationId,
                 supports: (language) =>
@@ -32,6 +33,7 @@ const providers: Readonly<Record<string, ProviderDefinition>> = Object.freeze({
         },
         create: (env) => {
             const fixture = new FixtureSpeechProvider();
+
             return {
                 ...providers.fixture!.resolve(env),
                 submit: fixture.submit.bind(fixture),
@@ -73,13 +75,20 @@ export function resolveSpeechProvider(
     environment: DictionaryAudioEnvironment,
 ): SpeechProfileResolver {
     const definition = providers[environment.provider];
-    if (!definition) throw new Error('Unsupported speech provider.');
+    if (!definition) {
+        throw new Error('Unsupported speech provider.');
+    }
+
     return definition.resolve(environment);
 }
+
 export function createSpeechProvider(
     environment: DictionaryAudioEnvironment,
 ): SpeechSynthesisProvider {
     const definition = providers[environment.provider];
-    if (!definition) throw new Error('Unsupported speech provider.');
+    if (!definition) {
+        throw new Error('Unsupported speech provider.');
+    }
+
     return definition.create(environment);
 }

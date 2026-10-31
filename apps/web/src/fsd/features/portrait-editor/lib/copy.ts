@@ -8,6 +8,7 @@ export function copy(
 ) {
     return { en, ru, fr, es }[locale];
 }
+
 export const labels = {
     en: {
         languages: 'Languages and levels',

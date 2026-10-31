@@ -17,6 +17,7 @@ function CollectionNotification({
     let titleKey: Parameters<typeof t>[0] = collectionFailureKey(
         task.failureCode,
     );
+
     if (task.state === 'adding') {
         variant = 'loading';
         titleKey = 'texts.collect.adding';
@@ -26,6 +27,7 @@ function CollectionNotification({
     } else if (task.state === 'duplicate') {
         titleKey = 'texts.collect.duplicate';
     }
+
     const title = t(titleKey, { term: task.selection.text });
     const restoreLabel =
         task.state === 'duplicate'
@@ -34,7 +36,9 @@ function CollectionNotification({
 
     function dismiss() {
         c.dismissTask(task.body.operationId);
-        if (c.selection === task.selection) c.close();
+        if (c.selection === task.selection) {
+            c.close();
+        }
     }
 
     function cancel() {

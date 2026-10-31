@@ -16,6 +16,7 @@ it('sends a quick action once after its question, selection and conversation are
     function Wrapper({ children }: PropsWithChildren) {
         return <StrictMode>{children}</StrictMode>;
     }
+
     const { rerender } = renderHook(
         (props: {
             request: WorkspaceAssistantProps['request'];
@@ -33,6 +34,7 @@ it('sends a quick action once after its question, selection and conversation are
             wrapper: Wrapper,
         },
     );
+
     rerender({ request, question: request.prompt, passage: null, ready: true });
     expect(send).not.toHaveBeenCalled();
     rerender({
@@ -41,6 +43,7 @@ it('sends a quick action once after its question, selection and conversation are
         passage: { id: request.id, content: request.passage },
         ready: false,
     });
+
     expect(send).not.toHaveBeenCalled();
     const ready = {
         request,
@@ -48,6 +51,7 @@ it('sends a quick action once after its question, selection and conversation are
         passage: { id: request.id, content: request.passage },
         ready: true,
     };
+
     rerender(ready);
     rerender(ready);
     expect(send).toHaveBeenCalledTimes(1);
@@ -73,10 +77,12 @@ it('does not send Ask actions or an edited quick-action prompt', () => {
             }),
         { initialProps: { request, question: request.prompt } },
     );
+
     expect(send).not.toHaveBeenCalled();
     rerender({
         request: { ...request, id: 'auto', autoSend: true },
         question: 'My edited question',
     });
+
     expect(send).not.toHaveBeenCalled();
 });

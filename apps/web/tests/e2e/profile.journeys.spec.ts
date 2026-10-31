@@ -19,19 +19,29 @@ function captureBrowserErrors(page: Page) {
         if (
             message.type() === 'error' &&
             !message.text().startsWith('Failed to load resource:')
-        )
+        ) {
             errors.push(message.text());
+        }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
         );
-        if (path === '/auth/refresh' && response.status() === 401) return;
+
+        if (path === '/auth/refresh' && response.status() === 401) {
+            return;
+        }
+
         errors.push(`${response.status()} ${path}`);
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -53,12 +63,15 @@ test('shows truthful account placeholders and the authenticated application shel
     await expect(
         page.getByRole('heading', { level: 1, name: 'Account settings' }),
     ).toBeVisible();
+
     await expect(
         page.getByRole('combobox', { name: 'Interface language' }),
     ).toBeVisible();
+
     await expect(
         page.getByRole('textbox', { name: 'Full name' }),
     ).toBeDisabled();
+
     await expect(page.locator('#main-content').getByText(email)).toBeVisible();
     await expect(page.locator('dl').getByText('Not available yet')).toHaveCount(
         2,
@@ -70,6 +83,7 @@ test('shows truthful account placeholders and the authenticated application shel
             .getByText('No payment method is stored. Billing is coming soon.')
             .first(),
     ).toBeVisible();
+
     await page.getByRole('button', { name: 'Compare plans' }).click();
     await expect(page.getByText('Subscription is coming soon.')).toBeVisible();
 
@@ -89,6 +103,7 @@ test('shows truthful account placeholders and the authenticated application shel
     await expect(
         page.getByRole('dialog', { name: 'Main navigation' }),
     ).toBeVisible();
+
     await page.keyboard.press('Escape');
     await expect(menuButton).toBeFocused();
     expect(
@@ -101,11 +116,13 @@ test('shows truthful account placeholders and the authenticated application shel
     await page.evaluate(() => {
         document.body.style.zoom = '200%';
     });
+
     expect(
         await page.evaluate(
             () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
     ).toBe(true);
+
     await page.evaluate(() => {
         document.body.style.zoom = '';
     });
@@ -119,6 +136,7 @@ test('shows truthful account placeholders and the authenticated application shel
             exact: true,
         }),
     ).toBeVisible();
+
     assertNoBrowserErrors();
 });
 
@@ -141,49 +159,61 @@ test('saves a unique handle, keeps Security real and email mock honest, then sch
     await page
         .getByRole('textbox', { name: 'Username' })
         .fill(handle.toUpperCase());
+
     await page.getByRole('button', { name: 'Save username' }).click();
     await expect(
         page.getByRole('heading', { name: `@${handle}` }),
     ).toBeVisible();
+
     const accountMenu = page.getByRole('button', {
         name: `Account menu, @${handle}`,
     });
+
     await expect(accountMenu).toBeVisible();
     await accountMenu.click();
     await expect(
         page.getByRole('link', { name: 'Profile', exact: true }),
     ).toHaveAttribute('href', '/profile');
+
     await page.keyboard.press('Escape');
 
     await page.getByRole('tab', { name: /Security/ }).click();
     await expect(
         page.getByRole('heading', { name: 'Change password' }),
     ).toBeVisible();
+
     await expect(
         page.getByRole('heading', { name: 'Passkeys', exact: true }),
     ).toBeVisible();
+
     await expect(
         page.getByRole('heading', { name: 'Sign-in methods' }),
     ).toBeVisible();
+
     await expect(page.getByRole('heading', { name: /^Google/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Yandex/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Apple/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Connect' })).toHaveCount(3);
     for (const connect of await page
         .getByRole('button', { name: 'Connect' })
-        .all())
+        .all()) {
         await expect(connect).toBeDisabled();
+    }
+
     await expect(
         page.getByRole('button', { name: 'Add passkey' }),
     ).toBeVisible();
+
     await page.getByRole('button', { name: 'Request email change' }).click();
     await expect(
         page.getByText(/no email was sent and your address was not changed/i),
     ).toBeVisible();
+
     await page.getByLabel('Current password', { exact: true }).fill(password);
     await page
         .getByLabel('New password', { exact: true })
         .fill(changedPassword);
+
     await page.getByRole('button', { name: 'Change password' }).click();
     await expect(
         page.getByText(
@@ -196,19 +226,24 @@ test('saves a unique handle, keeps Security real and email mock honest, then sch
     await expect(
         page.getByRole('button', { name: 'Schedule account removal' }),
     ).toBeDisabled();
+
     await page
         .getByRole('textbox', { name: 'Type DELETE to confirm' })
         .fill('DELETE');
+
     await expect(
         page.getByRole('button', { name: 'Schedule account removal' }),
     ).toBeDisabled();
+
     await page.getByRole('checkbox', { name: /access ends now/i }).check();
     await page
         .getByRole('button', { name: 'Schedule account removal' })
         .click();
+
     await expect(
         page.getByRole('heading', { name: 'Account removal scheduled' }),
     ).toBeVisible();
+
     await expect(page.getByText(/Access has ended/)).toBeVisible();
     assertNoBrowserErrors();
 });
@@ -222,6 +257,7 @@ test('Settings Credits displays the real zero and exact funded available balance
     await page
         .getByLabel('Email')
         .fill(`balance-${runId}-${info.workerIndex}@example.test`);
+
     await page.getByLabel('Password', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'Create account' }).click();
     await page.getByLabel('Verification code').fill('0000');
@@ -235,52 +271,64 @@ test('Settings Credits displays the real zero and exact funded available balance
             new URL(response.url()).pathname.endsWith('/users/me/ai-credits') &&
             response.status() === 200,
     );
+
     await page.getByRole('button', { name: 'Verify email' }).click();
     const { user } = await (await verified).json();
     expect(await (await zero).json()).toEqual({
         mode: 'limited',
         availableCredits: '0',
     });
+
     await expect(
         page.getByRole('heading', { name: 'Credit balance', exact: true }),
     ).toBeVisible();
+
     await expect(
         page.getByText('Exact balance: 0', { exact: true }),
     ).toBeVisible();
+
     await customerBalance(user.id, '20.125', 'dictionary-generation');
     const funded = page.waitForResponse(
         (response) =>
             new URL(response.url()).pathname.endsWith('/users/me/ai-credits') &&
             response.status() === 200,
     );
+
     await page.reload();
     expect(await (await funded).json()).toEqual({
         mode: 'limited',
         availableCredits: '20.125',
     });
+
     await expect(
         page.getByText('Exact balance: 20.125', { exact: true }),
     ).toBeVisible();
+
     const available = page
         .locator('dl')
         .filter({ has: page.getByText('Available credits', { exact: true }) });
+
     await expect(available.locator('dd')).toHaveText('20.13');
     await page.screenshot({
         path: info.outputPath('settings-credit-balance-desktop.png'),
         fullPage: true,
     });
+
     await page.setViewportSize({ width: 320, height: 844 });
     await expect(
         page.getByText('Exact balance: 20.125', { exact: true }),
     ).toBeVisible();
+
     expect(
         await page.evaluate(
             () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
     ).toBe(true);
+
     await page.screenshot({
         path: info.outputPath('settings-credit-balance-phone.png'),
         fullPage: true,
     });
+
     assertNoBrowserErrors();
 });

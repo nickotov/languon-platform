@@ -10,6 +10,7 @@ const base = '/knowledge/workbooks';
 function path(id: string) {
     return `${base}/${c.WorkbookIdParamsSchema.parse({ workbookId: id }).workbookId}`;
 }
+
 async function request<T>(
     route: string,
     schema: { parse(value: unknown): T },
@@ -45,23 +46,30 @@ async function request<T>(
             },
         );
     } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw error;
+        }
+
         throw new WorkbookApiError(0, fallback);
     }
+
     const payload: unknown = await response.json().catch(() => undefined);
     if (!response.ok) {
         const error = c.KnowledgeErrorResponseSchema.safeParse(payload);
+
         throw new WorkbookApiError(
             response.status,
             error.success ? error.data.error : fallback,
         );
     }
+
     try {
         return schema.parse(payload);
     } catch {
         throw new WorkbookApiError(502, fallback);
     }
 }
+
 export const workbookApi = {
     list: (token: string, signal?: AbortSignal) =>
         request(

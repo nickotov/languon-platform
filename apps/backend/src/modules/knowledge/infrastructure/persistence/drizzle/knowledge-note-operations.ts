@@ -157,7 +157,10 @@ export function restore(
             fingerprint,
         );
 
-        if (receipt) return replayKnowledgeNote(tx, ownerId, receipt);
+        if (receipt) {
+            return replayKnowledgeNote(tx, ownerId, receipt);
+        }
+
         await getOwnedKnowledgeNote(tx, ownerId, noteId);
         const [revision] = await tx
             .select()
@@ -172,7 +175,10 @@ export function restore(
                 ),
             );
 
-        if (!revision) throw knowledgeUnavailable();
+        if (!revision) {
+            throw knowledgeUnavailable();
+        }
+
         const now = new Date();
         const note = await replaceKnowledgeContent(
             tx,
@@ -218,13 +224,18 @@ export async function deleteNote(
             fingerprint,
         );
 
-        if (receipt) return;
+        if (receipt) {
+            return;
+        }
+
         const note = await getOwnedKnowledgeRow(tx, ownerId, noteId);
-        if (note.version !== input.expectedVersion)
+        if (note.version !== input.expectedVersion) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The knowledge note changed. Reload it before deleting.',
             );
+        }
+
         const now = new Date();
         await eraseKnowledgeSpeech(tx, noteId);
         await persistence.lifecycle.beforeNoteDeletion(tx, {

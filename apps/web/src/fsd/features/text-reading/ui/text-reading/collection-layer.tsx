@@ -24,6 +24,7 @@ export function CollectionLayer(
         </>
     );
 }
+
 function CurrentCollectionLayer({
     c,
     compact,
@@ -49,7 +50,9 @@ function CurrentCollectionLayer({
     }
 
     function changeOpen(open: boolean) {
-        if (!open) c.close();
+        if (!open) {
+            c.close();
+        }
     }
 
     const trigger = selection && (
@@ -87,8 +90,14 @@ function CurrentCollectionLayer({
     );
     let title = t('texts.collect.title', { term: selection?.text ?? '' });
 
-    if (c.step === 'new') title = t('texts.collect.new');
-    if (c.step === 'signin') title = t('texts.collect.signin');
+    if (c.step === 'new') {
+        title = t('texts.collect.new');
+    }
+
+    if (c.step === 'signin') {
+        title = t('texts.collect.signin');
+    }
+
     if (['closed', 'adding', 'success'].includes(c.step) || !selection) {
         return null;
     }

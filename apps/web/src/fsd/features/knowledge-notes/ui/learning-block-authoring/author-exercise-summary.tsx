@@ -19,8 +19,12 @@ export function AuthorExerciseSummary({
     );
     const attempted = questions.filter((block) => {
         const options = authoring?.blockViewOptions?.(block);
-        if (options?.learnerState?.attempted) return true;
+        if (options?.learnerState?.attempted) {
+            return true;
+        }
+
         const local = authoring?.attempted[block.id];
+
         return (
             local?.attempted &&
             local.identity ===
@@ -33,6 +37,7 @@ export function AuthorExerciseSummary({
     function toggle() {
         authoring?.toggleExpansion(expansionId);
     }
+
     return (
         <div className={styles.groupSummary}>
             <span>

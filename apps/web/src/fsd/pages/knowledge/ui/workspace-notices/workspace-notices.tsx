@@ -20,8 +20,10 @@ export function WorkspaceNotices({
     onApplyRetarget(): void;
 }) {
     const { t } = useI18n();
-    if (!alternatives && !recoveryError && !actionError && !retargeting)
+    if (!alternatives && !recoveryError && !actionError && !retargeting) {
         return null;
+    }
+
     const retry = (
         <Button onClick={onRetryRecovery}>{t('knowledge.retry')}</Button>
     );
@@ -35,6 +37,7 @@ export function WorkspaceNotices({
             </Button>
         </div>
     );
+
     return (
         <div className={styles.root}>
             {alternatives && (

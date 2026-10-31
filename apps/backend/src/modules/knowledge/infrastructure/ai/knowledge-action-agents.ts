@@ -26,9 +26,12 @@ export function createKnowledgeActionAgents(options: {
             defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             defaultOptions: { maxSteps: 1 },
         });
+
         agent.__registerPrimitives({ logger: noopLogger });
+
         return agent;
     };
+
     return {
         knowledgeBlockFieldAgent: create('knowledge-block-field-agent'),
         knowledgeExerciseEvaluationAgent: create(

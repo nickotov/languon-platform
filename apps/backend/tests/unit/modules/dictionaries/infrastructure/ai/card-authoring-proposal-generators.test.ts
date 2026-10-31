@@ -75,6 +75,7 @@ describe('dictionary card authoring proposal generators', () => {
             },
             usage: { inputTokens: 0, outputTokens: 0 },
         });
+
         await expect(
             generator.generate({
                 ...request(['translation']),
@@ -87,6 +88,7 @@ describe('dictionary card authoring proposal generators', () => {
             delta: { suggestions: [{ field: 'translation' }] },
             usage: { inputTokens: 0, outputTokens: 0 },
         });
+
         await expect(
             generator.generate({
                 ...request(['translation']),
@@ -154,6 +156,7 @@ describe('dictionary card authoring proposal generators', () => {
                 suggestions: [{ field: 'example', value: 'Use bank.' }],
             }),
         );
+
         await expect(
             generator.generate(request(['definition'])),
         ).rejects.toBeInstanceOf(CardAuthoringProposalGeneratorExecutionError);
@@ -165,6 +168,7 @@ describe('dictionary card authoring proposal generators', () => {
                 { field: 'definition', value: 'A new contextual definition.' },
             ],
         }));
+
         await expect(partial.generate(request())).resolves.toMatchObject({
             delta: {
                 suggestions: [
@@ -187,6 +191,7 @@ describe('dictionary card authoring proposal generators', () => {
                 ],
             }),
         );
+
         await expect(
             repeated.generate({
                 ...request(),
@@ -216,6 +221,7 @@ describe('dictionary card authoring proposal generators', () => {
                 ],
             },
         });
+
         await expect(
             repeated.generate({
                 ...request(),
@@ -292,6 +298,7 @@ describe('dictionary card authoring proposal generators', () => {
                     { field: 'translation', value: 'entidad bancaria' },
                 ],
             }));
+
         await expect(
             historicalSource.generate({
                 ...base,
@@ -353,6 +360,7 @@ describe('dictionary card authoring proposal generators', () => {
                     { headers: { 'Content-Type': 'application/json' } },
                 ),
         );
+
         vi.stubGlobal('fetch', fetchProvider);
         try {
             const generator = createCardAuthoringProposalGenerator({
@@ -370,9 +378,11 @@ describe('dictionary card authoring proposal generators', () => {
                 providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
                 structuredOutputMode: 'prompt-injection',
             });
+
             await expect(generator.generate(request())).resolves.toMatchObject({
                 usage: { inputTokens: 100, outputTokens: 20 },
             });
+
             expect(fetchProvider).toHaveBeenCalledOnce();
             const options = fetchProvider.mock.calls[0] as unknown as [
                 unknown,
@@ -396,16 +406,20 @@ describe('dictionary card authoring proposal generators', () => {
             agent: { generate: vi.fn().mockRejectedValue(error) },
             onProviderFailure,
         });
+
         await expect(generator.generate(request())).rejects.toMatchObject({
             category: 'provider_unavailable',
         });
+
         expect(onProviderFailure).toHaveBeenCalledExactlyOnceWith({
             errorName: 'AI_APICallError',
             httpStatus: 402,
         });
+
         onProviderFailure.mockImplementation(() => {
             throw new Error('diagnostic sink unavailable');
         });
+
         await expect(generator.generate(request())).rejects.toMatchObject({
             category: 'provider_unavailable',
         });
@@ -435,11 +449,13 @@ describe('dictionary card authoring proposal generators', () => {
             delta,
             usage: { inputTokens: 100, outputTokens: 20 },
         });
+
         const serialized = generate.mock.calls[0]![0] as string;
         expect(JSON.parse(serialized)).toEqual(input);
         expect(serialized).not.toMatch(
             /dictionaryId|ownerId|predecessor|suggestionId|discardedSuggestionId/,
         );
+
         expect(serialized).not.toContain('private inactive field content');
         expect(generate).toHaveBeenCalledWith(expect.any(String), {
             abortSignal: generationRequest.signal,
@@ -490,9 +506,11 @@ describe('dictionary card authoring proposal generators', () => {
             ...request(),
             input: contextual,
         });
+
         expect(JSON.parse(generate.mock.calls[0]![0] as string)).toEqual(
             contextual,
         );
+
         expect(
             selectionCardValues(
                 contextual,
@@ -505,13 +523,16 @@ describe('dictionary card authoring proposal generators', () => {
             example: 'Le parasol est ouvert.',
             exampleTranslation: 'The sunshade is open.',
         });
+
         expect(contextual.source).toBe('parasol');
     });
+
     it('registers the authoring agent in canonical Mastra composition', () => {
         const model = 'openai/gpt-4o-mini' as const;
         expect(createDictionaryCardAuthoringAgent({ model }).id).toBe(
             'dictionary-card-authoring-agent',
         );
+
         expect(
             createCanonicalMastra({
                 dictionaryCardAuthoring: { model },

@@ -21,7 +21,7 @@ export function LibrarySaveFooter({
     onClose: () => void;
     onCommit: () => void;
 }) {
-    if (saved)
+    if (saved) {
         return (
             <div className={styles.footerActions}>
                 <Button
@@ -34,6 +34,8 @@ export function LibrarySaveFooter({
                 </Button>
             </div>
         );
+    }
+
     return (
         <div className={styles.footerActions}>
             <p className={styles.prepared}>{labels.prepared}</p>

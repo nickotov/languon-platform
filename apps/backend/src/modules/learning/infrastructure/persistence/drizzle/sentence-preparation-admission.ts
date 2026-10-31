@@ -59,8 +59,10 @@ export async function sentencePracticePreparePreparationAction(
             !execution.snapshot ||
             !execution.revisionId ||
             !execution.snapshot.creditPricing
-        )
+        ) {
             throw new SentenceModelUnavailableError();
+        }
+
         const preparedSnapshot = await prepareLegacyAction(
             tx,
             learnerId,
@@ -96,15 +98,20 @@ export async function sentencePracticePreparePreparationAction(
 
         return { snapshot, revisionId: execution.revisionId };
     } catch (error) {
-        if (error instanceof AiCreditInsufficientBalanceError)
+        if (error instanceof AiCreditInsufficientBalanceError) {
             throw new SentenceCreditsExhaustedError();
+        }
+
         if (
             error instanceof TextAiSelectionUnavailableError ||
             error instanceof ProviderCostAdmissionUnavailableError
-        )
+        ) {
             throw new SentenceModelUnavailableError();
-        if (error instanceof OperatorBudgetUnavailableError)
+        }
+
+        if (error instanceof OperatorBudgetUnavailableError) {
             throw new SentenceCapacityUnavailableError();
+        }
 
         throw error;
     }
@@ -136,7 +143,10 @@ export async function sentencePracticeAdmitPreparationGeneration(
             ),
         );
 
-    if (!parent) throw new SentenceCreditsExhaustedError();
+    if (!parent) {
+        throw new SentenceCreditsExhaustedError();
+    }
+
     const budget = parent.snapshot.aggregateBudget;
     const capacity = await readTextAiCapacity(tx, {
         actorId: learnerId,
@@ -153,8 +163,10 @@ export async function sentencePracticeAdmitPreparationGeneration(
             context.now.getTime() - capacity.oldestRunnableAt.getTime() >
                 300000) ||
         !textAiProviderBudgetAllows(capacity.providerUsage, true, budget)
-    )
+    ) {
         throw new SentenceCapacityUnavailableError();
+    }
+
     const rows = await tx
         .execute<{ job_id: string }>(
             sql`
@@ -168,13 +180,16 @@ export async function sentencePracticeAdmitPreparationGeneration(
                 typeof cause === 'object' &&
                 'code' in cause &&
                 cause.code === '54000'
-            )
+            ) {
                 throw new SentenceCapacityUnavailableError();
+            }
 
             throw error;
         });
     const jobId = rows[0]?.job_id;
-    if (!jobId) throw new SentenceCreditsExhaustedError();
+    if (!jobId) {
+        throw new SentenceCreditsExhaustedError();
+    }
 
     return { jobId };
 }

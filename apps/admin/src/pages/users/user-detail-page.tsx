@@ -48,7 +48,10 @@ export function UserDetailPage() {
         form.resetFields();
     };
     const mutate = async ({ reason }: { reason: string }) => {
-        if (!detail || !operation) return;
+        if (!detail || !operation) {
+            return;
+        }
+
         setError(null);
         try {
             await update.mutateAsync({
@@ -56,6 +59,7 @@ export function UserDetailPage() {
                 resource: 'users',
                 values: { expectedVersion: detail.version, operation, reason },
             });
+
             closeOperation();
             await user.query.refetch();
         } catch (caught) {
@@ -66,7 +70,8 @@ export function UserDetailPage() {
             );
         }
     };
-    if (user.query.isError)
+
+    if (user.query.isError) {
         return (
             <Alert
                 action={
@@ -79,6 +84,8 @@ export function UserDetailPage() {
                 type='error'
             />
         );
+    }
+
     return (
         <div className={styles.stack}>
             <Link to='/users'>

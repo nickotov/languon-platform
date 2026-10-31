@@ -31,7 +31,9 @@ export async function readLearnerWorkbookProgress(
         .where(and(eq(workbooks.id, workbookId), isNull(workbooks.deletedAt)))
         .for('share');
 
-    if (!workbook) throw knowledgeUnavailable();
+    if (!workbook) {
+        throw knowledgeUnavailable();
+    }
 
     if (access || workbook.ownerId !== actorId) {
         const [share] = await tx
@@ -45,8 +47,9 @@ export async function readLearnerWorkbookProgress(
             !share ||
             share.locator !== access.locator ||
             !crypto.verify(access.key, share.keyDigest)
-        )
+        ) {
             throw knowledgeUnavailable();
+        }
     }
 
     const [owner] = await tx
@@ -54,7 +57,9 @@ export async function readLearnerWorkbookProgress(
         .from(usersTable)
         .where(eq(usersTable.id, workbook.ownerId));
 
-    if (owner?.status !== 'active') throw knowledgeUnavailable();
+    if (owner?.status !== 'active') {
+        throw knowledgeUnavailable();
+    }
 
     const visible = await tx
         .select({ id: notes.id, version: notes.version })
@@ -87,10 +92,14 @@ export async function readLearnerWorkbookProgress(
     let updatedSinceCompletion = 0;
     for (const note of visible) {
         const completion = byNote.get(note.id);
-        if (!completion) continue;
+        if (!completion) {
+            continue;
+        }
+
         completedNotes += 1;
-        if (note.version > completion.completedNoteVersion)
+        if (note.version > completion.completedNoteVersion) {
             updatedSinceCompletion += 1;
+        }
     }
 
     return WorkbookProgressSchema.parse({

@@ -129,8 +129,10 @@ const values = {
         'Actualiser les propositions',
     ],
 };
+
 export function blockProposalLabels(locale: Locale) {
     const index = { en: 0, ru: 1, es: 2, fr: 3 }[locale];
+
     return Object.fromEntries(
         Object.entries(values).map(([key, items]) => [key, items[index]]),
     ) as Record<keyof typeof values, string>;

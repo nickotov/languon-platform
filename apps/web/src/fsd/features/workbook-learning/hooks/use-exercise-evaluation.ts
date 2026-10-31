@@ -32,10 +32,12 @@ function pause(signal: AbortSignal) {
             clearTimeout(timer);
             reject(signal.reason);
         }
+
         const timer = setTimeout(() => {
             signal.removeEventListener('abort', abort);
             resolve();
         }, 750);
+
         signal.addEventListener('abort', abort, { once: true });
     });
 }
@@ -64,11 +66,12 @@ export function useExerciseEvaluation({
     useEffect(() => {
         mounted.current = true;
         const operations = active.current;
+
         return () => {
             mounted.current = false;
             for (const operation of operations.values()) {
                 operation.controller.abort();
-                if (operation.jobId)
+                if (operation.jobId) {
                     void requestWithSession((token) =>
                         learningApi.cancelEvaluation(
                             token,
@@ -77,26 +80,34 @@ export function useExerciseEvaluation({
                             access,
                         ),
                     ).catch(() => undefined);
+                }
             }
+
             operations.clear();
         };
     }, [noteId, requestWithSession, accessKind, accessLocator, accessKey]);
 
     async function run(input: SubmitWorkbookAttemptRequest) {
-        if (active.current.has(input.exerciseId)) return;
+        if (active.current.has(input.exerciseId)) {
+            return;
+        }
+
         const operation: Operation = {
             controller: new AbortController(),
             operationId: crypto.randomUUID(),
         };
+
         active.current.set(input.exerciseId, operation);
         setStates((current) => ({
             ...current,
             [input.exerciseId]: { pending: true },
         }));
+
         try {
             const { attempt } = await requestWithSession((token) =>
                 learningApi.attempt(token, noteId, input, access),
             );
+
             operation.controller.signal.throwIfAborted();
             const request = RequestKnowledgeExerciseEvaluationSchema.parse({
                 operationId: operation.operationId,
@@ -114,6 +125,7 @@ export function useExerciseEvaluation({
                     ),
                 ),
             );
+
             operation.jobId = job.id;
             if (operation.controller.signal.aborted) {
                 void requestWithSession((token) =>
@@ -124,12 +136,16 @@ export function useExerciseEvaluation({
                         access,
                     ),
                 ).catch(() => undefined);
+
                 return;
             }
+
             const deadline = Date.now() + 120_000;
             while (job.status === 'queued' || job.status === 'running') {
-                if (Date.now() >= deadline)
+                if (Date.now() >= deadline) {
                     throw new Error('Evaluation deadline reached.');
+                }
+
                 await pause(operation.controller.signal);
                 ({ job } = await requestWithSession((token) =>
                     learningApi.evaluation(
@@ -141,9 +157,12 @@ export function useExerciseEvaluation({
                     ),
                 ));
             }
+
             operation.controller.signal.throwIfAborted();
-            if (job.status !== 'completed' || !job.attempt)
+            if (job.status !== 'completed' || !job.attempt) {
                 throw new Error('Evaluation unavailable.');
+            }
+
             if (mounted.current) {
                 setStates((current) => ({
                     ...current,
@@ -152,6 +171,7 @@ export function useExerciseEvaluation({
                         attempt: job.attempt!,
                     },
                 }));
+
                 await onCompleted();
             }
         } catch (error) {
@@ -164,7 +184,8 @@ export function useExerciseEvaluation({
                     },
                 }));
             }
-            if (operation.jobId)
+
+            if (operation.jobId) {
                 void requestWithSession((token) =>
                     learningApi.cancelEvaluation(
                         token,
@@ -173,10 +194,13 @@ export function useExerciseEvaluation({
                         access,
                     ),
                 ).catch(() => undefined);
+            }
         } finally {
-            if (active.current.get(input.exerciseId) === operation)
+            if (active.current.get(input.exerciseId) === operation) {
                 active.current.delete(input.exerciseId);
+            }
         }
     }
+
     return { states, run, consent };
 }

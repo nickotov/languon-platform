@@ -44,6 +44,7 @@ export function ExerciseActions({
     const evaluationUnavailable =
         props.evaluationUnavailableReason !== undefined ||
         props.onEvaluate === undefined;
+
     return (
         <div className={styles.actions}>
             {canSubmit ? (

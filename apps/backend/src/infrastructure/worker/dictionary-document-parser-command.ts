@@ -12,21 +12,28 @@ async function readInput(): Promise<Uint8Array> {
     for await (const value of process.stdin) {
         const chunk = value as Buffer;
         length += chunk.byteLength;
-        if (length > documentIngestionLimitsV1.upload.maximumFileBytes)
+        if (length > documentIngestionLimitsV1.upload.maximumFileBytes) {
             throw new Error('input_limit');
+        }
+
         chunks.push(chunk);
     }
+
     const bytes = new Uint8Array(length);
     let offset = 0;
     for (const chunk of chunks) {
         bytes.set(chunk, offset);
         offset += chunk.byteLength;
     }
+
     return bytes;
 }
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
-    if (args.length !== 1) throw new Error('invalid_arguments');
+    if (args.length !== 1) {
+        throw new Error('invalid_arguments');
+    }
+
     const mediaType = DictionaryDocumentMediaTypeSchema.parse(args[0]);
     const extraction = await parseNativeDictionaryDocument({
         bytes: await readInput(),
@@ -39,11 +46,14 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
             entries.push(entry);
             continue;
         }
+
         outputBytes += entry.page.content.byteLength;
         if (
             outputBytes > documentIngestionLimitsV1.parser.maximumTemporaryBytes
-        )
+        ) {
             throw new Error('output_limit');
+        }
+
         const contentPath = `page-${entry.page.pageNumber}.png`;
         const handle = await open(`/output/${contentPath}`, 'wx', 0o600);
         try {
@@ -52,6 +62,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
         } finally {
             await handle.close();
         }
+
         entries.push({
             kind: 'ocr-page' as const,
             page: {
@@ -62,16 +73,20 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
             },
         });
     }
+
     const payload = JSON.stringify({
         entries,
         pageCount: extraction.pageCount,
         totalPixels: extraction.totalPixels,
     });
+
     if (
         Buffer.byteLength(payload, 'utf8') >
         documentIngestionLimitsV1.parser.maximumIpcOutputBytes
-    )
+    ) {
         throw new Error('output_limit');
+    }
+
     process.stdout.write(payload);
 }
 

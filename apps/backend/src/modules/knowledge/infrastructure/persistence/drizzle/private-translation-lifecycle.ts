@@ -31,7 +31,10 @@ export async function eraseKnowledgeTranslationJobs(
         .from(evaluationSources)
         .where(eq(evaluationSources.noteId, noteId));
     const linked = [...translated, ...fieldRows, ...evaluationRows];
-    if (!linked.length) return;
+    if (!linked.length) {
+        return;
+    }
+
     const rows = await tx
         .select()
         .from(jobs)

@@ -49,6 +49,7 @@ describe('speech adapters', () => {
             },
             { deployed: false },
         );
+
         for (const adapters of [
             createDictionaryAudioAdapters({
                 environment,
@@ -66,6 +67,7 @@ describe('speech adapters', () => {
             expect(adapters.provider.supports('he')).toBeNull();
             adapters.close();
         }
+
         const defaults = createDictionaryAudioAdapters({
             environment: loadDictionaryAudioEnvironment(
                 {},
@@ -73,6 +75,7 @@ describe('speech adapters', () => {
             ),
             database: { execute: vi.fn() } as never,
         });
+
         expect(defaults.provider.supports('he')).not.toBeNull();
         defaults.close();
         expect(() =>
@@ -81,6 +84,7 @@ describe('speech adapters', () => {
                 { deployed: false },
             ),
         ).toThrow('Invalid test speech fixture language allowlist.');
+
         const live = loadDictionaryAudioEnvironment(
             {
                 DICTIONARY_AUDIO_PROVIDER: 'kie',
@@ -88,8 +92,10 @@ describe('speech adapters', () => {
             },
             { deployed: false, role: 'api' },
         );
+
         expect(live.fixtureSupportedLanguages).toBeUndefined();
     });
+
     it('emits a genuine deterministic audible WAV fixture', async () => {
         const fixture = new FixtureSpeechProvider();
         const result = await fixture.submit({
@@ -97,8 +103,12 @@ describe('speech adapters', () => {
             text: 'fixture',
             requestId: 'request',
         });
+
         expect(result.state).toBe('ready');
-        if (result.state !== 'ready') throw new Error('Missing fixture');
+        if (result.state !== 'ready') {
+            throw new Error('Missing fixture');
+        }
+
         const bytes = Buffer.from(result.audio.bytes);
         expect(bytes.toString('ascii', 0, 4)).toBe('RIFF');
         expect(bytes.toString('ascii', 8, 12)).toBe('WAVE');
@@ -108,6 +118,7 @@ describe('speech adapters', () => {
             audioChecksum(createFixtureAudio().bytes),
         );
     });
+
     it('holds ambiguous submission and never internally retries a paid call', async () => {
         for (const fetcher of [
             vi.fn().mockRejectedValue(new Error('timeout')),
@@ -121,9 +132,11 @@ describe('speech adapters', () => {
                     requestId: 'request',
                 }),
             ).rejects.toMatchObject({ outcome: 'unknown', retryable: false });
+
             expect(fetcher).toHaveBeenCalledTimes(1);
         }
     });
+
     it('classifies explicit validation rejection as definitely not submitted', async () => {
         const fetcher = vi.fn().mockResolvedValue(response({ code: 422 }, 422));
         await expect(
@@ -134,6 +147,7 @@ describe('speech adapters', () => {
             }),
         ).rejects.toMatchObject({ outcome: 'not_submitted', retryable: false });
     });
+
     it('persists async identity and polls the original profile with no resubmission', async () => {
         const fetcher = vi
             .fn()
@@ -172,25 +186,31 @@ describe('speech adapters', () => {
                 requestId: 'request',
             }),
         ).toMatchObject({ state: 'pending', taskId: 'task' });
+
         expect(await adapter.poll({ taskId: 'task', profile })).toMatchObject({
             state: 'pending',
             taskId: 'task',
         });
+
         expect(await adapter.poll({ taskId: 'task', profile })).toMatchObject({
             state: 'ready',
         });
+
         expect(
             fetcher.mock.calls.filter(
                 ([, options]) => options.method === 'POST',
             ),
         ).toHaveLength(1);
+
         expect(download).toHaveBeenCalledWith(
             'https://cdn.example.com/audio.mp3',
             ['cdn.example.com'],
             undefined,
         );
+
         expect(adapter.supports('uk')).toBeNull();
     });
+
     it('rejects mismatched task identity before downloading output', async () => {
         const fetcher = vi.fn().mockResolvedValue(
             response({
@@ -202,10 +222,12 @@ describe('speech adapters', () => {
                 },
             }),
         );
+
         await expect(
             provider(fetcher).poll({ taskId: 'task', profile }),
         ).rejects.toThrow('Mismatched');
     });
+
     it.each([429, '429', 500, '500', 502, '502', 503, '503', 504, '504'])(
         'classifies failed Kie task code %s as provider unavailability without retaining private diagnostics',
         async (failCode) => {
@@ -227,11 +249,13 @@ describe('speech adapters', () => {
             const error = await provider(fetcher, download)
                 .poll({ taskId: 'task', profile })
                 .catch((failure: unknown) => failure);
+
             expect(error).toBeInstanceOf(SpeechTaskFailedError);
             expect(error).toMatchObject({
                 reason: 'provider_unavailable',
                 message: 'Speech task failed.',
             });
+
             expect(JSON.stringify(error)).not.toContain(privateMessage);
             expect(error).not.toHaveProperty('failMsg');
             expect(download).not.toHaveBeenCalled();
@@ -239,6 +263,7 @@ describe('speech adapters', () => {
             expect(fetcher.mock.calls[0]![1].method).toBe('GET');
         },
     );
+
     it.each([400, 'unknown', null, undefined])(
         'keeps failed Kie task code %s as a safe generic generation failure',
         async (failCode) => {
@@ -254,6 +279,7 @@ describe('speech adapters', () => {
                     },
                 }),
             );
+
             await expect(
                 provider(fetcher).poll({ taskId: 'task', profile }),
             ).rejects.toMatchObject({
@@ -278,11 +304,14 @@ describe('audio download trust boundary', () => {
             'fe80::1',
             '2001:db8::1',
             '2002:7f00:1::',
-        ])
+        ]) {
             expect(isPublicAudioAddress(value), value).toBe(false);
+        }
+
         expect(isPublicAudioAddress('8.8.8.8')).toBe(true);
         expect(isPublicAudioAddress('2606:4700:4700::1111')).toBe(true);
     });
+
     it('permits only credential-free HTTPS exact allowlisted hosts', () => {
         for (const value of [
             'http://cdn.example.com/a',
@@ -290,20 +319,24 @@ describe('audio download trust boundary', () => {
             'https://127.0.0.1/a',
             'https://user:secret@cdn.example.com/a',
             'https://cdn.example.com:444/a',
-        ])
+        ]) {
             expect(() =>
                 validateAudioResultUrl(value, ['cdn.example.com']),
             ).toThrow();
+        }
+
         expect(
             validateAudioResultUrl('https://cdn.example.com/a?signature=fake', [
                 'cdn.example.com',
             ]).hostname,
         ).toBe('cdn.example.com');
     });
+
     it('rejects non-audio and incomplete MP3 and enforces duration', () => {
         expect(() =>
             validateMp3(Buffer.from('<html>not audio</html>')),
         ).toThrow();
+
         const frame = Buffer.alloc(417);
         frame.set([255, 251, 144, 0]);
         expect(() => validateMp3(frame)).not.toThrow();
@@ -343,6 +376,7 @@ describe('audio configuration', () => {
             deployed: true,
             role: 'api',
         });
+
         expect(environment.apiKey).toBeUndefined();
         expect(environment.retainedConfigurations).toEqual([]);
         const adapters = createDictionaryAudioAdapters({
@@ -350,11 +384,13 @@ describe('audio configuration', () => {
             database: { execute: vi.fn() } as never,
             role: 'api',
         });
+
         try {
             expect(adapters.provider.supports('en')).toMatchObject({
                 provider: 'kie',
                 voice: profile.voice,
             });
+
             expect('submit' in adapters.provider).toBe(false);
             expect('poll' in adapters.provider).toBe(false);
             expect(adapters.providers.size).toBe(0);
@@ -368,6 +404,7 @@ describe('audio configuration', () => {
             adapters.close();
         }
     });
+
     it.each(['kie', 'openrouter'])(
         'drains an original Kie task using retained credentials after switching defaults to %s',
         async (primary) => {
@@ -402,6 +439,7 @@ describe('audio configuration', () => {
                     },
                 }),
             );
+
             vi.stubGlobal('fetch', fetcher);
             try {
                 expect(adapters.provider.configurationId).toBe('kie-new');
@@ -410,9 +448,11 @@ describe('audio configuration', () => {
                 expect(
                     await retained.poll({ taskId: 'old-task', profile }),
                 ).toMatchObject({ taskId: 'old-task', state: 'pending' });
+
                 expect(fetcher.mock.calls[0]![1].headers.authorization).toBe(
                     'Bearer original-secret',
                 );
+
                 expect(fetcher.mock.calls[0]![0]).toContain('old-task');
             } finally {
                 vi.unstubAllGlobals();
@@ -420,6 +460,7 @@ describe('audio configuration', () => {
             }
         },
     );
+
     it('rejects duplicate retained configuration identities', () => {
         expect(() =>
             loadDictionaryAudioEnvironment(
@@ -438,6 +479,7 @@ describe('audio configuration', () => {
             ),
         ).toThrow('unique');
     });
+
     it('defaults to disabled fixture/postgres and rejects deployed enabled fixtures', () => {
         expect(
             loadDictionaryAudioEnvironment({}, { deployed: false }),
@@ -446,6 +488,7 @@ describe('audio configuration', () => {
             storage: 'postgres',
             playbackEnabled: false,
         });
+
         expect(() =>
             loadDictionaryAudioEnvironment(
                 { SPEECH_PLAYBACK_ENABLED: 'true' },
@@ -453,6 +496,7 @@ describe('audio configuration', () => {
             ),
         ).toThrow();
     });
+
     it('requires explicit live voice map, allowed hosts and budgets', () => {
         expect(() =>
             loadDictionaryAudioEnvironment(
@@ -475,6 +519,7 @@ describe('curated model strategies', () => {
         settingsVersion: 'gemini-pronunciation-1',
         language: 'fr',
     };
+
     it.each([
         ['fr', 'French', 'alarmer'],
         ['tr', 'Turkish', 'merhaba'],
@@ -496,6 +541,7 @@ describe('curated model strategies', () => {
                 allowedDownloadHosts: [],
                 fetch: fetcher,
             });
+
             expect(
                 await adapter.submit({
                     text,
@@ -503,6 +549,7 @@ describe('curated model strategies', () => {
                     requestId: 'request',
                 }),
             ).toMatchObject({ state: 'pending', taskId: 'tracked-task' });
+
             const body = JSON.parse(fetcher.mock.calls[0]![1].body);
             expect(body.model).toBe(gemini.model);
             expect(body.input).toEqual({
@@ -516,9 +563,11 @@ describe('curated model strategies', () => {
                     },
                 ],
             });
+
             expect(fetcher).toHaveBeenCalledOnce();
         },
     );
+
     it('preserves pre-existing operator-versioned Turbo profiles and voice IDs for polling', async () => {
         const legacy = {
             ...profile,
@@ -539,6 +588,7 @@ describe('curated model strategies', () => {
         expect(
             await adapter.poll({ taskId: 'old-task', profile: legacy }),
         ).toMatchObject({ state: 'pending' });
+
         expect(
             loadDictionaryAudioEnvironment(
                 {
@@ -556,17 +606,20 @@ describe('curated model strategies', () => {
             ).profiles.en,
         ).toEqual(legacy);
     });
+
     it('keeps the original Turbo payload and settings exactly', async () => {
         const fetcher = vi
             .fn()
             .mockResolvedValue(
                 response({ code: 200, data: { taskId: 'task' } }),
             );
+
         await provider(fetcher).submit({
             text: 'hello',
             profile,
             requestId: 'request',
         });
+
         expect(JSON.parse(fetcher.mock.calls[0]![1].body)).toEqual({
             model: profile.model,
             input: {
@@ -578,6 +631,7 @@ describe('curated model strategies', () => {
             },
         });
     });
+
     it.each([
         { language: 'hu' },
         { language: 'uk' },
@@ -604,12 +658,15 @@ describe('curated model strategies', () => {
                     requestId: 'request',
                 }),
             ).rejects.toMatchObject({ outcome: 'not_submitted' });
+
             await expect(
                 adapter.poll({ taskId: 'task', profile: selected }),
             ).rejects.toThrow('Unsupported speech configuration');
+
             expect(fetcher).not.toHaveBeenCalled();
         },
     );
+
     it('polls retained Gemini profiles independently of current Turbo defaults and validates identity', async () => {
         const download = vi.fn().mockResolvedValue(createFixtureAudio());
         const fetcher = vi.fn().mockResolvedValue(
@@ -633,15 +690,18 @@ describe('curated model strategies', () => {
             fetch: fetcher,
             download,
         });
+
         expect(adapter.supports('fr')).toBeNull();
         expect(
             await adapter.poll({ taskId: 'old-task', profile: gemini }),
         ).toMatchObject({ state: 'ready' });
+
         expect(download).toHaveBeenCalledWith(
             'https://cdn.example.com/audio.wav',
             ['cdn.example.com'],
             undefined,
         );
+
         expect(fetcher.mock.calls[0]![1].method).toBe('GET');
         fetcher.mockResolvedValue(
             response({
@@ -653,10 +713,12 @@ describe('curated model strategies', () => {
                 },
             }),
         );
+
         await expect(
             adapter.poll({ taskId: 'old-task', profile: gemini }),
         ).rejects.toThrow('Mismatched');
     });
+
     it('validates selected model language, voice, settings and rejects arbitrary synthesis options', () => {
         const values = (language: string, entry: unknown) => ({
             DICTIONARY_AUDIO_PROVIDER: 'kie',
@@ -668,11 +730,13 @@ describe('curated model strategies', () => {
             voice: gemini.voice,
             estimatedCostUnitsPerCharacter: 1,
         };
+
         expect(
             loadDictionaryAudioEnvironment(values('fr', entry), {
                 deployed: false,
             }).profiles.fr,
         ).toMatchObject(gemini);
+
         for (const [language, override] of [
             ['hu', {}],
             ['constructor', {}],
@@ -680,14 +744,16 @@ describe('curated model strategies', () => {
             ['fr', { voice: 'Bella' }],
             ['fr', { settingsVersion: '1' }],
             ['fr', { temperature: 2 }],
-        ] as const)
+        ] as const) {
             expect(() =>
                 loadDictionaryAudioEnvironment(
                     values(language, { ...entry, ...override }),
                     { deployed: false },
                 ),
             ).toThrow();
+        }
     });
+
     it('resolves the same Gemini language capabilities for metadata and executable providers without API credentials', () => {
         const environment = loadDictionaryAudioEnvironment(
             {
@@ -703,12 +769,14 @@ describe('curated model strategies', () => {
             },
             { deployed: false, role: 'api' },
         );
+
         for (const role of ['api', 'worker'] as const) {
             const adapters = createDictionaryAudioAdapters({
                 environment,
                 database: { execute: vi.fn() } as never,
                 role,
             } as never);
+
             expect(adapters.provider.supports('fr')).toEqual({
                 ...gemini,
                 nativeBilling: {
@@ -723,6 +791,7 @@ describe('curated model strategies', () => {
                     providerTaskBoundVerified: false,
                 },
             });
+
             expect(adapters.provider.supports('tr')).toBeNull();
             expect(adapters.provider.supports('constructor')).toBeNull();
             expect('submit' in adapters.provider).toBe(role === 'worker');

@@ -35,10 +35,12 @@ function pause(ms: number, signal: AbortSignal) {
             signal.removeEventListener('abort', abort);
             resolve();
         }, ms);
+
         function abort() {
             clearTimeout(timer);
             reject(signal.reason);
         }
+
         signal.addEventListener('abort', abort, { once: true });
     });
 }
@@ -82,15 +84,21 @@ export function useKnowledgeAudioPreparation(
         function clean() {
             operation.current?.controller.abort();
             operation.current = null;
-            if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+            if (previewUrl.current) {
+                URL.revokeObjectURL(previewUrl.current);
+            }
+
             previewUrl.current = null;
         }
+
         const unsubscribe = useSessionStore.subscribe((next, previous) => {
             if (
                 next.status === 'authenticated' &&
                 next.user?.id === previous.user?.id
-            )
+            ) {
                 return;
+            }
+
             clean();
             setPrepared(null);
             setAccepted(false);
@@ -99,6 +107,7 @@ export function useKnowledgeAudioPreparation(
             setImporting(false);
             setFailed(false);
         });
+
         return () => {
             clean();
             unsubscribe();
@@ -118,21 +127,31 @@ export function useKnowledgeAudioPreparation(
             ['queued', 'processing'].includes(result.state) &&
             result.requestId
         ) {
-            if (Date.now() >= deadline)
+            if (Date.now() >= deadline) {
                 throw new Error('Audio preparation timed out.');
+            }
+
             await pause(
                 Math.min(5000, Math.max(250, result.retryAfterMs ?? 1000)),
                 signal,
             );
+
             result = await api.status(result.requestId, signal);
             signal.throwIfAborted();
             setResponse(result);
         }
-        if (result.state !== 'ready' || !result.playbackId) return;
+
+        if (result.state !== 'ready' || !result.playbackId) {
+            return;
+        }
+
         const blob = await api.bytes(result.playbackId, signal);
         signal.throwIfAborted();
         const url = URL.createObjectURL(blob);
-        if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+        if (previewUrl.current) {
+            URL.revokeObjectURL(previewUrl.current);
+        }
+
         previewUrl.current = url;
         setPrepared({
             key: current.key,
@@ -152,6 +171,7 @@ export function useKnowledgeAudioPreparation(
             sourceText,
             confirmationId: crypto.randomUUID(),
         };
+
         operation.current = current;
         setBusy(true);
         setImporting(false);
@@ -167,6 +187,7 @@ export function useKnowledgeAudioPreparation(
                 sourceText,
                 language: props.language,
             });
+
             await consume(
                 await speechApi(props.requestWithSession).prepare(
                     source,
@@ -175,15 +196,24 @@ export function useKnowledgeAudioPreparation(
                 current,
             );
         } catch {
-            if (!current.controller.signal.aborted) setFailed(true);
+            if (!current.controller.signal.aborted) {
+                setFailed(true);
+            }
         } finally {
-            if (!current.controller.signal.aborted) setBusy(false);
+            if (!current.controller.signal.aborted) {
+                setBusy(false);
+            }
         }
     }
+
     async function confirm() {
         const current = operation.current,
             quote = response?.quote;
-        if (!current || !quote || current.key !== keyRef.current) return;
+
+        if (!current || !quote || current.key !== keyRef.current) {
+            return;
+        }
+
         setBusy(true);
         setFailed(false);
         try {
@@ -196,19 +226,26 @@ export function useKnowledgeAudioPreparation(
                 current,
             );
         } catch {
-            if (!current.controller.signal.aborted) setFailed(true);
+            if (!current.controller.signal.aborted) {
+                setFailed(true);
+            }
         } finally {
-            if (!current.controller.signal.aborted) setBusy(false);
+            if (!current.controller.signal.aborted) {
+                setBusy(false);
+            }
         }
     }
+
     async function accept() {
         if (
             !prepared ||
             prepared.key !== keyRef.current ||
             !prepared.response.playbackId ||
             busy
-        )
+        ) {
             return;
+        }
+
         operation.current?.controller.abort();
         const current = {
             controller: new AbortController(),
@@ -217,6 +254,7 @@ export function useKnowledgeAudioPreparation(
             sourceText: prepared.sourceText,
             confirmationId: crypto.randomUUID(),
         };
+
         operation.current = current;
         setBusy(true);
         setImporting(true);
@@ -228,8 +266,12 @@ export function useKnowledgeAudioPreparation(
                 prepared.response.playbackId,
                 current.controller.signal,
             );
+
             current.controller.signal.throwIfAborted();
-            if (prepared.key !== keyRef.current) return;
+            if (prepared.key !== keyRef.current) {
+                return;
+            }
+
             const oldTranscript = prepared.block.transcript;
             const existingText = oldTranscript?.segments
                 .map((segment) => segment.text.replace(/^—\s*/u, ''))
@@ -241,19 +283,26 @@ export function useKnowledgeAudioPreparation(
                           text: segment.text,
                       }))
                     : [{ id: crypto.randomUUID(), text: result.sourceText }];
+
             latest.current.onAccept({
                 ...prepared.block,
                 assetId: result.asset.id,
                 sourceText: result.sourceText,
                 transcript: { language: result.language, segments },
             });
+
             setAccepted(true);
             setPrepared(null);
             setResponse(null);
-            if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+            if (previewUrl.current) {
+                URL.revokeObjectURL(previewUrl.current);
+            }
+
             previewUrl.current = null;
         } catch {
-            if (!current.controller.signal.aborted) setFailed(true);
+            if (!current.controller.signal.aborted) {
+                setFailed(true);
+            }
         } finally {
             if (!current.controller.signal.aborted) {
                 setBusy(false);
@@ -261,10 +310,14 @@ export function useKnowledgeAudioPreparation(
             }
         }
     }
+
     function dismiss() {
         operation.current?.controller.abort();
         operation.current = null;
-        if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+        if (previewUrl.current) {
+            URL.revokeObjectURL(previewUrl.current);
+        }
+
         previewUrl.current = null;
         setPrepared(null);
         setResponse(null);
@@ -272,16 +325,19 @@ export function useKnowledgeAudioPreparation(
         setImporting(false);
         setFailed(false);
     }
+
     function cancelQuote() {
         operation.current?.controller.abort();
         operation.current = null;
         setResponse(null);
         setBusy(false);
     }
+
     const stale = Boolean(prepared && prepared.key !== key);
     const staleQuote = Boolean(
         response?.quote && operation.current?.key !== key,
     );
+
     return {
         busy,
         importing,

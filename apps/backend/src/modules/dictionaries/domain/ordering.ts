@@ -7,6 +7,7 @@ export class DictionaryCardCapacityError extends Error {
         super(
             `A dictionary cannot contain more than ${dictionaryLimits.cardCapacity} active cards.`,
         );
+
         this.name = 'DictionaryCardCapacityError';
     }
 }
@@ -17,6 +18,7 @@ export function assertDictionaryCardCapacity(cardCount: number): void {
             'A dictionary card count must be a non-negative integer.',
         );
     }
+
     if (cardCount > dictionaryLimits.cardCapacity) {
         throw new DictionaryCardCapacityError();
     }
@@ -39,9 +41,11 @@ export function sortKeyBetween(
     if (previous !== null && previous < 1n) {
         throw new RangeError('Dictionary card sort keys must be positive.');
     }
+
     if (next !== null && next < 1n) {
         throw new RangeError('Dictionary card sort keys must be positive.');
     }
+
     if (previous !== null && next !== null && previous >= next) {
         throw new RangeError(
             'Dictionary card sort-key bounds must be ordered.',
@@ -51,9 +55,11 @@ export function sortKeyBetween(
     if (previous === null && next === null) {
         return dictionaryCardSortGap;
     }
+
     if (next === null) {
         return previous! + dictionaryCardSortGap;
     }
+
     if (previous === null) {
         return next > 1n ? next / 2n : null;
     }

@@ -56,7 +56,9 @@ export function createDictionaryAudioAdapters(
             maxAttempts: 2,
             requestHandler: { connectionTimeout: 5000, requestTimeout: 10000 },
         });
+
         clients.push(client);
+
         return new S3AudioObjectStorage({
             client,
             bucket: configuration.bucket,
@@ -70,18 +72,24 @@ export function createDictionaryAudioAdapters(
         ...env.retainedStorages.map(createS3),
     ]);
     const close = () => {
-        for (const client of clients) client.destroy();
+        for (const client of clients) {
+            client.destroy();
+        }
     };
+
     if (options.role === 'api') {
         // Metadata resolution cannot execute paid work and holds no provider credentials.
         const resolved = resolveSpeechProvider(env);
         const provider: ProfileResolver = resolved;
+
         return { storage, provider, providers: new Map(), close };
     }
+
     const provider = createSpeechProvider(env);
     const providers = new Map<string, SpeechSynthesisProvider>([
         [provider.configurationId, provider],
     ]);
+
     for (const retained of env.retainedConfigurations) {
         // Historical adapters deliberately expose no capabilities for new submissions.
         // Persisted task profiles supply their original voice/model/settings during polling.
@@ -90,6 +98,7 @@ export function createDictionaryAudioAdapters(
             new KieSpeechProvider({ ...retained, profiles: {} }),
         );
     }
+
     return {
         storage,
         provider,

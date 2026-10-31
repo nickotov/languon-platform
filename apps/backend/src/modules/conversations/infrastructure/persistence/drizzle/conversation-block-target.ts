@@ -34,10 +34,11 @@ export async function captureConversationBlockTarget(
     if (
         !branch ||
         (expectedVersion !== undefined && branch.version !== expectedVersion)
-    )
+    ) {
         throw conflict(
             'The selected working branch changed. Save your draft and try again.',
         );
+    }
 
     const body = KnowledgeBodySchema.parse(branch.content.body);
     const blocks = (body.document.content ?? []).flatMap(
@@ -59,11 +60,12 @@ export function assertConversationEditorAuthority(
     input: SubmitConversationTurnRequest,
 ) {
     const readOnly = isReadOnlyKnowledgeSource(source);
-    if (readOnly && (input.editorContext || input.draftContext))
+    if (readOnly && (input.editorContext || input.draftContext)) {
         throw new ConversationError(
             'invalid_editor_context',
             'Read-only conversations use saved content only.',
         );
+    }
 
     return readOnly;
 }
@@ -72,9 +74,10 @@ export function assertConversationRetryAuthority(
     source: ConversationSource,
     snapshot: ConversationSourceSnapshot,
 ) {
-    if (isReadOnlyKnowledgeSource(source) && snapshot.provenance !== 'saved')
+    if (isReadOnlyKnowledgeSource(source) && snapshot.provenance !== 'saved') {
         throw new ConversationError(
             'invalid_editor_context',
             'Read-only conversations cannot retry a private draft snapshot.',
         );
+    }
 }

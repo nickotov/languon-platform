@@ -27,6 +27,7 @@ export function GrammarBlock({
     const examples = compact ? block.examples?.slice(0, 1) : block.examples;
     const rule = block.rule;
     const className = compact ? styles.compact : styles.root;
+
     return (
         <div className={className} lang={block.language} dir='auto'>
             {rule ? (
@@ -56,6 +57,7 @@ export function GrammarBlock({
                                 text: example.text,
                                 language: block.language,
                             };
+
                             return (
                                 <li key={index} className={styles.exampleRow}>
                                     <div className={styles.example}>

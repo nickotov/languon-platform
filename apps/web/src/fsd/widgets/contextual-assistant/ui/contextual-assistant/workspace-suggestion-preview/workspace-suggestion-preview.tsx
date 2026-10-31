@@ -17,13 +17,18 @@ export function WorkspaceSuggestionPreview({
     function show() {
         setOpen(true);
     }
+
     function close() {
         setOpen(false);
     }
+
     function containEscape(event: KeyboardEvent<HTMLDivElement>) {
         // Preserve native dialog cancel, while the tutor behind it stays open.
-        if (open && event.key === 'Escape') event.stopPropagation();
+        if (open && event.key === 'Escape') {
+            event.stopPropagation();
+        }
     }
+
     return (
         <div className={styles.host} onKeyDown={containEscape}>
             <Tooltip content={copy.preview}>

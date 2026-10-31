@@ -41,12 +41,16 @@ export function loadAccountPurgeEnvironment(values: NodeJS.ProcessEnv) {
     const databaseUrl =
         raw.ACCOUNT_PURGE_DATABASE_URL ??
         (!deployed ? raw.DATABASE_URL : undefined);
-    if (!databaseUrl)
+
+    if (!databaseUrl) {
         throw new Error('Account purge database URL is required.');
+    }
+
     const parsedDatabaseUrl = new URL(databaseUrl);
     if (!['postgres:', 'postgresql:'].includes(parsedDatabaseUrl.protocol)) {
         throw new Error('Account purge database URL must be PostgreSQL.');
     }
+
     if (
         deployed &&
         parsedDatabaseUrl.searchParams.get('sslmode') !== 'verify-full' &&
@@ -56,6 +60,7 @@ export function loadAccountPurgeEnvironment(values: NodeJS.ProcessEnv) {
             'Account purge database must verify TLS in production.',
         );
     }
+
     let storage:
         | {
               accessKeyId: string;
@@ -66,6 +71,7 @@ export function loadAccountPurgeEnvironment(values: NodeJS.ProcessEnv) {
               secretAccessKey: string;
           }
         | undefined;
+
     if (raw.DICTIONARY_DOCUMENT_STORAGE_MODE === 's3') {
         if (
             !raw.ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID ||
@@ -78,6 +84,7 @@ export function loadAccountPurgeEnvironment(values: NodeJS.ProcessEnv) {
                 'Dedicated account purge document storage configuration is incomplete.',
             );
         }
+
         const endpoint = new URL(raw.DICTIONARY_DOCUMENT_STORAGE_ENDPOINT);
         if (
             endpoint.username ||
@@ -92,6 +99,7 @@ export function loadAccountPurgeEnvironment(values: NodeJS.ProcessEnv) {
                 'Account purge storage endpoint must be a credential-free origin and HTTPS when deployed.',
             );
         }
+
         storage = {
             accessKeyId: raw.ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID,
             bucket: raw.DICTIONARY_DOCUMENT_STORAGE_BUCKET,
@@ -102,6 +110,7 @@ export function loadAccountPurgeEnvironment(values: NodeJS.ProcessEnv) {
             secretAccessKey: raw.ACCOUNT_PURGE_STORAGE_SECRET_ACCESS_KEY,
         };
     }
+
     return {
         databaseMaxConnections: raw.DATABASE_MAX_CONNECTIONS,
         databaseUrl,

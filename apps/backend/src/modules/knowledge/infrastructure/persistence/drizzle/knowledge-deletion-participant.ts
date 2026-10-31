@@ -54,8 +54,10 @@ export async function eraseOwnerKnowledge(
         knowledgeLearnerEventsTable,
         knowledgeLearnerCompletionTable,
         knowledgeLearnerCompletionReceiptsTable,
-    ])
+    ]) {
         await tx.delete(table).where(eq(table.actorId, ownerId));
+    }
+
     const notes = await tx
         .select({ id: knowledgeNotesTable.id })
         .from(knowledgeNotesTable)

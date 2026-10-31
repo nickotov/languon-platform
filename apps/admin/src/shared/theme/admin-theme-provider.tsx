@@ -22,6 +22,7 @@ const storageKey = 'languon-admin-theme';
 export function AdminThemeProvider({ children }: { children: ReactNode }) {
     const [preference, setPreferenceState] = useState<ThemePreference>(() => {
         const stored = localStorage.getItem(storageKey);
+
         return stored === 'dark' || stored === 'light' || stored === 'system'
             ? stored
             : 'system';
@@ -29,18 +30,23 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
     const [systemDark, setSystemDark] = useState(
         () => matchMedia('(prefers-color-scheme: dark)').matches,
     );
+
     useEffect(() => {
         const media = matchMedia('(prefers-color-scheme: dark)');
         const listener = () => setSystemDark(media.matches);
         media.addEventListener('change', listener);
+
         return () => media.removeEventListener('change', listener);
     }, []);
+
     const resolved =
         preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
+
     useEffect(() => {
         document.documentElement.dataset.theme = resolved;
         document.documentElement.style.colorScheme = resolved;
     }, [resolved]);
+
     const setPreference = (value: ThemePreference) => {
         localStorage.setItem(storageKey, value);
         setPreferenceState(value);
@@ -49,6 +55,7 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
         () => ({ preference, resolved, setPreference }),
         [preference, resolved],
     );
+
     return (
         <ThemeContext.Provider value={value}>
             <ConfigProvider
@@ -75,6 +82,9 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
 
 export function useAdminTheme(): ThemeContextValue {
     const context = useContext(ThemeContext);
-    if (!context) throw new Error('AdminThemeProvider is missing.');
+    if (!context) {
+        throw new Error('AdminThemeProvider is missing.');
+    }
+
     return context;
 }

@@ -6,6 +6,7 @@ export function sourceRevision(...parts) {
         hash.update(String(part));
         hash.update('\0');
     }
+
     return `sha256:${hash.digest('hex')}`;
 }
 

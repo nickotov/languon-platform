@@ -6,20 +6,26 @@ export class TextSelectionService {
         private readonly authentication: DictionaryAuthentication,
         private readonly store: TextSelectionStore,
     ) {}
+
     async enqueue(
         token: string,
         request: TextSelectionRequest,
         shareKey?: string,
     ) {
         const principal = await this.authentication.authenticate(token);
+
         return this.store.enqueue(principal.userId, request, shareKey);
     }
+
     async read(token: string, id: string) {
         const principal = await this.authentication.authenticate(token);
+
         return this.store.read(principal.userId, id);
     }
+
     async cancel(token: string, id: string) {
         const principal = await this.authentication.authenticate(token);
+
         return this.store.cancel(principal.userId, id);
     }
 }

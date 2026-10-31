@@ -17,6 +17,7 @@ const providerPrice = {
     sourceReference: 'deepseek-flash-peak-testing',
     sourceUrl: 'https://api-docs.deepseek.com/quick_start/pricing/',
 };
+
 export const setupProfiles = {
     'deepseek-local-testing': {
         description:
@@ -53,12 +54,14 @@ export function validateProfile(profile, contracts) {
         expectedVersion: 0,
         reason,
     });
+
     contracts.ProviderPricePublishRequestSchema.parse({
         ...profile.providerPrice,
         expectedVersion: 0,
         effectiveAt: new Date().toISOString(),
         reason,
     });
+
     return profile;
 }
 
@@ -77,6 +80,7 @@ export function renderProfileDocumentation() {
                     profile.providerPrice,
                 ],
             ];
+
             return (
                 `### ${name}\n\n${profile.description}\n\n` +
                 sections

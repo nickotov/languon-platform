@@ -45,8 +45,10 @@ export function useCardMutation({
         }) => {
             const current = dictionary.data?.dictionary;
             const versions = cards.data?.pages[0];
-            if (!current || !versions)
+            if (!current || !versions) {
                 throw new Error('Dictionary unavailable');
+            }
+
             if (input.card) {
                 return requestWithSession((token) =>
                     dictionaryApi.updateCard(
@@ -63,6 +65,7 @@ export function useCardMutation({
                     ),
                 );
             }
+
             return requestWithSession((token) =>
                 dictionaryApi.createCard(token, dictionaryId, {
                     expectedDictionaryVersion: versions.dictionaryVersion,
@@ -73,10 +76,16 @@ export function useCardMutation({
         },
         onMutate: () => ({ session: editingSession.current }),
         onSuccess: async (response, input, attempt) => {
-            if (attempt?.session !== editingSession.current) return;
+            if (attempt?.session !== editingSession.current) {
+                return;
+            }
+
             setGenerationCompared(false);
             await queueCardAuthoringCleanup();
-            if (attempt.session !== editingSession.current) return;
+            if (attempt.session !== editingSession.current) {
+                return;
+            }
+
             setAuthoringJobId(null);
             setAuthoringReviewJob(null);
             authoringAttempt.current = null;
@@ -87,13 +96,16 @@ export function useCardMutation({
                         ? null
                         : currentEditing;
                 }
+
                 return currentEditing === 'new' ? null : currentEditing;
             });
+
             setOutcome(
                 response.duplicateSource
                     ? t('dictionary.card.savedDuplicate')
                     : t('dictionary.card.saved'),
             );
+
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: ['dictionary-cards', dictionaryId],

@@ -5,11 +5,13 @@ import { AssistantLanguageSchema } from './contextual-assistant';
 const credits = z.string().refine((value) => {
     try {
         parseCreditMilli(value);
+
         return true;
     } catch {
         return false;
     }
 }, 'Expected exact nonnegative credits.');
+
 export const SubmitKnowledgeTranscriptionRequestSchema =
     KnowledgeTranscriptionRequestSchema.extend({
         confirmedMaximumCredits: credits.optional(),

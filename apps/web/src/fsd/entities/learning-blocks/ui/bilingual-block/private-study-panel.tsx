@@ -24,10 +24,22 @@ export function PrivateStudyPanel({
     const failed = study.state === 'failed';
     const unavailable = study.state === 'unavailable';
     let message = labels.notice;
-    if (loading) message = labels.loading;
-    if (busy) message = `${labels.generating}${pendingLabel}`;
-    if (failed) message = `${labels.error}${pendingLabel}`;
-    if (unavailable) message = labels.unavailable;
+    if (loading) {
+        message = labels.loading;
+    }
+
+    if (busy) {
+        message = `${labels.generating}${pendingLabel}`;
+    }
+
+    if (failed) {
+        message = `${labels.error}${pendingLabel}`;
+    }
+
+    if (unavailable) {
+        message = labels.unavailable;
+    }
+
     return (
         <div className={styles.privatePanel} aria-live='polite'>
             <div className={styles.privateHeading}>

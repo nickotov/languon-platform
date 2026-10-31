@@ -123,7 +123,10 @@ async function assertActor(
         )
         .for('update');
 
-    if (!user) throw new AdminAccessDeniedError();
+    if (!user) {
+        throw new AdminAccessDeniedError();
+    }
+
     const [principal] = await tx
         .select({ authenticatedAt: authSessionsTable.authenticatedAt })
         .from(authSessionsTable)
@@ -154,9 +157,13 @@ async function assertActor(
         )
         .for('update', { of: authSessionsTable });
 
-    if (!principal) throw new AdminAccessDeniedError();
-    if (principal.authenticatedAt.getTime() + 300_000 <= now.getTime())
+    if (!principal) {
+        throw new AdminAccessDeniedError();
+    }
+
+    if (principal.authenticatedAt.getTime() + 300_000 <= now.getTime()) {
         throw new RecentAuthenticationRequiredError();
+    }
 }
 
 export class DrizzleTranscriptionAdminStore implements TranscriptionAdminStore {
@@ -201,8 +208,9 @@ export class DrizzleTranscriptionAdminStore implements TranscriptionAdminStore {
     preview(input: KnowledgeTranscriptionAdminPreviewRequest) {
         return this.database.transaction(async (tx) => {
             const row = await current(tx);
-            if ((row?.version ?? 0) !== input.expectedVersion)
+            if ((row?.version ?? 0) !== input.expectedVersion) {
                 throw new AdminAiSettingsConflictError();
+            }
 
             return transcriptionAdminReadiness(
                 input.config,
@@ -240,8 +248,9 @@ export class DrizzleTranscriptionAdminStore implements TranscriptionAdminStore {
                                 input.config,
                             ),
                         )
-                )
+                ) {
                     throw new AdminAiSettingsConflictError();
+                }
 
                 return;
             }
@@ -250,8 +259,10 @@ export class DrizzleTranscriptionAdminStore implements TranscriptionAdminStore {
             if (
                 (row?.version ?? 0) !== input.expectedVersion ||
                 expiresAt.getTime() <= now.getTime()
-            )
+            ) {
                 throw new AdminAiSettingsConflictError();
+            }
+
             const options = await this.readinessOptions();
             const readiness = transcriptionAdminReadiness(
                 input.config,
@@ -263,14 +274,18 @@ export class DrizzleTranscriptionAdminStore implements TranscriptionAdminStore {
                 input.config.dataSharingDisabled &&
                 (!options.credentialFingerprint ||
                     !input.config.dataSharingEvidence)
-            )
+            ) {
                 throw new AdminAiSettingsUnavailableError(
                     'Organization data-sharing attestation requires current credentials and evidence.',
                 );
-            if (input.config.enabled && !readiness.ready)
+            }
+
+            if (input.config.enabled && !readiness.ready) {
                 throw new AdminAiSettingsUnavailableError(
                     'Transcription is not ready. Review processing approval, credentials, pricing, billing evidence and execution bounds.',
                 );
+            }
+
             await tx.insert(revisions).values({
                 id: input.revisionId,
                 version: input.expectedVersion + 1,

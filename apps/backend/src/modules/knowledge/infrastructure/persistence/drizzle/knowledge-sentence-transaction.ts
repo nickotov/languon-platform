@@ -33,7 +33,9 @@ export class DrizzleKnowledgeSentenceTransaction implements KnowledgeSentenceTra
                 ),
             );
 
-        if (!row) throw new LearningEntryUnavailableError();
+        if (!row) {
+            throw new LearningEntryUnavailableError();
+        }
 
         return {
             exercise: SentenceExerciseSchema.parse(row.publicContent),
@@ -59,8 +61,9 @@ export class DrizzleKnowledgeSentenceTransaction implements KnowledgeSentenceTra
             if (
                 prior.noteId !== input.noteId ||
                 prior.blockId !== input.blockId
-            )
+            ) {
                 throw new LearningConflictError('operation_conflict');
+            }
 
             return SentenceExerciseSchema.parse(prior.publicContent);
         }
@@ -113,8 +116,10 @@ export class DrizzleKnowledgeSentenceTransaction implements KnowledgeSentenceTra
             (prior.exerciseId !== input.exerciseId ||
                 prior.noteId !== input.noteId ||
                 prior.blockId !== input.blockId)
-        )
+        ) {
             throw new LearningConflictError('operation_conflict');
+        }
+
         const values = {
             id: randomUUID(),
             actorId: input.actorId,
@@ -131,7 +136,9 @@ export class DrizzleKnowledgeSentenceTransaction implements KnowledgeSentenceTra
             createdAt: input.createdAt,
         };
         const row = prior ?? values;
-        if (!prior) await this.tx.insert(attempts).values(values);
+        if (!prior) {
+            await this.tx.insert(attempts).values(values);
+        }
 
         return SentenceAttemptSchema.parse({
             id: row.id,

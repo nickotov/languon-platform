@@ -22,11 +22,13 @@ const escaped = await new Promise((resolve) => {
         socket.destroy();
         resolve(false);
     }, 750);
+
     socket.once('connect', () => {
         clearTimeout(timer);
         socket.destroy();
         resolve(true);
     });
+
     socket.once('error', () => {
         clearTimeout(timer);
         resolve(false);

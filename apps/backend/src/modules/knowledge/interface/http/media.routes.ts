@@ -55,10 +55,11 @@ export function createKnowledgeMediaRoutes({
                 ),
         }),
     );
+
     for (const path of [
         '/knowledge/notes/:noteId/media',
         '/knowledge/notes/:noteId/media/*',
-    ])
+    ]) {
         app.use(path, async (c, next) => {
             c.header('Cache-Control', 'private, no-store');
             c.header('X-Content-Type-Options', 'nosniff');
@@ -70,16 +71,21 @@ export function createKnowledgeMediaRoutes({
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             if (c.req.method === 'OPTIONS') {
                 c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
                 c.header(
                     'Access-Control-Allow-Headers',
                     'Authorization, Content-Type, X-Languon-Share-Key',
                 );
+
                 return c.body(null, 204);
             }
+
             await next();
         });
+    }
+
     app.use(
         '/knowledge/notes/*/media',
         bodyLimit({
@@ -96,48 +102,67 @@ export function createKnowledgeMediaRoutes({
                 ),
         }),
     );
+
     app.onError((caught, c) => {
-        if (caught instanceof InvalidBearerAuthorizationError)
+        if (caught instanceof InvalidBearerAuthorizationError) {
             return c.json(
                 error('authentication_required', 'Sign in to continue.'),
                 401,
             );
-        if (caught instanceof InvalidRequestOriginError)
+        }
+
+        if (caught instanceof InvalidRequestOriginError) {
             return c.json(
                 error('invalid_origin', 'The request origin is not allowed.'),
                 403,
             );
+        }
+
         if (caught instanceof KnowledgeDomainError) {
             let status: 400 | 404 | 429 = 400;
-            if (caught.code === 'knowledge_not_found') status = 404;
-            if (caught.code === 'rate_limited') status = 429;
+            if (caught.code === 'knowledge_not_found') {
+                status = 404;
+            }
+
+            if (caught.code === 'rate_limited') {
+                status = 429;
+            }
+
             return c.json(error(caught.code, caught.message), status);
         }
-        if (caught instanceof z.ZodError)
+
+        if (caught instanceof z.ZodError) {
             return c.json(
                 error('invalid_request', 'The request is invalid.'),
                 400,
             );
+        }
+
         const mapped = mapDictionaryHttpError(caught);
-        if (mapped.status === 401)
+        if (mapped.status === 401) {
             return c.json(
                 error('authentication_required', 'Sign in to continue.'),
                 401,
             );
+        }
+
         return c.json(
             error('service_unavailable', 'The audio could not be loaded.'),
             503,
         );
     });
+
     const context = (
         c: Parameters<typeof authenticationRequestMetadata>[0],
     ) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return {
             signal: metadata.signal,
             clientAddress: metadata.clientAddress,
         };
     };
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -182,9 +207,11 @@ export function createKnowledgeMediaRoutes({
                 bytes,
                 c.req.header('Content-Type') ?? '',
             );
+
             return c.json({ asset }, 201);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -233,12 +260,15 @@ export function createKnowledgeMediaRoutes({
                 token,
                 access,
             );
+
             c.header('Content-Type', audio.mimeType);
             c.header('Content-Disposition', 'inline');
             c.header('Content-Length', String(audio.bytes.length));
+
             return c.body(new Uint8Array(audio.bytes), 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -279,8 +309,10 @@ export function createKnowledgeMediaRoutes({
                 c.req.valid('param').noteId,
                 c.req.valid('json').playbackId,
             );
+
             return c.json(applied, 201);
         },
     );
+
     return app;
 }

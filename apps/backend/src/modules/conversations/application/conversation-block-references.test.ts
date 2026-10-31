@@ -21,6 +21,7 @@ const grammar = {
     language: 'fr',
     rule: 'Use **structured** explanations.',
 };
+
 function snapshot(): ConversationSourceSnapshot {
     return {
         title: 'Note',
@@ -32,12 +33,14 @@ function snapshot(): ConversationSourceSnapshot {
         learningBlocks: learningBlockSourceMaterial([grammar]),
     };
 }
+
 describe('authorized block references', () => {
     it('restricts explicit-reference update targets while preserving legacy turns and append proposals', () => {
         const frozen = snapshot();
         expect(() =>
             assertReferencedProposalTarget(frozen, foreign),
         ).not.toThrow();
+
         captureBlockReferences(frozen, [id], 'knowledge');
         expect(() => assertReferencedProposalTarget(frozen, id)).not.toThrow();
         expect(() => assertReferencedProposalTarget(frozen)).not.toThrow();
@@ -45,19 +48,23 @@ describe('authorized block references', () => {
             'explicitly mentioned',
         );
     });
+
     it('rejects foreign, duplicate, excessive and non-knowledge references', () => {
         for (const ids of [
             [foreign],
             [id, id],
             Array.from({ length: 9 }, () => id),
-        ])
+        ]) {
             expect(() =>
                 captureBlockReferences(snapshot(), ids, 'knowledge'),
             ).toThrow();
+        }
+
         expect(() =>
             captureBlockReferences(snapshot(), [id], 'text'),
         ).toThrow();
     });
+
     it('sends compact selected descriptors initially and retrieves exact authorized content', () => {
         const frozen = snapshot();
         captureBlockReferences(frozen, [id], 'knowledge');
@@ -66,24 +73,29 @@ describe('authorized block references', () => {
             frozen,
             'explain',
         );
+
         expect(source.initialContext.referencedBlocks).toEqual([
             { id, type: 'grammar', title: grammar.title },
         ]);
+
         expect(JSON.stringify(source.initialContext)).not.toContain(
             grammar.rule,
         );
+
         const result = source.read({ query: 'rule', limit: 1, blockIds: [id] });
         expect(result.material[0]?.content).toBe(JSON.stringify(grammar));
         expect(() =>
             source.read({ query: 'foreign', limit: 1, blockIds: [foreign] }),
         ).toThrow();
     });
+
     it('rejects an oversized exact read rather than silently returning part of a target', () => {
         const frozen = snapshot();
         frozen.learningBlocks![0]!.content = JSON.stringify({
             ...grammar,
             rule: 'é'.repeat(20_000),
         });
+
         captureBlockReferences(frozen, [id], 'knowledge');
         expect(() =>
             projectConversationSource('knowledge', frozen, 'explain').read({
@@ -93,6 +105,7 @@ describe('authorized block references', () => {
             }),
         ).toThrow('No content was truncated');
     });
+
     it('keeps one complete editor snapshot and surrounding register guidance with mentioned grammar', () => {
         const editor = 'Use informal register.\nGrammar topic: le subjonctif.';
         const message = projectTutorUserMessage({
@@ -102,17 +115,21 @@ describe('authorized block references', () => {
                 content: editor,
             },
         });
+
         expect(JSON.stringify(message)).toContain(id);
         expect(
             message.parts.filter((part) =>
                 part.text.startsWith('Current complete editor snapshot'),
             ),
         ).toHaveLength(1);
+
         expect(message.parts.some((part) => part.text.includes(editor))).toBe(
             true,
         );
+
         expect(JSON.stringify(message)).toContain('Use informal register.');
     });
+
     it('rejects a reference turn that exceeds the existing message allowance instead of dropping its editor snapshot', () => {
         const message = projectTutorUserMessage({
             content: 'Explain these',
@@ -121,6 +138,7 @@ describe('authorized block references', () => {
                 content: 'x'.repeat(currentTutorMessageByteLimit),
             },
         });
+
         expect(() => assertTutorCurrentMessageFits(message)).toThrow();
     });
 });

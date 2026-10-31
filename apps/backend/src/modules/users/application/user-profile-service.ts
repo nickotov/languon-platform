@@ -28,11 +28,16 @@ export class UserProfileService {
             if (!found || found.user.status !== 'active') {
                 throw new UserProfileUnavailableError();
             }
-            if (found.user.handle === input.handle) return input.handle;
+
+            if (found.user.handle === input.handle) {
+                return input.handle;
+            }
+
             const changed = found.user.withHandle(input.handle, input.now);
             if (!(await repository.saveHandle(changed, found.user.version))) {
                 throw new UserProfileConflictError();
             }
+
             return input.handle;
         });
     }

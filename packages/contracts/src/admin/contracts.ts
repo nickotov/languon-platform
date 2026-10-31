@@ -210,6 +210,7 @@ export const AdminAiSettingsMutationRequestSchema = z
                 path: ['enabledModels'],
             });
         }
+
         if (!value.enabledModels.includes(value.defaultModel)) {
             context.addIssue({
                 code: 'custom',
@@ -277,6 +278,7 @@ export const AdminAiCreditAdjustmentRequestSchema = z
                 path: ['amountCredits'],
             });
         }
+
         if (value.amountCredits < 0 && value.expiresAt !== null) {
             context.addIssue({
                 code: 'custom',

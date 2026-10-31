@@ -12,5 +12,6 @@ export function exercisePracticeIdentity(
         hint: _hint,
         ...material
     } = block;
+
     return JSON.stringify([material, revision]);
 }

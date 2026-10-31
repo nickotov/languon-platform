@@ -19,6 +19,7 @@ function SourceOption({
     label: string;
 }) {
     const title = block.title || `${label} ${index + 1}`;
+
     return <option value={block.id}>{title}</option>;
 }
 
@@ -30,12 +31,14 @@ export function KnowledgeNarration(props: KnowledgeNarrationProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     useEffect(() => {
         const audio = audioRef.current;
+
         return () => {
             audio?.pause();
             audio?.removeAttribute('src');
             audio?.load();
         };
     }, [state.url]);
+
     const blocks = props.blocks.filter((block) =>
         ['bilingual-text', 'grammar', 'vocabulary'].includes(block.type),
     );
@@ -58,20 +61,27 @@ export function KnowledgeNarration(props: KnowledgeNarrationProps) {
         state.response !== null ||
         state.url !== null ||
         state.failed;
+
     function change(event: ChangeEvent<HTMLSelectElement>) {
         state.setSelected(event.target.value);
     }
+
     function generate() {
         void state.generate();
     }
+
     function confirm() {
         void state.confirm();
     }
+
     function apply() {
         void state.apply();
     }
-    if (!hasSource && !hasActivity)
+
+    if (!hasSource && !hasActivity) {
         return props.hideWhenEmpty ? null : <p>{copy.empty}</p>;
+    }
+
     return (
         <section className={styles.root} aria-label={copy.title}>
             <h3>{copy.title}</h3>

@@ -11,6 +11,8 @@ pnpm-lock.yaml
 apps/mobile/.expo
 apps/backend/drizzle/meta
 apps/*/next-env.d.ts
+# Captured provider responses are immutable parser inputs, not authored code.
+apps/backend/src/modules/ai-credits/infrastructure/pricing/fixtures/**
 # Immutable provider export; DESIGN.md records its original content hash.
 .agent/features/033-flashcard-training-backend/designs/flashcard-training/v001/source-export.json
 # Frozen design handoffs and provider source; preserve recorded SHA-256 identities.
@@ -46,3 +48,18 @@ apps/*/next-env.d.ts
 .agent/features/059-interactive-workbooks/evidence/v16-migration/**/tests.json
 .agent/features/059-interactive-workbooks/evidence/v16-migration/**/selection.json
 .agent/features/059-interactive-workbooks/evidence/v16-migration/final-critical/reports
+
+# Imported design exports and their source identities remain byte-exact.
+.agent/features/**/designs/**/source
+.agent/features/**/designs/**/reference
+.agent/features/**/designs/**/source-manifest.json
+# Machine-captured runtime/evidence JSON is historical proof, not authored code.
+.agent/features/**/designs/**/runtime/**/*.json
+.agent/features/**/evidence/**/*.json
+.agent/improvements/evidence/**/*.json
+.agent/features/035-user-ai-model-preferences-backend/remediation-preflight-manifest.json
+.agent/features/048-persistent-tutor-modes/verified-source-sha256.json
+# Raw agent responses and Playwright failure output preserve the original capture.
+.agent/evals/design-brief/import-probe.md
+.agent/features/040-web-css-modules-migration/evidence/skill-forward-test.md
+.agent/improvements/evidence/sentence-practice-ui-fidelity/browser-final/finite-round-failure-error-context.md

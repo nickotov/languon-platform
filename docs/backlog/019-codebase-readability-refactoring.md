@@ -22,12 +22,19 @@ depends_on:
   using BL-018 exclusions. Read implementation logic; track each file as reviewed
   and acceptable, refactored, or deferred with a concrete reason. Report coverage
   and all deferrals; formatter output is not evidence of clarity review.
+- Include BL-018's 37 unsupported SQL/shell source files in the review inventory;
+  they were deliberately preserved by the mechanical formatter pass, not judged
+  readable or excluded from source review. Migrations/generated output remain out.
 - Deliver bounded module/application batches with meaningful names, explicit
   decisions, cohesive helpers and reason/invariant comments. Avoid shallow
   wrappers, arbitrary splitting, speculative abstractions and blanket memoization.
 - Backend review includes orchestration/configuration, predicates, transactions
   and errors. Frontend includes nested JSX, state transitions, cohesive hooks,
   handlers and derived values.
+- Remove BL-018's exact temporary persistence size allowances through cohesive
+  refactoring: conversation-turn-admission (505), text-content-mutations (502),
+  texts-job-admission (504). Restore their ordinary 500-line limits; do not compress
+  formatting or weaken the shared size rule to clear the exceptions.
 - Preserve behavior, DDD/FSD, contracts, persistence semantics, side-effect order,
   concurrency, cancellation, errors, React hooks/identity/dependencies, rendered
   states and accessibility. Escalate changes crossing root feature boundaries.

@@ -55,17 +55,20 @@ export function createKnowledgeBlockFieldRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (!result.success)
+            if (!result.success) {
                 return context.json(
                     error('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
     });
+
     for (const path of [
         '/knowledge/:noteId/block-field-actions',
         '/knowledge/:noteId/block-field-actions/*',
@@ -81,8 +84,10 @@ export function createKnowledgeBlockFieldRoutes({
                 context.header('Access-Control-Allow-Credentials', 'true');
                 context.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -94,6 +99,7 @@ export function createKnowledgeBlockFieldRoutes({
                     ),
             }),
         );
+
         app.options(path, (context) => {
             const origin = context.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -103,32 +109,45 @@ export function createKnowledgeBlockFieldRoutes({
                 'Access-Control-Allow-Methods',
                 'GET, POST, OPTIONS',
             );
+
             context.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID',
             );
+
             return context.body(null, 204);
         });
+
         app.use(path, actionAllowanceRequestMiddleware);
     }
+
     app.onError((caught, context) => {
         const allowance = actionAllowanceErrorResponse(caught, context);
-        if (allowance) return allowance;
-        if (caught instanceof InvalidBearerAuthorizationError)
+        if (allowance) {
+            return allowance;
+        }
+
+        if (caught instanceof InvalidBearerAuthorizationError) {
             return context.json(
                 error('authentication_required', 'Sign in to continue.'),
                 401,
             );
-        if (caught instanceof InvalidRequestOriginError)
+        }
+
+        if (caught instanceof InvalidRequestOriginError) {
             return context.json(
                 error('invalid_origin', 'The request origin is not allowed.'),
                 403,
             );
-        if (caught instanceof z.ZodError)
+        }
+
+        if (caught instanceof z.ZodError) {
             return context.json(
                 error('invalid_request', 'The request is invalid.'),
                 400,
             );
+        }
+
         if (
             caught instanceof TextsAiError ||
             caught instanceof KnowledgeDomainError
@@ -150,6 +169,7 @@ export function createKnowledgeBlockFieldRoutes({
                               code === 'model_capacity_exceeded'
                             ? 400
                             : 503;
+
             return context.json(
                 error(
                     code,
@@ -160,13 +180,16 @@ export function createKnowledgeBlockFieldRoutes({
                 status,
             );
         }
+
         const mapped = mapDictionaryHttpError(caught);
-        if (mapped.status === 401)
+        if (mapped.status === 401) {
             return context.json(
                 error('authentication_required', 'Sign in to continue.'),
                 401,
             );
-        if (mapped.status === 402)
+        }
+
+        if (mapped.status === 402) {
             return context.json(
                 error(
                     'ai_credits_exhausted',
@@ -174,6 +197,8 @@ export function createKnowledgeBlockFieldRoutes({
                 ),
                 402,
             );
+        }
+
         return context.json(
             error(
                 'service_unavailable',
@@ -182,8 +207,10 @@ export function createKnowledgeBlockFieldRoutes({
             503,
         );
     });
+
     const auth = (context: Context) => {
         const metadata = authenticationRequestMetadata(context, policy);
+
         return [
             policy.parseBearerAuthorization(
                 context.req.header('Authorization') ?? null,
@@ -223,6 +250,7 @@ export function createKnowledgeBlockFieldRoutes({
                 202,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -236,12 +264,14 @@ export function createKnowledgeBlockFieldRoutes({
         }),
         async (context) => {
             const input = context.req.valid('param');
+
             return context.json(
                 await service.get(...auth(context), input.noteId, input.jobId),
                 200,
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -255,6 +285,7 @@ export function createKnowledgeBlockFieldRoutes({
         }),
         async (context) => {
             const input = context.req.valid('param');
+
             return context.json(
                 await service.cancel(
                     ...auth(context),
@@ -265,5 +296,6 @@ export function createKnowledgeBlockFieldRoutes({
             );
         },
     );
+
     return app;
 }

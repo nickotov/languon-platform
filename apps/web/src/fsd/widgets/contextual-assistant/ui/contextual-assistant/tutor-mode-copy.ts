@@ -34,6 +34,7 @@ const copy = {
         practice: 'Pratiquer',
     },
 };
+
 export function tutorModeCopy(locale: Locale) {
     return copy[locale];
 }

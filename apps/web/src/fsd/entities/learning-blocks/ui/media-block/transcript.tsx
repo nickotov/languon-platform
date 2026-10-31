@@ -21,6 +21,7 @@ export function Transcript({
                     segment.timing !== undefined &&
                     position >= segment.timing.startSeconds &&
                     position < segment.timing.endSeconds;
+
                 return (
                     <TranscriptSegment
                         key={segment.id}
@@ -34,6 +35,7 @@ export function Transcript({
         </ol>
     );
 }
+
 function TranscriptSegment({
     segment,
     replayLabel,
@@ -46,8 +48,11 @@ function TranscriptSegment({
     active: boolean;
 }) {
     function handleReplay() {
-        if (segment.timing) onReplay?.(segment.timing.startSeconds);
+        if (segment.timing) {
+            onReplay?.(segment.timing.startSeconds);
+        }
     }
+
     const canReplay = segment.timing !== undefined && onReplay !== undefined;
     const seconds = segment.timing?.startSeconds;
     const timestamp =
@@ -57,7 +62,7 @@ function TranscriptSegment({
     let timing;
     if (timestamp) {
         timing = <span className={styles.time}>{timestamp}</span>;
-        if (canReplay)
+        if (canReplay) {
             timing = (
                 <Button
                     className={styles.timestamp}
@@ -70,7 +75,9 @@ function TranscriptSegment({
                     {timestamp}
                 </Button>
             );
+        }
     }
+
     return (
         <li className={styles.segment} aria-current={active || undefined}>
             {timing}

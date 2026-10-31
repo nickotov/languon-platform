@@ -58,9 +58,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const [identity] = await tx.execute<{ role_name: string }>(
                     sql`select current_user as role_name`,
                 );
+
                 expect(identity?.role_name).toBe(role);
+
                 return callback(tx);
             });
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
@@ -80,21 +83,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .filter((line) => !line.startsWith('\\'))
                 .join('\n')
                 .replaceAll(':"dictionary_worker_role"', `"${role}"`);
+
             await client.unsafe(grants);
         }, 120000);
+
         afterAll(async () => {
             if (roleCreated) {
                 await client.unsafe(`DROP OWNED BY "${role}"`);
                 await client.unsafe(`DROP ROLE "${role}"`);
             }
+
             await client?.end();
         });
+
         beforeEach(async () => {
             await client`truncate ai_operator_attempt_costs, ai_operator_action_budgets, ai_operator_daily_budgets, ai_accounting_settings_revisions, users cascade`;
             ownerId = randomUUID();
             await db
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId,
@@ -106,6 +114,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
         });
+
         const reserve = () =>
             db.transaction((tx) =>
                 reserveConversationActionFixture(tx, {
@@ -129,6 +138,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         tx,
                     ).accountSummary(ownerId, new Date()),
                 );
+
                 expect(before.availableCredits).toBe(400n);
                 expect(before.reservedCredits).toBe(600n);
                 const [claimed] = await db
@@ -151,6 +161,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         at: new Date(),
                     }),
                 );
+
                 await restricted((tx) =>
                     recordConversationAttemptFixture(tx, {
                         ownerId,
@@ -160,6 +171,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         usage: { inputTokens: 100, outputTokens: 100 },
                     }),
                 );
+
                 const settled = await restricted((tx) =>
                     settleConversationActionFixture(tx, {
                         ownerId,
@@ -175,6 +187,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         tx,
                     ).accountSummary(ownerId, new Date()),
                 );
+
                 expect(after.availableCredits).toBe(1000n - expectedCharge);
                 expect(after.reservedCredits).toBe(0n);
                 expect(after.consumedCredits).toBe(expectedCharge);
@@ -182,24 +195,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .select()
                     .from(aiCreditActionAttemptsTable)
                     .where(eq(aiCreditActionAttemptsTable.id, attempt.id));
+
                 expect(storedAttempt).toMatchObject({
                     state: 'settled',
                     successful: outcome === 'success' ? 1 : 0,
                     inputTokens: 100,
                     outputTokens: 100,
                 });
+
                 const expenses = await db
                     .select()
                     .from(aiProviderExpenseRecordsTable)
                     .where(
                         eq(aiProviderExpenseRecordsTable.actionId, action.id),
                     );
+
                 expect(expenses).toHaveLength(1);
                 await restricted((tx) =>
                     tx.execute(
                         sql`select languon_record_text_provider_expense(${attempt.id}::uuid,NULL::jsonb)`,
                     ),
                 );
+
                 const canonical = {
                     attemptId: attempt.id,
                     actionId: action.id,
@@ -211,6 +228,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     amountUsdMicros: '1',
                     occurredAt: attempt.createdAt.toISOString(),
                 };
+
                 for (const override of [
                     { providerId: 'wrong-provider' },
                     { modelId: 'wrong-model' },
@@ -231,21 +249,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     amountUsdMicros: 1n,
                     costSource: 'calculated',
                 });
+
                 const [operator] = await db
                     .select()
                     .from(aiOperatorActionBudgetsTable)
                     .where(
                         eq(aiOperatorActionBudgetsTable.actionId, action.id),
                     );
+
                 expect(operator?.state).toBe('settled');
                 expect(operator?.consumedMicros).toBeGreaterThan(0n);
                 const [feature] = await db
                     .select()
                     .from(conversationTurnsTable)
                     .where(eq(conversationTurnsTable.id, action.id));
+
                 expect(feature?.status).toBe(
                     outcome === 'success' ? 'succeeded' : 'failed',
                 );
+
                 // Replay the terminal acknowledgement; it must neither charge nor append another expense.
                 expect(
                     (
@@ -258,10 +280,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )
                     ).chargedMilli,
                 ).toBe(expectedCharge);
+
                 const [storedAction] = await db
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, action.id));
+
                 expect(storedAction?.chargedMilli).toBe(expectedCharge);
                 expect(
                     await db
@@ -302,21 +326,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sql`insert into ai_credit_reservations select * from ai_credit_reservations limit 1`,
                 sql`insert into ai_credit_history select * from ai_credit_history limit 1`,
             ];
-            for (const statement of forbidden)
+
+            for (const statement of forbidden) {
                 await expect(
                     restricted(async (tx) => {
                         await tx.execute(statement);
+
                         throw new Error(
                             'Forbidden worker mutation unexpectedly succeeded.',
                         );
                     }),
                 ).rejects.toMatchObject({ cause: { code: '42501' } });
+            }
+
             const after = await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).accountSummary(
                     ownerId,
                     new Date(),
                 ),
             );
+
             expect(after.availableCredits).toBe(400n);
             expect(after.reservedCredits).toBe(600n);
             expect(after.consumedCredits).toBe(0n);
@@ -352,25 +381,32 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         at: new Date('2000-01-01T00:00:00Z'),
                     }),
                 );
+
             await expect(
                 dispatch(claimed!.leaseToken!, randomUUID()),
             ).rejects.toThrow();
+
             await expect(dispatch(undefined)).rejects.toMatchObject({
                 cause: { code: '23514' },
             });
+
             await expect(dispatch(randomUUID())).rejects.toMatchObject({
                 cause: { code: '23514' },
             });
+
             await expect(
                 dispatch(claimed!.leaseToken!, ownerId, randomUUID()),
             ).rejects.toMatchObject({ cause: { code: '23514' } });
+
             await db
                 .update(conversationTurnsTable)
                 .set({ leaseUntil: new Date(Date.now() - 1000) })
                 .where(eq(conversationTurnsTable.id, action.id));
+
             await expect(dispatch(claimed!.leaseToken!)).rejects.toMatchObject({
                 cause: { code: '23514' },
             });
+
             expect(
                 await db
                     .select()
@@ -419,6 +455,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ),
             ).rejects.toMatchObject({ cause: { code: '23514' } });
+
             await expect(
                 restricted((tx) =>
                     tx.execute(
@@ -443,6 +480,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             const action = await db.transaction((tx) =>
                 reserveConversationActionFixture(tx, {
                     ownerId,
@@ -474,6 +512,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at: new Date(),
                 }),
             );
+
             expect(attempt.outputLimit).toBe(10000);
         });
 
@@ -494,6 +533,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .select()
                     .from(conversationTurnsTable)
                     .where(eq(conversationTurnsTable.id, action.id));
+
                 return restricted((tx) =>
                     new DrizzleActionAccountingParticipant(tx).admitAttempt({
                         actionId: action.id,
@@ -522,6 +562,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(attempt.outputLimit).toBe(10000);
                 admitted.push(attempt);
             }
+
             const first = admitted[0]!;
             await restricted((tx) =>
                 new DrizzleActionAccountingParticipant(tx).recordAttempt({
@@ -533,16 +574,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at: new Date('2000-01-01T00:00:00Z'),
                 }),
             );
+
             const [observed] = await db
                 .select()
                 .from(aiCreditActionAttemptsTable)
                 .where(eq(aiCreditActionAttemptsTable.id, first.id));
+
             expect(observed!.settledAt!.getTime()).toBeGreaterThanOrEqual(
                 first.createdAt.getTime(),
             );
+
             expect(observed!.settledAt!.getTime()).toBeGreaterThan(
                 Date.now() - 10000,
             );
+
             await expect(dispatch()).rejects.toThrow(
                 'Provider operational capacity is unavailable',
             );
@@ -564,6 +609,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(conversationTurnsTable)
                 .where(eq(conversationTurnsTable.id, action.id));
+
             await restricted(async (tx) => {
                 await expect(
                     new DrizzleActionAccountingParticipant(tx).admitAttempt({
@@ -581,19 +627,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         at: new Date(),
                     }),
                 ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+
                 const settled = await settleConversationActionFixture(tx, {
                     ownerId,
                     actionId: action.id,
                     outcome: 'failure',
                 });
+
                 expect(settled.chargedMilli).toBe(0n);
             });
+
             const balance = await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).accountSummary(
                     ownerId,
                     new Date(),
                 ),
             );
+
             expect(balance.availableCredits).toBe(1000n);
             expect(balance.reservedCredits).toBe(0n);
             expect(
@@ -620,6 +670,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(conversationTurnsTable)
                 .where(eq(conversationTurnsTable.id, action.id));
+
             for (let index = 0; index < 3; index++) {
                 const attempt = await restricted((tx) =>
                     new DrizzleActionAccountingParticipant(tx).admitAttempt({
@@ -637,6 +688,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         at: new Date(),
                     }),
                 );
+
                 await restricted((tx) =>
                     recordConversationAttemptFixture(tx, {
                         actionId: action.id,
@@ -647,6 +699,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 );
             }
+
             const settled = await restricted((tx) =>
                 settleConversationActionFixture(tx, {
                     ownerId,
@@ -654,6 +707,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     outcome: 'success',
                 }),
             );
+
             expect(settled.chargedMilli).toBe(1n);
             expect(
                 await db

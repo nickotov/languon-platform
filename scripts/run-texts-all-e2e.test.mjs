@@ -10,9 +10,11 @@ const environment = {
     AUTH_TEST_REDIS_URL: 'redis://127.0.0.1:56443/1',
     AUTH_TEST_REDIS_CONFIRM: '127.0.0.1:56443/1',
 };
+
 test('accepts the exact guarded combined disposable target', () => {
     assert.doesNotThrow(() => assertTextsCombinedEnvironment(environment));
 });
+
 test('refuses a different test database before either child can reset data', () => {
     assert.throws(
         () =>
@@ -29,6 +31,7 @@ test('refuses a different test database before either child can reset data', () 
         /exclusive/,
     );
 });
+
 test('refuses shared/nonlocal targets and live debug-server reuse', () => {
     assert.throws(() =>
         assertTextsCombinedEnvironment({
@@ -39,6 +42,7 @@ test('refuses shared/nonlocal targets and live debug-server reuse', () => {
             ),
         }),
     );
+
     assert.throws(
         () =>
             assertTextsCombinedEnvironment({
@@ -62,6 +66,7 @@ test('refuses an unexpected disposable port or Redis database before the backend
             }),
         /PostgreSQL/,
     );
+
     assert.throws(
         () =>
             assertTextsCombinedEnvironment({

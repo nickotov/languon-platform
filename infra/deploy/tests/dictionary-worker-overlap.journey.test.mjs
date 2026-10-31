@@ -35,6 +35,7 @@ const baseCapabilities = {
 
 function release(identity, phase, apiEnqueued, capabilityOverrides = {}) {
     const sourceSha = identity === 'expand' ? 'b'.repeat(40) : 'c'.repeat(40);
+
     return validateReleaseManifest({
         schemaVersion: 2,
         identity,
@@ -100,6 +101,7 @@ test('release budget metadata is bound to the deployed API and worker policy', a
     assert.doesNotThrow(() =>
         assertDictionaryGenerationBudgetConfig(manifest, config),
     );
+
     assert.throws(
         () =>
             assertDictionaryGenerationBudgetConfig(manifest, {
@@ -108,24 +110,29 @@ test('release budget metadata is bound to the deployed API and worker policy', a
             }),
         /budget must match.*MAX_COST_MICROS_PER_ATTEMPT/,
     );
+
     const inactiveConfig = Object.fromEntries(
         Object.entries(config).filter(
             ([name]) => !name.startsWith('DICTIONARY_GENERATION_'),
         ),
     );
+
     assert.throws(
         () => assertDictionaryGenerationBudgetConfig(manifest, inactiveConfig),
         /budget must match/,
     );
+
     const { calls, deployment } = await fixture(manifest);
     deployment.config = {
         ...config,
         DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '69999',
     };
+
     await assert.rejects(
         () => deployment.deploy(),
         /budget must match.*MAX_COST_MICROS_PER_ATTEMPT/,
     );
+
     assert.equal(calls.length, 0);
 });
 
@@ -160,6 +167,7 @@ async function fixture(manifest, behavior = {}) {
                 stderr: '',
             };
         }
+
         if (
             behavior.failWorkerReadiness === true &&
             args.includes('up') &&
@@ -168,9 +176,11 @@ async function fixture(manifest, behavior = {}) {
         ) {
             throw new Error('private worker readiness failed');
         }
+
         if (args.includes('sh') && args.includes('-c')) {
             throw new Error('no draining nginx workers');
         }
+
         return {
             stdout: args.some((value) => String(value).startsWith('http'))
                 ? (options.env?.RELEASE_SHA ?? deployment.manifest.sourceSha)
@@ -178,6 +188,7 @@ async function fixture(manifest, behavior = {}) {
             stderr: '',
         };
     };
+
     return {
         calls,
         directory,
@@ -219,6 +230,7 @@ test('expand, activate, slot overlap, and rollback preserve full dictionary job 
         (line) =>
             line.includes('dictionary-overlap-blue') && line.includes('down'),
     );
+
     assert.ok(startsCandidate >= 0 && startsCandidate < stopsFloor);
     assert.equal(
         environments.some(
@@ -247,6 +259,7 @@ test('expand, activate, slot overlap, and rollback preserve full dictionary job 
         'infra/deploy/compose/apps.compose.yaml',
         'utf8',
     );
+
     assert.match(compose, /dictionary-worker:/);
     assert.match(compose, /dictionary-worker-command\.js/);
     assert.equal(
@@ -281,27 +294,33 @@ test('card-authoring v2 activation propagates alongside readable v1 through slot
             environment.RELEASE_SHA === activate.sourceSha &&
             environment.DICTIONARY_JOB_API_ENQUEUED_FORMATS === format,
     );
+
     assert.ok(activated);
     assert.equal(
         activated.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS,
         formats.join(','),
     );
+
     assert.equal(
         activated.DICTIONARY_JOB_API_READABLE_FORMATS,
         formats.join(','),
     );
+
     assert.equal(
         activated.DICTIONARY_JOB_API_CANCELLABLE_FORMATS,
         formats.join(','),
     );
+
     assert.equal(
         activated.DICTIONARY_JOB_API_DISCARDABLE_FORMATS,
         formats.join(','),
     );
+
     assert.equal(
         activated.DICTIONARY_JOB_API_ACCEPTABLE_FORMATS,
         formats.join(','),
     );
+
     assert.equal(
         activated.DICTIONARY_JOB_WEB_READABLE_FORMATS,
         formats.join(','),
@@ -328,6 +347,7 @@ test('activate, steady expand patch, and rollback restore the activated release'
             'utf8',
         ),
     );
+
     assert.equal(state.current.identity, 'activate');
     assert.deepEqual(state.current.dictionaryJobs.apiEnqueued, [
         'single-card:v1',
@@ -349,12 +369,14 @@ test('rollback from initial expand to an empty current release runs the drain ga
     const rollbackCalls = calls
         .slice(beforeRollback)
         .map((call) => call.join(' '));
+
     assert.equal(
         rollbackCalls.some((line) =>
             line.includes('dictionary_generation_jobs'),
         ),
         true,
     );
+
     assert.equal(
         rollbackCalls.some((line) =>
             line.includes('run --rm --no-deps migrator'),
@@ -370,6 +392,7 @@ test('activation fails before migration when the rollback floor cannot resolve i
         () => deployment.deploy(),
         /Rollback-floor release workerProcessable/,
     );
+
     assert.equal(calls.length, 0);
     const audit = JSON.parse(
         (
@@ -379,6 +402,7 @@ test('activation fails before migration when the rollback floor cannot resolve i
             )
         ).trim(),
     );
+
     assert.equal(audit.failurePhase, 'preflight');
 });
 
@@ -398,6 +422,7 @@ test('activation fails before migration when the live provider remains disabled'
         () => deployment.deploy(),
         /requires a configured live provider/,
     );
+
     assert.equal(calls.length, beforeActivation);
 });
 
@@ -420,6 +445,7 @@ test('stop-enqueue keeps live provider required until processable work drains', 
         () => deployment.deploy(),
         /worker-processable.*live provider/i,
     );
+
     assert.equal(calls.length, beforeStopEnqueue);
 });
 
@@ -441,14 +467,17 @@ test('budget incompatibility fails before migration and preserves rollback safet
             },
         },
     );
+
     deployment.config = {
         ...config,
         DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: '500000',
     };
+
     await assert.rejects(
         () => deployment.deploy(),
         /Rollback-floor worker cannot claim/,
     );
+
     assert.equal(calls.length, beforeActivation);
 
     deployment.manifest = activate;
@@ -466,14 +495,17 @@ test('budget incompatibility fails before migration and preserves rollback safet
             },
         },
     );
+
     deployment.config = {
         ...config,
         DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS: '3000000',
     };
+
     await assert.rejects(
         () => deployment.deploy(),
         /Rollback-floor worker cannot claim/,
     );
+
     assert.equal(calls.length, beforeSteady);
 
     deployment.manifest = release('steady', 'expand', ['single-card:v1']);
@@ -507,12 +539,14 @@ test('format retirement is blocked until jobs and reviewable proposals are drain
         documentTombstoneVersions: 0,
         documentActiveCapabilities: 0,
     };
+
     deployment.manifest = retire;
 
     await assert.rejects(
         () => deployment.deploy(),
         /cannot retire while 1 queued\/running jobs and 2 reviewable proposals remain/,
     );
+
     const retirementCalls = calls.slice(beforeRetirement);
     assert.equal(
         retirementCalls.some((call) =>
@@ -520,12 +554,14 @@ test('format retirement is blocked until jobs and reviewable proposals are drain
         ),
         true,
     );
+
     assert.equal(
         retirementCalls.some((call) =>
             call.join(' ').includes('run --rm --no-deps migrator'),
         ),
         false,
     );
+
     const audit = JSON.parse(
         (
             await readFile(
@@ -537,6 +573,7 @@ test('format retirement is blocked until jobs and reviewable proposals are drain
             .split('\n')
             .at(-1),
     );
+
     assert.equal(audit.failurePhase, 'retirement-preflight');
 });
 
@@ -603,6 +640,7 @@ test('format retirement proceeds after the database is fully drained', async () 
             documentActiveCapabilities: 0,
         },
     });
+
     await deployment.deploy();
     const beforeRetirement = calls.length;
     deployment.manifest = retire;
@@ -617,6 +655,7 @@ test('format retirement proceeds after the database is fully drained', async () 
     const migration = retirementCalls.findIndex((line) =>
         line.includes('run --rm --no-deps migrator'),
     );
+
     assert.ok(preflight >= 0 && preflight < migration);
 });
 
@@ -634,9 +673,11 @@ test('unhealthy private worker readiness blocks activation before traffic switch
         () => deployment.deploy(),
         /private worker readiness failed/,
     );
+
     const activationCalls = calls
         .slice(beforeActivation)
         .map((call) => call.join(' '));
+
     assert.equal(
         activationCalls.some(
             (line) =>
@@ -645,16 +686,19 @@ test('unhealthy private worker readiness blocks activation before traffic switch
         ),
         true,
     );
+
     assert.equal(
         activationCalls.some((line) => line.includes('nginx -s reload')),
         false,
     );
+
     const state = JSON.parse(
         await readFile(
             path.join(directory, 'state/deployment-state.json'),
             'utf8',
         ),
     );
+
     assert.equal(state.activeSlot, 'blue');
 });
 
@@ -689,6 +733,7 @@ test(
                 ],
                 { capture: true, ...options },
             );
+
         try {
             await runCommand(
                 'docker',
@@ -703,15 +748,21 @@ test(
                 ],
                 { capture: true },
             );
+
             let ready = false;
             for (let attempt = 0; attempt < 40; attempt += 1) {
                 ready = await postgres(['--command', 'select 1']).then(
                     () => true,
                     () => false,
                 );
-                if (ready) break;
+
+                if (ready) {
+                    break;
+                }
+
                 await new Promise((resolve) => setTimeout(resolve, 250));
             }
+
             assert.equal(ready, true, 'disposable PostgreSQL did not start');
             await postgres(['--file', '-'], {
                 input: [
@@ -749,10 +800,12 @@ test(
                     'grant insert on dictionary_generation_proposals, dictionary_generation_provider_circuit to worker_missing_update;',
                 ].join('\n'),
             });
+
             const grants = await readFile(
                 'infra/deploy/sql/dictionary-worker-role.sql',
                 'utf8',
             );
+
             await postgres(
                 [
                     '--set',
@@ -762,6 +815,7 @@ test(
                 ],
                 { input: grants },
             );
+
             await postgres(['--file', '-'], {
                 input: [
                     'grant languon_dictionary_worker to worker_excess_auth;',
@@ -773,6 +827,7 @@ test(
                     'grant create on schema public to worker_excess_generation;',
                 ].join('\n'),
             });
+
             const queryAs = (username, password, statement) =>
                 runCommand(
                     'docker',
@@ -842,6 +897,7 @@ test(
                     adminMemberships,
                     adminAuditEvents,
                 ] = values;
+
                 return {
                     jobs,
                     proposals,
@@ -879,9 +935,11 @@ test(
                 'languon_dictionary_worker',
                 'worker-test',
             );
+
             assert.doesNotThrow(() =>
                 assertDictionaryWorkerDatabasePrivileges(fullPrivileges),
             );
+
             for (const [username, password, expectedRequired] of [
                 [
                     'worker_select_only',
@@ -918,6 +976,7 @@ test(
                     username,
                     password,
                 );
+
                 assert.deepEqual(
                     {
                         jobs: partialPrivileges.jobs,
@@ -927,6 +986,7 @@ test(
                     },
                     expectedRequired,
                 );
+
                 assert.throws(
                     () =>
                         assertDictionaryWorkerDatabasePrivileges(
@@ -935,10 +995,12 @@ test(
                     /least-privilege boundary/,
                 );
             }
+
             const excessivePrivileges = await readPrivileges(
                 'worker_excess_auth',
                 'excess-test',
             );
+
             assert.deepEqual(
                 {
                     jobs: excessivePrivileges.jobs,
@@ -953,6 +1015,7 @@ test(
                     settings: true,
                 },
             );
+
             assert.equal(excessivePrivileges.authSessions, true);
             assert.throws(
                 () =>
@@ -961,16 +1024,19 @@ test(
                     ),
                 /least-privilege boundary/,
             );
+
             const excessiveGenerationPrivileges = await readPrivileges(
                 'worker_excess_generation',
                 'generation-excess-test',
             );
+
             assert.equal(excessiveGenerationPrivileges.jobsUnexpected, true);
             assert.equal(excessiveGenerationPrivileges.dictionaries, true);
             assert.equal(
                 excessiveGenerationPrivileges.dictionaryCardsUnexpectedColumns,
                 true,
             );
+
             assert.equal(excessiveGenerationPrivileges.schemaCreate, true);
             assert.throws(
                 () =>
@@ -979,18 +1045,23 @@ test(
                     ),
                 /least-privilege boundary/,
             );
+
             await worker(
                 'select * from dictionary_generation_jobs; update dictionary_generation_jobs set id = 1 where id = 1; insert into dictionary_generation_proposals values (1); update dictionary_generation_proposals set id = 1 where id = 1; insert into dictionary_generation_provider_circuit values (1); update dictionary_generation_provider_circuit set id = 1 where id = 1; select * from dictionary_settings;',
             );
+
             await worker(
                 'select * from dictionary_document_uploads; update dictionary_document_uploads set id = 1 where id = 1; insert into dictionary_document_object_versions values (1); update dictionary_document_object_versions set id = 1 where id = 1; insert into dictionary_document_extractions values (1); update dictionary_document_extractions set id = 1 where id = 1;',
             );
+
             await worker(
                 'select id, dictionary_id, source, sort_key from dictionary_cards;',
             );
+
             await assert.rejects(() =>
                 worker('select translation from dictionary_cards;'),
             );
+
             for (const table of [
                 'users',
                 'user_emails',

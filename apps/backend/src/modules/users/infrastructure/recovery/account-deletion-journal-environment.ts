@@ -61,8 +61,10 @@ export function loadAccountDeletionJournalEnvironment(
                 'Deletion journal endpoint must be a credential-free origin and use HTTPS when deployed.',
             );
         }
+
         endpoint = parsed.origin;
     }
+
     return {
         accessKeyId: raw.ACCOUNT_DELETION_JOURNAL_ACCESS_KEY_ID,
         bucket: raw.ACCOUNT_DELETION_JOURNAL_BUCKET,

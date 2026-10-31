@@ -13,9 +13,12 @@ export async function runFlashcardTrainingE2e(run = execute) {
             allowFailure: true,
             quiet: true,
         });
-        if (result.code === 0)
+
+        if (result.code === 0) {
             throw new Error(`Refusing to reuse existing container ${name}.`);
+        }
     }
+
     try {
         await run([
             'docker',
@@ -38,6 +41,7 @@ export async function runFlashcardTrainingE2e(run = execute) {
             'POSTGRES_PASSWORD=learning-local',
             'postgres:17-alpine',
         ]);
+
         started.push(postgresName);
         await run([
             'docker',
@@ -57,6 +61,7 @@ export async function runFlashcardTrainingE2e(run = execute) {
             '--appendonly',
             'no',
         ]);
+
         started.push(redisName);
         await ready(run, [
             'docker',
@@ -68,6 +73,7 @@ export async function runFlashcardTrainingE2e(run = execute) {
             '--dbname',
             databaseName,
         ]);
+
         await ready(run, ['docker', 'exec', redisName, 'redis-cli', 'ping']);
         await run(
             [
@@ -105,10 +111,13 @@ async function ready(run, command) {
     for (let attempt = 0; attempt < 40; attempt++) {
         if (
             (await run(command, { allowFailure: true, quiet: true })).code === 0
-        )
+        ) {
             return;
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
+
     throw new Error(
         'Disposable flashcard test infrastructure did not become ready.',
     );
@@ -123,6 +132,7 @@ function execute(
             env: environment,
             stdio: quiet ? 'ignore' : 'inherit',
         });
+
         child.once('error', reject);
         child.once('exit', (code, signal) => {
             if (!allowFailure && (code !== 0 || signal)) {
@@ -131,7 +141,9 @@ function execute(
                         `Flashcard test command failed: ${command} (exit ${code ?? 'unknown'}, signal ${signal ?? 'none'}).`,
                     ),
                 );
-            } else resolve({ code: code ?? 1 });
+            } else {
+                resolve({ code: code ?? 1 });
+            }
         });
     });
 }

@@ -35,9 +35,13 @@ export function segmentAnswer(
                     index < item.span.end,
             )?.index ?? null;
         const last = chunks.at(-1);
-        if (last && last.issue === issue) last.text += point;
-        else chunks.push({ text: point, issue });
+        if (last && last.issue === issue) {
+            last.text += point;
+        } else {
+            chunks.push({ text: point, issue });
+        }
     });
+
     return chunks;
 }
 
@@ -45,6 +49,7 @@ export function segmentAnswer(
 export function HighlightedAnswer({ attempt }: { attempt: SentenceAttempt }) {
     const { t } = useSentenceCopy();
     const chunks = segmentAnswer(attempt.answer, attempt.feedback.issues);
+
     return (
         <p
             lang={attempt.exercise.targetLanguage}
@@ -96,7 +101,9 @@ export function AiResultPanel({
         scoreTone = styles.scoreWarning;
         ScoreIcon = CircleDashed;
     }
+
     const scoreClassName = `${styles.score} ${scoreTone}`;
+
     return (
         <section aria-label={t('AI feedback')} className={styles.feedbackPanel}>
             <div className={styles.feedbackHeader}>
@@ -254,6 +261,7 @@ export function ReferencePanel({
 }) {
     const { t } = useSentenceCopy();
     const [open, setOpen] = useState(true);
+
     return (
         <section
             aria-label={t('Reference translation')}

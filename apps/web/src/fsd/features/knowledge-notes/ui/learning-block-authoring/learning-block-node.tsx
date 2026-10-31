@@ -25,6 +25,7 @@ export const LearningBlockNode = Node.create<{ labels: BlockAuthoringLabels }>({
     },
     renderHTML({ node }) {
         const block = LearningBlockSchema.parse(node.attrs.block);
+
         return [
             'div',
             { 'data-learning-block': 'true' },

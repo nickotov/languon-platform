@@ -37,8 +37,10 @@ export function AccountingPage() {
             to.getTime() - from.getTime() > 366 * 86_400_000
         ) {
             setPeriodError(true);
+
             return;
         }
+
         setPeriodError(false);
         accounting.setPeriod({
             from: from.toISOString(),
@@ -72,6 +74,7 @@ export function AccountingPage() {
         },
         { title: t('accounting.id'), dataIndex: 'id' },
     ];
+
     return (
         <div className={styles.stack}>
             <Typography.Title>{t('accounting.title')}</Typography.Title>

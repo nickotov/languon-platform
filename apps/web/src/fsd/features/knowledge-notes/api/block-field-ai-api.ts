@@ -26,6 +26,7 @@ async function request(
     signal?: AbortSignal,
 ) {
     const noteId = z.uuid().parse(context.noteId);
+
     return context.requestWithSession(async (token) => {
         const response = await fetch(
             `${resolveApiUrl(process.env.NODE_ENV, process.env.NEXT_PUBLIC_API_URL)}/knowledge/${encodeURIComponent(noteId)}/block-field-actions${suffix}`,
@@ -49,6 +50,7 @@ async function request(
         const payload: unknown = await response.json();
         if (!response.ok) {
             const parsed = errorSchema.safeParse(payload);
+
             throw new BlockFieldAiError(
                 response.status,
                 parsed.success
@@ -61,9 +63,11 @@ async function request(
                       },
             );
         }
+
         return KnowledgeBlockFieldActionResponseSchema.parse(payload);
     });
 }
+
 export const blockFieldAiApi = {
     submit(
         context: KnowledgeBlockFieldAiContext,
@@ -71,6 +75,7 @@ export const blockFieldAiApi = {
         confirmedQuoteId?: string,
     ) {
         const body = RequestKnowledgeBlockFieldActionSchema.parse(input);
+
         return request(context, '', {
             ...body,
             ...(confirmedQuoteId ? { confirmedQuoteId } : {}),

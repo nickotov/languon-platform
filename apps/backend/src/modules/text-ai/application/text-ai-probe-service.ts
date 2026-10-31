@@ -29,8 +29,10 @@ export class TextAiProbeService {
             maximumCostMicros <= 0n ||
             maximumCostMicros > this.limits.maximumCostMicros ||
             parseFixed(request.approvedMaximumCostUsd, 6) !== maximumCostMicros
-        )
+        ) {
             throw new TextAiProbeUnavailableError('probe_limit_changed');
+        }
+
         const identity = this.executor.identity(request);
         const reservation = await this.store.reserve({
             actorId,
@@ -57,6 +59,7 @@ export class TextAiProbeService {
             const notDispatched =
                 !dispatchStarted ||
                 error instanceof TextAiProbeUnavailableError;
+
             // No raw provider object crosses this boundary. Unknown usage is never zero.
             result = {
                 valid: false,
@@ -73,6 +76,7 @@ export class TextAiProbeService {
                     : ('unknown' as const),
             };
         }
+
         return this.store.finish(reservation, result, this.now());
     }
 

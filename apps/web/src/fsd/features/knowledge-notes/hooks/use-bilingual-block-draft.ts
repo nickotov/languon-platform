@@ -28,6 +28,7 @@ export function useBilingualBlockDraft({
             ? structuredClone(block.translations)
             : [],
     );
+
     function passages(data: FormData) {
         return Array.from(
             { length: counts.current.segments ?? 0 },
@@ -40,14 +41,22 @@ export function useBilingualBlockDraft({
             }),
         );
     }
+
     function capture(data: FormData) {
         const language = String(data.get('translationLanguage') ?? '').trim();
         const rows = passages(data);
-        if (!language) return;
+        if (!language) {
+            return;
+        }
+
         const existing = prepared.current.find(
             (item) => item.language.toLowerCase() === language.toLowerCase(),
         );
-        if (!existing && !rows.some((row) => row.translation.trim())) return;
+
+        if (!existing && !rows.some((row) => row.translation.trim())) {
+            return;
+        }
+
         const translation = {
             language: existing?.language ?? language,
             segments: rows.map((row) => ({
@@ -55,19 +64,31 @@ export function useBilingualBlockDraft({
                 text: row.translation,
             })),
         };
-        if (existing)
+
+        if (existing) {
             prepared.current = prepared.current.map((item) =>
                 item === existing ? translation : item,
             );
-        else prepared.current = [...prepared.current, translation];
+        } else {
+            prepared.current = [...prepared.current, translation];
+        }
     }
+
     function read(data: FormData) {
-        if (kind !== 'bilingual-text') return undefined;
+        if (kind !== 'bilingual-text') {
+            return undefined;
+        }
+
         capture(data);
+
         return prepared.current;
     }
+
     function switchLanguage(language: string) {
-        if (kind !== 'bilingual-text' || !form.current) return;
+        if (kind !== 'bilingual-text' || !form.current) {
+            return;
+        }
+
         const data = new FormData(form.current);
         capture(data);
         const translation = prepared.current.find(
@@ -97,16 +118,21 @@ export function useBilingualBlockDraft({
                     : group,
             ),
         };
+
         onDefinition(next);
     }
+
     function needsReview() {
         if (
             block?.type !== 'bilingual-text' ||
             !block.translations.length ||
             !form.current
-        )
+        ) {
             return false;
+        }
+
         const rows = passages(new FormData(form.current));
+
         return (
             rows.length !== block.segments.length ||
             rows.some(
@@ -116,6 +142,7 @@ export function useBilingualBlockDraft({
             )
         );
     }
+
     return {
         read,
         switchLanguage,

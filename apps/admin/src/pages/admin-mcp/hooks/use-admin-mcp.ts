@@ -20,15 +20,20 @@ export function useAdminMcp() {
                 setError(null);
             }
         } catch (caught) {
-            if (!signal?.aborted) setError(asError(caught));
+            if (!signal?.aborted) {
+                setError(asError(caught));
+            }
         } finally {
-            if (!signal?.aborted) setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
 
     useEffect(() => {
         const controller = new AbortController();
         void refresh(controller.signal);
+
         return () => controller.abort();
     }, [refresh]);
 
@@ -39,9 +44,11 @@ export function useAdminMcp() {
             const result = await adminMcpApi.issue(body);
             setSecret(result.secret);
             setTokens((current) => [result.token, ...current]);
+
             return true;
         } catch (caught) {
             setError(asError(caught));
+
             return false;
         } finally {
             setPending(false);
@@ -54,9 +61,11 @@ export function useAdminMcp() {
         try {
             await adminMcpApi.revoke(id, reason);
             await refresh();
+
             return true;
         } catch (caught) {
             setError(asError(caught));
+
             return false;
         } finally {
             setPending(false);
@@ -65,6 +74,7 @@ export function useAdminMcp() {
 
     const reload = () => void refresh();
     const dismissSecret = () => setSecret(null);
+
     return {
         tokens,
         loading,

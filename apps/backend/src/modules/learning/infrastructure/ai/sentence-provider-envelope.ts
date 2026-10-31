@@ -24,6 +24,7 @@ export function sentenceGenerationProviderSchema(
                   contextualHint: segment.shape.contextualHint.unwrap(),
               })
             : segment.omit({ contextualHint: true });
+
     return SentenceGenerationDraftSchema.extend({
         segments: providerSegment
             .extend({ entryId: alias.nullable() })
@@ -46,6 +47,7 @@ export function sentenceCheckProviderSchema(aliases: string[]) {
         aliases.map((alias) => [alias, assessment]),
     );
     const issue = SentenceCheckDraftSchema.shape.issues.element;
+
     return SentenceCheckDraftSchema.extend({
         targets: z.object(shape).strict(),
         issues: issue
@@ -91,6 +93,7 @@ export function sentenceActionInputOverhead(
         const aliases = input.candidates.map(
             (_, index) => `candidate-${index + 1}`,
         );
+
         return overhead(
             'generate',
             sentenceGenerationProviderSchema(
@@ -99,6 +102,8 @@ export function sentenceActionInputOverhead(
             ),
         );
     }
+
     const aliases = input.targets.map((_, index) => `target-${index + 1}`);
+
     return overhead('check', sentenceCheckProviderSchema(aliases));
 }

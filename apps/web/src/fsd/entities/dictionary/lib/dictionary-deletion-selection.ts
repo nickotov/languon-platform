@@ -12,12 +12,16 @@ export function toggleDeletionTarget(
     const selected = new Set(current);
     if (selected.has(targetId)) {
         selected.delete(targetId);
+
         return { limitReached: false, selected };
     }
+
     if (selected.size >= dictionaryDeletionSelectedTargetLimit) {
         return { limitReached: true, selected };
     }
+
     selected.add(targetId);
+
     return { limitReached: false, selected };
 }
 
@@ -27,18 +31,26 @@ export function toggleLoadedDeletionTargets(
 ): DeletionSelectionUpdate {
     const selected = new Set(current);
     if (targetIds.every((targetId) => selected.has(targetId))) {
-        for (const targetId of targetIds) selected.delete(targetId);
+        for (const targetId of targetIds) {
+            selected.delete(targetId);
+        }
+
         return { limitReached: false, selected };
     }
 
     let limitReached = false;
     for (const targetId of targetIds) {
-        if (selected.has(targetId)) continue;
+        if (selected.has(targetId)) {
+            continue;
+        }
+
         if (selected.size >= dictionaryDeletionSelectedTargetLimit) {
             limitReached = true;
             break;
         }
+
         selected.add(targetId);
     }
+
     return { limitReached, selected };
 }

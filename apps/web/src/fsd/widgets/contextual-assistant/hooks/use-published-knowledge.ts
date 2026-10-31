@@ -7,6 +7,7 @@ export function usePublishedKnowledge(
     const [notes, setNotes] = useState<
         Record<string, { id: string; title: string }>
     >({});
+
     function publishedNote(
         id: string,
         title: string,
@@ -17,8 +18,11 @@ export function usePublishedKnowledge(
             ...previous,
             [sourceConversationId]: { id, title },
         }));
+
         setEditingDraft((current) => (current === draftId ? null : current));
     }
+
     const published = conversationId ? notes[conversationId] : undefined;
+
     return { published, publishedNote };
 }

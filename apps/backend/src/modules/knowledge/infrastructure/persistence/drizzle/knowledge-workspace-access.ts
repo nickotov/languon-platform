@@ -38,7 +38,10 @@ export async function ensureBranch(
     tx: KnowledgeTransaction,
     row: typeof knowledgeNotesTable.$inferSelect,
 ) {
-    if (row.preferredBranchId) return row.preferredBranchId;
+    if (row.preferredBranchId) {
+        return row.preferredBranchId;
+    }
+
     const id = randomUUID();
     const content = KnowledgeWorkingContentSchema.parse({
         title: row.title,
@@ -213,12 +216,14 @@ export async function createDraft(
             fingerprint,
         );
 
-        if (receipt)
+        if (receipt) {
             return composeWorkspace(
                 persistence,
                 tx,
                 await getOwnedKnowledgeRow(tx, ownerId, receipt.noteId),
             );
+        }
+
         const noteId = randomUUID(),
             branchId = randomUUID(),
             now = new Date();

@@ -67,6 +67,7 @@ export function deriveEditorWorkspace(
         reloadAfterConflict,
     };
 }
+
 export type EditorController = ReturnType<typeof useDictionaryEditorController>;
 export type EditorWorkspace = ReturnType<typeof deriveEditorWorkspace>;
 export type EditorViewFields = EditorController['state'] &

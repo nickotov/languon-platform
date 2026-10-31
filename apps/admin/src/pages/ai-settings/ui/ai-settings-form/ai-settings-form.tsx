@@ -56,7 +56,10 @@ export function AiSettingsForm({
                 model.available &&
                 enabledIds.includes(model.id),
         );
-        if (!validDefault) form.setFieldValue('defaultModel', undefined);
+
+        if (!validDefault) {
+            form.setFieldValue('defaultModel', undefined);
+        }
     };
 
     const handleFinish = async (values: AiSettingsFormValues) => {

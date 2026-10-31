@@ -25,20 +25,20 @@ explicit, non-persisting “Coming soon” feedback.
 ## Acceptance criteria
 
 - [x] AC-1 — The old fixed controls-only header is replaced globally by the
-  Magic Patterns top bar, with a home-linked Languon logo, retained locale
-  selection, and an accessible light/dark toggle that persists preference.
+      Magic Patterns top bar, with a home-linked Languon logo, retained locale
+      selection, and an accessible light/dark toggle that persists preference.
 - [x] AC-2 — `/profile` renders the Magic Patterns account-settings hierarchy:
-  heading, profile summary, underline tabs, and responsive outlined sections.
+      heading, profile summary, underline tabs, and responsive outlined sections.
 - [x] AC-3 — Account identity comes only from the authenticated session; no
-  invented profile, plan, payment, credit, or transaction data is displayed.
+      invented profile, plan, payment, credit, or transaction data is displayed.
 - [x] AC-4 — Account, Security, Billing, and Credits can all be selected with
-  keyboard-accessible tabs, and unavailable actions provide “Coming soon”
-  feedback without API calls, persistence, or destructive effects.
+      keyboard-accessible tabs, and unavailable actions provide “Coming soon”
+      feedback without API calls, persistence, or destructive effects.
 - [x] AC-5 — Signed-out visitors to `/profile` receive a clear sign-in route;
-  bootstrapping has a loading state, and authenticated users can reach both the
-  existing working security controls and the new profile surface.
+      bootstrapping has a loading state, and authenticated users can reach both the
+      existing working security controls and the new profile surface.
 - [x] AC-6 — Desktop and mobile browser verification finds no material visual,
-  accessibility, console, or failed-network regression on profile and auth.
+      accessibility, console, or failed-network regression on profile and auth.
 
 ## Scope
 

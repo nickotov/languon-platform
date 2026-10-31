@@ -98,10 +98,12 @@ function assertFixtureTarget() {
     if (
         process.env.LEARNER_PORTRAIT_WEB_FIXTURE !== 'true' ||
         process.env.APP_ENV !== 'test'
-    )
+    ) {
         throw new Error(
             'Explicit learner portrait web test-only composition opt-in required.',
         );
+    }
+
     const database = new URL(getTestDatabaseUrl());
     const redis = new URL(process.env.AUTH_TEST_REDIS_URL ?? 'invalid:');
     const namedTarget =
@@ -114,6 +116,7 @@ function assertFixtureTarget() {
         (database.port === '55444' &&
             database.pathname === '/languon_auth_assistant_web_test' &&
             redis.port === '56444');
+
     if (
         !namedTarget ||
         redis.protocol !== 'redis:' ||
@@ -122,10 +125,11 @@ function assertFixtureTarget() {
         process.env.ALLOW_DISPOSABLE_REDIS_TESTS !== 'true' ||
         process.env.AUTH_TEST_REDIS_CONFIRM !==
             `${redis.hostname}:${redis.port}/1`
-    )
+    ) {
         throw new Error(
             'Fixture requires the confirmed portrait55481/56381, critical55486/56486 or assistant55444/56444 named disposable target pair.',
         );
+    }
 }
 
 /** Real SDK/tools/memory/accounting; replace only the paid external model boundary. */
@@ -134,6 +138,7 @@ function deterministicModel(
     fail: boolean,
 ): TutorProviderModel {
     let dispatched = 0;
+
     return {
         specificationVersion: 'v2',
         provider: 'deterministic-local',
@@ -152,23 +157,32 @@ function deterministicModel(
                     'مؤسسة مالية',
                     'We sat on the river bank.',
                     'The bank is closed today.',
-                ])
-                    if (!prompt.includes(field))
+                ]) {
+                    if (!prompt.includes(field)) {
                         throw new Error(
                             'The real tutor prompt must receive every selected copied card field.',
                         );
+                    }
+                }
             }
+
             const ordinal = dispatched++;
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
             const progressive = /progressively/iu.test(question);
             let text =
                 'A river bank is the land beside a river. This explanation uses your saved learning context.';
-            if (fail) text = 'Partial explanation before interruption.';
-            else if (question.includes('Markdown grammar mapping fixture'))
+
+            if (fail) {
+                text = 'Partial explanation before interruption.';
+            } else if (question.includes('Markdown grammar mapping fixture')) {
                 text =
                     '# Времена во французском\n\nФранцузская система: **время** и *вид*.\n\n## Настоящее\n\n- Je parle\n- Tu parles\n\n| Temps | Exemple |\n| --- | --- |\n| Présent | Je parle |';
-            else if (question.includes('Unsupported Markdown grammar fixture'))
+            } else if (
+                question.includes('Unsupported Markdown grammar fixture')
+            ) {
                 text = '```text\nJe parle français.\n```';
+            }
+
             return {
                 stream: new ReadableStream({
                     async start(controller) {
@@ -177,6 +191,7 @@ function deterministicModel(
                                 type: 'stream-start',
                                 warnings: [],
                             });
+
                             if (draft) {
                                 controller.enqueue({
                                     type: 'tool-call',
@@ -184,6 +199,7 @@ function deterministicModel(
                                     toolName: 'propose_knowledge_note',
                                     input: JSON.stringify(proposedContent),
                                 });
+
                                 controller.enqueue({
                                     type: 'finish',
                                     finishReason: 'tool-calls',
@@ -198,6 +214,7 @@ function deterministicModel(
                                     type: 'text-start',
                                     id: 'answer',
                                 });
+
                                 if (progressive) {
                                     // Delays/chunks live only at the external model boundary:
                                     // Mastra, tools, durable writes, SSE and UI run unchanged.
@@ -205,6 +222,7 @@ function deterministicModel(
                                         signal:
                                             options.abortSignal ?? undefined,
                                     });
+
                                     for (
                                         let offset = 0;
                                         offset < text.length;
@@ -218,6 +236,7 @@ function deterministicModel(
                                                 offset + 4,
                                             ),
                                         });
+
                                         await delay(
                                             offset === 40 ? 1_100 : 140,
                                             undefined,
@@ -234,6 +253,7 @@ function deterministicModel(
                                         id: 'answer',
                                         delta: text.slice(0, 20),
                                     });
+
                                     await delay(
                                         /slow/iu.test(question) ? 8_000 : 350,
                                         undefined,
@@ -243,20 +263,25 @@ function deterministicModel(
                                                 undefined,
                                         },
                                     );
-                                    if (fail)
+
+                                    if (fail) {
                                         throw new Error(
                                             'Deterministic interrupted provider response.',
                                         );
+                                    }
+
                                     controller.enqueue({
                                         type: 'text-delta',
                                         id: 'answer',
                                         delta: text.slice(20),
                                     });
                                 }
+
                                 controller.enqueue({
                                     type: 'text-end',
                                     id: 'answer',
                                 });
+
                                 controller.enqueue({
                                     type: 'finish',
                                     finishReason: 'stop',
@@ -267,6 +292,7 @@ function deterministicModel(
                                     },
                                 });
                             }
+
                             controller.close();
                         } catch (error) {
                             controller.error(error);
@@ -320,17 +346,21 @@ function deterministicInterviewerModel(
         ...(invalid.proposedItems as Record<string, unknown>),
         languages: [{ language: 'French', level: 'A1' }],
     };
+
     const invalidResponse = JSON.stringify(invalid);
+
     return {
         specificationVersion: 'v2',
         provider: 'deterministic-portrait-web',
         modelId: 'deepseek-flash',
         supportedUrls: {},
         async doGenerate(options) {
-            if (mode === 'slow')
+            if (mode === 'slow') {
                 await delay(3_000, undefined, {
                     signal: options.abortSignal ?? undefined,
                 });
+            }
+
             return {
                 content: [
                     {
@@ -367,10 +397,12 @@ function admittedPortraitExecution(
         !budget ||
         typeof budget !== 'object' ||
         typeof value.chargingPolicy !== 'object'
-    )
+    ) {
         throw new Error(
             'Portrait fixture operation lacks the admitted execution snapshot.',
         );
+    }
+
     return value as unknown as TextAiAdmissionExecution & {
         chargingPolicy: CapabilityPolicy;
     };
@@ -388,6 +420,7 @@ export async function createLearnerPortraitWebFixture(
     } finally {
         await migration.end();
     }
+
     const namespace = uniqueAuthRedisNamespace('learner-portrait-web');
     const secret = 'synthetic-assistant-dictionary-secret-at-least-forty-bytes';
     const authentication = await createAuthenticationComposition(
@@ -406,6 +439,7 @@ export async function createLearnerPortraitWebFixture(
             REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
         }),
     );
+
     async function close() {
         await authentication.close();
         const redis = createTestRedisClient();
@@ -416,6 +450,7 @@ export async function createLearnerPortraitWebFixture(
             await redis.quit();
         }
     }
+
     try {
         const d = authentication.productDependencies;
         const consumeRateLimit = d.rateLimiter.consume.bind(d.rateLimiter);
@@ -433,9 +468,11 @@ export async function createLearnerPortraitWebFixture(
                       ? { limit: request.limit * 7 }
                       : {}),
             });
+
         const authenticate = async (token: string) => {
             const claims = await d.accessTokens.verify(token);
             await d.authentication.requireActiveSession(claims);
+
             return { userId: claims.userId };
         };
         const failedConversations = new Set<string>();
@@ -458,7 +495,11 @@ export async function createLearnerPortraitWebFixture(
                 const fail =
                     /fail once/iu.test(turn.message.content) &&
                     !failedConversations.has(turn.conversationId);
-                if (fail) failedConversations.add(turn.conversationId);
+
+                if (fail) {
+                    failedConversations.add(turn.conversationId);
+                }
+
                 const runner = createContextualTutorRunner({
                     model: deterministicModel(turn.message.content, fail),
                     maxInputTokens: snapshot.perCallMaxInputTokens,
@@ -472,6 +513,7 @@ export async function createLearnerPortraitWebFixture(
                             store.withOperation(turn, work),
                     }),
                 });
+
                 return {
                     async run(input) {
                         try {
@@ -483,12 +525,14 @@ export async function createLearnerPortraitWebFixture(
                                     ? error.message
                                     : 'unknown',
                             );
+
                             throw error;
                         }
                     },
                 };
             },
         });
+
         await seedInterviewAccountingFixture(d.database);
         const existingPolicies = await d.database
             .select()
@@ -499,6 +543,7 @@ export async function createLearnerPortraitWebFixture(
                     'portrait-interview',
                 ),
             );
+
         await d.database.insert(capabilityPolicyRevisionsTable).values({
             id: randomUUID(),
             capability: 'portrait-interview',
@@ -507,6 +552,7 @@ export async function createLearnerPortraitWebFixture(
             createdAt: new Date(),
             reason: 'Deterministic interview browser fixture policy',
         });
+
         const learnerPortraits = createLearnerPortraitModule({
             database: d.database,
             selectionPolicy: {
@@ -523,16 +569,19 @@ export async function createLearnerPortraitWebFixture(
                     operation.execution,
                 );
                 const snapshot = execution.snapshot;
-                if (!snapshot)
+                if (!snapshot) {
                     throw new Error(
                         'Portrait fixture operation lacks a model snapshot.',
                     );
+                }
+
                 const submission = JSON.stringify(operation.input);
                 const mode = submission.includes('[portrait-invalid]')
                     ? 'invalid'
                     : submission.includes('[portrait-slow]')
                       ? 'slow'
                       : 'normal';
+
                 return createLearnerInterviewerRunner({
                     model: deterministicInterviewerModel(mode),
                     accounting: createInterviewAccounting({
@@ -621,7 +670,10 @@ export async function createLearnerPortraitWebFixture(
         const credited = new Set<string>();
         async function credit(token: string, verifiedEmail?: string) {
             const { userId } = await authenticate(token);
-            if (credited.has(userId)) return;
+            if (credited.has(userId)) {
+                return;
+            }
+
             // Only identities returned by real synthetic email verification can
             // select these bounded balances; ordinary fixture accounts keep20k.
             const balance =
@@ -631,8 +683,10 @@ export async function createLearnerPortraitWebFixture(
             const amount = balance === undefined ? 20_000n : BigInt(balance);
             if (amount === 0n) {
                 credited.add(userId);
+
                 return;
             }
+
             await d.database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: userId,
@@ -643,8 +697,10 @@ export async function createLearnerPortraitWebFixture(
                     sourceReference: randomUUID(),
                 }),
             );
+
             credited.add(userId);
         }
+
         async function request(
             path: string,
             token?: string,
@@ -666,13 +722,17 @@ export async function createLearnerPortraitWebFixture(
                 ...(body === undefined ? {} : { body: JSON.stringify(body) }),
             });
         }
+
         async function signup() {
             const registered = await request('/auth/sign-up', undefined, {
                 email: `portrait-web-${randomUUID()}@example.test`,
                 password: 'Synthetic assistant password 47!',
             });
-            if (registered.status !== 202)
+
+            if (registered.status !== 202) {
                 throw new Error(await registered.text());
+            }
+
             const { verification } = SignUpResponseSchema.parse(
                 await registered.json(),
             );
@@ -681,13 +741,20 @@ export async function createLearnerPortraitWebFixture(
                 undefined,
                 { flowId: verification.flowId, code: '0000' },
             );
-            if (verified.status !== 200) throw new Error(await verified.text());
+
+            if (verified.status !== 200) {
+                throw new Error(await verified.text());
+            }
+
             const { accessToken } = AuthenticationSuccessResponseSchema.parse(
                 await verified.json(),
             );
+
             await credit(accessToken);
+
             return accessToken;
         }
+
         const administrator = await authenticate(await signup());
         const model = textAiModelCatalog.find(
             (model) => model.id === 'deepseek-flash',
@@ -699,6 +766,7 @@ export async function createLearnerPortraitWebFixture(
                 version: max(dictionaryAiConfigurationRevisionsTable.version),
             })
             .from(dictionaryAiConfigurationRevisionsTable);
+
         await d.database
             .insert(dictionaryAiConfigurationRevisionsTable)
             .values({
@@ -719,6 +787,7 @@ export async function createLearnerPortraitWebFixture(
                     supportedFormats: [...model.supportedFormats],
                 },
             });
+
         await d.database
             .insert(dictionaryAiConfigurationTable)
             .values({
@@ -731,6 +800,7 @@ export async function createLearnerPortraitWebFixture(
                 target: dictionaryAiConfigurationTable.id,
                 set: { activeRevisionId: revisionId, updatedAt: now },
             });
+
         await d.database
             .insert(dictionaryAiWorkerObservationsTable)
             .values({
@@ -762,6 +832,7 @@ export async function createLearnerPortraitWebFixture(
                     expiresAt: new Date(now.getTime() + 3_600_000),
                 },
             });
+
         await d.database
             .insert(dictionaryAiWorkerObservationsTable)
             .values({
@@ -793,6 +864,7 @@ export async function createLearnerPortraitWebFixture(
                     expiresAt: new Date(now.getTime() + 3_600_000),
                 },
             });
+
         return {
             app,
             request,
@@ -805,6 +877,7 @@ export async function createLearnerPortraitWebFixture(
         };
     } catch (error) {
         await close();
+
         throw error;
     }
 }

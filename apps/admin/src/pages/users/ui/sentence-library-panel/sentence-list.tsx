@@ -25,19 +25,24 @@ export function SentenceList({
     const someSelected = selected.length > 0 && !allSelected;
     const selectAll = () =>
         onSelect(allSelected ? [] : items.map((item) => item.exerciseId));
-    if (loading)
+
+    if (loading) {
         return (
             <div className={styles.empty}>
                 <Spin aria-label={t('sentences.loading')} />
             </div>
         );
-    if (!items.length)
+    }
+
+    if (!items.length) {
         return (
             <Empty
                 className={styles.empty}
                 description={t('sentences.empty')}
             />
         );
+    }
+
     return (
         <div>
             <div className={styles.listHeading}>
@@ -86,6 +91,7 @@ function SentenceRow({
         text: item.sourceText,
     });
     const languagePair = `${item.sourceLanguage.toUpperCase()} → ${item.targetLanguage.toUpperCase()}`;
+
     return (
         <li className={styles.row}>
             <Checkbox

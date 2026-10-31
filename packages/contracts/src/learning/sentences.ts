@@ -28,6 +28,7 @@ const safeText = (maximum: number, nonblank = true) =>
             (!nonblank || v.trim().length > 0) &&
             [...v].every((character) => {
                 const code = character.codePointAt(0)!;
+
                 return !(
                     code <= 8 ||
                     code === 11 ||
@@ -53,6 +54,7 @@ const token = (prefix: string) =>
         .string()
         .max(40)
         .regex(new RegExp(`^${prefix}-[0-9]+$`));
+
 export const SentenceDirectionSchema = z.enum([
     'source-to-target',
     'target-to-source',
@@ -86,6 +88,7 @@ const SentenceSetupRequestSchema = z
         preparedBatchId: id.optional(),
     })
     .strict();
+
 export const SentencePrepareRequestSchema = SentenceSetupRequestSchema.extend({
     confirmedQuoteId: z.uuid().optional(),
     replayExerciseIds: distinctIds(
@@ -186,11 +189,13 @@ export const SentenceExerciseSchema = z
         if (
             (exercise.dictionaryId === null) !==
             (exercise.knowledgeSource !== undefined)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message: 'Exactly one sentence vocabulary source is required.',
             });
+        }
+
         if (exercise.generationPolicyVersion === 1) {
             if (
                 exercise.hints.length > SENTENCE_LIMITS.requiredTargets ||
@@ -198,14 +203,17 @@ export const SentenceExerciseSchema = z
                 exercise.segments.some(
                     (segment) => segment.contextualHintId !== undefined,
                 )
-            )
+            ) {
                 context.addIssue({
                     code: 'custom',
                     message:
                         'Unexpected contextual metadata in legacy exercise',
                 });
+            }
+
             return;
         }
+
         const hints = new Map(exercise.hints.map((hint) => [hint.id, hint]));
         const contextual = exercise.hints.filter(
             (hint) => hint.kind === 'contextual',
@@ -221,36 +229,44 @@ export const SentenceExerciseSchema = z
             required.length < 1 ||
             required.length > SENTENCE_LIMITS.requiredTargets ||
             contextual.length + required.length !== exercise.hints.length
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message: 'Invalid version 2 hint inventory',
             });
+        }
+
         for (const segment of exercise.segments) {
             if (segment.target) {
                 used.add(segment.target.hintId);
                 if (
                     segment.contextualHintId !== undefined ||
                     hints.get(segment.target.hintId)?.kind !== 'dictionary'
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Invalid dictionary hint association',
                     });
+                }
             } else if (segment.contextualHintId !== undefined) {
                 used.add(segment.contextualHintId);
-                if (hints.get(segment.contextualHintId)?.kind !== 'contextual')
+                if (
+                    hints.get(segment.contextualHintId)?.kind !== 'contextual'
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Invalid contextual hint association',
                     });
+                }
             }
         }
-        if (exercise.hints.some((hint) => !used.has(hint.id)))
+
+        if (exercise.hints.some((hint) => !used.has(hint.id))) {
             context.addIssue({
                 code: 'custom',
                 message: 'Unreferenced version 2 hint',
             });
+        }
     });
 export const SentenceFeedbackIssueSchema = z
     .object({
@@ -389,8 +405,9 @@ export const SentenceJobSchema = z
                 (v.kind === 'sentence-generation'
                     ? v.result?.kind !== 'exercise'
                     : v.result?.kind !== 'attempt'))
-        )
+        ) {
             ctx.addIssue({ code: 'custom', message: 'Invalid job outcome' });
+        }
     });
 export const SentenceNextResponseSchema = z.discriminatedUnion('kind', [
     z

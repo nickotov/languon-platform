@@ -32,6 +32,7 @@ export class KnowledgeMediaService {
             }>;
         },
     ) {}
+
     async importSpeech(
         token: string,
         context: KnowledgeRequestContext,
@@ -44,11 +45,14 @@ export class KnowledgeMediaService {
             KnowledgeMediaParamsSchema.shape.noteId.parse(noteId);
         const validatedPlaybackId =
             KnowledgeMediaParamsSchema.shape.assetId.parse(playbackId);
-        if (!this.dependencies.readSpeech)
+
+        if (!this.dependencies.readSpeech) {
             throw new KnowledgeDomainError(
                 'service_unavailable',
                 'Speech is unavailable.',
             );
+        }
+
         const { audio, text, language } = await this.dependencies.readSpeech(
             principal.userId,
             validatedPlaybackId,
@@ -59,8 +63,10 @@ export class KnowledgeMediaService {
             validatedNoteId,
             this.dependencies.verify(audio.bytes, audio.mimeType),
         );
+
         return { asset, sourceText: text, language };
     }
+
     private async rate(
         context: KnowledgeRequestContext,
         subject: string,
@@ -74,12 +80,15 @@ export class KnowledgeMediaService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!result.allowed)
+
+        if (!result.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many audio requests.',
             );
+        }
     }
+
     async upload(
         token: string,
         context: KnowledgeRequestContext,
@@ -93,8 +102,10 @@ export class KnowledgeMediaService {
         const ids = KnowledgeMediaParamsSchema.shape.noteId.parse(noteId);
         const audio = this.dependencies.verify(bytes, mime);
         context.signal.throwIfAborted();
+
         return this.dependencies.store.upload(principal.userId, ids, audio);
     }
+
     async read(
         context: KnowledgeRequestContext,
         noteId: string,
@@ -107,6 +118,7 @@ export class KnowledgeMediaService {
         const principal = token
             ? await this.dependencies.authenticate(token)
             : undefined;
+
         return this.dependencies.store.read(ids.noteId, ids.assetId, {
             ...(principal ? { ownerId: principal.userId } : {}),
             ...(access

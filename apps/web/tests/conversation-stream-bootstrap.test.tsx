@@ -25,6 +25,7 @@ const messageId = '00000000-0000-4000-8000-000000000003';
 const date = '2026-10-19T10:00:00.000Z';
 const request: ConversationSessionRequest = (operation) =>
     operation('synthetic');
+
 function detail(id: string, content?: string): ConversationDetail {
     return ConversationDetailSchema.parse({
         conversation: {
@@ -67,10 +68,12 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
             signal: AbortSignal | undefined;
         }
     >();
+
     vi.spyOn(conversationApi, 'detail').mockImplementation(
         (_token, id, _shareKey, signal) =>
             new Promise((resolve) => pending.set(id, { resolve, signal })),
     );
+
     const subscriptions = new Map<string, (event: ConversationEvent) => void>();
     vi.spyOn(conversationApi, 'events').mockImplementation(
         async (_token, id, _after, receive, signal) => {
@@ -82,9 +85,11 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
             );
         },
     );
+
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     function Wrapper({ children }: PropsWithChildren) {
         return (
             <QueryClientProvider client={client}>
@@ -92,6 +97,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
             </QueryClientProvider>
         );
     }
+
     const hook = renderHook(
         ({ id }) => {
             const query = useQuery({
@@ -110,10 +116,12 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                 undefined,
                 query.data,
             );
+
             return { query, stream };
         },
         { initialProps: { id: firstId }, wrapper: Wrapper },
     );
+
     function snapshot(id: string, content: string) {
         subscriptions.get(id)!({
             id: 1,
@@ -123,6 +131,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
             data: detail(id, content),
         });
     }
+
     function append(id: string, content: string) {
         subscriptions.get(id)!({
             id: 2,
@@ -132,6 +141,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
             data: detail(id, content).messages[0]!,
         });
     }
+
     const text = () =>
         hook.result.current.stream.messages
             .flatMap((message) =>
@@ -140,16 +150,19 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                     .map((part) => part.text),
             )
             .join('');
+
     try {
         await waitFor(() =>
             expect(subscriptions.has(firstId) && pending.has(firstId)).toBe(
                 true,
             ),
         );
+
         await act(async () => {
             snapshot(firstId, 'New');
             append(firstId, 'New streamed answer');
         });
+
         await waitFor(() => expect(text()).toBe('New streamed answer'));
         await waitFor(() =>
             expect(
@@ -160,6 +173,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                 ])?.messages[0]?.content,
             ).toBe('New streamed answer'),
         );
+
         // Simulate a transport which ignores AbortSignal and returns the older GET.
         await act(async () => pending.get(firstId)!.resolve(detail(firstId)));
         expect(text()).toBe('New streamed answer');
@@ -170,6 +184,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                 firstId,
             ])?.messages[0]?.content,
         ).toBe('New streamed answer');
+
         expect(pending.get(firstId)!.signal?.aborted).toBe(true);
         hook.rerender({ id: secondId });
         await waitFor(() =>
@@ -177,6 +192,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                 true,
             ),
         );
+
         await act(async () => {
             snapshot(secondId, 'Second');
             append(secondId, 'Second streamed answer');
@@ -188,8 +204,10 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                 type: 'snapshot',
                 data: detail(firstId, 'Wrong conversation'),
             });
+
             pending.get(secondId)!.resolve(detail(secondId));
         });
+
         await waitFor(() => expect(text()).toBe('Second streamed answer'));
         await waitFor(() =>
             expect(
@@ -200,6 +218,7 @@ it('gives stream snapshots bootstrap ownership over delayed detail queries and i
                 ])?.messages[0]?.content,
             ).toBe('Second streamed answer'),
         );
+
         expect(
             hook.result.current.stream.messages.every(
                 (message) => message.metadata?.conversationId === secondId,
@@ -221,17 +240,20 @@ it.each([401, 403, 404, 410])(
             ['conversation', actorId, firstId],
             detail(firstId),
         );
+
         const cancel = client.cancelQueries.bind(client);
         let releaseCancellation!: () => void;
         const held = new Promise<void>((resolve) => {
             releaseCancellation = resolve;
         });
+
         vi.spyOn(client, 'cancelQueries').mockImplementation(
             async (...args) => {
                 await cancel(...args);
                 await held;
             },
         );
+
         let receive!: (event: ConversationEvent) => void;
         let fail!: (error: Error) => void;
         vi.spyOn(conversationApi, 'events').mockImplementation(
@@ -245,6 +267,7 @@ it.each([401, 403, 404, 410])(
                 });
             },
         );
+
         function Wrapper({ children }: PropsWithChildren) {
             return (
                 <QueryClientProvider client={client}>
@@ -252,6 +275,7 @@ it.each([401, 403, 404, 410])(
                 </QueryClientProvider>
             );
         }
+
         const hook = renderHook(
             () =>
                 useConversationStream(
@@ -263,6 +287,7 @@ it.each([401, 403, 404, 410])(
                 ),
             { wrapper: Wrapper },
         );
+
         try {
             await waitFor(() => expect(receive).toBeDefined());
             await act(async () =>
@@ -274,9 +299,11 @@ it.each([401, 403, 404, 410])(
                     data: detail(firstId, 'Protected answer'),
                 }),
             );
+
             await waitFor(() =>
                 expect(hook.result.current.messages).toHaveLength(1),
             );
+
             await act(async () =>
                 fail(
                     new ConversationApiError(status, {
@@ -286,20 +313,25 @@ it.each([401, 403, 404, 410])(
                     }),
                 ),
             );
+
             await waitFor(() =>
                 expect(hook.result.current.unavailable).toBe(true),
             );
+
             expect(
                 client.getQueryState(['conversation', actorId, firstId]),
             ).toBeUndefined();
+
             expect(hook.result.current.messages).toHaveLength(0);
             await act(async () => {
                 releaseCancellation();
                 await held;
             });
+
             expect(
                 client.getQueryState(['conversation', actorId, firstId]),
             ).toBeUndefined();
+
             expect(hook.result.current.unavailable).toBe(true);
             expect(hook.result.current.messages).toHaveLength(0);
         } finally {
@@ -317,14 +349,17 @@ it('rejects a held publication from the previous A session after switching A to 
     const held = new Promise<void>((resolve) => {
         releaseCancellation = resolve;
     });
+
     vi.spyOn(client, 'cancelQueries').mockImplementation(async (...args) => {
         await cancel(...args);
         await held;
     });
+
     const subscriptions: {
         id: string;
         receive(event: ConversationEvent): void;
     }[] = [];
+
     vi.spyOn(conversationApi, 'events').mockImplementation(
         async (_token, id, _after, receive, signal) => {
             subscriptions.push({ id, receive });
@@ -335,6 +370,7 @@ it('rejects a held publication from the previous A session after switching A to 
             );
         },
     );
+
     function Wrapper({ children }: PropsWithChildren) {
         return (
             <QueryClientProvider client={client}>
@@ -342,11 +378,13 @@ it('rejects a held publication from the previous A session after switching A to 
             </QueryClientProvider>
         );
     }
+
     const hook = renderHook(
         ({ id }) =>
             useConversationStream(actorId, id, request, undefined, undefined),
         { initialProps: { id: firstId }, wrapper: Wrapper },
     );
+
     try {
         await waitFor(() => expect(subscriptions).toHaveLength(1));
         await act(async () =>
@@ -358,9 +396,11 @@ it('rejects a held publication from the previous A session after switching A to 
                 data: detail(firstId, 'Old A answer'),
             }),
         );
+
         await waitFor(() =>
             expect(hook.result.current.messages).toHaveLength(1),
         );
+
         hook.rerender({ id: secondId });
         await waitFor(() => expect(subscriptions).toHaveLength(2));
         hook.rerender({ id: firstId });
@@ -369,9 +409,11 @@ it('rejects a held publication from the previous A session after switching A to 
             releaseCancellation();
             await held;
         });
+
         expect(
             client.getQueryState(['conversation', actorId, firstId]),
         ).toBeUndefined();
+
         expect(hook.result.current.messages).toHaveLength(0);
         // The new A subscription remains able to publish its own fresh state.
         await act(async () =>
@@ -383,6 +425,7 @@ it('rejects a held publication from the previous A session after switching A to 
                 data: detail(firstId, 'Fresh A answer'),
             }),
         );
+
         await waitFor(() =>
             expect(
                 client.getQueryData<ConversationDetail>([
@@ -405,6 +448,7 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
         ['conversation', actorId, secondId],
         detail(secondId, 'B history'),
     );
+
     let receive!: (event: ConversationEvent) => void;
     let fail!: (error: Error) => void;
     let firstSignal: AbortSignal | undefined;
@@ -416,6 +460,7 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
                 receive = onEvent;
                 firstSignal = signal;
             }
+
             await new Promise<void>((resolve, reject) => {
                 fail = reject;
                 signal.addEventListener('abort', () => resolve(), {
@@ -424,6 +469,7 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
             });
         },
     );
+
     const suspended = new Promise<void>(() => undefined);
     let renderedB = false;
     function Wrapper({ children }: PropsWithChildren) {
@@ -435,6 +481,7 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
             </Suspense>
         );
     }
+
     const hook = renderHook(
         ({ id }) => {
             const stream = useConversationStream(
@@ -444,14 +491,18 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
                 undefined,
                 undefined,
             );
+
             if (id === secondId) {
                 renderedB = true;
+
                 throw suspended;
             }
+
             return stream;
         },
         { initialProps: { id: firstId }, wrapper: Wrapper },
     );
+
     try {
         await waitFor(() => expect(receive).toBeDefined());
         await act(async () =>
@@ -463,9 +514,11 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
                 data: detail(firstId, 'A answer'),
             }),
         );
+
         await waitFor(() =>
             expect(hook.result.current.messages).toHaveLength(1),
         );
+
         act(() => startTransition(() => hook.rerender({ id: secondId })));
         await waitFor(() => expect(renderedB).toBe(true));
         expect(firstSignal?.aborted).toBe(false); // A is still committed while B suspends.
@@ -479,6 +532,7 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
                 }),
             ),
         );
+
         await waitFor(() =>
             expect(
                 client.getQueryData<ConversationDetail>([
@@ -488,9 +542,11 @@ it('keeps a committed A terminal error from purging B during a suspended B rende
                 ])?.messages[0]?.content,
             ).toBe('B history'),
         );
+
         expect(
             client.getQueryState(['conversation', actorId, firstId]),
         ).toBeUndefined();
+
         expect(opened).toEqual([firstId]);
     } finally {
         hook.unmount();
@@ -508,6 +564,7 @@ it.each([false, true])(
             fail(error: Error): void;
             signal: AbortSignal;
         }[] = [];
+
         vi.spyOn(conversationApi, 'events').mockImplementation(
             async (_token, id, _after, receive, signal) => {
                 await new Promise<void>((resolve, reject) => {
@@ -515,13 +572,15 @@ it.each([false, true])(
                     subscriptions.push({ id, receive, fail: reject, signal });
                     // The first HTTP operation deliberately ignores cancellation, then
                     // rejects late; transport and SDK abort fences must still hold.
-                    if (!first)
+                    if (!first) {
                         signal.addEventListener('abort', () => resolve(), {
                             once: true,
                         });
+                    }
                 });
             },
         );
+
         function Wrapper({ children }: PropsWithChildren) {
             return (
                 <QueryClientProvider client={client}>
@@ -529,6 +588,7 @@ it.each([false, true])(
                 </QueryClientProvider>
             );
         }
+
         const hook = renderHook(
             ({ id }) =>
                 useConversationStream(
@@ -540,6 +600,7 @@ it.each([false, true])(
                 ),
             { initialProps: { id: firstId }, wrapper: Wrapper },
         );
+
         try {
             await waitFor(() => expect(subscriptions).toHaveLength(1));
             hook.rerender({ id: secondId });
@@ -548,6 +609,7 @@ it.each([false, true])(
                 hook.rerender({ id: firstId });
                 await waitFor(() => expect(subscriptions).toHaveLength(3));
             }
+
             const current = subscriptions.at(-1)!;
             await act(async () =>
                 current.receive({
@@ -558,6 +620,7 @@ it.each([false, true])(
                     data: detail(current.id, 'Current session answer'),
                 }),
             );
+
             await waitFor(() =>
                 expect(
                     client.getQueryData<ConversationDetail>([
@@ -567,6 +630,7 @@ it.each([false, true])(
                     ])?.messages[0]?.content,
                 ).toBe('Current session answer'),
             );
+
             expect(subscriptions[0]!.signal.aborted).toBe(true);
             await act(async () =>
                 subscriptions[0]!.fail(
@@ -577,6 +641,7 @@ it.each([false, true])(
                     }),
                 ),
             );
+
             expect(
                 client.getQueryData<ConversationDetail>([
                     'conversation',
@@ -584,6 +649,7 @@ it.each([false, true])(
                     current.id,
                 ])?.messages[0]?.content,
             ).toBe('Current session answer');
+
             expect(hook.result.current.unavailable).toBe(false);
             expect(hook.result.current.messages[0]?.metadata?.content).toBe(
                 'Current session answer',

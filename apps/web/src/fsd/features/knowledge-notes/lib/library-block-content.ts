@@ -35,6 +35,7 @@ export function vocabularyLibraryBlock(
         })),
     });
 }
+
 function originalPassages(source: string) {
     const chunks: string[] = [];
     let current = '';
@@ -43,9 +44,14 @@ function originalPassages(source: string) {
             chunks.push(current);
             current = '';
         }
+
         current += character;
     }
-    if (current) chunks.push(current);
+
+    if (current) {
+        chunks.push(current);
+    }
+
     return chunks.map((text) => ({ id: crypto.randomUUID(), text }));
 }
 
@@ -59,7 +65,7 @@ export function textLibraryBlock(
         | 'alignment'
     >,
 ): LearningBlock {
-    if (!text.alignment)
+    if (!text.alignment) {
         return LearningBlockSchema.parse({
             id: crypto.randomUUID(),
             type: 'bilingual-text',
@@ -68,10 +74,13 @@ export function textLibraryBlock(
             segments: originalPassages(text.sourceText),
             translations: [],
         });
+    }
+
     const segments = text.alignment.source.map((segment) => ({
         id: crypto.randomUUID(),
         text: segment.text,
     }));
+
     return LearningBlockSchema.parse({
         id: crypto.randomUUID(),
         type: 'bilingual-text',

@@ -26,6 +26,7 @@ export function CreateMenu({
     ]
         .filter(Boolean)
         .join(' ');
+
     return (
         <Menu
             heading={t('shell.createAction')}

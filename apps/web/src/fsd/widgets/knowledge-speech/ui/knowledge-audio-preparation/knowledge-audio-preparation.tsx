@@ -28,53 +28,69 @@ export function KnowledgeAudioPreparation(
     const preview = state.prepared;
     useEffect(() => {
         const element = audio.current;
+
         return () => {
             element?.pause();
             element?.removeAttribute('src');
             element?.load();
         };
     }, [preview?.url]);
+
     function generate() {
         void state.generate();
     }
+
     function accept() {
         void state.accept();
     }
+
     function confirm() {
         void state.confirm();
     }
+
     async function togglePlayback() {
         const element = audio.current;
-        if (!element) return;
-        if (!element.paused) {
-            element.pause();
+        if (!element) {
             return;
         }
+
+        if (!element.paused) {
+            element.pause();
+
+            return;
+        }
+
         setPlaybackFailed(false);
         try {
             player.registerExternalMedia(
                 () => element.pause(),
                 `audio-preview:${props.noteId}:${props.block.id}`,
             );
+
             await element.play();
         } catch {
             setPlaybackFailed(true);
             setPlaying(false);
         }
     }
+
     function play() {
         void togglePlayback();
     }
+
     function markPlaying() {
         setPlaying(true);
     }
+
     function markStopped() {
         setPlaying(false);
     }
+
     function markFailed() {
         setPlaying(false);
         setPlaybackFailed(true);
     }
+
     const quote = !state.staleQuote ? state.response?.quote : null;
     const unavailable =
         Boolean(state.response) &&
@@ -93,6 +109,7 @@ export function KnowledgeAudioPreparation(
         <Play size={14} aria-hidden />
     );
     const speechIcon = <Sparkles size={14} aria-hidden />;
+
     return (
         <section className={styles.root}>
             <Button

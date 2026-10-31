@@ -35,7 +35,10 @@ export async function readVocabularyPracticeSource(
                 block?.type === 'vocabulary' && block.id === source.blockId,
         );
 
-    if (!block) throw new LearningEntryUnavailableError();
+    if (!block) {
+        throw new LearningEntryUnavailableError();
+    }
+
     const sourceLanguage = DictionaryLanguageTagSchema.parse(block.language);
     const targetLanguage = DictionaryLanguageTagSchema.parse(
         block.translationLanguage,

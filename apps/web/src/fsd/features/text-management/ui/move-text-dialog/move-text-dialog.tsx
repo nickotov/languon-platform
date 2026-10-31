@@ -46,13 +46,16 @@ export function MoveTextDialog({
         destination === (document.folderId ?? '') ||
         Boolean(destination && !folder) ||
         (shared && !confirmed);
+
     function change(event: ChangeEvent<HTMLSelectElement>) {
         setDestination(event.target.value);
         setConfirmed(false);
     }
+
     function confirm(event: ChangeEvent<HTMLInputElement>) {
         setConfirmed(event.target.checked);
     }
+
     function refresh() {
         void mutation.run(
             (token) => textsApi.getText(token, document.id),
@@ -62,12 +65,17 @@ export function MoveTextDialog({
             },
         );
     }
+
     function retryFolders() {
         void folders.refetch();
         setConfirmed(false);
     }
+
     function move() {
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
+
         void mutation.run(
             (token) =>
                 textsApi.moveText(token, document.id, {
@@ -88,6 +96,7 @@ export function MoveTextDialog({
             },
         );
     }
+
     return (
         <Dialog
             open

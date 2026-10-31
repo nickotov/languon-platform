@@ -51,29 +51,41 @@ export function PortraitEntryCard({
         title = interview ? text.pending : text.pendingDraft;
         body = text.resumeBody;
     }
+
     if (isSavedOff) {
         title = text.saved;
         body = text.savedBody;
     }
+
     if (isActive) {
         title = text.active;
         body = text.activeBody;
     }
+
     let badge = text.draft;
-    if (portrait) badge = state?.useEnabled ? text.on : text.off;
+    if (portrait) {
+        badge = state?.useEnabled ? text.on : text.off;
+    }
+
     function retry() {
         void query.refetch();
         void status.refetch();
     }
-    if (!ownerId) return null;
-    if (query.isPending || status.isPending)
+
+    if (!ownerId) {
+        return null;
+    }
+
+    if (query.isPending || status.isPending) {
         return (
             <section className={styles.card} aria-busy='true'>
                 <p className={styles.eyebrow}>{text.title}</p>
                 <div className={styles.skeleton} />
             </section>
         );
-    if (query.isError || status.isError)
+    }
+
+    if (query.isError || status.isError) {
         return (
             <section className={styles.card}>
                 <InlineAlert
@@ -87,6 +99,8 @@ export function PortraitEntryCard({
                 />
             </section>
         );
+    }
+
     return (
         <section
             className={styles.card}

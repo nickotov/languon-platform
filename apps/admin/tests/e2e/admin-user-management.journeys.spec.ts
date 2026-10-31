@@ -71,6 +71,7 @@ function captureBrowserErrors(
         ) {
             return;
         }
+
         if (
             message.type() === 'error' &&
             !message.text().startsWith('Failed to load resource:')
@@ -78,14 +79,19 @@ function captureBrowserErrors(
             errors.push(message.text());
         }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const route = new URL(response.url()).pathname;
         if (expected[route] !== response.status()) {
             errors.push(`${response.status()} ${route}`);
         }
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -101,19 +107,23 @@ async function provisionVerifiedUser(
             headers: { Origin: adminOrigin },
         },
     );
+
     if (existingLogin.ok()) {
         const existing = (await existingLogin.json()) as {
             status?: string;
             user?: { id: string };
         };
+
         if (existing.status === 'authenticated' && existing.user) {
             return existing.user.id;
         }
     }
+
     const signup = await request.post(`${backendOrigin}/auth/sign-up`, {
         data: { email, password },
         headers: { Origin: adminOrigin },
     });
+
     expect(signup.status()).toBe(202);
     const pending = (await signup.json()) as {
         verification: { flowId: string };
@@ -125,7 +135,9 @@ async function provisionVerifiedUser(
             headers: { Origin: adminOrigin },
         },
     );
+
     expect(verification.status()).toBe(200);
+
     return ((await verification.json()) as { user: { id: string } }).user.id;
 }
 
@@ -143,7 +155,11 @@ async function runMembershipGrant(email: string, actorEmail?: string) {
             '--confirm',
             'admin-membership-change',
         ];
-        if (actorEmail) args.push('--actor-email', actorEmail);
+
+        if (actorEmail) {
+            args.push('--actor-email', actorEmail);
+        }
+
         await execFileAsync('pnpm', args, {
             cwd: repositoryRoot,
             env: membershipEnvironment(),
@@ -153,6 +169,7 @@ async function runMembershipGrant(email: string, actorEmail?: string) {
             error && typeof error === 'object'
                 ? `${'stdout' in error ? String(error.stdout) : ''}${'stderr' in error ? String(error.stderr) : ''}`
                 : String(error);
+
         if (!/already has an active owner membership/i.test(output)) {
             throw error;
         }
@@ -166,10 +183,14 @@ async function listOwnerEmails() {
         { cwd: repositoryRoot, env: membershipEnvironment() },
     );
     const jsonStart = stdout.indexOf('{');
-    if (jsonStart < 0) throw new Error('Membership list returned no JSON.');
+    if (jsonStart < 0) {
+        throw new Error('Membership list returned no JSON.');
+    }
+
     const output = JSON.parse(stdout.slice(jsonStart)) as {
         result: Array<{ email: string }>;
     };
+
     return output.result.map(({ email }) => email);
 }
 
@@ -212,6 +233,7 @@ async function startDictionaryWorker() {
             stdio: ['ignore', 'pipe', 'pipe'],
         },
     );
+
     worker.stdout?.on('data', (chunk) => output.push(String(chunk)));
     worker.stderr?.on('data', (chunk) => output.push(String(chunk)));
 
@@ -222,13 +244,19 @@ async function startDictionaryWorker() {
                     `Dictionary worker exited before readiness: ${output.join('').slice(-2_000)}`,
                 );
             }
+
             const [observation] = await database<[{ count: number }]>`
                 select count(*)::int as count
                 from dictionary_ai_worker_observations
             `;
-            if ((observation?.count ?? 0) >= 2) return worker;
+
+            if ((observation?.count ?? 0) >= 2) {
+                return worker;
+            }
+
             await delay(100);
         }
+
         throw new Error('Dictionary worker did not publish readiness in time.');
     } finally {
         await database.end({ timeout: 1 });
@@ -236,14 +264,19 @@ async function startDictionaryWorker() {
 }
 
 async function stopDictionaryWorker(worker: ChildProcess | undefined) {
-    if (!worker || worker.exitCode !== null) return;
+    if (!worker || worker.exitCode !== null) {
+        return;
+    }
+
     worker.kill('SIGTERM');
     await Promise.race([
         new Promise<void>((resolveExit) =>
             worker.once('exit', () => resolveExit()),
         ),
         delay(5_000).then(() => {
-            if (worker.exitCode === null) worker.kill('SIGKILL');
+            if (worker.exitCode === null) {
+                worker.kill('SIGKILL');
+            }
         }),
     ]);
 }
@@ -263,6 +296,7 @@ async function waitForGenerationReview(
                 },
             },
         );
+
         expect(response.status()).toBe(200);
         const payload = (await response.json()) as {
             job: {
@@ -273,16 +307,20 @@ async function waitForGenerationReview(
                 state: string;
             };
         };
+
         if (payload.job.state === 'review' && payload.job.proposal) {
             return payload.job;
         }
+
         if (['cancelled', 'expired', 'failed'].includes(payload.job.state)) {
             throw new Error(
                 `Generation ${jobId} reached ${payload.job.state}: ${JSON.stringify(payload.job.failure)}`,
             );
         }
+
         await delay(100);
     }
+
     throw new Error(`Generation ${jobId} did not reach review.`);
 }
 
@@ -315,7 +353,11 @@ async function runSpeechFixture(
     const jsonLine = stdout
         .split('\n')
         .findLast((line) => line.startsWith('{'));
-    if (!jsonLine) throw new Error('Speech fixture returned no JSON.');
+
+    if (!jsonLine) {
+        throw new Error('Speech fixture returned no JSON.');
+    }
+
     return JSON.parse(jsonLine) as {
         recordingId: string;
         dictionaryId: string;
@@ -354,6 +396,7 @@ async function addVirtualAuthenticator(page: Page): Promise<CDPSession> {
             transport: 'internal',
         },
     });
+
     return client;
 }
 
@@ -364,6 +407,7 @@ test.describe.serial('admin user management journeys', () => {
             ownerEmail,
             ownerPassword,
         );
+
         await grantOwner();
         targetId = await provisionVerifiedUser(
             request,
@@ -381,48 +425,58 @@ test.describe.serial('admin user management journeys', () => {
         const clean = captureBrowserErrors(page, {
             '/api/admin/ai/accounting/report': 503,
         });
+
         await page.getByRole('menuitem', { name: /AI accounting$/ }).click();
         await expect(
             page.getByRole('heading', { name: 'AI accounting', exact: true }),
         ).toBeVisible();
+
         const settings = page.locator('.ant-card').filter({
             has: page.getByText('AI action and provider expense limits', {
                 exact: true,
             }),
         });
+
         await settings
             .getByLabel(
                 'Default maximum credits per action (blank = uncalibrated)',
             )
             .fill('20.125');
+
         await settings
             .getByLabel('Maximum provider expense per action (USD)', {
                 exact: true,
             })
             .fill('1');
+
         await settings
             .getByLabel(
                 'Maximum provider expense per account per UTC day (USD)',
                 { exact: true },
             )
             .fill('10');
+
         await settings
             .getByLabel(
                 'Maximum provider expense per UTC day, all accounts (USD)',
                 { exact: true },
             )
             .fill('100');
+
         await settings
             .getByLabel('Reason for change')
             .fill('Synthetic accounting browser calibration');
+
         const published = page.waitForResponse(
             (response) =>
                 response.request().method() === 'PATCH' &&
                 response.url().endsWith('/admin/ai/accounting-settings'),
         );
+
         await settings
             .getByRole('button', { name: 'Publish action budget revision' })
             .click();
+
         expect((await published).ok()).toBe(true);
         await page.reload();
         await expect(
@@ -430,12 +484,14 @@ test.describe.serial('admin user management journeys', () => {
                 'Default maximum credits per action (blank = uncalibrated)',
             ),
         ).toHaveValue('20.125');
+
         await page
             .getByRole('button', {
                 name: 'Record manual transaction',
                 exact: true,
             })
             .click();
+
         const dialog = page.getByRole('dialog', {
             name: 'Record manual transaction',
             exact: true,
@@ -444,29 +500,37 @@ test.describe.serial('admin user management journeys', () => {
         await dialog
             .getByLabel('External reference', { exact: true })
             .fill(reference);
+
         await dialog
             .getByLabel('Amount (USD, up to 6 decimals)', { exact: true })
             .fill('2.125');
+
         await dialog
             .getByLabel('Customer user ID', { exact: true })
             .fill(targetId);
+
         await dialog
             .getByLabel('Purchased credits (up to 3 decimals)', { exact: true })
             .fill('3.125');
+
         await dialog
             .getByLabel('Payment fees (USD)', { exact: true })
             .fill('0.025');
+
         await dialog
             .getByLabel('Reason for change')
             .fill('Synthetic external payment already received');
+
         const recorded = page.waitForResponse(
             (response) =>
                 response.request().method() === 'POST' &&
                 response.url().endsWith('/admin/ai/accounting/records'),
         );
+
         await dialog
             .getByRole('button', { name: 'Save manual record', exact: true })
             .click();
+
         const response = await recorded;
         expect(response.ok(), await response.text()).toBe(true);
         expect(await response.json()).toMatchObject({
@@ -478,6 +542,7 @@ test.describe.serial('admin user management journeys', () => {
                 feeUsd: '0.025',
             },
         });
+
         await expect(dialog).toHaveCount(0);
         const row = page.getByRole('row').filter({ hasText: reference });
         await expect(row).toHaveCount(1);
@@ -489,19 +554,23 @@ test.describe.serial('admin user management journeys', () => {
             path: info.outputPath('accounting-record-wide.png'),
             fullPage: true,
         });
+
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(
             settings.getByLabel(
                 'Default maximum credits per action (blank = uncalibrated)',
             ),
         ).toHaveValue('20.125');
+
         await page.screenshot({
             path: info.outputPath('accounting-settings-narrow.png'),
             fullPage: true,
         });
+
         await expect(
             page.getByText('Current report', { exact: true }),
         ).toBeVisible({ timeout: 60_000 });
+
         clean();
     });
 
@@ -514,6 +583,7 @@ test.describe.serial('admin user management journeys', () => {
         const assertErrors = captureBrowserErrors(page, {
             '/api/admin/speech/recordings/delete': 409,
         });
+
         await page.getByRole('menuitem', { name: 'Speech recordings' }).click();
         await page.getByLabel('Normalized text search').fill(fixture.text);
         const inventory = page.waitForResponse(
@@ -522,6 +592,7 @@ test.describe.serial('admin user management journeys', () => {
                 new URL(response.url()).searchParams.get('search') ===
                     fixture.text,
         );
+
         await page.getByRole('button', { name: 'Apply filters' }).click();
         expect((await inventory).status()).toBe(200);
         const row = page.getByRole('row').filter({ hasText: fixture.text });
@@ -533,6 +604,7 @@ test.describe.serial('admin user management journeys', () => {
             name: 'Preview',
             exact: true,
         });
+
         await expect(preview).toContainText(fixture.text);
         const bytes = page.waitForResponse((response) =>
             response
@@ -541,73 +613,91 @@ test.describe.serial('admin user management journeys', () => {
                     `/admin/speech/recordings/${fixture.recordingId}/content`,
                 ),
         );
+
         await preview
             .getByRole('button', { name: 'Load audio preview' })
             .click();
+
         const audioResponse = await bytes;
         expect(audioResponse.status()).toBe(200);
         expect(audioResponse.headers()['cache-control']).toContain('no-store');
         expect(audioResponse.headers()['content-type']).toBe('audio/wav');
         const adminToken = (await audioResponse.request().allHeaders())
             .authorization!;
+
         await expect(preview.locator('audio')).toHaveAttribute('src', /^blob:/);
         await page.screenshot({
             path: info.outputPath('admin-private-speech-preview-narrow.png'),
             fullPage: true,
         });
+
         await preview
             .getByRole('button', { name: 'Close', exact: true })
             .click();
+
         await row.getByRole('checkbox').check();
         await page.getByRole('button', { name: 'Delete selected (1)' }).click();
         const removal = page.getByRole('dialog', {
             name: 'Delete these recordings?',
         });
+
         await expect(removal).toContainText(
             'Remove 1 recordings affecting 1 saved-content links.',
         );
+
         await removal
             .getByRole('button', { name: 'Confirm permanent removal' })
             .click();
+
         await expect(
             removal.getByRole('textbox', { name: 'Reason' }),
         ).toHaveAttribute('aria-invalid', 'true');
+
         await runSpeechFixture('join', fixture.dictionaryId, fixture.cardId);
         await removal
             .getByRole('textbox', { name: 'Reason' })
             .fill('Remove synthetic fixture after reviewing saved links');
+
         const conflict = page.waitForResponse(
             (response) =>
                 response.url().endsWith('/admin/speech/recordings/delete') &&
                 response.request().method() === 'POST',
         );
+
         await removal
             .getByRole('button', { name: 'Confirm permanent removal' })
             .click();
+
         expect((await conflict).status()).toBe(409);
         await expect(
             removal.getByRole('button', { name: 'Confirm permanent removal' }),
         ).toBeDisabled();
+
         await removal
             .getByRole('button', { name: 'Reload and review impact' })
             .click();
+
         await expect(removal).not.toBeVisible();
         await row.getByRole('checkbox').check();
         await page.getByRole('button', { name: 'Delete selected (1)' }).click();
         await expect(removal).toContainText(
             'Remove 1 recordings affecting 2 saved-content links.',
         );
+
         await removal
             .getByRole('textbox', { name: 'Reason' })
             .fill('Confirm removal with the refreshed two-link impact');
+
         const deleted = page.waitForResponse(
             (response) =>
                 response.url().endsWith('/admin/speech/recordings/delete') &&
                 response.request().method() === 'POST',
         );
+
         await removal
             .getByRole('button', { name: 'Confirm permanent removal' })
             .click();
+
         expect((await deleted).status()).toBe(200);
         await expect(removal).not.toBeVisible();
         await expect(row).toHaveCount(0);
@@ -615,16 +705,19 @@ test.describe.serial('admin user management journeys', () => {
             (await runSpeechFixture('assert-deleted', fixture.recordingId))
                 .deleted,
         ).toBe(true);
+
         const removedContent = await page.request.get(
             `${adminOrigin}/api/admin/speech/recordings/${fixture.recordingId}/content`,
             { headers: { Authorization: adminToken } },
         );
+
         expect(removedContent.status()).toBe(404);
         expect(
             await page.evaluate(
                 () => document.documentElement.scrollWidth <= innerWidth + 1,
             ),
         ).toBe(true);
+
         assertErrors();
     });
 
@@ -638,9 +731,11 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('heading', { name: 'Speech recordings' }),
         ).toBeVisible();
+
         await page
             .getByLabel('Normalized text search')
             .fill(`no-such-recording-${runId}`);
+
         await page.getByLabel('Language', { exact: true }).fill('fr');
         await page.getByLabel('Created from (UTC)').fill('2026-01-01');
         const loaded = page.waitForResponse(
@@ -648,26 +743,32 @@ test.describe.serial('admin user management journeys', () => {
                 response.url().includes('/admin/speech/recordings?') &&
                 new URL(response.url()).searchParams.get('language') === 'fr',
         );
+
         await page
             .getByRole('button', { name: 'Apply filters', exact: true })
             .click();
+
         expect((await loaded).status()).toBe(200);
         await expect(
             page.getByRole('button', { name: 'Delete selected (0)' }),
         ).toBeDisabled();
+
         await expect(page.locator('.ant-empty-description')).toHaveText(
             'No data',
         );
+
         await page.setViewportSize({ width: 390, height: 844 });
         await page.screenshot({
             path: info.outputPath('admin-speech-library-narrow.png'),
             fullPage: true,
         });
+
         expect(
             await page.evaluate(
                 () => document.documentElement.scrollWidth <= innerWidth + 1,
             ),
         ).toBe(true);
+
         assertErrors();
     });
 
@@ -680,6 +781,7 @@ test.describe.serial('admin user management journeys', () => {
         const assertErrors = captureBrowserErrors(page, {
             '/api/admin/ai/model-prices': 409,
         });
+
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
         const panel = page.locator('.ant-card').filter({
             has: page.getByText('Model credit pricing', { exact: true }),
@@ -688,17 +790,21 @@ test.describe.serial('admin user management journeys', () => {
             .getByRole('row')
             .filter({ hasText: 'google/gemini-3-8-flash-lite-tts' })
             .first();
+
         await expect(row).toBeVisible();
         await row
             .getByRole('button', { name: 'Edit price', exact: true })
             .click();
+
         const staleDialog = page.getByRole('dialog', {
             name: 'Publish model price',
         });
+
         await expect(staleDialog).toBeVisible();
         const secondContext = await browser.newContext({
             baseURL: adminOrigin,
         });
+
         try {
             const second = await secondContext.newPage();
             await passwordLogin(second);
@@ -709,59 +815,72 @@ test.describe.serial('admin user management journeys', () => {
                     exact: true,
                 }),
             });
+
             await secondPanel
                 .getByRole('row')
                 .filter({ hasText: 'google/gemini-3-8-flash-lite-tts' })
                 .first()
                 .getByRole('button', { name: 'Edit price', exact: true })
                 .click();
+
             const dialog = second.getByRole('dialog', {
                 name: 'Publish model price',
             });
+
             await dialog.getByLabel('Credits per 1,000 characters').fill('101');
             await dialog
                 .getByLabel('Reason', { exact: true })
                 .fill('Publish a deterministic test price revision');
+
             const published = second.waitForResponse(
                 (response) =>
                     response.url().includes('/admin/ai/model-prices') &&
                     response.request().method() === 'POST',
             );
+
             await dialog
                 .getByRole('button', { name: 'Publish price revision' })
                 .click();
+
             expect((await published).status()).toBe(200);
             await expect(dialog).not.toBeVisible();
             secondErrors();
             await staleDialog
                 .getByLabel('Reason', { exact: true })
                 .fill('Attempt an intentionally stale price revision');
+
             const conflict = page.waitForResponse(
                 (response) =>
                     response.url().includes('/admin/ai/model-prices') &&
                     response.request().method() === 'POST',
             );
+
             await staleDialog
                 .getByRole('button', { name: 'Publish price revision' })
                 .click();
+
             expect((await conflict).status()).toBe(409);
             await expect(
                 staleDialog.getByRole('button', {
                     name: 'Publish price revision',
                 }),
             ).toBeDisabled();
+
             await page.setViewportSize({ width: 390, height: 844 });
             await page.screenshot({
                 path: info.outputPath('admin-price-revision-conflict.png'),
                 fullPage: true,
             });
+
             await staleDialog
                 .getByRole('button', { name: 'Refresh', exact: true })
                 .click();
+
             await expect(staleDialog).not.toBeVisible();
         } finally {
             await secondContext.close();
         }
+
         assertErrors();
     });
 
@@ -774,10 +893,12 @@ test.describe.serial('admin user management journeys', () => {
             process.env.ADMIN_E2E_SENTENCE_SERVICES !== 'true',
             'Requires the guarded deterministic sentence worker.',
         );
+
         test.setTimeout(120_000);
         const assertErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
         });
+
         // This disposable database can retain the previous run's Kie default.
         // Configure the model processed by our deterministic sentence worker
         // through the same audited administrator UI used in production.
@@ -787,13 +908,17 @@ test.describe.serial('admin user management journeys', () => {
             .locator('label.ant-radio-button-wrapper')
             .filter({ hasText: 'DeepSeek' })
             .click();
+
         const modelEnabled = page.getByRole('checkbox', {
             name: /DeepSeek Flash/,
         });
-        if (!(await modelEnabled.isChecked()))
+
+        if (!(await modelEnabled.isChecked())) {
             await modelEnabled.evaluate((element: HTMLInputElement) =>
                 element.click(),
             );
+        }
+
         const fixtureDefault = page.getByLabel('Default model');
         await fixtureDefault.press('ArrowDown');
         await fixtureDefault.press('Home');
@@ -801,11 +926,13 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.locator('.ant-select').filter({ has: fixtureDefault }),
         ).toContainText('DeepSeek Flash');
+
         await page
             .getByLabel('Reason for change')
             .fill(
                 'Select deterministic sentence fixture model for isolated E2E',
             );
+
         await page.getByRole('button', { name: 'Save configuration' }).click();
         await expect(page.getByText(/Configuration version \d+/)).toBeVisible();
         const fixtureRunId = process.env.ADMIN_E2E_SENTENCE_RUN_ID!;
@@ -822,6 +949,7 @@ test.describe.serial('admin user management journeys', () => {
                 headers: { Origin: webOrigin },
             },
         );
+
         expect(login.status()).toBe(200);
         const headers = {
             Authorization: `Bearer ${((await login.json()) as { accessToken: string }).accessToken}`,
@@ -838,6 +966,7 @@ test.describe.serial('admin user management journeys', () => {
                 },
             },
         );
+
         expect(dictionaryResponse.status()).toBe(201);
         const { dictionary } = (await dictionaryResponse.json()) as {
             dictionary: {
@@ -857,6 +986,7 @@ test.describe.serial('admin user management journeys', () => {
                 },
             },
         );
+
         expect(card.status()).toBe(201);
         const sentencePath = `${backendOrigin}/learning/dictionaries/${dictionary.id}/sentences`;
         // Wait for fixture provider readiness and credit initialization via the real setup API.
@@ -874,11 +1004,13 @@ test.describe.serial('admin user management journeys', () => {
                             },
                         },
                     );
+
                     return setup.status();
                 },
                 { timeout: 30_000 },
             )
             .toBe(200);
+
         const nextInput = {
             direction: 'source-to-target',
             mode: 'new-only',
@@ -895,12 +1027,15 @@ test.describe.serial('admin user management journeys', () => {
                         headers,
                         data: nextInput,
                     });
+
                     if (next.status() === 503) {
                         const error = (await next!.json()) as {
                             error?: { code?: string };
                         };
+
                         return `503:${error.error?.code ?? 'unknown'}`;
                     }
+
                     return String(next.status());
                 },
                 {
@@ -911,6 +1046,7 @@ test.describe.serial('admin user management journeys', () => {
                 },
             )
             .toBe('202');
+
         const admitted = (await next!.json()) as { job: { id: string } };
         await expect
             .poll(
@@ -919,12 +1055,15 @@ test.describe.serial('admin user management journeys', () => {
                         `${sentencePath}/jobs/${admitted.job.id}`,
                         { headers },
                     );
+
                     expect(response.status()).toBe(200);
+
                     return ((await response.json()) as { state: string }).state;
                 },
                 { timeout: 40_000 },
             )
             .toBe('completed');
+
         await page.goto(`/users/${learnerId}`);
         await page
             .getByRole('button', {
@@ -932,71 +1071,87 @@ test.describe.serial('admin user management journeys', () => {
                 exact: true,
             })
             .click();
+
         await expect(
             page.getByRole('heading', {
                 name: 'Saved examples, under control.',
                 exact: true,
             }),
         ).toBeVisible();
+
         await page
             .getByRole('combobox', { name: 'Dictionary', exact: true })
             .click();
+
         await page
             .getByText(`Sentence operations ${fixtureRunId} · EN → FR`, {
                 exact: true,
             })
             .click();
+
         const selection = page.getByRole('checkbox', {
             name: 'Select example: book is useful.',
         });
+
         await expect(selection).toBeVisible();
         await page
             .getByRole('button', { name: 'Preview example: book is useful.' })
             .click();
+
         const preview = page.getByRole('dialog', { name: 'Example preview' });
         await expect(preview).toContainText('livre est utile.');
         await expect(
             preview.getByText('Hints & phrase mappings', { exact: true }),
         ).toBeVisible();
+
         await page.screenshot({
             animations: 'disabled',
             path: info.outputPath('admin-sentence-preview-wide.png'),
             fullPage: true,
         });
+
         await preview
             .getByRole('button', { name: 'Close', exact: true })
             .click();
+
         await page.getByText('Dark', { exact: true }).click();
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
             'dark',
         );
+
         await page
             .getByRole('button', { name: 'Preview example: book is useful.' })
             .click();
+
         await expect(preview).toContainText('livre est utile.');
         await page.screenshot({
             path: info.outputPath('admin-sentence-preview-wide-dark.png'),
             animations: 'disabled',
             fullPage: false,
         });
+
         await preview
             .getByRole('button', { name: 'Close', exact: true })
             .click();
+
         await page.getByText('Light', { exact: true }).click();
         await expect(page.locator('html')).toHaveAttribute(
             'data-theme',
             'light',
         );
+
         const mutate = async (label: string, reason: string, purge = false) => {
             await selection.check();
             await page
                 .getByRole('button', { name: label, exact: true })
                 .click();
+
             const dialog = page.getByRole('dialog', {
                 name: label,
                 exact: true,
             });
+
             await dialog.getByLabel('Reason', { exact: true }).fill(reason);
             await page.screenshot({
                 animations: 'disabled',
@@ -1005,6 +1160,7 @@ test.describe.serial('admin user management journeys', () => {
                 ),
                 fullPage: true,
             });
+
             if (purge) {
                 await dialog
                     .getByRole('button', {
@@ -1012,6 +1168,7 @@ test.describe.serial('admin user management journeys', () => {
                         exact: true,
                     })
                     .click();
+
                 await expect(dialog).toBeVisible();
                 await expect(
                     dialog.getByText(
@@ -1019,29 +1176,36 @@ test.describe.serial('admin user management journeys', () => {
                         { exact: true },
                     ),
                 ).toBeVisible();
+
                 await dialog
                     .getByRole('checkbox', {
                         name: /I understand this permanently deletes/,
                     })
                     .check();
             }
+
             await dialog
                 .getByRole('button', { name: 'Confirm action', exact: true })
                 .click();
+
             await expect(dialog).not.toBeVisible();
         };
+
         await mutate(
             'Archive globally',
             'Hide the synthetic example globally for verification',
         );
+
         await mutate(
             'Restore globally',
             'Restore the synthetic globally archived example',
         );
+
         await mutate(
             'Archive for user',
             'Archive the generator example before permanent cleanup',
         );
+
         await page.reload();
         await page
             .getByRole('button', {
@@ -1049,23 +1213,28 @@ test.describe.serial('admin user management journeys', () => {
                 exact: true,
             })
             .click();
+
         await page
             .getByRole('combobox', { name: 'Dictionary', exact: true })
             .click();
+
         await page
             .getByText(`Sentence operations ${fixtureRunId} · EN → FR`, {
                 exact: true,
             })
             .click();
+
         await expect(selection).toBeVisible();
         await mutate(
             'Restore for user',
             'Verify personal restore retains saved example content',
         );
+
         await mutate(
             'Archive for user',
             'Archive the generator example for final permanent cleanup',
         );
+
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(
             page.getByRole('heading', {
@@ -1073,45 +1242,55 @@ test.describe.serial('admin user management journeys', () => {
                 exact: true,
             }),
         ).toBeVisible();
+
         await page.screenshot({
             animations: 'disabled',
             path: info.outputPath('admin-sentence-library-narrow.png'),
             fullPage: true,
         });
+
         const sentencePanel = page.locator('.ant-card').filter({
             has: page.getByText('Sentence library', { exact: true }),
         });
+
         await sentencePanel.screenshot({
             path: info.outputPath('admin-sentence-panel-narrow.png'),
             animations: 'disabled',
         });
+
         const panelPosition = await sentencePanel.evaluate((element) => {
             const rect = element.getBoundingClientRect();
             const header = document.querySelector('.ant-layout-header');
+
             return {
                 top: rect.top + scrollY,
                 bottom: rect.bottom + scrollY,
                 header: header?.getBoundingClientRect().height ?? 0,
             };
         });
+
         await page.evaluate(
             (position) =>
                 scrollTo(0, Math.max(0, position.top - position.header - 16)),
             panelPosition,
         );
+
         await page.screenshot({
             path: info.outputPath('admin-sentence-panel-top-narrow.png'),
             animations: 'disabled',
         });
+
         await page.evaluate(
             (position) =>
                 scrollTo(0, Math.max(0, position.bottom - innerHeight + 16)),
             panelPosition,
         );
+
         await page.screenshot({
             path: info.outputPath('admin-sentence-panel-bottom-narrow.png'),
             animations: 'disabled',
         });
+
         expect(
             await page.evaluate(
                 () =>
@@ -1119,32 +1298,39 @@ test.describe.serial('admin user management journeys', () => {
                     window.innerWidth + 1,
             ),
         ).toBe(true);
+
         await page
             .getByRole('button', { name: 'Preview example: book is useful.' })
             .click();
+
         await expect(preview).toContainText('livre est utile.');
         await page.screenshot({
             animations: 'disabled',
             path: info.outputPath('admin-sentence-preview-narrow.png'),
             fullPage: false,
         });
+
         await preview
             .getByRole('button', { name: 'Close', exact: true })
             .click();
+
         await mutate(
             'Delete permanently',
             'Permanently erase this synthetic creator archived example',
             true,
         );
+
         await expect(selection).not.toBeVisible();
         const remaining = await request.get(
             `${sentencePath}/library?personalArchive=all&globalArchive=all`,
             { headers },
         );
+
         expect(remaining.status()).toBe(200);
         expect(
             ((await remaining.json()) as { items: unknown[] }).items,
         ).toHaveLength(0);
+
         assertErrors();
     });
 
@@ -1155,10 +1341,12 @@ test.describe.serial('admin user management journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
         });
+
         await passwordLogin(page);
         await expect(
             page.getByRole('heading', { name: 'Overview' }),
         ).toBeVisible();
+
         await page.reload();
         await expect(page.getByText(ownerEmail, { exact: true })).toBeVisible();
         await page.getByRole('menuitem', { name: 'Users' }).click();
@@ -1168,6 +1356,7 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('heading', { name: targetEmail }),
         ).toBeVisible();
+
         await expect(page.getByText('Verified', { exact: true })).toBeVisible();
         assertNoBrowserErrors();
     });
@@ -1179,6 +1368,7 @@ test.describe.serial('admin user management journeys', () => {
             process.env.ADMIN_E2E_ACCESS_TOKEN_TTL !== '60s',
             'Requires the shortened token-expiry verification environment.',
         );
+
         test.setTimeout(120_000);
         const clean = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
@@ -1188,59 +1378,76 @@ test.describe.serial('admin user management journeys', () => {
                 response.url().endsWith('/admin/auth/login/password') &&
                 response.status() === 200,
         );
+
         await passwordLogin(page);
         const { accessTokenExpiresAt } = (await (
             await loginResponse
         ).json()) as { accessTokenExpiresAt: string };
+
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
         const speechTariff = page
             .getByRole('row')
             .filter({ hasText: 'speech-characters' })
             .first();
+
         await speechTariff
             .getByRole('button', { name: 'Edit price', exact: true })
             .click();
+
         const dialog = page.getByRole('dialog', {
             name: 'Publish model price',
         });
+
         await dialog
             .getByLabel('Credits per 1,000 characters', { exact: true })
             .fill('1.125');
+
         await dialog
             .getByLabel('Minimum credits per recording', { exact: true })
             .fill('0.001');
+
         await dialog
             .getByLabel('Reason', { exact: true })
             .fill(
                 'Verify one explicit speech tariff publication after token refresh',
             );
+
         let refreshes = 0;
         let publications = 0;
         page.on('request', (request) => {
-            if (request.url().endsWith('/admin/auth/refresh')) refreshes++;
+            if (request.url().endsWith('/admin/auth/refresh')) {
+                refreshes++;
+            }
+
             if (
                 request.method() === 'POST' &&
                 request.url().endsWith('/admin/ai/model-prices')
-            )
+            ) {
                 publications++;
+            }
         });
+
         // Real backend token expiry; no mocked response, clock or auth state.
         await page.waitForTimeout(
             Math.max(0, Date.parse(accessTokenExpiresAt) - Date.now() + 1500),
         );
+
         expect(
             refreshes,
             'no background request may refresh the expired token before the write',
         ).toBe(0);
+
         expect(publications).toBe(0);
         const published = page.waitForResponse(
             (response) =>
                 response.request().method() === 'POST' &&
                 response.url().endsWith('/admin/ai/model-prices'),
         );
+
         await dialog
             .getByRole('button', { name: 'Publish price revision' })
             .click();
+
         const response = await published;
         expect(response.status()).toBe(200);
         expect(await response.json()).toMatchObject({
@@ -1248,10 +1455,12 @@ test.describe.serial('admin user management journeys', () => {
             creditsPer1000Characters: 1.125,
             minimumCredits: 0.001,
         });
+
         await expect(dialog).not.toBeVisible();
         await expect(
             page.getByRole('heading', { name: 'AI providers', exact: true }),
         ).toBeVisible();
+
         expect(refreshes).toBe(1);
         expect(publications).toBe(1);
         clean();
@@ -1264,6 +1473,7 @@ test.describe.serial('admin user management journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
         });
+
         await passwordLogin(page);
         await page.goto('/users');
         await page.getByPlaceholder('Email or exact user ID').fill(targetEmail);
@@ -1273,6 +1483,7 @@ test.describe.serial('admin user management journeys', () => {
         await page
             .getByLabel('Reason')
             .fill('Reviewed account restriction in the E2E journey');
+
         await page.getByRole('button', { name: 'Confirm disable' }).click();
         await expect(
             page.getByText('disabled', { exact: true }).first(),
@@ -1282,20 +1493,24 @@ test.describe.serial('admin user management journeys', () => {
         await page
             .getByLabel('Reason')
             .fill('Confirmed restoration in the E2E journey');
+
         await page.getByRole('button', { name: 'Confirm restore' }).click();
         await expect(
             page.getByText('active', { exact: true }).first(),
         ).toBeVisible();
+
         await page.getByRole('menuitem', { name: 'Audit' }).click();
         const auditRow = page
             .getByRole('row')
             .filter({ hasText: 'Confirmed restoration in the E2E journey' })
             .filter({ hasText: ownerEmail });
+
         await expect(auditRow).toContainText(ownerEmail);
         await expect(auditRow).toContainText(targetEmail);
         await expect(auditRow).toContainText(
             /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
         );
+
         assertNoBrowserErrors();
     });
 
@@ -1308,6 +1523,7 @@ test.describe.serial('admin user management journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
         });
+
         await passwordLogin(page);
         await execFileAsync(
             'pnpm',
@@ -1335,9 +1551,11 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('heading', { name: targetEmail }),
         ).toBeVisible();
+
         await expect(
             page.getByText('AI credits', { exact: true }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Adjust credits' }).click();
         const adjustmentDialog = page.getByRole('dialog', {
             name: 'Adjust AI credits',
@@ -1345,18 +1563,22 @@ test.describe.serial('admin user management journeys', () => {
         const amount = adjustmentDialog.getByRole('spinbutton', {
             name: 'Credits',
         });
+
         await expect(amount).toHaveValue('1.000');
         await amount.fill('50000000');
         await expect(amount).toHaveValue('50000000');
         await adjustmentDialog
             .getByLabel('Reason')
             .fill('Grant one deterministic managed generation attempt');
+
         await expect(adjustmentDialog.getByLabel('Reason')).toHaveValue(
             'Grant one deterministic managed generation attempt',
         );
+
         await adjustmentDialog
             .getByRole('button', { name: 'Apply adjustment' })
             .click();
+
         await expect(
             page.getByText('Grant', { exact: true }).first(),
         ).toBeVisible();
@@ -1368,6 +1590,7 @@ test.describe.serial('admin user management journeys', () => {
                 headers: { Origin: webOrigin },
             },
         );
+
         expect(targetLogin.status()).toBe(200);
         const accessToken = (
             (await targetLogin.json()) as { accessToken: string }
@@ -1390,6 +1613,7 @@ test.describe.serial('admin user management journeys', () => {
                 },
             },
         );
+
         expect(dictionaryResponse.status()).toBe(201);
         const dictionary = (await dictionaryResponse.json()) as {
             dictionary: {
@@ -1413,6 +1637,7 @@ test.describe.serial('admin user management journeys', () => {
                 },
             },
         );
+
         expect(cardResponse.status()).toBe(201);
         const card = (await cardResponse.json()) as {
             card: { id: string; version: number };
@@ -1439,6 +1664,7 @@ test.describe.serial('admin user management journeys', () => {
                     },
                 },
             );
+
             expect(generationResponse.status()).toBe(202);
             const jobId = (
                 (await generationResponse.json()) as {
@@ -1464,47 +1690,57 @@ test.describe.serial('admin user management journeys', () => {
                     select state, outcome, measurement, charged_milli as "chargedMilli", held_milli as "heldMilli"
                     from ai_credit_actions where id = ${jobId}
                 `;
+
                 expect(action).toMatchObject({
                     state: 'settled',
                     outcome: 'success',
                     measurement: 'unknown',
                     chargedMilli: '0',
                 });
+
                 expect(BigInt(action!.heldMilli)).toBeGreaterThan(0n);
                 const [attempt] = await database<
                     Array<{ state: string; inputTokens: number | null }>
                 >`
                     select state, input_tokens as "inputTokens" from ai_credit_action_attempts where action_id = ${jobId}
                 `;
+
                 expect(attempt).toMatchObject({
                     state: 'settled',
                     inputTokens: null,
                 });
+
                 const [expense] = await database<
                     Array<{ measurement: string; amountMicros: string | null }>
                 >`
                     select measurement, amount_usd_micros as "amountMicros" from ai_provider_expense_records where action_id = ${jobId}
                 `;
+
                 expect(expense).toMatchObject({
                     measurement: 'unknown',
                     amountMicros: null,
                 });
+
                 const oldReservations =
                     await database`select id from ai_credit_reservations where job_id = ${jobId}`;
+
                 expect(oldReservations).toHaveLength(0);
             } finally {
                 await database.end();
             }
+
             await page.reload();
             await expect(
                 page.getByText('Grant', { exact: true }).first(),
             ).toBeVisible();
+
             await expect(
                 page
                     .getByRole('row')
                     .filter({ hasText: 'Settlement' })
                     .filter({ hasText: 'Estimated maximum' }),
             ).toHaveCount(0);
+
             const accepted = await request.post(
                 `${backendOrigin}/dictionary-generation-jobs/${jobId}/accept`,
                 {
@@ -1512,6 +1748,7 @@ test.describe.serial('admin user management journeys', () => {
                     headers: apiHeaders,
                 },
             );
+
             expect(accepted.status()).toBe(200);
             expect(
                 ((await accepted.json()) as { job: { state: string } }).job
@@ -1520,6 +1757,7 @@ test.describe.serial('admin user management journeys', () => {
         } finally {
             await stopDictionaryWorker(worker);
         }
+
         assertNoBrowserErrors();
     });
 
@@ -1544,22 +1782,27 @@ test.describe.serial('admin user management journeys', () => {
                     path === '/api/admin/ai/routing' ||
                     path === '/api/admin/ai-settings/probes' ||
                     /^\/api\/admin\/users\/[^/]+\/ai-credits$/.test(path))
-            )
+            ) {
                 return;
+            }
+
             failedRequests.push(
                 `${request.method()} ${path}: ${request.failure()?.errorText}`,
             );
         });
+
         await passwordLogin(page);
         const firstRouting = await configureModel(page, {
             inputRate: '100',
             outputRate: '300',
             reason: 'Establish reviewed baseline for pinned routing regression',
         });
+
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(
             page.getByRole('button', { name: 'Publish routing', exact: true }),
         ).toBeVisible();
+
         await page.setViewportSize({ width: 1280, height: 720 });
         // Fund both immutable tariff revisions before admitting the jobs.
         // Fund through the owner UI rather than depending on another test case.
@@ -1567,6 +1810,7 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByText('AI credits', { exact: true }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Adjust credits' }).click();
         const adjustmentDialog = page.getByRole('dialog', {
             name: 'Adjust AI credits',
@@ -1574,21 +1818,26 @@ test.describe.serial('admin user management journeys', () => {
         const amount = adjustmentDialog.getByRole('spinbutton', {
             name: 'Credits',
         });
+
         await expect(amount).toHaveValue('1.000');
         await amount.fill('50000000');
         await expect(amount).toHaveValue('50000000');
         await adjustmentDialog
             .getByLabel('Reason')
             .fill('Fund pinned provider-revision generation jobs');
+
         await expect(adjustmentDialog.getByLabel('Reason')).toHaveValue(
             'Fund pinned provider-revision generation jobs',
         );
+
         await adjustmentDialog
             .getByRole('button', { name: 'Apply adjustment' })
             .click();
+
         await expect(
             page.getByText('Grant', { exact: true }).first(),
         ).toBeVisible();
+
         await page.getByRole('menuitem', { name: 'AI settings' }).click();
         await expect(
             page.getByRole('heading', { name: 'AI providers' }),
@@ -1601,6 +1850,7 @@ test.describe.serial('admin user management journeys', () => {
                 headers: { Origin: webOrigin },
             },
         );
+
         expect(targetLogin.status()).toBe(200);
         const accessToken = (
             (await targetLogin.json()) as { accessToken: string }
@@ -1623,6 +1873,7 @@ test.describe.serial('admin user management journeys', () => {
                 },
             },
         );
+
         expect(dictionaryResponse.status()).toBe(201);
         const createdDictionary = (await dictionaryResponse.json()) as {
             dictionary: {
@@ -1650,12 +1901,15 @@ test.describe.serial('admin user management journeys', () => {
                     },
                 },
             );
+
             expect(response.status()).toBe(201);
             const payload = (await response.json()) as {
                 card: { id: string; version: number };
                 dictionaryVersion: number;
             };
+
             dictionaryVersion = payload.dictionaryVersion;
+
             return payload.card;
         };
         const deepSeekCard = await createCard('canvas', 'toile');
@@ -1677,7 +1931,9 @@ test.describe.serial('admin user management journeys', () => {
                     },
                 },
             );
+
             expect(response.status()).toBe(202);
+
             return ((await response.json()) as { job: { id: string } }).job.id;
         };
         let worker: ChildProcess | undefined;
@@ -1694,6 +1950,7 @@ test.describe.serial('admin user management journeys', () => {
                 checkFlows: false,
                 reason: 'Change future flow tariffs while preserving admitted snapshots',
             });
+
             expect(secondRouting.id).not.toBe(firstRouting.id);
             const nextTariffJobId = await enqueue(nextTariffCard);
 
@@ -1720,19 +1977,24 @@ test.describe.serial('admin user management journeys', () => {
                 where jobs.id in (${deepSeekJobId}, ${nextTariffJobId})
                 order by jobs.id
             `;
+
                 expect(pinned).toHaveLength(2);
                 expect(new Set(pinned.map((row) => row.revisionId)).size).toBe(
                     2,
                 );
+
                 expect(new Set(pinned.map((row) => row.modelId))).toEqual(
                     new Set(['deepseek-flash']),
                 );
+
                 expect(new Set(pinned.map((row) => row.providerId))).toEqual(
                     new Set(['deepseek']),
                 );
+
                 expect(new Set(pinned.map((row) => row.inputRate))).toEqual(
                     new Set(['100', '200']),
                 );
+
                 expect(new Set(pinned.map((row) => row.revisionId))).toEqual(
                     new Set([firstRouting.id, secondRouting.id]),
                 );
@@ -1745,11 +2007,13 @@ test.describe.serial('admin user management journeys', () => {
                 accessToken,
                 deepSeekJobId,
             );
+
             await waitForGenerationReview(
                 request,
                 accessToken,
                 nextTariffJobId,
             );
+
             const accepted = await request.post(
                 `${backendOrigin}/dictionary-generation-jobs/${deepSeekJobId}/accept`,
                 {
@@ -1757,6 +2021,7 @@ test.describe.serial('admin user management journeys', () => {
                     headers: apiHeaders,
                 },
             );
+
             expect(accepted.status()).toBe(200);
             expect(
                 ((await accepted.json()) as { job: { state: string } }).job
@@ -1770,12 +2035,15 @@ test.describe.serial('admin user management journeys', () => {
         await expect(
             page.getByRole('region', { name: 'Text AI routes' }),
         ).toBeVisible();
+
         await expect(
             page.getByText(/Configuration version \d+/i),
         ).toBeVisible();
+
         expect(failedRequests, 'unexpected failed browser requests').toEqual(
             [],
         );
+
         assertNoBrowserErrors();
     });
 
@@ -1791,6 +2059,7 @@ test.describe.serial('admin user management journeys', () => {
                 headers: { Origin: webOrigin },
             },
         );
+
         expect(targetLogin.status()).toBe(200);
         const token = ((await targetLogin.json()) as { accessToken: string })
             .accessToken;
@@ -1804,28 +2073,35 @@ test.describe.serial('admin user management journeys', () => {
                 },
             },
         );
+
         expect(scheduled.status()).toBe(202);
 
         const assertNoBrowserErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
         });
+
         await passwordLogin(page);
         await page.goto(`/users/${targetId}`);
         await expect(
             page.getByText('scheduled for deletion', { exact: true }).first(),
         ).toBeVisible();
+
         await page
             .getByRole('button', { name: 'Cancel scheduled deletion' })
             .click();
+
         await page
             .getByLabel('Reason')
             .fill('Reviewed administrator cancellation in disposable E2E');
+
         await page
             .getByRole('button', { name: 'Confirm cancellation' })
             .click();
+
         await expect(
             page.getByText('active', { exact: true }).first(),
         ).toBeVisible();
+
         await page.getByRole('menuitem', { name: 'Audit' }).click();
         await expect(
             page
@@ -1836,6 +2112,7 @@ test.describe.serial('admin user management journeys', () => {
                 })
                 .filter({ hasText: targetEmail }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1847,6 +2124,7 @@ test.describe.serial('admin user management journeys', () => {
             '/api/admin/auth/refresh': 401,
             [`/api/admin/users/${targetId}/disable`]: 403,
         });
+
         await passwordLogin(page);
         const sql = postgres(databaseUrl, { max: 1 });
         try {
@@ -1860,6 +2138,7 @@ test.describe.serial('admin user management journeys', () => {
         } finally {
             await sql.end();
         }
+
         await page.goto(`/users/${targetId}`);
         await page.getByRole('button', { name: 'Disable user' }).click();
         const reason = 'Reviewed recent authentication rejection';
@@ -1874,10 +2153,12 @@ test.describe.serial('admin user management journeys', () => {
                 })
                 .first(),
         ).toBeVisible();
+
         await expect(page.getByLabel('Reason')).toHaveValue(reason);
         await expect(
             page.getByRole('button', { name: 'Sign in again' }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1889,6 +2170,7 @@ test.describe.serial('admin user management journeys', () => {
             '/api/admin/auth/login/password': 403,
             '/api/admin/auth/refresh': 401,
         });
+
         await passwordLogin(page, targetEmail, false);
         await expect(
             page
@@ -1896,6 +2178,7 @@ test.describe.serial('admin user management journeys', () => {
                 .filter({ hasText: 'Administrator access is required.' })
                 .first(),
         ).toBeVisible();
+
         await expect(page).toHaveURL(/\/login$/);
         assertNoBrowserErrors();
     });
@@ -1913,11 +2196,13 @@ test.describe.serial('admin user management journeys', () => {
             await page.goto(
                 `${webOrigin}/login?returnTo=%2Fprofile%3Ftab%3Dsecurity`,
             );
+
             await page.getByLabel('Email').fill(ownerEmail);
             await page.locator('input[name="password"]').fill(ownerPassword);
             await page
                 .getByRole('button', { name: 'Sign in', exact: true })
                 .click();
+
             await expect(page).toHaveURL(/\/profile\?tab=security$/);
             await page
                 .getByRole('button', {
@@ -1925,6 +2210,7 @@ test.describe.serial('admin user management journeys', () => {
                     exact: true,
                 })
                 .click();
+
             await expect(page.getByText('Passkey added.')).toBeVisible();
             await page.getByRole('button', { name: 'Sign out here' }).click();
 
@@ -1936,6 +2222,7 @@ test.describe.serial('admin user management journeys', () => {
         } finally {
             await client.detach();
         }
+
         assertNoBrowserErrors();
     });
 });

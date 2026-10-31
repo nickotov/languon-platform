@@ -35,7 +35,10 @@ export function usePortraitManagement() {
     const query = usePortraitState({ ownerId, requestWithSession });
     const status = usePortraitInterviewStatus({ ownerId, requestWithSession });
     const scopeRef = useRef<OwnerScope>({ ownerId });
-    if (scopeRef.current.ownerId !== ownerId) scopeRef.current = { ownerId };
+    if (scopeRef.current.ownerId !== ownerId) {
+        scopeRef.current = { ownerId };
+    }
+
     const scope = scopeRef.current;
     const activeRequest = useRef<MutationRequest | null>(null);
     const [mutation, setMutation] = useState<MutationState | null>(null);
@@ -48,8 +51,10 @@ export function usePortraitManagement() {
             !ownerId ||
             scopeRef.current !== scope ||
             activeRequest.current?.scope === scope
-        )
+        ) {
             return null;
+        }
+
         const request = { scope };
         activeRequest.current = request;
         setMutation({ request, pending: true, error: null });
@@ -60,9 +65,13 @@ export function usePortraitManagement() {
                 useSessionStore.getState().user?.id === ownerId
             );
         }
+
         try {
             const state = await requestWithSession(action);
-            if (!ownsRequest()) return null;
+            if (!ownsRequest()) {
+                return null;
+            }
+
             setPortraitStateCache(client, ownerId, state);
             await Promise.all([
                 invalidatePortraitInterviewStatusCache(client, ownerId),
@@ -73,6 +82,7 @@ export function usePortraitManagement() {
                     queryKey: ['conversation', ownerId],
                 }),
             ]);
+
             return ownsRequest() ? state : null;
         } catch (cause) {
             if (ownsRequest()) {
@@ -85,6 +95,7 @@ export function usePortraitManagement() {
                     await status.refetch();
                 }
             }
+
             return null;
         } finally {
             if (ownsRequest()) {
@@ -99,14 +110,20 @@ export function usePortraitManagement() {
     }
 
     async function discard() {
-        if (!query.data) return null;
+        if (!query.data) {
+            return null;
+        }
+
         return apply((token) =>
             portraitApi.discard(token, { expectedVersion: query.data.version }),
         );
     }
 
     async function setUse(enabled: boolean) {
-        if (!query.data) return null;
+        if (!query.data) {
+            return null;
+        }
+
         return apply((token) =>
             portraitApi.setUse(token, {
                 expectedVersion: query.data.version,
@@ -128,4 +145,5 @@ export function usePortraitManagement() {
         setUse,
     };
 }
+
 export type PortraitManagement = ReturnType<typeof usePortraitManagement>;

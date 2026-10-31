@@ -28,15 +28,19 @@ export function WorkbookNoteRow({
     function up() {
         onMove(index, -1);
     }
+
     function down() {
         onMove(index, 1);
     }
+
     function remove() {
         onRemove(note.id);
     }
+
     function select() {
         onSelect(note.id);
     }
+
     return (
         <li className={styles.panel}>
             <div className={styles.header}>

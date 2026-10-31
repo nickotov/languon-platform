@@ -47,9 +47,12 @@ export function ProviderRouteTable({
             route.routeId,
         );
         let processing = t('routing.processingEligible');
-        if (route.retired) processing = t('routing.retired');
-        else if (!route.processingEligible)
+        if (route.retired) {
+            processing = t('routing.retired');
+        } else if (!route.processingEligible) {
             processing = t('routing.processingBlocked');
+        }
+
         return {
             id: route.routeId,
             label: `${route.providerId} · ${route.label}`,
@@ -159,6 +162,7 @@ function DisableRouteButton({
 }) {
     const t = useTranslate();
     const handleDisable = () => onDisable(route.id);
+
     return (
         <Button
             danger

@@ -19,6 +19,7 @@ describe('Knowledge snippet speech', () => {
             },
         ],
     };
+
     it('speaks only the selected source term or example in its prepared language', () => {
         expect(
             knowledgeSnippetText(vocabulary, {
@@ -27,6 +28,7 @@ describe('Knowledge snippet speech', () => {
                 field: 'term',
             }),
         ).toEqual({ text: 'travail', language: 'fr' });
+
         expect(
             knowledgeSnippetText(vocabulary, {
                 kind: 'vocabulary',
@@ -34,6 +36,7 @@ describe('Knowledge snippet speech', () => {
                 field: 'example',
             }),
         ).toEqual({ text: 'Je vais au travail.', language: 'fr' });
+
         expect(() =>
             knowledgeSnippetText(vocabulary, {
                 kind: 'vocabulary',
@@ -41,6 +44,7 @@ describe('Knowledge snippet speech', () => {
                 field: 'term',
             }),
         ).toThrow();
+
         expect(() =>
             knowledgeSnippetText(vocabulary, {
                 kind: 'grammar-example',
@@ -48,6 +52,7 @@ describe('Knowledge snippet speech', () => {
             }),
         ).toThrow();
     });
+
     it('selects a source bilingual segment or complete source without adding translations', () => {
         const segmentId = randomUUID();
         const block: LearningBlock = {
@@ -60,14 +65,17 @@ describe('Knowledge snippet speech', () => {
             ],
             translations: [],
         };
+
         expect(
             knowledgeSnippetText(block, { kind: 'bilingual', segmentId }),
         ).toEqual({ text: 'Bonjour.', language: 'fr' });
+
         expect(knowledgeSnippetText(block, { kind: 'bilingual' })).toEqual({
             text: 'Bonjour.\n\nAu revoir.',
             language: 'fr',
         });
     });
+
     it('selects only an existing grammar source example', () => {
         const block: LearningBlock = {
             id: randomUUID(),
@@ -75,13 +83,16 @@ describe('Knowledge snippet speech', () => {
             language: 'fr',
             examples: [{ text: 'Je travaille.', translation: 'Я работаю.' }],
         };
+
         expect(
             knowledgeSnippetText(block, { kind: 'grammar-example', index: 0 }),
         ).toEqual({ text: 'Je travaille.', language: 'fr' });
+
         expect(() =>
             knowledgeSnippetText(block, { kind: 'grammar-example', index: 1 }),
         ).toThrow();
     });
+
     it('bounds owner audio draft input without accepting arbitrary source authority', () => {
         const source = {
             kind: 'knowledge-audio-draft',
@@ -91,15 +102,24 @@ describe('Knowledge snippet speech', () => {
             sourceText: 'Bonjour.',
             language: 'fr',
         };
+
         expect(SpeechSourceSchema.safeParse(source).success).toBe(true);
-        for (const sourceText of ['', '   ', 'x'.repeat(8001), 'bad\u0000text'])
+        for (const sourceText of [
+            '',
+            '   ',
+            'x'.repeat(8001),
+            'bad\u0000text',
+        ]) {
             expect(
                 SpeechSourceSchema.safeParse({ ...source, sourceText }).success,
             ).toBe(false);
+        }
+
         expect(
             SpeechSourceSchema.safeParse({ ...source, ownerId: randomUUID() })
                 .success,
         ).toBe(false);
+
         expect(
             SpeechSourceSchema.safeParse({
                 ...source,
@@ -107,6 +127,7 @@ describe('Knowledge snippet speech', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects client text and forged stored share digests at the public boundary', () => {
         const source = {
             kind: 'knowledge-snippet',
@@ -119,17 +140,20 @@ describe('Knowledge snippet speech', () => {
             },
             selector: { kind: 'vocabulary', entryId, field: 'term' },
         };
+
         expect(SpeechSourceSchema.safeParse(source).success).toBe(true);
         expect(
             SpeechSourceSchema.safeParse({ ...source, text: 'arbitrary text' })
                 .success,
         ).toBe(false);
+
         expect(
             SpeechSourceSchema.safeParse({
                 ...source,
                 selector: { ...source.selector, field: 'translation' },
             }).success,
         ).toBe(false);
+
         expect(
             SpeechSourceSchema.safeParse({
                 ...source,

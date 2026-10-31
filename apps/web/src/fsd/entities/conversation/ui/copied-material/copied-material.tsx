@@ -16,7 +16,8 @@ export function CopiedMaterial({
         caption && caption !== attachment.label
             ? `${attachment.label} · ${caption}`
             : attachment.label;
-    if (attachment.kind === 'text-reference')
+
+    if (attachment.kind === 'text-reference') {
         return (
             <details className={styles.root}>
                 <summary dir='auto'>{summary}</summary>
@@ -38,7 +39,9 @@ export function CopiedMaterial({
                 )}
             </details>
         );
-    if (attachment.kind !== 'dictionary-card')
+    }
+
+    if (attachment.kind !== 'dictionary-card') {
         return (
             <details className={styles.root}>
                 <summary dir='auto'>{summary}</summary>
@@ -47,12 +50,16 @@ export function CopiedMaterial({
                 </div>
             </details>
         );
+    }
+
     const card = attachment.card;
     let transcriptionLabel = copy.transcription;
-    if (card.transcriptionCustomLabel)
+    if (card.transcriptionCustomLabel) {
         transcriptionLabel += ` (${card.transcriptionCustomLabel})`;
-    else if (card.transcriptionNotation)
+    } else if (card.transcriptionNotation) {
         transcriptionLabel += ` (${card.transcriptionNotation})`;
+    }
+
     return (
         <details className={styles.root}>
             <summary dir='auto'>{summary}</summary>
@@ -111,6 +118,7 @@ function MaterialField({
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
+
     return (
         <div>
             <dt className={styles.label}>{label}</dt>

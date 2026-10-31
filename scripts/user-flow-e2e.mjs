@@ -42,6 +42,7 @@ export async function inspectUserFlowE2e(feature, options = {}) {
             error instanceof Error ? error.message : String(error),
         );
     }
+
     try {
         validateE2eMarkerRegistry(
             new Map([[feature, guide.e2e]]),
@@ -57,6 +58,7 @@ export async function inspectUserFlowE2e(feature, options = {}) {
     const scenarioFiles = new Map(
         guide.e2e.scenarios.map((scenario) => [scenario, []]),
     );
+
     for (const [testPath, testContent] of testFiles) {
         for (const scenario of guide.e2e.scenarios) {
             const marker = `// @user-flow ${feature}/${scenario}`;
@@ -91,12 +93,14 @@ export function formatInspection(inspection) {
         'Scenarios:',
         ...inspection.scenarios.map((scenario) => {
             const files = inspection.scenarioFiles.get(scenario);
+
             return `  - ${scenario}: ${files.length > 0 ? files.join(', ') : 'missing marker'}`;
         }),
         inspection.validationError
             ? `Status: invalid — ${inspection.validationError}`
             : 'Status: synchronized',
     ];
+
     return lines.join('\n');
 }
 
@@ -118,15 +122,24 @@ export async function main(args = process.argv.slice(2)) {
     }
 
     if (action === 'check') {
-        if (feature) assertFeatureSlug(feature);
+        if (feature) {
+            assertFeatureSlug(feature);
+        }
+
         await checkUserFlowGuides(feature ? { feature } : {});
+
         return;
     }
 
-    if (!feature) throw new Error(usage());
+    if (!feature) {
+        throw new Error(usage());
+    }
+
     const inspection = await inspectUserFlowE2e(feature);
     console.log(formatInspection(inspection));
-    if (inspection.validationError) process.exitCode = 1;
+    if (inspection.validationError) {
+        process.exitCode = 1;
+    }
 }
 
 if (

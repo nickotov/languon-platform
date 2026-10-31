@@ -105,7 +105,10 @@ function commandActive(command) {
 function renderRunningServices() {
     const servicesByUrl = new Map();
     for (const command of panelState.commands) {
-        if (!commandActive(command)) continue;
+        if (!commandActive(command)) {
+            continue;
+        }
+
         for (const service of command.serviceUrls) {
             if (!servicesByUrl.has(service.url)) {
                 servicesByUrl.set(service.url, {
@@ -116,6 +119,7 @@ function renderRunningServices() {
             }
         }
     }
+
     const services = [...servicesByUrl.values()];
     runningServiceCountElement.textContent = `${services.length} available`;
     runningServicesEmptyElement.hidden = services.length > 0;
@@ -166,6 +170,7 @@ function showManagerNotice(message, kind = 'status') {
         'notice--warning',
         kind === 'error',
     );
+
     customSectionsDialogNotice.setAttribute(
         'role',
         kind === 'error' ? 'alert' : 'status',
@@ -178,15 +183,22 @@ function showPreferenceIssue(message) {
 }
 
 function errorMessage(error) {
-    if (!(error instanceof Error)) return String(error);
+    if (!(error instanceof Error)) {
+        return String(error);
+    }
+
     const issues = error.issues
         ?.map((issue) => issue.message ?? issue.reason)
         .filter(Boolean);
+
     return [...new Set([error.message, ...(issues ?? [])])].join(' · ');
 }
 
 function updateToolbar() {
-    if (!panelState) return;
+    if (!panelState) {
+        return;
+    }
+
     const selectable = selectableCommands(panelState.commands);
     const compatibleIds = new Set(compatibleCommandIds(panelState.commands));
     for (const id of [...selected]) {
@@ -194,6 +206,7 @@ function updateToolbar() {
             selected.delete(id);
         }
     }
+
     selectionCountElement.textContent = `${selected.size} selected`;
     runSelectedElement.disabled = selected.size === 0;
     stopAllElement.disabled = !panelState.commands.some(commandActive);
@@ -201,13 +214,18 @@ function updateToolbar() {
         compatibleIds.size > 0 &&
         compatibleIds.size === selected.size &&
         [...compatibleIds].every((id) => selected.has(id));
+
     selectAllElement.indeterminate =
         selected.size > 0 && !selectAllElement.checked;
+
     selectAllElement.disabled = selectable.length === 0;
 }
 
 function formatTime(value) {
-    if (!value) return '—';
+    if (!value) {
+        return '—';
+    }
+
     return new Intl.DateTimeFormat(undefined, {
         hour: '2-digit',
         minute: '2-digit',
@@ -219,15 +237,23 @@ function statusText(command) {
     const status = command.missing
         ? 'missing'
         : (command.run?.status ?? (command.available ? 'idle' : 'disabled'));
+
     return `${status.slice(0, 1).toUpperCase()}${status.slice(1)}`;
 }
 
 function logText(run) {
-    if (!run) return 'No run in this server session.';
+    if (!run) {
+        return 'No run in this server session.';
+    }
+
     const prefix = run.logs.truncated
         ? '[Earlier log entries were discarded]\n'
         : '';
-    if (run.logs.entries.length === 0) return `${prefix}Waiting for output…`;
+
+    if (run.logs.entries.length === 0) {
+        return `${prefix}Waiting for output…`;
+    }
+
     return (
         prefix +
         run.logs.entries
@@ -238,6 +264,7 @@ function logText(run) {
                         : entry.stream === 'agent'
                           ? 'AGENT'
                           : 'OUT';
+
                 return `${entry.timestamp} [${stream}] ${entry.text}`;
             })
             .join('\n')
@@ -251,6 +278,7 @@ function trimClientLog(run) {
         (total, entry) => total + JSON.stringify(entry).length,
         0,
     );
+
     while (
         run.logs.entries.length > maximumEntries ||
         run.logs.clientBytes > maximumBytes
@@ -263,18 +291,25 @@ function trimClientLog(run) {
 
 function scheduleLogRender(commandId) {
     pendingLogCommands.add(commandId);
-    if (pendingLogFrame !== null) return;
+    if (pendingLogFrame !== null) {
+        return;
+    }
+
     pendingLogFrame = requestAnimationFrame(() => {
         for (const id of pendingLogCommands) {
             const command = panelState?.commands.find((item) => item.id === id);
             for (const card of document.querySelectorAll('[data-command-id]')) {
-                if (card.dataset.commandId !== id) continue;
+                if (card.dataset.commandId !== id) {
+                    continue;
+                }
+
                 const terminal = card.querySelector('.terminal');
                 if (terminal && command?.run) {
                     terminal.textContent = logText(command.run);
                 }
             }
         }
+
         pendingLogCommands.clear();
         pendingLogFrame = null;
     });
@@ -290,6 +325,7 @@ function createAgentMetadata(agent) {
         ['Thread', agent.threadId ?? 'Not reported'],
         ['Skill', agent.skill],
     ];
+
     for (const [term, description] of values) {
         const dt = document.createElement('dt');
         dt.textContent = term;
@@ -297,6 +333,7 @@ function createAgentMetadata(agent) {
         dd.textContent = description;
         list.append(dt, dd);
     }
+
     return list;
 }
 
@@ -309,8 +346,10 @@ function commitCustomSections(nextDocument, message) {
             customSectionsJsonElement.value =
                 serializeCustomSections(nextDocument);
         }
+
         render();
         showNotice(message);
+
         return true;
     } catch (error) {
         render();
@@ -318,6 +357,7 @@ function commitCustomSections(nextDocument, message) {
         if (customSectionsDialog.open) {
             showManagerNotice(errorMessage(error), 'error');
         }
+
         return false;
     }
 }
@@ -333,6 +373,7 @@ function updateMembership(sectionId, commandId, included) {
         const section = nextDocument.sections.find(
             ({ id }) => id === sectionId,
         );
+
         commitCustomSections(
             nextDocument,
             `${commandId} ${included ? 'added to' : 'removed from'} ${section.name}.`,
@@ -353,12 +394,14 @@ function createMembershipControls(command) {
         const copy = document.createElement('p');
         copy.textContent =
             'Create a section to add this command to quick access.';
+
         const manageButton = document.createElement('button');
         manageButton.className = 'button';
         manageButton.type = 'button';
         manageButton.textContent = 'Create section';
         manageButton.addEventListener('click', openCustomSectionsManager);
         fieldset.append(copy, manageButton);
+
         return fieldset;
     }
 
@@ -372,12 +415,15 @@ function createMembershipControls(command) {
         checkbox.addEventListener('change', () =>
             updateMembership(section.id, command.id, checkbox.checked),
         );
+
         const name = document.createElement('span');
         name.textContent = section.name;
         label.append(checkbox, name);
         options.append(label);
     }
+
     fieldset.append(options);
+
     return fieldset;
 }
 
@@ -388,8 +434,11 @@ function createCommandCard(command, placementId) {
     card.dataset.active = String(commandActive(command));
     card.open = expandedCommandPlacements.has(placementId);
     card.addEventListener('toggle', () => {
-        if (card.open) expandedCommandPlacements.add(placementId);
-        else expandedCommandPlacements.delete(placementId);
+        if (card.open) {
+            expandedCommandPlacements.add(placementId);
+        } else {
+            expandedCommandPlacements.delete(placementId);
+        }
     });
 
     const summary = document.createElement('summary');
@@ -405,6 +454,7 @@ function createCommandCard(command, placementId) {
     status.dataset.status = command.missing
         ? 'missing'
         : (command.run?.status ?? (command.available ? 'idle' : 'disabled'));
+
     status.textContent = statusText(command);
     summary.append(summaryCopy, status);
 
@@ -428,10 +478,12 @@ function createCommandCard(command, placementId) {
         reasonLabel.textContent = command.missing
             ? 'Why missing'
             : 'Why unavailable';
+
         const reasonText = document.createElement('span');
         reasonText.textContent =
             command.runtimeReason ??
             'This command has not been approved for browser execution.';
+
         reason.append(reasonLabel, reasonText);
         body.append(reason);
     }
@@ -441,8 +493,9 @@ function createCommandCard(command, placementId) {
         runMeta.className = 'run-meta';
         runMeta.textContent = `Started ${formatTime(command.run.startedAt)} · Ended ${formatTime(command.run.endedAt)} · Exit ${command.run.exitCode ?? '—'}`;
         body.append(runMeta);
-        if (command.run.agent)
+        if (command.run.agent) {
             body.append(createAgentMetadata(command.run.agent));
+        }
     }
 
     const actions = document.createElement('div');
@@ -457,14 +510,21 @@ function createCommandCard(command, placementId) {
         !command.available ||
         !command.batchEligible ||
         commandActive(command);
+
     if (unavailableReasonId) {
         checkbox.setAttribute('aria-describedby', unavailableReasonId);
     }
+
     checkbox.addEventListener('change', () => {
-        if (checkbox.checked) selected.add(command.id);
-        else selected.delete(command.id);
+        if (checkbox.checked) {
+            selected.add(command.id);
+        } else {
+            selected.delete(command.id);
+        }
+
         render();
     });
+
     const selectionText = document.createElement('span');
     selectionText.textContent = 'Select';
     selectionLabel.append(checkbox, selectionText);
@@ -473,12 +533,15 @@ function createCommandCard(command, placementId) {
     actionButton.className = commandActive(command)
         ? 'button button--danger'
         : 'button';
+
     actionButton.textContent = commandActive(command) ? 'Stop' : 'Start';
     actionButton.disabled =
         command.missing || (!command.available && !commandActive(command));
+
     if (unavailableReasonId) {
         actionButton.setAttribute('aria-describedby', unavailableReasonId);
     }
+
     actionButton.addEventListener('click', () =>
         commandActive(command)
             ? mutate('/api/stop', {
@@ -498,6 +561,7 @@ function createCommandCard(command, placementId) {
                   { clearSelection: true },
               ),
     );
+
     actions.append(selectionLabel, actionButton);
     body.append(actions, createMembershipControls(command));
 
@@ -514,6 +578,7 @@ function createCommandCard(command, placementId) {
     body.append(logDetails);
 
     card.append(summary, body);
+
     return card;
 }
 
@@ -544,19 +609,23 @@ function createNavigationItem({ count, id, label, onOpen }) {
     link.append(countElement);
     link.addEventListener('click', onOpen);
     item.append(link);
+
     return item;
 }
 
 function startCustomSection(section) {
     const { missingIds, nonBatchIds, selections, unavailable } =
         sectionStartSelections(panelState.commands, section.commandIds);
+
     if (missingIds.length > 0) {
         showNotice(
             `Cannot start ${section.name}: missing command IDs ${missingIds.join(', ')}.`,
             'error',
         );
+
         return;
     }
+
     if (unavailable.length > 0) {
         showNotice(
             `Cannot start ${section.name}: ${unavailable
@@ -564,19 +633,25 @@ function startCustomSection(section) {
                 .join(' · ')}.`,
             'error',
         );
+
         return;
     }
+
     if (nonBatchIds.length > 0) {
         showNotice(
             `Cannot start ${section.name}: not eligible for section batch ${nonBatchIds.join(', ')}.`,
             'error',
         );
+
         return;
     }
+
     if (selections.length === 0) {
         showNotice(`${section.name} has no commands to start.`, 'error');
+
         return;
     }
+
     mutate('/api/start', { selections }, { clearSelection: true });
 }
 
@@ -584,14 +659,17 @@ function requestStopCustomSection(section) {
     const runs = sectionActiveRuns(panelState.commands, section.commandIds);
     if (runs.length === 0) {
         showNotice(`${section.name} has no active commands.`, 'error');
+
         return;
     }
+
     pendingStopSection = {
         commandIds: [...section.commandIds],
         id: section.id,
         name: section.name,
         runs,
     };
+
     stopCustomSectionDescription.textContent = `Stop ${runs.length} active command${runs.length === 1 ? '' : 's'} in “${section.name}”? Other running commands are not affected.`;
     stopCustomSectionDialog.returnValue = '';
     stopCustomSectionDialog.showModal();
@@ -625,6 +703,7 @@ function renderCustomSections(commandsById) {
             'aria-expanded',
             String(expandedCustomSections.has(section.id)),
         );
+
         const toggleTitle = document.createElement('strong');
         toggleTitle.textContent = section.name;
         const toggleCount = document.createElement('span');
@@ -641,6 +720,7 @@ function renderCustomSections(commandsById) {
         startButton.addEventListener('click', () =>
             startCustomSection(section),
         );
+
         const activeRuns = sectionActiveRuns(
             panelState.commands,
             section.commandIds,
@@ -653,6 +733,7 @@ function renderCustomSections(commandsById) {
         stopButton.addEventListener('click', () =>
             requestStopCustomSection(section),
         );
+
         const removeButton = document.createElement('button');
         removeButton.className = 'button';
         removeButton.type = 'button';
@@ -660,6 +741,7 @@ function renderCustomSections(commandsById) {
         removeButton.addEventListener('click', () =>
             requestRemoveCustomSection(section),
         );
+
         actions.append(startButton, stopButton, removeButton);
         header.append(toggle, actions);
 
@@ -671,11 +753,13 @@ function renderCustomSections(commandsById) {
             empty.className = 'empty-state';
             empty.textContent =
                 'No commands yet. Expand a catalog command and select this section.';
+
             grid.append(empty);
         } else {
             for (const commandId of section.commandIds) {
                 const command =
                     commandsById.get(commandId) ?? missingCommand(commandId);
+
                 grid.append(
                     createCommandCard(
                         command,
@@ -687,11 +771,16 @@ function renderCustomSections(commandsById) {
 
         toggle.addEventListener('click', () => {
             const expanded = !expandedCustomSections.has(section.id);
-            if (expanded) expandedCustomSections.add(section.id);
-            else expandedCustomSections.delete(section.id);
+            if (expanded) {
+                expandedCustomSections.add(section.id);
+            } else {
+                expandedCustomSections.delete(section.id);
+            }
+
             toggle.setAttribute('aria-expanded', String(expanded));
             grid.hidden = !expanded;
         });
+
         group.append(header, grid);
         customSectionsElement.append(group);
         customSectionLinksElement.append(
@@ -715,7 +804,10 @@ function reportStoredCatalogDrift() {
         panelState.commands,
     );
     const signature = missing.join('\n');
-    if (signature === reportedMissingIds) return;
+    if (signature === reportedMissingIds) {
+        return;
+    }
+
     reportedMissingIds = signature;
     if (missing.length > 0) {
         showNotice(
@@ -726,21 +818,28 @@ function reportStoredCatalogDrift() {
 }
 
 function render() {
-    if (!panelState) return;
+    if (!panelState) {
+        return;
+    }
+
     renderRunningServices();
     groupsElement.replaceChildren();
     sectionLinksElement.replaceChildren();
     const commandsById = new Map(
         panelState.commands.map((command) => [command.id, command]),
     );
+
     renderCustomSections(commandsById);
 
     const categories = new Map();
     for (const command of panelState.commands) {
-        if (!categories.has(command.category))
+        if (!categories.has(command.category)) {
             categories.set(command.category, []);
+        }
+
         categories.get(command.category).push(command);
     }
+
     const usedSectionIds = new Set();
     for (const [category, commands] of categories) {
         const baseId = `command-section-${category
@@ -753,6 +852,7 @@ function render() {
             sectionId = `${baseId}-${suffix}`;
             suffix += 1;
         }
+
         usedSectionIds.add(sectionId);
 
         const section = document.createElement('details');
@@ -760,9 +860,13 @@ function render() {
         section.id = sectionId;
         section.open = expandedCategories.has(category);
         section.addEventListener('toggle', () => {
-            if (section.open) expandedCategories.add(category);
-            else expandedCategories.delete(category);
+            if (section.open) {
+                expandedCategories.add(category);
+            } else {
+                expandedCategories.delete(category);
+            }
         });
+
         const summary = document.createElement('summary');
         const title = document.createElement('h2');
         title.textContent = category;
@@ -777,6 +881,7 @@ function render() {
                 createCommandCard(command, `catalog:${category}:${command.id}`),
             );
         }
+
         section.append(summary, grid);
         groupsElement.append(section);
         sectionLinksElement.append(
@@ -791,11 +896,13 @@ function render() {
             }),
         );
     }
+
     groupsElement.setAttribute('aria-busy', 'false');
     catalogIssuesElement.hidden = panelState.catalogIssues.length === 0;
     catalogIssuesElement.textContent = panelState.catalogIssues.length
         ? `Catalog review required: ${panelState.catalogIssues.join(' · ')}`
         : '';
+
     updateToolbar();
     reportStoredCatalogDrift();
 }
@@ -816,16 +923,19 @@ async function mutate(path, body, { clearSelection = false } = {}) {
             const issueText = result.issues?.map(({ commandId, reason }) =>
                 commandId ? `${commandId}: ${reason}` : reason,
             );
+
             throw new Error(
                 [result.message, issueText?.join(' · ')]
                     .filter(Boolean)
                     .join(' ') || result.code,
             );
         }
+
         if (clearSelection) {
             selected.clear();
             render();
         }
+
         showNotice('Command state updated.');
     } catch (error) {
         showNotice(errorMessage(error), 'error');
@@ -837,18 +947,26 @@ function openCustomSectionsManager() {
     customSectionsJsonElement.value = serializeCustomSections(
         customSectionsDocument,
     );
+
     customSectionsDialog.showModal();
 }
 
 selectAllElement.addEventListener('change', () => {
-    if (!panelState) return;
+    if (!panelState) {
+        return;
+    }
+
     const compatibleIds = compatibleCommandIds(panelState.commands);
     for (const command of selectableCommands(panelState.commands)) {
         selected.delete(command.id);
     }
+
     if (selectAllElement.checked) {
-        for (const id of compatibleIds) selected.add(id);
+        for (const id of compatibleIds) {
+            selected.add(id);
+        }
     }
+
     render();
 });
 
@@ -871,14 +989,18 @@ stopAllElement.addEventListener('click', () => {
     stopAllDialog.returnValue = '';
     stopAllDialog.showModal();
 });
+
 stopAllDialog.addEventListener('close', () => {
-    if (stopAllDialog.returnValue === 'confirm') mutate('/api/stop-all', {});
+    if (stopAllDialog.returnValue === 'confirm') {
+        mutate('/api/stop-all', {});
+    }
 });
 
 manageCustomSectionsElement.addEventListener(
     'click',
     openCustomSectionsManager,
 );
+
 manageCustomSectionsInlineElement.addEventListener(
     'click',
     openCustomSectionsManager,
@@ -925,13 +1047,16 @@ importCustomJsonElement.addEventListener('click', () => {
             'Wait for the command catalog before importing.',
             'error',
         );
+
         return;
     }
+
     try {
         const imported = parseImportedCustomSections(
             customSectionsJsonElement.value,
             panelState.commands,
         );
+
         if (
             commitCustomSections(
                 imported,
@@ -950,11 +1075,14 @@ importCustomJsonElement.addEventListener('click', () => {
                 parsed,
                 panelState.commands,
             );
-            if (missing.length > 0)
+
+            if (missing.length > 0) {
                 detail = ` Missing command IDs: ${missing.join(', ')}.`;
+            }
         } catch {
             // The original schema error is the useful failure in this case.
         }
+
         showManagerNotice(`${errorMessage(error)}${detail}`, 'error');
     }
 });
@@ -962,7 +1090,10 @@ importCustomJsonElement.addEventListener('click', () => {
 removeCustomSectionDialog.addEventListener('close', () => {
     const section = pendingRemoveSection;
     pendingRemoveSection = null;
-    if (!section || removeCustomSectionDialog.returnValue !== 'confirm') return;
+    if (!section || removeCustomSectionDialog.returnValue !== 'confirm') {
+        return;
+    }
+
     try {
         const nextDocument = deleteSection(customSectionsDocument, section.id);
         expandedCustomSections.delete(section.id);
@@ -971,6 +1102,7 @@ removeCustomSectionDialog.addEventListener('close', () => {
                 expandedCommandPlacements.delete(placement);
             }
         }
+
         commitCustomSections(nextDocument, `Removed ${section.name}.`);
     } catch (error) {
         showNotice(errorMessage(error), 'error');
@@ -980,7 +1112,10 @@ removeCustomSectionDialog.addEventListener('close', () => {
 stopCustomSectionDialog.addEventListener('close', () => {
     const request = pendingStopSection;
     pendingStopSection = null;
-    if (!request || stopCustomSectionDialog.returnValue !== 'confirm') return;
+    if (!request || stopCustomSectionDialog.returnValue !== 'confirm') {
+        return;
+    }
+
     const section = customSectionsDocument.sections.find(
         ({ id }) => id === request.id,
     );
@@ -1000,27 +1135,35 @@ stopCustomSectionDialog.addEventListener('close', () => {
                 run.commandId === request.runs[index].commandId &&
                 run.runId === request.runs[index].runId,
         );
+
     if (!membershipUnchanged || !runsUnchanged) {
         showNotice(
             `${request.name} changed while Stop all was open. Review the current section and confirm again.`,
             'error',
         );
+
         return;
     }
+
     mutate('/api/stop-selected', { runs: currentRuns });
 });
 
 window.addEventListener('storage', (event) => {
-    if (event.key !== CUSTOM_SECTIONS_STORAGE_KEY) return;
+    if (event.key !== CUSTOM_SECTIONS_STORAGE_KEY) {
+        return;
+    }
+
     try {
         customSectionsDocument = event.newValue
             ? parseCustomSections(event.newValue)
             : emptyCustomSectionsDocument();
+
         if (customSectionsDialog.open) {
             customSectionsJsonElement.value = serializeCustomSections(
                 customSectionsDocument,
             );
         }
+
         showPreferenceIssue('');
         render();
         showNotice('Quick-access sections updated from another tab.');
@@ -1044,42 +1187,62 @@ const eventSource = new EventSource('/api/events');
 eventSource.addEventListener('open', () =>
     setConnection('connected', 'Connected'),
 );
+
 eventSource.addEventListener('snapshot', (event) => {
     panelState = JSON.parse(event.data);
     render();
 });
+
 eventSource.addEventListener('log', (event) => {
-    if (!panelState) return;
+    if (!panelState) {
+        return;
+    }
+
     const value = JSON.parse(event.data);
     const command = panelState.commands.find(
         ({ id }) => id === value.commandId,
     );
-    if (!command?.run || command.run.id !== value.runId) return;
+
+    if (!command?.run || command.run.id !== value.runId) {
+        return;
+    }
+
     command.run.logs.clientBytes ??= command.run.logs.entries.reduce(
         (total, entry) => total + JSON.stringify(entry).length,
         0,
     );
+
     command.run.logs.entries.push(value.entry);
     command.run.logs.clientBytes += JSON.stringify(value.entry).length;
     trimClientLog(command.run);
     scheduleLogRender(command.id);
 });
+
 eventSource.addEventListener('agent', (event) => {
-    if (!panelState) return;
+    if (!panelState) {
+        return;
+    }
+
     const value = JSON.parse(event.data);
     const command = panelState.commands.find(
         ({ id }) => id === value.commandId,
     );
-    if (!command?.run || command.run.id !== value.runId) return;
+
+    if (!command?.run || command.run.id !== value.runId) {
+        return;
+    }
+
     command.run.agent = value.agent;
     render();
 });
+
 eventSource.addEventListener('server-warning', () =>
     showNotice(
         'A catalog source could not be refreshed. Reload or run the catalog check.',
         'error',
     ),
 );
+
 eventSource.addEventListener('error', () =>
     setConnection('disconnected', 'Reconnecting…'),
 );

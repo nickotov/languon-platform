@@ -55,8 +55,10 @@ export function useDictionaryNavigation(
         initialPageParam: undefined as string | undefined,
         queryFn: ({ pageParam, signal }) =>
             requestWithSession((token) => {
-                if (!isCurrentUser(userId))
+                if (!isCurrentUser(userId)) {
                     throw new Error('Dictionary navigation session changed');
+                }
+
                 return dictionaryApi.listDictionaries(
                     token,
                     {
@@ -72,18 +74,23 @@ export function useDictionaryNavigation(
     const { fetchNextPage, hasNextPage, isFetchingNextPage } = dictionaries;
 
     useEffect(() => {
-        if (!enabled || !loadList || !hasNextPage || isFetchingNextPage) return;
+        if (!enabled || !loadList || !hasNextPage || isFetchingNextPage) {
+            return;
+        }
+
         void fetchNextPage();
     }, [enabled, loadList, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     useEffect(() => {
         setCreateOpen(false);
         createAttempt.current = null;
+
         return () => {
-            if (userId)
+            if (userId) {
                 void queryClient.cancelQueries({
                     queryKey: ['dictionaries-navigation', 'active', userId],
                 });
+            }
         };
     }, [userId, queryClient]);
 
@@ -95,16 +102,21 @@ export function useDictionaryNavigation(
             body: CreateDictionaryRequest;
             ownerId: string;
         }) => {
-            if (!isCurrentUser(ownerId))
+            if (!isCurrentUser(ownerId)) {
                 throw new Error('Dictionary navigation session changed');
+            }
+
             const fingerprint = JSON.stringify(body);
             createAttempt.current = retainIdempotencyAttempt(
                 createAttempt.current,
                 fingerprint,
             );
+
             return requestWithSession((token) => {
-                if (!isCurrentUser(ownerId))
+                if (!isCurrentUser(ownerId)) {
                     throw new Error('Dictionary navigation session changed');
+                }
+
                 return dictionaryApi.createDictionary(
                     token,
                     body,
@@ -113,20 +125,27 @@ export function useDictionaryNavigation(
             });
         },
         onSuccess: ({ dictionary }, { ownerId }) => {
-            if (!isCurrentUser(ownerId)) return;
+            if (!isCurrentUser(ownerId)) {
+                return;
+            }
+
             createAttempt.current = null;
             setCreateOpen(false);
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
             void queryClient.invalidateQueries({
                 queryKey: ['dictionaries-navigation'],
             });
+
             router.push(href(`/dictionaries/${dictionary.id}`));
         },
     });
 
     function submitCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (!userId || !isCurrentUser(userId)) return;
+        if (!userId || !isCurrentUser(userId)) {
+            return;
+        }
+
         const data = new FormData(event.currentTarget);
         create.mutate({
             ownerId: userId,
@@ -165,7 +184,10 @@ export function useDictionaryNavigation(
     }
 
     function retryLoad() {
-        if (!isCurrentUser(userId)) return;
+        if (!isCurrentUser(userId)) {
+            return;
+        }
+
         void languages.refetch();
         void dictionaries.refetch();
     }
@@ -189,7 +211,9 @@ export function useDictionaryNavigation(
         list,
         loadError,
         openCreate: () => {
-            if (isCurrentUser(userId)) setCreateOpen(true);
+            if (isCurrentUser(userId)) {
+                setCreateOpen(true);
+            }
         },
         pending: dictionaries.isPending || languages.isPending,
         retryLoad,
@@ -199,6 +223,7 @@ export function useDictionaryNavigation(
 
 function isCurrentUser(ownerId: string | null) {
     const state = useSessionStore.getState();
+
     return (
         ownerId !== null &&
         state.status === 'authenticated' &&

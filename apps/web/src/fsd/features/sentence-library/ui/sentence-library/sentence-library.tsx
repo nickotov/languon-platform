@@ -28,8 +28,11 @@ export function SentenceLibrary(props: LibraryProps) {
     const search = useSearchParams();
     const lastTrigger = useRef<HTMLElement | null>(null);
     useEffect(() => {
-        if (!props.exampleId && !c.query.isPending) restorePreviewTrigger();
+        if (!props.exampleId && !c.query.isPending) {
+            restorePreviewTrigger();
+        }
     }, [props.exampleId, c.query.isPending, c.items.length]);
+
     const baseHref = `${props.dictionaryHref}/sentences`;
     const activeCount =
         Number(c.filters.personalArchive !== 'active') +
@@ -38,18 +41,23 @@ export function SentenceLibrary(props: LibraryProps) {
         Number(c.filters.direction !== 'target-to-source');
     const fragment =
         props.target.kind === 'shared' ? `#${props.target.shareKey}` : '';
+
     function practice() {
         router.push(href(`${props.dictionaryHref}?practice=setup${fragment}`));
     }
+
     function prepare() {
         if (props.onOpenPreparation) {
             props.onOpenPreparation();
+
             return;
         }
+
         router.push(
             href(`${props.dictionaryHref}?practice=setup&prep=1${fragment}`),
         );
     }
+
     function openDetail(id: string, trigger: HTMLElement) {
         lastTrigger.current = trigger;
         rememberPreviewTrigger(id);
@@ -58,13 +66,16 @@ export function SentenceLibrary(props: LibraryProps) {
             href(`${baseHref}/${id}${params ? `?${params}` : ''}${fragment}`),
         );
     }
+
     function closeDetail() {
         const params = search.toString();
         router.push(
             href(`${baseHref}${params ? `?${params}` : ''}${fragment}`),
         );
+
         window.setTimeout(() => lastTrigger.current?.focus(), 0);
     }
+
     function singleToggle(sentence: SavedSentence) {
         void c.openConfirmation(
             sentence.archivedByMe ? 'restore' : 'archive',
@@ -72,12 +83,14 @@ export function SentenceLibrary(props: LibraryProps) {
             sentence,
         );
     }
+
     function setFilter<K extends keyof typeof c.filters>(
         key: K,
         value: (typeof c.filters)[K],
     ) {
         c.updateFilters({ ...c.filters, [key]: value });
     }
+
     const breadcrumb = [
         { label: t('dictionary.backToLibrary'), href: href('/dictionaries') },
         {
@@ -89,19 +102,24 @@ export function SentenceLibrary(props: LibraryProps) {
     const success = c.announcement.includes(':')
         ? c.announcement.split(':')
         : null;
+
     function viewRemoved() {
         c.updateFilters({ ...c.filters, personalArchive: 'archived' });
     }
+
     const announcement =
         c.announcement === 'selectionCleared'
             ? L('selectionCleared')
             : c.announcement;
-    if (c.accessDenied)
+
+    if (c.accessDenied) {
         return (
             <InlineAlert tone='error' title={L('detailRemovedTitle')}>
                 {L('detailRemovedBody')}
             </InlineAlert>
         );
+    }
+
     return (
         <>
             <div className={componentStyles.root}>

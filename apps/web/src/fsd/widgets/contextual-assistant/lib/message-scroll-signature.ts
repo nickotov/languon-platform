@@ -11,5 +11,6 @@ export function messageScrollSignature(
             length + (part.type === 'text' ? part.text.length : 0),
         0,
     );
+
     return `${messages.length}:${last?.id}:${textLength}:${last?.parts.length}:${last?.metadata?.status}:${draftCount}`;
 }

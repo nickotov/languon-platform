@@ -3,8 +3,13 @@ import { LearningBlockSchema, type LearningBlock } from '@languon/contracts';
 
 /** JSONB key order is not stable; compare content using canonical object keys. */
 function canonical(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map(canonical);
-    if (!value || typeof value !== 'object') return value;
+    if (Array.isArray(value)) {
+        return value.map(canonical);
+    }
+
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
 
     return Object.fromEntries(
         Object.entries(value)
@@ -23,18 +28,25 @@ export function findProposalBlock(
     node: unknown,
     id: string,
 ): LearningBlock | undefined {
-    if (!node || typeof node !== 'object') return;
+    if (!node || typeof node !== 'object') {
+        return;
+    }
+
     const item = node as {
         type?: string;
         attrs?: { block?: LearningBlock };
         content?: unknown[];
     };
 
-    if (item.type === 'learningBlock' && item.attrs?.block?.id === id)
+    if (item.type === 'learningBlock' && item.attrs?.block?.id === id) {
         return item.attrs.block;
+    }
+
     for (const child of item.content ?? []) {
         const found = findProposalBlock(child, id);
-        if (found) return found;
+        if (found) {
+            return found;
+        }
     }
 }
 
@@ -43,16 +55,23 @@ export function replaceProposalBlock(
     id: string,
     block: LearningBlock,
 ): unknown {
-    if (!node || typeof node !== 'object') return node;
+    if (!node || typeof node !== 'object') {
+        return node;
+    }
+
     const item = node as {
         type?: string;
         attrs?: { block?: LearningBlock };
         content?: unknown[];
     };
 
-    if (item.type === 'learningBlock' && item.attrs?.block?.id === id)
+    if (item.type === 'learningBlock' && item.attrs?.block?.id === id) {
         return { ...item, attrs: { ...item.attrs, block } };
-    if (!item.content) return node;
+    }
+
+    if (!item.content) {
+        return node;
+    }
 
     return {
         ...item,
@@ -72,17 +91,24 @@ export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
             return;
         }
 
-        if (!value || typeof value !== 'object') return;
+        if (!value || typeof value !== 'object') {
+            return;
+        }
+
         const object = value as Record<string, unknown>;
-        if (typeof object.id === 'string' && !ids.has(object.id))
+        if (typeof object.id === 'string' && !ids.has(object.id)) {
             ids.set(object.id, randomUUID());
+        }
+
         Object.values(object).forEach(find);
     };
 
     find(blocks);
     const remap = (value: unknown, key?: string): unknown => {
-        if (Array.isArray(value))
+        if (Array.isArray(value)) {
             return value.map((child) => remap(child, key));
+        }
+
         if (
             typeof value === 'string' &&
             key &&
@@ -94,9 +120,13 @@ export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
                 'correctChoiceId',
                 'parentBlockId',
             ].includes(key)
-        )
+        ) {
             return ids.get(value) ?? value;
-        if (!value || typeof value !== 'object') return value;
+        }
+
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
 
         return Object.fromEntries(
             Object.entries(value).map(([name, child]) => [

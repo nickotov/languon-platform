@@ -17,13 +17,18 @@ export function decodeCursor<T>(
     cursor: string | undefined,
     guard: (value: unknown) => value is T,
 ): T | null {
-    if (!cursor) return null;
+    if (!cursor) {
+        return null;
+    }
+
     try {
         const value: unknown = JSON.parse(
             Buffer.from(cursor, 'base64url').toString('utf8'),
         );
 
-        if (guard(value)) return value;
+        if (guard(value)) {
+            return value;
+        }
     } catch {
         // Invalid cursors are deliberately handled as a stable request error.
     }
@@ -34,7 +39,10 @@ export function decodeCursor<T>(
 export function isDictionaryCursor(
     value: unknown,
 ): value is { id: string; updatedAt: string } {
-    if (!value || typeof value !== 'object') return false;
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
     const cursor = value as Record<string, unknown>;
 
     return (

@@ -62,6 +62,7 @@ export class DictionaryGenerationService {
         context: DictionaryRequestContext,
     ) {
         await this.owner(accessToken, context);
+
         return {
             cardAuthoringGeneration: {
                 available: this.supports(
@@ -110,8 +111,10 @@ export class DictionaryGenerationService {
             'format' in request
                 ? request.format
                 : dictionaryCardAuthoringGenerationFormatV1;
+
         this.requireSupport('enqueued', format);
         await this.limitEnqueue(ownerId, context);
+
         return this.dependencies.store.enqueueCardAuthoring({
             context: this.context(context),
             dictionaryId,
@@ -144,6 +147,7 @@ export class DictionaryGenerationService {
         const ownerId = await this.owner(accessToken, context);
         this.requireSupport('enqueued', request.format);
         await this.limitEnqueue(ownerId, context);
+
         return this.dependencies.store.enqueueCardAuthoring({
             context: this.context(context),
             dictionaryId,
@@ -179,6 +183,7 @@ export class DictionaryGenerationService {
         this.requireSupport('enqueued', dictionaryPastedTermsGenerationFormat);
         await this.limitEnqueue(ownerId, context);
         parseDictionaryBatchGenerationText(request.text);
+
         return this.dependencies.store.enqueuePastedTerms({
             context: this.context(context),
             dictionaryId,
@@ -206,6 +211,7 @@ export class DictionaryGenerationService {
         const ownerId = await this.owner(accessToken, context);
         this.requireSupport('enqueued', dictionaryGenerationFormat);
         await this.limitEnqueue(ownerId, context);
+
         return this.dependencies.store.enqueue({
             cardId,
             context: this.context(context),
@@ -239,12 +245,16 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('readable', prior.format);
-        if (prior.kind !== 'pasted-terms')
+        if (prior.kind !== 'pasted-terms') {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         const rowIndexes = [...request.rowIndexes].sort(
             (left, right) => left - right,
         );
+
         return this.dependencies.store.enqueuePastedTerms({
             context: this.context(context),
             dictionaryId: prior.dictionaryId,
@@ -275,12 +285,16 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('readable', prior.format);
-        if (prior.kind !== 'document-terms')
+        if (prior.kind !== 'document-terms') {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         const rowIndexes = [...request.rowIndexes].sort(
             (left, right) => left - right,
         );
+
         return this.dependencies.store.enqueueDocumentFailureRetry({
             context: this.context(context),
             dictionaryId: prior.dictionaryId,
@@ -312,12 +326,16 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('readable', prior.format);
-        if (prior.kind !== 'import-pairs')
+        if (prior.kind !== 'import-pairs') {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         const rowIndexes = [...request.rowIndexes].sort(
             (left, right) => left - right,
         );
+
         return this.dependencies.store.enqueueImportPairsRetry({
             context: this.context(context),
             expectedDictionaryVersion: request.expectedDictionaryVersion,
@@ -346,7 +364,11 @@ export class DictionaryGenerationService {
             dictionaryId,
             ownerId,
         });
-        if (job) this.requireSupport('readable', job.format);
+
+        if (job) {
+            this.requireSupport('readable', job.format);
+        }
+
         return job;
     }
 
@@ -361,7 +383,9 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('readable', job.format);
+
         return job;
     }
 
@@ -376,7 +400,9 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('cancellable', job.format);
+
         return this.dependencies.store.cancel({
             context: this.context(context),
             jobId,
@@ -395,7 +421,9 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('discardable', job.format);
+
         return this.dependencies.store.discard({
             context: this.context(context),
             jobId,
@@ -415,6 +443,7 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('acceptable', job.format);
         if (
             'format' in request &&
@@ -422,13 +451,19 @@ export class DictionaryGenerationService {
                 request.format === dictionaryCardAuthoringGenerationFormatV2 ||
                 request.format === dictionaryCardAuthoringGenerationFormat)
         ) {
-            if (job.kind !== 'card-authoring' || job.format !== request.format)
+            if (
+                job.kind !== 'card-authoring' ||
+                job.format !== request.format
+            ) {
                 throw new DictionaryGenerationNotAvailableError();
+            }
+
             const authoringRequest =
                 request as AcceptDictionaryCardAuthoringGenerationJobRequest;
             const selectedSuggestions = [
                 ...authoringRequest.selectedSuggestions,
             ].sort((left, right) => left.field.localeCompare(right.field));
+
             return this.dependencies.store.acceptCardAuthoring({
                 acceptanceFingerprint:
                     this.dependencies.cryptography.fingerprint({
@@ -443,18 +478,24 @@ export class DictionaryGenerationService {
                 selectedSuggestions,
             });
         }
+
         if ('format' in request) {
             if (
                 job.kind !== 'pasted-terms' &&
                 job.kind !== 'document-terms' &&
                 job.kind !== 'import-pairs'
-            )
+            ) {
                 throw new DictionaryGenerationNotAvailableError();
-            if (request.format !== job.format)
+            }
+
+            if (request.format !== job.format) {
                 throw new DictionaryGenerationNotAvailableError();
+            }
+
             const selected = [...request.selected].sort(
                 (left, right) => left.rowIndex - right.rowIndex,
             );
+
             return this.dependencies.store.acceptBatch({
                 acceptanceFingerprint:
                     this.dependencies.cryptography.fingerprint({
@@ -467,8 +508,11 @@ export class DictionaryGenerationService {
                 selected,
             });
         }
-        if (job.kind !== 'single-card')
+
+        if (job.kind !== 'single-card') {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         return this.dependencies.store.acceptSingleCard({
             candidate: request.candidate,
             candidateFingerprint: this.dependencies.cryptography.fingerprint(
@@ -495,12 +539,19 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('readable', prior.format);
-        if (prior.kind !== 'card-authoring' || prior.format !== request.format)
+        if (
+            prior.kind !== 'card-authoring' ||
+            prior.format !== request.format
+        ) {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         const discardedSuggestionIds = [
             ...request.discardedSuggestionIds,
         ].sort();
+
         return this.dependencies.store.enqueueCardAuthoring({
             context: this.context(context),
             dictionaryId: prior.dictionaryId,
@@ -539,9 +590,12 @@ export class DictionaryGenerationService {
             jobId,
             ownerId,
         });
+
         this.requireSupport('readable', prior.format);
-        if (prior.kind !== 'single-card')
+        if (prior.kind !== 'single-card') {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         return this.dependencies.store.enqueue({
             cardId: prior.cardId,
             context: this.context(context),
@@ -561,6 +615,7 @@ export class DictionaryGenerationService {
 
     private context(context: DictionaryRequestContext) {
         context.signal.throwIfAborted();
+
         return { now: this.dependencies.clock.now(), signal: context.signal };
     }
 
@@ -576,11 +631,15 @@ export class DictionaryGenerationService {
             scope: 'owner',
             signal: context.signal,
         });
-        if (!decision.allowed)
+
+        if (!decision.allowed) {
             throw new DictionaryRateLimitError(
                 decision.retryAfterSeconds ?? 60,
             );
+        }
+
         context.signal.throwIfAborted();
+
         return principal.userId;
     }
 
@@ -593,10 +652,12 @@ export class DictionaryGenerationService {
             scope: 'generation-enqueue',
             signal: context.signal,
         });
-        if (!decision.allowed)
+
+        if (!decision.allowed) {
             throw new DictionaryRateLimitError(
                 decision.retryAfterSeconds ?? 60,
             );
+        }
     }
 
     private requireSupport(
@@ -608,8 +669,9 @@ export class DictionaryGenerationService {
             | 'readable',
         format: string,
     ): void {
-        if (!this.supports(capability, format))
+        if (!this.supports(capability, format)) {
             throw new DictionaryGenerationNotAvailableError();
+        }
     }
 
     private supports(

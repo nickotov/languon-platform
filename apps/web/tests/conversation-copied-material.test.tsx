@@ -19,6 +19,7 @@ const card = {
     exampleTranslation: 'Hello, my friend',
     exampleTranslationLanguage: 'en',
 };
+
 function copy(id: string) {
     return CopiedAttachmentSchema.parse({
         id,
@@ -38,6 +39,7 @@ it('renders multiple immutable card copies as labeled fields with their language
             <CopiedMaterial attachment={second} />
         </>,
     );
+
     for (const label of [
         'Source',
         'Translation',
@@ -45,14 +47,19 @@ it('renders multiple immutable card copies as labeled fields with their language
         'Transcription (romanization)',
         'Example',
         'Example translation',
-    ])
+    ]) {
         expect(screen.getAllByText(label)).toHaveLength(2);
-    for (const value of screen.getAllByText('تحية'))
+    }
+
+    for (const value of screen.getAllByText('تحية')) {
         expect(value).toHaveAttribute('lang', 'ar');
+    }
+
     for (const value of screen.getAllByText('Hello, my friend')) {
         expect(value).toHaveAttribute('lang', 'en');
         expect(value).toHaveAttribute('dir', 'auto');
     }
+
     expect(container.textContent).not.toContain('"source":');
     expect(container.querySelectorAll('dl')).toHaveLength(2);
 });
@@ -68,6 +75,7 @@ it('keeps pasted/legacy JSON and HTML-looking material inert without inventing t
             }}
         />,
     );
+
     expect(screen.getByText(content)).toBeInTheDocument();
     expect(screen.queryByText('Definition')).not.toBeInTheDocument();
     expect(container.querySelector('img')).toBeNull();

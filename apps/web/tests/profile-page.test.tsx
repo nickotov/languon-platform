@@ -18,20 +18,24 @@ const replace = vi.fn((path: string) => {
     window.history.replaceState(null, '', path);
     window.dispatchEvent(new Event('popstate'));
 });
+
 vi.mock('next/navigation', async () => {
     const { useSyncExternalStore: syncStore } = await vi.importActual<{
         useSyncExternalStore: typeof useSyncExternalStore;
     }>('react');
+
     return {
         useRouter: () => ({ replace }),
         useSearchParams: () => {
             const search = syncStore(
                 (notify) => {
                     window.addEventListener('popstate', notify);
+
                     return () => window.removeEventListener('popstate', notify);
                 },
                 () => window.location.search,
             );
+
             return new URLSearchParams(search);
         },
     };
@@ -67,10 +71,12 @@ describe('ProfilePage', () => {
         HTMLDialogElement.prototype.showModal = function () {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function () {
             this.removeAttribute('open');
             this.dispatchEvent(new Event('close'));
         };
+
         useSessionStore.getState().signOut();
         window.history.replaceState(null, '', '/profile');
         replace.mockClear();
@@ -80,13 +86,16 @@ describe('ProfilePage', () => {
             ...response,
             user: useSessionStore.getState().user ?? response.user,
         }));
+
         vi.spyOn(authApi, 'capabilities').mockResolvedValue({
             email: { passwordRecovery: true, signUp: true, verification: true },
             passkeys: { authentication: true, registration: true },
             passwordAuthentication: true,
         });
+
         vi.spyOn(authApi, 'listPasskeys').mockResolvedValue({ passkeys: [] });
     });
+
     afterEach(() => {
         HTMLDialogElement.prototype.showModal = originalShowModal;
         HTMLDialogElement.prototype.close = originalClose;
@@ -131,18 +140,25 @@ describe('ProfilePage', () => {
         expect(screen.getByText('profile@example.test')).toBeInTheDocument();
         expect(screen.getAllByText('Not available yet')).toHaveLength(2);
         expect(screen.queryByText(/Anna/i)).not.toBeInTheDocument();
-        expect(screen.getByRole('combobox', { name: 'Interface language' })).toBeInTheDocument();
-        expect(screen.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
+        expect(
+            screen.getByRole('combobox', { name: 'Interface language' }),
+        ).toBeInTheDocument();
+
+        expect(
+            screen.getByRole('textbox', { name: 'Full name' }),
+        ).toBeDisabled();
 
         await user.click(screen.getByRole('tab', { name: /Billing/ }));
         expect(replace).toHaveBeenCalledWith('/profile?tab=billing', {
             scroll: false,
         });
+
         expect(
             screen.getAllByText(
                 'No payment method is stored. Billing is coming soon.',
             ),
         ).toHaveLength(2);
+
         await user.click(screen.getByRole('button', { name: 'Compare plans' }));
         expect(
             screen.getByText('Subscription is coming soon.'),
@@ -152,32 +168,55 @@ describe('ProfilePage', () => {
         expect(replace).toHaveBeenCalledWith('/profile?tab=security', {
             scroll: false,
         });
+
         expect(
             screen.getByRole('heading', { name: 'Change password' }),
         ).toBeInTheDocument();
+
         expect(
             screen.getByRole('heading', { name: 'Passkeys' }),
         ).toBeInTheDocument();
-        expect(screen.getByRole('heading', { name: 'Sign-in methods' })).toBeInTheDocument();
+
+        expect(
+            screen.getByRole('heading', { name: 'Sign-in methods' }),
+        ).toBeInTheDocument();
+
         for (const provider of ['Google', 'Yandex', 'Apple']) {
-            expect(screen.getByRole('heading', { name: new RegExp(`^${provider}`) })).toBeInTheDocument();
+            expect(
+                screen.getByRole('heading', {
+                    name: new RegExp(`^${provider}`),
+                }),
+            ).toBeInTheDocument();
         }
-        expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(3);
-        for (const button of screen.getAllByRole('button', { name: 'Connect' })) expect(button).toBeDisabled();
+
+        expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(
+            3,
+        );
+
+        for (const button of screen.getAllByRole('button', {
+            name: 'Connect',
+        })) {
+            expect(button).toBeDisabled();
+        }
+
         expect(
             screen.getByRole('heading', { name: 'Sessions' }),
         ).toBeInTheDocument();
+
         expect(
             screen.queryByRole('link', { name: 'Manage security' }),
         ).not.toBeInTheDocument();
+
         await user.click(
             screen.getByRole('button', { name: 'Request email change' }),
         );
+
         expect(
             screen.getByText(
                 /no email was sent and your address was not changed/i,
             ),
         ).toBeInTheDocument();
+
         expect(useSessionStore.getState().user?.primaryEmail).toBe(
             'profile@example.test',
         );
@@ -191,10 +230,12 @@ describe('ProfilePage', () => {
                 <ProfilePage />
             </AuthProvider>,
         );
+
         expect(screen.getByRole('tab', { name: /Security/ })).toHaveAttribute(
             'aria-selected',
             'true',
         );
+
         expect(
             screen.getByRole('heading', { name: 'Change password' }),
         ).toBeInTheDocument();
@@ -203,33 +244,66 @@ describe('ProfilePage', () => {
     it('renders Account labels, removal copy, and Security when a serialized catalog is incomplete', async () => {
         useSessionStore.getState().authenticate(response);
         const messages = Object.fromEntries(
-            Object.entries(en).filter(([key]) => ![
-                'profile.fullName',
-                'profile.interfaceLanguage',
-                'profile.learningLanguage',
-                'profile.timeZone',
-                'profile.handleLabel',
-                'profile.deleteConfirmLabel',
-                'profile.deleteAcknowledge',
-                'security.revokePasskeyDescription',
-            ].includes(key)),
+            Object.entries(en).filter(
+                ([key]) =>
+                    ![
+                        'profile.fullName',
+                        'profile.interfaceLanguage',
+                        'profile.learningLanguage',
+                        'profile.timeZone',
+                        'profile.handleLabel',
+                        'profile.deleteConfirmLabel',
+                        'profile.deleteAcknowledge',
+                        'security.revokePasskeyDescription',
+                    ].includes(key),
+            ),
         ) as Messages;
+
         renderWithProviders(
             <I18nProvider locale='en' messages={messages}>
-                <AuthProvider><ProfilePage /></AuthProvider>
+                <AuthProvider>
+                    <ProfilePage />
+                </AuthProvider>
             </I18nProvider>,
         );
+
         const user = userEvent.setup();
-        expect(screen.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
-        expect(screen.getByRole('combobox', { name: 'Interface language' })).toBeVisible();
-        expect(screen.getByRole('combobox', { name: 'Learning language & level' })).toBeDisabled();
-        expect(screen.getByRole('combobox', { name: 'Time zone' })).toBeDisabled();
+        expect(
+            screen.getByRole('textbox', { name: 'Full name' }),
+        ).toBeDisabled();
+
+        expect(
+            screen.getByRole('combobox', { name: 'Interface language' }),
+        ).toBeVisible();
+
+        expect(
+            screen.getByRole('combobox', { name: 'Learning language & level' }),
+        ).toBeDisabled();
+
+        expect(
+            screen.getByRole('combobox', { name: 'Time zone' }),
+        ).toBeDisabled();
+
         expect(screen.getByRole('textbox', { name: 'Username' })).toBeVisible();
 
-        await user.click(screen.getByRole('button', { name: 'Delete account' }));
-        expect(screen.getByRole('textbox', { name: 'Type DELETE to confirm' })).toBeVisible();
-        expect(screen.getByRole('checkbox', { name: 'I understand access ends now and purge follows.' })).toBeVisible();
-        await user.click(screen.getByRole('button', { name: 'Keep my account' }));
+        await user.click(
+            screen.getByRole('button', { name: 'Delete account' }),
+        );
+
+        expect(
+            screen.getByRole('textbox', { name: 'Type DELETE to confirm' }),
+        ).toBeVisible();
+
+        expect(
+            screen.getByRole('checkbox', {
+                name: 'I understand access ends now and purge follows.',
+            }),
+        ).toBeVisible();
+
+        await user.click(
+            screen.getByRole('button', { name: 'Keep my account' }),
+        );
+
         await user.click(screen.getByRole('tab', { name: /Security/ }));
         expect(screen.getByRole('heading', { name: 'Passkeys' })).toBeVisible();
     });
@@ -239,21 +313,25 @@ describe('ProfilePage', () => {
         const update = vi
             .spyOn(authApi, 'updateHandle')
             .mockResolvedValue({ handle: 'learner_42' });
+
         render(
             <AuthProvider>
                 <ProfilePage />
             </AuthProvider>,
         );
+
         const user = userEvent.setup();
         await user.type(
             screen.getByRole('textbox', { name: 'Username' }),
             'Learner_42',
         );
+
         await user.click(screen.getByRole('button', { name: 'Save username' }));
         expect(update).toHaveBeenCalledWith(
             { handle: 'learner_42' },
             expect.any(String),
         );
+
         expect(await screen.findByText('@learner_42')).toBeInTheDocument();
         expect(useSessionStore.getState().user?.handle).toBe('learner_42');
     });
@@ -266,16 +344,21 @@ describe('ProfilePage', () => {
                 message: 'Already claimed',
             }),
         );
+
         render(
             <AuthProvider>
                 <ProfilePage />
             </AuthProvider>,
         );
+
         const user = userEvent.setup();
         const field = screen.getByRole('textbox', { name: 'Username' });
         await user.type(field, 'claimed');
         await user.click(screen.getByRole('button', { name: 'Save username' }));
-        expect(await screen.findByText(/username is taken/i)).toBeInTheDocument();
+        expect(
+            await screen.findByText(/username is taken/i),
+        ).toBeInTheDocument();
+
         expect(field).toHaveValue('claimed');
         expect(useSessionStore.getState().user?.handle).toBeNull();
         await user.clear(field);
@@ -294,33 +377,46 @@ describe('ProfilePage', () => {
                 scheduledAt: '2026-09-15T09:00:00.000Z',
                 status: 'deletion_scheduled',
             });
+
         render(
             <AuthProvider>
                 <ProfilePage />
             </AuthProvider>,
         );
+
         const user = userEvent.setup();
         await user.click(
             screen.getByRole('button', { name: 'Delete account' }),
         );
+
         expect(
             screen.getByRole('button', { name: 'Schedule account removal' }),
         ).toBeDisabled();
+
         await user.type(
             screen.getByRole('textbox', { name: 'Type DELETE to confirm' }),
             'DELETE',
         );
-        expect(screen.getByRole('button', { name: 'Schedule account removal' })).toBeDisabled();
-        await user.click(screen.getByRole('checkbox', { name: /access ends now/i }));
+
+        expect(
+            screen.getByRole('button', { name: 'Schedule account removal' }),
+        ).toBeDisabled();
+
+        await user.click(
+            screen.getByRole('checkbox', { name: /access ends now/i }),
+        );
+
         await user.click(
             screen.getByRole('button', { name: 'Schedule account removal' }),
         );
+
         expect(schedule).toHaveBeenCalledOnce();
         expect(
             await screen.findByRole('heading', {
                 name: 'Account removal scheduled',
             }),
         ).toBeInTheDocument();
+
         expect(useSessionStore.getState().status).toBe('signed-out');
     });
 
@@ -333,31 +429,66 @@ describe('ProfilePage', () => {
             lastUsedAt: null,
             name: 'Laptop',
         };
-        vi.spyOn(authApi, 'listPasskeys').mockResolvedValue({ passkeys: [passkey] });
-        vi.spyOn(authApi, 'renamePasskey').mockRejectedValue(
-            new AuthApiError(503, { code: 'service_unavailable', message: 'Try later' }),
-        );
-        const revoke = vi.spyOn(authApi, 'revokePasskey').mockResolvedValue({ status: 'passkey_revoked' });
-        const user = userEvent.setup();
-        render(<AuthProvider><ProfilePage /></AuthProvider>);
 
-        await user.click(await screen.findByRole('button', { name: 'Rename Laptop' }));
+        vi.spyOn(authApi, 'listPasskeys').mockResolvedValue({
+            passkeys: [passkey],
+        });
+
+        vi.spyOn(authApi, 'renamePasskey').mockRejectedValue(
+            new AuthApiError(503, {
+                code: 'service_unavailable',
+                message: 'Try later',
+            }),
+        );
+
+        const revoke = vi
+            .spyOn(authApi, 'revokePasskey')
+            .mockResolvedValue({ status: 'passkey_revoked' });
+        const user = userEvent.setup();
+        render(
+            <AuthProvider>
+                <ProfilePage />
+            </AuthProvider>,
+        );
+
+        await user.click(
+            await screen.findByRole('button', { name: 'Rename Laptop' }),
+        );
+
         const name = screen.getByRole('textbox', { name: 'New passkey name' });
         await user.clear(name);
         await user.type(name, 'Study laptop');
-        await user.click(screen.getByRole('dialog', { name: 'Rename passkey' }).querySelector('button[type="submit"]')!);
-        expect(await screen.findByRole('textbox', { name: 'New passkey name' })).toHaveValue('Study laptop');
+        await user.click(
+            screen
+                .getByRole('dialog', { name: 'Rename passkey' })
+                .querySelector('button[type="submit"]')!,
+        );
+
+        expect(
+            await screen.findByRole('textbox', { name: 'New passkey name' }),
+        ).toHaveValue('Study laptop');
+
         expect(await screen.findByRole('alert')).toBeVisible();
-        await user.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
+        await user.click(
+            screen.getByRole('button', { name: 'Cancel', exact: true }),
+        );
 
         await user.click(screen.getByRole('button', { name: 'Revoke Laptop' }));
-        expect(screen.getByRole('alertdialog', { name: 'Revoke this passkey?' })).toBeInTheDocument();
+        expect(
+            screen.getByRole('alertdialog', { name: 'Revoke this passkey?' }),
+        ).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Keep passkey' }));
         expect(revoke).not.toHaveBeenCalled();
         await user.click(screen.getByRole('button', { name: 'Revoke Laptop' }));
-        await user.click(screen.getByRole('button', { name: 'Revoke passkey' }));
+        await user.click(
+            screen.getByRole('button', { name: 'Revoke passkey' }),
+        );
+
         expect(revoke).toHaveBeenCalledWith(passkey.id, expect.any(String));
         expect(await screen.findByText('Passkey removed.')).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Revoke Laptop' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'Revoke Laptop' }),
+        ).not.toBeInTheDocument();
     });
 });

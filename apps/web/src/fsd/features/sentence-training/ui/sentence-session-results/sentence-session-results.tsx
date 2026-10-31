@@ -32,9 +32,11 @@ export function SentenceSessionResults({
     useEffect(() => {
         heading.current?.focus();
     }, []);
+
     function cancelRequest() {
         void c.cancel();
     }
+
     const last = c.roundItems.at(-1);
     const promptAudio =
         last && c.sessionId
@@ -55,6 +57,7 @@ export function SentenceSessionResults({
     const answerAudio = last?.attempt
         ? renderAudio?.({ kind: 'checked-answer', id: last.attempt.id })
         : null;
+
     return (
         <section
             aria-labelledby='sentence-results-title'

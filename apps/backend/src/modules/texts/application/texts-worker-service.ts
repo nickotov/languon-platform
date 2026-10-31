@@ -44,7 +44,10 @@ export class TextsWorkerService {
         signal.throwIfAborted();
         const context = () => ({ now: d.clock.now(), signal });
         const job = await d.store.claimNext(d, context());
-        if (!job) return false;
+        if (!job) {
+            return false;
+        }
+
         const controller = new AbortController();
         const combined = AbortSignal.any([
             signal,
@@ -61,14 +64,19 @@ export class TextsWorkerService {
                         d.leaseMs,
                         context(),
                     );
-                    if (!result.owned || result.cancellationRequested)
+
+                    if (!result.owned || result.cancellationRequested) {
                         controller.abort();
+                    }
                 })
                 .catch(() => controller.abort());
         }, d.heartbeatMs);
+
         try {
-            if (!(await d.store.markDispatched(job.lease, context())))
+            if (!(await d.store.markDispatched(job.lease, context()))) {
                 return true;
+            }
+
             const result = await abortable(
                 d.provider.run({
                     input: job.input,
@@ -83,6 +91,7 @@ export class TextsWorkerService {
                 }),
                 combined,
             );
+
             usage = result.usage;
             combined.throwIfAborted();
             let proposal: TextJobResult;
@@ -94,8 +103,11 @@ export class TextsWorkerService {
                     KnowledgeExerciseEvaluationResultSchema.safeParse(
                         result.draft,
                     );
-                if (!parsed.success)
+
+                if (!parsed.success) {
                     throw new TextsProviderInvalidOutputError(usage);
+                }
+
                 proposal = parsed.data;
             } else if (
                 job.input.kind === 'text-translation' &&
@@ -104,16 +116,21 @@ export class TextsWorkerService {
                 const parsed = KnowledgeBlockFieldResultSchema.safeParse(
                     result.draft,
                 );
+
                 if (
                     !parsed.success ||
                     (job.input.knowledgeFieldAction.action === 'generate' &&
                         parsed.data.status !== 'suggested')
-                )
+                ) {
                     throw new TextsProviderInvalidOutputError(usage);
+                }
+
                 proposal = parsed.data;
             } else if (job.input.kind === 'text-translation') {
-                if (!('translation' in result.draft))
+                if (!('translation' in result.draft)) {
                     throw new TextsProviderInvalidOutputError(usage);
+                }
+
                 proposal = TextTranslationProposalSchema.parse({
                     id: job.lease.jobId,
                     sourceText: job.input.sourceText,
@@ -130,15 +147,21 @@ export class TextsWorkerService {
                 const parsed = TextDetectionResultSchema.safeParse(
                     result.draft,
                 );
-                if (!parsed.success)
+
+                if (!parsed.success) {
                     throw new TextsProviderInvalidOutputError(usage);
+                }
+
                 proposal = parsed.data;
             }
+
             await d.store.complete(job.lease, proposal, usage, context());
         } catch (error) {
             if (!signal.aborted) {
-                if (error instanceof TextsProviderInvalidOutputError)
+                if (error instanceof TextsProviderInvalidOutputError) {
                     usage ??= error.usage;
+                }
+
                 const code =
                     error instanceof TextDomainError ||
                     error instanceof TextsProviderInvalidOutputError
@@ -148,6 +171,7 @@ export class TextsWorkerService {
                           : combined.aborted
                             ? 'provider_timeout'
                             : 'provider_unavailable';
+
                 await d.store.fail(
                     job.lease,
                     {
@@ -187,8 +211,10 @@ export class TextsWorkerService {
             clearInterval(timer);
             await heartbeat;
         }
+
         return true;
     }
+
     releaseWorkerLeases(signal: AbortSignal) {
         return this.dependencies.store.releaseWorkerLeases(
             this.dependencies.workerId,
@@ -200,11 +226,14 @@ function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
     return new Promise((resolve, reject) => {
         const abort = () =>
             reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+
         if (signal.aborted) {
             operation.catch(() => undefined);
             abort();
+
             return;
         }
+
         signal.addEventListener('abort', abort, { once: true });
         operation
             .then(resolve, reject)

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ESLint } from 'eslint';
+import { persistenceFormattingAllowances } from './eslint-persistence-readability.mjs';
 
 const eslint = new ESLint();
 const storePath =
@@ -109,4 +110,28 @@ test('normal autofix introduces whitespace without changing expressions', async 
 
     assert.equal(result.output, source.replace('    return', '\n    return'));
     assert.deepEqual(await messages(result.output), []);
+});
+
+test('formatting allowances are exact-file ceilings without exempting siblings', async () => {
+    for (const allowance of persistenceFormattingAllowances) {
+        const [filePath] = allowance.files;
+        const limit = allowance.rules['max-lines'][1].max;
+        const atLimit = Array(limit).fill('void 0;').join('\n');
+        const beyondLimit = `${atLimit}\nvoid 0;`;
+
+        assert.deepEqual(await messages(atLimit, filePath), []);
+        assert.ok(
+            (await messages(beyondLimit, filePath)).some(
+                ({ ruleId }) => ruleId === 'max-lines',
+            ),
+        );
+
+        const sibling = filePath.replace(/[^/]+$/, 'another-implementation.ts');
+
+        assert.ok(
+            (await messages(atLimit, sibling)).some(
+                ({ ruleId }) => ruleId === 'max-lines',
+            ),
+        );
+    }
 });

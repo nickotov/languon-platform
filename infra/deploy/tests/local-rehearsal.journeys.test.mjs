@@ -14,6 +14,7 @@ async function rehearsal(command) {
                 stdio: 'inherit',
             },
         );
+
         child.on('error', reject);
         child.on('close', resolve);
     });
@@ -28,6 +29,7 @@ async function assertRehearsalRemoved() {
         const { stdout } = await runCommand('docker', [kind, ...args], {
             capture: true,
         });
+
         assert.doesNotMatch(stdout, /languon-local-stage/);
     }
 }

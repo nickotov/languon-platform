@@ -85,13 +85,14 @@ export const RecordWorkbookLearningEventRequestSchema = z
     })
     .strict()
     .superRefine((value, ctx) => {
-        if (value.kind !== 'transcript-revealed' && !value.exerciseRevision)
+        if (value.kind !== 'transcript-revealed' && !value.exerciseRevision) {
             ctx.addIssue({
                 code: 'custom',
                 path: ['exerciseRevision'],
                 message:
                     'Exercise observations require their answered version.',
             });
+        }
     });
 export const WorkbookLearningEventSchema =
     RecordWorkbookLearningEventRequestSchema.safeExtend({

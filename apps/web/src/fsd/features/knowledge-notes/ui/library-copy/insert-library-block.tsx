@@ -24,9 +24,11 @@ export function InsertLibraryBlock({
     function show() {
         setOpen(true);
     }
+
     function close() {
         setOpen(false);
     }
+
     return (
         <>
             <Button

@@ -24,6 +24,7 @@ test('changed scripts become unavailable before their revision is trusted', () =
         'lint',
         'prettier --write .',
     );
+
     assert.equal(reconciled.enabled, false);
     assert.equal(reconciled.batchEligible, false);
     assert.match(reconciled.disabledReason, /explicit safety review/u);

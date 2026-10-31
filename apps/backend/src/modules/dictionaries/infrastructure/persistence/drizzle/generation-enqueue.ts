@@ -71,8 +71,9 @@ export async function enqueue(
             .for('share');
 
         if (replay) {
-            if (replay.requestFingerprint !== input.fingerprint)
+            if (replay.requestFingerprint !== input.fingerprint) {
                 throw new DictionaryIdempotencyConflictError();
+            }
 
             return readView(tx, replay, input.context.now);
         }
@@ -104,16 +105,22 @@ export async function enqueue(
             .for('update');
 
         abort(input.context);
-        if (!current) throw new DictionaryNotFoundError();
-        if (current.card.lifecycle !== 'active')
+        if (!current) {
+            throw new DictionaryNotFoundError();
+        }
+
+        if (current.card.lifecycle !== 'active') {
             throw new DictionaryCardNotFoundError();
+        }
+
         if (
             current.dictionary.lifecycle !== 'active' ||
             current.dictionary.version !== input.expectedDictionaryVersion ||
             current.settings.version !== input.expectedSettingsVersion ||
             current.card.version !== input.expectedCardVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
 
         const providerExecution = await assertGenerationAdmission(
             context,

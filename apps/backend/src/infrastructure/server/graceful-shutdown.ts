@@ -19,11 +19,15 @@ export function createGracefulShutdown(
         resourcesClosed ??= options.closeResources().catch((error: unknown) => {
             options.onError?.(error);
         });
+
         return resourcesClosed;
     };
 
     return (signal: string): void => {
-        if (shuttingDown) return;
+        if (shuttingDown) {
+            return;
+        }
+
         shuttingDown = true;
         console.log(`Received ${signal}; draining active requests.`);
 
@@ -31,6 +35,7 @@ export function createGracefulShutdown(
             console.error(
                 `Graceful shutdown exceeded ${options.timeoutMs}ms; closing remaining connections.`,
             );
+
             options.server.closeAllConnections?.();
             options.onDeadline?.();
             void closeResources();
@@ -41,6 +46,7 @@ export function createGracefulShutdown(
             if (error !== undefined) {
                 options.onError?.(error);
             }
+
             void closeResources();
         });
     };

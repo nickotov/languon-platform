@@ -25,31 +25,41 @@ export function WorkbookMembership({
     ];
     const blocked =
         !selected || model.busy || (workbook.shared && !acknowledged);
+
     function choose(event: ChangeEvent<HTMLSelectElement>) {
         setSelected(event.target.value);
         setAcknowledged(false);
     }
+
     function acknowledge(event: ChangeEvent<HTMLInputElement>) {
         setAcknowledged(event.target.checked);
     }
+
     function more() {
         void model.library.fetchNextPage();
     }
+
     function reload() {
         void model.library.refetch();
     }
+
     async function add(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (blocked) return;
+        if (blocked) {
+            return;
+        }
+
         const done = await model.setNotes(
             [...memberIds, selected],
             acknowledged,
         );
+
         if (done) {
             setSelected('');
             setAcknowledged(false);
         }
     }
+
     return (
         <form className={styles.panel} onSubmit={add}>
             <Select

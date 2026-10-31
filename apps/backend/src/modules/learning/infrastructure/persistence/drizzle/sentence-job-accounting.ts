@@ -43,12 +43,17 @@ export async function reserveSentenceAttempt(
     now: Date,
 ) {
     if (usesLegacyAction(job.selectedExecutionSnapshot)) {
-        if (!job.inputPayload)
+        if (!job.inputPayload) {
             throw new Error(
                 'Active sentence admission requires its retained input',
             );
+        }
+
         try {
-            if (attempt === 1 && !job.selectedExecutionSnapshot.actionParentId)
+            if (
+                attempt === 1 &&
+                !job.selectedExecutionSnapshot.actionParentId
+            ) {
                 await reserveLegacyAction(tx, {
                     id: job.id,
                     requestKey: job.operationId,
@@ -63,11 +68,15 @@ export async function reserveSentenceAttempt(
                     ),
                     at: now,
                 });
+            }
         } catch (error) {
-            if (error instanceof OperatorBudgetUnavailableError)
+            if (error instanceof OperatorBudgetUnavailableError) {
                 throw new SentenceCapacityUnavailableError();
-            if (error instanceof AiCreditInsufficientBalanceError)
+            }
+
+            if (error instanceof AiCreditInsufficientBalanceError) {
                 throw new SentenceCreditsExhaustedError();
+            }
 
             throw error;
         }
@@ -75,7 +84,10 @@ export async function reserveSentenceAttempt(
         return;
     }
 
-    if (!job.aiCreditAccounted) return;
+    if (!job.aiCreditAccounted) {
+        return;
+    }
+
     const id = randomUUID();
     try {
         const result = await new DrizzleAiCreditTransactionParticipant(
@@ -99,8 +111,9 @@ export async function reserveSentenceAttempt(
             })
             .where(eq(jobs.id, job.id));
     } catch (error) {
-        if (error instanceof AiCreditInsufficientBalanceError)
+        if (error instanceof AiCreditInsufficientBalanceError) {
             throw new SentenceCreditsExhaustedError();
+        }
 
         throw error;
     }
@@ -131,13 +144,14 @@ export async function settleSentenceAttempt(
             at: now,
         });
 
-        if (terminal && !job.selectedExecutionSnapshot.actionParentId)
+        if (terminal && !job.selectedExecutionSnapshot.actionParentId) {
             await settleLegacyAction(tx, {
                 id: job.id,
                 ownerId: job.learnerId,
                 outcome,
                 at: now,
             });
+        }
     }
 
     if (job.sourceKind === 'knowledge-vocabulary') {
@@ -148,7 +162,10 @@ export async function settleSentenceAttempt(
         return;
     }
 
-    if (job.providerReservationState !== 'active') return;
+    if (job.providerReservationState !== 'active') {
+        return;
+    }
+
     if (
         usage &&
         (!Number.isSafeInteger(usage.inputTokens) ||
@@ -157,17 +174,19 @@ export async function settleSentenceAttempt(
             usage.outputTokens < 0 ||
             usage.inputTokens > job.providerMaxInputTokensPerAttempt ||
             usage.outputTokens > job.providerMaxOutputTokensPerAttempt)
-    )
+    ) {
         throw new Error('Sentence provider usage exceeds reservation');
+    }
+
     if (job.aiCreditAccounted && job.aiCreditReservationId) {
         const credits = new DrizzleAiCreditTransactionParticipant(tx);
-        if (!job.aiCreditProviderDispatchedAt)
+        if (!job.aiCreditProviderDispatchedAt) {
             await credits.releaseUndispatchedAttempt({
                 ownerId: job.learnerId,
                 releasedAt: now,
                 reservationId: job.aiCreditReservationId,
             });
-        else {
+        } else {
             // Customer eligibility is independent of incurred provider usage.
             const measured =
                 outcome !== 'failure' && usage
@@ -183,13 +202,13 @@ export async function settleSentenceAttempt(
                       )
                     : 0n;
 
-            if (outcome === 'failure' || !usage)
+            if (outcome === 'failure' || !usage) {
                 await credits.settleFailedAttempt({
                     ownerId: job.learnerId,
                     reservationId: job.aiCreditReservationId,
                     settledAt: now,
                 });
-            else {
+            } else {
                 await credits.settleAttempt({
                     ownerId: job.learnerId,
                     reservationId: job.aiCreditReservationId,

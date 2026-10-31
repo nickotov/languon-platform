@@ -25,21 +25,26 @@ describe('shared overlay portal and lifecycle', () => {
                 </Popover>
             </dialog>,
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Reader actions' }),
         );
+
         const panel = await screen.findByRole('dialog', {
             name: 'Reader actions',
         });
+
         expect(panel.parentElement).toBe(
             screen.getByRole('dialog', { name: 'Reader' }),
         );
+
         await user.click(screen.getByRole('button', { name: 'Save word' }));
         expect(panel).toBeVisible();
         await user.keyboard('{Escape}');
         expect(
             screen.getByRole('button', { name: 'Reader actions' }),
         ).toHaveFocus();
+
         expect(screen.getByRole('dialog', { name: 'Reader' })).toBeVisible();
     });
 
@@ -57,11 +62,13 @@ describe('shared overlay portal and lifecycle', () => {
                 </Tooltip>
             </>,
         );
+
         screen.getByRole('button', { name: 'Modal help' }).focus();
         const modalTooltip = await screen.findByRole('tooltip');
         expect(modalTooltip.parentElement).toBe(
             screen.getByRole('dialog', { name: 'Settings' }),
         );
+
         await user.click(screen.getByRole('button', { name: 'Page help' }));
         const pageTooltip = await screen.findByRole('tooltip');
         expect(pageTooltip.parentElement).toBe(document.body);
@@ -75,17 +82,21 @@ describe('shared overlay portal and lifecycle', () => {
         });
         const hide = vi.fn(() => {
             // Native removal can clear focus after an eager invoker.focus().
-            if (document.activeElement instanceof HTMLElement)
+            if (document.activeElement instanceof HTMLElement) {
                 document.activeElement.blur();
+            }
         });
+
         Object.defineProperty(HTMLElement.prototype, 'showPopover', {
             configurable: true,
             value: show,
         });
+
         Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
             configurable: true,
             value: hide,
         });
+
         try {
             const user = userEvent.setup();
             render(
@@ -96,12 +107,15 @@ describe('shared overlay portal and lifecycle', () => {
                     </PopoverContent>
                 </Popover>,
             );
+
             await user.click(
                 screen.getByRole('button', { name: 'Show native actions' }),
             );
+
             const panel = await screen.findByRole('dialog', {
                 name: 'Native actions',
             });
+
             expect(show).toHaveBeenCalledOnce();
             expect(visibilityOnShow).toEqual(['hidden']);
             await waitFor(() => expect(panel).toBeVisible());
@@ -113,9 +127,11 @@ describe('shared overlay portal and lifecycle', () => {
                     screen.getByRole('button', { name: 'Show native actions' }),
                 ).toHaveFocus(),
             );
+
             await user.click(
                 screen.getByRole('button', { name: 'Show native actions' }),
             );
+
             await screen.findByRole('dialog', { name: 'Native actions' });
             await user.keyboard('{Escape}');
             await waitFor(() =>
@@ -123,6 +139,7 @@ describe('shared overlay portal and lifecycle', () => {
                     screen.getByRole('button', { name: 'Show native actions' }),
                 ).toHaveFocus(),
             );
+
             expect(
                 screen.queryByRole('dialog', { name: 'Native actions' }),
             ).not.toBeInTheDocument();
@@ -131,6 +148,7 @@ describe('shared overlay portal and lifecycle', () => {
             Reflect.deleteProperty(HTMLElement.prototype, 'hidePopover');
         }
     });
+
     it('promotes native tooltips while hidden and keeps a full viewport height budget', async () => {
         const visibilityOnShow: string[] = [];
         Object.defineProperty(HTMLElement.prototype, 'showPopover', {
@@ -140,10 +158,12 @@ describe('shared overlay portal and lifecycle', () => {
                 this.style.display = 'block';
             },
         });
+
         Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
             configurable: true,
             value: vi.fn(),
         });
+
         let view: ReturnType<typeof render> | undefined;
         try {
             view = render(
@@ -151,11 +171,13 @@ describe('shared overlay portal and lifecycle', () => {
                     <button>Native tooltip</button>
                 </Tooltip>,
             );
+
             const tooltip = await screen.findByRole('tooltip');
             expect(visibilityOnShow).toEqual(['hidden']);
             expect(tooltip.style.maxHeight).toBe(
                 `${window.innerHeight - 32}px`,
             );
+
             expect(tooltip).toHaveTextContent(
                 'Keep the complete explanation visible',
             );

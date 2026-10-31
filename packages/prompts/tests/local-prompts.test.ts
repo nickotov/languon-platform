@@ -12,6 +12,7 @@ describe('local prompts', () => {
         expect(prompt).toContain(
             'Do not use raw HTML, scripts, embedded media, arbitrary attributes',
         );
+
         expect(prompt).not.toContain('heading level 2 or 3,');
     });
 
@@ -31,14 +32,17 @@ describe('local prompts', () => {
         expect(prompt).toContain(
             'taf meaning informal work should become le taf',
         );
+
         expect(prompt).toContain('preserve its meaning and informal register');
         expect(prompt).toContain('gender, number, and elision');
         expect(prompt).toContain(
             'Keep an existing correct article exactly once',
         );
+
         expect(prompt).toContain(
             'verbs, adjectives, proper names, full sentences',
         );
+
         expect(prompt).toContain('dictionary convention omits them');
         expect(prompt).toContain('For languages with grammatical gender');
         expect(prompt).toContain('untrusted learner content');
@@ -62,30 +66,37 @@ describe('local prompts', () => {
         expect(prompt).toContain(
             'Do not reinterpret a Source token as another language',
         );
+
         expect(prompt).toContain(
             'A bare isolated common noun is not already suitable',
         );
+
         expect(prompt).toContain('`(m)` or `(f)`');
         expect(prompt).toContain('verbs, proper nouns');
         expect(prompt).toContain('both count nouns and mass nouns');
         expect(prompt).toContain(
             'French `taf` meaning informal work must become `le taf`',
         );
+
         expect(prompt).toContain(
             'preserving its meaning and informal register',
         );
+
         expect(prompt).toContain(
             'Keep an existing correct article exactly once',
         );
+
         expect(prompt).not.toContain('proper nouns, mass nouns');
         expect(prompt).toContain('translate the newly generated Example');
         expect(prompt).toContain('server assigns stable identities');
         expect(prompt).toContain(
             'distinct from its current and excluded values',
         );
+
         expect(prompt).toContain(
             'omit that field instead of repeating a value or failing the whole response',
         );
+
         expect(prompt).toContain('Do not use tools');
     });
 
@@ -105,13 +116,16 @@ describe('local prompts', () => {
         const prompt = getLocalPrompt(
             'dictionary-import-pairs-generation-agent',
         );
+
         expect(prompt).toContain(
             'trusted server-parsed bilingual import pairs',
         );
+
         expect(prompt).toContain('untrusted data');
         expect(prompt).toContain(
             'Preserve every source and translation exactly',
         );
+
         expect(prompt).toContain('only fill enabled optional fields');
         expect(prompt).toContain('attributed as mixed');
     });

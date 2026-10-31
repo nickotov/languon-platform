@@ -101,7 +101,10 @@ export function cancelUserDeletion(
             .limit(1)
             .for('update');
 
-        if (!row) throw new AdminUserNotFoundError();
+        if (!row) {
+            throw new AdminUserNotFoundError();
+        }
+
         if (row.version !== input.expectedVersion) {
             throw new AdminUserStateConflictError();
         }
@@ -162,7 +165,10 @@ export function cancelUserDeletion(
             )
             .returning({ id: usersTable.id });
 
-        if (updated.length !== 1) throw new AdminUserStateConflictError();
+        if (updated.length !== 1) {
+            throw new AdminUserStateConflictError();
+        }
+
         await transaction.insert(adminAuditEventsTable).values(
             auditValues({
                 action: 'user_deletion_cancelled',
@@ -185,7 +191,9 @@ export function cancelUserDeletion(
         );
 
         const detail = await readUser(persistence, transaction, row.id);
-        if (!detail) throw new AdminUserNotFoundError();
+        if (!detail) {
+            throw new AdminUserNotFoundError();
+        }
 
         return detail;
     });
@@ -243,7 +251,10 @@ export async function mutateUser(
             .limit(1)
             .for('update');
 
-        if (!row) throw new AdminUserNotFoundError();
+        if (!row) {
+            throw new AdminUserNotFoundError();
+        }
+
         if (row.version !== input.expectedVersion) {
             throw new AdminUserStateConflictError();
         }
@@ -285,7 +296,9 @@ export async function mutateUser(
             )
             .returning({ id: usersTable.id });
 
-        if (changed.length !== 1) throw new AdminUserStateConflictError();
+        if (changed.length !== 1) {
+            throw new AdminUserStateConflictError();
+        }
 
         if (operation === 'disable') {
             await transaction
@@ -326,7 +339,9 @@ export async function mutateUser(
         );
 
         const detail = await readUser(persistence, transaction, updated.id);
-        if (!detail) throw new AdminUserNotFoundError();
+        if (!detail) {
+            throw new AdminUserNotFoundError();
+        }
 
         return detail;
     });
@@ -376,7 +391,10 @@ export async function assertActorCanMutate(
         .limit(1)
         .for('update', { of: authSessionsTable });
 
-    if (!actor) throw new AdminAccessDeniedError();
+    if (!actor) {
+        throw new AdminAccessDeniedError();
+    }
+
     if (
         actor.authenticatedAt.getTime() + 5 * 60_000 <=
         operationTime.getTime()

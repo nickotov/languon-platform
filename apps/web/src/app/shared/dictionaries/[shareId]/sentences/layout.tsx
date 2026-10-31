@@ -8,6 +8,7 @@ export default async function Layout({
     children: ReactNode;
 }) {
     const { shareId } = await params;
+
     return (
         <SentenceLibraryRoute shareId={shareId}>
             {children}

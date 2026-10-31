@@ -19,6 +19,7 @@ describe('knowledge media transport', () => {
                 new File(['<script>'], 'clip.mp3', { type: 'text/html' }),
             ),
         ).rejects.toThrow();
+
         await expect(
             uploadKnowledgeAudio(
                 'token',
@@ -28,6 +29,7 @@ describe('knowledge media transport', () => {
                 }),
             ),
         ).rejects.toThrow();
+
         expect(fetch).not.toHaveBeenCalled();
     });
 
@@ -48,14 +50,17 @@ describe('knowledge media transport', () => {
                 },
             ),
         );
+
         vi.stubGlobal('fetch', fetch);
         const file = new File(['wav'], 'clip.wav', { type: 'audio/wav' });
         await expect(
             uploadKnowledgeAudio('token', noteId, file),
         ).resolves.toEqual({ assetId });
+
         expect(fetch.mock.calls[0]?.[0]).toContain(
             `/knowledge/notes/${noteId}/media`,
         );
+
         expect(fetch.mock.calls[0]?.[1]).toMatchObject({
             body: file,
             headers: {
@@ -71,6 +76,7 @@ describe('knowledge media transport', () => {
                 headers: { 'Content-Type': 'audio/mpeg' },
             }),
         );
+
         vi.stubGlobal('fetch', fetch);
         const access = {
             kind: 'workbook' as const,
@@ -81,6 +87,7 @@ describe('knowledge media transport', () => {
             access,
             signal: new AbortController().signal,
         });
+
         expect(result.type).toBe('audio/mpeg');
         expect(fetch.mock.calls[0]?.[0]).not.toContain(access.key);
         expect(fetch.mock.calls[0]?.[1]).toMatchObject({
@@ -98,6 +105,7 @@ describe('knowledge media transport', () => {
                 }),
             ),
         );
+
         await expect(
             readKnowledgeAudio(noteId, assetId, {
                 signal: new AbortController().signal,

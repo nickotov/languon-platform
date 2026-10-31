@@ -44,8 +44,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+
             workbooks = new DrizzleWorkbookStore(db, crypto);
         }, 120_000);
+
         beforeEach(async () => {
             owner = randomUUID();
             reader = randomUUID();
@@ -53,6 +55,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: owner, status: 'active' },
                 { id: reader, status: 'active' },
             ]);
+
             text = {
                 id: randomUUID(),
                 type: 'bilingual-text',
@@ -60,6 +63,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 segments: [{ id: randomUUID(), text: 'The cat sleeps.' }],
                 translations: [],
             };
+
             vocabulary = {
                 id: randomUUID(),
                 type: 'vocabulary',
@@ -70,6 +74,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ],
             };
         });
+
         afterAll(async () => client?.end());
         async function create() {
             const content = KnowledgeNoteContentSchema.parse({
@@ -96,8 +101,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 content,
             });
+
             return { note, content };
         }
+
         async function pin(
             noteId: string,
             blockId: string,
@@ -117,11 +124,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 )
             ).binding;
         }
+
         const assert = (
             binding: KnowledgeLearningSourceBinding,
             actor = binding.actorId,
         ) =>
             client`select languon_assert_knowledge_learning_binding(${JSON.stringify(binding)}::jsonb,${actor}::uuid)`;
+
         async function save(
             noteId: string,
             version: number,
@@ -151,6 +160,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             });
         }
+
         it('accepts owned saved material and rejects forged actor or source snapshots', async () => {
             const { note } = await create();
             const binding = await pin(note.id, text.id);
@@ -159,6 +169,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 assert({ ...binding, actorId: reader }, reader),
             ).rejects.toThrow();
+
             await expect(
                 assert({
                     ...binding,
@@ -175,6 +186,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             ).rejects.toThrow();
         });
+
         it('preserves translation authority through prepared-translation edits and rejects changed original wording', async () => {
             const { note, content } = await create();
             const binding = await pin(note.id, text.id);
@@ -189,6 +201,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 },
             ];
+
             let current = await save(note.id, note.version, content);
             await assert(binding);
             text.segments[0]!.text = 'The dog sleeps.';
@@ -196,6 +209,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(current.version).toBe(3);
             await expect(assert(binding)).rejects.toThrow('material changed');
         });
+
         it('requires the exact live note grant and source-owner status', async () => {
             const { note } = await create();
             const share = await knowledge.issueShare(owner, note.id);
@@ -203,15 +217,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 kind: 'note',
                 ...share,
             });
+
             await assert(binding);
             await knowledge.revokeShare(owner, note.id);
             await expect(assert(binding)).rejects.toThrow(
                 'grant is unavailable',
             );
+
             const ownerBinding = await pin(note.id, text.id);
             await client`update users set status='disabled' where id=${owner}::uuid`;
             await expect(assert(ownerBinding)).rejects.toThrow();
         });
+
         it('ends workbook-derived authority when a member is removed without invalidating a separate note link', async () => {
             const { note } = await create();
             const workbook = await workbooks.create(owner, {
@@ -237,6 +254,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 kind: 'note',
                 ...noteShare,
             });
+
             await assert(workbookBinding);
             await assert(noteBinding);
             await workbooks.setNotes(owner, workbook.id, {
@@ -244,11 +262,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteIds: [],
                 acknowledgeSharedAddition: false,
             });
+
             await expect(assert(workbookBinding)).rejects.toThrow(
                 'membership is unavailable',
             );
+
             await assert(noteBinding);
         });
+
         it('rejects vocabulary ABA restoration and incomplete or duplicated entry epochs', async () => {
             const { note, content } = await create();
             const binding = await pin(note.id, vocabulary.id);
@@ -256,6 +277,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 assert({ ...binding, learningVersions: [] }),
             ).rejects.toThrow();
+
             await expect(
                 assert({
                     ...binding,
@@ -265,6 +287,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 }),
             ).rejects.toThrow();
+
             vocabulary.entries[0]!.term = 'dog';
             let changed = await save(note.id, note.version, content);
             vocabulary.entries[0]!.term = 'cat';

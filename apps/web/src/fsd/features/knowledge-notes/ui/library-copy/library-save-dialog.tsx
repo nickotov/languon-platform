@@ -25,11 +25,18 @@ import { localizedBlockLabels } from '../learning-block-authoring/block-locales'
 import type { LibraryContentBlock, PreparedLibraryCopy } from '../../types';
 
 function initialTranslation(block: LibraryContentBlock) {
-    if (block.type !== 'bilingual-text') return '';
+    if (block.type !== 'bilingual-text') {
+        return '';
+    }
+
     const prepared = block.translations[0]?.language;
-    if (prepared) return prepared;
+    if (prepared) {
+        return prepared;
+    }
+
     return block.language === 'en' ? 'fr' : 'en';
 }
+
 export function LibrarySaveDialog({
     block,
     context,
@@ -63,15 +70,19 @@ export function LibrarySaveDialog({
     const kind = block.type === 'vocabulary' ? 'dictionary' : 'text';
     const title =
         kind === 'dictionary' ? labels.saveVocabulary : labels.saveText;
+
     function changeDestination(event: ChangeEvent<HTMLInputElement>) {
         setDestination(event.target.value);
     }
+
     function changeName(event: ChangeEvent<HTMLInputElement>) {
         setName(event.target.value);
     }
+
     function changeTranslation(event: ChangeEvent<HTMLSelectElement>) {
         setTranslation(event.target.value);
     }
+
     function toggleEntry(event: ChangeEvent<HTMLInputElement>) {
         const id = event.target.value;
         setEntries((current) =>
@@ -80,10 +91,12 @@ export function LibrarySaveDialog({
                 : current.filter((value) => value !== id),
         );
     }
+
     function invalidate() {
         setPreview(null);
         setSaved(false);
     }
+
     async function prepare(event: FormEvent) {
         event.preventDefault();
         setBusy(true);
@@ -96,6 +109,7 @@ export function LibrarySaveDialog({
                 blockId: block.id,
                 operationId: crypto.randomUUID(),
             };
+
             if (block.type === 'vocabulary') {
                 const request = c.CopyKnowledgeVocabularyRequestSchema.parse({
                     ...source,
@@ -121,6 +135,7 @@ export function LibrarySaveDialog({
                     context,
                     request,
                 );
+
                 setPreview({ kind: 'vocabulary', request, content });
             } else {
                 const request = c.CopyKnowledgeTextRequestSchema.parse({
@@ -142,6 +157,7 @@ export function LibrarySaveDialog({
                     context,
                     request,
                 );
+
                 setPreview({ kind: 'text', request, content });
             }
         } catch {
@@ -150,8 +166,12 @@ export function LibrarySaveDialog({
             setBusy(false);
         }
     }
+
     async function commit() {
-        if (!preview || busy) return;
+        if (!preview || busy) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         try {
@@ -165,15 +185,20 @@ export function LibrarySaveDialog({
                 caught instanceof KnowledgeApiError &&
                 (caught.detail.code === 'version_conflict' ||
                     caught.detail.code === 'idempotency_conflict')
-            )
+            ) {
                 setPreview(null);
+            }
         } finally {
             setBusy(false);
         }
     }
+
     function close() {
-        if (!busy) onClose();
+        if (!busy) {
+            onClose();
+        }
     }
+
     const previewDisabled =
         busy ||
         (destination === 'new' ? !name.trim() : !item) ||
@@ -206,6 +231,7 @@ export function LibrarySaveDialog({
         onToggleEntry: toggleEntry,
         onSelectItem: setItem,
     };
+
     return (
         <BlockEditorPanel
             kind={block.type}

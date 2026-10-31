@@ -14,18 +14,22 @@ const shared: TrainingTarget = {
     shareId: 'a'.repeat(32),
     shareKey: 'b'.repeat(64),
 };
+
 function response(payload: unknown, status = 200) {
     return new Response(JSON.stringify(payload), {
         status,
         headers: { 'Content-Type': 'application/json' },
     });
 }
+
 function preferences() {
     return { configuration, shuffle: true, version: 0 };
 }
+
 function authenticated(): RequestWithSession {
     return vi.fn(async (operation) => operation('access-token'));
 }
+
 afterEach(() => {
     vi.unstubAllGlobals();
 });
@@ -35,6 +39,7 @@ describe('validated training HTTP client', () => {
         const fetchMock = vi
             .fn()
             .mockResolvedValue(response({ flashcardsEnabled: false }));
+
         vi.stubGlobal('fetch', fetchMock);
         let api!: ReturnType<typeof createLearningApi>;
         expect(() => {
@@ -44,13 +49,16 @@ describe('validated training HTTP client', () => {
                 requestWithSession: authenticated(),
             });
         }).not.toThrow();
+
         expect(await api.capabilities()).toEqual({ flashcardsEnabled: false });
         await expect(api.listEntries({})).rejects.toMatchObject({
             code: 'invalid_request',
             status: 400,
         });
+
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
+
     it('uses the owner refresh wrapper and validates preferences responses', async () => {
         const fetchMock = vi.fn().mockResolvedValue(response(preferences()));
         vi.stubGlobal('fetch', fetchMock);
@@ -61,6 +69,7 @@ describe('validated training HTTP client', () => {
             requestWithSession,
             baseUrl: 'http://localhost:4000/',
         });
+
         expect(await api.getPreferences()).toEqual(preferences());
         expect(requestWithSession).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledWith(
@@ -73,6 +82,7 @@ describe('validated training HTTP client', () => {
             }),
         );
     });
+
     it('passes the shared capability only in its dedicated header, never a URL', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             response({
@@ -82,6 +92,7 @@ describe('validated training HTTP client', () => {
                 fallbackCount: 1,
             }),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const wrapper = authenticated();
         const api = createLearningApi({
@@ -89,6 +100,7 @@ describe('validated training HTTP client', () => {
             signedIn: true,
             requestWithSession: wrapper,
         });
+
         await api.prepare({ configuration, scope: { type: 'all' } });
         const [url, options] = fetchMock.mock.calls[0]!;
         expect(String(url)).not.toContain(shared.shareKey);
@@ -96,12 +108,15 @@ describe('validated training HTTP client', () => {
             'X-Languon-Share-Key': shared.shareKey,
             Authorization: 'Bearer access-token',
         });
+
         expect(wrapper).toHaveBeenCalledTimes(1);
     });
+
     it('anonymous shared content reads never acquire or send a bearer token', async () => {
         const fetchMock = vi
             .fn()
             .mockResolvedValue(response({ entries: [], nextCursor: null }));
+
         vi.stubGlobal('fetch', fetchMock);
         const wrapper = authenticated();
         const api = createLearningApi({
@@ -109,19 +124,23 @@ describe('validated training HTTP client', () => {
             signedIn: false,
             requestWithSession: wrapper,
         });
+
         await api.listEntries({ search: 'bonjour + hello', limit: 25 });
         expect(wrapper).not.toHaveBeenCalled();
         expect(
             fetchMock.mock.calls[0]![1].headers.Authorization,
         ).toBeUndefined();
+
         expect(fetchMock.mock.calls[0]![0]).toContain(
             'search=bonjour+%2B+hello',
         );
     });
+
     it('capabilities is public and carries neither share key nor bearer token', async () => {
         const fetchMock = vi
             .fn()
             .mockResolvedValue(response({ flashcardsEnabled: true }));
+
         vi.stubGlobal('fetch', fetchMock);
         const wrapper = authenticated();
         const api = createLearningApi({
@@ -129,12 +148,14 @@ describe('validated training HTTP client', () => {
             signedIn: true,
             requestWithSession: wrapper,
         });
+
         await api.capabilities();
         expect(wrapper).not.toHaveBeenCalled();
         expect(fetchMock.mock.calls[0]![1].headers).toEqual({
             Accept: 'application/json',
         });
     });
+
     it('preserves the shared 401 shape required by the refresh wrapper', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             response(
@@ -148,17 +169,21 @@ describe('validated training HTTP client', () => {
                 401,
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createLearningApi({
             target: shared,
             signedIn: true,
             requestWithSession: authenticated(),
         });
+
         await expect(api.getProgress()).rejects.toSatisfy(
             isAuthenticationRequiredError,
         );
+
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
+
     it('refresh retry never silently falls back to anonymous when a token is invalid', async () => {
         const fetchMock = vi
             .fn()
@@ -175,12 +200,16 @@ describe('validated training HTTP client', () => {
                 ),
             )
             .mockResolvedValueOnce(response(preferences()));
+
         vi.stubGlobal('fetch', fetchMock);
         const wrapper: RequestWithSession = async (operation) => {
             try {
                 return await operation('old-token');
             } catch (error) {
-                if (!isAuthenticationRequiredError(error)) throw error;
+                if (!isAuthenticationRequiredError(error)) {
+                    throw error;
+                }
+
                 return operation('new-token');
             }
         };
@@ -189,6 +218,7 @@ describe('validated training HTTP client', () => {
             signedIn: true,
             requestWithSession: wrapper,
         });
+
         await api.getPreferences();
         expect(
             fetchMock.mock.calls.map(
@@ -196,6 +226,7 @@ describe('validated training HTTP client', () => {
             ),
         ).toEqual(['Bearer old-token', 'Bearer new-token']);
     });
+
     it('rejects malformed successful payloads instead of displaying unvalidated content', async () => {
         vi.stubGlobal(
             'fetch',
@@ -205,16 +236,19 @@ describe('validated training HTTP client', () => {
                     response({ entries: [{ text: '<script>' }] }),
                 ),
         );
+
         const api = createLearningApi({
             target: shared,
             signedIn: false,
             requestWithSession: authenticated(),
         });
+
         await expect(api.listEntries({})).rejects.toMatchObject({
             status: 502,
             code: 'service_unavailable',
         });
     });
+
     it('bounds requests before transport and rejects invalid configuration or large batches', async () => {
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
@@ -223,17 +257,21 @@ describe('validated training HTTP client', () => {
             signedIn: false,
             requestWithSession: authenticated(),
         });
+
         expect(() =>
             api.getItems({ configuration, entryIds: Array(26).fill(id) }),
         ).toThrow();
+
         expect(() =>
             api.prepare({
                 configuration: { front: [], back: ['source'] },
                 scope: { type: 'all' },
             }),
         ).toThrow();
+
         expect(fetchMock).not.toHaveBeenCalled();
     });
+
     it('preserves a retry-after budget and classifies network loss as an ambiguous failure', async () => {
         const fetchMock = vi
             .fn()
@@ -251,16 +289,19 @@ describe('validated training HTTP client', () => {
                 ),
             )
             .mockRejectedValueOnce(new Error('disconnect'));
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createLearningApi({
             target: shared,
             signedIn: false,
             requestWithSession: authenticated(),
         });
+
         await expect(api.listEntries({})).rejects.toMatchObject({
             code: 'rate_limited',
             retryAfterSeconds: 4,
         });
+
         await expect(api.listEntries({})).rejects.toMatchObject({
             code: 'network_timeout',
             status: 0,

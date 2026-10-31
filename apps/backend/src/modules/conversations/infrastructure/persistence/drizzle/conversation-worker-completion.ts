@@ -52,12 +52,14 @@ export async function conversationTerminal(
         .where(eq(turns.id, row.id))
         .returning();
 
-    if (turn)
+    if (turn) {
         await settleConversationAction(
             tx,
             turn,
             status === 'cancelled' && row.failureCode === 'explicit_stop',
         );
+    }
+
     const [message] = await tx
         .update(messages)
         .set({
@@ -67,7 +69,7 @@ export async function conversationTerminal(
         .where(and(eq(messages.turnId, row.id), eq(messages.role, 'assistant')))
         .returning();
 
-    if (message)
+    if (message) {
         await conversationEvent(
             persistence,
             tx,
@@ -75,6 +77,8 @@ export async function conversationTerminal(
             'message',
             messageView(message),
         );
+    }
+
     await conversationEvent(
         persistence,
         tx,
@@ -140,7 +144,9 @@ export function conversationMemory(
                         (!input.before || item.createdAt <= input.before),
                 );
 
-                if (input.order === 'desc') values.reverse();
+                if (input.order === 'desc') {
+                    values.reverse();
+                }
 
                 return {
                     messages: values.slice(
@@ -171,11 +177,13 @@ export function conversationMemory(
                             !original ||
                             original.role !== 'user' ||
                             original.content !== value.content
-                        )
+                        ) {
                             throw new ConversationError(
                                 'memory_conflict',
                                 'Original learner messages cannot be rewritten.',
                             );
+                        }
+
                         await tx
                             .update(messages)
                             .set({
@@ -200,18 +208,24 @@ export function conversationMemory(
                                 row.role === 'assistant',
                         );
 
-                    if (!target || target.role !== 'assistant')
+                    if (!target || target.role !== 'assistant') {
                         throw new ConversationError(
                             'memory_conflict',
                             'The message does not belong to this response.',
                         );
+                    }
+
                     const segments = [...(target.modelContent ?? [])];
                     const index = segments.findIndex(
                         (segment) => segment.id === value.id,
                     );
 
-                    if (index < 0) segments.push(value);
-                    else segments[index] = value;
+                    if (index < 0) {
+                        segments.push(value);
+                    } else {
+                        segments[index] = value;
+                    }
+
                     target.modelContent = segments;
                     await tx
                         .update(messages)
@@ -235,7 +249,7 @@ export function conversationMemory(
             }),
         writeState: (entries) =>
             conversationWithOperation(persistence, turn, async (tx) => {
-                for (const [key, value] of Object.entries(entries))
+                for (const [key, value] of Object.entries(entries)) {
                     await tx
                         .insert(memory)
                         .values({
@@ -248,6 +262,7 @@ export function conversationMemory(
                             target: [memory.conversationId, memory.key],
                             set: { value, updatedAt: persistence.now() },
                         });
+                }
             }),
     };
 }

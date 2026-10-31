@@ -55,6 +55,7 @@ export async function inspectReadiness() {
         DICTIONARY_JOB_API_CANCELLABLE_FORMATS: formats,
         DICTIONARY_JOB_API_DISCARDABLE_FORMATS: formats,
     };
+
     await writeFile(
         envFile,
         Object.entries(values)
@@ -62,6 +63,7 @@ export async function inspectReadiness() {
             .join('\n'),
         { mode: 0o600 },
     );
+
     try {
         let stdout: string;
         try {
@@ -84,10 +86,13 @@ export async function inspectReadiness() {
                 !('stdout' in error) ||
                 typeof error.stdout !== 'string' ||
                 !error.stdout.trim().startsWith('{')
-            )
+            ) {
                 throw error;
+            }
+
             stdout = error.stdout;
         }
+
         return JSON.parse(stdout) as {
             ready: boolean;
             checks: Array<{ id: string; status: string; message: string }>;
@@ -102,6 +107,7 @@ export async function createUser(request: APIRequestContext, email: string) {
         data: { email, password },
         headers: { Origin: adminOrigin },
     });
+
     expect(signup.status()).toBe(202);
     const { verification } = await signup.json();
     const verified = await request.post(
@@ -111,7 +117,9 @@ export async function createUser(request: APIRequestContext, email: string) {
             headers: { Origin: adminOrigin },
         },
     );
+
     expect(verified.status()).toBe(200);
+
     return (await verified.json()).user.id as string;
 }
 
@@ -143,6 +151,7 @@ export async function applyDemoProfile(token: string, learnerId: string) {
         `APP_ENV=test\nDATABASE_URL=${databaseUrl}\nDICTIONARY_AI_PROVIDER_FIXTURE_MODE=deterministic\nRELEASE_SHA=development\n`,
         { mode: 0o600 },
     );
+
     try {
         const { stdout } = await promisify(execFile)(
             process.execPath,
@@ -172,6 +181,7 @@ export async function applyDemoProfile(token: string, learnerId: string) {
                 },
             },
         );
+
         expect(stdout).toContain('Setup requests completed');
     } finally {
         await rm(directory, { recursive: true, force: true });
@@ -209,6 +219,7 @@ export async function startWorker() {
             stdio: ['ignore', 'pipe', 'pipe'],
         },
     );
+
     worker.stdout?.on('data', (chunk) => output.push(String(chunk)));
     worker.stderr?.on('data', (chunk) => output.push(String(chunk)));
     const sql = postgres(databaseUrl, { max: 1 });
@@ -216,20 +227,25 @@ export async function startWorker() {
         await expect
             .poll(
                 async () => {
-                    if (worker.exitCode !== null)
+                    if (worker.exitCode !== null) {
                         throw new Error(
                             `Fixture worker exited: ${output.join('').slice(-2000)}`,
                         );
+                    }
+
                     const rows =
                         await sql`select id from dictionary_ai_worker_observations where model_id = 'deepseek-flash' and status = 'available'`;
+
                     return rows.length;
                 },
                 { timeout: 20000 },
             )
             .toBeGreaterThan(0);
+
         return worker;
     } catch (error) {
         await stopWorker(worker);
+
         throw error;
     } finally {
         await sql.end();
@@ -237,14 +253,19 @@ export async function startWorker() {
 }
 
 export async function stopWorker(worker?: ChildProcess) {
-    if (!worker || worker.exitCode !== null) return;
+    if (!worker || worker.exitCode !== null) {
+        return;
+    }
+
     worker.kill('SIGTERM');
     await Promise.race([
         new Promise<void>((resolveExit) =>
             worker.once('exit', () => resolveExit()),
         ),
         delay(5000).then(() => {
-            if (worker.exitCode === null) worker.kill('SIGKILL');
+            if (worker.exitCode === null) {
+                worker.kill('SIGKILL');
+            }
         }),
     ]);
 }

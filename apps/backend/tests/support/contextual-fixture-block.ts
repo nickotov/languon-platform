@@ -9,36 +9,53 @@ export function contextualFixtureBlock(
     const objects: Record<string, unknown>[] = [];
     let visited = 0;
     function visit(value: unknown, depth: number) {
-        if (++visited > 5000 || depth > 18) return;
+        if (++visited > 5000 || depth > 18) {
+            return;
+        }
+
         if (typeof value === 'string') {
             try {
                 visit(JSON.parse(value), depth + 1);
             } catch {
                 /* Plain prose. */
             }
+
             return;
         }
-        if (!value || typeof value !== 'object') return;
+
+        if (!value || typeof value !== 'object') {
+            return;
+        }
+
         objects.push(value as Record<string, unknown>);
-        for (const child of Object.values(value)) visit(child, depth + 1);
+        for (const child of Object.values(value)) {
+            visit(child, depth + 1);
+        }
     }
-    if (Array.isArray(prompt))
+
+    if (Array.isArray(prompt)) {
         for (const message of prompt) {
             if (
                 !message ||
                 typeof message !== 'object' ||
                 message.role !== 'tool' ||
                 !Array.isArray(message.content)
-            )
+            ) {
                 continue;
-            for (const result of message.content)
+            }
+
+            for (const result of message.content) {
                 if (
                     result &&
                     typeof result === 'object' &&
                     result.toolName === 'read_source_context'
-                )
+                ) {
                     visit(result.output, 0);
+                }
+            }
         }
+    }
+
     for (const candidate of objects) {
         let block = LearningBlockSchema.safeParse(candidate);
         if (
@@ -64,12 +81,13 @@ export function contextualFixtureBlock(
                     ]),
                 ).values(),
             ];
+
             // Never invent or silently drop an omitted passage from the tool projection.
             if (
                 Number.isSafeInteger(transcript.segmentCount) &&
                 transcript.segmentCount === unique.length &&
                 unique.length > 0
-            )
+            ) {
                 block = LearningBlockSchema.safeParse({
                     ...candidate,
                     transcript: {
@@ -77,7 +95,9 @@ export function contextualFixtureBlock(
                         segments: unique,
                     },
                 });
+            }
         }
+
         if (
             !block.success &&
             candidate.type === 'bilingual-text' &&
@@ -108,11 +128,12 @@ export function contextualFixtureBlock(
             const languages = candidate.translationLanguages.filter(
                 (language): language is string => typeof language === 'string',
             );
+
             if (
                 candidate.segmentCount === unique.length &&
                 unique.length > 0 &&
                 languages.length === candidate.translationLanguages.length
-            )
+            ) {
                 block = LearningBlockSchema.safeParse({
                     ...metadata,
                     segments: unique.map((item) => item.segment),
@@ -140,8 +161,11 @@ export function contextualFixtureBlock(
                         })),
                     })),
                 });
+            }
         }
-        if (block.success && block.data.type === kind && accept(block.data))
+
+        if (block.success && block.data.type === kind && accept(block.data)) {
             return block.data;
+        }
     }
 }

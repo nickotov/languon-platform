@@ -79,7 +79,10 @@ export function createDictionaryGenerationRoutes(dependencies: {
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (result.success) return;
+            if (result.success) {
+                return;
+            }
+
             return context.json(
                 new DictionaryHttpError(
                     'invalid_request',
@@ -92,13 +95,19 @@ export function createDictionaryGenerationRoutes(dependencies: {
             );
         },
     });
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
         const allowanceError = actionAllowanceErrorResponse(error, context);
-        if (allowanceError) return allowanceError;
+        if (allowanceError) {
+            return allowanceError;
+        }
+
         const mapped = mapDictionaryHttpError(error);
-        if (mapped.retryAfterSeconds)
+        if (mapped.retryAfterSeconds) {
             context.header('Retry-After', String(mapped.retryAfterSeconds));
+        }
+
         return context.json(
             mapped.response(
                 correlationId(context.req.header('X-Correlation-ID')),
@@ -106,6 +115,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
             mapped.status,
         );
     });
+
     const bearer = (value: string | undefined) =>
         dependencies.policy.parseBearerAuthorization(value ?? null);
     const requestContext = (
@@ -115,6 +125,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
             context,
             dependencies.policy,
         );
+
         return {
             clientAddress: metadata.clientAddress,
             signal: metadata.signal,
@@ -168,6 +179,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
         }),
         async (context) => {
             const params = context.req.valid('param');
+
             return context.json(
                 {
                     job: await dependencies.service.enqueueCardAuthoringUpdate(
@@ -207,6 +219,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
         }),
         async (context) => {
             const params = context.req.valid('param');
+
             return context.json(
                 {
                     job: await dependencies.service.enqueuePastedTerms(
@@ -245,6 +258,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
         }),
         async (context) => {
             const params = context.req.valid('param');
+
             return context.json(
                 {
                     job: await dependencies.service.enqueueCardAuthoring(
@@ -281,6 +295,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
         }),
         async (context) => {
             const params = context.req.valid('param');
+
             return context.json(
                 {
                     job: await dependencies.service.enqueue(
@@ -314,6 +329,7 @@ export function createDictionaryGenerationRoutes(dependencies: {
         }),
         async (context) => {
             const params = context.req.valid('param');
+
             return context.json(
                 {
                     job: await dependencies.service.latest(
@@ -497,11 +513,13 @@ export function createDictionaryGenerationRoutes(dependencies: {
                 ),
         );
     };
+
     action(
         'cancel',
         CancelDictionaryGenerationJobRequestSchema,
         CancelDictionaryGenerationJobResponseSchema,
     );
+
     action(
         'discard',
         DiscardDictionaryGenerationJobRequestSchema,

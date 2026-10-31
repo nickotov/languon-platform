@@ -25,6 +25,7 @@ const price: ProviderPrice = {
     sourceUrl: null,
     reason: 'Synthetic fixture rate',
 };
+
 describe('pinned exact provider expense', () => {
     it('rounds combined input/output expense once to USD micros', () => {
         expect(
@@ -33,6 +34,7 @@ describe('pinned exact provider expense', () => {
                 outputTokens: 1,
             }),
         ).toBe(1n);
+
         expect(
             providerTextExpenseMicros(
                 {
@@ -44,6 +46,7 @@ describe('pinned exact provider expense', () => {
             ),
         ).toBe(9999999n);
     });
+
     it('applies a reviewed per-request minimum after combined token rounding', () => {
         const minimumPrice = { ...price, minimumUsdPerRequest: '0.000150' };
         expect(
@@ -52,6 +55,7 @@ describe('pinned exact provider expense', () => {
                 outputTokens: 1,
             }),
         ).toBe(150n);
+
         expect(
             providerTextExpenseMicros(
                 { ...minimumPrice, inputUsdPerMillionTokens: '0.2' },
@@ -61,12 +65,14 @@ describe('pinned exact provider expense', () => {
                 },
             ),
         ).toBe(200000n);
+
         expect(
             providerTextExpenseMicros(minimumPrice, {
                 inputTokens: 0,
                 outputTokens: 0,
             }),
         ).toBe(0n);
+
         expect(
             providerTextExpenseMicros(
                 { ...minimumPrice, cacheReadUsdPerMillionTokens: null },
@@ -74,6 +80,7 @@ describe('pinned exact provider expense', () => {
             ),
         ).toBeNull();
     });
+
     it('applies the same reviewed minimum to a speech request', () => {
         expect(
             providerSpeechExpenseMicros(
@@ -86,6 +93,7 @@ describe('pinned exact provider expense', () => {
             ),
         ).toBe(150n);
     });
+
     it('keeps missing tariffs and missing cache rates unknown', () => {
         expect(
             providerTextExpenseMicros(null, {
@@ -93,6 +101,7 @@ describe('pinned exact provider expense', () => {
                 outputTokens: 1,
             }),
         ).toBeNull();
+
         expect(
             providerTextExpenseMicros(price, {
                 inputTokens: 10,
@@ -100,6 +109,7 @@ describe('pinned exact provider expense', () => {
                 cacheReadTokens: 5,
             }),
         ).toBeNull();
+
         expect(() =>
             providerTextExpenseMicros(price, {
                 inputTokens: 1,
@@ -108,6 +118,7 @@ describe('pinned exact provider expense', () => {
             }),
         ).toThrow();
     });
+
     it('handles cache and speech meters without floating point', () => {
         expect(
             providerTextExpenseMicros(
@@ -126,6 +137,7 @@ describe('pinned exact provider expense', () => {
                 },
             ),
         ).toBe(6100000n);
+
         expect(
             providerSpeechExpenseMicros(
                 {
@@ -137,6 +149,7 @@ describe('pinned exact provider expense', () => {
             ),
         ).toBe(124n);
     });
+
     it('requires source evidence, meter-compatible rates and safe source references', () => {
         const {
             id: _id,
@@ -152,27 +165,32 @@ describe('pinned exact provider expense', () => {
                 sourceUrl: 'not-a-url',
             }).success,
         ).toBe(false);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...valid,
                 sourceUrl: 'https://user:password@example.com/prices',
             }).success,
         ).toBe(false);
+
         expect(ProviderPricePublishRequestSchema.safeParse(valid).success).toBe(
             true,
         );
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...valid,
                 sourceUrl: 'javascript:alert(1)',
             }).success,
         ).toBe(false);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...valid,
                 meter: 'speech-characters',
             }).success,
         ).toBe(false);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...valid,

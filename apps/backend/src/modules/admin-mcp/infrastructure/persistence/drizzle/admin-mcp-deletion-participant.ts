@@ -105,16 +105,19 @@ export async function purgeAdminMcpForOwner(
             'actionId',
         ]) {
             const value = event.metadata[key];
-            if (typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value))
+            if (typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value)) {
                 references[key] = value;
+            }
         }
 
         const expenses = event.metadata.providerExpenseIds;
-        if (Array.isArray(expenses))
+        if (Array.isArray(expenses)) {
             references.providerExpenseIds = expenses.filter(
                 (value): value is string =>
                     typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value),
             );
+        }
+
         await tx
             .update(adminMcpAuditTable)
             .set({

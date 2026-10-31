@@ -32,6 +32,7 @@ function attachment(
 
 function extensionResults(credential: PublicKeyCredential) {
     const extensions = credential.getClientExtensionResults();
+
     return extensions.credProps
         ? {
               credProps: {
@@ -50,13 +51,17 @@ function fromBase64Url(value: string): ArrayBuffer {
     const bytes = Uint8Array.from(binary, (character) =>
         character.charCodeAt(0),
     );
+
     return bytes.buffer;
 }
 
 function toBase64Url(value: ArrayBuffer): string {
     const bytes = new Uint8Array(value);
     let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+
     return btoa(binary)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
@@ -120,6 +125,7 @@ export async function createPasskey(
     if (!(result instanceof PublicKeyCredential)) {
         throw new Error('The browser did not return a passkey credential.');
     }
+
     const response = result.response;
     if (!(response instanceof AuthenticatorAttestationResponse)) {
         throw new Error(
@@ -128,6 +134,7 @@ export async function createPasskey(
     }
 
     const resultAttachment = attachment(result.authenticatorAttachment);
+
     return {
         ...(resultAttachment
             ? { authenticatorAttachment: resultAttachment }
@@ -163,9 +170,11 @@ export async function getPasskey(
             userVerification: options.userVerification,
         },
     });
+
     if (!(result instanceof PublicKeyCredential)) {
         throw new Error('The browser did not return a passkey credential.');
     }
+
     const response = result.response;
     if (
         !(response instanceof AuthenticatorAssertionResponse) ||
@@ -177,6 +186,7 @@ export async function getPasskey(
     }
 
     const resultAttachment = attachment(result.authenticatorAttachment);
+
     return {
         ...(resultAttachment
             ? { authenticatorAttachment: resultAttachment }

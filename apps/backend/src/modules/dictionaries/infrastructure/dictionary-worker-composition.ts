@@ -29,6 +29,7 @@ import {
 const hasCardAuthoringFormat = (formats: readonly string[]) =>
     formats.includes(dictionaryCardAuthoringGenerationFormatV1) ||
     formats.includes(dictionaryCardAuthoringGenerationFormat);
+
 import {
     DrizzleDictionaryGenerationStore,
     type DictionaryGenerationIdGenerator,
@@ -66,31 +67,38 @@ export function createDictionaryWorkerComposition(
         dependencies.ids,
         dependencies.providerBudget,
     );
+
     if (
         hasCardAuthoringFormat(dependencies.supportedFormats) &&
         !dependencies.cardAuthoringProvider
-    )
+    ) {
         throw new Error(
             'Card-authoring provider is required for card-authoring:v1 or card-authoring:v2.',
         );
+    }
+
     if (
         dependencies.supportedFormats.includes(
             dictionaryDocumentGenerationFormat,
         ) &&
         !dependencies.document
-    )
+    ) {
         throw new Error(
             'Document generation dependencies are required for document-terms:v1.',
         );
+    }
+
     if (
         dependencies.supportedFormats.includes(
             dictionaryImportPairsGenerationFormat,
         ) &&
         !dependencies.importPairsProvider
-    )
+    ) {
         throw new Error(
             'Import-pairs provider is required for import-pairs:v1.',
         );
+    }
+
     const documentStore = dependencies.document
         ? new DrizzleDictionaryDocumentStore(
               dependencies.database,
@@ -135,6 +143,7 @@ export function createDictionaryWorkerComposition(
                   store: documentStore,
               })
             : undefined;
+
     return {
         service: new DictionaryGenerationWorkerService(
             {
@@ -156,29 +165,35 @@ export function createDictionaryWorkerComposition(
                 providerReadiness: async (signal) => {
                     const readiness: Array<Promise<void>> = [];
                     if (hasCardAuthoringFormat(dependencies.supportedFormats)) {
-                        if (!dependencies.cardAuthoringProvider?.readiness)
+                        if (!dependencies.cardAuthoringProvider?.readiness) {
                             throw new Error(
                                 'Card-authoring provider readiness is unavailable.',
                             );
+                        }
+
                         readiness.push(
                             dependencies.cardAuthoringProvider.readiness(
                                 signal,
                             ),
                         );
                     }
+
                     if (
                         dependencies.supportedFormats.includes(
                             dictionaryImportPairsGenerationFormat,
                         )
                     ) {
-                        if (!dependencies.importPairsProvider?.readiness)
+                        if (!dependencies.importPairsProvider?.readiness) {
                             throw new Error(
                                 'Import-pairs provider readiness is unavailable.',
                             );
+                        }
+
                         readiness.push(
                             dependencies.importPairsProvider.readiness(signal),
                         );
                     }
+
                     if (
                         dependencies.supportedFormats.includes(
                             dictionaryGenerationFormat,
@@ -195,8 +210,10 @@ export function createDictionaryWorkerComposition(
                                 'Dictionary provider readiness is unavailable.',
                             );
                         }
+
                         readiness.push(dependencies.provider.readiness(signal));
                     }
+
                     if (
                         dependencies.supportedFormats.includes(
                             dictionaryPastedTermsGenerationFormat,
@@ -210,26 +227,31 @@ export function createDictionaryWorkerComposition(
                                 'Pasted-terms provider readiness is unavailable.',
                             );
                         }
+
                         readiness.push(
                             dependencies.pastedTermsProvider.readiness(signal),
                         );
                     }
+
                     if (
                         dependencies.supportedFormats.includes(
                             dictionaryDocumentGenerationFormat,
                         )
                     ) {
                         const document = dependencies.document!;
-                        if (!document.storage.readiness)
+                        if (!document.storage.readiness) {
                             throw new Error(
                                 'Document storage readiness is unavailable.',
                             );
+                        }
+
                         readiness.push(
                             document.storage.readiness.call(
                                 document.storage,
                                 signal,
                             ),
                         );
+
                         for (const [name, probe] of [
                             ['scanner', document.scanner.readiness],
                             ['extractor', document.extractor.readiness],
@@ -237,10 +259,12 @@ export function createDictionaryWorkerComposition(
                                 ? ([['OCR', document.ocr.readiness]] as const)
                                 : []),
                         ] as const) {
-                            if (!probe)
+                            if (!probe) {
                                 throw new Error(
                                     `Document ${name} readiness is unavailable.`,
                                 );
+                            }
+
                             readiness.push(
                                 probe.call(
                                     name === 'scanner'
@@ -253,6 +277,7 @@ export function createDictionaryWorkerComposition(
                             );
                         }
                     }
+
                     await Promise.all(readiness);
                 },
                 store: generationStore,

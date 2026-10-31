@@ -107,7 +107,9 @@ export function OptionalFields({
         .filter(Boolean)
         .join(' ');
 
-    if (!fields.length) return null;
+    if (!fields.length) {
+        return null;
+    }
 
     return (
         <dl className={fieldsClassName}>

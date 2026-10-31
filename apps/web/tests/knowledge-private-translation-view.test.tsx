@@ -27,6 +27,7 @@ it('renders independently bounded original/private passages without treating the
             },
         ],
     };
+
     expect(LearningBlockSchema.safeParse(original).success).toBe(true);
     expect(LearningBlockSchema.safeParse(presentation).success).toBe(false);
     render(
@@ -35,10 +36,12 @@ it('renders independently bounded original/private passages without treating the
             labels={knowledgeLearningBlockLabels('en').view}
         />,
     );
+
     expect(screen.getAllByText('O'.repeat(7000))).toHaveLength(9);
     fireEvent.click(
         screen.getByRole('button', { name: 'Bilingual', exact: true }),
     );
+
     expect(screen.getAllByText('T'.repeat(3000))).toHaveLength(9);
     expect(original.translations).toEqual([]);
 });

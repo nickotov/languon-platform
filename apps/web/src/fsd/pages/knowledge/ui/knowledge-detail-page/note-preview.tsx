@@ -36,6 +36,7 @@ export function NotePreview({
             return value;
         }
     }
+
     return (
         <div className={styles.preview}>
             {content.summary && (

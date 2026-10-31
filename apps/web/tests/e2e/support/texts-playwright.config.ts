@@ -4,6 +4,7 @@ const env = Object.fromEntries(
         (entry): entry is [string, string] => entry[1] !== undefined,
     ),
 );
+
 export default defineConfig({
     testDir: '..',
     testMatch: [

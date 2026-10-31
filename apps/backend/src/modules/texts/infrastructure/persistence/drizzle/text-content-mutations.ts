@@ -91,7 +91,10 @@ export async function folderLifecycle(
     return persistence.db.transaction(async (tx) => {
         const row = await folder(persistence, tx, ownerId, id, false);
         assertTextVersion(row.version, expectedVersion);
-        if (row.lifecycle === lifecycle) return textFolder(row);
+        if (row.lifecycle === lifecycle) {
+            return textFolder(row);
+        }
+
         const [updated] = await tx
             .update(textFoldersTable)
             .set({
@@ -153,11 +156,12 @@ export async function confirmDestination(
                 confirmed.shareId !== share.id ||
                 confirmed.shareVersion !== share.version)) ||
         (!share && confirmed)
-    )
+    ) {
         throw new TextDomainError(
             'shared_folder_confirmation_required',
             'Folder sharing changed. Confirm that saved translations, including future translations, will be visible through this folder.',
         );
+    }
 }
 
 export async function pendingJob(
@@ -226,7 +230,10 @@ export async function moveText(
             .from(textsTable)
             .where(and(eq(textsTable.id, id), eq(textsTable.ownerId, ownerId)));
 
-        if (!candidate) throw textNotFound();
+        if (!candidate) {
+            throw textNotFound();
+        }
+
         // All membership operations lock both folders in stable order before the text.
         const folders = [
             ...new Set(
@@ -236,22 +243,32 @@ export async function moveText(
             ),
         ].sort();
 
-        for (const folderId of folders)
+        for (const folderId of folders) {
             await folder(persistence, tx, ownerId, folderId);
+        }
+
         const [row] = await tx
             .select()
             .from(textsTable)
             .where(eq(textsTable.id, id))
             .for('update');
 
-        if (!row || row.lifecycle !== 'active') throw textNotFound();
+        if (!row || row.lifecycle !== 'active') {
+            throw textNotFound();
+        }
+
         assertTextVersion(row.version, request.expectedVersion);
-        if (row.folderId !== candidate.folderId)
+        if (row.folderId !== candidate.folderId) {
             throw new TextDomainError(
                 'version_conflict',
                 'The text moved. Reload it and try again.',
             );
-        if (row.folderId === request.folderId) return textDocument(row);
+        }
+
+        if (row.folderId === request.folderId) {
+            return textDocument(row);
+        }
+
         const [busy] = await tx
             .select({ id: textsAiJobsTable.id })
             .from(textsAiJobsTable)
@@ -283,18 +300,22 @@ export async function moveText(
             )
             .limit(1);
 
-        if (busy)
+        if (busy) {
             throw new TextDomainError(
                 'text_busy',
                 'Finish or discard the translation before moving this text.',
             );
-        if (request.folderId)
+        }
+
+        if (request.folderId) {
             await confirmDestination(
                 persistence,
                 tx,
                 request.folderId,
                 request.sharedFolderConfirmation,
             );
+        }
+
         const [updated] = await tx
             .update(textsTable)
             .set({
@@ -342,11 +363,12 @@ export async function createText(
                 );
 
             if (prior) {
-                if (prior.fingerprint !== fingerprint)
+                if (prior.fingerprint !== fingerprint) {
                     throw new TextDomainError(
                         'idempotency_conflict',
                         'This request key was already used.',
                     );
+                }
 
                 return textDocument(
                     await text(
@@ -385,7 +407,7 @@ export async function createText(
             .returning();
 
         await revision(persistence, tx, row!);
-        if (operationId)
+        if (operationId) {
             await tx.insert(textIdempotencyTable).values({
                 ownerId,
                 key: operationId,
@@ -393,6 +415,7 @@ export async function createText(
                 result: { id: row!.id },
                 createdAt: now,
             });
+        }
 
         return textDocument(row!);
     });
@@ -434,11 +457,13 @@ export async function saveText(
         }
 
         if (request.kind === 'edits') {
-            if (!row.alignment)
+            if (!row.alignment) {
                 throw new TextDomainError(
                     'invalid_request',
                     'Translate the text before editing sentence pairs.',
                 );
+            }
+
             const alignment = applyTextEdits(row.alignment, request.pairs);
             patch = {
                 ...patch,
@@ -451,11 +476,13 @@ export async function saveText(
         }
 
         if (request.kind === 'proposal') {
-            if (!persistence.proposal)
+            if (!persistence.proposal) {
                 throw new TextDomainError(
                     'service_unavailable',
                     'Translation saving is unavailable.',
                 );
+            }
+
             const result = await persistence.proposal(tx, {
                 ownerId,
                 jobId: request.jobId,
@@ -497,7 +524,10 @@ export async function textLifecycle(
     return persistence.db.transaction(async (tx) => {
         const row = await text(persistence, tx, ownerId, id, false);
         assertTextVersion(row.version, expectedVersion);
-        if (row.lifecycle === lifecycle) return textDocument(row);
+        if (row.lifecycle === lifecycle) {
+            return textDocument(row);
+        }
+
         const [updated] = await tx
             .update(textsTable)
             .set({

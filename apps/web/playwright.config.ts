@@ -38,6 +38,7 @@ const databaseUrl = process.env.AUTH_E2E_DATABASE_URL;
 const redisUrl = process.env.AUTH_E2E_REDIS_URL;
 const runId =
     process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
+
 process.env.AUTH_E2E_RUN_ID = runId;
 const redisNamespace = `languon:auth:e2e:${createHash('sha256')
     .update(runId)

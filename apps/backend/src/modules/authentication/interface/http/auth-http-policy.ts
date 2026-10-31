@@ -38,6 +38,7 @@ export class AuthHttpPolicy {
                 'Trusted proxy CIDRs are required when proxy forwarding is enabled.',
             );
         }
+
         for (const cidr of options.trustedProxyCidrs ?? []) {
             this.addTrustedProxyCidr(cidr);
         }
@@ -67,12 +68,14 @@ export class AuthHttpPolicy {
                   ),
               )
             : configuredMaximum;
+
         return this.serializeRefreshCookie(refreshToken, maxAge);
     }
 
     public refreshCookieName(): string {
         const namespace = this.options.refreshCookieNamespace ?? 'public';
         const suffix = namespace === 'admin' ? 'admin_refresh' : 'refresh';
+
         return this.productionLike()
             ? `__Host-languon_${suffix}`
             : `languon_${suffix}`;
@@ -87,9 +90,11 @@ export class AuthHttpPolicy {
             /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(
                 value ?? '',
             );
+
         if (!match?.[1]) {
             throw new InvalidBearerAuthorizationError();
         }
+
         return match[1];
     }
 
@@ -124,11 +129,16 @@ export class AuthHttpPolicy {
         let clientAddress = directAddress;
         for (let index = chain.length - 1; index >= 0; index -= 1) {
             const candidate = chain[index];
-            if (!candidate || !this.validIpAddress(candidate))
+            if (!candidate || !this.validIpAddress(candidate)) {
                 return directAddress;
+            }
+
             clientAddress = candidate;
-            if (!this.isTrustedProxy(candidate)) return candidate;
+            if (!this.isTrustedProxy(candidate)) {
+                return candidate;
+            }
         }
+
         return clientAddress;
     }
 
@@ -138,21 +148,26 @@ export class AuthHttpPolicy {
         if (!address || extra.length > 0 || family === 0) {
             throw new Error(`Invalid trusted proxy CIDR: ${value}`);
         }
+
         if (rawPrefix === undefined) {
             this.trustedProxies.addAddress(
                 address,
                 family === 4 ? 'ipv4' : 'ipv6',
             );
+
             return;
         }
+
         if (!/^\d+$/.test(rawPrefix)) {
             throw new Error(`Invalid trusted proxy CIDR: ${value}`);
         }
+
         const prefix = Number(rawPrefix);
         const maximumPrefix = family === 4 ? 32 : 128;
         if (prefix > maximumPrefix) {
             throw new Error(`Invalid trusted proxy CIDR: ${value}`);
         }
+
         this.trustedProxies.addSubnet(
             address,
             prefix,
@@ -162,6 +177,7 @@ export class AuthHttpPolicy {
 
     private isTrustedProxy(address: string): boolean {
         const family = isIP(address);
+
         return (
             family !== 0 &&
             this.trustedProxies.check(address, family === 4 ? 'ipv4' : 'ipv6')
@@ -182,9 +198,11 @@ export class AuthHttpPolicy {
             'HttpOnly',
             'SameSite=Lax',
         ];
+
         if (productionLike) {
             attributes.push('Secure');
         }
+
         return attributes.join('; ');
     }
 

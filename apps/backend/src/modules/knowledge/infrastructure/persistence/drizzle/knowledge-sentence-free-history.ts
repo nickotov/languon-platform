@@ -58,7 +58,10 @@ function cursorFor(
     source: VocabularyPracticeActor,
     query: SentenceAttemptsQuery,
 ) {
-    if (!query.cursor) return null;
+    if (!query.cursor) {
+        return null;
+    }
+
     try {
         const cursor = cursorSchema.parse(
             JSON.parse(Buffer.from(query.cursor, 'base64url').toString()),
@@ -71,8 +74,9 @@ function cursorFor(
             cursor.blockId !== source.blockId ||
             cursor.direction !== (query.direction ?? null) ||
             cursor.exerciseId !== (query.exerciseId ?? null)
-        )
+        ) {
             throw new Error();
+        }
 
         return cursor;
     } catch {
@@ -139,7 +143,10 @@ export async function knowledgeSentenceReveal(
             ),
         );
 
-    if (!exercise) throw new LearningEntryUnavailableError();
+    if (!exercise) {
+        throw new LearningEntryUnavailableError();
+    }
+
     const hash = referenceFingerprint(
         source.noteId,
         source.blockId,
@@ -156,7 +163,10 @@ export async function knowledgeSentenceReveal(
             ),
         );
 
-    if (receipt) throw new SentenceConflictError('operation_conflict');
+    if (receipt) {
+        throw new SentenceConflictError('operation_conflict');
+    }
+
     const [paid] = await tx
         .select({ id: jobs.id })
         .from(jobs)
@@ -167,7 +177,10 @@ export async function knowledgeSentenceReveal(
             ),
         );
 
-    if (paid) throw new SentenceConflictError('operation_conflict');
+    if (paid) {
+        throw new SentenceConflictError('operation_conflict');
+    }
+
     const [prior] = await tx
         .select()
         .from(reviews)
@@ -179,14 +192,17 @@ export async function knowledgeSentenceReveal(
         );
 
     if (prior) {
-        if (prior.requestFingerprint !== hash)
+        if (prior.requestFingerprint !== hash) {
             throw new SentenceConflictError('operation_conflict');
+        }
 
         return { review: presentReview(prior, exercise, material) };
     }
 
-    if (!currentKnowledgeSentence(exercise, material))
+    if (!currentKnowledgeSentence(exercise, material)) {
         throw new SentenceConflictError('stale_content');
+    }
+
     await tx
         .insert(exposures)
         .values({

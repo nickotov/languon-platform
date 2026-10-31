@@ -68,6 +68,7 @@ export function KnowledgeDocumentView({
             />
         );
     }
+
     return (
         <KnowledgeBody
             {...props}

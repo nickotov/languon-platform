@@ -24,5 +24,6 @@ it('observes streamed growth and drafts without reading old message bodies', () 
     expect(messageScrollSignature(history, 1)).not.toBe(
         messageScrollSignature(history, 0),
     );
+
     expect(messageScrollSignature([], 0)).not.toBe(before);
 });

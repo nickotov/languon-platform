@@ -49,7 +49,7 @@ export function StreakIndicator({
     loading = false,
     className,
 }: StreakIndicatorProps) {
-    if (loading)
+    if (loading) {
         return (
             <span
                 className={[styles.loading, className]
@@ -62,6 +62,7 @@ export function StreakIndicator({
                 <span className={styles.skeleton} />
             </span>
         );
+    }
 
     const has = count > 0;
 
@@ -108,15 +109,16 @@ export function StreakIndicator({
         </span>
     );
 
-    if (variant === 'inline')
+    if (variant === 'inline') {
         return (
             <span className={className}>
                 <span className={styles.sr}>{sr}</span>
                 <span aria-hidden='true'>{value}</span>
             </span>
         );
+    }
 
-    if (variant === 'pill')
+    if (variant === 'pill') {
         return (
             <span
                 className={[styles.pill, styles[size], className]
@@ -128,6 +130,7 @@ export function StreakIndicator({
                 {week ? <WeekTrack week={week} /> : null}
             </span>
         );
+    }
 
     return (
         <section

@@ -6,8 +6,10 @@ import { format } from 'prettier';
 import { readabilityConfig, readabilityRules } from './eslint-readability.mjs';
 
 const eslint = new ESLint();
-const backendPath = readabilityConfig.files[0];
-const frontendPath = readabilityConfig.files[1];
+const backendPath =
+    'apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts';
+const frontendPath =
+    'apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx';
 const ruleIds = new Set(Object.keys(readabilityRules));
 
 async function readabilityMessages(source, filePath = backendPath) {
@@ -90,13 +92,43 @@ test('policy tests and implementation are themselves enrolled', async () => {
     }
 });
 
-test('staged rollout does not silently enable new errors across untouched code', async () => {
-    const messages = await readabilityMessages(
-        'export function choose(value) { if (value) return value; return null; }',
-        'apps/backend/src/modules/example/application/untouched.ts',
-    );
+test('enforces readability across maintained apps, packages and tooling', async () => {
+    for (const filePath of [
+        'apps/backend/src/modules/example/application/example.ts',
+        'apps/web/src/fsd/shared/lib/example.ts',
+        'apps/admin/src/shared/lib/example.ts',
+        'apps/mobile/example.tsx',
+        'packages/contracts/src/example.ts',
+        'scripts/example.mjs',
+        'infra/deploy/example.mjs',
+        'web-dev-panel/src/example.mjs',
+        'example.config.mjs',
+    ]) {
+        const messages = await readabilityMessages(
+            'export function choose(value) { if (value) return value; return null; }',
+            filePath,
+        );
 
-    assert.deepEqual(messages, []);
+        assert.ok(
+            messages.some(({ ruleId }) => ruleId === 'curly'),
+            filePath,
+        );
+    }
+});
+
+test('does not enroll generated or historical artifacts', async () => {
+    for (const filePath of [
+        'apps/web/next-env.d.ts',
+        'apps/backend/src/generated/example.ts',
+        'apps/mobile/ios/example.js',
+        '.agent/features/example/designs/example/source/example.ts',
+    ]) {
+        const config = await eslint.calculateConfigForFile(filePath);
+
+        assert.notEqual(config?.rules?.curly?.[0], 2, filePath);
+    }
+
+    assert.ok(readabilityConfig.ignores.includes('apps/backend/drizzle/**'));
 });
 
 test('autofix preserves dangling-else, loop effects and early-return behavior', async () => {

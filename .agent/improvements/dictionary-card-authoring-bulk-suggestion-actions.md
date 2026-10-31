@@ -42,25 +42,25 @@ Follow `.agent/DELIVERY.md`.
 
 ## Verification
 
-| Check                    | Result                 |
-| ------------------------ | ---------------------- |
-| Tests                    | Pass: 212 web tests and mapped deterministic E2E |
-| Lint/typecheck/build     | Pass: web lint, typecheck, and build |
+| Check                    | Result                                                                      |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Tests                    | Pass: 212 web tests and mapped deterministic E2E                            |
+| Lint/typecheck/build     | Pass: web lint, typecheck, and build                                        |
 | Runtime/browser/database | Pass: Storybook real-browser desktop/narrow states; database not applicable |
-| Documentation/user-flow  | Pass: guide and mapped revision checks |
+| Documentation/user-flow  | Pass: guide and mapped revision checks                                      |
 
 ## Outcome and evidence
 
 - Changes made: added a responsive bulk-review row to AI card authoring; centralized bulk selection/discard behavior in the authoring hook; preserved individual controls and non-destructive discard semantics; added all four locale messages and populated narrow/desktop stories. The Playwright harness now explicitly disables managed routing/credit enforcement and clears the live model ID so deterministic E2E cannot inherit paid-provider settings from `.env.local`.
 - Commands and results:
-  - `pnpm --filter @languon/web test` — pass, 27 files / 212 tests.
-  - `pnpm --filter @languon/web lint` — pass.
-  - `pnpm --filter @languon/web typecheck` — pass. An earlier parallel run raced `next build` while `.next` types were being replaced; the sequential rerun after build passed.
-  - `pnpm --filter @languon/web build` — pass.
-  - `pnpm --filter @languon/web test:e2e --grep "creates a mixed card from retained inline AI field choices"` with documented disposable PostgreSQL/Redis variables — pass, deterministic provider. Disposable containers were stopped and removed.
-  - `pnpm docs:user-flows:check` and `pnpm user-flow:e2e -- check dictionary-platform` — pass.
-  - Project-pinned browser session on the populated Storybook card-authoring stories — pass: desktop row and narrow stacked layout rendered; Accept all populated three fields, Discard all hid all suggestions without clearing values; final clean session reported no console or page errors. The mapped E2E also retained its 320px/200% overflow assertion.
-  - `git diff --check` — pass. Final application/test/doc patch SHA-256: `3fc8d54e43fb86c2b7919e649e4d68e436766b10590bb0eb1babf99755ca74ef`, based on `411354af484067b926279078c20a1d310c4dbc23`.
+    - `pnpm --filter @languon/web test` — pass, 27 files / 212 tests.
+    - `pnpm --filter @languon/web lint` — pass.
+    - `pnpm --filter @languon/web typecheck` — pass. An earlier parallel run raced `next build` while `.next` types were being replaced; the sequential rerun after build passed.
+    - `pnpm --filter @languon/web build` — pass.
+    - `pnpm --filter @languon/web test:e2e --grep "creates a mixed card from retained inline AI field choices"` with documented disposable PostgreSQL/Redis variables — pass, deterministic provider. Disposable containers were stopped and removed.
+    - `pnpm docs:user-flows:check` and `pnpm user-flow:e2e -- check dictionary-platform` — pass.
+    - Project-pinned browser session on the populated Storybook card-authoring stories — pass: desktop row and narrow stacked layout rendered; Accept all populated three fields, Discard all hid all suggestions without clearing values; final clean session reported no console or page errors. The mapped E2E also retained its 320px/200% overflow assertion.
+    - `git diff --check` — pass. Final application/test/doc patch SHA-256: `3fc8d54e43fb86c2b7919e649e4d68e436766b10590bb0eb1babf99755ca74ef`, based on `411354af484067b926279078c20a1d310c4dbc23`.
 - Documentation: updated the inline card-authoring guide and its mapped E2E revision marker with bulk-action behavior and narrow-layout expectations.
 - Review: initial independent review found two low-severity gaps: count-dependent grammar in the summary and insufficient proof that bulk acceptance preserves an already selected alternative, plus missing stale/active button assertions. Remediation introduced count-neutral copy in all locales, selected the second translation in the preservation test, and added explicit stale/active coverage. Focused remediation review marked both findings resolved with no new material defects. Automated approval review rejected temporarily elevating a disposable browser account because it crossed an authorization boundary; verification used synthetic Storybook data and deterministic E2E instead.
 

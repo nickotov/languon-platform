@@ -24,26 +24,30 @@ export function textLibraryContent(
     translationLanguage: string,
     createId: () => string = randomUUID,
 ) {
-    if (block.type !== 'bilingual-text')
+    if (block.type !== 'bilingual-text') {
         throw new KnowledgeDomainError(
             'invalid_request',
             'Select a bilingual text block.',
         );
+    }
+
     const translation = block.translations.find(
         (item) =>
             item.language.toLowerCase() === translationLanguage.toLowerCase(),
     );
 
-    if (block.language.toLowerCase() === translationLanguage.toLowerCase())
+    if (block.language.toLowerCase() === translationLanguage.toLowerCase()) {
         throw new KnowledgeDomainError(
             'invalid_request',
             'Choose a different translation language.',
         );
+    }
+
     const sourceText = TextSourceSchema.parse(
         block.segments.map((segment) => segment.text).join('\n\n'),
     );
 
-    if (!translation)
+    if (!translation) {
         return {
             title: block.title ?? 'Copied text',
             sourceText,
@@ -51,6 +55,8 @@ export function textLibraryContent(
             targetLanguage: TextLanguageSchema.parse(translationLanguage),
             alignment: null,
         };
+    }
+
     const pairs = block.segments.map((segment) => ({
         segment,
         pairId: createId(),
@@ -112,11 +118,13 @@ async function resolveTextLibraryContent(
     );
 
     if (request.privateTranslation) {
-        if (block.type !== 'bilingual-text')
+        if (block.type !== 'bilingual-text') {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Select a text block.',
             );
+        }
+
         const fingerprint = knowledgeLearningSourceFingerprint(
             knowledgeLearningSourceSnapshot(block),
         );
@@ -148,11 +156,13 @@ async function resolveTextLibraryContent(
             fingerprint !== request.privateTranslation.sourceFingerprint ||
             overlay.updatedAt.toISOString() !==
                 request.privateTranslation.updatedAt
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The private translation changed. Preview the copy again.',
             );
+        }
+
         block = {
             ...block,
             translations: [

@@ -50,14 +50,16 @@ export class DictionaryTextProviderRouter {
     ) {
         this.maximumCachedConfigurations =
             options.maximumCachedConfigurations ?? 16;
+
         if (
             !Number.isSafeInteger(this.maximumCachedConfigurations) ||
             this.maximumCachedConfigurations < 1 ||
             this.maximumCachedConfigurations > 64
-        )
+        ) {
             throw new Error(
                 'Dictionary text provider cache size must be between 1 and 64.',
             );
+        }
     }
 
     public resolve(
@@ -68,27 +70,38 @@ export class DictionaryTextProviderRouter {
         validateTextAiRouteRuntimeIdentity(snapshot, this.options);
         const credential =
             this.options.credentials[snapshot.credentialReference];
-        if (!credential)
+
+        if (!credential) {
             throw new Error(
                 'Dictionary text provider credential is unavailable.',
             );
+        }
+
         const key = stableSnapshotKey(snapshot);
         const cached = this.cache.get(key);
         if (cached) {
             this.cache.delete(key);
             this.cache.set(key, cached);
+
             return cached;
         }
+
         const providers = this.options.factory
             ? this.options.factory(snapshot, credential)
             : createProviderSet(snapshot, credential, this.options);
+
         this.cache.set(key, providers);
         while (this.cache.size > this.maximumCachedConfigurations) {
             const oldestKey = this.cache.keys().next().value as
                 string | undefined;
-            if (oldestKey === undefined) break;
+
+            if (oldestKey === undefined) {
+                break;
+            }
+
             this.cache.delete(oldestKey);
         }
+
         return providers;
     }
 
@@ -114,6 +127,7 @@ export function createDictionaryTextProviderRoutingAdapters(options: {
                   request.providerBudget,
               )[kind]
             : options.legacy[kind];
+
     return {
         card: {
             generate: (request) => resolve('card', request).generate(request),
@@ -178,6 +192,7 @@ function createProviderSet(
     let cardAuthoring: CardAuthoringProposalGenerator | undefined;
     let importPairs: ImportPairsProposalGenerator | undefined;
     let pastedTerms: PastedTermsProposalGenerator | undefined;
+
     return {
         get card() {
             return (card ??= createCardProposalGenerator(shared));

@@ -18,9 +18,11 @@ export function PrepareSummary({
 }) {
     const { t } = useI18n();
 
-    if (blocked) return <p className={styles.blocked}>{blocked}</p>;
+    if (blocked) {
+        return <p className={styles.blocked}>{blocked}</p>;
+    }
 
-    if (prepare.status === 'error')
+    if (prepare.status === 'error') {
         return (
             <InlineAlert
                 tone='error'
@@ -32,8 +34,9 @@ export function PrepareSummary({
                 {t('training.errorHelp')}
             </InlineAlert>
         );
+    }
 
-    if (prepare.status !== 'ready' || !prepare.result)
+    if (prepare.status !== 'ready' || !prepare.result) {
         return (
             <div
                 aria-label={t('training.checkEligible')}
@@ -44,6 +47,7 @@ export function PrepareSummary({
                 <Skeleton height={72} variant='rect' />
             </div>
         );
+    }
 
     const result = prepare.result;
 

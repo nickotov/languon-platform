@@ -20,6 +20,7 @@ export class KnowledgeTranscriptionWorker {
             now?: () => number;
         },
     ) {}
+
     async processNext(signal: AbortSignal): Promise<boolean> {
         signal.throwIfAborted();
         const now = this.options.now?.() ?? Date.now();
@@ -27,8 +28,12 @@ export class KnowledgeTranscriptionWorker {
             this.nextRecoveryAt = now + 60_000;
             await this.options.store.recoverExpired();
         }
+
         const lease = await this.options.store.claim(this.options.workerId);
-        if (!lease) return false;
+        if (!lease) {
+            return false;
+        }
+
         const controller = new AbortController();
         const remaining =
             lease.deadlineAt.getTime() - (this.options.now?.() ?? Date.now());
@@ -44,11 +49,16 @@ export class KnowledgeTranscriptionWorker {
         ]);
         let heartbeat: Promise<void> | undefined;
         const timer = setInterval(() => {
-            if (heartbeat) return;
+            if (heartbeat) {
+                return;
+            }
+
             heartbeat = this.options.store
                 .heartbeat(lease)
                 .then((alive) => {
-                    if (!alive) controller.abort();
+                    if (!alive) {
+                        controller.abort();
+                    }
                 })
                 .catch(() => controller.abort())
                 .finally(() => {
@@ -57,7 +67,10 @@ export class KnowledgeTranscriptionWorker {
         }, this.options.heartbeatMs ?? 15_000);
         let result: KnowledgeTranscriptionResult | null = null;
         try {
-            if (remaining <= 0) throw new Error('deadline_exceeded');
+            if (remaining <= 0) {
+                throw new Error('deadline_exceeded');
+            }
+
             combined.throwIfAborted();
             const audio = await this.options.store.audio(lease);
             combined.throwIfAborted();
@@ -69,6 +82,7 @@ export class KnowledgeTranscriptionWorker {
                 audio,
                 signal: combined,
             });
+
             combined.throwIfAborted();
             await this.options.store.finish(lease, result);
         } catch {
@@ -83,10 +97,13 @@ export class KnowledgeTranscriptionWorker {
             clearInterval(timer);
             await heartbeat;
         }
+
         return true;
     }
+
     async releaseWorkerLeases(signal: AbortSignal) {
         signal.throwIfAborted();
+
         return this.options.store.recoverExpired();
     }
 }

@@ -60,6 +60,7 @@ const exercise = (): ExerciseLearningBlock => ({
     referenceAnswer: 'Noon',
     explanation: 'The passage says noon.',
 });
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'published learning epochs against PostgreSQL',
     () => {
@@ -80,8 +81,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+
             learners = new DrizzleLearnerStore(db, crypto);
         }, 120_000);
+
         beforeEach(async () => {
             await db.delete(knowledgeNotesTable);
             owner = randomUUID();
@@ -91,11 +94,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: reader, status: 'active' },
             ]);
         });
+
         afterAll(async () => client?.end(), 120_000);
         async function revision(noteId: string) {
             return (await learners.read(owner, noteId)).exerciseRevisions[0]!
                 .revision;
         }
+
         async function epoch(
             noteId: string,
             blockId: string,
@@ -126,17 +131,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 exerciseRevision: first,
                 answer: { format: 'free-text', text: 'Noon' },
             });
+
             await notes.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
                 content: content([{ ...block, question: 'What time?' }]),
             });
+
             const second = await revision(note.id);
             await notes.restore(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 2,
                 revisionVersion: 1,
             });
+
             const third = await revision(note.id);
             expect(new Set([first, second, third]).size).toBe(3);
             expect((await epoch(note.id, block.id)).epoch).toBe(3);
@@ -153,6 +161,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
         });
+
         it('cosmetic publication preserves the epoch; removal and reintroduction create tombstoned history', async () => {
             const block = exercise();
             const note = await notes.create(owner, {
@@ -171,6 +180,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ]),
             });
+
             expect(await revision(note.id)).toBe(first);
             expect((await epoch(note.id, block.id)).epoch).toBe(1);
             await notes.update(owner, note.id, {
@@ -197,23 +207,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             });
+
             const [tombstone] = await db
                 .select()
                 .from(epochs)
                 .where(eq(epochs.noteId, note.id));
+
             expect(tombstone).toMatchObject({
                 active: false,
                 epoch: 2,
                 lastPublishedVersion: 3,
             });
+
             await notes.restore(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 3,
                 revisionVersion: 1,
             });
+
             expect(await revision(note.id)).not.toBe(first);
             expect((await epoch(note.id, block.id)).epoch).toBe(3);
         });
+
         it('vocabulary scopes identities by block and entry and advances through A → B → A', async () => {
             const entryId = randomUUID();
             const first: Extract<LearningBlock, { type: 'vocabulary' }> = {
@@ -228,6 +243,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 content: content([first, other]),
             });
+
             await notes.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
@@ -239,6 +255,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     other,
                 ]),
             });
+
             await notes.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 2,
@@ -247,26 +264,32 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { ...other, title: 'Cosmetic title' },
                 ]),
             });
+
             expect(
                 (await epoch(note.id, first.id, entryId, 'vocabulary')).epoch,
             ).toBe(3);
+
             expect(
                 (await epoch(note.id, other.id, entryId, 'vocabulary')).epoch,
             ).toBe(1);
+
             await notes.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 3,
                 content: content([other]),
             });
+
             await notes.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 4,
                 content: content([first, other]),
             });
+
             expect(
                 (await epoch(note.id, first.id, entryId, 'vocabulary')).epoch,
             ).toBe(5);
         });
+
         it('source passage changes advance exercise epochs, while unrelated passages do not', async () => {
             const block = exercise();
             const sourceId = randomUUID();
@@ -305,6 +328,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     linked,
                 ]),
             });
+
             expect(await revision(note.id)).toBe(first);
             await notes.update(owner, note.id, {
                 operationId: randomUUID(),
@@ -320,8 +344,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     linked,
                 ]),
             });
+
             expect(await revision(note.id)).not.toBe(first);
         });
+
         it('copies start independent epochs and source deletion cascades only source history', async () => {
             const block = exercise();
             const note = await notes.create(owner, {
@@ -342,16 +368,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(epochs)
                 .where(eq(epochs.noteId, copied.id));
+
             expect(copiedEpoch).toMatchObject({ epoch: 1, active: true });
             await db
                 .delete(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, note.id));
+
             expect(
                 await db
                     .select()
                     .from(epochs)
                     .where(eq(epochs.noteId, note.id)),
             ).toHaveLength(0);
+
             expect(
                 await db
                     .select()
@@ -359,6 +388,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(epochs.noteId, copied.id)),
             ).toHaveLength(1);
         });
+
         it('draft edits do not synchronize epochs and explicit Save creates the published identity', async () => {
             const block = exercise();
             const workspace = await notes.createDraft(owner, {
@@ -371,18 +401,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: branch.version,
                 content: content([block]),
             });
+
             expect(
                 await db
                     .select()
                     .from(epochs)
                     .where(eq(epochs.noteId, workspace.noteId)),
             ).toHaveLength(0);
+
             const saved = await notes.saveWorkspace(owner, workspace.noteId, {
                 operationId: randomUUID(),
                 branchId: edited.branch.id,
                 expectedVersion: edited.branch.version,
                 expectedPublishedVersion: 0,
             });
+
             expect((await epoch(workspace.noteId, block.id)).epoch).toBe(1);
             const first = await revision(workspace.noteId);
             await notes.saveWorkspace(owner, workspace.noteId, {
@@ -391,11 +424,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: edited.branch.version,
                 expectedPublishedVersion: saved.version,
             });
+
             expect(await revision(workspace.noteId)).toBe(first);
             expect(
                 (await epoch(workspace.noteId, block.id)).lastPublishedVersion,
             ).toBe(saved.version + 1);
         });
+
         it('epoch updates roll back with failed publication and constraints reject invalid counters', async () => {
             const block = exercise();
             const note = await notes.create(owner, {
@@ -410,21 +445,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .from(knowledgeNotesTable)
                         .where(eq(knowledgeNotesTable.id, note.id))
                         .for('update');
+
                     await syncLearningEpochs(
                         tx,
                         note.id,
                         content([{ ...block, question: 'Changed?' }]).body,
                         2,
                     );
+
                     throw new Error('synthetic publication failure');
                 }),
             ).rejects.toThrow('synthetic publication failure');
+
             expect(await epoch(note.id, block.id)).toEqual(original);
             await expect(
                 db.execute(
                     sql`update ${epochs} set epoch = 0 where note_id = ${note.id}::uuid`,
                 ),
             ).rejects.toThrow();
+
             expect(
                 (
                     await db
@@ -438,6 +477,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )
                 )[0]?.epoch,
             ).toBe(1);
+
             expect(learningEpochKey('exercise', block.id, block.id)).not.toBe(
                 learningEpochKey('vocabulary', block.id, block.id),
             );

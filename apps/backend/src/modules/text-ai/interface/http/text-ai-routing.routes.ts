@@ -39,12 +39,14 @@ export function createTextAiRoutingRoutes(options: {
                       400,
                   ),
     });
+
     app.use('/admin/ai/routing*', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
     });
+
     app.onError((error, c) => {
-        if (error instanceof TextAiRoutingConflictError)
+        if (error instanceof TextAiRoutingConflictError) {
             return c.json(
                 {
                     error: {
@@ -55,10 +57,12 @@ export function createTextAiRoutingRoutes(options: {
                 },
                 409,
             );
+        }
+
         if (
             error instanceof TextAiRoutingInvalidError ||
             error instanceof TextAiRoutingUnavailableError
-        )
+        ) {
             return c.json(
                 {
                     error: {
@@ -69,9 +73,13 @@ export function createTextAiRoutingRoutes(options: {
                 },
                 400,
             );
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const errors = Object.fromEntries(
         [400, 401, 403, 409].map((status) => [
             status,
@@ -89,6 +97,7 @@ export function createTextAiRoutingRoutes(options: {
             'application/json': { schema: TextAiRoutingResponseSchema },
         },
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -104,6 +113,7 @@ export function createTextAiRoutingRoutes(options: {
                 ),
                 randomUUID(),
             );
+
             return c.json(
                 {
                     revision: await options.store.current(),
@@ -113,6 +123,7 @@ export function createTextAiRoutingRoutes(options: {
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -133,7 +144,10 @@ export function createTextAiRoutingRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const principal =
                 await options.administration.authorizeSensitiveOperation(
@@ -142,6 +156,7 @@ export function createTextAiRoutingRoutes(options: {
                     ),
                     randomUUID(),
                 );
+
             return c.json(
                 {
                     revision: await options.store.publish(
@@ -155,6 +170,7 @@ export function createTextAiRoutingRoutes(options: {
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -175,7 +191,10 @@ export function createTextAiRoutingRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const principal =
                 await options.administration.authorizeSensitiveOperation(
@@ -184,6 +203,7 @@ export function createTextAiRoutingRoutes(options: {
                     ),
                     randomUUID(),
                 );
+
             return c.json(
                 {
                     revision: await options.store.disable(
@@ -197,5 +217,6 @@ export function createTextAiRoutingRoutes(options: {
             );
         },
     );
+
     return app;
 }

@@ -43,15 +43,20 @@ export async function activeProviderExecution(
             legacyBudget: context.providerBudget,
         });
 
-        if (context.aiCreditEnforcementEnabled && !execution.snapshot)
+        if (context.aiCreditEnforcementEnabled && !execution.snapshot) {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         if (context.aiCreditEnforcementEnabled && execution.snapshot) {
             const model = findTextAiModel(
                 execution.snapshot.providerId,
                 execution.snapshot.modelId,
             );
 
-            if (!model) throw new DictionaryGenerationNotAvailableError();
+            if (!model) {
+                throw new DictionaryGenerationNotAvailableError();
+            }
+
             execution.snapshot = {
                 ...execution.snapshot,
                 ...textAiExecutionLimits(model, [format]),
@@ -76,8 +81,9 @@ export async function activeProviderExecution(
             error instanceof TextAiSelectionUnavailableError ||
             error instanceof OperatorBudgetUnavailableError ||
             error instanceof ProviderCostAdmissionUnavailableError
-        )
+        ) {
             throw new DictionaryGenerationNotAvailableError();
+        }
 
         throw error;
     }
@@ -108,20 +114,26 @@ export async function settleAiCreditAttempt(
             at,
         });
 
-        if (terminal)
+        if (terminal) {
             await settleLegacyAction(tx, {
                 id: job.id,
                 ownerId: job.ownerId,
                 outcome,
                 at,
             });
+        }
 
         return;
     }
 
-    if (!job.aiCreditAccounted || !job.aiCreditReservationId) return;
-    if (!job.aiCreditPolicyMode)
+    if (!job.aiCreditAccounted || !job.aiCreditReservationId) {
+        return;
+    }
+
+    if (!job.aiCreditPolicyMode) {
         throw new Error('AI credit reservation is missing');
+    }
+
     const participant = new DrizzleAiCreditTransactionParticipant(tx);
     if (!job.aiCreditProviderDispatchedAt) {
         await participant.releaseUndispatchedAttempt({
@@ -170,8 +182,9 @@ export function documentCreditUsage(
     if (
         job.aiCreditInputCreditsPerMillionTokens === null ||
         job.aiCreditOutputCreditsPerMillionTokens === null
-    )
+    ) {
         throw new Error('AI credit pricing is missing');
+    }
 
     return roundActionChargeMilli(
         actionChargeNumerator(usage, {

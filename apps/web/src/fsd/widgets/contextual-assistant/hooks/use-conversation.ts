@@ -83,6 +83,7 @@ export function useConversation(
         shareKey,
         detail.data,
     );
+
     useEffect(() => {
         setSelected(null);
         setQuestion('');
@@ -90,9 +91,11 @@ export function useConversation(
         setUseDraft(false);
         pendingRequest.current = null;
     }, [sourceIdentity, actorId]);
+
     const active = detail.data?.turns.find(
         (turn) => turn.status === 'queued' || turn.status === 'running',
     );
+
     async function refresh(conversationId = id) {
         await Promise.all([
             client.invalidateQueries({ queryKey: listKey }),
@@ -101,10 +104,13 @@ export function useConversation(
             }),
         ]);
     }
+
     function rememberComposer() {
-        if (id)
+        if (id) {
             composerDrafts.current.set(id, { question, attachments, useDraft });
+        }
     }
+
     function restoreComposer(next: string) {
         const saved = composerDrafts.current.get(next);
         setQuestion(saved?.question ?? '');
@@ -112,6 +118,7 @@ export function useConversation(
         setUseDraft(saved?.useDraft ?? false);
         pendingRequest.current = null;
     }
+
     const create = useMutation({
         mutationFn: (preferences?: ChatPreferences) =>
             request((token) =>
@@ -123,6 +130,7 @@ export function useConversation(
                 rememberComposer();
                 restoreComposer(conversation.id);
             }
+
             setSelected(conversation.id);
             await refresh(conversation.id);
         },
@@ -136,6 +144,7 @@ export function useConversation(
         setAttachments,
         refresh,
     });
+
     function clearActionFailure(
         kind: ActionFailure['kind'],
         conversationId: string,
@@ -146,12 +155,14 @@ export function useConversation(
                 : current,
         );
     }
+
     async function stopTurn(conversationId: string, turnId: string) {
         clearActionFailure('stop', conversationId);
         try {
             await request((token) =>
                 conversationApi.stop(token, conversationId, turnId, shareKey),
             );
+
             await refresh(conversationId);
         } catch (error) {
             setLastActionFailure({
@@ -162,14 +173,21 @@ export function useConversation(
             });
         }
     }
+
     async function stop() {
-        if (active && id) await stopTurn(id, active.id);
+        if (active && id) {
+            await stopTurn(id, active.id);
+        }
     }
+
     async function savePreferences(
         conversationId: string,
         preferences: ChatPreferences,
     ) {
-        if (preferencesLock.current) return;
+        if (preferencesLock.current) {
+            return;
+        }
+
         preferencesLock.current = true;
         setPreferencesPending(true);
         clearActionFailure('preferences', conversationId);
@@ -182,47 +200,62 @@ export function useConversation(
                     shareKey,
                 ),
             );
+
             await refresh(conversationId);
         } catch (error) {
-            if (currentConversationId.current === conversationId)
+            if (currentConversationId.current === conversationId) {
                 setLastActionFailure({
                     kind: 'preferences',
                     conversationId,
                     preferences,
                     error,
                 });
+            }
         } finally {
             preferencesLock.current = false;
             setPreferencesPending(false);
         }
     }
+
     async function updatePreferences(preferences: ChatPreferences) {
-        if (id) await savePreferences(id, preferences);
+        if (id) {
+            await savePreferences(id, preferences);
+        }
     }
+
     function retryAction() {
-        if (actionFailure?.kind === 'preferences')
+        if (actionFailure?.kind === 'preferences') {
             void savePreferences(
                 actionFailure.conversationId,
                 actionFailure.preferences,
             );
-        else if (actionFailure?.kind === 'stop')
+        } else if (actionFailure?.kind === 'stop') {
             void stopTurn(actionFailure.conversationId, actionFailure.turnId);
+        }
     }
+
     async function rename(conversationId: string, title: string) {
         await request((token) =>
             conversationApi.rename(token, conversationId, title, shareKey),
         );
+
         await refresh(conversationId);
     }
+
     async function remove(conversationId = id) {
-        if (!conversationId) return;
+        if (!conversationId) {
+            return;
+        }
+
         await request((token) =>
             conversationApi.delete(token, conversationId, shareKey),
         );
+
         client.removeQueries({
             queryKey: ['conversation', actorId, conversationId],
             exact: true,
         });
+
         composerDrafts.current.delete(conversationId);
         if (conversationId === id) {
             setSelected(null);
@@ -231,13 +264,16 @@ export function useConversation(
             setUseDraft(false);
             pendingRequest.current = null;
         }
+
         await refresh();
     }
+
     function select(next: string) {
         rememberComposer();
         restoreComposer(next);
         setSelected(next);
     }
+
     return {
         id,
         list,

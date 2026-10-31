@@ -56,6 +56,7 @@ export function createSpeechInfrastructure(input: {
         ownerBudgetUnits: budget.ownerDailyCost,
         globalBudgetUnits: budget.globalDailyCost,
     });
+
     return {
         store,
         resolver,

@@ -15,18 +15,21 @@ describe('text model tariff rollout compatibility', () => {
                 defaultTextAiAvailabilityPolicy({ APP_ENV: appEnvironment })
                     .pricingAdmissionEnabled,
             ).toBe(false);
+
             expect(
                 defaultTextAiAvailabilityPolicy({
                     APP_ENV: appEnvironment,
                     AI_MODEL_PRICE_API_ADMITTED_VERSIONS: '1',
                 }).pricingAdmissionEnabled,
             ).toBe(false);
+
             expect(
                 defaultTextAiAvailabilityPolicy({
                     APP_ENV: appEnvironment,
                     AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS: '1',
                 }).pricingAdmissionEnabled,
             ).toBe(false);
+
             expect(
                 defaultTextAiAvailabilityPolicy({
                     APP_ENV: appEnvironment,
@@ -34,6 +37,7 @@ describe('text model tariff rollout compatibility', () => {
                     AI_MODEL_PRICE_WORKER_PROCESSABLE_VERSIONS: '1',
                 }).pricingAdmissionEnabled,
             ).toBe(false);
+
             expect(
                 defaultTextAiAvailabilityPolicy({
                     APP_ENV: appEnvironment,
@@ -43,16 +47,19 @@ describe('text model tariff rollout compatibility', () => {
             ).toBe(true);
         },
     );
+
     it('enables local and fixture runs without deployment declarations', () => {
         expect(
             defaultTextAiAvailabilityPolicy({ APP_ENV: 'development' })
                 .pricingAdmissionEnabled,
         ).toBe(true);
+
         expect(
             defaultTextAiAvailabilityPolicy({ APP_ENV: 'test' })
                 .pricingAdmissionEnabled,
         ).toBe(true);
     });
+
     it('rejects managed admission before tariff lookup or job creation when deployment compatibility is absent', async () => {
         const model = textAiModelCatalog[0]!;
         const current = vi.fn();
@@ -86,6 +93,7 @@ describe('text model tariff rollout compatibility', () => {
                 then: (resolve: (value: unknown[]) => unknown) =>
                     Promise.resolve(result).then(resolve),
             };
+
             return chain;
         };
         const database = {
@@ -103,6 +111,7 @@ describe('text model tariff rollout compatibility', () => {
             },
             { current },
         );
+
         await expect(
             participant.resolve({
                 userId: 'actor',
@@ -111,6 +120,7 @@ describe('text model tariff rollout compatibility', () => {
                 legacyBudget: defaultTextAiProviderBudgetPolicy,
             }),
         ).rejects.toBeInstanceOf(TextAiSelectionUnavailableError);
+
         expect(current).not.toHaveBeenCalled();
     });
 });

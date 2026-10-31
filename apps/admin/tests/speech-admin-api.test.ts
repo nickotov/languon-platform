@@ -14,10 +14,12 @@ const error = (status: number, code: string) =>
         }),
         { status, headers: { 'Content-Type': 'application/json' } },
     );
+
 beforeEach(() => {
     vi.restoreAllMocks();
     accessTokenStore.set('admin-token');
 });
+
 afterEach(() => {
     accessTokenStore.clear();
     vi.unstubAllGlobals();
@@ -31,6 +33,7 @@ describe('speech administration transport', () => {
                 headers: { 'Content-Type': 'application/json' },
             }),
         );
+
         vi.stubGlobal('fetch', fetcher);
         await adminApi.speechRecordings({
             search: 'café & tea',
@@ -39,10 +42,12 @@ describe('speech administration transport', () => {
             page: 1,
             pageSize: 25,
         });
+
         const url = new URL(
             String(fetcher.mock.calls[0]?.[0]),
             'http://localhost',
         );
+
         expect(url.pathname).toBe('/api/admin/speech/recordings');
         expect(url.searchParams.get('search')).toBe('café & tea');
         expect(url.searchParams.get('linked')).toBe('false');
@@ -55,6 +60,7 @@ describe('speech administration transport', () => {
         const fetcher = vi
             .fn<typeof fetch>()
             .mockResolvedValue(error(401, 'recent_authentication_required'));
+
         vi.stubGlobal('fetch', fetcher);
         await expect(
             adminApi.deleteSpeechRecordings({
@@ -65,6 +71,7 @@ describe('speech administration transport', () => {
                 ],
             }),
         ).rejects.toThrow();
+
         expect(fetcher).toHaveBeenCalledTimes(1);
         const body = JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body));
         expect(body.recordings[0]).toEqual({
@@ -88,6 +95,7 @@ describe('speech administration transport', () => {
                 })),
             }),
         ).toThrow();
+
         expect(fetcher).not.toHaveBeenCalled();
     });
 
@@ -95,6 +103,7 @@ describe('speech administration transport', () => {
         const fetcher = vi
             .fn<typeof fetch>()
             .mockResolvedValue(error(401, 'recent_authentication_required'));
+
         vi.stubGlobal('fetch', fetcher);
         await expect(
             adminApi.publishModelPrice({
@@ -110,6 +119,7 @@ describe('speech administration transport', () => {
                 reason: 'Set provisional tariff',
             }),
         ).rejects.toThrow();
+
         expect(fetcher).toHaveBeenCalledTimes(1);
         expect(
             JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body)),
@@ -127,12 +137,14 @@ describe('speech administration transport', () => {
                 headers: { 'Content-Type': 'audio/mpeg' },
             }),
         );
+
         vi.stubGlobal('fetch', fetcher);
         const blob = await adminApi.speechRecordingContent(id);
         expect(blob.type).toBe('audio/mpeg');
         expect(String(fetcher.mock.calls[0]?.[0])).toContain(
             `/api/admin/speech/recordings/${id}/content`,
         );
+
         expect(fetcher.mock.calls[0]?.[1]).toMatchObject({
             headers: { Authorization: 'Bearer admin-token' },
             redirect: 'error',
@@ -149,6 +161,7 @@ describe('speech administration transport', () => {
                 }),
             ),
         );
+
         await expect(adminApi.speechRecordingContent(id)).rejects.toThrow(
             'invalid',
         );

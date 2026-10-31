@@ -37,9 +37,13 @@ export function InterviewComposer({
     const stopPending = useRef(false);
     const previousVersion = useRef(clearVersion);
     useEffect(() => {
-        if (previousVersion.current !== clearVersion) setText('');
+        if (previousVersion.current !== clearVersion) {
+            setText('');
+        }
+
         previousVersion.current = clearVersion;
     }, [clearVersion]);
+
     const counterId = useId();
     const count = portraitCharacterCount(text);
     const over = count > 1000;
@@ -48,16 +52,25 @@ export function InterviewComposer({
     function changeText(event: ChangeEvent<HTMLTextAreaElement>) {
         setText(event.target.value);
     }
+
     async function send() {
-        if (sendDisabled) return;
+        if (sendDisabled) {
+            return;
+        }
+
         await onSend(text.trim());
     }
+
     async function submit(event: FormEvent) {
         event.preventDefault();
         await send();
     }
+
     async function stop() {
-        if (stopDisabled || stopPending.current || !onStop) return;
+        if (stopDisabled || stopPending.current || !onStop) {
+            return;
+        }
+
         stopPending.current = true;
         setStopping(true);
         try {
@@ -67,14 +80,17 @@ export function InterviewComposer({
             setStopping(false);
         }
     }
+
     function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             void send();
         }
     }
+
     const counter = `${count.toLocaleString(locale)}/${(1000).toLocaleString(locale)} ${interviewText(locale, 'characters')}`;
     const cost = interviewText(locale, free ? 'composerFree' : 'composerPaid');
+
     return (
         <form
             onSubmit={submit}

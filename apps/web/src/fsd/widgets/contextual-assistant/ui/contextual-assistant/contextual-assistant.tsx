@@ -13,13 +13,16 @@ export function ContextualAssistant(props: ContextualAssistantProps) {
     const actorId = useSessionStore((state) => state.user?.id);
     const { locale, href } = useI18n();
     const copy = conversationCopy(locale);
-    if (!actorId)
+    if (!actorId) {
         return (
             <ButtonLink variant='secondary' href={href('/login')}>
                 {copy.signIn}
             </ButtonLink>
         );
+    }
+
     const identity = `${actorId}:${props.source.kind}:${props.source.id}`;
+
     return <SourceAssistant key={identity} {...props} actorId={actorId} />;
 }
 
@@ -44,7 +47,10 @@ function SourceAssistant(
     const handledRequest = useRef<string | null>(null);
     const request = props.request ?? props.workspace?.request;
     useEffect(() => {
-        if (!request || handledRequest.current === request.id) return;
+        if (!request || handledRequest.current === request.id) {
+            return;
+        }
+
         handledRequest.current = request.id;
         setStarted(true);
         setFolded(false);
@@ -54,10 +60,13 @@ function SourceAssistant(
             setMobileTab?.('tutor');
         }
     }, [request, isWorkspace, setMode, setMobileTab]);
+
     useEffect(() => {
         setExpanded?.(started && !effectiveFolded);
+
         return () => setExpanded?.(false);
     }, [started, effectiveFolded, setExpanded]);
+
     function expand() {
         setStarted(true);
         setFolded(false);
@@ -67,22 +76,29 @@ function SourceAssistant(
             setMobileTab?.('tutor');
         }
     }
+
     function fold() {
         if (isWorkspace && placement && !placement.detached) {
-            if (window.matchMedia('(max-width: 767px)').matches)
+            if (window.matchMedia('(max-width: 767px)').matches) {
                 setMobileTab?.('document');
-            else setMode?.('focus');
+            } else {
+                setMode?.('focus');
+            }
         }
+
         setFolded(true);
     }
+
     function selectFromPage() {
         setSelecting(true);
         setFolded(true);
     }
+
     function attach(text: string) {
         setPassage({ id: crypto.randomUUID(), text });
         expand();
     }
+
     function show() {
         const selection = window.getSelection();
         const root = props.selectionRootId
@@ -95,10 +111,14 @@ function SourceAssistant(
             root.contains(selection.anchorNode) &&
             root.contains(selection.focusNode),
         );
-        if (!props.workspace && inSource && selection?.toString().trim())
+
+        if (!props.workspace && inSource && selection?.toString().trim()) {
             attach(selection.toString());
-        else expand();
+        } else {
+            expand();
+        }
     }
+
     return (
         <>
             {!props.workspace && (

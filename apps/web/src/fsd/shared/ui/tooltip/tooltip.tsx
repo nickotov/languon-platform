@@ -108,17 +108,25 @@ export function Tooltip({
         setMounted(true);
 
         return () => {
-            if (timer.current) clearTimeout(timer.current);
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
         };
     }, []);
 
     useEffect(() => {
-        if (!visible) return;
+        if (!visible) {
+            return;
+        }
 
         function dismissWithEscape(event: globalThis.KeyboardEvent) {
-            if (event.key !== 'Escape') return;
+            if (event.key !== 'Escape') {
+                return;
+            }
 
-            if (timer.current) clearTimeout(timer.current);
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
 
             setOpen(false);
         }
@@ -133,32 +141,42 @@ export function Tooltip({
     const setPanel = useCallback(
         (node: HTMLDivElement | null) => {
             panelRef.current = node;
-            if (node && visible && typeof node.showPopover === 'function')
+            if (node && visible && typeof node.showPopover === 'function') {
                 node.showPopover();
+            }
+
             refs.setFloating(node);
         },
         [refs, visible],
     );
 
     function show() {
-        if (timer.current) clearTimeout(timer.current);
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
 
         setOpen(true);
     }
 
     function showAfterDelay() {
-        if (timer.current) clearTimeout(timer.current);
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
 
         timer.current = setTimeout(show, delay);
     }
 
     function hide() {
-        if (timer.current) clearTimeout(timer.current);
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
 
         setOpen(false);
     }
 
-    if (disabled || !content) return children;
+    if (disabled || !content) {
+        return children;
+    }
 
     function resolveDescribedBy() {
         if (visible) {
@@ -186,11 +204,15 @@ export function Tooltip({
         onKeyDown(event: KeyboardEvent) {
             children.props.onKeyDown?.(event);
 
-            if (event.key === 'Escape') hide();
+            if (event.key === 'Escape') {
+                hide();
+            }
         },
     };
 
-    if (describedBy) triggerProps['aria-describedby'] = describedBy;
+    if (describedBy) {
+        triggerProps['aria-describedby'] = describedBy;
+    }
 
     const trigger = cloneElement(children, triggerProps);
 

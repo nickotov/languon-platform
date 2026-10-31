@@ -65,21 +65,27 @@ export function LearningExerciseSet({
         setExpanded(
             Object.fromEntries(entries.map((entry) => [entry.block.id, open])),
         );
+
         setCommand((previous) => ({ open, at: previous.at + 1 }));
     }
+
     function changeExpansion(id: string, open: boolean) {
         setExpanded((previous) => ({ ...previous, [id]: open }));
     }
+
     function changeAttempted(id: string, attempted: boolean, identity: string) {
         setLocalAttempts((previous) => {
             if (
                 previous[id]?.attempted === attempted &&
                 previous[id]?.identity === identity
-            )
+            ) {
                 return previous;
+            }
+
             return { ...previous, [id]: { attempted, identity } };
         });
     }
+
     const className = [
         styles.root,
         accented && !preview ? styles.accented : undefined,
@@ -94,6 +100,7 @@ export function LearningExerciseSet({
     const summary = `${attempted} / ${entries.length}${labels.attempted ? ` ${labels.attempted}` : ''}`;
     const shown = variant === 'compact' ? entries.slice(0, 2) : entries;
     const more = entries.length - shown.length;
+
     return (
         <section
             className={className}
@@ -164,6 +171,7 @@ function ExerciseSetItem({
         onExpansion(entry.block.id, open);
         entry.options?.onExpansionChange?.(open);
     }
+
     function attempt(id: string, attempted: boolean) {
         onAttempted(
             id,
@@ -173,8 +181,10 @@ function ExerciseSetItem({
                 entry.options?.exerciseRevision,
             ),
         );
+
         entry.options?.onAttemptedChange?.(id, attempted);
     }
+
     return (
         <LearningBlockView
             {...entry.options}

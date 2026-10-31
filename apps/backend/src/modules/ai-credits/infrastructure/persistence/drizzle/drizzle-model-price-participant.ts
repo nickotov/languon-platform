@@ -91,7 +91,7 @@ export class DrizzleModelPriceParticipant {
                     configuration?.snapshot.providerId === input.providerId &&
                     configuration.snapshot.modelId === input.modelId &&
                     configuration.snapshot.creditPricing
-                )
+                ) {
                     seed = {
                         ...seed,
                         inputCreditsPerMillionTokens:
@@ -101,6 +101,7 @@ export class DrizzleModelPriceParticipant {
                             configuration.snapshot.creditPricing
                                 .outputCreditsPerMillionTokens,
                     };
+                }
             }
 
             await this.transaction
@@ -129,8 +130,9 @@ export class DrizzleModelPriceParticipant {
                 .limit(1);
         }
 
-        if (!row || row.meter !== input.meter)
+        if (!row || row.meter !== input.meter) {
             throw new ModelPriceUnavailableError();
+        }
 
         return {
             providerId: row.providerId,
@@ -249,8 +251,10 @@ export class DrizzleModelPriceParticipant {
             )
             .for('share');
 
-        if (!membership || membership.role !== 'owner')
+        if (!membership || membership.role !== 'owner') {
             throw new AdminAccessDeniedError();
+        }
+
         this.seed(input);
         await this.transaction.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${input.providerId + '/' + input.modelId}, 1920424382))`,
@@ -261,8 +265,10 @@ export class DrizzleModelPriceParticipant {
                 ? await this.currentPublished(input)
                 : await this.current(input);
         const currentVersion = current?.version ?? 0;
-        if (currentVersion !== input.expectedVersion)
+        if (currentVersion !== input.expectedVersion) {
             throw new ModelPriceConflictError();
+        }
+
         const rates = {
             creditsPer1000Characters: input.creditsPer1000Characters,
             minimumCredits: input.minimumCredits,
@@ -288,8 +294,10 @@ export class DrizzleModelPriceParticipant {
                       rates.outputCreditsPerMillionTokens === 0) ||
                   rates.minimumCredits !== null ||
                   rates.creditsPer1000Characters !== null
-        )
+        ) {
             throw new ModelPriceUnavailableError('Invalid rates for meter.');
+        }
+
         await this.transaction.insert(modelPriceRevisionsTable).values({
             id: randomUUID(),
             providerId: input.providerId,
@@ -345,7 +353,7 @@ export class DrizzleModelPriceParticipant {
                     m.providerId === input.providerId &&
                     m.modelId === input.modelId,
             )
-        )
+        ) {
             return {
                 creditsPer1000Characters: 100,
                 minimumCredits: 1,
@@ -354,12 +362,15 @@ export class DrizzleModelPriceParticipant {
                 cachedInputCreditsPerMillionTokens: null,
                 provisional: true,
             };
+        }
+
         const model = textAiModelCatalog.find(
             (m) => m.providerId === input.providerId && m.id === input.modelId,
         );
 
-        if (!model || input.meter !== 'text-tokens')
+        if (!model || input.meter !== 'text-tokens') {
             throw new ModelPriceUnavailableError('Model is not curated.');
+        }
 
         return {
             creditsPer1000Characters: null,

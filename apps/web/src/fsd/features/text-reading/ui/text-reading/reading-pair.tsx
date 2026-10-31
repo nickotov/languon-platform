@@ -63,7 +63,10 @@ export function ReadingPair({
         for (const mark of marks) {
             const startOffset = mark.selection.startOffset - offsetOrigin;
             const endOffset = mark.selection.endOffset - offsetOrigin;
-            if (startOffset < cursor) continue;
+            if (startOffset < cursor) {
+                continue;
+            }
+
             result.push(
                 text.slice(cursor, startOffset),
                 <mark
@@ -77,9 +80,12 @@ export function ReadingPair({
                     {text.slice(startOffset, endOffset)}
                 </mark>,
             );
+
             cursor = endOffset;
         }
+
         result.push(text.slice(cursor));
+
         return result;
     };
 
@@ -103,7 +109,9 @@ export function ReadingPair({
     );
 
     function enter() {
-        if (matchMode) setActive(pair.pairId);
+        if (matchMode) {
+            setActive(pair.pairId);
+        }
     }
 
     function leave() {
@@ -111,7 +119,10 @@ export function ReadingPair({
     }
 
     function focus() {
-        if (!matchMode) return;
+        if (!matchMode) {
+            return;
+        }
+
         setFocused(pair.pairId);
         const matchedSide =
             side === 'source'
@@ -119,6 +130,7 @@ export function ReadingPair({
                 : 'texts.reading.source';
         const matchedText =
             side === 'source' ? (translation[index]?.text ?? '') : pair.text;
+
         setAnnouncement(
             t('texts.reading.matched', {
                 side: t(matchedSide),
@@ -132,8 +144,9 @@ export function ReadingPair({
     }
 
     function openCounterpart() {
-        if (matchMode && compact && window.getSelection()?.isCollapsed)
+        if (matchMode && compact && window.getSelection()?.isCollapsed) {
             setSheet(index);
+        }
     }
 
     function keyDown(event: KeyboardEvent<HTMLSpanElement>) {

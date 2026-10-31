@@ -25,6 +25,7 @@ export class SpeechService {
     ) {
         this.now = options.now ?? (() => new Date());
     }
+
     private async admit(
         actorId: string,
         capability: GenerationBurstCapability,
@@ -36,13 +37,19 @@ export class SpeechService {
                 capability,
                 ...(signal ? { signal } : {}),
             });
-            if (!decision.allowed) throw new SpeechError('rate_limited', 429);
+
+            if (!decision.allowed) {
+                throw new SpeechError('rate_limited', 429);
+            }
         } catch (error) {
-            if (error instanceof GenerationBurstUnavailableError)
+            if (error instanceof GenerationBurstUnavailableError) {
                 throw new SpeechError('service_unavailable', 503);
+            }
+
             throw error;
         }
     }
+
     public async availability(actorId: string, sources: SpeechSource[]) {
         const availability = await Promise.all(
             sources.map(async (source) => {
@@ -51,6 +58,7 @@ export class SpeechService {
                         actorId,
                         source,
                     );
+
                     return {
                         source,
                         ...(await this.options.store.availability(
@@ -68,8 +76,10 @@ export class SpeechService {
                 }
             }),
         );
+
         return { availability };
     }
+
     public async prepare(
         actorId: string,
         input: { source: SpeechSource; operationId: string },
@@ -80,6 +90,7 @@ export class SpeechService {
             actorId,
             input.source,
         );
+
         return this.options.store.prepare({
             ...input,
             actorId,
@@ -87,18 +98,21 @@ export class SpeechService {
             now: this.now(),
         });
     }
+
     public async confirm(
         actorId: string,
         input: { quoteId: string; operationId: string },
         signal?: AbortSignal,
     ) {
         await this.admit(actorId, 'speech-confirm', signal);
+
         return this.options.store.confirm({
             ...input,
             actorId,
             now: this.now(),
         });
     }
+
     public async status(actorId: string, requestId: string) {
         const result = await this.options.store.request(
             actorId,
@@ -109,10 +123,14 @@ export class SpeechService {
             actorId,
             result.source,
         );
-        if (resolved.revision !== result.revision)
+
+        if (resolved.revision !== result.revision) {
             throw new SpeechError('speech_source_changed');
+        }
+
         return result.response;
     }
+
     public async content(
         actorId: string,
         playbackId: string,
@@ -127,20 +145,29 @@ export class SpeechService {
             actorId,
             handle.source,
         );
-        if (resolved.revision !== handle.revision)
+
+        if (resolved.revision !== handle.revision) {
             throw new SpeechError('speech_source_changed');
+        }
+
         const audio = await this.options.storage.read(handle.storage, signal);
-        if (!audio || audio.checksum !== handle.checksum)
+        if (!audio || audio.checksum !== handle.checksum) {
             throw new SpeechError('speech_recording_unavailable', 404);
+        }
+
         assertAudioIntegrity(audio);
         // Fresh authorization and inventory state immediately before private delivery.
         const latest = await this.options.resolver.resolve(
             actorId,
             handle.source,
         );
-        if (latest.revision !== handle.revision)
+
+        if (latest.revision !== handle.revision) {
             throw new SpeechError('speech_source_changed');
+        }
+
         await this.options.store.playback(actorId, playbackId, this.now());
+
         return {
             audio,
             fixture: handle.fixture,

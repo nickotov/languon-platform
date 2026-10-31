@@ -28,8 +28,9 @@ import {
 
 function currentExercise(all: LearningBlock[], exerciseId: string) {
     const target = all.find((block) => block.id === exerciseId);
-    if (!target || target.type !== 'exercise')
+    if (!target || target.type !== 'exercise') {
         throw new TextsAiError('access_revoked');
+    }
 
     return target;
 }
@@ -60,7 +61,9 @@ async function privateAttempt(
         )
         .for('share');
 
-    if (!attempt) throw new TextsAiError('access_revoked');
+    if (!attempt) {
+        throw new TextsAiError('access_revoked');
+    }
 
     return attempt;
 }
@@ -81,8 +84,9 @@ async function assertCurrentRevision(
         exerciseSemanticRevision(target, all),
     );
 
-    if (learningExerciseRevision(noteId, epoch) !== expected)
+    if (learningExerciseRevision(noteId, epoch) !== expected) {
         throw new TextsAiError('source_changed');
+    }
 
     return { target, epoch };
 }
@@ -121,8 +125,9 @@ export async function pinKnowledgeExerciseEvaluation(
         ).source,
     );
 
-    if (sourcePassages.length > 32_000)
+    if (sourcePassages.length > 32_000) {
         throw new TextsAiError('model_capacity_exceeded');
+    }
 
     return {
         noteId,
@@ -153,8 +158,14 @@ export async function authorizeKnowledgeExerciseJobSource(
 ) {
     const input = job.knowledgeExerciseEvaluation;
     if (!input) {
-        if (job.externalSourceKind !== 'knowledge-exercise') return;
-        if (!job.id) throw new TextsAiError('access_revoked');
+        if (job.externalSourceKind !== 'knowledge-exercise') {
+            return;
+        }
+
+        if (!job.id) {
+            throw new TextsAiError('access_revoked');
+        }
+
         try {
             // A denied definer assertion must roll back to a savepoint so the outer
             // worker transaction can still settle/release the unusable action.
@@ -174,8 +185,9 @@ export async function authorizeKnowledgeExerciseJobSource(
                 typeof cause === 'object' &&
                 'code' in cause &&
                 cause.code === '23514'
-            )
+            ) {
                 throw new TextsAiError('access_revoked');
+            }
 
             throw error;
         }
@@ -201,8 +213,10 @@ export async function authorizeKnowledgeExerciseJobSource(
         attempt.exerciseRevision !== input.exerciseRevision ||
         JSON.stringify(attempt.answer) !==
             JSON.stringify(WorkbookAttemptAnswerSchema.parse(input.answer))
-    )
+    ) {
         throw new TextsAiError('source_changed');
+    }
+
     await assertCurrentRevision(
         tx,
         note.id,

@@ -68,6 +68,7 @@ describe('compact field-specific portrait reconciliation', () => {
                 />,
                 { locale },
             );
+
             const goalGroup = screen.getByRole('group', { name: goals });
             const toneGroup = screen.getByRole('group', { name: tone });
             const savedGoal = `${portraitCopy(locale, 'latest')}: Work`;
@@ -75,30 +76,37 @@ describe('compact field-specific portrait reconciliation', () => {
             expect(
                 within(goalGroup).getByRole('radio', { name: savedGoal }),
             ).toBeVisible();
+
             expect(
                 within(goalGroup).getByRole('radio', {
                     name: `${portraitCopy(locale, 'proposed')}: Travel`,
                 }),
             ).toBeVisible();
+
             expect(screen.queryByText(unrelated)).not.toBeInTheDocument();
             expect(
                 screen.queryByText('Unchanged hobby'),
             ).not.toBeInTheDocument();
+
             expect(
                 screen.queryByText('Keep unchanged needs'),
             ).not.toBeInTheDocument();
+
             expect(screen.getAllByRole('radio')).toHaveLength(4);
             const apply = screen.getByRole('button', {
                 name: portraitCopy(locale, 'reconcile'),
             });
+
             expect(apply).toBeDisabled();
             await userEvent.click(
                 within(goalGroup).getByRole('radio', { name: savedGoal }),
             );
+
             expect(apply).toBeDisabled();
             await userEvent.click(
                 within(toneGroup).getByRole('radio', { name: proposedTone }),
             );
+
             await userEvent.click(apply);
             expect(reconcile).toHaveBeenCalledWith({
                 ...base,
@@ -117,6 +125,7 @@ describe('compact field-specific portrait reconciliation', () => {
                 'en',
             ),
         ).toBe('Sometimes');
+
         expect(
             conflictFieldValue(
                 {

@@ -221,6 +221,7 @@ Prettier and diff checks pass. Test-only flowId string inference corrected with
 as const; final source/test run passed after that correction.
 
 Commands:
+
 - pnpm --filter @languon/backend exec vitest run tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts tests/unit/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators.test.ts tests/unit/infrastructure/probe-flow-registry.test.ts tests/unit/modules/text-ai/text-ai-probe-executor.test.ts --no-file-parallelism
 - pnpm --filter @languon/backend typecheck
 - pnpm --filter @languon/backend exec eslint src/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators.ts tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts
@@ -260,6 +261,7 @@ Docker storage read-only inventory:291local volumes,9active,29.67GB total,
 28.18GB reclaimable; no build cache. No blanket pruning performed. Preparing an
 exact unused-anonymous-volume inventory for explicit destructive-cleanup review.
 Final verified content hashes:
+
 - pasted-terms-proposal-generators.ts:7ac6ecfc9f074836460104ea2d95c4e44cd699028a0f887b00a0836d5ef9bc7e
 - gateway-provider-adapters.test.ts:6133f334e26d7f8918683f665e7ec70ffaf8370734613b4e4535d1566d5b9f75
 
@@ -304,7 +306,7 @@ Post-cleanup registered execution stage passed:257tests, no skips,23files,
 167.11seconds; process exit0. Deterministic production composition with fake
 provider HTTP and real disposable PostgreSQL/Redis, including admitted batch
 worker, gateway SDK wire and financial fencing regressions. Report
- test-results/critical-flows/f003a750-59db-4bfe-b2a7-3ea6c3615a70/ai-execution-contracts.json
+test-results/critical-flows/f003a750-59db-4bfe-b2a7-3ea6c3615a70/ai-execution-contracts.json
 (untracked generated report not committed). User confirmed worker/app restart
 and fresh admin sign-in. Resuming seven repaired/remaining real admin checks
 with original combinedUSD0.10 maximum, then Free route publication.
@@ -524,6 +526,7 @@ creating a real persistent job ourselves.
 ## Final Free-admission verification
 
 Complete registered critical gate passed on the final zero-price patch:
+
 - setup-to-generation1,admin-text-ai-routing1,authentication3,
   admin-session-refresh3,dictionary-generation1,sentence-practice2,
   text-generation2,chat-lifecycle1,insufficient-credits1,free-interview1:

@@ -71,8 +71,10 @@ export function languageCondition(
         expected.name === other.name ||
         (['Hani', 'Jpan', 'Kore'].includes(expected.name) &&
             ['Hani', 'Jpan', 'Kore'].includes(other.name))
-    )
+    ) {
         return sql`true`;
+    }
+
     const expectedCount = sql`char_length(regexp_replace(${text} collate "C", ${`[^${expected.sqlRange}]`}, '', 'g'))`;
     const otherCount = sql`char_length(regexp_replace(${text} collate "C", ${`[^${other.sqlRange}]`}, '', 'g'))`;
     const letterCount = sql`char_length(regexp_replace(${text} collate "C", ${`[^${sentenceLetterSqlRange()}]`}, '', 'g'))`;

@@ -49,6 +49,7 @@ export function createKnowledgeSentenceComposition(dependencies: {
         store,
         paid,
     });
+
     return {
         service,
         store,

@@ -6,5 +6,6 @@ export default async function Page({
     params: Promise<{ noteId: string }>;
 }) {
     const { noteId } = await params;
+
     return <KnowledgePracticePage noteId={noteId} />;
 }

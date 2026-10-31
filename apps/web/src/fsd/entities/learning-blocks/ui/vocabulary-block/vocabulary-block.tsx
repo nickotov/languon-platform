@@ -51,6 +51,7 @@ function VocabularyEntry({
     const disclosureLabel = disclosure.open ? collapseLabel : expandLabel;
     const chevronClass = disclosure.open ? styles.chevronOpen : styles.chevron;
     const rowClass = compact ? styles.compactRow : styles.row;
+
     return (
         <li className={rowClass}>
             <div className={styles.termRow}>
@@ -139,6 +140,7 @@ export function VocabularyBlock(props: VocabularyProps) {
         : props.block.entries;
     const more = props.block.entries.length - entries.length;
     const columns = !compact && entries.length >= 11;
+
     return (
         <div className={styles.container}>
             <ul className={styles.list} data-columns={columns || undefined}>

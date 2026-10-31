@@ -67,7 +67,10 @@ export async function rateVocabularyEntry(
     input: FlashcardAttemptRequest,
 ) {
     const entry = material.entries.find((entry) => entry.id === input.entryId);
-    if (!entry) throw new LearningEntryUnavailableError();
+    if (!entry) {
+        throw new LearningEntryUnavailableError();
+    }
+
     const replay = await operation(tx, source.actorId, input.operationId);
     if (replay) {
         if (
@@ -75,16 +78,21 @@ export async function rateVocabularyEntry(
             replay.blockId !== source.blockId ||
             replay.operationId !== input.operationId ||
             !sameFlashcardAttempt(replay, input)
-        )
+        ) {
             throw new LearningConflictError('operation_conflict');
+        }
 
         return result(replay);
     }
 
-    if (entry.learningVersion !== input.expectedLearningVersion)
+    if (entry.learningVersion !== input.expectedLearningVersion) {
         throw new LearningConflictError('stale_content');
-    if (!material.project(entry, input.configuration))
+    }
+
+    if (!material.project(entry, input.configuration)) {
         throw new LearningInvalidRequestError();
+    }
+
     const [row] = await tx
         .insert(attempts)
         .values({
@@ -102,7 +110,10 @@ export async function rateVocabularyEntry(
         })
         .returning();
 
-    if (!row) throw new Error('Vocabulary attempt insertion failed');
+    if (!row) {
+        throw new Error('Vocabulary attempt insertion failed');
+    }
+
     await tx
         .insert(progress)
         .values({
@@ -143,18 +154,27 @@ export async function undoVocabularyEntry(
         .from(attempts)
         .where(and(scope(source), eq(attempts.id, attemptId)));
 
-    if (!target) throw new LearningEntryUnavailableError();
+    if (!target) {
+        throw new LearningEntryUnavailableError();
+    }
+
     const entry = material.entries.find((entry) => entry.id === target.entryId);
-    if (!entry) throw new LearningEntryUnavailableError();
-    if (entry.learningVersion !== target.learningVersion)
+    if (!entry) {
+        throw new LearningEntryUnavailableError();
+    }
+
+    if (entry.learningVersion !== target.learningVersion) {
         throw new LearningConflictError('stale_content');
+    }
+
     const reuse = await operation(tx, source.actorId, input.operationId);
     if (reuse) {
         if (
             reuse.id !== target.id ||
             reuse.undoOperationId !== input.operationId
-        )
+        ) {
             throw new LearningConflictError('operation_conflict');
+        }
 
         return undoResult(reuse);
     }
@@ -184,8 +204,10 @@ export async function undoVocabularyEntry(
             latestSessionId: latestSession?.id,
             latestEntryId: current?.latestAttemptId,
         })
-    )
+    ) {
         throw new LearningConflictError('undo_conflict');
+    }
+
     const [prior] = await tx
         .select()
         .from(attempts)
@@ -210,8 +232,11 @@ export async function undoVocabularyEntry(
         .where(eq(attempts.id, target.id))
         .returning();
 
-    if (!voided) throw new Error('Vocabulary undo failed');
-    if (prior)
+    if (!voided) {
+        throw new Error('Vocabulary undo failed');
+    }
+
+    if (prior) {
         await tx
             .update(progress)
             .set({
@@ -220,7 +245,9 @@ export async function undoVocabularyEntry(
                 learningVersion: entry.learningVersion,
             })
             .where(condition);
-    else await tx.delete(progress).where(condition);
+    } else {
+        await tx.delete(progress).where(condition);
+    }
 
     return undoResult(voided);
 }

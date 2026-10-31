@@ -65,9 +65,11 @@ export class SessionIssuer {
             configuration.refreshTokenTtlMs,
             'refresh token',
         );
+
         this.recentAuthenticationTtlMs =
             configuration.recentAuthenticationTtlMs ??
             defaultRecentAuthenticationTtlMs;
+
         assertPositiveDuration(
             this.recentAuthenticationTtlMs,
             'recent authentication',

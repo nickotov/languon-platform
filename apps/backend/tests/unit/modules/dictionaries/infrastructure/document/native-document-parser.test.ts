@@ -38,6 +38,7 @@ describe('native dictionary document parser', () => {
             ),
             mediaType: 'text/markdown',
         });
+
         expect(
             extraction.entries.map((entry) =>
                 entry.kind === 'block' ? entry.block : entry,
@@ -139,6 +140,7 @@ describe('native dictionary document parser', () => {
                 openAction: null,
             }),
         ).toBe(false);
+
         expect(
             hasPdfActiveContent({
                 attachments: new Map(),
@@ -146,6 +148,7 @@ describe('native dictionary document parser', () => {
                 openAction: new Map(),
             }),
         ).toBe(false);
+
         expect(
             hasPdfActiveContent({
                 attachments: new Map([['attachment', { filename: 'payload' }]]),
@@ -153,6 +156,7 @@ describe('native dictionary document parser', () => {
                 openAction: null,
             }),
         ).toBe(true);
+
         expect(
             hasPdfActiveContent({
                 attachments: null,
@@ -171,6 +175,7 @@ describe('native dictionary document parser', () => {
                 pageActions: {},
             }),
         ).toBe(false);
+
         for (const input of [
             { annotations: [], pageActions: { PageOpen: ['javascript'] } },
             { annotations: [{ unsafeUrl: 'payload.exe' }], pageActions: {} },
@@ -179,10 +184,11 @@ describe('native dictionary document parser', () => {
                 pageActions: {},
             },
             { annotations: [{ annotationType: 16 }], pageActions: {} },
-        ])
+        ]) {
             expect(
                 hasPdfPageActiveContent({ activeAnnotationTypes, ...input }),
             ).toBe(true);
+        }
     });
 
     it('preflights every PDF page before extraction or rendering', async () => {
@@ -208,6 +214,7 @@ describe('native dictionary document parser', () => {
                 new Set(),
             ),
         ).rejects.toMatchObject({ reason: 'active_content' });
+
         expect(getPage).not.toHaveBeenCalled();
 
         await expect(
@@ -222,6 +229,7 @@ describe('native dictionary document parser', () => {
                 new Set(),
             ),
         ).rejects.toMatchObject({ reason: 'active_content' });
+
         expect(getPage).toHaveBeenCalledWith(1);
         expect(getTextContent).not.toHaveBeenCalled();
     });
@@ -245,6 +253,7 @@ describe('native dictionary document parser', () => {
             mediaType:
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         });
+
         expect(
             extraction.entries.map((entry) =>
                 entry.kind === 'block' ? entry.block : entry,
@@ -272,6 +281,7 @@ describe('native dictionary document parser', () => {
             bytes,
             mediaType: 'image/png',
         });
+
         expect(extraction).toMatchObject({
             entries: [
                 {
@@ -281,6 +291,7 @@ describe('native dictionary document parser', () => {
             ],
             totalPixels: 32,
         });
+
         await expect(
             parseNativeDictionaryDocument({
                 bytes,

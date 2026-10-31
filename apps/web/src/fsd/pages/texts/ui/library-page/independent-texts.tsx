@@ -26,28 +26,36 @@ export function IndependentTexts({
         type: TextRowAction;
         document: TextDocument;
     } | null>(null);
+
     function action(type: TextRowAction, document: TextDocument) {
         setDialog({ type, document });
     }
+
     function close() {
         setDialog(null);
     }
+
     function saved() {
         close();
         void list.refresh();
     }
+
     function changed() {
         return list.refresh();
     }
+
     function restore(document: TextDocument) {
         list.restore.mutate(document);
     }
+
     function retry() {
         void list.refetch();
     }
+
     function more() {
         void list.fetchNextPage();
     }
+
     return (
         <>
             {list.isPending && (

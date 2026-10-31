@@ -30,6 +30,7 @@ import type { TutorMemoryMessage } from '../../../application/ports/tutor-runner
 
 const time = (name: string) =>
     timestamp(name, { withTimezone: true }).notNull();
+
 export const conversationsTable = pgTable(
     'conversation_chats',
     {

@@ -92,6 +92,7 @@ describe('dictionary interchange domain', () => {
             ),
             options,
         });
+
         expect(result.rows).toEqual([
             { rowIndex: 0, source: 'bank, account', translation: 'banco' },
             { rowIndex: 1, source: 'line\r\nbreak', translation: 'salto' },
@@ -103,9 +104,11 @@ describe('dictionary interchange domain', () => {
             bytes: encode('source,translation\n\n"bad"x,value\nriver,río'),
             options,
         });
+
         expect(result.failures).toEqual([
             expect.objectContaining({ code: 'malformed_row', rowIndex: 0 }),
         ]);
+
         expect(result.rows).toEqual([
             { rowIndex: 1, source: 'river', translation: 'río' },
         ]);
@@ -127,6 +130,7 @@ describe('dictionary interchange domain', () => {
             ),
             options,
         });
+
         expect(withHeader.totalRows).toBe(10_000);
         expect(withHeader.rows).toHaveLength(10_000);
         expect(withHeader.rows.at(-1)?.rowIndex).toBe(9_999);
@@ -135,6 +139,7 @@ describe('dictionary interchange domain', () => {
             bytes: encode(['', ...interspersed, '', ' '].join('\n')),
             options: { ...options, hasHeader: false },
         });
+
         expect(withoutHeader.rows).toHaveLength(10_000);
         expect(() =>
             parseDictionaryInterchange({
@@ -165,9 +170,11 @@ describe('dictionary interchange domain', () => {
             ),
             options,
         });
+
         expect(result.rows).toEqual([
             { rowIndex: 0, source: 'valid', translation: 'válido' },
         ]);
+
         expect(
             result.failures.map(({ code, rowIndex }) => ({ code, rowIndex })),
         ).toEqual([
@@ -175,6 +182,7 @@ describe('dictionary interchange domain', () => {
             { code: 'too_many_columns', rowIndex: 2 },
             { code: 'malformed_row', rowIndex: 3 },
         ]);
+
         expect(result.totalRows).toBe(4);
     });
 
@@ -185,10 +193,11 @@ describe('dictionary interchange domain', () => {
             encode(
                 'record_type,languon_format_version\ndictionary,languon-csv:v1',
             ),
-        ])
+        ]) {
             expect(() =>
                 parseDictionaryInterchange({ bytes, options }),
             ).toThrow(InvalidDictionaryInterchangeError);
+        }
     });
 
     it('emits duplicate warnings while retaining every valid row', () => {
@@ -196,6 +205,7 @@ describe('dictionary interchange domain', () => {
             bytes: encode('source,translation\nＢＡＮＫ,uno\nbank,dos'),
             options,
         });
+
         expect(result.rows).toHaveLength(2);
         expect(result.warnings).toEqual([
             expect.objectContaining({
@@ -228,6 +238,7 @@ describe('dictionary interchange domain', () => {
         expect(decode([...first.chunks, ...second.chunks])).toBe(
             'one two\tuno dos\nriver\tbanco',
         );
+
         expect(first.warnings[0]?.fields).toEqual(['source', 'translation']);
     });
 
@@ -239,6 +250,7 @@ describe('dictionary interchange domain', () => {
         const page = serializer.serializeCards([
             card({ source: '\t=1+1', translation: '+SUM(1,2)' }),
         ]);
+
         expect(decode(page.chunks)).toBe(
             'source,translation\r\n\'\t=1+1,"\'+SUM(1,2)"\r\n',
         );
@@ -253,8 +265,10 @@ describe('dictionary interchange domain', () => {
                 state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
                 value += alphabet[state % alphabet.length];
             }
+
             return `${value}x`;
         };
+
         for (let iteration = 0; iteration < 64; iteration += 1) {
             const source = nextText();
             const translation = nextText();
@@ -266,6 +280,7 @@ describe('dictionary interchange domain', () => {
                 serializer.serializeCards([card({ source, translation })])
                     .chunks,
             );
+
             expect(
                 parseDictionaryInterchange({ bytes: encode(content), options })
                     .rows,
@@ -292,6 +307,7 @@ describe('dictionary interchange domain', () => {
         const text = decode(
             serializer.serializeCards([card({ source: "'term" })]).chunks,
         );
+
         expect(text).toContain('\r\ncard,languon-csv:v1');
         expect(text).toContain('inherit');
         expect(decodeLanguonCsvEscapedCell("''term", true)).toBe("'term");
@@ -318,6 +334,7 @@ describe('dictionary interchange domain', () => {
             const headers = lines[0]!.split(',');
             const cells = lines[2]!.split(',');
             const read = (name: string) => cells[headers.indexOf(name)]!;
+
             return decodeLanguonCsvNullableOverride({
                 formulaEscaped:
                     read(
@@ -329,6 +346,7 @@ describe('dictionary interchange domain', () => {
                 value: read('override_transcription_custom_label'),
             });
         };
+
         expect(serialize(null)).toBeNull();
         expect(serialize('inherit')).toBe('inherit');
         expect(() =>

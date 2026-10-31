@@ -25,11 +25,12 @@ export async function readTranscriptionWorkerAudio(
         (source.mime_type !== 'audio/wav' &&
             source.mime_type !== 'audio/mpeg') ||
         source.duration_ms !== row.sourceDurationMs
-    )
+    ) {
         throw new KnowledgeDomainError(
             'knowledge_not_found',
             'The transcription audio source is unavailable.',
         );
+    }
 
     return {
         bytes: source.bytes,

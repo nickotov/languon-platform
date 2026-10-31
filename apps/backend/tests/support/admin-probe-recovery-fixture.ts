@@ -12,27 +12,35 @@ if (
     process.env.APP_ENV !== 'test' ||
     process.env.ADMIN_E2E_SYNTHETIC_PROBES !== 'true' ||
     !url
-)
+) {
     throw new Error(
         'Explicit disposable synthetic probe fixture opt-in is required.',
     );
+}
+
 const target = new URL(url);
 if (
     !['localhost', '127.0.0.1'].includes(target.hostname) ||
     !/(?:admin.*e2e|e2e.*admin).*test/i.test(target.pathname) ||
     !target.port ||
     target.port === '5432'
-)
+) {
     throw new Error(
         'A dedicated disposable loopback admin E2E database on a nondefault port is required.',
     );
+}
+
 const actorId = z.uuid().parse(process.argv[2]);
 const routeId = 'deepseek/deepseek-flash';
 const fingerprint = createTextAiRouteFingerprint(textAiFixtureCredentials)(
     routeId,
     'sentence-check',
 );
-if (!fingerprint) throw new Error('Synthetic flow fingerprint is missing.');
+
+if (!fingerprint) {
+    throw new Error('Synthetic flow fingerprint is missing.');
+}
+
 const client = createPostgresClient({ databaseUrl: url, maxConnections: 1 });
 try {
     const reservation = await new DrizzleTextAiProbeStore(
@@ -59,6 +67,7 @@ try {
             evidenceHours: 24,
         },
     });
+
     process.stdout.write(JSON.stringify({ probeId: reservation.id }));
 } finally {
     await client.end();

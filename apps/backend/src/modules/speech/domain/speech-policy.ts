@@ -19,6 +19,7 @@ export function inspectSpeechText(text: string, language: string) {
             normalized,
         ),
     ].filter((part) => part.isWordLike).length;
+
     return {
         normalized,
         characterCount,

@@ -13,8 +13,10 @@ export function useBlockExpansion(
         command?.at !== local.at
             ? (command?.open ?? initiallyOpen)
             : local.open;
+
     function toggle() {
         setLocal({ at: command?.at, open: !open });
     }
+
     return { open, toggle };
 }

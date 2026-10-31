@@ -60,11 +60,13 @@ export function projectFlashcard(
                 text = input.settings.transcriptionEnabled
                     ? input.values.transcription
                     : null;
+
                 break;
             case 'definition':
                 text = input.settings.definitionEnabled
                     ? input.values.definition
                     : null;
+
                 role = input.settings.definitionLanguageRole;
                 break;
             case 'sourceExample':
@@ -78,16 +80,23 @@ export function projectFlashcard(
                         : input.settings.exampleTranslationEnabled
                           ? input.values.exampleTranslation
                           : null;
+
                 if (!text?.trim()) {
                     field = role === 'source' ? 'source' : 'translation';
                     text = input.values[field];
                     fallback = true;
                 }
+
                 break;
             }
         }
-        if (!text?.trim()) return null;
+
+        if (!text?.trim()) {
+            return null;
+        }
+
         const language = languageFor(role);
+
         return {
             field,
             requestedFields: [requested],
@@ -100,21 +109,32 @@ export function projectFlashcard(
     const side = (selected: FlashcardField[]): FlashcardPresentationField[] => {
         const result: FlashcardPresentationField[] = [];
         for (const field of flashcardFieldOrder) {
-            if (!selected.includes(field)) continue;
+            if (!selected.includes(field)) {
+                continue;
+            }
+
             const projected = valueFor(field);
-            if (!projected) continue;
+            if (!projected) {
+                continue;
+            }
+
             const previous = result.find(
                 (candidate) => candidate.field === projected.field,
             );
+
             if (previous) {
                 previous.requestedFields.push(field);
                 previous.fallback ||= projected.fallback;
-            } else result.push(projected);
+            } else {
+                result.push(projected);
+            }
         }
+
         return result;
     };
     const front = side(input.configuration.front);
     const back = side(input.configuration.back);
+
     return front.length && back.length
         ? {
               entryId: input.entryId,

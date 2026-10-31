@@ -46,6 +46,7 @@ export function useWorkspacePresentation(
                 : [blockId],
         });
     }
+
     function askTutor(passage: string) {
         const snapshot = actions.getSnapshot();
         setRequest({
@@ -54,6 +55,7 @@ export function useWorkspacePresentation(
             ...(snapshot.targetId ? { targetId: snapshot.targetId } : {}),
         });
     }
+
     function tutorAction(
         action:
             | 'explain'
@@ -73,6 +75,7 @@ export function useWorkspacePresentation(
             ...(snapshot.targetId ? { targetId: snapshot.targetId } : {}),
         });
     }
+
     function askOutline() {
         setRequest({
             id: crypto.randomUUID(),
@@ -80,12 +83,17 @@ export function useWorkspacePresentation(
             prompt: t('knowledge.outlinePrompt'),
         });
     }
+
     function preview(targetId?: string) {
         return actions.editor.current?.getProposalPreview(targetId) ?? null;
     }
+
     function showTarget(targetId?: string) {
-        if (targetId) actions.editor.current?.showTarget(targetId);
+        if (targetId) {
+            actions.editor.current?.showTarget(targetId);
+        }
     }
+
     const { canPublish, busy, save } = actions;
     useEffect(() => {
         function shortcut(event: KeyboardEvent) {
@@ -94,12 +102,17 @@ export function useWorkspacePresentation(
                 event.key.toLowerCase() === 's'
             ) {
                 event.preventDefault();
-                if (canPublish && dirty && busy === null) void save();
+                if (canPublish && dirty && busy === null) {
+                    void save();
+                }
             }
         }
+
         window.addEventListener('keydown', shortcut);
+
         return () => window.removeEventListener('keydown', shortcut);
     }, [canPublish, dirty, busy, save]);
+
     return {
         request,
         dirty,

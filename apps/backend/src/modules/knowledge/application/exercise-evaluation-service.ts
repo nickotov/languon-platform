@@ -54,11 +54,14 @@ export class KnowledgeExerciseEvaluationService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!ip.allowed)
+
+        if (!ip.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         const actor = await this.dependencies.authenticate(token);
         const limit = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-exercise-evaluation-actor',
@@ -67,11 +70,14 @@ export class KnowledgeExerciseEvaluationService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!limit.allowed)
+
+        if (!limit.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         return actor.userId;
     }
 
@@ -89,11 +95,14 @@ export class KnowledgeExerciseEvaluationService {
             capability: 'text-translation',
             signal: context.signal,
         });
-        if (!burst.allowed)
+
+        if (!burst.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many AI requests. Try again shortly.',
             );
+        }
+
         return {
             job: await this.dependencies.store.request(
                 ownerId,
@@ -109,6 +118,7 @@ export class KnowledgeExerciseEvaluationService {
             ),
         };
     }
+
     async get(
         token: string,
         context: KnowledgeRequestContext,
@@ -131,6 +141,7 @@ export class KnowledgeExerciseEvaluationService {
             ),
         };
     }
+
     async cancel(
         token: string,
         context: KnowledgeRequestContext,

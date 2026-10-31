@@ -17,6 +17,7 @@ describe('capability charging policy', () => {
             updatedAt: null,
         });
     });
+
     it('preserves customer-funded defaults for other existing capabilities', () => {
         for (const capability of AiCapabilitySchema.options.filter(
             (value) => value !== 'portrait-interview',
@@ -28,6 +29,7 @@ describe('capability charging policy', () => {
             ).toBe('customer');
         }
     });
+
     it('allows an uncalibrated null default and validates configured exact budgets', () => {
         expect(
             AiAccountingSettingsPublishSchema.parse({
@@ -36,6 +38,7 @@ describe('capability charging policy', () => {
                 reason: 'Await initial calibration',
             }).defaultMaxCreditsPerAction,
         ).toBeNull();
+
         expect(
             AiAccountingSettingsPublishSchema.parse({
                 expectedVersion: 0,
@@ -43,6 +46,7 @@ describe('capability charging policy', () => {
                 reason: 'Calibrated development budget',
             }).defaultMaxCreditsPerAction,
         ).toBe('1.001');
+
         expect(
             AiAccountingSettingsPublishSchema.safeParse({
                 expectedVersion: 0,
@@ -51,6 +55,7 @@ describe('capability charging policy', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects unsupported funding, capabilities, missing reason and invalid concurrency version', () => {
         const input = {
             capability: 'portrait-interview',
@@ -58,6 +63,7 @@ describe('capability charging policy', () => {
             funding: 'operator',
             reason: 'Free interviews',
         };
+
         expect(CapabilityPolicyPublishSchema.parse(input)).toEqual(input);
         for (const invalid of [
             { funding: 'unlimited' },

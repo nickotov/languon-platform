@@ -39,13 +39,17 @@ export class AdminMcpPreviewStore {
     ): Promise<AdminMcpPreview> {
         requirePermission(actor, permissionForWrite(input.operation));
         requireAction(actor, input.operation);
-        if (input.operation.endsWith('.read'))
+        if (input.operation.endsWith('.read')) {
             throw new AdminMcpError(
                 'permission_denied',
                 'Read operations do not create write previews.',
             );
-        if (input.reason.trim().length < 5 || input.reason.length > 500)
+        }
+
+        if (input.reason.trim().length < 5 || input.reason.length > 500) {
             throw new Error('A bounded reason is required.');
+        }
+
         assertSafeAuditContext(input);
         const at = this.now();
         const preview: AdminMcpPreview = {
@@ -103,8 +107,10 @@ export class AdminMcpPreviewStore {
                 )
                 .for('update');
 
-            if (!preview)
+            if (!preview) {
                 throw new AdminMcpError('not_found', 'Preview not found.');
+            }
+
             requirePermission(actor, permissionForWrite(preview.operation));
             requireAction(actor, preview.operation);
             const hash = payloadHash({
@@ -125,37 +131,43 @@ export class AdminMcpPreviewStore {
                 );
 
             if (receipt) {
-                if (receipt.payloadHash !== hash)
+                if (receipt.payloadHash !== hash) {
                     throw new AdminMcpError(
                         'idempotency_conflict',
                         'Operation key already used for a different change.',
                     );
+                }
 
                 return receipt.result;
             }
 
-            if (preview.appliedAt)
+            if (preview.appliedAt) {
                 throw new AdminMcpError(
                     'idempotency_conflict',
                     'Preview was already applied with a different operation key.',
                 );
+            }
+
             // The lock wait may have consumed the entire disclosure lifetime.
             await requireActor(tx, actor, this.now());
-            if (preview.expiresAt <= this.now())
+            if (preview.expiresAt <= this.now()) {
                 throw new AdminMcpError(
                     'preview_expired',
                     'Preview expired; create a fresh preview.',
                 );
+            }
 
             const result = await apply(tx, preview);
             // Locks on owner, membership and token prevent concurrent invalidation during commit.
             await requireActor(tx, actor, this.now());
             const committedAt = this.now();
-            if (preview.expiresAt <= committedAt)
+            if (preview.expiresAt <= committedAt) {
                 throw new AdminMcpError(
                     'preview_expired',
                     'Preview expired before commit; create a fresh preview.',
                 );
+            }
+
             await tx.insert(adminMcpReceiptsTable).values({
                 id: randomUUID(),
                 tokenId: actor.tokenId,

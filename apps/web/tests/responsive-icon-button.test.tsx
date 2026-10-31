@@ -24,6 +24,7 @@ describe('responsive icon actions', () => {
                 screen.getByRole('tooltip', { hidden: true }),
             ).toHaveTextContent('Сохранить'),
         );
+
         fireEvent.click(button);
         expect(save).toHaveBeenCalledOnce();
         fireEvent.blur(button);
@@ -38,6 +39,7 @@ describe('responsive icon actions', () => {
                 Saving
             </Button>,
         );
+
         const button = screen.getByRole('button', { name: 'Saving' });
         expect(button).toBeDisabled();
         expect(button).toHaveAttribute('aria-busy', 'true');
@@ -53,6 +55,7 @@ describe('responsive icon actions', () => {
                 Открыть
             </ButtonLink>,
         );
+
         expect(screen.getByRole('link', { name: 'Открыть' })).toHaveAttribute(
             'href',
             '/texts',

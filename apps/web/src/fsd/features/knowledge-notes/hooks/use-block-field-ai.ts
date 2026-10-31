@@ -44,33 +44,48 @@ export function useBlockFieldAi(
         mounted.current = true;
         const requests = active.current;
         const retryJobs = retries.current;
+
         return () => {
             mounted.current = false;
             const jobs = new Set<string>();
             for (const request of requests.values()) {
                 request.controller.abort();
-                if (request.jobId) jobs.add(request.jobId);
+                if (request.jobId) {
+                    jobs.add(request.jobId);
+                }
             }
-            for (const retry of retryJobs.values())
-                if (retry.jobId) jobs.add(retry.jobId);
-            if (context)
-                for (const jobId of jobs)
+
+            for (const retry of retryJobs.values()) {
+                if (retry.jobId) {
+                    jobs.add(retry.jobId);
+                }
+            }
+
+            if (context) {
+                for (const jobId of jobs) {
                     void blockFieldAiApi
                         .cancel(context, jobId)
                         .catch(() => undefined);
+                }
+            }
+
             retryJobs.clear();
             requests.clear();
         };
     }, [context?.noteId, context?.branchId, context?.requestWithSession]);
 
     async function run(key: string, field: KnowledgeBlockFieldTarget) {
-        if (!context || active.current.has(key)) return;
+        if (!context || active.current.has(key)) {
+            return;
+        }
+
         const fingerprint = JSON.stringify([scope, blockId, field]);
         const previousRetry = retries.current.get(key);
         const retry =
             previousRetry?.fingerprint === fingerprint
                 ? previousRetry
                 : { fingerprint, operationId: crypto.randomUUID() };
+
         retries.current.set(key, retry);
         const input = {
             operationId: retry.operationId,
@@ -87,6 +102,7 @@ export function useBlockFieldAi(
             ...previous,
             [key]: { target: field, scope, status: 'pending' },
         }));
+
         try {
             let { job } = retry.jobId
                 ? await blockFieldAiApi.get(
@@ -97,43 +113,63 @@ export function useBlockFieldAi(
                 : await consent.run((confirmedQuoteId) =>
                       blockFieldAiApi.submit(context, input, confirmedQuoteId),
                   );
+
             retry.jobId = job.id;
             request.jobId = job.id;
             if (!mounted.current || request.controller.signal.aborted) {
                 void blockFieldAiApi
                     .cancel(context, job.id)
                     .catch(() => undefined);
+
                 return;
             }
+
             const deadline = Date.now() + 120_000;
             while (job.status === 'queued' || job.status === 'running') {
-                if (Date.now() >= deadline) throw new Error('deadline');
+                if (Date.now() >= deadline) {
+                    throw new Error('deadline');
+                }
+
                 await new Promise<void>((resolve, reject) => {
                     const signal = request.controller.signal;
                     if (signal.aborted) {
                         reject(new DOMException('Cancelled', 'AbortError'));
+
                         return;
                     }
+
                     function abort() {
                         clearTimeout(timer);
                         reject(new DOMException('Cancelled', 'AbortError'));
                     }
+
                     const timer = setTimeout(() => {
                         signal.removeEventListener('abort', abort);
                         resolve();
                     }, 750);
+
                     signal.addEventListener('abort', abort, { once: true });
                 });
+
                 ({ job } = await blockFieldAiApi.get(
                     context,
                     job.id,
                     request.controller.signal,
                 ));
             }
-            if (!mounted.current || request.controller.signal.aborted) return;
-            if (retries.current.get(key) === retry) retries.current.delete(key);
-            if (job.status !== 'completed' || !job.result)
+
+            if (!mounted.current || request.controller.signal.aborted) {
+                return;
+            }
+
+            if (retries.current.get(key) === retry) {
+                retries.current.delete(key);
+            }
+
+            if (job.status !== 'completed' || !job.result) {
                 throw new Error('unavailable');
+            }
+
             setStates((previous) => ({
                 ...previous,
                 [key]: {
@@ -144,19 +180,26 @@ export function useBlockFieldAi(
                 },
             }));
         } catch (error) {
-            if (!mounted.current || request.controller.signal.aborted) return;
-            if (error instanceof ActionConsentCancelledError) {
-                clear(key);
+            if (!mounted.current || request.controller.signal.aborted) {
                 return;
             }
+
+            if (error instanceof ActionConsentCancelledError) {
+                clear(key);
+
+                return;
+            }
+
             let message = 'AI checking failed. Your edits are kept.';
             if (
                 error instanceof BlockFieldAiError &&
                 ['credits_exhausted', 'ai_credits_exhausted'].includes(
                     error.detail.code,
                 )
-            )
+            ) {
                 message = 'Not enough credits. Your edits are kept.';
+            }
+
             setStates((previous) => ({
                 ...previous,
                 [key]: {
@@ -166,6 +209,7 @@ export function useBlockFieldAi(
                     error: message,
                 },
             }));
+
             if (
                 request.jobId &&
                 error instanceof Error &&
@@ -177,26 +221,33 @@ export function useBlockFieldAi(
                         if (
                             job.status === 'cancelled' &&
                             retries.current.get(key) === retry
-                        )
+                        ) {
                             retries.current.delete(key);
+                        }
                     })
                     .catch(() => undefined);
             }
         } finally {
-            if (active.current.get(key) === request) active.current.delete(key);
+            if (active.current.get(key) === request) {
+                active.current.delete(key);
+            }
         }
     }
+
     function clear(key: string) {
         retries.current.delete(key);
         setStates((previous) => {
             const next = { ...previous };
             delete next[key];
+
             return next;
         });
     }
+
     const visibleStates = Object.fromEntries(
         Object.entries(states).filter(([, value]) => value.scope === scope),
     );
+
     return {
         states: visibleStates,
         run,
@@ -205,4 +256,5 @@ export function useBlockFieldAi(
         available: Boolean(context),
     };
 }
+
 export type BlockFieldAi = ReturnType<typeof useBlockFieldAi>;

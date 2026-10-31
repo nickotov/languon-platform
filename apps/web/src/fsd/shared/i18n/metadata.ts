@@ -7,5 +7,6 @@ export async function localizedMetadata(
     titleKey: MessageKey,
 ): Promise<Metadata> {
     const { t } = await getRequestI18n();
+
     return { title: t(titleKey) };
 }

@@ -29,7 +29,7 @@ export function createTextAiRoutes(
 ): OpenAPIHono {
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (!result.success)
+            if (!result.success) {
                 return context.json(
                     new AuthHttpError(
                         'invalid_request',
@@ -38,19 +38,24 @@ export function createTextAiRoutes(
                     ).response(),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     for (const path of ['/text-ai/models', '/users/me/ai-model-preference']) {
         app.use(path, async (context, next) => {
             for (const [name, value] of Object.entries(
                 dependencies.policy.securityHeaders(),
-            ))
+            )) {
                 context.header(name, value);
+            }
+
             const origin = context.req.header('Origin');
             if (origin) {
                 dependencies.policy.assertCookieRequestOrigin(origin);
@@ -58,8 +63,10 @@ export function createTextAiRoutes(
                 context.header('Access-Control-Allow-Credentials', 'true');
                 context.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -75,20 +82,24 @@ export function createTextAiRoutes(
                     ),
             }),
         );
+
         app.options(path, (context) => {
             dependencies.policy.assertCookieRequestOrigin(
                 context.req.header('Origin') ?? null,
             );
+
             context.header('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
             context.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID',
             );
+
             return context.body(null, 204);
         });
     }
+
     app.onError((error, context) => {
-        if (error instanceof TextAiModelUnavailableError)
+        if (error instanceof TextAiModelUnavailableError) {
             return context.json(
                 {
                     error: {
@@ -101,6 +112,8 @@ export function createTextAiRoutes(
                 },
                 409,
             );
+        }
+
         const mapped =
             error instanceof TextAiPreferenceConflictError
                 ? new AuthHttpError(
@@ -115,11 +128,13 @@ export function createTextAiRoutes(
                         401,
                     )
                   : mapAuthenticationHttpError(error);
+
         return context.json(
             mapped.response(context.req.header('X-Correlation-ID')),
             mapped.status,
         );
     });
+
     const authenticate = async (authorization: string | undefined) => {
         const token = dependencies.policy.parseBearerAuthorization(
             authorization ?? null,
@@ -129,6 +144,7 @@ export function createTextAiRoutes(
             sessionId: claims.sessionId,
             userId: claims.userId,
         });
+
         return claims.userId;
     };
     const errors = {
@@ -175,6 +191,7 @@ export function createTextAiRoutes(
             },
         },
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -201,6 +218,7 @@ export function createTextAiRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -228,6 +246,7 @@ export function createTextAiRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'put',
@@ -265,5 +284,6 @@ export function createTextAiRoutes(
                 200,
             ),
     );
+
     return app;
 }

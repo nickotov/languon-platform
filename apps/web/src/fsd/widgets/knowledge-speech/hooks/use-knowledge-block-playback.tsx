@@ -51,7 +51,10 @@ export function useKnowledgeBlockPlayback({
             setPreparingId(request.id);
             try {
                 const current = await snapshot();
-                if (revision.current !== operation) return;
+                if (revision.current !== operation) {
+                    return;
+                }
+
                 const block = current.blocks.find(
                     (item) => item.id === request.blockId,
                 );
@@ -62,7 +65,11 @@ export function useKnowledgeBlockPlayback({
                         request.text,
                         request.language,
                     );
-                if (!selector) throw new Error('The playback source changed.');
+
+                if (!selector) {
+                    throw new Error('The playback source changed.');
+                }
+
                 await player.play(
                     {
                         kind: 'knowledge-snippet',
@@ -74,32 +81,40 @@ export function useKnowledgeBlockPlayback({
                     request.id,
                 );
             } catch {
-                if (revision.current === operation) setFailedId(request.id);
+                if (revision.current === operation) {
+                    setFailedId(request.id);
+                }
             } finally {
-                if (revision.current === operation) setPreparingId(undefined);
+                if (revision.current === operation) {
+                    setPreparingId(undefined);
+                }
             }
         }
+
         function stop() {
             revision.current += 1;
             setPreparingId(undefined);
             setFailedId(undefined);
             player.stop();
         }
+
         let status: LearningBlockPlayback['status'];
         if (
             preparingId ||
             (player.selected &&
                 ['loading', 'confirmation'].includes(player.state.phase))
-        )
+        ) {
             status = 'preparing';
-        else if (player.selected && player.state.phase === 'playing')
+        } else if (player.selected && player.state.phase === 'playing') {
             status = 'playing';
-        else if (
+        } else if (
             failedId ||
             (player.selected &&
                 ['failed', 'unavailable'].includes(player.state.phase))
-        )
+        ) {
             status = 'unavailable';
+        }
+
         return {
             activeId: preparingId ?? failedId ?? player.targetId,
             status,
@@ -115,6 +130,7 @@ export function useKnowledgeBlockPlayback({
             },
         };
     }
+
     const quote = player.selected ? player.state.quote : null;
     const confirmation = quote ? (
         <SpeechConfirmation
@@ -123,5 +139,6 @@ export function useKnowledgeBlockPlayback({
             onCancel={player.stop}
         />
     ) : null;
+
     return { options, confirmation };
 }

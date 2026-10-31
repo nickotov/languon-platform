@@ -121,6 +121,7 @@ describe('dictionary document ingestion domain', () => {
                 { rowIndex: 2, input: '[Invalid extracted term]' },
             ],
         });
+
         expect(JSON.stringify(result)).not.toContain('x'.repeat(201));
         expect(JSON.stringify(result)).not.toContain('unsafe');
     });
@@ -138,6 +139,7 @@ describe('dictionary document ingestion domain', () => {
                 })),
             ),
         ).toMatchObject({ kind: 'review' });
+
         expect(
             classifyDictionaryDocumentTerms(
                 Array.from({ length: 101 }, (_, blockIndex) => ({
@@ -147,6 +149,7 @@ describe('dictionary document ingestion domain', () => {
                 })),
             ),
         ).toEqual({ kind: 'too_many_terms', extractedUnits: 101 });
+
         expect(
             classifyDictionaryDocumentTerms([
                 { kind: 'heading', location: location(0) },
@@ -165,6 +168,7 @@ describe('dictionary document ingestion domain', () => {
                 },
             ]),
         ).toThrow();
+
         expect(() =>
             validateDictionaryDocumentBlocks([
                 {

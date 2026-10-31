@@ -66,6 +66,7 @@ const headers = z.object({
 const envelope = (code: string, message: string) => ({
     error: { code, message, correlationId: randomUUID() },
 });
+
 export function createVocabularyPracticeRoutes({
     service,
     policy,
@@ -75,20 +76,26 @@ export function createVocabularyPracticeRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     envelope('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.use('/knowledge/:noteId/vocabulary/:blockId/*', async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('Referrer-Policy', 'no-referrer');
         const origin = c.req.header('Origin');
-        if (origin) policy.assertCookieRequestOrigin(origin);
+        if (origin) {
+            policy.assertCookieRequestOrigin(origin);
+        }
+
         await next();
     });
+
     app.use(
         '/knowledge/:noteId/vocabulary/:blockId/*',
         bodyLimit({
@@ -100,6 +107,7 @@ export function createVocabularyPracticeRoutes({
                 ),
         }),
     );
+
     app.options('/knowledge/:noteId/vocabulary/:blockId/learning/*', (c) => {
         const origin = c.req.header('Origin');
         policy.assertCookieRequestOrigin(origin ?? null);
@@ -110,28 +118,37 @@ export function createVocabularyPracticeRoutes({
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key, X-Languon-Share-Kind, X-Languon-Share-Locator',
         );
+
         c.header('Vary', 'Origin');
+
         return c.body(null, 204);
     });
+
     app.onError((error, c) => {
         if (
             error instanceof z.ZodError ||
             error instanceof LearningInvalidRequestError
-        )
+        ) {
             return c.json(
                 envelope('invalid_request', 'The request is invalid.'),
                 400,
             );
-        if (error instanceof LearningEntryUnavailableError)
+        }
+
+        if (error instanceof LearningEntryUnavailableError) {
             return c.json(
                 envelope('entry_not_found', 'The entry is unavailable.'),
                 404,
             );
-        if (error instanceof LearningUnavailableError)
+        }
+
+        if (error instanceof LearningUnavailableError) {
             return c.json(
                 envelope('source_not_found', 'The material is unavailable.'),
                 404,
             );
+        }
+
         if (error instanceof LearningConflictError) {
             const codes = {
                 preferences_conflict: 'version_conflict',
@@ -139,6 +156,7 @@ export function createVocabularyPracticeRoutes({
                 operation_conflict: 'idempotency_conflict',
                 undo_conflict: 'undo_conflict',
             };
+
             return c.json(
                 envelope(
                     codes[error.reason],
@@ -147,8 +165,9 @@ export function createVocabularyPracticeRoutes({
                 409,
             );
         }
+
         if (error instanceof KnowledgeDomainError) {
-            if (error.code === 'knowledge_not_found')
+            if (error.code === 'knowledge_not_found') {
                 return c.json(
                     envelope(
                         'source_not_found',
@@ -156,7 +175,9 @@ export function createVocabularyPracticeRoutes({
                     ),
                     404,
                 );
-            if (error.code === 'version_conflict')
+            }
+
+            if (error.code === 'version_conflict') {
                 return c.json(
                     envelope(
                         'learning_version_conflict',
@@ -164,14 +185,19 @@ export function createVocabularyPracticeRoutes({
                     ),
                     409,
                 );
-            if (error.code === 'rate_limited')
+            }
+
+            if (error.code === 'rate_limited') {
                 return c.json(
                     envelope('rate_limited', 'Too many requests.'),
                     429,
                 );
+            }
         }
+
         const mapped = mapDictionaryHttpError(error);
         const code = LearningErrorCodeSchema.safeParse(mapped.code);
+
         return c.json(
             envelope(
                 code.success ? code.data : 'internal_error',
@@ -180,11 +206,13 @@ export function createVocabularyPracticeRoutes({
             code.success ? mapped.status : 500,
         );
     });
+
     const request = (c: Context): VocabularyPracticeRequest => {
         const metadata = authenticationRequestMetadata(c, policy);
         const kind = c.req.header('X-Languon-Share-Kind');
         const locator = c.req.header('X-Languon-Share-Locator');
         const key = c.req.header('X-Languon-Share-Key');
+
         return {
             token: policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -242,9 +270,11 @@ export function createVocabularyPracticeRoutes({
             async (c) => c.json(response.parse(await handler(c)), 200),
         );
     };
+
     register('get', '/capabilities', LearningCapabilitiesResponseSchema, (c) =>
         service.capabilities(request(c)),
     );
+
     register(
         'get',
         '/entries',
@@ -252,9 +282,11 @@ export function createVocabularyPracticeRoutes({
         (c) => service.entries(request(c), c.req.query()),
         LearningEntriesQuerySchema,
     );
+
     register('get', '/preferences', FlashcardPreferencesSchema, (c) =>
         service.preferences(request(c)),
     );
+
     register(
         'put',
         '/preferences',
@@ -262,6 +294,7 @@ export function createVocabularyPracticeRoutes({
         async (c) => service.savePreferences(request(c), await c.req.json()),
         FlashcardPreferencesPutRequestSchema,
     );
+
     register(
         'post',
         '/prepare',
@@ -269,6 +302,7 @@ export function createVocabularyPracticeRoutes({
         async (c) => service.prepare(request(c), await c.req.json()),
         FlashcardPrepareRequestSchema,
     );
+
     register(
         'post',
         '/items',
@@ -276,9 +310,11 @@ export function createVocabularyPracticeRoutes({
         async (c) => service.items(request(c), await c.req.json()),
         FlashcardItemsRequestSchema,
     );
+
     register('get', '/progress', FlashcardProgressResponseSchema, (c) =>
         service.progress(request(c)),
     );
+
     register(
         'post',
         '/attempts',
@@ -286,6 +322,7 @@ export function createVocabularyPracticeRoutes({
         async (c) => service.rate(request(c), await c.req.json()),
         FlashcardAttemptRequestSchema,
     );
+
     register(
         'post',
         '/attempts/{attemptId}/undo',
@@ -298,5 +335,6 @@ export function createVocabularyPracticeRoutes({
             ),
         FlashcardUndoRequestSchema,
     );
+
     return app;
 }

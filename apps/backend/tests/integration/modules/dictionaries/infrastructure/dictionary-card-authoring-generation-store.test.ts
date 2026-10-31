@@ -105,6 +105,7 @@ run('card-authoring generation persistence', () => {
         dictionaryStore = new DrizzleDictionaryStore(database, {
             generate: randomUUID,
         });
+
         generationStore = new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         });
@@ -134,6 +135,7 @@ run('card-authoring generation persistence', () => {
             textAiSupportedFormats: [...model.supportedFormats],
         });
     }
+
     // Rebuild all migrations and seed legacy routing before each independent case.
     // This is setup capacity; generation/assertion deadlines remain unchanged.
     beforeEach(async () => {
@@ -144,6 +146,7 @@ run('card-authoring generation persistence', () => {
             'DEEPSEEK_API_KEY',
             textAiFixtureCredentials.DEEPSEEK_API_KEY,
         );
+
         vi.stubEnv(
             'OPENROUTER_API_KEY',
             textAiFixtureCredentials.OPENROUTER_API_KEY,
@@ -159,6 +162,7 @@ run('card-authoring generation persistence', () => {
             status: 'active',
             updatedAt: instant(),
         });
+
         await seedLegacyActionFixture(database);
         instantOrigin = Date.now();
         await readyWorker();
@@ -169,6 +173,7 @@ run('card-authoring generation persistence', () => {
         vi.unstubAllGlobals();
         vi.restoreAllMocks();
     });
+
     afterAll(async () => client.end());
 
     async function productionSdkAuthoring(
@@ -184,6 +189,7 @@ run('card-authoring generation persistence', () => {
             createdAt: instant(),
             reason: 'Synthetic Free dictionary admission regression',
         });
+
         await seedTextAiRoutingFixture(database, {
             routeId: 'openrouter/openai/gpt-6-luna',
             tariff: {
@@ -196,6 +202,7 @@ run('card-authoring generation persistence', () => {
             replace: true,
             at: instant(),
         });
+
         if (native) {
             await database.insert(aiProviderPriceRevisionsTable).values({
                 id: randomUUID(),
@@ -247,6 +254,7 @@ run('card-authoring generation persistence', () => {
                     },
                 },
             });
+
             const probes = new DrizzleTextAiProbeStore(database);
             const request = {
                 routeId: 'openrouter/openai/gpt-6-luna',
@@ -272,6 +280,7 @@ run('card-authoring generation persistence', () => {
                     evidenceHours: 24,
                 },
             });
+
             await probes.finish(
                 reservation,
                 {
@@ -294,6 +303,7 @@ run('card-authoring generation persistence', () => {
                 instant(),
             );
         }
+
         await readyWorker(
             dictionaryAiModelCatalog.find(
                 (model) =>
@@ -301,7 +311,8 @@ run('card-authoring generation persistence', () => {
                     model.id === 'openai/gpt-6-luna',
             )!,
         );
-        if (funding === 'customer')
+
+        if (funding === 'customer') {
             await database.transaction(async (tx) => {
                 await new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     amount: 100_000n,
@@ -312,6 +323,8 @@ run('card-authoring generation persistence', () => {
                     sourceReference: `synthetic-paid-${randomUUID()}`,
                 });
             });
+        }
+
         const dictionary = await dictionaryStore.createDictionary({
             context: context(),
             fingerprint: fingerprint('F'),
@@ -354,48 +367,64 @@ run('card-authoring generation persistence', () => {
                 },
             },
         });
+
         expect(job.state).toBe('queued');
         const [action] = await database
             .select()
             .from(actions)
             .where(eq(actions.id, job.id));
+
         expect(action).toMatchObject({
             funding,
         });
-        if (funding === 'operator') expect(action!.heldMilli).toBe(0n);
-        else expect(action!.heldMilli).toBeGreaterThan(0n);
+
+        if (funding === 'operator') {
+            expect(action!.heldMilli).toBe(0n);
+        } else {
+            expect(action!.heldMilli).toBeGreaterThan(0n);
+        }
+
         expect(
             await database
                 .select()
                 .from(aiCreditReservationsTable)
                 .where(eq(aiCreditReservationsTable.jobId, job.id)),
         ).toHaveLength(0);
+
         const [stored] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(stored?.selectedExecutionSnapshot).toMatchObject({
             actionFunding: funding,
             routingAuthority: { tariffPublished: funding === 'customer' },
         });
+
         expect(stored?.selectedExecutionSnapshot).toHaveProperty(
             'actionProviderPrice',
             expect.objectContaining({ meter: 'text-tokens' }),
         );
+
         const claimSpy = vi.spyOn(store, 'claim');
         const providerFetch = vi.fn<typeof fetch>(async (url, init) => {
             expect(String(url)).toBe(
                 'https://openrouter.ai/api/v1/chat/completions',
             );
+
             const body = JSON.parse(String(init?.body));
             expect(body.model).toBe('openai/gpt-6-luna');
             expect(body.max_tokens).toBeGreaterThan(0);
             expect(body.max_tokens).toBeLessThanOrEqual(10000);
-            if (outcome === 'transport failure')
+            if (outcome === 'transport failure') {
                 throw new TypeError('Synthetic transport failure');
+            }
+
             const claim = await claimSpy.mock.results[0]!.value;
-            if (!claim || claim.input.format !== 'card-authoring:v3')
+            if (!claim || claim.input.format !== 'card-authoring:v3') {
                 throw new Error('Expected card authoring claim');
+            }
+
             const delta =
                 await new DeterministicCardAuthoringProposalGenerator().generate(
                     {
@@ -407,6 +436,7 @@ run('card-authoring generation persistence', () => {
                         idempotencyKey: claim.id,
                     },
                 );
+
             return new Response(
                 JSON.stringify({
                     id: 'synthetic-completion',
@@ -433,6 +463,7 @@ run('card-authoring generation persistence', () => {
                 { headers: { 'content-type': 'application/json' } },
             );
         });
+
         vi.stubGlobal('fetch', providerFetch);
         const unexpected = {
             generate: async () => {
@@ -462,6 +493,7 @@ run('card-authoring generation persistence', () => {
             pastedTermsProvider: providers.pastedTerms,
             importPairsProvider: providers.importPairs,
         });
+
         await expect(
             worker.processNext({
                 signal: new AbortController().signal,
@@ -469,19 +501,23 @@ run('card-authoring generation persistence', () => {
                 workerId: 'synthetic-completion-worker',
             }),
         ).resolves.toBe(true);
+
         expect(providerFetch).toHaveBeenCalledOnce();
         const persisted = await store.read({
             context: context(3),
             jobId: job.id,
             ownerId,
         });
+
         expect(persisted.state).toBe(
             outcome === 'success' ? 'review' : 'failed',
         );
+
         const [settled] = await database
             .select()
             .from(actions)
             .where(eq(actions.id, job.id));
+
         expect(settled).toMatchObject({
             state: 'settled',
             funding,
@@ -489,15 +525,18 @@ run('card-authoring generation persistence', () => {
                 funding === 'customer' && outcome === 'success' ? 25n : 0n,
             outcome: outcome === 'success' ? 'success' : 'failure',
         });
+
         const [expense] = await database
             .select()
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.actionId, job.id));
+
         expect(expense).toMatchObject({
             providerId: 'openrouter',
             modelId: 'openai/gpt-6-luna',
             measurement: outcome === 'success' ? 'measured' : 'unknown',
         });
+
         if (native) {
             expect(expense!.amountUsdMicros).toBe(3_000_000_000n);
             expect(expense!.costSource).toBe('calculated');
@@ -505,6 +544,7 @@ run('card-authoring generation persistence', () => {
                 .select()
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
             expect(completed).toMatchObject({
                 providerReservationState: 'settled',
                 providerActualCostMicros: null,
@@ -516,8 +556,10 @@ run('card-authoring generation persistence', () => {
                 .select()
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
             expect(completed!.providerActualCostMicros).not.toBeNull();
         }
+
         const [circuit] = await database
             .select()
             .from(dictionaryGenerationProviderCircuitTable)
@@ -527,9 +569,11 @@ run('card-authoring generation persistence', () => {
                     'openrouter/openai/gpt-6-luna/card-authoring:v3',
                 ),
             );
+
         expect(circuit?.consecutiveFailures).toBe(
             outcome === 'success' ? 0 : 1,
         );
+
         if (
             persisted.kind === 'card-authoring' &&
             persisted.proposal &&
@@ -548,6 +592,7 @@ run('card-authoring generation persistence', () => {
         'settles namespaced card authoring through the production SDK: %s / %s',
         productionSdkAuthoring,
     );
+
     it('settles native namespaced card authoring through the production SDK with canonical expense and no flat projection', async () => {
         await productionSdkAuthoring('operator', 'success', true);
     });
@@ -562,15 +607,19 @@ run('card-authoring generation persistence', () => {
                 ),
             ),
         ];
-        for (const id of new Set(keys))
+
+        for (const id of new Set(keys)) {
             await database
                 .insert(dictionaryGenerationProviderCircuitTable)
                 .values({ id, consecutiveFailures: 0, updatedAt: instant() });
+        }
+
         expect(
             await database
                 .select()
                 .from(dictionaryGenerationProviderCircuitTable),
         ).toHaveLength(new Set(keys).size);
+
         for (const id of [
             'openrouter//model/card-authoring:v3',
             'openrouter/../card-authoring:v3',
@@ -609,6 +658,7 @@ run('card-authoring generation persistence', () => {
             undefined,
             true,
         );
+
         await expect(
             accounted.enqueuePastedTerms({
                 context: context(1),
@@ -622,9 +672,11 @@ run('card-authoring generation persistence', () => {
                 text: 'hello',
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
         expect(
             await database.select().from(dictionaryGenerationJobsTable),
         ).toHaveLength(0);
+
         expect(await database.select().from(actions)).toHaveLength(0);
     });
 
@@ -682,6 +734,7 @@ run('card-authoring generation persistence', () => {
                     idempotencyKey: `latest-rewrite-${randomUUID()}`,
                     instruction: null,
                 });
+
                 rewriteId = rewrite.id;
                 await generationStore.cancel({
                     context: context(3),
@@ -689,6 +742,7 @@ run('card-authoring generation persistence', () => {
                     ownerId,
                 });
             }
+
             const inline = await generationStore.enqueueCardAuthoring({
                 ...versionInput,
                 context: context(4),
@@ -725,10 +779,12 @@ run('card-authoring generation persistence', () => {
                     id: rewriteId,
                     kind: 'single-card',
                 });
+
                 expect(latest?.id).not.toBe(inline.id);
             } else {
                 expect(latest).toBeNull();
             }
+
             await expect(
                 generationStore.latestForCard({
                     ...lookup,
@@ -745,6 +801,7 @@ run('card-authoring generation persistence', () => {
             undefined,
             true,
         );
+
         await database.insert(aiCreditAccountsTable).values({
             createdAt: instant(),
             mode: 'unlimited',
@@ -752,6 +809,7 @@ run('card-authoring generation persistence', () => {
             updatedAt: instant(),
             userId: ownerId,
         });
+
         const dictionary = await dictionaryStore.createDictionary({
             context: context(),
             fingerprint: fingerprint('P'),
@@ -807,6 +865,7 @@ run('card-authoring generation persistence', () => {
             .select()
             .from(actions)
             .where(eq(actions.id, first.id));
+
         expect(action).toMatchObject({
             state: 'active',
             funding: 'unlimited',
@@ -824,6 +883,7 @@ run('card-authoring generation persistence', () => {
                 at: instant(4),
             })
         ).id;
+
         await readyWorker(nextModel);
 
         const replay = await creditedStore.enqueue({
@@ -836,6 +896,7 @@ run('card-authoring generation persistence', () => {
             fingerprint: fingerprint('R'),
             idempotencyKey: `pinned-${randomUUID()}`,
         });
+
         expect(replay.id).toBe(first.id);
         const rows = await database
             .select({
@@ -843,6 +904,7 @@ run('card-authoring generation persistence', () => {
                 revisionId: dictionaryGenerationJobsTable.executionRevisionId,
             })
             .from(dictionaryGenerationJobsTable);
+
         expect(rows).toEqual(
             expect.arrayContaining([
                 { id: first.id, revisionId: revisionOne },
@@ -862,6 +924,7 @@ run('card-authoring generation persistence', () => {
                 .where(eq(dictionaryGenerationJobsTable.id, first.id))
                 .returning({ id: dictionaryGenerationJobsTable.id }),
         ).resolves.toEqual([]);
+
         expect(
             (
                 await database
@@ -877,12 +940,15 @@ run('card-authoring generation persistence', () => {
                 await tx.execute(
                     sql`select set_config('languon.text_ai_selection_revision', '1', true)`,
                 );
+
                 await tx.execute(
                     sql`select set_config('languon.dictionary_ai_routing_revision', '1', true)`,
                 );
+
                 await tx.execute(
                     sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
                 );
+
                 return tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
@@ -894,6 +960,7 @@ run('card-authoring generation persistence', () => {
                     .where(eq(dictionaryGenerationJobsTable.id, first.id));
             }),
         ).rejects.toThrow();
+
         await creditedStore.cancel({
             context: context(8),
             jobId: second.id,
@@ -911,15 +978,19 @@ run('card-authoring generation persistence', () => {
             supportedFormats: ['single-card:v2'],
             workerId: 'managed-routing-worker',
         });
+
         expect(claim).toMatchObject({
             id: first.id,
             providerExecution: { modelId: deepSeek.id },
         });
+
         if (
             !claim?.providerExecution ||
             claim.input.format !== 'single-card:v2'
-        )
+        ) {
             throw new Error('Expected a pinned single-card claim.');
+        }
+
         await expect(
             creditedStore.markProviderDispatch({
                 context: context(9),
@@ -968,11 +1039,13 @@ run('card-authoring generation persistence', () => {
             providerBudget: claim.providerBudget,
             signal: new AbortController().signal,
         });
+
         expect(cardGenerate).toHaveBeenCalledOnce();
         const completed =
             'proposal' in result
                 ? result
                 : { proposal: result, usage: undefined };
+
         await expect(
             creditedStore.complete({
                 context: context(10),
@@ -985,6 +1058,7 @@ run('card-authoring generation persistence', () => {
                 workerId: claim.workerId,
             }),
         ).resolves.toBe(true);
+
         await expect(
             creditedStore.read({
                 context: context(11),
@@ -992,10 +1066,12 @@ run('card-authoring generation persistence', () => {
                 ownerId,
             }),
         ).resolves.toMatchObject({ state: 'review' });
+
         const [settledAction] = await database
             .select()
             .from(actions)
             .where(eq(actions.id, claim.id));
+
         expect(settledAction).toMatchObject({
             state: 'settled',
             funding: 'unlimited',
@@ -1003,6 +1079,7 @@ run('card-authoring generation persistence', () => {
             measurement: 'unknown',
             chargedMilli: 0n,
         });
+
         expect(
             await database
                 .select()
@@ -1039,6 +1116,7 @@ run('card-authoring generation persistence', () => {
                 sourceReference: `retry-credit-${randomUUID()}`,
             });
         });
+
         const creditedStore = new DrizzleDictionaryGenerationStore(
             database,
             { generate: randomUUID },
@@ -1077,6 +1155,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'credit-retry-worker',
         });
+
         expect(firstClaim?.id).toBe(job.id);
         await expect(
             creditedStore.markProviderDispatch({
@@ -1087,6 +1166,7 @@ run('card-authoring generation persistence', () => {
                 workerId: firstClaim!.workerId,
             }),
         ).resolves.toBe(true);
+
         await expect(
             creditedStore.fail({
                 context: context(5),
@@ -1112,6 +1192,7 @@ run('card-authoring generation persistence', () => {
                 workerId: 'credit-retry-worker',
             }),
         ).resolves.toBeNull();
+
         await expect(
             creditedStore.read({
                 context: context(7),
@@ -1122,15 +1203,18 @@ run('card-authoring generation persistence', () => {
             failure: { code: 'provider_timeout', retryable: true },
             state: 'failed',
         });
+
         const [action] = await database
             .select()
             .from(actions)
             .where(eq(actions.id, job.id));
+
         expect(action).toMatchObject({
             state: 'settled',
             outcome: 'failure',
             chargedMilli: 0n,
         });
+
         const [stored] = await database
             .select({
                 actualCost:
@@ -1149,6 +1233,7 @@ run('card-authoring generation persistence', () => {
             })
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(stored).toMatchObject({
             actualCost: stored?.reservedCost,
             actualInput: stored?.reservedInput,
@@ -1222,11 +1307,13 @@ run('card-authoring generation persistence', () => {
             scope: { kind: 'all' },
             source: 'hello',
         });
+
         expect(first).toMatchObject({
             dictionaryId: dictionary.id,
             kind: 'card-authoring',
             state: 'queued',
         });
+
         const firstClaim = await generationStore.claim({
             managedRoutingRevision: 1,
             textAiSelectionRevision: 1,
@@ -1238,10 +1325,12 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'authoring-worker',
         });
+
         expect(firstClaim?.input).toMatchObject({
             format: dictionaryCardAuthoringGenerationFormat,
             source: 'hello',
         });
+
         await expect(
             generationStore.complete({
                 context: context(3),
@@ -1259,14 +1348,18 @@ run('card-authoring generation persistence', () => {
                 workerId: firstClaim!.workerId,
             }),
         ).resolves.toBe(true);
+
         const firstReview = await generationStore.read({
             context: context(4),
             jobId: first.id,
             ownerId,
         });
+
         expect(firstReview).toMatchObject({ state: 'review' });
-        if (firstReview.kind !== 'card-authoring' || !firstReview.proposal)
+        if (firstReview.kind !== 'card-authoring' || !firstReview.proposal) {
             throw new Error('Expected a card-authoring review');
+        }
+
         const discardedId = firstReview.proposal.suggestions.find(
             (suggestion) => suggestion.field === 'translation',
         )!.id;
@@ -1275,6 +1368,7 @@ run('card-authoring generation persistence', () => {
             .update(dictionaryGenerationJobsTable)
             .set({ expectedDictionaryVersion: dictionaryVersion - 1 })
             .where(eq(dictionaryGenerationJobsTable.id, first.id));
+
         await expect(
             generationStore.enqueueCardAuthoring({
                 context: context(5),
@@ -1293,6 +1387,7 @@ run('card-authoring generation persistence', () => {
                 source: 'hello',
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotReviewableError);
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({ expectedDictionaryVersion: dictionaryVersion })
@@ -1312,6 +1407,7 @@ run('card-authoring generation persistence', () => {
                 },
             })
             .where(eq(dictionaryGenerationProposalsTable.jobId, first.id));
+
         await expect(
             generationStore.enqueueCardAuthoring({
                 context: context(5),
@@ -1330,6 +1426,7 @@ run('card-authoring generation persistence', () => {
                 source: 'hello',
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+
         await database
             .update(dictionaryGenerationProposalsTable)
             .set({ payload: originalProposal })
@@ -1359,6 +1456,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'authoring-worker',
         });
+
         await database
             .update(dictionaryGenerationProposalsTable)
             .set({
@@ -1367,6 +1465,7 @@ run('card-authoring generation persistence', () => {
                 terminalAt: context(7).now,
             })
             .where(eq(dictionaryGenerationProposalsTable.jobId, first.id));
+
         await expect(
             generationStore.complete({
                 context: context(8),
@@ -1381,6 +1480,7 @@ run('card-authoring generation persistence', () => {
                 workerId: conflictClaim!.workerId,
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationCompletionConflictError);
+
         await expect(
             generationStore.fail({
                 context: context(9),
@@ -1394,10 +1494,12 @@ run('card-authoring generation persistence', () => {
                 workerId: conflictClaim!.workerId,
             }),
         ).resolves.toBe(true);
+
         const [failedConflict] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, postCallConflict.id));
+
         expect(failedConflict).toMatchObject({
             executionState: 'failed',
             failureCategory: 'generation_conflict',
@@ -1405,6 +1507,7 @@ run('card-authoring generation persistence', () => {
             providerActualOutputTokens: 3,
             providerReservationState: 'settled',
         });
+
         const [providerCircuit] = await database
             .select()
             .from(dictionaryGenerationProviderCircuitTable)
@@ -1414,6 +1517,7 @@ run('card-authoring generation persistence', () => {
                     dictionaryCardAuthoringGenerationFormat,
                 ),
             );
+
         expect(providerCircuit?.consecutiveFailures ?? 0).toBe(0);
         await database
             .update(dictionaryGenerationProposalsTable)
@@ -1451,6 +1555,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'authoring-worker',
         });
+
         await generationStore.complete({
             context: context(7),
             fencingToken: successorClaim!.fencingToken,
@@ -1463,6 +1568,7 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: successorClaim!.workerId,
         });
+
         const successorReview = await generationStore.read({
             context: context(8),
             jobId: successor.id,
@@ -1473,23 +1579,28 @@ run('card-authoring generation persistence', () => {
             jobId: first.id,
             ownerId,
         });
+
         if (
             successorReview.kind !== 'card-authoring' ||
             !successorReview.proposal ||
             retainedPredecessor.kind !== 'card-authoring' ||
             !retainedPredecessor.proposal
-        )
+        ) {
             throw new Error('Expected retained authoring proposals');
+        }
+
         expect(
             retainedPredecessor.proposal.suggestions.map(
                 (suggestion) => suggestion.value,
             ),
         ).toContain('bonjour');
+
         expect(
             successorReview.proposal.suggestions.map(
                 (suggestion) => suggestion.value,
             ),
         ).toEqual(expect.arrayContaining(['a greeting', 'salut']));
+
         expect(
             successorReview.proposal.suggestions.map(
                 (suggestion) => suggestion.id,
@@ -1526,12 +1637,14 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'authoring-worker',
         });
+
         expect(secondClaim?.input).toMatchObject({
             excludedValues: [
                 { field: 'translation', values: ['bonjour', 'salut'] },
                 { field: 'definition', values: ['a greeting'] },
             ],
         });
+
         await generationStore.complete({
             context: context(11),
             fencingToken: secondClaim!.fencingToken,
@@ -1544,13 +1657,17 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: secondClaim!.workerId,
         });
+
         const secondReview = await generationStore.read({
             context: context(12),
             jobId: secondSuccessor.id,
             ownerId,
         });
-        if (secondReview.kind !== 'card-authoring' || !secondReview.proposal)
+
+        if (secondReview.kind !== 'card-authoring' || !secondReview.proposal) {
             throw new Error('Expected a second authoring successor');
+        }
+
         expect(
             secondReview.proposal.suggestions.map(
                 (suggestion) => suggestion.value,
@@ -1584,6 +1701,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'authoring-worker',
         });
+
         expect(thirdClaim?.input).toMatchObject({
             excludedValues: [
                 {
@@ -1594,6 +1712,7 @@ run('card-authoring generation persistence', () => {
             ],
             scope: { field: 'definition', kind: 'field' },
         });
+
         await generationStore.complete({
             context: context(12),
             fencingToken: thirdClaim!.fencingToken,
@@ -1608,13 +1727,17 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: thirdClaim!.workerId,
         });
+
         const thirdReview = await generationStore.read({
             context: context(12),
             jobId: thirdSuccessor.id,
             ownerId,
         });
-        if (thirdReview.kind !== 'card-authoring' || !thirdReview.proposal)
+
+        if (thirdReview.kind !== 'card-authoring' || !thirdReview.proposal) {
             throw new Error('Expected a third authoring successor');
+        }
+
         const selected = thirdReview.proposal.suggestions.find(
             (suggestion) => suggestion.value === 'coucou',
         )!;
@@ -1643,6 +1766,7 @@ run('card-authoring generation persistence', () => {
             ...acceptance,
             context: context(14),
         });
+
         expect(replay).toEqual(accepted);
         expect(accepted).toMatchObject({
             job: { proposal: null, state: 'accepted' },
@@ -1652,16 +1776,19 @@ run('card-authoring generation persistence', () => {
                 duplicateSource: true,
             },
         });
+
         const [card] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, accepted.outcome.cardId));
+
         expect(card).toMatchObject({
             authorship: 'mixed',
             learningVersion: 1,
             source: 'hello',
             translation: 'coucou',
         });
+
         const [revision] = await database
             .select()
             .from(dictionaryCardRevisionsTable)
@@ -1671,11 +1798,13 @@ run('card-authoring generation persistence', () => {
                     accepted.outcome.cardId,
                 ),
             );
+
         expect(revision).toMatchObject({
             acceptedGenerationJobId: thirdSuccessor.id,
             authorship: 'mixed',
             mutationKind: 'ai_proposal_accept',
         });
+
         const [redactedJob] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
@@ -1686,6 +1815,7 @@ run('card-authoring generation persistence', () => {
             .where(
                 eq(dictionaryGenerationProposalsTable.jobId, thirdSuccessor.id),
             );
+
         expect(redactedJob?.inputPayload).toBeNull();
         expect(redactedProposal).toMatchObject({
             acceptedCardId: accepted.outcome.cardId,
@@ -1733,6 +1863,7 @@ run('card-authoring generation persistence', () => {
                 translation: 'bonjour régénéré',
             },
         };
+
         await generationStore.complete({
             context: context(17),
             fencingToken: singleClaim!.fencingToken,
@@ -1747,6 +1878,7 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(70_000),
             workerId: singleClaim!.workerId,
         });
+
         await expect(
             generationStore.acceptSingleCard({
                 candidate: singleCandidate,
@@ -1758,15 +1890,18 @@ run('card-authoring generation persistence', () => {
         ).resolves.toMatchObject({
             outcome: { cardId: existingCard.card.id, cardVersion: 2 },
         });
+
         const [learnableSingle] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, existingCard.card.id));
+
         expect(learnableSingle?.learningVersion).toBe(2);
         const [acceptedSingleProposal] = await database
             .select()
             .from(dictionaryGenerationProposalsTable)
             .where(eq(dictionaryGenerationProposalsTable.jobId, single.id));
+
         expect(acceptedSingleProposal).toMatchObject({
             acceptedCardId: null,
             acceptedDuplicateSource: null,
@@ -1801,6 +1936,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'manual-authoring-worker',
         });
+
         await generationStore.complete({
             context: context(21),
             fencingToken: manualClaim!.fencingToken,
@@ -1816,6 +1952,7 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(80_000),
             workerId: manualClaim!.workerId,
         });
+
         const manualAcceptance = await generationStore.acceptCardAuthoring({
             acceptanceFingerprint: fingerprint('W'),
             candidate: {
@@ -1840,11 +1977,13 @@ run('card-authoring generation persistence', () => {
             .where(
                 eq(dictionaryCardsTable.id, manualAcceptance.outcome.cardId),
             );
+
         expect(manualCard).toMatchObject({
             authorship: 'human',
             source: 'manual source',
             translation: 'manual translation',
         });
+
         const [manualProposal] = await database
             .select()
             .from(dictionaryGenerationProposalsTable)
@@ -1854,6 +1993,7 @@ run('card-authoring generation persistence', () => {
                     manualAuthoring.id,
                 ),
             );
+
         expect(manualProposal).toMatchObject({
             payload: null,
             reviewState: 'accepted',
@@ -1935,6 +2075,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: ['card-authoring:v2'],
             workerId: 'authoring-v2-worker',
         });
+
         await generationStore.complete({
             context: context(4),
             fencingToken: claim!.fencingToken,
@@ -1948,17 +2089,21 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         const review = await generationStore.read({
             context: context(5),
             jobId: job.id,
             ownerId,
         });
+
         if (
             review.kind !== 'card-authoring' ||
             review.format !== 'card-authoring:v2' ||
             review.state !== 'review'
-        )
+        ) {
             throw new Error('Expected v2 review');
+        }
+
         const sourceSuggestion = review.proposal.sourceSuggestions[0]!;
         const successor = await generationStore.enqueueCardAuthoring({
             context: context(6),
@@ -2002,6 +2147,7 @@ run('card-authoring generation persistence', () => {
             supportedFormats: ['card-authoring:v2'],
             workerId: 'authoring-v2-worker',
         });
+
         await generationStore.complete({
             context: context(8),
             fencingToken: successorClaim!.fencingToken,
@@ -2014,20 +2160,25 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: successorClaim!.workerId,
         });
+
         const successorReview = await generationStore.read({
             context: context(9),
             jobId: successor.id,
             ownerId,
         });
+
         if (
             successorReview.kind !== 'card-authoring' ||
             successorReview.format !== 'card-authoring:v2' ||
             successorReview.state !== 'review'
-        )
+        ) {
             throw new Error('Expected v2 successor review');
+        }
+
         const translationSuggestion = successorReview.proposal.suggestions.find(
             (suggestion) => suggestion.field === 'translation',
         )!;
+
         expect(translationSuggestion.basisSource).toBe(sourceSuggestion.value);
         const retry = await generationStore.enqueueCardAuthoring({
             context: context(10),
@@ -2060,6 +2211,7 @@ run('card-authoring generation persistence', () => {
                 expectedCardVersion: card.version,
             },
         });
+
         expect(retry.id).not.toBe(successor.id);
         await expect(
             generationStore.acceptCardAuthoring({
@@ -2086,6 +2238,7 @@ run('card-authoring generation persistence', () => {
                 ],
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+
         const accepted = await generationStore.acceptCardAuthoring({
             acceptanceFingerprint: fingerprint('X'),
             candidate: {
@@ -2110,6 +2263,7 @@ run('card-authoring generation persistence', () => {
                 },
             ],
         });
+
         expect(accepted.job).toMatchObject({
             state: 'accepted',
             target: {
@@ -2118,16 +2272,19 @@ run('card-authoring generation persistence', () => {
                 expectedCardVersion: card.version,
             },
         });
+
         const [persisted] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, card.id));
+
         expect(persisted).toMatchObject({
             source: 'the atelier',
             learningVersion: persistedBefore!.learningVersion + 1,
             sortKey: persistedBefore!.sortKey,
             version: card.version + 1,
         });
+
         await expect(
             generationStore.read({
                 context: context(12),
@@ -2173,6 +2330,7 @@ run('card-authoring generation persistence', () => {
                 values,
             },
         });
+
         expect(created.card.authorship).toBe('human');
         const job = await generationStore.enqueueCardAuthoring({
             context: context(2),
@@ -2213,7 +2371,11 @@ run('card-authoring generation persistence', () => {
             supportedFormats: ['card-authoring:v3'],
             workerId: 'corrected-ai-worker',
         });
-        if (!claim) throw new Error('Expected authoring claim');
+
+        if (!claim) {
+            throw new Error('Expected authoring claim');
+        }
+
         await generationStore.complete({
             context: context(4),
             fencingToken: claim.fencingToken,
@@ -2227,11 +2389,13 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim.workerId,
         });
+
         const review = await generationStore.read({
             context: context(5),
             jobId: job.id,
             ownerId,
         });
+
         if (
             review.kind !== 'card-authoring' ||
             review.format !== 'card-authoring:v3' ||
@@ -2239,6 +2403,7 @@ run('card-authoring generation persistence', () => {
         ) {
             throw new Error('Expected v3 review');
         }
+
         const source = review.proposal.sourceSuggestions[0]!;
         const acceptance = {
             acceptanceFingerprint: fingerprint('T'),
@@ -2258,6 +2423,7 @@ run('card-authoring generation persistence', () => {
                 { field: 'source' as const, suggestionId: source.id },
             ],
         };
+
         await expect(
             generationStore.acceptCardAuthoring({
                 ...acceptance,
@@ -2271,15 +2437,18 @@ run('card-authoring generation persistence', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+
         const [unchanged] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, created.card.id));
+
         expect(unchanged).toMatchObject({
             authorship: 'human',
             source: values.source,
             version: created.card.version,
         });
+
         await expect(
             generationStore.read({
                 context: context(6),
@@ -2287,6 +2456,7 @@ run('card-authoring generation persistence', () => {
                 ownerId,
             }),
         ).resolves.toMatchObject({ state: 'review' });
+
         const accepted = await generationStore.acceptCardAuthoring(acceptance);
         expect(accepted).toMatchObject({
             job: { id: job.id, state: 'accepted' },
@@ -2295,20 +2465,24 @@ run('card-authoring generation persistence', () => {
                 cardVersion: created.card.version + 1,
             },
         });
+
         const [persisted] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, created.card.id));
+
         expect(persisted).toMatchObject({
             authorship: 'mixed',
             source: source.value,
             translation: acceptance.candidate.values.translation,
             version: created.card.version + 1,
         });
+
         const revisions = await database
             .select()
             .from(dictionaryCardRevisionsTable)
             .where(eq(dictionaryCardRevisionsTable.cardId, created.card.id));
+
         expect(revisions).toHaveLength(2);
         expect(revisions).toContainEqual(
             expect.objectContaining({
@@ -2376,11 +2550,13 @@ run('card-authoring generation persistence', () => {
             supportedFormats: ['card-authoring:v3'],
             workerId: 'authoring-v3-worker',
         });
+
         expect(inheritedClaim?.input).toMatchObject({
             draft: { translationContext: null },
             format: 'card-authoring:v3',
             translationContext: 'Museum curation terminology',
         });
+
         await generationStore.complete({
             context: context(4),
             fencingToken: inheritedClaim!.fencingToken,
@@ -2393,23 +2569,29 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: inheritedClaim!.workerId,
         });
+
         const review = await generationStore.read({
             context: context(5),
             jobId: inherited.id,
             ownerId,
         });
+
         if (
             review.kind !== 'card-authoring' ||
             review.format !== 'card-authoring:v3' ||
             review.state !== 'review'
-        )
+        ) {
             throw new Error('Expected v3 review');
+        }
+
         expect(review.proposal.translationContext).toBe(
             'Museum curation terminology',
         );
+
         const translationSuggestion = review.proposal.suggestions.find(
             (suggestion) => suggestion.field === 'translation',
         )!;
+
         await expect(
             generationStore.acceptCardAuthoring({
                 acceptanceFingerprint: fingerprint('M'),
@@ -2436,6 +2618,7 @@ run('card-authoring generation persistence', () => {
                 ],
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+
         const accepted = await generationStore.acceptCardAuthoring({
             acceptanceFingerprint: fingerprint('N'),
             candidate: {
@@ -2473,18 +2656,21 @@ run('card-authoring generation persistence', () => {
                     accepted.outcome.cardId,
                 ),
             );
+
         expect(acceptedCard?.translationContext).toBeNull();
         expect(acceptedRevision?.snapshot).toMatchObject({
             effectiveTranslationContext: 'Museum curation terminology',
             rawTranslationContext: null,
             schemaVersion: 2,
         });
+
         const [acceptedJob] = await database
             .select({
                 inputPayload: dictionaryGenerationJobsTable.inputPayload,
             })
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, inherited.id));
+
         expect(acceptedJob?.inputPayload).toBeNull();
 
         const overridden = await generationStore.enqueueCardAuthoring({
@@ -2522,12 +2708,14 @@ run('card-authoring generation persistence', () => {
             supportedFormats: ['card-authoring:v3'],
             workerId: 'authoring-v3-worker',
         });
+
         expect(overriddenClaim?.input).toMatchObject({
             draft: {
                 translationContext: 'Photography collection terminology',
             },
             translationContext: 'Photography collection terminology',
         });
+
         await generationStore.complete({
             context: context(10),
             fencingToken: overriddenClaim!.fencingToken,
@@ -2540,6 +2728,7 @@ run('card-authoring generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: overriddenClaim!.workerId,
         });
+
         await dictionaryStore.updateDictionary({
             context: context(11),
             dictionaryId: dictionary.id,
@@ -2549,20 +2738,25 @@ run('card-authoring generation persistence', () => {
                 translationContext: 'Changed dictionary terminology',
             },
         });
+
         const overriddenReview = await generationStore.read({
             context: context(12),
             jobId: overridden.id,
             ownerId,
         });
+
         if (
             overriddenReview.kind !== 'card-authoring' ||
             overriddenReview.format !== 'card-authoring:v3' ||
             overriddenReview.state !== 'review'
-        )
+        ) {
             throw new Error('Expected overridden v3 review');
+        }
+
         const overriddenSuggestion = overriddenReview.proposal.suggestions.find(
             (suggestion) => suggestion.field === 'translation',
         )!;
+
         await expect(
             generationStore.acceptCardAuthoring({
                 acceptanceFingerprint: fingerprint('P'),

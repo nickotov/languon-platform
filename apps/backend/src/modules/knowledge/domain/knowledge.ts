@@ -15,9 +15,14 @@ export class KnowledgeDomainError extends Error {
 export function knowledgeBodyPlainText(body: KnowledgeBody): string {
     const parts: string[] = [];
     const walk = (node: KnowledgeBody['document']) => {
-        if (node.type === 'learningBlock' && node.attrs?.block)
+        if (node.type === 'learningBlock' && node.attrs?.block) {
             parts.push('\n', learningBlockPlainText(node.attrs.block), '\n');
-        if (node.text) parts.push(node.text);
+        }
+
+        if (node.text) {
+            parts.push(node.text);
+        }
+
         node.content?.forEach(walk);
         if (
             [
@@ -28,9 +33,12 @@ export function knowledgeBodyPlainText(body: KnowledgeBody): string {
                 'hardBreak',
                 'horizontalRule',
             ].includes(node.type)
-        )
+        ) {
             parts.push('\n');
+        }
     };
+
     walk(body.document);
+
     return parts.join('').replace(/\s+/gu, ' ').trim();
 }

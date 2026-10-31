@@ -104,14 +104,21 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
 
     const optionalFields: DictionaryCardAuthoringField[] = [];
 
-    if (effective.transcriptionEnabled) optionalFields.push('transcription');
+    if (effective.transcriptionEnabled) {
+        optionalFields.push('transcription');
+    }
 
-    if (effective.definitionEnabled) optionalFields.push('definition');
+    if (effective.definitionEnabled) {
+        optionalFields.push('definition');
+    }
 
-    if (effective.exampleEnabled) optionalFields.push('example');
+    if (effective.exampleEnabled) {
+        optionalFields.push('example');
+    }
 
-    if (effective.exampleTranslationEnabled)
+    if (effective.exampleTranslationEnabled) {
         optionalFields.push('exampleTranslation');
+    }
 
     const fullWidthFields = optionalFields.filter(
         (field) => field !== 'example' && field !== 'exampleTranslation',

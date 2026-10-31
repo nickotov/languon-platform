@@ -31,20 +31,27 @@ export async function resolveKnowledgeSpeechSource(
             ),
         )
         .for('share');
-    if (!branch || branch.version !== source.expectedBranchVersion)
+
+    if (!branch || branch.version !== source.expectedBranchVersion) {
         throw new SpeechError('speech_source_changed');
+    }
+
     const block = branch.content.body.document.content?.find(
         (node) =>
             node.type === 'learningBlock' &&
             node.attrs?.block?.id === source.blockId,
     )?.attrs?.block;
-    if (!block || ['video', 'exercise'].includes(block.type))
+
+    if (!block || ['video', 'exercise'].includes(block.type)) {
         throw new SpeechError('speech_source_unavailable', 404);
+    }
+
     const { text, language } = knowledgeNarrationText(
         block,
         branch.content.studiedLanguage,
         branch.content.explanationLanguage,
     );
+
     return {
         text,
         language,

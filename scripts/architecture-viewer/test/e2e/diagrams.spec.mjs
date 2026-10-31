@@ -17,19 +17,27 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
     const external = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
-        if (message.type() === 'error') errors.push(message.text());
+        if (message.type() === 'error') {
+            errors.push(message.text());
+        }
     });
+
     page.on('requestfailed', (request) =>
         errors.push(`${request.url()}: ${request.failure()?.errorText}`),
     );
+
     page.on('response', (response) => {
-        if (response.status() >= 400)
+        if (response.status() >= 400) {
             errors.push(`${response.status()} ${response.url()}`);
+        }
     });
+
     page.on('request', (request) => {
-        if (!request.url().startsWith(`${baseURL}/`))
+        if (!request.url().startsWith(`${baseURL}/`)) {
             external.push(request.url());
+        }
     });
+
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/');
     const navigation = page.getByRole('navigation', { name: 'Diagrams' });
@@ -39,26 +47,32 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
         await navigation
             .getByRole('link', { name: title, exact: true })
             .click();
+
         await expect(
             page.getByRole('heading', { name: title, level: 1, exact: true }),
         ).toBeVisible();
+
         await expect(page.locator('#canvas svg')).toHaveAttribute(
             'aria-label',
             title,
         );
+
         await expect(page.locator('#render-status')).toBeEmpty();
         await expect(page.locator('#freshness')).toHaveAttribute(
             'data-stale',
             'false',
         );
     }
+
     await navigation
         .getByRole('link', { name: 'System context', exact: true })
         .click();
+
     await expect(page.locator('#canvas svg')).toHaveAttribute(
         'aria-label',
         'System context',
     );
+
     const initialZoom = await page.locator('#zoom-level').textContent();
     await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
     await expect(page.locator('#zoom-level')).not.toHaveText(initialZoom);
@@ -68,6 +82,7 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
     await expect(page.locator('#sources')).toContainText(
         'apps/backend/src/app.ts',
     );
+
     await expect(page.locator('#mermaid-source')).toContainText('flowchart');
     await page.locator('#notes-details summary').click();
     await expect(page.locator('#notes')).toContainText('Reconciliation');
@@ -82,6 +97,7 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
             exact: true,
         }),
     ).toBeVisible();
+
     expect(await navigation.getByRole('link').count()).toBeLessThan(9);
     await page.getByLabel('Find a diagram').fill('');
     await page.getByRole('button', { name: 'Refresh sources' }).click();
@@ -89,34 +105,42 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
         'aria-label',
         'System context',
     );
+
     await page.reload();
     await expect(page.locator('#canvas svg')).toHaveAttribute(
         'aria-label',
         'System context',
     );
-    if (process.env.DIAGRAM_EVIDENCE === 'true')
+
+    if (process.env.DIAGRAM_EVIDENCE === 'true') {
         await page.screenshot({
             path: '.agent/features/045-development-cleanup-and-architecture-diagrams/evidence/viewer-desktop.png',
             fullPage: true,
         });
+    }
+
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(navigation).toBeVisible();
     await expect(
         page.getByRole('button', { name: 'Fit', exact: true }),
     ).toBeVisible();
+
     expect(
         await page.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth,
         ),
     ).toBe(true);
+
     await page.getByLabel('Find a diagram').focus();
     await page.keyboard.press('Tab');
     await expect(navigation.getByRole('link').first()).toBeFocused();
-    if (process.env.DIAGRAM_EVIDENCE === 'true')
+    if (process.env.DIAGRAM_EVIDENCE === 'true') {
         await page.screenshot({
             path: '.agent/features/045-development-cleanup-and-architecture-diagrams/evidence/viewer-mobile.png',
             fullPage: true,
         });
+    }
+
     expect(errors).toEqual([]);
     expect(external).toEqual([]);
 });
@@ -147,6 +171,7 @@ flowchart LR
 
 <img src=x onerror=untrusted()>
 `;
+
     await writeFile(join(root, 'source.ts'), 'export const revision = 1;');
     await writeFile(documentPath, document);
     await loadCatalog(root, { stamp: true });
@@ -163,14 +188,17 @@ flowchart LR
             'aria-label',
             'Synthetic review flow',
         );
+
         await expect(page.locator('#freshness')).toHaveAttribute(
             'data-stale',
             'false',
         );
+
         await page.locator('#notes-details summary').click();
         await expect(page.locator('#notes')).toContainText(
             '<img src=x onerror=untrusted()>',
         );
+
         await expect(page.locator('#notes img')).toHaveCount(0);
         await writeFile(join(root, 'source.ts'), 'export const revision = 2;');
         await page.getByRole('button', { name: 'Refresh sources' }).click();
@@ -178,9 +206,11 @@ flowchart LR
             'data-stale',
             'true',
         );
+
         await expect(page.locator('#freshness')).toContainText(
             'diagram needs review',
         );
+
         await loadCatalog(root, { stamp: true });
         await page.getByRole('button', { name: 'Refresh sources' }).click();
         await expect(page.locator('#freshness')).toHaveAttribute(
@@ -193,14 +223,17 @@ flowchart LR
             documentPath,
             document.replace('Request --> Result', 'A -->|unfinished'),
         );
+
         await page.getByRole('button', { name: 'Refresh sources' }).click();
         await expect(page.locator('#render-status')).toContainText(
             'Unable to render this diagram',
         );
+
         await page.locator('#sources-details summary').click();
         await expect(page.locator('#mermaid-source')).toContainText(
             'A -->|unfinished',
         );
+
         await writeFile(documentPath, document);
         await loadCatalog(root, { stamp: true });
         await page.getByRole('button', { name: 'Refresh sources' }).click();
@@ -208,6 +241,7 @@ flowchart LR
             'aria-label',
             'Synthetic review flow',
         );
+
         await expect(page.locator('#render-status')).toBeEmpty();
 
         await viewer.close();
@@ -216,6 +250,7 @@ flowchart LR
         await expect(page.getByRole('alert')).toContainText(
             'Unable to load diagrams',
         );
+
         await viewer.listen(Number(new URL(origin).port));
         listening = true;
         await page.getByRole('button', { name: 'Refresh sources' }).click();
@@ -224,13 +259,18 @@ flowchart LR
             'aria-label',
             'Synthetic review flow',
         );
+
         expect(failed.length).toBeGreaterThan(0);
         expect(failed.every((url) => url === `${origin}/api/diagrams`)).toBe(
             true,
         );
+
         expect(exceptions).toEqual([]);
     } finally {
-        if (listening) await viewer.close();
+        if (listening) {
+            await viewer.close();
+        }
+
         await rm(root, { recursive: true, force: true });
     }
 });

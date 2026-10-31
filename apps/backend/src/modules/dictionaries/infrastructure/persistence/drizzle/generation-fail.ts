@@ -31,7 +31,10 @@ export async function fail(
             .where(workerCas(input))
             .for('update');
 
-        if (!job) return false;
+        if (!job) {
+            return false;
+        }
+
         if (job.cancellationRequestedAt) {
             await terminalizeCancelled(tx, job, input.context.now);
 
@@ -58,8 +61,10 @@ export async function fail(
                     jobProviderBudget.maxInputTokensPerAttempt ||
                 input.providerUsage.outputTokens >
                     jobProviderBudget.maxOutputTokensPerAttempt)
-        )
+        ) {
             throw new Error('Invalid provider usage');
+        }
+
         const priorAttemptCount = Math.max(0, job.attemptCount - 1);
         const settledCostMicros = input.providerUsage
             ? priorAttemptCount * jobProviderBudget.maxCostMicrosPerAttempt +
@@ -81,8 +86,10 @@ export async function fail(
             settledCostMicros > job.providerReservedCostMicros ||
             settledInputTokens > job.providerReservedInputTokens ||
             settledOutputTokens > job.providerReservedOutputTokens
-        )
+        ) {
             throw new Error('Provider usage exceeds reservation');
+        }
+
         await settleCurrentAiCreditAttempt(tx, job, {
             at: input.context.now,
             terminal: !retry,
@@ -130,15 +137,18 @@ export async function fail(
                 'provider_timeout',
                 'provider_unavailable',
             ].includes(input.failureCategory)
-        )
+        ) {
             await recordProviderFailure(tx, job, input.context.now);
-        if (updated && !retry && job.kind === 'document-terms')
+        }
+
+        if (updated && !retry && job.kind === 'document-terms') {
             await scheduleDocumentCleanup(
                 tx,
                 job.id,
                 input.context.now,
                 'failed',
             );
+        }
 
         return Boolean(updated);
     });

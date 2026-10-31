@@ -16,6 +16,7 @@ const mock = vi.hoisted(() => ({
     setUse: vi.fn(),
     setCache: vi.fn(),
 }));
+
 vi.mock('@/fsd/entities/learner-portrait', async (importOriginal) => ({
     ...(await importOriginal<typeof LearnerPortraitEntity>()),
     usePortraitState: () => ({
@@ -33,6 +34,7 @@ vi.mock('@/fsd/entities/learner-portrait', async (importOriginal) => ({
     portraitApi: { setUse: mock.setUse },
     setPortraitStateCache: mock.setCache,
 }));
+
 const ownerId = '10000000-0000-4000-8000-000000000001';
 const items = {
     languages: [],
@@ -43,6 +45,7 @@ const items = {
 };
 const requestWithSession = <T,>(operation: (token: string) => Promise<T>) =>
     operation('fixture-token');
+
 function mount() {
     const client = new QueryClient();
     render(
@@ -53,8 +56,10 @@ function mount() {
             />
         </QueryClientProvider>,
     );
+
     return client;
 }
+
 beforeEach(() => {
     vi.clearAllMocks();
     mock.error = false;
@@ -67,6 +72,7 @@ beforeEach(() => {
         approved: null,
         draft: null,
     };
+
     useSessionStore.setState({ user: { id: ownerId } as AuthUser });
 });
 
@@ -76,10 +82,12 @@ describe('portrait entry real states', () => {
         expect(
             screen.getByRole('link', { name: 'Start interview' }),
         ).toHaveAttribute('href', '/portrait/intro');
+
         expect(
             screen.getByRole('link', { name: 'Fill it in myself' }),
         ).toHaveAttribute('href', '/portrait/manual');
     });
+
     it('keeps a manual draft recoverable without inventing an interview', () => {
         mock.state!.draft = {
             items,
@@ -89,33 +97,40 @@ describe('portrait entry real states', () => {
             updatedAt: '2026-10-21T10:00:00.000Z',
             expiresAt: '2026-11-04T10:00:00.000Z',
         };
+
         mount();
         expect(
             screen.getByRole('heading', {
                 name: 'Your draft is ready to review',
             }),
         ).toBeVisible();
+
         expect(
             screen.getByRole('link', { name: 'Review draft' }),
         ).toHaveAttribute('href', '/portrait/review');
+
         expect(
             screen.queryByRole('link', { name: 'Resume interview' }),
         ).not.toBeInTheDocument();
     });
+
     it('shows resumable interview actions with real expiry', () => {
         mock.interview = {
             id: 'interview-fixture',
             locale: 'en',
             expiresAt: '2026-11-04T10:00:00.000Z',
         };
+
         mount();
         expect(
             screen.getByRole('link', { name: 'Resume interview' }),
         ).toHaveAttribute('href', '/portrait/interview');
+
         expect(
             screen.getByRole('link', { name: 'Review draft' }),
         ).toBeVisible();
     });
+
     it('only enables through an explicit action and refreshes chat preference caches', async () => {
         mock.state = {
             ...mock.state!,
@@ -128,36 +143,43 @@ describe('portrait entry real states', () => {
                 updatedAt: '2026-10-21T10:00:00.000Z',
             },
         };
+
         mock.setUse.mockResolvedValue({
             ...mock.state,
             version: 4,
             useEnabled: true,
         });
+
         const client = mount();
         const invalidate = vi.spyOn(client, 'invalidateQueries');
         expect(mock.setUse).not.toHaveBeenCalled();
         await userEvent.click(
             screen.getByRole('button', { name: 'Use my portrait' }),
         );
+
         await waitFor(() =>
             expect(mock.setUse).toHaveBeenCalledWith('fixture-token', {
                 expectedVersion: 3,
                 enabled: true,
             }),
         );
+
         expect(invalidate).toHaveBeenCalledWith({
             queryKey: ['conversations', ownerId],
         });
+
         expect(invalidate).toHaveBeenCalledWith({
             queryKey: ['conversation', ownerId],
         });
     });
+
     it('offers a real retry when discovery fails', async () => {
         mock.error = true;
         mount();
         await userEvent.click(
             screen.getByRole('button', { name: 'Try again' }),
         );
+
         expect(mock.refetch).toHaveBeenCalledTimes(2);
     });
 });

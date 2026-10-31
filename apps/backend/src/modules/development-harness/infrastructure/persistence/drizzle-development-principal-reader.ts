@@ -17,7 +17,9 @@ export class DrizzleDevelopmentPrincipalReader implements DevelopmentPrincipalRe
     public async findById(id: string): Promise<DevelopmentPrincipal | null> {
         const result = await this.users.findById(id);
 
-        if (!result) return null;
+        if (!result) {
+            return null;
+        }
 
         return {
             email: result.primaryEmail.value,

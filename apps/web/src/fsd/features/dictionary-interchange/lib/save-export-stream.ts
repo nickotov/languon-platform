@@ -24,19 +24,27 @@ interface FilePickerWindow extends Window {
 }
 
 async function boundedBlob(response: Response): Promise<Blob> {
-    if (!response.body) throw new Error('Export response has no body.');
+    if (!response.body) {
+        throw new Error('Export response has no body.');
+    }
+
     const reader = response.body.getReader();
     const chunks: ArrayBuffer[] = [];
     let total = 0;
     try {
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+                break;
+            }
+
             total += value.byteLength;
             if (total > maximumFallbackBytes) {
                 await reader.cancel('dictionary_export_fallback_limit');
+
                 throw new DictionaryExportSaveError('streaming_required');
             }
+
             const copy = new Uint8Array(value.byteLength);
             copy.set(value);
             chunks.push(copy.buffer);
@@ -44,6 +52,7 @@ async function boundedBlob(response: Response): Promise<Blob> {
     } finally {
         reader.releaseLock();
     }
+
     return new Blob(chunks, {
         type:
             response.headers.get('content-type') ?? 'application/octet-stream',
@@ -76,22 +85,30 @@ export async function saveDictionaryExport(input: {
                 ],
             });
         } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError')
+            if (error instanceof DOMException && error.name === 'AbortError') {
                 return 'cancelled';
+            }
+
             throw error;
         }
+
         const writable = await handle.createWritable();
         try {
             const loaded = await input.load();
-            if (!loaded.response.body)
+            if (!loaded.response.body) {
                 throw new Error('Export response has no body.');
+            }
+
             await loaded.response.body.pipeTo(writable);
         } catch (error) {
             await writable.abort(error).catch(() => undefined);
+
             throw error;
         }
+
         return 'saved';
     }
+
     const loaded = await input.load();
     const blob = await boundedBlob(loaded.response);
     const url = URL.createObjectURL(blob);
@@ -103,6 +120,7 @@ export async function saveDictionaryExport(input: {
     } finally {
         URL.revokeObjectURL(url);
     }
+
     return 'saved';
 }
 

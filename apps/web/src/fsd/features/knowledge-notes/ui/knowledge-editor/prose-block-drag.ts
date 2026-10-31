@@ -22,6 +22,7 @@ export const ProseBlockDrag = Extension.create<{
     addProseMirrorPlugins() {
         const label = this.options.label;
         const dragState: ProseDragState = { current: null };
+
         return [
             new Plugin({
                 props: {
@@ -30,8 +31,10 @@ export const ProseBlockDrag = Extension.create<{
                             !view.editable ||
                             !event.altKey ||
                             !['ArrowUp', 'ArrowDown'].includes(event.key)
-                        )
+                        ) {
                             return false;
+                        }
+
                         const resolved = view.state.doc.resolve(
                             view.state.selection.from,
                         );
@@ -44,45 +47,64 @@ export const ProseBlockDrag = Extension.create<{
                             !node ||
                             node.type.name === 'learningBlock' ||
                             !(element instanceof HTMLElement)
-                        )
+                        ) {
                             return false;
+                        }
+
                         const destination = adjacentBlockDestination(
                             view.state.doc,
                             at,
                             event.key === 'ArrowUp' ? -1 : 1,
                         );
-                        if (destination !== null)
+
+                        if (destination !== null) {
                             moveEditorBlock(
                                 view,
                                 { position: at, node },
                                 destination,
                             );
+                        }
+
                         event.preventDefault();
+
                         return true;
                     },
                     handleDrop(view, event, _slice, moved) {
-                        if (!dragState.current) return false;
+                        if (!dragState.current) {
+                            return false;
+                        }
+
                         const captured = dragState.current;
                         const stale =
                             !view.editable ||
                             captured.document !== view.state.doc;
+
                         dragState.current = null;
                         event.preventDefault();
                         view.dragging = null;
-                        if (stale) return true;
+                        if (stale) {
+                            return true;
+                        }
+
                         const target = view.posAtCoords({
                             left: event.clientX,
                             top: event.clientY,
                         });
-                        if (!target) return true;
+
+                        if (!target) {
+                            return true;
+                        }
+
                         const resolved = view.state.doc.resolve(target.pos);
                         let destination = target.pos;
                         if (resolved.depth > 0) {
                             const at = resolved.before(1);
                             const range = editorBlockRange(view.state.doc, at);
                             const element = view.nodeDOM(at);
-                            if (!range || !(element instanceof HTMLElement))
+                            if (!range || !(element instanceof HTMLElement)) {
                                 return true;
+                            }
+
                             const rect = element.getBoundingClientRect();
                             destination =
                                 event.clientY < rect.top + rect.height / 2
@@ -93,12 +115,14 @@ export const ProseBlockDrag = Extension.create<{
                                 editorBlockRange(view.state.doc, target.pos)
                                     ?.from ?? target.pos;
                         }
+
                         moveEditorBlock(
                             view,
                             captured.source,
                             destination,
                             !moved,
                         );
+
                         return true;
                     },
                 },

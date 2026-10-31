@@ -37,15 +37,19 @@ export async function readPricingText(
     },
 ): Promise<string> {
     signal?.throwIfAborted();
-    if (!origins.has(url.origin) || url.username || url.password || url.hash)
+    if (!origins.has(url.origin) || url.username || url.password || url.hash) {
         throw new Error('Unsupported pricing source origin.');
+    }
+
     if (
         body &&
         (url.origin !== 'https://api.kie.ai' ||
             url.pathname !== '/client/v1/model-pricing/page' ||
             url.search)
-    )
+    ) {
         throw new Error('Unsupported pricing source request.');
+    }
+
     const bounded = AbortSignal.timeout(10_000);
     const response = await fetcher(url, {
         method: body ? 'POST' : 'GET',
@@ -60,28 +64,39 @@ export async function readPricingText(
         redirect: 'error',
         signal: signal ? AbortSignal.any([signal, bounded]) : bounded,
     });
-    if (!response.ok || !response.body)
+
+    if (!response.ok || !response.body) {
         throw new Error('Pricing source unavailable.');
+    }
+
     const length = response.headers.get('content-length');
     if (length && Number(length) > MAXIMUM_BYTES) {
         await response.body.cancel();
+
         throw new Error('Pricing response too large.');
     }
+
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = [];
     let bytes = 0;
     try {
         for (;;) {
             const item = await reader.read();
-            if (item.done) break;
+            if (item.done) {
+                break;
+            }
+
             bytes += item.value.byteLength;
-            if (bytes > MAXIMUM_BYTES)
+            if (bytes > MAXIMUM_BYTES) {
                 throw new Error('Pricing response too large.');
+            }
+
             chunks.push(item.value);
         }
     } finally {
         await reader.cancel();
         reader.releaseLock();
     }
+
     return Buffer.concat(chunks).toString('utf8');
 }

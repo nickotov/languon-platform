@@ -28,12 +28,16 @@ export function useInterviewLocale({
     async function switchLocale(
         next: StartPortraitInterviewResponse['context']['locale'],
     ) {
-        if (!session || !isInterviewOwner(ownerId)) return;
+        if (!session || !isInterviewOwner(ownerId)) {
+            return;
+        }
+
         const sequence = ++revision.current;
         const request = ownerScopedInterviewRequest(
             ownerId,
             requestWithSession,
         );
+
         try {
             const current = await request((token) => portraitApi.read(token));
             const updated = await request((token) =>
@@ -43,15 +47,22 @@ export function useInterviewLocale({
                     locale: next,
                 }),
             );
-            if (sequence !== revision.current) return;
+
+            if (sequence !== revision.current) {
+                return;
+            }
+
             onSession({ ...session, ...updated });
         } catch {
-            if (!isInterviewOwner(ownerId) || sequence !== revision.current)
+            if (!isInterviewOwner(ownerId) || sequence !== revision.current) {
                 return;
+            }
+
             onError(
                 'Unable to change the interview language. Your answers are kept.',
             );
         }
     }
+
     return switchLocale;
 }

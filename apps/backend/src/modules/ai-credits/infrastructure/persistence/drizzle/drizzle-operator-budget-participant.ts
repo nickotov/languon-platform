@@ -14,15 +14,18 @@ export interface OperatorBudgetSettings {
 }
 const MAX = 9_007_199_254_740_991n;
 function amount(value: string | null) {
-    if (!value)
+    if (!value) {
         throw new OperatorBudgetUnavailableError(
             'Operator spending limits must be configured.',
         );
+    }
+
     const result = parseFixed(value, 6);
-    if (result <= 0n || result > MAX)
+    if (result <= 0n || result > MAX) {
         throw new OperatorBudgetUnavailableError(
             'Invalid operator spending limit.',
         );
+    }
 
     return result;
 }
@@ -42,10 +45,12 @@ export class DrizzleOperatorBudgetParticipant {
             .from(actions)
             .where(eq(actions.actionId, actionId));
 
-        if (!action?.ownerId)
+        if (!action?.ownerId) {
             throw new OperatorBudgetUnavailableError(
                 'Operator action authorization is missing.',
             );
+        }
+
         await this.lockOwner(action.ownerId);
     }
 
@@ -78,10 +83,12 @@ export class DrizzleOperatorBudgetParticipant {
                 ? input.maximumMicros
                 : limits.action;
 
-        if (maximum < 0n || maximum > MAX)
+        if (maximum < 0n || maximum > MAX) {
             throw new OperatorBudgetUnavailableError(
                 'Invalid operator action reservation.',
             );
+        }
+
         const [previous] = await this.tx
             .select()
             .from(actions)
@@ -92,10 +99,11 @@ export class DrizzleOperatorBudgetParticipant {
             if (
                 previous.ownerId !== input.ownerId ||
                 previous.state !== 'active'
-            )
+            ) {
                 throw new OperatorBudgetUnavailableError(
                     'Conflicting operator action identity.',
                 );
+            }
 
             return previous;
         }
@@ -121,10 +129,11 @@ export class DrizzleOperatorBudgetParticipant {
                     typeof cause === 'object' &&
                     'code' in cause &&
                     cause.code === 'P0001'
-                )
+                ) {
                     throw new OperatorBudgetUnavailableError(
                         'The operator spending allowance is unavailable.',
                     );
+                }
 
                 throw error;
             });
@@ -142,10 +151,12 @@ export class DrizzleOperatorBudgetParticipant {
             .where(eq(actions.actionId, actionId))
             .for('update');
 
-        if (!action || action.state !== 'active')
+        if (!action || action.state !== 'active') {
             throw new OperatorBudgetUnavailableError(
                 'Active operator authorization is missing.',
             );
+        }
+
         const [usage] = await this.tx
             .select({
                 used: sql<string>`coalesce(sum(coalesce(${attempts.consumedMicros},${attempts.reservedMicros})),0)::text`,
@@ -163,10 +174,12 @@ export class DrizzleOperatorBudgetParticipant {
         at: Date;
     }) {
         const remaining = await this.remaining(input.actionId);
-        if (input.maximumMicros < 0n || input.maximumMicros > remaining)
+        if (input.maximumMicros < 0n || input.maximumMicros > remaining) {
             throw new OperatorBudgetUnavailableError(
                 'Provider attempt exceeds operator action authorization.',
             );
+        }
+
         await this.tx.insert(attempts).values({
             actionId: input.actionId,
             attemptId: input.attemptId,
@@ -193,11 +206,16 @@ export class DrizzleOperatorBudgetParticipant {
             )
             .for('update');
 
-        if (!attempt)
+        if (!attempt) {
             throw new OperatorBudgetUnavailableError(
                 'Provider attempt operator authorization is missing.',
             );
-        if (attempt.settledAt) return;
+        }
+
+        if (attempt.settledAt) {
+            return;
+        }
+
         const valid =
             input.measuredMicros !== null &&
             input.measuredMicros >= 0n &&
@@ -224,11 +242,16 @@ export class DrizzleOperatorBudgetParticipant {
             .where(eq(actions.actionId, input.actionId))
             .for('update');
 
-        if (!action)
+        if (!action) {
             throw new OperatorBudgetUnavailableError(
                 'Operator action authorization is missing.',
             );
-        if (action.state === 'settled') return action;
+        }
+
+        if (action.state === 'settled') {
+            return action;
+        }
+
         await this.tx
             .update(attempts)
             .set({

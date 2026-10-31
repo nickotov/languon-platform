@@ -22,6 +22,7 @@ it('indexes H1 words and treats rules as separators without making a rule-only d
                 ],
             },
         });
+
         expect(knowledgeBodyPlainText(body)).toBe('Bonjour Monde');
         expect(
             knowledgeBodyPlainText(
@@ -36,6 +37,7 @@ it('indexes H1 words and treats rules as separators without making a rule-only d
         ).toBe('');
     }
 });
+
 it('indexes words crossing inline marks as a single word and preserves block boundaries', () => {
     const body = KnowledgeBodySchema.parse({
         schemaVersion: 1,
@@ -60,6 +62,7 @@ it('indexes words crossing inline marks as a single word and preserves block bou
             ],
         },
     });
+
     expect(knowledgeBodyPlainText(body)).toBe('bonjour tout le monde');
 });
 
@@ -120,6 +123,7 @@ it('retains useful content for a media-only note without claiming media understa
             ],
         },
     });
+
     expect(knowledgeBodyPlainText(body)).toBe('Video');
 });
 

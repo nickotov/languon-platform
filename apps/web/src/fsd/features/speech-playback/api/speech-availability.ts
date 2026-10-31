@@ -20,8 +20,10 @@ export function speechAvailability(
         const item = { source, resolve, reject };
         if (pending) {
             pending.push(item);
+
             return;
         }
+
         batches.set(request, [item]);
         queueMicrotask(() => {
             void flush(request);
@@ -46,6 +48,7 @@ async function flush(request: RequestWithSession) {
                     item.playable,
                 ]),
             );
+
             group.forEach((item) =>
                 item.resolve(values.get(speechSourceKey(item.source)) === true),
             );

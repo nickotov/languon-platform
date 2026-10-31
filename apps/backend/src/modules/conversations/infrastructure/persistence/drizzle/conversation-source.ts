@@ -68,7 +68,9 @@ export class ConversationSourceResolver {
             .from(usersTable)
             .where(eq(usersTable.id, ownerId));
         const [actor] = lock === 'none' ? await query : await query.for(lock);
-        if (actor?.status !== 'active') throw conversationUnavailable();
+        if (actor?.status !== 'active') {
+            throw conversationUnavailable();
+        }
     }
 
     async resolve(
@@ -84,12 +86,14 @@ export class ConversationSourceResolver {
         snapshot: ConversationSourceSnapshot;
         authority: SourceAuthority;
     }> {
-        if (!actorVerified)
+        if (!actorVerified) {
             await this.assertActiveActor(
                 tx,
                 ownerId,
                 lockRows ? 'share' : 'none',
             );
+        }
+
         if (source.kind === 'knowledge') {
             const shared = source.shareLocator
                 ? await readSharedConversationNote(
@@ -103,8 +107,9 @@ export class ConversationSourceResolver {
                 shared?.note ??
                 (await this.dependencies.readNote(tx, ownerId, source.id));
 
-            if (source.view === 'saved' && note.version < 1)
+            if (source.view === 'saved' && note.version < 1) {
                 throw conversationUnavailable();
+            }
 
             return {
                 authority: shared?.authority ?? { sourceOwnerId: ownerId },
@@ -150,11 +155,16 @@ export class ConversationSourceResolver {
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, source.id));
 
-            if (!candidate) throw conversationUnavailable();
+            if (!candidate) {
+                throw conversationUnavailable();
+            }
+
             // resolve() verified this actor already; shared resources still need
             // their separate source owner's lifecycle check and lock.
-            if (candidate.ownerId !== ownerId)
+            if (candidate.ownerId !== ownerId) {
                 await this.owner(tx, candidate.ownerId, lockRows);
+            }
+
             const dictionaryQuery = tx
                 .select()
                 .from(dictionariesTable)
@@ -167,8 +177,10 @@ export class ConversationSourceResolver {
                 !dictionary ||
                 dictionary.ownerId !== candidate.ownerId ||
                 dictionary.lifecycle !== 'active'
-            )
+            ) {
                 throw conversationUnavailable();
+            }
+
             const authority: SourceAuthority = {
                 sourceOwnerId: dictionary.ownerId,
             };
@@ -187,8 +199,10 @@ export class ConversationSourceResolver {
                               access.key,
                               dictionary.shareKeyDigest,
                           )))
-                )
+                ) {
                     throw conversationUnavailable();
+                }
+
                 authority.share = {
                     digest: dictionary.shareKeyDigest,
                     version: dictionary.shareKeyVersion!,
@@ -248,11 +262,13 @@ export class ConversationSourceResolver {
                       .limit(query ? 100 : 10001)
                 : [];
 
-            if (!query && cards.length > 10000)
+            if (!query && cards.length > 10000) {
                 throw new ConversationError(
                     'source_too_large',
                     'This source has too many cards for a conversation. Use a smaller source.',
                 );
+            }
+
             const visible = (override: string | null, defaultValue: boolean) =>
                 override ? override === 'enabled' : defaultValue;
             const material = cards.map((card) => {
@@ -340,11 +356,15 @@ export class ConversationSourceResolver {
                 };
             });
 
-            if (Buffer.byteLength(JSON.stringify(material), 'utf8') > 4_000_000)
+            if (
+                Buffer.byteLength(JSON.stringify(material), 'utf8') > 4_000_000
+            ) {
                 throw new ConversationError(
                     'source_too_large',
                     'This source is too large for a conversation. Use a smaller source.',
                 );
+            }
+
             const revision = createHash('sha256')
                 .update(JSON.stringify(material))
                 .digest('hex')
@@ -364,17 +384,26 @@ export class ConversationSourceResolver {
             };
         }
 
-        if (source.shareKind && !['text', 'folder'].includes(source.shareKind))
+        if (
+            source.shareKind &&
+            !['text', 'folder'].includes(source.shareKind)
+        ) {
             throw conversationUnavailable();
+        }
 
         const [candidate] = await tx
             .select()
             .from(textsTable)
             .where(eq(textsTable.id, source.id));
 
-        if (!candidate) throw conversationUnavailable();
-        if (candidate.ownerId !== ownerId)
+        if (!candidate) {
+            throw conversationUnavailable();
+        }
+
+        if (candidate.ownerId !== ownerId) {
             await this.owner(tx, candidate.ownerId, lockRows);
+        }
+
         const folderQuery =
             candidate.folderId === null
                 ? undefined
@@ -403,8 +432,10 @@ export class ConversationSourceResolver {
             (document.folderId !== null &&
                 (folder?.lifecycle !== 'active' ||
                     folder.ownerId !== document.ownerId))
-        )
+        ) {
             throw conversationUnavailable();
+        }
+
         const authority: SourceAuthority = { sourceOwnerId: document.ownerId };
         if (document.ownerId !== ownerId) {
             const shareQuery = tx
@@ -438,8 +469,10 @@ export class ConversationSourceResolver {
                           access.key,
                           share.keyDigest,
                       )))
-            )
+            ) {
                 throw conversationUnavailable();
+            }
+
             authority.share = {
                 id: share.id,
                 digest: share.keyDigest,
@@ -481,6 +514,8 @@ export class ConversationSourceResolver {
             .from(usersTable)
             .where(eq(usersTable.id, id));
         const [owner] = lockRows ? await query.for('share') : await query;
-        if (owner?.status !== 'active') throw conversationUnavailable();
+        if (owner?.status !== 'active') {
+            throw conversationUnavailable();
+        }
     }
 }

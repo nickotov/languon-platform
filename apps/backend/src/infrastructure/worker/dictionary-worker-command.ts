@@ -94,8 +94,10 @@ export function createWorkerSentenceProvider(
         const unavailable = async (): Promise<never> => {
             throw new Error('Sentence provider fixtures are unavailable.');
         };
+
         return { generate: unavailable, check: unavailable };
     }
+
     return createSentenceAiProvider({
         runtime,
         credentials: environment.providerCredentials,
@@ -178,6 +180,7 @@ export function publishWorkerTextAiObservations(
               !!environment.transcriptionApiKey,
           )
         : Promise.resolve();
+
     return Promise.all([textPublication, transcriptionPublication]).then(
         () => undefined,
     );
@@ -199,6 +202,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     if (existsSync(dictionaryWorkerLocalEnvironmentFile)) {
         loadEnvFile(dictionaryWorkerLocalEnvironmentFile);
     }
+
     const [command = 'run'] = values;
     if (!['healthcheck', 'run'].includes(command) || values.length > 1) {
         throw new Error(
@@ -218,6 +222,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             }`,
         );
     }
+
     const sql = createPostgresClient({
         databaseUrl: environment.databaseUrl,
         maxConnections: environment.databaseMaxConnections,
@@ -230,6 +235,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const audioDeployed = ['staging', 'production'].includes(
         process.env.APP_ENV ?? 'development',
     );
+
     if (
         audioDeployed &&
         process.env.SPEECH_GENERATION_ENABLED === 'true' &&
@@ -244,6 +250,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             'Shared speech worker requires compatible processing and pricing revisions.',
         );
     }
+
     const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
         deployed: audioDeployed,
         role: 'worker',
@@ -431,11 +438,14 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const generationFormat =
         process.env.LEARNING_SENTENCE_GENERATION_FORMAT ??
         'sentence-generation:v1';
+
     if (
         generationFormat !== 'sentence-generation:v1' &&
         generationFormat !== 'sentence-generation:v2'
-    )
+    ) {
         throw new Error('Invalid sentence generation format');
+    }
+
     const { preparation: sentencePreparation } =
         createSentencePreparationWorkerComposition({
             database,
@@ -522,6 +532,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             'Texts vocabulary execution requires the API DICTIONARY_HMAC_SECRET (at least 32 bytes).',
         );
     }
+
     const textsCryptography = selectionEnabled
         ? createTextsCryptography(textsHmacSecret!, { randomBytes })
         : undefined;
@@ -543,13 +554,16 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const conversationEnabled =
         environment.supportedFormats.includes('conversation:v1') &&
         environment.providerFixtureMode !== 'deterministic';
+
     if (
         conversationEnabled &&
         (!textsHmacSecret || Buffer.byteLength(textsHmacSecret, 'utf8') < 32)
-    )
+    ) {
         throw new DictionaryWorkerConfigurationError(
             'Conversation execution requires DICTIONARY_HMAC_SECRET (at least 32 bytes).',
         );
+    }
+
     const conversationWorker = conversationEnabled
         ? createConversationWorkerComposition({
               database,
@@ -614,6 +628,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             audioAdapters.close();
             await sql.end({ timeout: 1 });
         }
+
         return;
     }
 
@@ -621,12 +636,15 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         void runtime
             .shutdown(signal)
             .then(({ forced }) => {
-                if (forced) process.exitCode = 1;
+                if (forced) {
+                    process.exitCode = 1;
+                }
             })
             .catch(() => {
                 process.exitCode = 1;
             });
     };
+
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
     await publishWorkerTextAiObservations(
@@ -635,6 +653,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         observationWorkerId,
         workerId,
     );
+
     const observationTimer = setInterval(() => {
         void publishWorkerTextAiObservations(
             environment,
@@ -647,6 +666,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             );
         });
     }, 60_000);
+
     observationTimer.unref();
     try {
         await runtime.run();
@@ -667,6 +687,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                 ? `${error.message}\n`
                 : 'Dictionary worker command failed.\n',
         );
+
         process.exitCode = 1;
     });
 }

@@ -53,14 +53,20 @@ export async function completeUpload(
             )
             .for('update');
 
-        if (!upload) throw new DictionaryDocumentUploadNotFoundError();
+        if (!upload) {
+            throw new DictionaryDocumentUploadNotFoundError();
+        }
+
         const [job] = await tx
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, upload.jobId))
             .for('update');
 
-        if (!job) throw new DictionaryDocumentUploadNotFoundError();
+        if (!job) {
+            throw new DictionaryDocumentUploadNotFoundError();
+        }
+
         const providerBudget = {
             inputCostMicrosPerMillionTokens:
                 job.providerInputCostMicrosPerMillionTokens,
@@ -89,8 +95,9 @@ export async function completeUpload(
                 replayCurrent.sizeBytes !== upload.verifiedSizeBytes ||
                 replayCurrent.contentType !== upload.expectedContentType ||
                 input.detectedFormat !== upload.detectedFormat
-            )
+            ) {
                 throw new DictionaryDocumentUploadConflictError();
+            }
 
             return { conflict: false as const, jobId: job.id };
         }
@@ -98,8 +105,9 @@ export async function completeUpload(
         if (
             upload.processingState !== 'authorized' ||
             upload.capabilityExpiresAt <= input.context.now
-        )
+        ) {
             return { conflict: true as const, jobId: job.id };
+        }
 
         const dataVersions = input.versions.filter(
             (version) => version.kind === 'data',
@@ -122,9 +130,11 @@ export async function completeUpload(
             current.contentType !== upload.expectedContentType ||
             input.detectedFormat !== upload.expectedFormat
         ) {
-            if (usesLegacyAction(job.selectedExecutionSnapshot))
+            if (usesLegacyAction(job.selectedExecutionSnapshot)) {
                 await settleAiCreditAttempt(tx, job, input.context.now);
-            if (job.aiCreditReservationId)
+            }
+
+            if (job.aiCreditReservationId) {
                 await new DrizzleAiCreditTransactionParticipant(
                     tx,
                 ).releaseUndispatchedAttempt({
@@ -132,6 +142,8 @@ export async function completeUpload(
                     releasedAt: input.context.now,
                     reservationId: job.aiCreditReservationId,
                 });
+            }
+
             await persistObservedVersions(
                 context,
                 tx,
@@ -193,8 +205,9 @@ export async function completeUpload(
                 true,
                 providerBudget,
             )
-        )
+        ) {
             throw new DictionaryGenerationNotAvailableError();
+        }
 
         await persistObservedVersions(
             context,
@@ -253,15 +266,19 @@ export async function completeUpload(
         return { conflict: false as const, jobId: job.id };
     });
 
-    if (completion.conflict) throw new DictionaryDocumentUploadConflictError();
+    if (completion.conflict) {
+        throw new DictionaryDocumentUploadConflictError();
+    }
+
     const job = await context.generationStore.read({
         context: input.context,
         jobId: completion.jobId,
         ownerId: input.ownerId,
     });
 
-    if (job.kind !== 'document-terms')
+    if (job.kind !== 'document-terms') {
         throw new DictionaryGenerationJobNotFoundError();
+    }
 
     return job;
 }

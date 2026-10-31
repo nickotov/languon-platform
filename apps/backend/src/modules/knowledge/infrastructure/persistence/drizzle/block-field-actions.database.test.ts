@@ -100,8 +100,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             try {
                 return await fields.request(owner, noteId, value, context());
             } catch (error) {
-                if (!(error instanceof ActionAllowanceConfirmationRequired))
+                if (!(error instanceof ActionAllowanceConfirmationRequired)) {
                     throw error;
+                }
+
                 return withActionAllowanceConsent(error.quote.id, () =>
                     fields.request(owner, noteId, value, context()),
                 );
@@ -112,6 +114,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -128,8 +131,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             const model = textAiModelCatalog[0]!,
                 revisionId = randomUUID();
+
             await db.insert(dictionaryAiConfigurationRevisionsTable).values({
                 id: revisionId,
                 version: 1,
@@ -141,11 +146,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     supportedFormats: [...model.supportedFormats],
                 },
             });
+
             await db.insert(dictionaryAiConfigurationTable).values({
                 id: 'global',
                 version: 1,
                 activeRevisionId: revisionId,
             });
+
             await db.insert(dictionaryAiWorkerObservationsTable).values({
                 id: textsExecutionObservationId(
                     'block-field-test',
@@ -167,6 +174,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 checkedAt: now,
                 expiresAt: new Date(now.getTime() + 3_600_000),
             });
+
             await seedLegacyActionFixture(db);
             store = new DrizzleTextsJobStore(db, {
                 fingerprintSecret: 'synthetic-field-actions',
@@ -183,17 +191,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         requiredWorkerFormat: format,
                     }),
             });
+
             fields = new DrizzleKnowledgeBlockFieldStore(
                 store.knowledgeActionPersistence(),
             );
+
             const workspace = await new DrizzleKnowledgeStore(
                 db,
                 { beforeNoteDeletion: async () => {} },
                 new KnowledgeShareCrypto('synthetic-block-field-source'),
             ).createDraft(owner, { operationId: randomUUID() });
+
             noteId = workspace.noteId;
             branchId = workspace.preferredBranchId;
         }, 120_000);
+
         afterEach(() => vi.unstubAllGlobals());
         afterAll(async () => client?.end());
 
@@ -216,6 +228,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                     'utf8',
                 );
+
                 await client.unsafe(
                     grants
                         .split('\n')
@@ -223,56 +236,73 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"dictionary_worker_role"', `"${role}"`),
                 );
+
                 const withRole = async <T>(
                     callback: Parameters<typeof db.transaction<T>>[0],
                 ) =>
                     db.transaction(async (tx) => {
                         await tx.execute(sql.raw(`SET LOCAL ROLE "${role}"`));
+
                         return callback(tx);
                     });
+
                 workerDatabase = new Proxy(db, {
                     get(target, key) {
-                        if (key === 'transaction') return withRole;
-                        if (key === 'execute')
+                        if (key === 'transaction') {
+                            return withRole;
+                        }
+
+                        if (key === 'execute') {
                             return (query: Parameters<typeof db.execute>[0]) =>
                                 withRole((tx) => tx.execute(query));
+                        }
+
                         return Reflect.get(target, key);
                     },
                 });
+
                 await expect(
                     workerDatabase.execute(
                         sql`update knowledge_notes set title='forged' where id=${noteId}::uuid`,
                     ),
                 ).rejects.toMatchObject({ cause: { code: '42501' } });
+
                 await expect(
                     workerDatabase.execute(
                         sql`select result from knowledge_learner_attempts`,
                     ),
                 ).rejects.toMatchObject({ cause: { code: '42501' } });
+
                 await expect(
                     workerDatabase.execute(
                         sql`update knowledge_learner_attempts set result='{}'::jsonb where actor_id=${owner}::uuid`,
                     ),
                 ).rejects.toMatchObject({ cause: { code: '42501' } });
             }
+
             const outgoing: Record<string, unknown>[] = [];
             const http: typeof fetch = async (request, init) => {
                 const incoming = new Request(request, init),
                     url = new URL(incoming.url);
+
                 if (
                     url.origin !== 'https://api.deepseek.com' ||
                     url.pathname !== '/chat/completions' ||
                     incoming.method !== 'POST'
-                )
+                ) {
                     throw new Error('Unexpected provider HTTP request.');
+                }
+
                 const body = (await incoming.json()) as Record<string, unknown>;
                 outgoing.push(body);
                 await onProviderRequest?.();
-                if (fail)
+                if (fail) {
                     return Response.json(
                         { error: { message: 'synthetic provider failure' } },
                         { status: 400 },
                     );
+                }
+
                 return Response.json({
                     id: 'synthetic-field-answer',
                     object: 'chat.completion',
@@ -295,12 +325,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 });
             };
+
             vi.stubGlobal('fetch', http);
             const completionErrors: string[] = [];
             const productionStore = new DrizzleTextsJobStore(workerDatabase);
             const workerStore = new Proxy(productionStore, {
                 get(target, key) {
-                    if (key === 'complete')
+                    if (key === 'complete') {
                         return async (
                             ...args: Parameters<
                                 DrizzleTextsJobStore['complete']
@@ -315,15 +346,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                     'cause' in error
                                         ? error.cause
                                         : error;
+
                                 completionErrors.push(
                                     cause instanceof Error
                                         ? cause.message
                                         : String(cause),
                                 );
+
                                 throw error;
                             }
                         };
+                    }
+
                     const member = Reflect.get(target, key);
+
                     return typeof member === 'function'
                         ? member.bind(target)
                         : member;
@@ -350,6 +386,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 retryDelayMs: 100,
                 supportedFormats: ['text-translation:v4'],
             });
+
             try {
                 // Claim-time budget/source finalization can finish a queued job without a provider call.
                 await worker.processNext(context().signal);
@@ -359,12 +396,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await client.unsafe(`DROP ROLE "${role}"`);
                 }
             }
-            if (completionErrors.length)
+
+            if (completionErrors.length) {
                 throw new Error(
                     `Completion failed: ${completionErrors.join('; ')}`,
                 );
+            }
+
             return { outgoing };
         }
+
         async function execute(
             jobId: string,
             payload: unknown,
@@ -378,8 +419,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 fail,
             );
             const result = await fields.get(owner, noteId, jobId, context());
+
             return { outgoing, result };
         }
+
         async function evaluationFixture(actorId = owner) {
             const crypto = new KnowledgeShareCrypto(
                 'synthetic-block-field-source',
@@ -423,6 +466,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             });
+
             noteId = note.id;
             const learners = new DrizzleLearnerStore(db, crypto);
             const share =
@@ -461,6 +505,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     attemptId: attempt.id,
                     replyLanguage: 'en' as const,
                 };
+
                 try {
                     return await evaluations.request(
                         actorId,
@@ -470,8 +515,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         share,
                     );
                 } catch (error) {
-                    if (!(error instanceof ActionAllowanceConfirmationRequired))
+                    if (
+                        !(error instanceof ActionAllowanceConfirmationRequired)
+                    ) {
                         throw error;
+                    }
+
                     return withActionAllowanceConsent(error.quote.id, () =>
                         evaluations.request(
                             actorId,
@@ -483,6 +532,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     );
                 }
             };
+
             return {
                 evaluations,
                 requestEvaluation,
@@ -502,6 +552,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect((await fixture.requestEvaluation(operationId)).id).toBe(
                     job.id,
                 );
+
                 const { outgoing } = await executeWorker(
                     job.id,
                     {
@@ -517,21 +568,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     job.id,
                     context(),
                 );
+
                 expect(result.status, result.failureCode ?? undefined).toBe(
                     'completed',
                 );
+
                 expect(result.attempt?.id).toBe(fixture.attempt.id);
                 expect(result.attempt?.evaluation).toMatchObject({
                     status: 'correct',
                     method: 'ai',
                     validAlternative: true,
                 });
+
                 expect(outgoing).toHaveLength(1);
                 expect(outgoing[0]?.model).toBe('deepseek-flash');
                 const [attempt] = await db
                     .select()
                     .from(attempts)
                     .where(eq(attempts.actionId, job.id));
+
                 expect(attempt?.state).toBe('settled');
                 expect(outgoing[0]?.max_tokens).toBe(attempt?.outputLimit);
                 expect(result.billing?.state).toBe('charged');
@@ -539,24 +594,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .select()
                     .from(knowledgeNotesTable)
                     .where(eq(knowledgeNotesTable.id, noteId));
+
                 expect(JSON.stringify(saved?.body)).not.toContain(
                     'Je nettoie la maison',
                 );
+
                 expect(
                     (await fixture.learners.read(owner, noteId)).attempts[0]
                         ?.evaluation,
                 ).toMatchObject({ validAlternative: true });
+
                 await expect(
                     store.get(owner, job.id, context()),
                 ).rejects.toMatchObject({ code: 'generation_job_not_found' });
             },
             30_000,
         );
+
         it('isolates shared-reader evaluations and denies reads after access is revoked', async () => {
             const reader = randomUUID();
             await db
                 .insert(usersTable)
                 .values({ id: reader, status: 'active' });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: reader,
@@ -567,6 +627,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             const fixture = await evaluationFixture(reader);
             const job = await fixture.requestEvaluation();
             const { outgoing } = await executeWorker(
@@ -585,16 +646,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 context(),
                 fixture.share,
             );
+
             expect(result.status, result.failureCode ?? undefined).toBe(
                 'completed',
             );
+
             expect(outgoing).toHaveLength(1);
             await expect(
                 fixture.evaluations.get(owner, noteId, job.id, context()),
             ).rejects.toMatchObject({ code: 'generation_job_not_found' });
+
             expect(
                 (await fixture.learners.read(owner, noteId)).attempts,
             ).toHaveLength(0);
+
             await fixture.notes.revokeShare(owner, noteId);
             await expect(
                 fixture.evaluations.get(
@@ -606,6 +671,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toBeDefined();
         }, 30_000);
+
         it('cancels queued exercise checking without modifying the saved private answer or charging a provider', async () => {
             const fixture = await evaluationFixture();
             const job = await fixture.requestEvaluation();
@@ -615,16 +681,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 job.id,
                 context(),
             );
+
             expect(cancelled.status).toBe('cancelled');
             expect(cancelled.result).toBeNull();
             expect(
                 (await fixture.learners.read(owner, noteId)).attempts[0]
                     ?.evaluation,
             ).toEqual({ status: 'unchecked' });
+
             const [action] = await db
                 .select()
                 .from(actions)
                 .where(eq(actions.id, job.id));
+
             expect(action?.state).not.toBe('active');
             expect(cancelled.billing?.chargedCredits).toBe('0');
         }, 30_000);
@@ -632,7 +701,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         it.each([false, true])(
             'persists usable field suggestion through real SDK and settlement (restricted=%s)',
             async (restricted) => {
-                if (!restricted) await seedLegacyActionFixture(db, '200');
+                if (!restricted) {
+                    await seedLegacyActionFixture(db, '200');
+                }
+
                 const job = await request();
                 const { outgoing, result } = await execute(
                     job.id,
@@ -643,12 +715,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                     restricted,
                 );
+
                 expect(result.status, result.failureCode ?? undefined).toBe(
                     'completed',
                 );
+
                 expect(result.result).toMatchObject({
                     proposedValue: 'работа',
                 });
+
                 expect(outgoing).toHaveLength(1);
                 expect(outgoing[0]?.model).toBe('deepseek-flash');
                 const [attempt] = await db
@@ -659,21 +734,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .select()
                     .from(jobs)
                     .where(eq(jobs.id, job.id));
+
                 expect(outgoing[0]?.max_tokens).toBe(
                     Math.min(
                         attempt!.outputLimit,
                         row!.selectedExecutionSnapshot.perCallMaxOutputTokens,
                     ),
                 );
-                if (restricted)
+
+                if (restricted) {
                     expect(Number(outgoing[0]?.max_tokens)).toBeLessThan(8192);
-                else expect(outgoing[0]?.max_tokens).toBe(8192);
+                } else {
+                    expect(outgoing[0]?.max_tokens).toBe(8192);
+                }
+
                 expect(attempt?.state).toBe('settled');
                 expect(result.billing?.state).toBe('charged');
                 const [note] = await db
                     .select()
                     .from(knowledgeNotesTable)
                     .where(eq(knowledgeNotesTable.id, noteId));
+
                 expect(note?.status).toBe('draft');
                 expect(JSON.stringify(note?.body)).not.toContain('работа');
                 await expect(
@@ -696,6 +777,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceText: 'Je fais le ménage.',
                     currentValue: action === 'check' ? 'Я убираюсь.' : '',
                 };
+
                 const job = await request(value);
                 const prepared =
                     action === 'check'
@@ -713,6 +795,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(result.status, result.failureCode ?? undefined).toBe(
                     'completed',
                 );
+
                 expect(result.result).toMatchObject(prepared);
                 expect(result.billing?.state).toBe('charged');
             },
@@ -724,10 +807,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             async (change) => {
                 const actorId =
                     change === 'share revoked' ? randomUUID() : owner;
+
                 if (actorId !== owner) {
                     await db
                         .insert(usersTable)
                         .values({ id: actorId, status: 'active' });
+
                     await db.transaction((tx) =>
                         new DrizzleAiCreditTransactionParticipant(
                             tx,
@@ -741,6 +826,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         }),
                     );
                 }
+
                 const fixture = await evaluationFixture(actorId);
                 const job = await fixture.requestEvaluation();
                 const { outgoing } = await executeWorker(
@@ -757,11 +843,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             .select()
                             .from(attempts)
                             .where(eq(attempts.actionId, job.id));
+
                         expect(dispatched?.state).toBe('dispatched');
                         if (change === 'share revoked') {
                             await fixture.notes.revokeShare(owner, noteId);
+
                             return;
                         }
+
                         const saved = await fixture.notes.get(owner, noteId);
                         const updated = {
                             ...saved.body,
@@ -785,6 +874,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 ),
                             },
                         };
+
                         await fixture.notes.update(owner, noteId, {
                             operationId: randomUUID(),
                             expectedVersion: saved.version,
@@ -799,17 +889,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         });
                     },
                 );
+
                 expect(outgoing).toHaveLength(1);
                 const [raw] = await db
                     .select()
                     .from(jobs)
                     .where(eq(jobs.id, job.id));
+
                 expect(raw?.executionState).toBe('failed');
                 expect(raw?.resultPayload).toBeNull();
                 const [action] = await db
                     .select()
                     .from(actions)
                     .where(eq(actions.id, job.id));
+
                 expect(action?.state).toBe('settled');
                 expect(action?.outcome).toBe('failure');
                 expect(action?.chargedMilli).toBe(0n);
@@ -825,9 +918,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             ),
                         ),
                     );
+
                 expect(attempt?.result.evaluation).toEqual({
                     status: 'unchecked',
                 });
+
                 await expect(
                     fixture.evaluations.get(
                         actorId,
@@ -850,10 +945,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Synthetic free field checks',
             });
+
             await seedTextAiRoutingFixture(db, {
                 replace: true,
                 omittedTariffFlows: ['text-translation'],
             });
+
             const value = input();
             value.action = 'check';
             value.field.currentValue = 'работа';
@@ -862,15 +959,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 status: 'correct',
                 explanation: 'This is a valid translation.',
             });
+
             expect(result.status, result.failureCode ?? undefined).toBe(
                 'completed',
             );
+
             expect(result.billing?.state).toBe('free');
         }, 30_000);
 
         it('keeps one job for idempotent retries and rejects foreign ownership or field changes', async () => {
             const value = input(),
                 first = await request(value);
+
             expect((await request(value)).id).toBe(first.id);
             await expect(
                 request({
@@ -878,11 +978,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     field: { ...value.field, sourceText: 'joie' },
                 }),
             ).rejects.toMatchObject({ code: 'idempotency_conflict' });
+
             const other = randomUUID();
             await db.insert(usersTable).values({ id: other, status: 'active' });
             await expect(
                 fields.get(other, noteId, first.id, context()),
             ).rejects.toMatchObject({ code: 'generation_job_not_found' });
+
             await expect(
                 fields.request(
                     other,
@@ -891,6 +993,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).rejects.toMatchObject({ code: 'access_revoked' });
+
             expect(
                 (await fields.cancel(owner, noteId, first.id, context()))
                     .status,
@@ -915,10 +1018,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         0,
                         (pending?.nextAttemptAt?.getTime() ?? 0) - Date.now(),
                     ) + 25;
+
                 expect(waitMs).toBeLessThan(10_000);
                 await new Promise((resolve) => setTimeout(resolve, waitMs));
                 ({ result } = await execute(job.id, invalid));
             }
+
             expect(result.status).toBe('failed');
             expect(result.result).toBeNull();
             expect(result.billing?.chargedCredits).toBe('0');
@@ -926,6 +1031,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(actions)
                 .where(and(eq(actions.id, job.id), eq(actions.ownerId, owner)));
+
             expect(action?.state).not.toBe('active');
         }, 30_000);
 
@@ -934,19 +1040,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .delete(knowledgeWorkingBranchesTable)
                 .where(eq(knowledgeWorkingBranchesTable.id, branchId));
+
             await expect(
                 fields.get(owner, noteId, job.id, context()),
             ).rejects.toMatchObject({ code: 'access_revoked' });
+
             await db.transaction(async (tx) => {
                 await eraseKnowledgeTranslationJobs(tx, noteId, new Date());
                 await tx
                     .delete(knowledgeNotesTable)
                     .where(eq(knowledgeNotesTable.id, noteId));
             });
+
             const [raw] = await db
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, job.id));
+
             expect(raw?.executionState).toBe('cancelled');
             expect(raw?.inputPayload).toBeNull();
             expect(raw?.resultPayload).toBeNull();
@@ -954,6 +1064,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(actions)
                 .where(eq(actions.id, job.id));
+
             expect(action?.state).not.toBe('active');
         }, 30_000);
 
@@ -965,13 +1076,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .delete(knowledgeNotesTable)
                     .where(eq(knowledgeNotesTable.id, noteId));
             });
+
             await expect(
                 fields.get(owner, noteId, job.id, context()),
             ).rejects.toMatchObject({ code: 'generation_job_not_found' });
+
             const [row] = await db
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, job.id));
+
             expect(row?.inputPayload).toBeNull();
             expect(row?.resultPayload).toBeNull();
             expect(row?.executionState).toBe('cancelled');
@@ -995,10 +1109,12 @@ describe('atomic field request boundaries', () => {
             currentValue: '',
         },
     };
+
     it('permits generation of an empty draft field without permitting arbitrary paths', () => {
         expect(
             RequestKnowledgeBlockFieldActionSchema.safeParse(request).success,
         ).toBe(true);
+
         expect(
             RequestKnowledgeBlockFieldActionSchema.safeParse({
                 ...request,
@@ -1006,6 +1122,7 @@ describe('atomic field request boundaries', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects empty checks, invalid Unicode and unexpected mutation data', () => {
         expect(
             RequestKnowledgeBlockFieldActionSchema.safeParse({
@@ -1013,12 +1130,14 @@ describe('atomic field request boundaries', () => {
                 action: 'check',
             }).success,
         ).toBe(false);
+
         expect(
             RequestKnowledgeBlockFieldActionSchema.safeParse({
                 ...request,
                 field: { ...request.field, sourceText: '\u0000' },
             }).success,
         ).toBe(false);
+
         expect(
             RequestKnowledgeBlockFieldActionSchema.safeParse({
                 ...request,

@@ -46,8 +46,10 @@ export function LearningBlockAuthoring({
 }) {
     const { locale } = useI18n();
     const authoring = useBlockAuthoring();
-    if (!authoring)
+    if (!authoring) {
         throw new Error('Block authoring requires its editor scope.');
+    }
+
     const {
         editing,
         setEditing,
@@ -60,44 +62,71 @@ export function LearningBlockAuthoring({
     useEffect(() => {
         setItems(blocks(editor));
         function refresh({ transaction }: { transaction: Transaction }) {
-            if (transaction.docChanged) setItems(blocks(editor));
+            if (transaction.docChanged) {
+                setItems(blocks(editor));
+            }
         }
+
         editor.on('transaction', refresh);
+
         return () => {
             editor.off('transaction', refresh);
         };
     }, [editor]);
+
     function add(kind: BlockKind) {
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
+
         setEditing({ kind });
     }
+
     function close() {
         setEditing(null);
     }
+
     function apply(block: LearningBlock) {
-        if (disabled) return false;
+        if (disabled) {
+            return false;
+        }
+
         const previous =
             editing?.existing && editing.block ? [editing.block] : [];
         const applied = applyLearningBlockEdit(editor, previous, [block]);
         setError(!applied);
-        if (applied) close();
+        if (applied) {
+            close();
+        }
+
         return applied;
     }
+
     function applyExercises(next: ExerciseLearningBlock[]) {
-        if (disabled) return false;
+        if (disabled) {
+            return false;
+        }
+
         const previous =
             editing?.members ??
             (editing?.existing && editing.block ? [editing.block] : []);
         const applied = applyLearningBlockEdit(editor, previous, next);
         setError(!applied);
-        if (applied) close();
+        if (applied) {
+            close();
+        }
+
         return applied;
     }
+
     function applyAudio(
         audio: Extract<LearningBlock, { type: 'audio' }>,
         questions: ExerciseLearningBlock[],
     ) {
-        if (disabled) return false;
+        if (disabled) {
+            return false;
+        }
+
         const previous =
             editing?.members ??
             (editing?.existing && editing.block ? [editing.block] : []);
@@ -116,22 +145,34 @@ export function LearningBlockAuthoring({
             audio,
             ...nextQuestions,
         ]);
+
         setError(!applied);
-        if (applied) close();
+        if (applied) {
+            close();
+        }
+
         return applied;
     }
+
     function insert(block: LearningBlock) {
-        if (disabled) return false;
+        if (disabled) {
+            return false;
+        }
+
         const applied = applyLearningBlockEdit(editor, [], [block]);
         setError(!applied);
+
         return applied;
     }
+
     function closeLibrary() {
         authoring?.setLibraryBlock(null);
     }
+
     function closeDuplicate() {
         setServerDuplicate(null);
     }
+
     const duplicateDestination =
         !copyToAnotherNote && blockCopy?.source.kind === 'owned-working'
             ? {
@@ -145,6 +186,7 @@ export function LearningBlockAuthoring({
           ? [serverDuplicate.id]
           : [];
     const sourceBlocks = items.map((item) => item.block);
+
     return (
         <div className={styles.root}>
             <div className={styles.actions}>

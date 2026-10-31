@@ -26,6 +26,7 @@ const response = (body: unknown, status = 200) =>
         status,
         headers: { 'content-type': 'application/json' },
     });
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('learner portrait transport', () => {
@@ -72,10 +73,12 @@ describe('learner portrait transport', () => {
                     locale: 'en',
                 }),
             ).resolves.toEqual(session);
+
             expect(fetcher).toHaveBeenCalledTimes(1);
             expect(fetcher.mock.calls[0]?.[0]).toMatch(
                 /\/learner-portrait\/interview$/,
             );
+
             fetcher.mockResolvedValue(
                 response({
                     ...session,
@@ -85,13 +88,16 @@ describe('learner portrait transport', () => {
                     },
                 }),
             );
+
             const error = await portraitApi
                 .startInterview('token', { expectedVersion: 2, locale: 'en' })
                 .catch((error) => error);
+
             expect(error).toMatchObject({ code: 'invalid_response' });
             expect(JSON.stringify(error)).not.toContain('private sentinel');
         },
     );
+
     it('rejects private fields, invalid recovery states, and malformed error details in a last attempt', () => {
         const attempt = {
             id: operationId,
@@ -107,9 +113,11 @@ describe('learner portrait transport', () => {
             baseGeneration: 0,
             stale: true,
         };
+
         expect(
             PortraitInterviewLastAttemptSchema.safeParse(attempt).success,
         ).toBe(true);
+
         for (const extra of [
             { ownerId: 'other-owner' },
             { context: { locale: 'en' } },
@@ -122,30 +130,35 @@ describe('learner portrait transport', () => {
                 }).success,
             ).toBe(false);
         }
+
         expect(
             PortraitInterviewLastAttemptSchema.safeParse({
                 ...attempt,
                 input: { ...attempt.input, ownerId: 'other-owner' },
             }).success,
         ).toBe(false);
+
         expect(
             PortraitInterviewLastAttemptSchema.safeParse({
                 ...attempt,
                 state: 'succeeded',
             }).success,
         ).toBe(false);
+
         expect(
             PortraitInterviewLastAttemptSchema.safeParse({
                 ...attempt,
                 errorCode: { message: 'private' },
             }).success,
         ).toBe(false);
+
         expect(
             PortraitInterviewLastAttemptSchema.safeParse({
                 ...attempt,
                 baseGeneration: -1,
             }).success,
         ).toBe(false);
+
         expect(
             PortraitInterviewLastAttemptSchema.safeParse({
                 ...attempt,
@@ -157,6 +170,7 @@ describe('learner portrait transport', () => {
             }).success,
         ).toBe(false);
     });
+
     it('reads bounded private interview metadata without starting or refreshing it', async () => {
         const metadata = {
             interview: {
@@ -171,17 +185,21 @@ describe('learner portrait transport', () => {
         await expect(portraitApi.readInterviewStatus('token')).resolves.toEqual(
             metadata,
         );
+
         expect(fetcher).toHaveBeenCalledWith(
             expect.stringContaining('/learner-portrait/interview/status'),
             expect.objectContaining({ method: 'GET', cache: 'no-store' }),
         );
+
         fetcher.mockResolvedValue(
             response({ ...metadata, transcript: ['private sentinel'] }),
         );
+
         await expect(
             portraitApi.readInterviewStatus('token'),
         ).rejects.toMatchObject({ code: 'invalid_response' });
     });
+
     it('authenticates a validated versioned write without browser caching', async () => {
         const fetcher = vi.fn().mockResolvedValue(response(empty));
         vi.stubGlobal('fetch', fetcher);
@@ -189,6 +207,7 @@ describe('learner portrait transport', () => {
             expectedVersion: 3,
             enabled: false,
         });
+
         expect(fetcher).toHaveBeenCalledWith(
             expect.stringContaining('/learner-portrait/use'),
             expect.objectContaining({
@@ -205,6 +224,7 @@ describe('learner portrait transport', () => {
             }),
         );
     });
+
     it('validates destructive confirmation and operation identifiers before transport', () => {
         const fetcher = vi.fn();
         vi.stubGlobal('fetch', fetcher);
@@ -214,11 +234,14 @@ describe('learner portrait transport', () => {
                 confirmed: false as true,
             }),
         ).toThrow();
+
         expect(() =>
             portraitApi.readOperation('token', '../other-account'),
         ).toThrow();
+
         expect(fetcher).not.toHaveBeenCalled();
     });
+
     it.each([
         'version_conflict',
         'resource_limit',
@@ -240,12 +263,14 @@ describe('learner portrait transport', () => {
                 ),
             ),
         );
+
         await expect(portraitApi.read('token')).rejects.toMatchObject({
             status: 409,
             code,
             detail: { correlationId: 'test-correlation' },
         });
     });
+
     it('preserves authentication errors for the session refresh coordinator', async () => {
         vi.stubGlobal(
             'fetch',
@@ -262,10 +287,12 @@ describe('learner portrait transport', () => {
                 ),
             ),
         );
+
         const error = await portraitApi.read('token').catch((error) => error);
         expect(error).toBeInstanceOf(PortraitApiError);
         expect(isAuthenticationRequiredError(error)).toBe(true);
     });
+
     it('rejects malformed personal responses without surfacing their contents', async () => {
         vi.stubGlobal(
             'fetch',
@@ -276,10 +303,12 @@ describe('learner portrait transport', () => {
                 }),
             ),
         );
+
         const error = await portraitApi.read('token').catch((error) => error);
         expect(error).toMatchObject({ code: 'invalid_response' });
         expect(JSON.stringify(error)).not.toContain('private sentinel');
     });
+
     it('bounds streamed response bytes and rejects invalid gateway bodies', async () => {
         vi.stubGlobal(
             'fetch',
@@ -289,9 +318,11 @@ describe('learner portrait transport', () => {
                     new Response('a'.repeat(250_001), { status: 200 }),
                 ),
         );
+
         await expect(portraitApi.read('token')).rejects.toMatchObject({
             code: 'invalid_response',
         });
+
         vi.stubGlobal(
             'fetch',
             vi
@@ -300,11 +331,13 @@ describe('learner portrait transport', () => {
                     new Response('gateway failed', { status: 503 }),
                 ),
         );
+
         await expect(portraitApi.read('token')).rejects.toMatchObject({
             status: 503,
             code: 'service_unavailable',
         });
     });
+
     it('validates resumed interview context and pending proposal metadata', async () => {
         const session = {
             interviewId: operationId,
@@ -332,6 +365,7 @@ describe('learner portrait transport', () => {
                 locale: 'en',
             }),
         ).resolves.toEqual(session);
+
         fetcher.mockResolvedValue(
             response({
                 ...session,
@@ -341,6 +375,7 @@ describe('learner portrait transport', () => {
                 },
             }),
         );
+
         await expect(
             portraitApi.startInterview('token', {
                 expectedVersion: 0,
@@ -348,6 +383,7 @@ describe('learner portrait transport', () => {
             }),
         ).rejects.toMatchObject({ code: 'invalid_response' });
     });
+
     it('reads and stops the exact durable operation without accepting path traversal', async () => {
         const operation = {
             id: operationId,
@@ -359,15 +395,18 @@ describe('learner portrait transport', () => {
         const fetcher = vi
             .fn()
             .mockImplementation(() => Promise.resolve(response(operation)));
+
         vi.stubGlobal('fetch', fetcher);
         await portraitApi.readOperation('token', operationId);
         await portraitApi.stopOperation('token', operationId);
         expect(fetcher.mock.calls[0]?.[0]).toContain(
             `/interview/responses/${operationId}`,
         );
+
         expect(fetcher.mock.calls[1]?.[0]).toContain(
             `/interview/responses/${operationId}/stop`,
         );
+
         expect(fetcher.mock.calls[1]?.[1]).toMatchObject({ method: 'POST' });
     });
 });
@@ -385,6 +424,7 @@ describe('portrait owner-scoped cache', () => {
                     }),
             ),
         );
+
         const requestWithSession = <T>(
             operation: (token: string) => Promise<T>,
         ) => operation('token');
@@ -394,19 +434,24 @@ describe('portrait owner-scoped cache', () => {
             () => usePortraitState({ ownerId: 'owner-a', requestWithSession }),
             { wrapper },
         );
+
         act(() =>
             setPortraitStateCache(client, 'owner-a', { ...empty, version: 8 }),
         );
+
         await act(async () => {
             finish?.(response({ ...empty, version: 7 }));
         });
+
         await waitFor(() =>
             expect(hook.result.current.fetchStatus).toBe('idle'),
         );
+
         expect(hook.result.current.data?.version).toBe(8);
         hook.unmount();
         client.clear();
     });
+
     it('isolates owners and refuses a delayed older state after deletion', () => {
         const client = new QueryClient();
         setPortraitStateCache(client, 'owner-a', {
@@ -414,21 +459,26 @@ describe('portrait owner-scoped cache', () => {
             version: 5,
             generation: 1,
         });
+
         setPortraitStateCache(client, 'owner-a', {
             ...empty,
             version: 4,
             useEnabled: true,
         });
+
         setPortraitStateCache(client, 'owner-b', { ...empty, version: 2 });
         expect(client.getQueryData(portraitQueryKey('owner-a'))).toMatchObject({
             version: 5,
             useEnabled: false,
         });
+
         expect(client.getQueryData(portraitQueryKey('owner-b'))).toMatchObject({
             version: 2,
         });
+
         client.clear();
     });
+
     it('never exposes another owner data while the new owner fetch is pending', async () => {
         const client = new QueryClient();
         const requestWithSession = vi.fn((operation) => operation('session'));
@@ -442,6 +492,7 @@ describe('portrait owner-scoped cache', () => {
                         finish = resolve;
                     }),
             );
+
         vi.stubGlobal('fetch', fetcher);
         const wrapper = ({ children }: PropsWithChildren) =>
             createElement(QueryClientProvider, { client }, children);
@@ -449,16 +500,19 @@ describe('portrait owner-scoped cache', () => {
             ({ ownerId }) => usePortraitState({ ownerId, requestWithSession }),
             { wrapper, initialProps: { ownerId: 'owner-a' } },
         );
+
         await waitFor(() => expect(hook.result.current.data?.version).toBe(5));
         hook.rerender({ ownerId: 'owner-b' });
         expect(hook.result.current.data).toBeUndefined();
         await act(async () => {
             finish?.(response({ ...empty, version: 2 }));
         });
+
         await waitFor(() => expect(hook.result.current.data?.version).toBe(2));
         hook.unmount();
         client.clear();
     });
+
     it('does not request a portrait without an authenticated owner', async () => {
         const client = new QueryClient();
         const requestWithSession = vi.fn();
@@ -468,6 +522,7 @@ describe('portrait owner-scoped cache', () => {
             () => usePortraitState({ ownerId: null, requestWithSession }),
             { wrapper },
         );
+
         expect(requestWithSession).not.toHaveBeenCalled();
         hook.unmount();
         client.clear();

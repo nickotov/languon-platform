@@ -73,6 +73,7 @@ export const KnowledgeExerciseEvaluationJobSchema = z
                 (evaluation.status === 'correct' &&
                     evaluation.validAlternative !==
                         value.result.validAlternative));
+
         if (
             resultMismatch ||
             terminal !== (value.completedAt !== null) ||
@@ -84,12 +85,13 @@ export const KnowledgeExerciseEvaluationJobSchema = z
                     value.attempt.id !== value.attemptId ||
                     value.attempt.exerciseId !== value.exerciseId ||
                     value.attempt.exerciseRevision !== value.exerciseRevision))
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message:
                     'Exercise evaluation state and source are inconsistent.',
             });
+        }
     });
 export const KnowledgeExerciseEvaluationResponseSchema = z
     .object({

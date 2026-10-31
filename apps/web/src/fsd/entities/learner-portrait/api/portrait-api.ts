@@ -53,6 +53,7 @@ const ErrorResponseSchema = z.object({
         correlationId: z.string().max(200),
     }),
 });
+
 export type PortraitErrorCode = z.infer<typeof ErrorCodeSchema>;
 export class PortraitApiError extends BrowserApiError<
     z.infer<typeof ErrorResponseSchema>['error']
@@ -72,29 +73,39 @@ const MAX_RESPONSE_BYTES = 250_000;
 /** Bound decoded response bytes before JSON parsing; errors never expose raw personal data. */
 async function readBody(response: Response): Promise<unknown> {
     const reader = response.body?.getReader();
-    if (!reader) throw new Error('Missing response body');
+    if (!reader) {
+        throw new Error('Missing response body');
+    }
+
     const chunks: Uint8Array[] = [];
     let size = 0;
     try {
         while (true) {
             const chunk = await reader.read();
-            if (chunk.done) break;
+            if (chunk.done) {
+                break;
+            }
+
             size += chunk.value.byteLength;
             if (size > MAX_RESPONSE_BYTES) {
                 await reader.cancel();
+
                 throw new Error('Response exceeds limit');
             }
+
             chunks.push(chunk.value);
         }
     } finally {
         reader.releaseLock();
     }
+
     const bytes = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) {
         bytes.set(chunk, offset);
         offset += chunk.byteLength;
     }
+
     return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
 }
 
@@ -130,13 +141,17 @@ async function request<T>(
                 : { body: JSON.stringify(options.body) }),
         });
     } catch (cause) {
-        if (signal.aborted) throw cause;
+        if (signal.aborted) {
+            throw cause;
+        }
+
         throw new PortraitApiError(0, {
             code: 'network_error',
             message: 'Could not reach the portrait service.',
             correlationId: 'client-request',
         });
     }
+
     let body: unknown;
     try {
         body = await readBody(response);
@@ -148,8 +163,10 @@ async function request<T>(
                 response.headers.get('x-correlation-id') ?? 'client-request',
         });
     }
+
     if (!response.ok) {
         const parsed = ErrorResponseSchema.safeParse(body);
+
         throw new PortraitApiError(
             response.status,
             parsed.success
@@ -161,6 +178,7 @@ async function request<T>(
                   },
         );
     }
+
     try {
         return schema.parse(body);
     } catch {

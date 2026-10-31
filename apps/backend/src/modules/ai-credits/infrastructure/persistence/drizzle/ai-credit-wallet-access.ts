@@ -108,7 +108,10 @@ export async function advanceManagementVersion(
     );
 
     if (account === null) {
-        if (expectedVersion !== 0) throw new AiCreditManagementConflictError();
+        if (expectedVersion !== 0) {
+            throw new AiCreditManagementConflictError();
+        }
+
         await persistence.transaction.insert(aiCreditAccountsTable).values({
             createdAt: at,
             managementVersion: 1,
@@ -306,8 +309,9 @@ export async function admissionPolicy(
         )
         .limit(1);
 
-    if (!reservation || reservation.ownerId !== ownerId)
+    if (!reservation || reservation.ownerId !== ownerId) {
         throw new AiCreditReservationStateError();
+    }
 
     return {
         mode: reservation.policyMode,

@@ -43,6 +43,7 @@ describe('Frozen structured block context', () => {
             snapshot,
             'train',
         );
+
         expect(source.initialContext.includedMaterialCount).toBe(0);
         expect(source.initialContext.availableMaterialCount).toBe(2);
         const selected = source.read({ query: 'train', limit: 5 });
@@ -54,6 +55,7 @@ describe('Frozen structured block context', () => {
                 JSON.stringify({ ...selected, coverage: 'partial' }),
             ),
         ).toBeLessThanOrEqual(retrievedSourceContextBytes);
+
         const input = {
             message: {
                 id: 'message',
@@ -77,10 +79,12 @@ describe('Frozen structured block context', () => {
                 blockProposalsAvailable: false,
             },
         };
+
         expect(
             tutorReservedInputBytes(input) - tutorReservedInputBytes(legacy),
         ).toBeGreaterThan(source.initialContext.retrievedContextByteBound);
     });
+
     it('bounds long transcript retrieval and carries segment identity on every excerpt', () => {
         const material = learningBlockSourceMaterial([
             {
@@ -113,6 +117,7 @@ describe('Frozen structured block context', () => {
                 JSON.stringify({ ...selected, coverage: 'partial' }),
             ),
         ).toBeLessThanOrEqual(retrievedSourceContextBytes);
+
         expect(
             selected.material.some((item) => item.label.includes(segmentId)),
         ).toBe(true);
@@ -153,6 +158,7 @@ it('reserves the actual frozen retrieval bound for a small populated workspace i
             Buffer.byteLength(JSON.stringify({ ...read, coverage: 'partial' })),
         ).toBeLessThanOrEqual(bound);
     }
+
     const input = {
         message: {
             id: 'm',
@@ -175,6 +181,7 @@ it('reserves the actual frozen retrieval bound for a small populated workspace i
             retrievedContextByteBound: undefined,
         },
     };
+
     expect(
         tutorReservedInputBytes(legacy) - tutorReservedInputBytes(input),
     ).toBeGreaterThan(22_000);
@@ -227,8 +234,10 @@ it('bounds every subset and relevance-neighbor read with escaped Unicode by the 
             expect(new Set(result.material.map((item) => item.id)).size).toBe(
                 result.material.length,
             );
+
             const coverage =
                 result.material.length >= result.total ? 'complete' : 'partial';
+
             expect(
                 Buffer.byteLength(
                     JSON.stringify({ ...result, coverage }),
@@ -285,6 +294,7 @@ it('retrieves authored video descriptions and grouped exercise hints within the 
     expect(Buffer.byteLength(encoded)).toBeLessThanOrEqual(
         source.initialContext.retrievedContextByteBound!,
     );
+
     expect(source.initialContext.retrievedContextByteBound).toBeLessThanOrEqual(
         retrievedSourceContextBytes,
     );

@@ -64,38 +64,44 @@ export function PracticeSession({
 
     let subtitle = t('training.paused');
 
-    if (state.phase === 'card')
+    if (state.phase === 'card') {
         subtitle = t('training.roundCard', {
             round: state.round,
             card: Math.min(state.index + 1, total),
             total,
         });
-    else if (state.phase === 'results')
+    } else if (state.phase === 'results') {
         subtitle = t('training.roundResults', { round: state.round });
-    else if (state.phase === 'loading') subtitle = t('training.preparing');
+    } else if (state.phase === 'loading') {
+        subtitle = t('training.preparing');
+    }
 
     const className = `${styles.frame} ${dialogMode ? styles.dialog : ''}`;
 
     let announcement = '';
 
-    if (state.announcement === 'showingBack') announcement = t('training.back');
-    else if (state.announcement === 'showingFront')
+    if (state.announcement === 'showingBack') {
+        announcement = t('training.back');
+    } else if (state.announcement === 'showingFront') {
         announcement = t('training.front');
-    else if (state.announcement === 'ratingConfirmed')
+    } else if (state.announcement === 'ratingConfirmed') {
         announcement = t('training.saved');
-    else if (state.announcement === 'ratingUndone')
+    } else if (state.announcement === 'ratingUndone') {
         announcement = t('training.undo');
-    else if (state.announcement === 'accessLost')
+    } else if (state.announcement === 'accessLost') {
         announcement = t('training.accessLost');
-    else if (state.announcement === 'roundComplete')
+    } else if (state.announcement === 'roundComplete') {
         announcement = t('training.roundComplete', { round: state.round });
-    else if (state.announcement === 'entriesSkipped')
+    } else if (state.announcement === 'entriesSkipped') {
         announcement = t('training.removed');
+    }
 
     useEffect(() => {
         const dialog = dialogRef.current;
 
-        if (!dialog) return;
+        if (!dialog) {
+            return;
+        }
 
         dialog.showModal();
 
@@ -121,14 +127,21 @@ export function PracticeSession({
     function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
         event.preventDefault();
 
-        if (endOpen) return;
+        if (endOpen) {
+            return;
+        }
 
-        if (display.mode === 'overlay') display.toDialog();
-        else if (dialogMode) handleEnd();
+        if (display.mode === 'overlay') {
+            display.toDialog();
+        } else if (dialogMode) {
+            handleEnd();
+        }
     }
 
     function handleKey(event: KeyboardEvent<HTMLDialogElement>) {
-        if (endOpen || event.defaultPrevented) return;
+        if (endOpen || event.defaultPrevented) {
+            return;
+        }
 
         const target = event.target as HTMLElement;
 
@@ -141,8 +154,9 @@ export function PracticeSession({
             event.metaKey ||
             event.altKey ||
             window.getSelection()?.toString()
-        )
+        ) {
             return;
+        }
 
         if (event.key === 'ArrowLeft') {
             event.preventDefault();

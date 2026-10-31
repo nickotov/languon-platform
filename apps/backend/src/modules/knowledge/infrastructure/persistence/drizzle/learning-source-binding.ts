@@ -53,8 +53,9 @@ function blockFrom(
     if (
         !block ||
         (block.type !== 'bilingual-text' && block.type !== 'vocabulary')
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
 
     return block;
 }
@@ -123,11 +124,12 @@ export async function readPinnedKnowledgeLearningSource(
         knowledgeLearningSourceFingerprint(
             knowledgeLearningSourceSnapshot(block),
         ) !== binding.sourceFingerprint
-    )
+    ) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The learning material changed. Start a new action.',
         );
+    }
 
     if (block.type === 'vocabulary') {
         const epochs = await readLearningEpochs(tx, note.id);
@@ -146,11 +148,12 @@ export async function readPinnedKnowledgeLearningSource(
                         entry.id,
                     ).epoch,
             )
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The vocabulary learning version changed. Start a new action.',
             );
+        }
     }
 
     return { note, block };

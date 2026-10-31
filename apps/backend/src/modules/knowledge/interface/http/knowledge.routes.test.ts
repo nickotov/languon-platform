@@ -18,6 +18,7 @@ const content = KnowledgeNoteContentSchema.parse({
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     },
 });
+
 function fixture() {
     const note = {
         ...content,
@@ -112,6 +113,7 @@ function fixture() {
         appEnvironment: 'test',
         refreshTokenTtlSeconds: 3600,
     });
+
     return {
         app: createKnowledgeRoutes({ service, policy }),
         store,
@@ -120,6 +122,7 @@ function fixture() {
         note,
     };
 }
+
 describe('Knowledge HTTP boundary', () => {
     it('requires a verified bearer principal and serves private responses', async () => {
         const { app, store, owner } = fixture();
@@ -128,6 +131,7 @@ describe('Knowledge HTTP boundary', () => {
         const response = await app.request('/knowledge', {
             headers: { Authorization: 'Bearer synthetic.payload.signature' },
         });
+
         expect(response.status).toBe(200);
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
         expect(store.list).toHaveBeenCalledWith(owner, {
@@ -135,6 +139,7 @@ describe('Knowledge HTTP boundary', () => {
             limit: 20,
         });
     });
+
     it('rejects disallowed origins and malformed rich content before mutation', async () => {
         const { app, store } = fixture();
         const headers = {
@@ -146,6 +151,7 @@ describe('Knowledge HTTP boundary', () => {
             headers: { ...headers, Origin: 'https://untrusted.test' },
             body: JSON.stringify({ operationId: randomUUID(), content }),
         });
+
         expect(denied.status).toBe(403);
         const invalid = await app.request('/knowledge', {
             method: 'POST',
@@ -169,14 +175,17 @@ describe('Knowledge HTTP boundary', () => {
                 },
             }),
         });
+
         expect(invalid.status).toBe(400);
         expect(store.create).not.toHaveBeenCalled();
     });
+
     it('maps optimistic conflicts without exposing internals', async () => {
         const { app, store, note } = fixture();
         store.update.mockRejectedValueOnce(
             new KnowledgeDomainError('version_conflict', 'The note changed.'),
         );
+
         const response = await app.request(`/knowledge/${note.id}`, {
             method: 'PATCH',
             headers: {
@@ -189,11 +198,13 @@ describe('Knowledge HTTP boundary', () => {
                 content,
             }),
         });
+
         expect(response.status).toBe(409);
         expect(await response.json()).toMatchObject({
             error: { code: 'version_conflict' },
         });
     });
+
     it('keeps the share key in a header and serves the published note without caching', async () => {
         const { app, store, note } = fixture();
         const path = `/knowledge/shared/${'a'.repeat(32)}`;
@@ -202,10 +213,12 @@ describe('Knowledge HTTP boundary', () => {
         const response = await app.request(path, {
             headers: { 'X-Languon-Share-Key': 'b'.repeat(43) },
         });
+
         expect(response.status).toBe(200);
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
         expect(await response.json()).toMatchObject({ note: { id: note.id } });
     });
+
     it('requires authentication before copying a shared note', async () => {
         const { app, store } = fixture();
         const path = `/knowledge/shared/${'a'.repeat(32)}/copy`;
@@ -220,6 +233,7 @@ describe('Knowledge HTTP boundary', () => {
                 expectedVersion: 1,
             }),
         };
+
         expect((await app.request(path, request)).status).toBe(401);
         expect(store.copyShared).not.toHaveBeenCalled();
         const response = await app.request(path, {
@@ -229,10 +243,12 @@ describe('Knowledge HTTP boundary', () => {
                 Authorization: 'Bearer synthetic.payload.signature',
             },
         });
+
         expect(response.status).toBe(201);
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
         expect(store.copyShared).toHaveBeenCalledOnce();
     });
+
     it('generates the public OpenAPI document for versioned rich content', () => {
         const { app } = fixture();
         expect(() =>

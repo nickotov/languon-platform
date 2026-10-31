@@ -27,7 +27,10 @@ export function ProbeRecovery({
         reason: string;
         confirmed: boolean;
     }) => {
-        if (!confirmed) return;
+        if (!confirmed) {
+            return;
+        }
+
         await onRecover(probe.id, { reason, confirmedUpstreamStopped: true });
     };
 

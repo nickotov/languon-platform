@@ -20,12 +20,14 @@ describe('training retry deadline', () => {
         expect(
             screen.getByRole('button', { name: 'Retry in 2s' }),
         ).toBeDisabled();
+
         act(() => vi.advanceTimersByTime(1_500));
         first.unmount();
         const second = render(<RetryButton error={error} onRetry={onRetry} />);
         expect(
             screen.getByRole('button', { name: 'Retry in 1s' }),
         ).toBeDisabled();
+
         act(() => vi.advanceTimersByTime(500));
         const retry = screen.getByRole('button', { name: 'Retry' });
         expect(retry).toBeEnabled();
@@ -33,6 +35,7 @@ describe('training retry deadline', () => {
         expect(onRetry).toHaveBeenCalledOnce();
         second.unmount();
     });
+
     it('an explicit operation deadline takes precedence over the error deadline', () => {
         vi.useFakeTimers();
         const error = new ApiError(429, {
@@ -48,9 +51,11 @@ describe('training retry deadline', () => {
                 onRetry={vi.fn()}
             />,
         );
+
         expect(
             screen.getByRole('button', { name: 'Retry in 1s' }),
         ).toBeDisabled();
+
         act(() => vi.advanceTimersByTime(1_000));
         expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
         view.unmount();

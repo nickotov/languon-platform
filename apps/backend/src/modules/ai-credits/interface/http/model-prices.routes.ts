@@ -40,12 +40,14 @@ export function createModelPriceRoutes(options: {
                       400,
                   ),
     });
+
     app.use('/admin/ai/model-prices', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
     });
+
     app.onError((error, c) => {
-        if (error instanceof ModelPriceConflictError)
+        if (error instanceof ModelPriceConflictError) {
             return c.json(
                 {
                     error: {
@@ -56,7 +58,9 @@ export function createModelPriceRoutes(options: {
                 },
                 409,
             );
-        if (error instanceof ModelPriceUnavailableError)
+        }
+
+        if (error instanceof ModelPriceUnavailableError) {
             return c.json(
                 {
                     error: {
@@ -67,9 +71,13 @@ export function createModelPriceRoutes(options: {
                 },
                 400,
             );
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const response = (
         schema: typeof ModelPriceSchema | typeof ModelPricesResponseSchema,
     ) => ({
@@ -102,6 +110,7 @@ export function createModelPriceRoutes(options: {
             description: 'Price changed.',
         },
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -114,16 +123,20 @@ export function createModelPriceRoutes(options: {
             const token = options.policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
             );
+
             await options.administration.authorizeOperation(
                 token,
                 randomUUID(),
             );
+
             const prices = await options.database.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).list(),
             );
+
             return c.json({ prices }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -144,7 +157,10 @@ export function createModelPriceRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const correlation = z
                 .string()
@@ -161,7 +177,8 @@ export function createModelPriceRoutes(options: {
                     token,
                     correlationId,
                 );
-            if (options.publishingEnabled === false)
+
+            if (options.publishingEnabled === false) {
                 return c.json(
                     {
                         error: {
@@ -173,6 +190,8 @@ export function createModelPriceRoutes(options: {
                     },
                     403,
                 );
+            }
+
             const price = await options.database.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).publish(
                     c.req.valid('json'),
@@ -181,8 +200,10 @@ export function createModelPriceRoutes(options: {
                     correlationId,
                 ),
             );
+
             return c.json(price, 200);
         },
     );
+
     return app;
 }

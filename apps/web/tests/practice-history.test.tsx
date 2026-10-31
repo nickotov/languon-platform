@@ -22,6 +22,7 @@ const originalClose = Object.getOwnPropertyDescriptor(
     HTMLDialogElement.prototype,
     'close',
 );
+
 beforeEach(() => {
     Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
         configurable: true,
@@ -29,6 +30,7 @@ beforeEach(() => {
             this.open = true;
         },
     });
+
     Object.defineProperty(HTMLDialogElement.prototype, 'close', {
         configurable: true,
         value() {
@@ -36,21 +38,28 @@ beforeEach(() => {
         },
     });
 });
+
 afterEach(() => {
-    if (originalShowModal)
+    if (originalShowModal) {
         Object.defineProperty(
             HTMLDialogElement.prototype,
             'showModal',
             originalShowModal,
         );
-    else Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
-    if (originalClose)
+    } else {
+        Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
+    }
+
+    if (originalClose) {
         Object.defineProperty(
             HTMLDialogElement.prototype,
             'close',
             originalClose,
         );
-    else Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+    } else {
+        Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+    }
+
     vi.restoreAllMocks();
 });
 
@@ -91,6 +100,7 @@ function fixture() {
         targetLanguage: 'Russian',
         sentencesEnabled: true,
     };
+
     function draw() {
         return render(
             <I18nProvider locale='en' messages={en}>
@@ -98,6 +108,7 @@ function fixture() {
             </I18nProvider>,
         );
     }
+
     return { ...props, getProgress, progress, attempts, draw };
 }
 
@@ -109,6 +120,7 @@ describe('dictionary practice history', () => {
             'aria-selected',
             'true',
         );
+
         await screen.findByText('7 active entries');
         expect(screen.getByText('Known')).toBeInTheDocument();
         expect(screen.getByText('Practise again')).toBeInTheDocument();
@@ -116,6 +128,7 @@ describe('dictionary practice history', () => {
         expect(f.progress).not.toHaveBeenCalled();
         expect(f.attempts).not.toHaveBeenCalled();
     });
+
     it('loads both labelled sentence directions and authoritative totals separately from history pages', async () => {
         const f = fixture();
         f.draw();
@@ -125,6 +138,7 @@ describe('dictionary practice history', () => {
         await waitFor(() =>
             expect(within(source).getByText('25')).toBeInTheDocument(),
         );
+
         expect(within(target).getByText('25')).toBeInTheDocument();
         expect(within(source).getByText('4')).toBeInTheDocument();
         expect(within(target).getByText('1')).toBeInTheDocument();
@@ -135,6 +149,7 @@ describe('dictionary practice history', () => {
         expect(screen.getByText('No manual reviews yet')).toBeInTheDocument();
         expect(screen.getAllByText('12')).toHaveLength(2);
     });
+
     it('offers a retry for failed flashcard statistics without conflating failure with zero progress', async () => {
         const f = fixture();
         f.getProgress.mockRejectedValueOnce(new Error('Unavailable'));
@@ -145,6 +160,7 @@ describe('dictionary practice history', () => {
         await screen.findByText('7 active entries');
         expect(f.getProgress).toHaveBeenCalledTimes(2);
     });
+
     it('keeps successful direction statistics visible when the other fails and retries only that direction', async () => {
         const f = fixture();
         f.progress.mockRejectedValueOnce(new Error('Unavailable'));
@@ -162,6 +178,7 @@ describe('dictionary practice history', () => {
             'source-to-target',
         ]);
     });
+
     it('uses the same statistics and tabs inside active practice without nesting a dialog', async () => {
         const f = fixture();
         render(
@@ -169,17 +186,20 @@ describe('dictionary practice history', () => {
                 <PracticeHistory {...f} inline initialTab='sentences' />
             </I18nProvider>,
         );
+
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'Sentences' })).toHaveAttribute(
             'aria-selected',
             'true',
         );
+
         await screen.findByText('No AI checks yet');
         expect(f.progress).toHaveBeenCalledTimes(2);
         expect(f.getProgress).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('tab', { name: 'Flashcards' }));
         await screen.findByText('7 active entries');
     });
+
     it('unmounts statistics on close and ignores a pending response before a fresh reopen', async () => {
         const f = fixture();
         let finish!: (value: unknown) => void;
@@ -189,6 +209,7 @@ describe('dictionary practice history', () => {
                     finish = resolve;
                 }),
         );
+
         function contents(open: boolean) {
             return (
                 <I18nProvider locale='en' messages={en}>
@@ -196,18 +217,21 @@ describe('dictionary practice history', () => {
                 </I18nProvider>
             );
         }
+
         const view = render(contents(true));
         expect(f.getProgress).toHaveBeenCalledOnce();
         view.rerender(contents(false));
         expect(
             screen.queryByRole('tab', { name: 'Flashcards' }),
         ).not.toBeInTheDocument();
+
         finish({ total: 999, known: 999, again: 0, unstudied: 0 });
         view.rerender(contents(true));
         await screen.findByText('7 active entries');
         expect(
             screen.queryByText('999 active entries'),
         ).not.toBeInTheDocument();
+
         expect(f.getProgress).toHaveBeenCalledTimes(2);
     });
 
@@ -221,6 +245,7 @@ describe('dictionary practice history', () => {
                 message: 'Unavailable',
             }),
         );
+
         render(
             <I18nProvider locale='en' messages={en}>
                 <PracticeHistory
@@ -231,6 +256,7 @@ describe('dictionary practice history', () => {
                 />
             </I18nProvider>,
         );
+
         await waitFor(() => expect(onAccessLoss).toHaveBeenCalledOnce());
     });
 });
@@ -249,14 +275,17 @@ describe('shared dictionary personal secondary actions', () => {
                 />
             </I18nProvider>,
         );
+
         const trigger = screen.getByRole('button', {
             name: 'More dictionary actions',
         });
+
         fireEvent.click(trigger);
         expect(await screen.findAllByRole('menuitem')).toHaveLength(2);
         fireEvent.click(
             await screen.findByRole('menuitem', { name: 'Sentences' }),
         );
+
         expect(onOpenLibrary).toHaveBeenCalledOnce();
         fireEvent.click(trigger);
         fireEvent.click(
@@ -264,8 +293,10 @@ describe('shared dictionary personal secondary actions', () => {
                 name: 'My practice history',
             }),
         );
+
         expect(onOpenHistory).toHaveBeenCalledOnce();
     });
+
     it('does not expose personal actions to an anonymous shared viewer', () => {
         render(
             <I18nProvider locale='en' messages={en}>
@@ -277,6 +308,7 @@ describe('shared dictionary personal secondary actions', () => {
                 />
             </I18nProvider>,
         );
+
         expect(
             screen.queryByRole('button', { name: 'More dictionary actions' }),
         ).not.toBeInTheDocument();

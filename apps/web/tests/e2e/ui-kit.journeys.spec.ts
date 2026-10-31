@@ -12,16 +12,25 @@ function captureBrowserErrors(page: Page) {
             errors.push(message.text());
         }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
         );
-        if (path === '/auth/refresh' && response.status() === 401) return;
+
+        if (path === '/auth/refresh' && response.status() === 401) {
+            return;
+        }
+
         errors.push(`${response.status()} ${path}`);
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -41,9 +50,11 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'system',
         );
+
         await page
             .getByRole('button', { name: 'Settings', exact: true })
             .click();
+
         await page.getByRole('button', { name: 'Dark', exact: true }).click();
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
         await expect(page.locator('html')).toHaveAttribute(
@@ -54,6 +65,7 @@ test.describe('web UI kit journeys', () => {
         const themeCookie = (await page.context().cookies()).find(
             (cookie) => cookie.name === 'languon-theme',
         );
+
         expect(themeCookie).toMatchObject({
             path: '/',
             sameSite: 'Lax',
@@ -65,9 +77,11 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'dark',
         );
+
         await page
             .getByRole('button', { name: 'Settings', exact: true })
             .click();
+
         await expect(
             page.getByRole('button', { name: 'Dark', exact: true }),
         ).toHaveAttribute('aria-pressed', 'true');
@@ -77,6 +91,7 @@ test.describe('web UI kit journeys', () => {
             'data-theme',
             'light',
         );
+
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fsecurity$/);
         await page.keyboard.press('Escape');
 
@@ -92,6 +107,7 @@ test.describe('web UI kit journeys', () => {
                 (await control.boundingBox())?.height,
             ).toBeGreaterThanOrEqual(44);
         }
+
         expect(
             await page.evaluate(
                 () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -102,11 +118,13 @@ test.describe('web UI kit journeys', () => {
         await page.evaluate(() => {
             document.body.style.zoom = '200%';
         });
+
         expect(
             await page.evaluate(
                 () => document.documentElement.scrollWidth <= window.innerWidth,
             ),
         ).toBe(true);
+
         await page.evaluate(() => {
             document.body.style.zoom = '';
         });
@@ -120,6 +138,7 @@ test.describe('web UI kit journeys', () => {
         expect(
             await page.evaluate(() => {
                 const style = getComputedStyle(document.documentElement);
+
                 return (
                     style
                         .getPropertyValue('--sys-color-border-control')
@@ -135,6 +154,7 @@ test.describe('web UI kit journeys', () => {
                 () => matchMedia('(forced-colors: active)').matches,
             ),
         ).toBe(true);
+
         assertNoBrowserErrors();
     });
 });

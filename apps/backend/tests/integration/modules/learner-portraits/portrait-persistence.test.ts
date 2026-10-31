@@ -66,9 +66,11 @@ run('learner portrait durable persistence', () => {
         await migrateTestDatabase(client);
         database = createDrizzleDatabase(client, databaseSchema);
     }, 120000);
+
     afterAll(async () => {
         await client?.end();
     });
+
     beforeEach(async () => {
         const terminal = await database
             .select()
@@ -77,11 +79,13 @@ run('learner portrait durable persistence', () => {
                 inArray(operations.state, ['succeeded', 'failed', 'cancelled']),
             )
             .orderBy(operations.id);
+
         await database
             .update(operations)
             .set({ state: 'cancelled', leaseUntil: null })
             .where(inArray(operations.state, ['queued', 'running']));
-        if (terminal.length)
+
+        if (terminal.length) {
             expect(
                 await database
                     .select()
@@ -94,15 +98,19 @@ run('learner portrait durable persistence', () => {
                     )
                     .orderBy(operations.id),
             ).toEqual(terminal);
+        }
+
         ownerId = randomUUID();
         await database
             .insert(usersTable)
             .values({ id: ownerId, status: 'active' });
+
         service = new PortraitService(new DrizzlePortraitStore(database));
         store = new DrizzleInterviewStore(database, async () => ({
             interviewCreditsBypass: true,
         }));
     });
+
     it('counts admitted failures once, replays idempotently, and resets only at UTC day boundary', async () => {
         const day = new Date('2026-10-22T23:59:00.000Z');
         const session = await store.start({
@@ -131,10 +139,12 @@ run('learner portrait durable persistence', () => {
         expect((await store.enqueue({ ...first, id: randomUUID() })).id).toBe(
             admitted.id,
         );
+
         await database
             .update(operations)
             .set({ state: 'failed' })
             .where(eq(operations.id, admitted.id));
+
         for (let i = 1; i < 30; i++) {
             const next = await store.enqueue(submit(day));
             await database
@@ -142,12 +152,15 @@ run('learner portrait durable persistence', () => {
                 .set({ state: 'failed' })
                 .where(eq(operations.id, next.id));
         }
+
         await expect(store.enqueue(submit(day))).rejects.toThrow(
             'Daily interview limit',
         );
+
         const nextDay = await store.enqueue(
             submit(new Date('2026-10-23T00:00:00.000Z')),
         );
+
         expect(nextDay.state).toBe('queued');
     });
 
@@ -175,9 +188,11 @@ run('learner portrait durable persistence', () => {
         expect(
             results.filter((result) => result.status === 'fulfilled'),
         ).toHaveLength(1);
+
         const rows = await database.execute(
             sql`select admitted from portrait_interview_daily_admissions where owner_id=${ownerId}::uuid`,
         );
+
         expect(rows).toHaveLength(1);
         expect(rows[0]?.admitted).toBe(1);
     });
@@ -195,6 +210,7 @@ run('learner portrait durable persistence', () => {
                         'portrait-interview',
                     ),
                 );
+
             await database.insert(capabilityPolicyRevisionsTable).values({
                 id: randomUUID(),
                 capability: 'portrait-interview',
@@ -205,6 +221,7 @@ run('learner portrait durable persistence', () => {
                 createdAt: now(),
                 reason: 'Synthetic paid portrait persistence fixture policy',
             });
+
             await database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     amount: 100_000n,
@@ -215,6 +232,7 @@ run('learner portrait durable persistence', () => {
                     sourceReference: `interview-action-${randomUUID()}`,
                 }),
             );
+
             store = new DrizzleInterviewStore(
                 database,
                 createInterviewAdmission({
@@ -225,10 +243,14 @@ run('learner portrait durable persistence', () => {
                     },
                 }),
             );
+
             const queued = await enqueue(true);
             const claim = await store.claim();
             expect(claim?.id).toBe(queued.id);
-            if (!claim) throw new Error('Expected claimed action');
+            if (!claim) {
+                throw new Error('Expected claimed action');
+            }
+
             const callId = randomUUID();
             await database.transaction(async (tx) => {
                 const accounting = new DrizzleActionAccountingParticipant(tx);
@@ -246,6 +268,7 @@ run('learner portrait durable persistence', () => {
                     },
                     at: now(),
                 });
+
                 await accounting.recordAttempt({
                     actionId: queued.id,
                     ownerId,
@@ -255,13 +278,15 @@ run('learner portrait durable persistence', () => {
                     at: now(),
                 });
             });
+
             const [before] = await database
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, queued.id));
+
             expect(before?.state).toBe('active');
             expect(before?.chargedMilli).toBeNull();
-            if (outcome === 'success')
+            if (outcome === 'success') {
                 await store.complete(
                     claim,
                     {
@@ -272,9 +297,11 @@ run('learner portrait durable persistence', () => {
                     },
                     now(),
                 );
-            else {
-                if (outcome === 'stopped')
+            } else {
+                if (outcome === 'stopped') {
                     await store.stop(ownerId, queued.id, now());
+                }
+
                 await store.fail(
                     claim,
                     outcome === 'stopped'
@@ -283,10 +310,12 @@ run('learner portrait durable persistence', () => {
                     now(),
                 );
             }
+
             const [after] = await database
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, queued.id));
+
             expect(after?.state).toBe('settled');
             expect(after?.outcome).toBe(outcome);
             expect(after?.chargedMilli).toBe(outcome === 'failure' ? 0n : 40n);
@@ -297,15 +326,18 @@ run('learner portrait durable persistence', () => {
                     .where(
                         eq(aiProviderExpenseRecordsTable.actionId, queued.id),
                     );
+
                 expect(expenses).toHaveLength(1);
                 await expireLearnerPortraitInterviews(
                     database,
                     new Date(Date.now() + 15 * 86400_000),
                 );
+
                 const [retained] = await database
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, queued.id));
+
                 expect(retained).toEqual(after);
                 expect(
                     await database
@@ -336,6 +368,7 @@ run('learner portrait durable persistence', () => {
             },
         });
     }
+
     async function enqueue(paidAcknowledged = false) {
         const state = await service.get(ownerId);
         const session = await store.start({
@@ -344,6 +377,7 @@ run('learner portrait durable persistence', () => {
             expectedVersion: state.version,
             now: now(),
         });
+
         return store.enqueue({
             id: randomUUID(),
             ownerId,
@@ -360,50 +394,62 @@ run('learner portrait durable persistence', () => {
             paidAcknowledged,
         });
     }
+
     it('migrates typed tables, checks and indexes', async () => {
         const rows =
             await client`select indexname from pg_indexes where tablename='learner_portrait_interview_operations'`;
+
         expect(rows.map((row) => row.indexname)).toContain(
             'portrait_operations_active_owner_unique',
         );
+
         const checks =
             await client`select conname from pg_constraint where conrelid='learner_portraits'::regclass`;
+
         expect(checks.map((row) => row.conname)).toContain(
             'learner_portraits_versions_check',
         );
     });
+
     it('serializes conflicting edits and approval without enabling usage', async () => {
         const results = await Promise.allSettled([draft(), draft()]);
         expect(
             results.filter((result) => result.status === 'fulfilled'),
         ).toHaveLength(1);
+
         const rejected = results.find((result) => result.status === 'rejected');
         expect(
             rejected?.status === 'rejected' && rejected.reason,
         ).toBeInstanceOf(PortraitConflictError);
+
         const approved = await service.approve(ownerId, {
             expectedVersion: 1,
             expectedApprovedVersion: 0,
         });
+
         expect(approved.approved?.items.goals).toEqual(['Travel']);
         expect(approved.useEnabled).toBe(false);
         expect(approved.draft).toBeNull();
     });
+
     it('never reads another owner operation and rejects deleted account access', async () => {
         const operation = await enqueue();
         const other = randomUUID();
         await database
             .insert(usersTable)
             .values({ id: other, status: 'active' });
+
         expect(await store.read(other, operation.id)).toBeNull();
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+
         await expect(service.get(ownerId)).rejects.toBeInstanceOf(
             PortraitUserUnavailableError,
         );
     });
+
     it('replays admitted submissions and enforces one active response', async () => {
         const state = await service.get(ownerId),
             session = await store.start({
@@ -415,8 +461,10 @@ run('learner portrait durable persistence', () => {
         let admissions = 0;
         store = new DrizzleInterviewStore(database, async () => {
             admissions++;
+
             return { interviewCreditsBypass: true };
         });
+
         const request = {
             id: randomUUID(),
             ownerId,
@@ -439,11 +487,15 @@ run('learner portrait durable persistence', () => {
             }),
         ).rejects.toBeInstanceOf(PortraitConflictError);
     });
+
     it('does not complete a clarification topic and rejects post-delete output resurrection', async () => {
         await enqueue();
         const claim = await store.claim();
         expect(claim).not.toBeNull();
-        if (!claim) return;
+        if (!claim) {
+            return;
+        }
+
         await store.complete(
             claim,
             {
@@ -454,15 +506,20 @@ run('learner portrait durable persistence', () => {
             },
             now(),
         );
+
         const [session] = await database
             .select()
             .from(interviews)
             .where(eq(interviews.ownerId, ownerId));
+
         expect(session?.context.completedTopics).toEqual([]);
         const next = await enqueue();
         const nextClaim = await store.claim();
         expect(nextClaim?.id).toBe(next.id);
-        if (!nextClaim) return;
+        if (!nextClaim) {
+            return;
+        }
+
         await service.delete(ownerId, { expectedVersion: 0, confirmed: true });
         await store.complete(
             nextClaim,
@@ -474,6 +531,7 @@ run('learner portrait durable persistence', () => {
             },
             now(),
         );
+
         expect((await service.get(ownerId)).approved).toBeNull();
         expect(await store.read(ownerId, next.id)).toBeNull();
         expect(
@@ -483,12 +541,14 @@ run('learner portrait durable persistence', () => {
                 .where(eq(interviews.ownerId, ownerId)),
         ).toHaveLength(0);
     });
+
     it('expires draft and transcript at 14 inactive days but preserves approval', async () => {
         await draft();
         await service.approve(ownerId, {
             expectedVersion: 1,
             expectedApprovedVersion: 0,
         });
+
         const state = await service.get(ownerId);
         await store.start({
             ownerId,
@@ -496,16 +556,20 @@ run('learner portrait durable persistence', () => {
             expectedVersion: state.version,
             now: now(),
         });
+
         await database
             .update(interviews)
             .set({ expiresAt: new Date(Date.now() - 1) })
             .where(eq(interviews.ownerId, ownerId));
+
         expect(await expireLearnerPortraitInterviews(database)).toBeGreaterThan(
             0,
         );
+
         expect((await service.get(ownerId)).approved?.items.goals).toEqual([
             'Travel',
         ]);
+
         expect(
             await database
                 .select()
@@ -513,10 +577,12 @@ run('learner portrait durable persistence', () => {
                 .where(eq(interviews.ownerId, ownerId)),
         ).toHaveLength(0);
     });
+
     it('rolls back admission and persisted operation together on failure', async () => {
         store = new DrizzleInterviewStore(database, async () => {
             throw new Error('unavailable');
         });
+
         await expect(enqueue()).rejects.toThrow('unavailable');
         expect(
             await database
@@ -525,14 +591,17 @@ run('learner portrait durable persistence', () => {
                 .where(eq(operations.ownerId, ownerId)),
         ).toHaveLength(0);
     });
+
     it('cancels queued work immediately and exposes cancellation without dispatch', async () => {
         const admitted = await enqueue();
         await store.stop(ownerId, admitted.id, now());
         expect((await store.read(ownerId, admitted.id))?.state).toBe(
             'cancelled',
         );
+
         expect(await store.claim()).toBeNull();
     });
+
     it('settles expired leases through recovery and never re-dispatches the call', async () => {
         const admitted = await enqueue();
         const claim = await store.claim();
@@ -541,6 +610,7 @@ run('learner portrait durable persistence', () => {
             .update(operations)
             .set({ leaseUntil: new Date(Date.now() - 1) })
             .where(eq(operations.id, admitted.id));
+
         const recovered: string[] = [];
         const recoveryStore = new DrizzleInterviewStore(
             database,
@@ -549,6 +619,7 @@ run('learner portrait durable persistence', () => {
                 recovered.push(id);
             },
         );
+
         expect(await recoveryStore.claim()).toBeNull();
         expect(recovered).toEqual([admitted.id]);
         expect((await store.read(ownerId, admitted.id))?.state).toBe('failed');
@@ -565,6 +636,7 @@ run('learner portrait durable persistence', () => {
             ),
         ).rejects.toBeInstanceOf(PortraitConflictError);
     });
+
     it('preserves locale on resume and explicit locale edits refresh inactivity', async () => {
         const state = await service.get(ownerId);
         const session = await store.start({
@@ -581,10 +653,12 @@ run('learner portrait durable persistence', () => {
             expectedVersion: state.version,
             now: at,
         });
+
         expect(switched.context.locale).toBe('es');
         expect(Date.parse(switched.expiresAt)).toBe(
             at.getTime() + 14 * 86400_000,
         );
+
         expect(
             (
                 await store.start({
@@ -596,6 +670,7 @@ run('learner portrait durable persistence', () => {
             ).context.locale,
         ).toBe('es');
     });
+
     it.each(['approve', 'discard', 'delete'] as const)(
         'erases content-derived fingerprints during %s while preserving running settlement identities',
         async (action) => {
@@ -603,22 +678,29 @@ run('learner portrait durable persistence', () => {
             const admitted = await enqueue();
             const claim = await store.claim();
             expect(claim?.id).toBe(admitted.id);
-            if (action === 'approve')
+            if (action === 'approve') {
                 await service.approve(ownerId, {
                     expectedVersion: 1,
                     expectedApprovedVersion: 0,
                 });
-            if (action === 'discard')
+            }
+
+            if (action === 'discard') {
                 await service.discardInterview(ownerId, { expectedVersion: 1 });
-            if (action === 'delete')
+            }
+
+            if (action === 'delete') {
                 await service.delete(ownerId, {
                     expectedVersion: 1,
                     confirmed: true,
                 });
+            }
+
             const [row] = await database
                 .select()
                 .from(operations)
                 .where(eq(operations.id, admitted.id));
+
             expect(row?.fingerprint).toBe('erased');
             expect(row?.input).toEqual({ kind: 'skip', topic: 'update' });
             expect(row?.context).toEqual({
@@ -628,32 +710,38 @@ run('learner portrait durable persistence', () => {
                 messages: [],
                 completedTopics: [],
             });
+
             expect(row?.result).toBeNull();
             expect(row?.state).toBe('running');
             expect(row?.execution).toEqual({ interviewCreditsBypass: true });
         },
     );
+
     it('purges queued work without requiring a worker or retaining content hashes', async () => {
         await draft();
         await enqueue();
         await database.transaction((tx) =>
             requestPortraitCancellation(tx, ownerId),
         );
+
         expect(
             await database
                 .select()
                 .from(operations)
                 .where(eq(operations.ownerId, ownerId)),
         ).toHaveLength(0);
+
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+
         await database.transaction(async (tx) => {
             expect(await portraitDeletionBusy(tx, ownerId)).toBe(false);
             await eraseOwnerLearnerPortrait(tx, ownerId, now());
         });
     });
+
     it('account purge recovers expired running work without an interview worker and respects live leases', async () => {
         const admitted = await enqueue();
         const claim = await store.claim();
@@ -662,28 +750,34 @@ run('learner portrait durable persistence', () => {
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+
         await database.transaction((tx) =>
             requestPortraitCancellation(tx, ownerId),
         );
+
         expect(
             await database.transaction((tx) =>
                 portraitDeletionBusy(tx, ownerId),
             ),
         ).toBe(true);
+
         await database
             .update(operations)
             .set({ leaseUntil: new Date(Date.now() - 1) })
             .where(eq(operations.id, admitted.id));
+
         await database.transaction(async (tx) => {
             expect(await portraitDeletionBusy(tx, ownerId)).toBe(false);
             await eraseOwnerLearnerPortrait(tx, ownerId, now());
         });
+
         expect(
             await database
                 .select()
                 .from(operations)
                 .where(eq(operations.id, admitted.id)),
         ).toHaveLength(0);
+
         expect(
             await database
                 .select()
@@ -691,6 +785,7 @@ run('learner portrait durable persistence', () => {
                 .where(eq(interviews.ownerId, ownerId)),
         ).toHaveLength(0);
     });
+
     it('recovers and erases under the deployment purge role without reading private payloads', async () => {
         await draft();
         const admitted = await enqueue();
@@ -699,10 +794,12 @@ run('learner portrait durable persistence', () => {
             .update(operations)
             .set({ leaseUntil: new Date(Date.now() - 1) })
             .where(eq(operations.id, admitted.id));
+
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+
         await database.execute(
             sql`with observed as materialized (select clock_timestamp() as at) insert into account_deletion_requests(user_id,state,scheduled_at,purge_at,next_attempt_at,lease_deadline,lease_worker_id,fencing_token,updated_at) select ${ownerId}::uuid,'running',at-interval '2 minutes',at-interval '1 minute',at-interval '1 minute',at+interval '5 minutes','portrait-purge-scope',1,at from observed`,
         );
@@ -715,11 +812,13 @@ run('learner portrait durable persistence', () => {
             ),
             'utf8',
         );
+
         await client.unsafe(`create role ${role}`);
         const restricted = createPostgresClient({
             databaseUrl: getTestDatabaseUrl(),
             maxConnections: 1,
         });
+
         try {
             await client.unsafe(
                 script
@@ -728,6 +827,7 @@ run('learner portrait durable persistence', () => {
                     .join('\n')
                     .replaceAll(':"account_purge_role"', role),
             );
+
             await restricted.unsafe(`set role ${role}`);
             for (const column of [
                 'input',
@@ -735,52 +835,62 @@ run('learner portrait durable persistence', () => {
                 'result',
                 'fingerprint',
                 'lease_token',
-            ])
+            ]) {
                 await expect(
                     restricted.unsafe(
                         `select ${column} from learner_portrait_interview_operations`,
                     ),
                 ).rejects.toThrow();
+            }
+
             await expect(
                 restricted.unsafe(
                     'select context from learner_portrait_interviews',
                 ),
             ).rejects.toThrow();
+
             await expect(
                 restricted.unsafe('select state from learner_portraits'),
             ).rejects.toThrow();
+
             const restrictedDatabase = createDrizzleDatabase(
                 restricted,
                 databaseSchema,
             );
+
             await restrictedDatabase.transaction(async (tx) => {
                 await requestPortraitCancellation(tx, ownerId, {
                     workerId: 'portrait-purge-scope',
                     fencingToken: 1,
                 });
+
                 expect(
                     await portraitDeletionBusy(tx, ownerId, new Date(), {
                         workerId: 'portrait-purge-scope',
                         fencingToken: 1,
                     }),
                 ).toBe(false);
+
                 await eraseOwnerLearnerPortrait(tx, ownerId, now(), {
                     workerId: 'portrait-purge-scope',
                     fencingToken: 1,
                 });
             });
+
             expect(
                 await database
                     .select()
                     .from(operations)
                     .where(eq(operations.id, admitted.id)),
             ).toHaveLength(0);
+
             expect(
                 await database
                     .select()
                     .from(interviews)
                     .where(eq(interviews.ownerId, ownerId)),
             ).toHaveLength(0);
+
             expect(
                 (
                     await database.execute(
@@ -795,6 +905,7 @@ run('learner portrait durable persistence', () => {
             await client.unsafe(`drop role ${role}`);
         }
     });
+
     it('discovers only live owner metadata without starting or extending an interview', async () => {
         expect(await store.status(ownerId, now())).toBeNull();
         const session = await store.start({
@@ -807,19 +918,23 @@ run('learner portrait durable persistence', () => {
             .select()
             .from(interviews)
             .where(eq(interviews.id, session.interviewId));
+
         expect(await store.status(ownerId, now())).toEqual({
             id: session.interviewId,
             locale: 'fr',
             expiresAt: session.expiresAt,
         });
+
         const [after] = await database
             .select()
             .from(interviews)
             .where(eq(interviews.id, session.interviewId));
+
         expect(after).toEqual(before);
         await expect(store.status(randomUUID(), now())).rejects.toBeInstanceOf(
             PortraitUserUnavailableError,
         );
+
         expect(
             await store.status(
                 ownerId,
@@ -827,6 +942,7 @@ run('learner portrait durable persistence', () => {
             ),
         ).toBeNull();
     });
+
     it('persists requested locale at admission and preserves a later explicit selection', async () => {
         const session = await store.start({
             ownerId,
@@ -850,6 +966,7 @@ run('learner portrait durable persistence', () => {
             now: now(),
             paidAcknowledged: false,
         });
+
         expect(admitted.context.locale).toBe('es');
         expect(
             (
@@ -861,9 +978,13 @@ run('learner portrait durable persistence', () => {
                 })
             ).context.locale,
         ).toBe('es');
+
         const claim = await store.claim();
         expect(claim?.id).toBe(admitted.id);
-        if (!claim) return;
+        if (!claim) {
+            return;
+        }
+
         await store.complete(
             claim,
             {
@@ -874,6 +995,7 @@ run('learner portrait durable persistence', () => {
             },
             now(),
         );
+
         expect(
             (
                 await store.start({
@@ -884,6 +1006,7 @@ run('learner portrait durable persistence', () => {
                 })
             ).context.locale,
         ).toBe('es');
+
         await store.enqueue({
             id: randomUUID(),
             ownerId,
@@ -900,9 +1023,13 @@ run('learner portrait durable persistence', () => {
             now: now(),
             paidAcknowledged: false,
         });
+
         const second = await store.claim();
         expect(second).not.toBeNull();
-        if (!second) return;
+        if (!second) {
+            return;
+        }
+
         await store.setLocale({
             ownerId,
             interviewId: session.interviewId,
@@ -910,6 +1037,7 @@ run('learner portrait durable persistence', () => {
             expectedVersion: 0,
             now: now(),
         });
+
         await store.complete(
             second,
             {
@@ -921,6 +1049,7 @@ run('learner portrait durable persistence', () => {
             },
             now(),
         );
+
         expect(
             (
                 await store.start({
@@ -932,11 +1061,15 @@ run('learner portrait durable persistence', () => {
             ).context.locale,
         ).toBe('fr');
     });
+
     it('resumes the latest question and options across devices without resetting after a failed reply', async () => {
         const admitted = await enqueue();
         const claim = await store.claim();
         expect(claim?.id).toBe(admitted.id);
-        if (!claim) return;
+        if (!claim) {
+            return;
+        }
+
         const latest = {
             message: 'Which explanation style helps you?',
             topic: 'style' as const,
@@ -946,6 +1079,7 @@ run('learner portrait durable persistence', () => {
             ],
             multiSelect: false,
         };
+
         await store.complete(claim, latest, now());
         const resumedService = new InterviewService(
             new DrizzleInterviewStore(database, async () => ({
@@ -957,6 +1091,7 @@ run('learner portrait durable persistence', () => {
             { locale: 'en', expectedVersion: 0 },
             now(),
         );
+
         expect(resumed.interviewId).toBe(admitted.interviewId);
         expect(resumed.initialQuestion).toEqual(latest);
         expect(resumed.context.messages.at(-1)?.content).toBe(latest.message);
@@ -971,9 +1106,13 @@ run('learner portrait durable persistence', () => {
             now: now(),
             paidAcknowledged: false,
         });
+
         const failed = await store.claim();
         expect(failed).not.toBeNull();
-        if (!failed) return;
+        if (!failed) {
+            return;
+        }
+
         await store.fail(failed, 'generation_failed', now());
         expect(
             (
@@ -985,6 +1124,7 @@ run('learner portrait durable persistence', () => {
             ).initialQuestion,
         ).toEqual(latest);
     });
+
     it('restores a safe active response handle for queued and running reconnects', async () => {
         const admitted = await enqueue();
         const service = new InterviewService(store);
@@ -992,6 +1132,7 @@ run('learner portrait durable persistence', () => {
             locale: 'en',
             expectedVersion: 0,
         });
+
         expect(queued.activeOperation).toEqual({
             id: admitted.id,
             interviewId: admitted.interviewId,
@@ -999,11 +1140,13 @@ run('learner portrait durable persistence', () => {
             result: null,
             errorCode: null,
         });
+
         expect(
             PortraitInterviewActiveOperationSchema.safeParse(
                 queued.activeOperation,
             ).success,
         ).toBe(true);
+
         expect(Object.keys(queued.activeOperation ?? {}).sort()).toEqual([
             'errorCode',
             'id',
@@ -1011,37 +1154,49 @@ run('learner portrait durable persistence', () => {
             'result',
             'state',
         ]);
+
         const claim = await store.claim();
         expect(claim?.id).toBe(admitted.id);
-        if (!claim) return;
+        if (!claim) {
+            return;
+        }
+
         expect(
             (await service.start(ownerId, { locale: 'en', expectedVersion: 0 }))
                 .activeOperation?.state,
         ).toBe('running');
+
         expect((await service.stop(ownerId, admitted.id))?.state).toBe(
             'cancelled',
         );
+
         await store.fail(claim, 'cancelled', now());
         expect((await service.read(ownerId, admitted.id))?.state).toBe(
             'cancelled',
         );
+
         expect(
             (await service.start(ownerId, { locale: 'en', expectedVersion: 0 }))
                 .activeOperation,
         ).toBeUndefined();
     });
+
     it('refreshes edited portrait items on resume without extending expiry or restoring stale proposals', async () => {
         const original = await draft();
         const admitted = await enqueue();
         const claim = await store.claim();
         expect(claim?.id).toBe(admitted.id);
-        if (!claim) return;
+        if (!claim) {
+            return;
+        }
+
         const question = {
             message: 'Choose a style',
             topic: 'style' as const,
             options: [{ id: 'examples-first', label: 'Examples first' }],
             multiSelect: false,
         };
+
         await store.complete(
             claim,
             {
@@ -1051,16 +1206,20 @@ run('learner portrait durable persistence', () => {
             },
             now(),
         );
+
         const fresh = await new InterviewService(store).start(ownerId, {
             locale: 'en',
             expectedVersion: 1,
         });
+
         expect(fresh.latestCompletedOperation?.result.proposedItems).toEqual(
             original.draft!.items,
         );
+
         expect(fresh.latestCompletedOperation?.result.answerSummary).toBe(
             'Travel',
         );
+
         expect(fresh.latestCompletedOperation?.stale).toBe(false);
         expect(fresh.latestCompletedOperation?.baseVersion).toBe(1);
         expect(fresh.latestCompletedOperation?.baseGeneration).toBe(0);
@@ -1069,6 +1228,7 @@ run('learner portrait durable persistence', () => {
                 fresh.latestCompletedOperation,
             ).success,
         ).toBe(true);
+
         expect(
             Object.keys(fresh.latestCompletedOperation ?? {}).sort(),
         ).toEqual([
@@ -1081,6 +1241,7 @@ run('learner portrait durable persistence', () => {
             'stale',
             'state',
         ]);
+
         const changedAt = new Date(Date.now() + 1000);
         const edited = await service.saveDraft(
             ownerId,
@@ -1105,6 +1266,7 @@ run('learner portrait durable persistence', () => {
             { locale: 'en', expectedVersion: edited.version },
             new Date(changedAt.getTime() + 5000),
         );
+
         expect(resumed.context.draftItems?.goals).toEqual(['Work']);
         expect(resumed.context.approvedItems).toBeNull();
         expect(resumed.initialQuestion).toEqual(question);
@@ -1112,9 +1274,11 @@ run('learner portrait durable persistence', () => {
         expect(
             resumed.latestCompletedOperation?.result.proposedItems?.goals,
         ).toEqual(['Travel']);
+
         expect(resumed.latestCompletedOperation?.result.answerSummary).toBe(
             'Travel',
         );
+
         expect(resumed.latestCompletedOperation?.baseVersion).toBe(1);
         expect(resumed.latestCompletedOperation?.baseGeneration).toBe(0);
         const [after] = await database
@@ -1125,6 +1289,7 @@ run('learner portrait durable persistence', () => {
             })
             .from(interviews)
             .where(eq(interviews.id, admitted.interviewId));
+
         expect(after?.expiresAt).toEqual(before?.expiresAt);
         expect(after?.updatedAt).toEqual(before?.updatedAt);
         expect(after?.context.draftItems?.goals).toEqual(['Work']);
@@ -1137,19 +1302,23 @@ run('learner portrait durable persistence', () => {
             locale: 'en',
             expectedVersion: approved.version,
         });
+
         expect(restarted.interviewId).not.toBe(admitted.interviewId);
         expect(restarted.context.approvedItems?.goals).toEqual(['Work']);
         expect(restarted.context.draftItems).toBeNull();
     });
+
     it('explicitly erases portraits for retained user tombstones', async () => {
         await draft();
         await service.approve(ownerId, {
             expectedVersion: 1,
             expectedApprovedVersion: 0,
         });
+
         await database.transaction((tx) =>
             eraseOwnerLearnerPortrait(tx, ownerId, now()),
         );
+
         expect(
             (
                 await database.execute(
@@ -1157,6 +1326,7 @@ run('learner portrait durable persistence', () => {
                 )
             ).length,
         ).toBe(0);
+
         expect(
             await database
                 .select()
@@ -1164,6 +1334,7 @@ run('learner portrait durable persistence', () => {
                 .where(eq(usersTable.id, ownerId)),
         ).toHaveLength(1);
     });
+
     it('recovers only the latest failed or cancelled owner input without execution metadata', async () => {
         const admitted = await enqueue();
         const claim = await store.claim();
@@ -1175,6 +1346,7 @@ run('learner portrait durable persistence', () => {
             expectedVersion: 0,
             now: now(),
         });
+
         expect(
             PortraitInterviewLastAttemptSchema.parse(response.lastAttempt),
         ).toEqual({
@@ -1187,6 +1359,7 @@ run('learner portrait durable persistence', () => {
             baseGeneration: 0,
             stale: false,
         });
+
         expect(Object.keys(response.lastAttempt!)).not.toContain('execution');
         expect(Object.keys(response.lastAttempt!)).not.toContain('context');
         expect(Object.keys(response.lastAttempt!)).not.toContain('ownerId');
@@ -1195,6 +1368,7 @@ run('learner portrait durable persistence', () => {
         await database
             .insert(usersTable)
             .values({ id: otherId, status: 'active' });
+
         expect(
             (
                 await store.start({
@@ -1205,6 +1379,7 @@ run('learner portrait durable persistence', () => {
                 })
             ).lastAttempt,
         ).toBeUndefined();
+
         const retry = await store.enqueue({
             id: randomUUID(),
             ownerId,
@@ -1221,6 +1396,7 @@ run('learner portrait durable persistence', () => {
             paidAcknowledged: false,
             now: new Date(Date.now() + 100),
         });
+
         expect(
             (
                 await store.start({
@@ -1231,6 +1407,7 @@ run('learner portrait durable persistence', () => {
                 })
             ).lastAttempt,
         ).toBeUndefined();
+
         await store.stop(ownerId, retry.id, now());
         const cancelled = await store.start({
             ownerId,
@@ -1238,6 +1415,7 @@ run('learner portrait durable persistence', () => {
             expectedVersion: 0,
             now: now(),
         });
+
         expect(cancelled.lastAttempt?.state).toBe('cancelled');
         expect(cancelled.lastAttempt?.input).toEqual(retry.input);
         const edited = await draft();
@@ -1251,6 +1429,7 @@ run('learner portrait durable persistence', () => {
                 })
             ).lastAttempt?.stale,
         ).toBe(true);
+
         const next = await store.enqueue({
             id: randomUUID(),
             ownerId,
@@ -1274,6 +1453,7 @@ run('learner portrait durable persistence', () => {
             },
             now(),
         );
+
         expect(
             (
                 await store.start({
@@ -1285,6 +1465,7 @@ run('learner portrait durable persistence', () => {
             ).lastAttempt,
         ).toBeUndefined();
     });
+
     it.each(['approve', 'discard', 'delete', 'expire'] as const)(
         'erases recoverable failed input after %s',
         async (action) => {
@@ -1302,25 +1483,34 @@ run('learner portrait durable persistence', () => {
                     })
                 ).lastAttempt?.input,
             ).toEqual(admitted.input);
-            if (action === 'approve')
+
+            if (action === 'approve') {
                 await service.approve(ownerId, {
                     expectedVersion: state.version,
                     expectedApprovedVersion: state.approvedVersion,
                 });
-            if (action === 'discard')
+            }
+
+            if (action === 'discard') {
                 await service.discardInterview(ownerId, {
                     expectedVersion: state.version,
                 });
-            if (action === 'delete')
+            }
+
+            if (action === 'delete') {
                 await service.delete(ownerId, {
                     expectedVersion: state.version,
                     confirmed: true,
                 });
-            if (action === 'expire')
+            }
+
+            if (action === 'expire') {
                 await expireLearnerPortraitInterviews(
                     database,
                     new Date(Date.now() + 15 * 86400_000),
                 );
+            }
+
             expect(await store.status(ownerId, now())).toBeNull();
             expect(await store.read(ownerId, admitted.id)).toBeNull();
             expect(

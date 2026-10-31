@@ -70,8 +70,9 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
             if (
                 BigInt(total?.used ?? '0') + input.limits.maximumCostMicros >
                 input.limits.dailyMaximumCostMicros
-            )
+            ) {
                 throw new TextAiProbeUnavailableError('probe_limit_reached');
+            }
 
             const [running] = await tx
                 .select({ id: probes.id, state: probes.state })
@@ -101,12 +102,13 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                 )
                 .limit(1);
 
-            if (running)
+            if (running) {
                 throw new TextAiProbeUnavailableError(
                     running.state === 'running'
                         ? 'probe_busy'
                         : 'probe_recovery_required',
                 );
+            }
 
             const [recent] = await tx
                 .select({ id: probes.id })
@@ -125,7 +127,9 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                 )
                 .limit(1);
 
-            if (recent) throw new TextAiProbeUnavailableError('probe_cooldown');
+            if (recent) {
+                throw new TextAiProbeUnavailableError('probe_cooldown');
+            }
 
             const price = await pinProviderPrice(tx, {
                 providerId: input.identity.providerId,
@@ -140,15 +144,18 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                     !price.nativeRules &&
                     (price.minimumUsdPerRequest == null ||
                         parseFixed(price.minimumUsdPerRequest, 6) <= 0n))
-            )
+            ) {
                 throw new TextAiProbeUnavailableError('probe_prices_missing');
+            }
+
             if (
                 parseFixed(price.minimumUsdPerRequest ?? '0', 6) >
                 input.limits.maximumCostMicros
-            )
+            ) {
                 throw new TextAiProbeUnavailableError(
                     'probe_budget_insufficient',
                 );
+            }
 
             const id = randomUUID();
             const identity = price.nativeRules
@@ -198,11 +205,15 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                 .where(eq(probes.id, reservation.id))
                 .for('update');
 
-            if (!previous)
+            if (!previous) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
-            if (previous.state !== 'running') return dto(previous);
+            }
+
+            if (previous.state !== 'running') {
+                return dto(previous);
+            }
 
             const cost = probeCostMicros(
                 previous.price,
@@ -284,26 +295,32 @@ export class DrizzleTextAiProbeStore implements TextAiProbeStore {
                 .where(eq(probes.id, input.probeId))
                 .for('update');
 
-            if (!previous)
+            if (!previous) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
+            }
+
             const [recovery] = await tx
                 .select()
                 .from(recoveries)
                 .where(eq(recoveries.probeId, input.probeId));
 
-            if (recovery) return dto(previous, recovery.recoveredAt);
+            if (recovery) {
+                return dto(previous, recovery.recoveredAt);
+            }
+
             if (
                 previous.state === 'passed' ||
                 (previous.state === 'failed' &&
                     !['execution_unknown', 'timeout'].includes(
                         previous.failure ?? '',
                     ))
-            )
+            ) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
+            }
 
             let saved = previous;
             if (previous.state === 'running') {
@@ -361,10 +378,15 @@ export function probeCostMicros(
         result.failure === 'budget_insufficient' &&
         result.inputTokens === 0 &&
         result.outputTokens === 0
-    )
+    ) {
         return 0n;
+    }
+
     if (price.nativeRules) {
-        if (!dispatchedAt && !result.executionFacts) return null;
+        if (!dispatchedAt && !result.executionFacts) {
+            return null;
+        }
+
         const cost = evaluateNativeProviderCost(
             price.nativeRules,
             {
@@ -398,14 +420,18 @@ export function probeCostMicros(
         result.measurement === 'unknown' ||
         result.inputTokens === null ||
         result.outputTokens === null
-    )
+    ) {
         return null;
+    }
+
     if (
         result.failure === 'budget_insufficient' &&
         result.inputTokens === 0 &&
         result.outputTokens === 0
-    )
+    ) {
         return 0n;
+    }
+
     const read = result.cacheReadTokens ?? 0,
         write = result.cacheWriteTokens ?? 0;
 
@@ -415,8 +441,10 @@ export function probeCostMicros(
         (write > 0 && price.cacheWriteUsdPerMillionTokens === null) ||
         price.inputUsdPerMillionTokens === null ||
         price.outputUsdPerMillionTokens === null
-    )
+    ) {
         return null;
+    }
+
     const numerator =
         BigInt(result.inputTokens - read - write) *
             parseFixed(price.inputUsdPerMillionTokens, 6) +
@@ -472,8 +500,9 @@ export async function requireProbeReady(
         !latest.evidenceExpiresAt ||
         latest.evidenceExpiresAt <= input.now ||
         !(await isProbeDispatchAllowed(tx, expected))
-    )
+    ) {
         throw new TextAiProbeUnavailableError('probe_check_required');
+    }
 }
 
 export async function isProbeDispatchAllowed(

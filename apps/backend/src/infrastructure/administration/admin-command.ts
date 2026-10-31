@@ -52,19 +52,27 @@ export function parseAdministrationCommand(
             'Usage: admin-command <grant|revoke|list|prune> [--email value] [--actor-email value] [--reason value] [--confirm admin-membership-change]',
         );
     }
+
     const values = parseFlags(tokens);
     if (command === 'list') {
         if (Object.keys(values).length) {
             throw new Error('The list command does not accept options.');
         }
+
         return { command } as const;
     }
+
     if (command === 'prune') {
         const parsed = PruneCommandSchema.parse(values);
-        if (!parsed.actorEmail) throw new Error('Actor email is required.');
+        if (!parsed.actorEmail) {
+            throw new Error('Actor email is required.');
+        }
+
         return { ...parsed, actorEmail: parsed.actorEmail, command };
     }
+
     const parsed = MutatingCommandSchema.parse(values);
+
     return {
         ...(parsed.actorEmail ? { actorEmail: parsed.actorEmail } : {}),
         command: command as 'grant' | 'revoke',
@@ -78,6 +86,7 @@ export function readsAdministrationRequestFromStandardInput(
     arguments_: string[],
 ): boolean {
     const normalized = withoutPnpmSeparator(arguments_);
+
     return normalized.length === 1 && normalized[0] === '--request-stdin';
 }
 
@@ -88,12 +97,14 @@ export function parseAdministrationRequest(
         .object({ command: z.enum(['grant', 'list', 'prune', 'revoke']) })
         .passthrough()
         .parse(input);
+
     if (envelope.command === 'list') {
         return z
             .object({ command: z.literal('list') })
             .strict()
             .parse(input);
     }
+
     if (envelope.command === 'prune') {
         return {
             ...PruneCommandSchema.extend({ command: z.literal('prune') })
@@ -101,11 +112,13 @@ export function parseAdministrationRequest(
                 .parse(input),
         };
     }
+
     const parsed = MutatingCommandSchema.extend({
         command: z.enum(['grant', 'revoke']),
     })
         .strict()
         .parse(input);
+
     return {
         ...(parsed.actorEmail ? { actorEmail: parsed.actorEmail } : {}),
         command: parsed.command,
@@ -120,7 +133,11 @@ async function main() {
         '../../../../../.env.local',
         import.meta.url,
     );
-    if (existsSync(localEnvironmentFile)) loadEnvFile(localEnvironmentFile);
+
+    if (existsSync(localEnvironmentFile)) {
+        loadEnvFile(localEnvironmentFile);
+    }
+
     const commandArguments = process.argv.slice(2);
     const input = readsAdministrationRequestFromStandardInput(commandArguments)
         ? parseAdministrationRequest(
@@ -132,6 +149,7 @@ async function main() {
         databaseUrl: environment.DATABASE_URL,
         maxConnections: 1,
     });
+
     try {
         const operator = new DrizzleAdministrationOperator(
             createDrizzleDatabase(sql, databaseSchema),
@@ -153,11 +171,13 @@ async function main() {
                 now,
                 reason: input.reason,
             };
+
             result =
                 input.command === 'grant'
                     ? await operator.grant(mutation)
                     : await operator.revoke(mutation);
         }
+
         console.log(
             JSON.stringify({ command: input.command, result }, null, 2),
         );
@@ -178,7 +198,11 @@ async function readStandardInput(maximumBytes: number): Promise<string> {
             throw new Error('Administration request exceeds 8 KiB.');
         }
     }
-    if (!result.trim()) throw new Error('Administration request is empty.');
+
+    if (!result.trim()) {
+        throw new Error('Administration request is empty.');
+    }
+
     return result;
 }
 
@@ -190,15 +214,22 @@ function parseFlags(tokens: string[]): Record<string, string> {
         if (!flag?.startsWith('--') || !value || value.startsWith('--')) {
             throw new Error(`Invalid option near ${flag ?? 'end of command'}.`);
         }
+
         const key = flag
             .slice(2)
             .replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+
         if (!['actorEmail', 'confirm', 'email', 'reason'].includes(key)) {
             throw new Error(`Unknown option ${flag}.`);
         }
-        if (result[key]) throw new Error(`Duplicate option ${flag}.`);
+
+        if (result[key]) {
+            throw new Error(`Duplicate option ${flag}.`);
+        }
+
         result[key] = value;
     }
+
     return result;
 }
 
@@ -207,6 +238,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         console.error(
             error instanceof Error ? error.message : 'Command failed.',
         );
+
         process.exitCode = 1;
     });
 }

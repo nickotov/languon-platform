@@ -58,6 +58,7 @@ export function ActionBudgetConfirmation({
               new Date(quote.expiresAt),
           )
         : '';
+
     return (
         <Dialog
             open={quote !== null}

@@ -36,6 +36,7 @@ function control(
         stop,
         confirm: vi.fn(),
     });
+
     return render(
         <SpeechControl
             source={source}
@@ -56,6 +57,7 @@ it('shows only an icon while retaining an action label and keyboard tooltip', as
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Play Source phrase',
     );
+
     fireEvent.click(button);
     expect(play).toHaveBeenCalledOnce();
     fireEvent.keyDown(button, { key: 'Escape' });
@@ -69,6 +71,7 @@ it('keeps retry instructions in a tooltip and announces failures without inline 
     expect(screen.getByRole('status')).toHaveTextContent(
         'Pronunciation could not be prepared. Try again.',
     );
+
     fireEvent.focus(button);
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Pronunciation could not be prepared. Try again.',
@@ -84,6 +87,7 @@ it.each(['en', 'ru', 'fr', 'es'] as const)(
         expect(screen.getByRole('status')).toHaveTextContent(
             speechCopy[locale].providerUnavailable,
         );
+
         fireEvent.focus(button);
         expect(await screen.findByRole('tooltip')).toHaveTextContent(
             speechCopy[locale].providerUnavailable,
@@ -117,6 +121,7 @@ it('keeps the test tone disclosure in the ready tooltip and live announcement', 
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
         'Development test tone',
     );
+
     expect(screen.getByRole('status')).toHaveTextContent(
         'Development test tone',
     );

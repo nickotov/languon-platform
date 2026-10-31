@@ -52,6 +52,7 @@ export function SentencePreparationProgress({
                 : run?.state === 'stopping'
                   ? P('stopping')
                   : null;
+
     return (
         <div className={styles.progressContent}>
             {run ? (
@@ -132,6 +133,7 @@ export function SentencePreparationProgress({
         </div>
     );
 }
+
 function CoverageBar({
     label,
     done,
@@ -144,6 +146,7 @@ function CoverageBar({
     const { P } = usePreparationCopy();
     const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
     const text = P('coverageBar', { done, total });
+
     return (
         <div className={styles.coverage}>
             <div className={styles.coverageHeader}>

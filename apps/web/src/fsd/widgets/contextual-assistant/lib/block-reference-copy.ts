@@ -45,6 +45,7 @@ const copy = {
         add: 'Ajouter le bloc au chat',
     },
 };
+
 export function blockReferenceCopy(locale: Locale) {
     return copy[locale];
 }

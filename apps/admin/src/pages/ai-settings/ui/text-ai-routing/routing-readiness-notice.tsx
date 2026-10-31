@@ -3,6 +3,7 @@ import { Alert, Typography } from 'antd';
 
 export function RoutingReadinessNotice() {
     const t = useTranslate();
+
     return (
         <Alert
             type='info'

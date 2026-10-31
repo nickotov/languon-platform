@@ -4,12 +4,14 @@ it('allows explicit web links and rejects executable, relative and embedded cont
     expect(safeChatLink('https://example.org/word')).toBe(
         'https://example.org/word',
     );
+
     for (const value of [
         'javascript:alert(1)',
         'data:text/html,test',
         '//example.org',
         '/admin',
         'mailto:a@example.org',
-    ])
+    ]) {
         expect(safeChatLink(value)).toBeUndefined();
+    }
 });

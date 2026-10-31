@@ -27,8 +27,9 @@ function assertDisposable(): void {
         workerAccessKeyId.length === 0 ||
         workerSecretAccessKey.length < 16 ||
         apiAccessKeyId === workerAccessKeyId
-    )
+    ) {
         throw new Error('Disposable document storage guard is not satisfied.');
+    }
 }
 
 describe.skipIf(!enabled)('S3 document storage conformance', () => {
@@ -80,6 +81,7 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
                 },
                 method: capability.method,
             });
+
             expect(wrongContentType.status).toBe(403);
             const [first, replay] = await Promise.all([
                 fetch(capability.url, {
@@ -96,6 +98,7 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
             const successful = [first, replay].filter(
                 (response) => response.ok,
             );
+
             expect(successful).toHaveLength(1);
             expect([first.status, replay.status].sort()).toEqual([200, 412]);
             const versionId = successful[0]!.headers.get('x-amz-version-id');
@@ -109,6 +112,7 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
                 requestedVersionId: versionId!,
                 signal: new AbortController().signal,
             });
+
             expect(observation).toMatchObject({
                 detectedFormat: 'txt',
                 versions: [
@@ -135,7 +139,10 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
                 new AbortController().signal,
             );
             const chunks: Uint8Array[] = [];
-            for await (const chunk of opened.content) chunks.push(chunk);
+            for await (const chunk of opened.content) {
+                chunks.push(chunk);
+            }
+
             expect(Buffer.concat(chunks)).toEqual(content);
             expect(opened.reference).toMatchObject({
                 checksumSha256,
@@ -145,6 +152,7 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
             const publicRead = await fetch(
                 `${endpoint}/${bucket}/${encodeURIComponent(objectKey)}`,
             );
+
             expect(publicRead.ok).toBe(false);
 
             const tombstone = await privateStorage.putTombstone({
@@ -156,18 +164,23 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
                 headers: capability.requiredHeaders,
                 method: capability.method,
             });
+
             expect(lateReplay.status).toBe(412);
             const versions = await privateStorage.listVersions({
                 objectKey,
                 signal: new AbortController().signal,
             });
-            for (const version of versions)
-                if (version.kind === 'data')
+
+            for (const version of versions) {
+                if (version.kind === 'data') {
                     await privateStorage.deleteVersion({
                         objectKey,
                         signal: new AbortController().signal,
                         versionId: version.versionId,
                     });
+                }
+            }
+
             expect(
                 await privateStorage.listVersions({
                     objectKey,
@@ -180,11 +193,13 @@ describe.skipIf(!enabled)('S3 document storage conformance', () => {
                     versionId: tombstone.versionId,
                 }),
             ]);
+
             await privateStorage.deleteTombstone({
                 objectKey,
                 signal: new AbortController().signal,
                 versionId: tombstone.versionId,
             });
+
             expect(
                 await privateStorage.listVersions({
                     objectKey,

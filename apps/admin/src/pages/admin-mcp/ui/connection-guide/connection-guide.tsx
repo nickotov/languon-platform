@@ -32,7 +32,7 @@ export function ConnectionGuide() {
     const portStatus = validPort ? '' : 'error';
     const portHelp = validPort ? t('mcp.portHelp') : t('mcp.portInvalid');
     const tabs: TabsProps['items'] = [];
-    if (configurations)
+    if (configurations) {
         tabs.push(
             {
                 key: 'codex',
@@ -68,6 +68,8 @@ export function ConnectionGuide() {
                 ),
             },
         );
+    }
+
     const troubleshooting = [
         {
             key: 'troubleshooting',
@@ -127,6 +129,7 @@ function ClientConfiguration({
     source: string;
 }) {
     const t = useTranslate();
+
     return (
         <Space
             direction='vertical'

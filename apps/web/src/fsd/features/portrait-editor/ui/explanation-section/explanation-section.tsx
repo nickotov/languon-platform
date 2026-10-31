@@ -40,8 +40,10 @@ export function ExplanationSection({
         { value: '', label: text.preference },
     ];
     let mixedValue = items.mixedLanguageFrequency ?? '';
-    if (!mixedValue && items.mixedLanguage !== undefined)
+    if (!mixedValue && items.mixedLanguage !== undefined) {
         mixedValue = items.mixedLanguage ? 'helpful' : 'avoid';
+    }
+
     const question = copy(
         locale,
         'Are mixed-language explanations helpful?',
@@ -70,10 +72,12 @@ export function ExplanationSection({
         'Avec vos mots (facultatif)',
         'Con tus palabras (opcional)',
     );
+
     function handleExplanation(value: string) {
         const next = toggleItem(items.explanationLanguages, value);
         onChange({ ...items, explanationLanguages: next });
     }
+
     function handleMixed(value: string) {
         const next = { ...items };
         if (!value) {
@@ -83,16 +87,24 @@ export function ExplanationSection({
             next.mixedLanguageFrequency = value as NonNullable<
                 PortraitItems['mixedLanguageFrequency']
             >;
+
             next.mixedLanguage = value !== 'avoid';
         }
+
         onChange(next);
     }
+
     function handleNote(value: string) {
         const next = { ...items };
-        if (value) next.mixingNote = value;
-        else delete next.mixingNote;
+        if (value) {
+            next.mixingNote = value;
+        } else {
+            delete next.mixingNote;
+        }
+
         onChange(next);
     }
+
     return (
         <EditorSection
             title={text.explanation}
@@ -117,6 +129,7 @@ export function ExplanationSection({
                             disabled ||
                             (!selected &&
                                 items.explanationLanguages.length >= 10);
+
                         return (
                             <ChoiceChip
                                 key={code}

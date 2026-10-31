@@ -11,11 +11,13 @@ const state = vi.hoisted(() => ({
     propose: vi.fn(),
     accept: vi.fn(),
 }));
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/hooks/use-assistant-panel',
     () => ({
         useAssistantPanel: (props: unknown) => {
             state.sourceProps = props;
+
             return {
                 chat: {
                     id: 'conversation',
@@ -41,6 +43,7 @@ vi.mock(
         },
     }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/hooks/use-published-knowledge',
     () => ({
@@ -50,6 +53,7 @@ vi.mock(
         }),
     }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell',
     () => ({
@@ -58,27 +62,33 @@ vi.mock(
         ),
     }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages',
     () => ({
         ConversationMessages: (props: { children: ReactNode }) => {
             state.messageProps = props;
+
             return <div>{props.children}</div>;
         },
     }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-history',
     () => ({ ConversationHistory: () => null }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-dialogs',
     () => ({ AssistantDialogs: () => null }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/knowledge-draft-card',
     () => ({ KnowledgeDraftCard: () => <button>Apply private draft</button> }),
 );
+
 vi.mock(
     '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/published-note-notice',
     () => ({ PublishedNoteNotice: () => <div>Published private note</div> }),
@@ -93,11 +103,13 @@ const panelProps = {
     onExpand: vi.fn(),
     onSelectFromPage: vi.fn(),
 };
+
 beforeEach(() => {
     vi.clearAllMocks();
     state.sourceProps = undefined;
     state.messageProps = undefined;
 });
+
 describe('shared knowledge read-only assistant controls', () => {
     it('keeps copying available without rendering a proposal action when the callback is absent', () => {
         render(
@@ -107,11 +119,13 @@ describe('shared knowledge read-only assistant controls', () => {
                 disabled={false}
             />,
         );
+
         expect(screen.getByRole('button', { name: 'Copy' })).toBeEnabled();
         expect(
             screen.queryByRole('button', { name: 'Prepare a Knowledge note' }),
         ).not.toBeInTheDocument();
     });
+
     it('retains the owner proposal action when an authorized callback exists', () => {
         const propose = vi.fn();
         render(
@@ -122,11 +136,14 @@ describe('shared knowledge read-only assistant controls', () => {
                 disabled={false}
             />,
         );
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Prepare a Knowledge note' }),
         );
+
         expect(propose).toHaveBeenCalledTimes(1);
     });
+
     it('clears editing context and hides draft/publish controls on shared knowledge sources', () => {
         const workspace = { getSnapshot: vi.fn(), onAcceptProposal: vi.fn() };
         render(
@@ -141,12 +158,14 @@ describe('shared knowledge read-only assistant controls', () => {
                 workspace={workspace}
             />,
         );
+
         expect(state.sourceProps).toEqual(
             expect.objectContaining({
                 workspace: undefined,
                 currentDraft: undefined,
             }),
         );
+
         expect(state.messageProps).toEqual(
             expect.objectContaining({
                 onPropose: undefined,
@@ -154,13 +173,16 @@ describe('shared knowledge read-only assistant controls', () => {
                 workspace: undefined,
             }),
         );
+
         expect(
             screen.queryByRole('button', { name: 'Apply private draft' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByText('Published private note'),
         ).not.toBeInTheDocument();
     });
+
     it('preserves owner draft and proposal controls for private knowledge sources', () => {
         render(
             <AssistantPanel
@@ -168,14 +190,18 @@ describe('shared knowledge read-only assistant controls', () => {
                 source={{ kind: 'knowledge', id: sourceId }}
             />,
         );
+
         expect(state.messageProps).toEqual(
             expect.objectContaining({ onPropose: state.propose }),
         );
+
         expect(
             screen.getByRole('button', { name: 'Apply private draft' }),
         ).toBeInTheDocument();
+
         expect(screen.getByText('Published private note')).toBeInTheDocument();
     });
+
     it('keeps owner saved practice read-only while preserving its feedback request', () => {
         const request = { id: 'feedback', prompt: 'Explain my answer' };
         render(
@@ -187,6 +213,7 @@ describe('shared knowledge read-only assistant controls', () => {
                 workspace={{ getSnapshot: vi.fn(), onAcceptProposal: vi.fn() }}
             />,
         );
+
         expect(state.sourceProps).toEqual(
             expect.objectContaining({
                 request,
@@ -194,12 +221,14 @@ describe('shared knowledge read-only assistant controls', () => {
                 currentDraft: undefined,
             }),
         );
+
         expect(state.messageProps).toEqual(
             expect.objectContaining({
                 onPropose: undefined,
                 onAcceptWorkspaceProposal: undefined,
             }),
         );
+
         expect(
             screen.queryByRole('button', { name: 'Apply private draft' }),
         ).not.toBeInTheDocument();

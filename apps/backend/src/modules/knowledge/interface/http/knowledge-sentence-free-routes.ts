@@ -77,6 +77,7 @@ const headers = z.object({
 const envelope = (code: string, message: string) => ({
     error: { code, message, correlationId: randomUUID() },
 });
+
 export function createKnowledgeSentenceRoutes({
     service,
     policy,
@@ -86,20 +87,26 @@ export function createKnowledgeSentenceRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     envelope('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.use('/knowledge/:noteId/vocabulary/:blockId/*', async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('Referrer-Policy', 'no-referrer');
         const origin = c.req.header('Origin');
-        if (origin) policy.assertCookieRequestOrigin(origin);
+        if (origin) {
+            policy.assertCookieRequestOrigin(origin);
+        }
+
         await next();
     });
+
     app.use(
         '/knowledge/:noteId/vocabulary/:blockId/*',
         bodyLimit({
@@ -111,6 +118,7 @@ export function createKnowledgeSentenceRoutes({
                 ),
         }),
     );
+
     app.options('/knowledge/:noteId/vocabulary/:blockId/sentences/*', (c) => {
         const origin = c.req.header('Origin');
         policy.assertCookieRequestOrigin(origin ?? null);
@@ -121,17 +129,24 @@ export function createKnowledgeSentenceRoutes({
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key, X-Languon-Share-Kind, X-Languon-Share-Locator',
         );
+
         c.header('Vary', 'Origin');
+
         return c.body(null, 204);
     });
+
     app.use(
         '/knowledge/:noteId/vocabulary/:blockId/sentences/*',
         actionAllowanceRequestMiddleware,
     );
+
     app.onError((error, c) => {
         const consent = actionAllowanceErrorResponse(error, c);
-        if (consent) return consent;
-        if (error instanceof SentenceConflictError)
+        if (consent) {
+            return consent;
+        }
+
+        if (error instanceof SentenceConflictError) {
             return c.json(
                 envelope(
                     error.reason === 'stale_content'
@@ -141,7 +156,9 @@ export function createKnowledgeSentenceRoutes({
                 ),
                 409,
             );
-        if (error instanceof SentenceUnavailableError)
+        }
+
+        if (error instanceof SentenceUnavailableError) {
             return c.json(
                 envelope(
                     'job_not_found',
@@ -149,17 +166,23 @@ export function createKnowledgeSentenceRoutes({
                 ),
                 404,
             );
-        if (error instanceof SentenceModelUnavailableError)
+        }
+
+        if (error instanceof SentenceModelUnavailableError) {
             return c.json(
                 envelope('model_unavailable', 'AI is unavailable.'),
                 503,
             );
-        if (error instanceof SentenceCreditsExhaustedError)
+        }
+
+        if (error instanceof SentenceCreditsExhaustedError) {
             return c.json(
                 envelope('ai_credits_exhausted', 'Insufficient AI credits.'),
                 402,
             );
-        if (error instanceof SentenceCapacityUnavailableError)
+        }
+
+        if (error instanceof SentenceCapacityUnavailableError) {
             return c.json(
                 envelope(
                     'capacity_unavailable',
@@ -167,24 +190,32 @@ export function createKnowledgeSentenceRoutes({
                 ),
                 503,
             );
+        }
+
         if (
             error instanceof z.ZodError ||
             error instanceof LearningInvalidRequestError
-        )
+        ) {
             return c.json(
                 envelope('invalid_request', 'The request is invalid.'),
                 400,
             );
-        if (error instanceof LearningEntryUnavailableError)
+        }
+
+        if (error instanceof LearningEntryUnavailableError) {
             return c.json(
                 envelope('entry_not_found', 'The entry is unavailable.'),
                 404,
             );
-        if (error instanceof LearningUnavailableError)
+        }
+
+        if (error instanceof LearningUnavailableError) {
             return c.json(
                 envelope('source_not_found', 'The material is unavailable.'),
                 404,
             );
+        }
+
         if (error instanceof LearningConflictError) {
             const codes = {
                 preferences_conflict: 'version_conflict',
@@ -192,6 +223,7 @@ export function createKnowledgeSentenceRoutes({
                 operation_conflict: 'idempotency_conflict',
                 undo_conflict: 'undo_conflict',
             };
+
             return c.json(
                 envelope(
                     codes[error.reason],
@@ -200,8 +232,9 @@ export function createKnowledgeSentenceRoutes({
                 409,
             );
         }
+
         if (error instanceof KnowledgeDomainError) {
-            if (error.code === 'knowledge_not_found')
+            if (error.code === 'knowledge_not_found') {
                 return c.json(
                     envelope(
                         'source_not_found',
@@ -209,7 +242,9 @@ export function createKnowledgeSentenceRoutes({
                     ),
                     404,
                 );
-            if (error.code === 'version_conflict')
+            }
+
+            if (error.code === 'version_conflict') {
                 return c.json(
                     envelope(
                         'learning_version_conflict',
@@ -217,14 +252,19 @@ export function createKnowledgeSentenceRoutes({
                     ),
                     409,
                 );
-            if (error.code === 'rate_limited')
+            }
+
+            if (error.code === 'rate_limited') {
                 return c.json(
                     envelope('rate_limited', 'Too many requests.'),
                     429,
                 );
+            }
         }
+
         const mapped = mapDictionaryHttpError(error);
         const code = LearningErrorCodeSchema.safeParse(mapped.code);
+
         return c.json(
             envelope(
                 code.success ? code.data : 'internal_error',
@@ -233,11 +273,13 @@ export function createKnowledgeSentenceRoutes({
             code.success ? mapped.status : 500,
         );
     });
+
     const request = (c: Context): VocabularyPracticeRequest => {
         const metadata = authenticationRequestMetadata(c, policy);
         const kind = c.req.header('X-Languon-Share-Kind');
         const locator = c.req.header('X-Languon-Share-Locator');
         const key = c.req.header('X-Languon-Share-Key');
+
         return {
             token: policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -309,13 +351,16 @@ export function createKnowledgeSentenceRoutes({
                         result !== null &&
                         'kind' in result &&
                         result.kind === 'job');
+
                 return c.json(result, accepted ? 202 : 200);
             },
         );
     };
+
     register('get', '/capabilities', SentenceCapabilitiesResponseSchema, (c) =>
         service.capabilities(request(c)),
     );
+
     register(
         'post',
         '/prepare',
@@ -323,6 +368,7 @@ export function createKnowledgeSentenceRoutes({
         async (c) => service.prepare(request(c), await c.req.json()),
         SentencePrepareRequestSchema,
     );
+
     register(
         'post',
         '/next',
@@ -330,12 +376,15 @@ export function createKnowledgeSentenceRoutes({
         async (c) => service.next(request(c), await c.req.json()),
         SentenceNextRequestSchema,
     );
+
     register('get', '/jobs/{jobId}', SentenceJobSchema, (c) =>
         service.getJob(request(c), c.req.param('jobId') ?? ''),
     );
+
     register('post', '/jobs/{jobId}/cancel', SentenceJobSchema, (c) =>
         service.cancelJob(request(c), c.req.param('jobId') ?? ''),
     );
+
     register(
         'post',
         '/exercises/{exerciseId}/checks',
@@ -348,6 +397,7 @@ export function createKnowledgeSentenceRoutes({
             ),
         SentenceCheckRequestSchema,
     );
+
     register(
         'post',
         '/exercises/{exerciseId}/reference-answer',
@@ -360,6 +410,7 @@ export function createKnowledgeSentenceRoutes({
             ),
         SentenceReferenceRevealRequestSchema,
     );
+
     register(
         'get',
         '/attempts',
@@ -367,6 +418,7 @@ export function createKnowledgeSentenceRoutes({
         (c) => service.attempts(request(c), c.req.query()),
         SentenceAttemptsQuerySchema,
     );
+
     register(
         'get',
         '/reviews',
@@ -374,6 +426,7 @@ export function createKnowledgeSentenceRoutes({
         (c) => service.manualReviews(request(c), c.req.query()),
         SentenceManualReviewsQuerySchema,
     );
+
     register(
         'get',
         '/progress',
@@ -381,5 +434,6 @@ export function createKnowledgeSentenceRoutes({
         (c) => service.progress(request(c), c.req.query()),
         SentenceProgressQuerySchema,
     );
+
     return app;
 }

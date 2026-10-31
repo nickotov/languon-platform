@@ -10,7 +10,10 @@ import { grantTestLearner } from './dev-setup/learner-grant.mjs';
 import { openTargetBinding } from './dev-setup/target-binding.mjs';
 
 export async function main(args = process.argv.slice(2)) {
-    if (args[0] === '--') args = args.slice(1);
+    if (args[0] === '--') {
+        args = args.slice(1);
+    }
+
     const { values } = parseArgs({
         args,
         options: {
@@ -26,16 +29,21 @@ export async function main(args = process.argv.slice(2)) {
             'confirm-database': { type: 'string' },
         },
     });
+
     if (values.help) {
         console.log(
             'dev:configure --profile <deterministic-demo|deepseek-local-testing> --origin http://localhost:4000 --admin-origin http://localhost:3001 [--apply --env-file <file> --confirm-database <name>] [--learner-id UUID]\nPreview is default. Set LANGUON_DEV_ADMIN_TOKEN in the environment; mutations require recent admin authentication. Optional learner-id grants 100 credits once to an active non-owner .test learner. No generation, account creation or database resets. --render-docs emits preset tables; --check-docs <file> verifies they are included.',
         );
+
         return;
     }
+
     if (values['render-docs']) {
         console.log(renderProfileDocumentation());
+
         return;
     }
+
     if (values['check-docs']) {
         const content = await readFile(values['check-docs'], 'utf8');
         // Ignore formatter-specific whitespace, preserving field/value order.
@@ -43,13 +51,18 @@ export async function main(args = process.argv.slice(2)) {
             text
                 .replace(/^\s*\|(?:\s*:?-+:?\s*\|)+\s*$/gm, '')
                 .replace(/\s+/g, '');
-        if (!compact(content).includes(compact(renderProfileDocumentation())))
+
+        if (!compact(content).includes(compact(renderProfileDocumentation()))) {
             throw new Error(
                 'Setup documentation does not match the reviewed profile definitions. Regenerate with --render-docs.',
             );
+        }
+
         console.log('Setup profile documentation matches.');
+
         return;
     }
+
     const request = createAdminClient({
         origin: values.origin,
         adminOrigin: values['admin-origin'],
@@ -66,11 +79,18 @@ export async function main(args = process.argv.slice(2)) {
           })
         : null;
     const boundRequest = async (...args) => {
-        if (args[2] && args[2] !== 'GET') await binding?.verify();
+        if (args[2] && args[2] !== 'GET') {
+            await binding?.verify();
+        }
+
         const result = await request(...args);
-        if (args[2] && args[2] !== 'GET') await binding?.verify();
+        if (args[2] && args[2] !== 'GET') {
+            await binding?.verify();
+        }
+
         return result;
     };
+
     try {
         await binding?.verify();
         await configure({
@@ -80,13 +100,16 @@ export async function main(args = process.argv.slice(2)) {
             apply: values.apply,
             runtimeEnvironment: binding?.env ?? process.env,
         });
-        if (values['learner-id'])
+
+        if (values['learner-id']) {
             await grantTestLearner({
                 learnerId: values['learner-id'],
                 contracts,
                 request: boundRequest,
                 apply: values.apply,
             });
+        }
+
         console.log(
             values.apply
                 ? 'Setup requests completed. Run dev:doctor to check runtime readiness. No generation was requested.'

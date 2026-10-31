@@ -132,6 +132,7 @@ const copies = {
         retry: 'Reintentar',
     },
 };
+
 export function portraitSettingsCopy(locale: string) {
     return copies[locale as keyof typeof copies] ?? copies.en;
 }

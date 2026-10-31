@@ -34,7 +34,10 @@ import { loadKnowledgeTranscriptionEnvironment } from '../../config/knowledge-tr
 import { modelPriceCatalog } from './price-actualization';
 
 const local = new URL('../../../../../.env.local', import.meta.url);
-if (existsSync(local)) loadEnvFile(local);
+if (existsSync(local)) {
+    loadEnvFile(local);
+}
+
 const env = loadAdminMcpEnvironment();
 const sql = createPostgresClient({
     databaseUrl: env.DATABASE_URL,
@@ -56,8 +59,10 @@ const routing = new DrizzleTextAiRoutingStore(
     database,
     async (tx, request) => {
         const identity = fingerprint(request.routeId, request.flowId);
-        if (!identity)
+        if (!identity) {
             throw new TextAiProbeUnavailableError('probe_route_unavailable');
+        }
+
         await requireProbeReady(tx, { ...request, fingerprint: identity });
     },
     (providerId) =>
@@ -133,19 +138,26 @@ const server = serve({
     hostname: '127.0.0.1',
     port: env.ADMIN_MCP_PORT,
 });
+
 console.info(
     `Local admin MCP listening on http://127.0.0.1:${env.ADMIN_MCP_PORT}/mcp`,
 );
+
 let stopping = false;
 async function stop() {
-    if (stopping) return;
+    if (stopping) {
+        return;
+    }
+
     stopping = true;
     server.close();
     await Promise.all([sql.end(), reportsSql.end()]);
 }
+
 process.once('SIGTERM', () => {
     void stop();
 });
+
 process.once('SIGINT', () => {
     void stop();
 });

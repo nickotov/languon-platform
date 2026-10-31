@@ -66,6 +66,7 @@ describe('operator-only model checks', () => {
         const store = {
             reserve: vi.fn(async () => {
                 controller.abort();
+
                 return reservation;
             }),
             finish: vi.fn(async () => ({ id: reservation.id })),
@@ -74,11 +75,13 @@ describe('operator-only model checks', () => {
             identity: () => reservation.identity,
             execute: vi.fn(),
         };
+
         await new TextAiProbeService(store, executor, limits).run(
             'admin-id',
             reservation.request,
             controller.signal,
         );
+
         expect(executor.execute).not.toHaveBeenCalled();
         expect(store.finish).toHaveBeenCalledWith(
             reservation,
@@ -91,11 +94,13 @@ describe('operator-only model checks', () => {
             expect.any(Date),
         );
     });
+
     it('checks live dispatch authority after reserve and persists a known zero expense when authorization fails', async () => {
         const order: string[] = [];
         const store = {
             reserve: vi.fn(async () => {
                 order.push('reserve');
+
                 return reservation;
             }),
             finish: vi.fn(async () => ({ id: reservation.id })),
@@ -106,14 +111,17 @@ describe('operator-only model checks', () => {
         };
         const authorize = vi.fn(async () => {
             order.push('authorize');
+
             throw new Error('Delegation revoked');
         });
+
         await new TextAiProbeService(store, executor, limits).run(
             'admin-id',
             reservation.request,
             undefined,
             authorize,
         );
+
         expect(order).toEqual(['reserve', 'authorize']);
         expect(executor.execute).not.toHaveBeenCalled();
         expect(store.finish).toHaveBeenCalledWith(
@@ -128,6 +136,7 @@ describe('operator-only model checks', () => {
             expect.any(Date),
         );
     });
+
     it('refuses revoked delegation before reservation and propagates revocation after dispatch', async () => {
         const finish = vi.fn(async () => ({ id: reservation.id }));
         const reserve = vi.fn(async () => reservation);
@@ -142,14 +151,17 @@ describe('operator-only model checks', () => {
         await expect(
             service.run('admin-id', reservation.request, revoked.signal),
         ).rejects.toThrow();
+
         expect(reserve).not.toHaveBeenCalled();
 
         const active = new AbortController();
         executor.execute = async (_reservation, signal) => {
             active.abort();
             signal.throwIfAborted();
+
             return result;
         };
+
         await service.run('admin-id', reservation.request, active.signal);
         expect(finish).toHaveBeenCalledWith(
             reservation,
@@ -162,6 +174,7 @@ describe('operator-only model checks', () => {
             expect.any(Date),
         );
     });
+
     it('requires an explicit selected flow and rejects arbitrary fields', () => {
         expect(
             TextAiProbeRequestSchema.safeParse({
@@ -170,6 +183,7 @@ describe('operator-only model checks', () => {
                 kind: 'flow',
             }).success,
         ).toBe(false);
+
         expect(
             TextAiProbeRequestSchema.safeParse({
                 routeId: 'deepseek/deepseek-flash',
@@ -179,15 +193,18 @@ describe('operator-only model checks', () => {
             }).success,
         ).toBe(false);
     });
+
     it('reserves before dispatch and finishes exactly once without learner authority', async () => {
         const order: string[] = [];
         const store = {
             reserve: vi.fn(async () => {
                 order.push('reserve');
+
                 return reservation;
             }),
             finish: vi.fn(async () => {
                 order.push('finish');
+
                 return { id: reservation.id };
             }),
             list: vi.fn(async () => []),
@@ -197,18 +214,22 @@ describe('operator-only model checks', () => {
             identity: () => reservation.identity,
             execute: async () => {
                 order.push('execute');
+
                 return result;
             },
         };
+
         await new TextAiProbeService(store, executor, limits).run(
             'admin-id',
             reservation.request,
         );
+
         expect(order).toEqual(['reserve', 'execute', 'finish']);
         expect(store.reserve).toHaveBeenCalledWith(
             expect.objectContaining({ actorId: 'admin-id', limits }),
         );
     });
+
     it('requires approval again when the displayed maximum changed', async () => {
         const reserve = vi.fn();
         const execute = vi.fn();
@@ -218,6 +239,7 @@ describe('operator-only model checks', () => {
             list: vi.fn(),
             recover: vi.fn(),
         } as TextAiProbeStore;
+
         await expect(
             new TextAiProbeService(
                 store,
@@ -228,9 +250,11 @@ describe('operator-only model checks', () => {
                 approvedMaximumCostUsd: '0.005',
             }),
         ).rejects.toThrow('probe_limit_changed');
+
         expect(reserve).not.toHaveBeenCalled();
         expect(execute).not.toHaveBeenCalled();
     });
+
     it('accepts a lower approved maximum and reserves that exact operator budget for one deterministic probe', async () => {
         const reducedMaximum = 5_000n;
         const reserve = vi.fn(
@@ -242,6 +266,7 @@ describe('operator-only model checks', () => {
         );
         const execute = vi.fn(async (accepted: TextAiProbeReservation) => {
             expect(accepted.maximumCostMicros).toBe(reducedMaximum);
+
             return result;
         });
         const store = {
@@ -271,8 +296,10 @@ describe('operator-only model checks', () => {
                 }),
             }),
         );
+
         expect(execute).toHaveBeenCalledTimes(1);
     });
+
     it('never calls a provider when the atomic reservation rejects', async () => {
         const execute = vi.fn();
         const store = {
@@ -281,6 +308,7 @@ describe('operator-only model checks', () => {
             list: vi.fn(),
             recover: vi.fn(),
         } as TextAiProbeStore;
+
         await expect(
             new TextAiProbeService(
                 store,
@@ -288,8 +316,10 @@ describe('operator-only model checks', () => {
                 limits,
             ).run('admin-id', reservation.request),
         ).rejects.toThrow('daily cap');
+
         expect(execute).not.toHaveBeenCalled();
     });
+
     it('records unknown expense rather than zero and hides raw errors', async () => {
         const finish = vi.fn(async () => ({ id: reservation.id }));
         const store = {
@@ -298,6 +328,7 @@ describe('operator-only model checks', () => {
             list: async () => [],
             recover: vi.fn(),
         } as unknown as TextAiProbeStore;
+
         await new TextAiProbeService(
             store,
             {
@@ -308,6 +339,7 @@ describe('operator-only model checks', () => {
             },
             limits,
         ).run('admin-id', reservation.request);
+
         expect(finish).toHaveBeenCalledWith(
             reservation,
             expect.objectContaining({
@@ -319,12 +351,14 @@ describe('operator-only model checks', () => {
             }),
             expect.any(Date),
         );
+
         expect(
             JSON.stringify(finish.mock.calls, (_key, value) =>
                 typeof value === 'bigint' ? value.toString() : value,
             ),
         ).not.toContain('secret api key');
     });
+
     it('records known zero usage for a budget rejection before any provider dispatch', async () => {
         const finish = vi.fn(async () => ({ id: reservation.id }));
         const store = {
@@ -333,6 +367,7 @@ describe('operator-only model checks', () => {
             list: async () => [],
             recover: vi.fn(),
         } as unknown as TextAiProbeStore;
+
         await new TextAiProbeService(
             store,
             {
@@ -345,6 +380,7 @@ describe('operator-only model checks', () => {
             },
             limits,
         ).run('admin-id', reservation.request);
+
         expect(finish).toHaveBeenCalledWith(
             reservation,
             expect.objectContaining({
@@ -357,6 +393,7 @@ describe('operator-only model checks', () => {
             expect.any(Date),
         );
     });
+
     it('does not retry dispatch when persistence settlement fails', async () => {
         const execute = vi.fn(async () => result);
         const finish = vi.fn().mockRejectedValue(new Error('database down'));
@@ -366,6 +403,7 @@ describe('operator-only model checks', () => {
             list: async () => [],
             recover: vi.fn(),
         } as TextAiProbeStore;
+
         await expect(
             new TextAiProbeService(
                 store,
@@ -373,9 +411,11 @@ describe('operator-only model checks', () => {
                 limits,
             ).run('admin-id', reservation.request),
         ).rejects.toThrow('database down');
+
         expect(execute).toHaveBeenCalledTimes(1);
         expect(finish).toHaveBeenCalledTimes(1);
     });
+
     it('rounds exact aggregate USD once, preserves cache categories', () => {
         expect(
             probeCostMicros(price, {
@@ -384,6 +424,7 @@ describe('operator-only model checks', () => {
                 outputTokens: 3,
             }),
         ).toBe(34n);
+
         expect(
             probeCostMicros(price, {
                 ...result,
@@ -392,6 +433,7 @@ describe('operator-only model checks', () => {
                 cacheReadTokens: 100,
             }),
         ).toBe(1n);
+
         expect(
             probeCostMicros(price, {
                 ...result,
@@ -399,10 +441,12 @@ describe('operator-only model checks', () => {
                 measurement: 'unknown',
             }),
         ).toBeNull();
+
         expect(
             probeCostMicros(price, { ...result, cacheWriteTokens: 1 }),
         ).toBeNull();
     });
+
     it('applies reviewed request minimums only to dispatched work and never calls unknown cost zero', () => {
         const minimumPrice = { ...price, minimumUsdPerRequest: '0.001' };
         expect(probeCostMicros(minimumPrice, result)).toBe(1000n);
@@ -412,6 +456,7 @@ describe('operator-only model checks', () => {
                 result,
             ),
         ).toBe(42n);
+
         expect(
             probeCostMicros(minimumPrice, {
                 ...result,
@@ -421,6 +466,7 @@ describe('operator-only model checks', () => {
                 outputTokens: 0,
             }),
         ).toBe(0n);
+
         expect(
             probeCostMicros(minimumPrice, {
                 ...result,

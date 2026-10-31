@@ -39,12 +39,17 @@ export function useTextWorkspaceAuto(options: {
     function cancel() {
         reset();
         const cancellations: Promise<unknown>[] = [];
-        if (detection.active)
+        if (detection.active) {
             cancellations.push(detection.cancel().catch(() => undefined));
-        if (translation.active)
+        }
+
+        if (translation.active) {
             cancellations.push(translation.cancel().catch(() => undefined));
+        }
+
         detection.clear();
         translation.clear();
+
         return Promise.all(cancellations);
     }
 
@@ -70,13 +75,19 @@ export function useTextWorkspaceAuto(options: {
     }
 
     async function start() {
-        if (continuation.current || detection.active || translation.active)
+        if (continuation.current || detection.active || translation.active) {
             return;
+        }
+
         setError(null);
-        if (input.sourceLanguage !== 'auto')
+        if (input.sourceLanguage !== 'auto') {
             return startTranslation(input.sourceLanguage);
-        if (resolved.current?.fingerprint === fingerprint)
+        }
+
+        if (resolved.current?.fingerprint === fingerprint) {
             return startTranslation(resolved.current.language);
+        }
+
         continuation.current = fingerprint;
         setDetecting(true);
         await detection.start(
@@ -91,7 +102,10 @@ export function useTextWorkspaceAuto(options: {
 
     useEffect(() => {
         const expected = continuation.current;
-        if (!expected || current.current !== expected || !isCurrent()) return;
+        if (!expected || current.current !== expected || !isCurrent()) {
+            return;
+        }
+
         const job = detection.job;
         if (
             detection.error ||
@@ -101,21 +115,30 @@ export function useTextWorkspaceAuto(options: {
             continuation.current = null;
             setDetecting(false);
             setError('unknown');
+
             return;
         }
+
         const result = job?.result;
-        if (!result || !('confidence' in result)) return;
+        if (!result || !('confidence' in result)) {
+            return;
+        }
+
         continuation.current = null;
         setDetecting(false);
         const language = TextLanguageSchema.safeParse(result.language);
         if (!language.success) {
             setError('unknown');
+
             return;
         }
+
         if (language.data === input.targetLanguage) {
             setError('same');
+
             return;
         }
+
         resolved.current = { fingerprint: expected, language: language.data };
         void startTranslation(language.data);
     }, [detection.job, detection.error, fingerprint]);
@@ -125,8 +148,10 @@ export function useTextWorkspaceAuto(options: {
             next.sourceText !== input.sourceText ||
             next.sourceLanguage !== input.sourceLanguage ||
             next.targetLanguage !== input.targetLanguage
-        )
+        ) {
             invalidate();
+        }
+
         options.setInput?.(next);
     }
 

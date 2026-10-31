@@ -47,6 +47,7 @@ function harness() {
                 Origin: origin,
             },
         });
+
     return { app, request, accountSummary, requireActiveSession };
 }
 
@@ -59,16 +60,19 @@ describe('learner credit balance HTTP boundary', () => {
             mode: 'limited',
             availableCredits: '20.125',
         });
+
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
         expect(h.accountSummary).toHaveBeenCalledWith(
             'learner-a',
             expect.any(Date),
         );
+
         expect(h.requireActiveSession).toHaveBeenCalledWith({
             userId: 'learner-a',
             sessionId: 'session-a',
         });
     });
+
     it.each([
         [0n, '0'],
         [1n, '0.001'],
@@ -82,12 +86,14 @@ describe('learner credit balance HTTP boundary', () => {
                 ...summary,
                 availableCredits: amount,
             });
+
             expect(await (await h.request()).json()).toEqual({
                 mode: 'limited',
                 availableCredits: expected,
             });
         },
     );
+
     it('uses effective unlimited policy and hides finite wallet amounts', async () => {
         const h = harness();
         const summary = await h.accountSummary();
@@ -95,36 +101,44 @@ describe('learner credit balance HTTP boundary', () => {
             ...summary,
             policy: { ...summary.policy, effectiveMode: 'unlimited' },
         });
+
         expect(await (await h.request()).json()).toEqual({
             mode: 'unlimited',
             availableCredits: null,
         });
     });
+
     it('rejects missing and inactive authentication before reading the wallet', async () => {
         const h = harness();
         expect((await h.app.request('/users/me/ai-credits')).status).toBe(401);
         h.requireActiveSession.mockRejectedValueOnce(
             new AuthenticationRequiredError(),
         );
+
         expect((await h.request()).status).toBe(401);
         expect(h.accountSummary).not.toHaveBeenCalled();
     });
+
     it('rejects supplied account selectors and hostile origins without reading any balance', async () => {
         const h = harness();
         expect(
             (await h.request('/users/me/ai-credits?ownerId=learner-b')).status,
         ).toBe(400);
+
         expect(
             (await h.request('/users/me/ai-credits', 'https://hostile.example'))
                 .status,
         ).toBe(403);
+
         expect(h.accountSummary).not.toHaveBeenCalled();
     });
+
     it('returns sanitized errors instead of a fabricated zero', async () => {
         const h = harness();
         h.accountSummary.mockRejectedValueOnce(
             new Error('private database detail'),
         );
+
         const response = await h.request();
         expect(response.status).toBe(500);
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
@@ -133,12 +147,14 @@ describe('learner credit balance HTTP boundary', () => {
         expect(JSON.stringify(body)).not.toContain('private database detail');
         expect(body).not.toHaveProperty('availableCredits');
     });
+
     it('supports permitted browser preflight', async () => {
         const h = harness();
         const response = await h.app.request('/users/me/ai-credits', {
             method: 'OPTIONS',
             headers: { Origin: 'https://app.example' },
         });
+
         expect(response.status).toBe(204);
         expect(response.headers.get('Access-Control-Allow-Methods')).toBe(
             'GET, OPTIONS',

@@ -31,19 +31,33 @@ export function ExerciseBlock(
         expansion.toggle();
         props.onExpansionChange?.(!expansion.open);
     }
+
     function handleReveal() {
-        if (props.interactionsDisabled) return;
+        if (props.interactionsDisabled) {
+            return;
+        }
+
         props.onInteraction?.(block.id, { kind: 'answer-revealed' });
         practice.reveal();
     }
+
     function handleHint() {
-        if (props.interactionsDisabled) return;
-        if (!hintVisible)
+        if (props.interactionsDisabled) {
+            return;
+        }
+
+        if (!hintVisible) {
             props.onInteraction?.(block.id, { kind: 'hint-used' });
+        }
+
         practice.toggleHint();
     }
+
     function handleRetry() {
-        if (props.interactionsDisabled) return;
+        if (props.interactionsDisabled) {
+            return;
+        }
+
         practice.retry();
         props.onInteraction?.(block.id, { kind: 'retry' });
         props.onAttemptedChange?.(
@@ -52,20 +66,30 @@ export function ExerciseBlock(
                 (practice.attempted || props.learnerState.attempted),
         );
     }
+
     function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (
             props.interactionsDisabled ||
             props.attemptPending ||
             !form.current?.reportValidity()
-        )
+        ) {
             return;
-        if (!props.onSubmitAttempt && block.format === 'free-text') return;
+        }
+
+        if (!props.onSubmitAttempt && block.format === 'free-text') {
+            return;
+        }
+
         practice.markAttempted();
         props.onAttemptedChange?.(block.id, true);
-        if (props.onSubmitAttempt) props.onSubmitAttempt(block.id, response);
-        else practice.setPreparedResult(checkPreparedAnswer(block, response));
+        if (props.onSubmitAttempt) {
+            props.onSubmitAttempt(block.id, response);
+        } else {
+            practice.setPreparedResult(checkPreparedAnswer(block, response));
+        }
     }
+
     function handleEvaluate() {
         if (
             props.interactionsDisabled ||
@@ -73,12 +97,15 @@ export function ExerciseBlock(
             props.evaluationUnavailableReason !== undefined ||
             !props.onEvaluate ||
             !form.current?.reportValidity()
-        )
+        ) {
             return;
+        }
+
         practice.markAttempted();
         props.onAttemptedChange?.(block.id, true);
         props.onEvaluate(block.id, response);
     }
+
     const canSubmit =
         block.format !== 'free-text' ||
         (props.variant === undefined && props.onSubmitAttempt !== undefined);
@@ -111,15 +138,35 @@ export function ExerciseBlock(
     let status = practice.attempted
         ? (labels.attempted ?? labels.answer)
         : (labels.notAnswered ?? '');
-    if (hintVisible) status = labels.hint;
-    if (revealed) status = labels.showAnswer;
-    if (preparedResult !== undefined)
+
+    if (hintVisible) {
+        status = labels.hint;
+    }
+
+    if (revealed) {
+        status = labels.showAnswer;
+    }
+
+    if (preparedResult !== undefined) {
         status = preparedResult ? labels.correct : labels.incorrect;
-    if (matchesSaved && props.learnerState?.attempted) status = labels.answer;
-    if (matchesSaved && props.learnerState?.correct !== undefined)
+    }
+
+    if (matchesSaved && props.learnerState?.attempted) {
+        status = labels.answer;
+    }
+
+    if (matchesSaved && props.learnerState?.correct !== undefined) {
         status = props.learnerState.correct ? labels.correct : labels.incorrect;
-    if (visibleFeedback) status = visibleFeedback.split(':')[0] ?? '';
-    if (preview) return <ExercisePreview {...props} />;
+    }
+
+    if (visibleFeedback) {
+        status = visibleFeedback.split(':')[0] ?? '';
+    }
+
+    if (preview) {
+        return <ExercisePreview {...props} />;
+    }
+
     return (
         <div className={styles.root}>
             <button

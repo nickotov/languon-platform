@@ -22,11 +22,13 @@ export function useAuthoringJob({
             const response = await requestWithSession((token) =>
                 dictionaryApi.readGenerationJob(token, authoringJobId!, signal),
             );
+
             return response.job.kind === 'card-authoring' ? response.job : null;
         },
         enabled: editing !== null && authoringJobId !== null,
         refetchInterval: (query) => {
             const state = query.state.data?.state;
+
             return state === 'queued' || state === 'running' ? 1_000 : false;
         },
     });

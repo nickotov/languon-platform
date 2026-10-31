@@ -21,13 +21,16 @@ export async function assertLegacyNoteTarget(
         )
         .for('share');
 
-    if (!note)
+    if (!note) {
         throw new KnowledgeDomainError(
             'knowledge_not_found',
             'The knowledge note is unavailable.',
         );
-    if (note.body.schemaVersion !== 1)
+    }
+
+    if (note.body.schemaVersion !== 1) {
         throw conflict(
             'This note contains interactive blocks. Use block-aware editing instead of replacing it with a prose proposal.',
         );
+    }
 }

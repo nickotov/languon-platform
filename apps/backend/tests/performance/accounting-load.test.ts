@@ -56,11 +56,15 @@ type AdmissionQueryTrace = {
  * not server-side PostgreSQL execution timings.
  */
 function closeAdmissionQueryTrace(trace: AdmissionQueryTrace, at: number) {
-    if (!trace.lastQuery) return;
+    if (!trace.lastQuery) {
+        return;
+    }
+
     trace.durations.push({
         query: trace.lastQuery.query,
         durationMs: at - trace.lastQuery.startedAt,
     });
+
     delete trace.lastQuery;
 }
 
@@ -73,12 +77,15 @@ async function hashes(directory: string): Promise<Record<string, string>> {
         withFileTypes: true,
     })) {
         const path = `${directory}/${entry.name}`;
-        if (entry.isDirectory()) Object.assign(result, await hashes(path));
-        else
+        if (entry.isDirectory()) {
+            Object.assign(result, await hashes(path));
+        } else {
             result[path] = createHash('sha256')
                 .update(await readFile(resolve(root, path)))
                 .digest('hex');
+        }
     }
+
     return result;
 }
 
@@ -86,10 +93,12 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
     it('measures full conversation admission with million-row history and 100 real SSE subscriptions', async () => {
         const target = validatePerformanceTargets(process.env);
         const output = process.env.ACCOUNTING_PERF_EVIDENCE_PATH;
-        if (!output)
+        if (!output) {
             throw new Error(
                 'ACCOUNTING_PERF_EVIDENCE_PATH required to retain evidence.',
             );
+        }
+
         // The accepted workload always uses 100 subscriptions. Zero is an
         // intentionally narrow diagnostic control that isolates subscription
         // reads from admission contention without changing the API or fixture.
@@ -97,10 +106,13 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
             process.env.ACCOUNTING_PERF_DIAGNOSTIC_STREAMS === undefined
                 ? 100
                 : Number(process.env.ACCOUNTING_PERF_DIAGNOSTIC_STREAMS);
-        if (![0, 100].includes(requestedStreams))
+
+        if (![0, 100].includes(requestedStreams)) {
             throw new Error(
                 'ACCOUNTING_PERF_DIAGNOSTIC_STREAMS must be 0 or 100.',
             );
+        }
+
         const captureLockDiagnostics =
             process.env.ACCOUNTING_PERF_CAPTURE_LOCK_DIAGNOSTICS === 'true';
         const client = createPostgresClient({
@@ -115,13 +127,17 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
             logger: {
                 logQuery(query, params) {
                     const trace = context.getStore();
-                    if (!trace) return;
+                    if (!trace) {
+                        return;
+                    }
+
                     const now = performance.now();
                     closeAdmissionQueryTrace(trace, now);
                     trace.queries.push(query);
                     trace.lastQuery = { query, startedAt: now };
-                    if (/^select\s/i.test(query))
+                    if (/^select\s/i.test(query)) {
                         admissionSelects.set(query, params);
+                    }
                 },
             },
         });
@@ -165,6 +181,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 )
                 .digest('hex'),
         };
+
         try {
             await redis.connect();
             await redis.ping();
@@ -173,13 +190,17 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 migrationsFolder: resolve(root, 'apps/backend/drizzle'),
                 purpose: grantDisposableMigrationPurpose(),
             });
+
             // Reruns require a separately recreated empty database. No resets, truncates or Redis FLUSH.
             const [existing] =
                 await client`select count(*)::int as count from users`;
-            if (existing!.count !== 0)
+
+            if (existing!.count !== 0) {
                 throw new Error(
                     'Performance database must be empty; provision a fresh isolated target.',
                 );
+            }
+
             const model = textAiModelCatalog.find(
                 (entry) => entry.id === 'deepseek-flash',
             )!;
@@ -188,6 +209,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
             for (let n = 0; n < 100; n++) {
                 const owner = randomUUID(),
                     dictionary = randomUUID();
+
                 owners.push(owner);
                 await client`insert into users(id,status) values(${owner},'active')`;
                 await client`insert into dictionaries(id,owner_id,name,source_language_tag,target_language_tag) values(${dictionary},${owner},'Synthetic load source','es','en')`;
@@ -201,12 +223,14 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                         sourceReference: randomUUID(),
                     }),
                 );
+
                 // Sources are private owner dictionaries. Unused note/share capabilities fail explicitly.
                 const store = makeStore();
                 const chat = await store.create(
                     { ownerId: owner },
                     { source: { kind: 'dictionary', id: dictionary } },
                 );
+
                 chats.push(chat.id);
                 admissionChats.push(
                     (
@@ -217,6 +241,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     ).id,
                 );
             }
+
             await db.insert(dictionaryAiConfigurationRevisionsTable).values({
                 id: revision,
                 version: 1,
@@ -228,11 +253,13 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     supportedFormats: ['conversation:v1'],
                 },
             });
+
             await db.insert(dictionaryAiConfigurationTable).values({
                 id: 'global',
                 version: 1,
                 activeRevisionId: revision,
             });
+
             await db.insert(dictionaryAiWorkerObservationsTable).values({
                 id: conversationExecutionObservationId(
                     runId,
@@ -255,6 +282,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 conversationExecutionRevision: 1,
                 creditSettlementRevision: 1,
             });
+
             await db.insert(aiAccountingSettingsRevisionsTable).values({
                 id: randomUUID(),
                 version: 1,
@@ -265,6 +293,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 createdAt: now,
                 reason: 'Synthetic load fixture only',
             });
+
             await db.insert(aiProviderPriceRevisionsTable).values({
                 id: randomUUID(),
                 providerId: model.providerId,
@@ -289,6 +318,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     reason: 'Synthetic no-provider load fixture',
                 },
             });
+
             await seedTextAiRoutingFixture(db, { at: now });
             function makeStore() {
                 return new DrizzleConversationStore({
@@ -312,6 +342,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     },
                 });
             }
+
             const store = makeStore();
             const limiter = new RedisRateLimiter({
                 redis,
@@ -327,8 +358,10 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                             !token.startsWith('fixture.') ||
                             !token.endsWith('.signature') ||
                             !owners.includes(owner)
-                        )
+                        ) {
                             throw new Error('Unknown synthetic actor');
+                        }
+
                         // Real PG identity lookup on every revalidation. This goes through
                         // the instrumented Drizzle client so the admission evidence includes
                         // its query shape; credential cryptography remains deliberately excluded.
@@ -341,8 +374,11 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                                     eq(usersTable.status, 'active'),
                                 ),
                             );
-                        if (!user)
+
+                        if (!user) {
                             throw new Error('Synthetic actor unavailable');
+                        }
+
                         return { userId: owner };
                     },
                     limiter,
@@ -354,6 +390,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     refreshTokenTtlSeconds: 3600,
                 }),
             });
+
             // Real admission seeds100active turns; real worker claims8, leaving92queued.
             // Two provider slots remain available while route admissions/finalizers hand off.
             // Admissions use separate chats and settle immediately to keep capacity bounded.
@@ -367,13 +404,16 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                         attachments: [],
                     },
                 );
+
                 if (n < runningFixtureTurns) {
                     const running = await store.claim();
                     expect(running).not.toBeNull();
                     claimed.push(running!);
                 }
+
                 expect(turn.status).toBe('queued');
             }
+
             async function finalize(
                 turnId: string,
                 ownerId: string,
@@ -383,6 +423,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 // actor/source/turn fences, publication and zero-usage settlement.
                 await store.stop({ ownerId }, conversationId, turnId);
             }
+
             await Promise.all(
                 chats.slice(0, requestedStreams).map(async (chat, n) => {
                     const controller = new AbortController();
@@ -396,6 +437,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                             },
                         },
                     );
+
                     expect(response.status).toBe(200);
                     const reader = response.body!.getReader();
                     readers.push(reader);
@@ -406,11 +448,13 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     drains.push(
                         (async () => {
                             try {
-                                while (!(await reader.read()).done)
+                                while (!(await reader.read()).done) {
                                     receivedFrames++;
+                                }
                             } catch {
-                                if (!controller.signal.aborted)
+                                if (!controller.signal.aborted) {
                                     streamFailures++;
+                                }
                             } finally {
                                 activeStreams--;
                             }
@@ -418,26 +462,35 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     );
                 }),
             );
+
             writer = (async () => {
                 try {
                     let nextHeartbeatAt = Date.now() + 5_000;
                     while (writing) {
                         const tick = performance.now();
                         const heartbeatDue = Date.now() >= nextHeartbeatAt;
-                        if (heartbeatDue) nextHeartbeatAt = Date.now() + 5_000;
+                        if (heartbeatDue) {
+                            nextHeartbeatAt = Date.now() + 5_000;
+                        }
+
                         await Promise.all(
                             claimed.map(async (turn) => {
                                 // Match ConversationWorkerService's production default.
                                 // Output remains persisted every 100ms; lease renewal is
                                 // independent and occurs every five seconds.
-                                if (heartbeatDue) await store.heartbeat(turn);
+                                if (heartbeatDue) {
+                                    await store.heartbeat(turn);
+                                }
+
                                 await store.append(
                                     turn,
                                     'Deterministic provider fixture output. ',
                                 );
+
                                 persistedBatches++;
                             }),
                         );
+
                         await delay(
                             Math.max(0, 100 - (performance.now() - tick)),
                         );
@@ -446,6 +499,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     writerFailure = failure;
                 }
             })();
+
             const [server] = await client`select version() as version`;
             // Establish steady streaming/polling before measuring admission.
             // The measured target is concurrent live streams, not SSE startup.
@@ -466,12 +520,16 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                         }),
                     },
                 );
-                if (response.status !== 200)
+
+                if (response.status !== 200) {
                     throw new Error(
                         `Synthetic admission route failed with HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`,
                     );
+                }
+
                 return (await response.json()) as { turn: { id: string } };
             }
+
             const measure = async (label: string, count: number) => {
                 const durationMs: number[] = [],
                     lagMs: number[] = [],
@@ -486,11 +544,16 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     while (sampling) {
                         const [waiters] =
                             await client`select count(*)::int as count from pg_stat_activity where datname=current_database() and wait_event_type='Lock'`;
-                        if (waiters!.count > 0) lockWaitSamples++;
+
+                        if (waiters!.count > 0) {
+                            lockWaitSamples++;
+                        }
+
                         maxLockWaiters = Math.max(
                             maxLockWaiters,
                             waiters!.count,
                         );
+
                         if (
                             captureLockDiagnostics &&
                             waiters!.count > 0 &&
@@ -510,11 +573,13 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                                     from pg_locks lock where lock.pid=any(pg_blocking_pids(wait.pid)) and lock.locktype='advisory'), '[]'::json) as blocker_advisory_locks
                                 from pg_stat_activity wait
                                 where wait.datname=current_database() and wait.wait_event_type='Lock'`;
+
                             lockDiagnostics.push({
                                 at: new Date().toISOString(),
                                 waiters: details,
                             });
                         }
+
                         await delay(100);
                     }
                 })();
@@ -522,13 +587,16 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 const pending: Promise<
                     { ok: true } | { ok: false; error: string }
                 >[] = [];
+
                 for (let index = 0; index < count; index++) {
                     await delay(
                         Math.max(0, start + index * 100 - performance.now()),
                     );
+
                     lagMs.push(
                         Math.max(0, performance.now() - (start + index * 100)),
                     );
+
                     // Handle rejections when they are created. This workload starts
                     // requests before joining them, so Promise.allSettled at the end
                     // would otherwise be too late for Node's rejection tracker.
@@ -543,24 +611,31 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                             const response = await context.run(trace, () =>
                                 submitThroughRoute(n),
                             );
+
                             closeAdmissionQueryTrace(trace, performance.now());
                             durationMs.push(performance.now() - begin);
                             queryCounts.push(trace.queries.length);
-                            for (const query of trace.queries)
+                            for (const query of trace.queries) {
                                 statements.set(
                                     query,
                                     (statements.get(query) ?? 0) + 1,
                                 );
+                            }
+
                             for (const timing of trace.durations) {
                                 const samples = statementDurations.get(
                                     timing.query,
                                 );
-                                if (samples) samples.push(timing.durationMs);
-                                else
+
+                                if (samples) {
+                                    samples.push(timing.durationMs);
+                                } else {
                                     statementDurations.set(timing.query, [
                                         timing.durationMs,
                                     ]);
+                                }
                             }
+
                             await finalize(
                                 response.turn.id,
                                 owners[n]!,
@@ -578,6 +653,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                         ),
                     );
                 }
+
                 const results = await Promise.all(pending);
                 sampling = false;
                 await sampler;
@@ -587,6 +663,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                             !entry.ok,
                     )
                     .map((entry) => entry.error);
+
                 phases.push({
                     label,
                     count,
@@ -624,24 +701,30 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     ),
                 });
             };
+
             await measure('small-history-baseline', 100);
             // Genuine immutable ledger facts for the SAME active owners. No naked
             // actions: every real action requires owned feature/policy authority.
             // This isolates history-size effects without inventing feature outcomes.
             await client`insert into ai_credit_history(id,owner_id,kind,amount,reason,created_at)
                 select md5('accounting-load-ledger-' || n::text)::uuid, (${client.array(owners)}::uuid[])[1+(n%100)::int], 'policy_update', 0, 'Synthetic historical policy update', now()-interval '2 days' from generate_series(1,1000000) n`;
+
             await client`analyze ai_credit_history`;
             const [history] =
                 await client`select count(*)::int as count from ai_credit_history where reason='Synthetic historical policy update'`;
             const [actionHistory] =
                 await client`select count(*)::int as count from ai_credit_actions where state='settled'`;
+
             expect(history!.count).toBeGreaterThanOrEqual(1_000_000);
             await measure('million-history-loaded', 300);
             const [historyAfterAdmission] =
                 await client`select count(*)::int as count from ai_credit_history where reason='Synthetic historical policy update'`;
+
             expect(historyAfterAdmission!.count).toBe(history!.count);
-            for (const query of admissionSelects.keys())
+            for (const query of admissionSelects.keys()) {
                 expect(query).not.toMatch(/\bai_credit_history\b/i);
+            }
+
             const plans = [];
             for (const [query, parameters] of admissionSelects) {
                 plans.push({
@@ -652,6 +735,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     ),
                 });
             }
+
             const sourceAfter = {
                 ...(await hashes('apps/backend/src')),
                 ...(await hashes('apps/backend/drizzle')),
@@ -725,6 +809,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                     'EXPLAIN ANALYZE captures each distinct admission SELECT, including locking queries. Trigger internals need separate SQL review.',
                 ],
             };
+
             await mkdir(resolve(output, '..'), { recursive: true });
             await writeFile(output, JSON.stringify(evidence, null, 2));
             expect(writerFailure).toBeUndefined();
@@ -736,6 +821,7 @@ describe.runIf(enabled)('AC9 deterministic real accounting/stream load', () => {
                 expect(phase.activeStreams).toBe(requestedStreams);
                 expect(phase.maxSchedulingLagMs).toBeLessThanOrEqual(100);
             }
+
             expect(streamFailures).toBe(0);
             const loaded = phases[1] as { p95Ms: number };
             expect(loaded.p95Ms).not.toBeNull();

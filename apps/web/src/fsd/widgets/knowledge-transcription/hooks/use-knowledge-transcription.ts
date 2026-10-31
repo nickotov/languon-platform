@@ -38,6 +38,7 @@ async function cancelPrepared(
         clearTimeout(timeout);
     }
 }
+
 export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
     const [selected, setSelectedValue] = useState(''),
         [language, setLanguage] = useState(props.language);
@@ -60,6 +61,7 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
         operation: AbortController;
         detached: 'closed' | 'cancel' | null;
     } | null>(null);
+
     function reset() {
         controller.current?.abort();
         prepared.current = null;
@@ -73,6 +75,7 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
         setApplied(false);
         setConflict(false);
     }
+
     useEffect(
         () => () => {
             const admitting = submission.current;
@@ -82,7 +85,10 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             ) {
                 // Retain only bounded admission readback, never polling or UI after closure.
                 admitting.detached = 'closed';
-            } else controller.current?.abort();
+            } else {
+                controller.current?.abort();
+            }
+
             const current = prepared.current;
             if (
                 latest.current.cancelOnUnmount &&
@@ -98,25 +104,33 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                     current,
                 );
             }
+
             prepared.current = null;
         },
         [props.noteId],
     );
+
     useEffect(
         () =>
             useSessionStore.subscribe((next, previous) => {
                 if (
                     next.status === 'authenticated' &&
                     next.user?.id === previous.user?.id
-                )
+                ) {
                     return;
+                }
+
                 reset();
             }),
         [],
     );
+
     async function perform(action: Action) {
         const current = prepared.current;
-        if (!current) return;
+        if (!current) {
+            return;
+        }
+
         const pendingAdmission = submission.current;
         if (
             action === 'cancel' &&
@@ -126,7 +140,10 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             // An early cancellation may precede POST commit. Keep its bounded readback
             // so the admitted job is cancelled again without starting observation.
             pendingAdmission.detached = 'cancel';
-        } else controller.current?.abort();
+        } else {
+            controller.current?.abort();
+        }
+
         const operation = new AbortController();
         controller.current = operation;
         lastAction.current = action;
@@ -142,15 +159,21 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             props.cancelOnUnmount && action === 'submit'
                 ? { operation, detached: null as 'closed' | 'cancel' | null }
                 : null;
-        if (admitting) submission.current = admitting;
+
+        if (admitting) {
+            submission.current = admitting;
+        }
+
         function recoverCancelledDialog(
             result: KnowledgeTranscriptionJob | null,
         ) {
             if (
                 admitting?.detached !== 'cancel' ||
                 prepared.current !== current
-            )
+            ) {
                 return;
+            }
+
             // Only this still-open request can recover its controls; closure/reset
             // erases the prepared identity and prevents every late UI update.
             controller.current?.abort();
@@ -163,47 +186,62 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                     setJob(result);
                     setFailed(false);
                     setUnready(false);
-                } else reset();
+                } else {
+                    reset();
+                }
             } else {
                 setFailed(true);
                 setUnready(false);
             }
         }
+
         try {
             let result;
             if (action === 'submit') {
                 const timeout = admitting
                     ? setTimeout(() => operation.abort(), 30_000)
                     : null;
+
                 try {
                     result = await api.submit(current.input, operation.signal);
                 } finally {
-                    if (timeout !== null) clearTimeout(timeout);
-                    if (submission.current === admitting)
+                    if (timeout !== null) {
+                        clearTimeout(timeout);
+                    }
+
+                    if (submission.current === admitting) {
                         submission.current = null;
+                    }
                 }
-            } else if (action === 'cancel')
+            } else if (action === 'cancel') {
                 result = await api.cancel(
                     current.noteId,
                     current.input.operationId,
                     operation.signal,
                 );
-            else
+            } else {
                 result = await api.read(
                     current.noteId,
                     current.input.operationId,
                     operation.signal,
                 );
+            }
+
             if (admitting?.detached) {
                 const cancelled = transcriptionTerminal(result)
                     ? result
                     : await cancelPrepared(api, current);
+
                 recoverCancelledDialog(cancelled);
+
                 return;
             }
+
             operation.signal.throwIfAborted();
-            if (result.assetId !== current.expected.assetId)
+            if (result.assetId !== current.expected.assetId) {
                 throw new Error('The audio source changed.');
+            }
+
             await pollTranscription(
                 result,
                 () =>
@@ -223,8 +261,10 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
         } catch (error) {
             if (admitting?.detached) {
                 recoverCancelledDialog(await cancelPrepared(api, current));
+
                 return;
             }
+
             if (!operation.signal.aborted) {
                 setFailed(true);
                 setUnready(
@@ -244,9 +284,12 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             }
         }
     }
+
     async function prepare() {
-        if (lock.current || (prepared.current && !transcriptionTerminal(job)))
+        if (lock.current || (prepared.current && !transcriptionTerminal(job))) {
             return;
+        }
+
         reset();
         lock.current = true;
         setBusy(true);
@@ -257,7 +300,11 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             const targetId =
                 selected ||
                 props.blocks.find((block) => block.type === 'audio')?.id;
-            if (!targetId) throw new Error('Select an audio block.');
+
+            if (!targetId) {
+                throw new Error('Select an audio block.');
+            }
+
             const draft = await props.flush();
             preparation.signal.throwIfAborted();
             prepared.current = captureTranscription(
@@ -266,6 +313,7 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                 targetId,
                 props.variant === 'focused' ? props.language : language,
             );
+
             lock.current = false;
             await perform('submit');
         } catch {
@@ -276,31 +324,42 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             }
         }
     }
+
     async function confirm() {
         if (
             lock.current ||
             job?.state !== 'confirmation-required' ||
             !prepared.current
-        )
+        ) {
             return;
+        }
+
         prepared.current.input = {
             ...prepared.current.input,
             confirmedMaximumCredits: job.maximumCredits,
         };
+
         await perform('submit');
     }
+
     async function cancel() {
         if (
             cancelling.current ||
             !prepared.current ||
             transcriptionTerminal(job)
-        )
+        ) {
             return;
+        }
+
         cancelling.current = true;
         await perform('cancel');
     }
+
     async function retry() {
-        if (lock.current || !prepared.current) return;
+        if (lock.current || !prepared.current) {
+            return;
+        }
+
         await perform(
             (job?.state === 'queued' || job?.state === 'running') &&
                 lastAction.current !== 'cancel'
@@ -308,6 +367,7 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                 : lastAction.current,
         );
     }
+
     async function apply() {
         const current = prepared.current;
         if (
@@ -317,8 +377,10 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             !job.result ||
             applied ||
             current.noteId !== props.noteId
-        )
+        ) {
             return;
+        }
+
         lock.current = true;
         setBusy(true);
         setFailed(false);
@@ -334,9 +396,14 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
                 branchId: current.branchId,
                 branchVersion: current.branchVersion,
             });
-            if (outcome === 'applied') setApplied(true);
-            else if (outcome === 'invalid') setFailed(true);
-            else setConflict(true);
+
+            if (outcome === 'applied') {
+                setApplied(true);
+            } else if (outcome === 'invalid') {
+                setFailed(true);
+            } else {
+                setConflict(true);
+            }
         } catch {
             setFailed(true);
         } finally {
@@ -344,14 +411,19 @@ export function useKnowledgeTranscription(props: KnowledgeTranscriptionProps) {
             setBusy(false);
         }
     }
+
     function setSelected(value: string) {
-        if (lock.current || (prepared.current && !transcriptionTerminal(job)))
+        if (lock.current || (prepared.current && !transcriptionTerminal(job))) {
             return;
+        }
+
         reset();
         setSelectedValue(value);
     }
+
     const sameNote = jobNoteId === props.noteId;
     const active = prepared.current !== null && !transcriptionTerminal(job);
+
     return {
         selected,
         setSelected,

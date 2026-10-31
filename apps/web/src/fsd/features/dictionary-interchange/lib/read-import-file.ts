@@ -8,8 +8,10 @@ export class DictionaryImportFileError extends Error {
 }
 
 export async function readDictionaryImportFile(file: File): Promise<string> {
-    if (file.size > dictionaryInterchangeLimitsV1.maximumInputUtf8Bytes)
+    if (file.size > dictionaryInterchangeLimitsV1.maximumInputUtf8Bytes) {
         throw new DictionaryImportFileError('too_large');
+    }
+
     const bytes = await file.arrayBuffer();
     try {
         return new TextDecoder('utf-8', { fatal: true }).decode(bytes);

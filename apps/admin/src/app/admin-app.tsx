@@ -84,8 +84,11 @@ function RefineApplication() {
         { name: 'accounting', list: '/accounting' },
         { name: 'speech-recordings', list: '/speech-recordings' },
     ];
-    if (adminMcpEnabled)
+
+    if (adminMcpEnabled) {
         resources.push({ name: 'admin-mcp', list: '/admin-mcp' });
+    }
+
     return (
         <Refine
             accessControlProvider={adminAccessProvider}
@@ -145,6 +148,7 @@ function RefineApplication() {
 
 function PageLoading() {
     const translate = useTranslate();
+
     return (
         <div
             aria-label={translate('loading.page')}

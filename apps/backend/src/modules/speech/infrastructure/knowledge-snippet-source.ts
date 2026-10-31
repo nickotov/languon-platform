@@ -41,8 +41,10 @@ export async function resolveKnowledgeSnippetSource(
     ResolvedSpeechSource & { authority: StoredKnowledgeSnippetSpeechSource }
 > {
     const origin = source.origin;
-    if (origin.kind === 'saved')
+    if (origin.kind === 'saved') {
         return resolveSaved(tx, actorId, source, crypto);
+    }
+
     const note = await getOwnedKnowledgeRow(tx, actorId, source.noteId).catch(
         () => {
             throw unavailable();
@@ -61,11 +63,15 @@ export async function resolveKnowledgeSnippetSource(
                 ),
             )
             .for('share');
-        if (!branch || branch.version !== origin.expectedBranchVersion)
+
+        if (!branch || branch.version !== origin.expectedBranchVersion) {
             throw new SpeechError('speech_source_changed');
+        }
+
         block = branch.content.body.document.content?.find(
             (node) => node.attrs?.block?.id === source.blockId,
         )?.attrs?.block;
+
         revision = `${note.id}:${branch.id}:${branch.version}:${source.blockId}`;
     } else {
         const [chat] = await tx
@@ -78,13 +84,16 @@ export async function resolveKnowledgeSnippetSource(
                 ),
             )
             .for('share');
+
         if (
             !chat ||
             chat.source.kind !== 'knowledge' ||
             chat.source.id !== note.id ||
             isReadOnlyKnowledgeSource(chat.source)
-        )
+        ) {
             throw unavailable();
+        }
+
         const [proposal] = await tx
             .select()
             .from(proposals)
@@ -96,12 +105,20 @@ export async function resolveKnowledgeSnippetSource(
                 ),
             )
             .for('share');
-        if (!proposal) throw unavailable();
+
+        if (!proposal) {
+            throw unavailable();
+        }
+
         block = proposal.blocks.find((item) => item.id === source.blockId);
         revision = `${note.id}:proposal:${proposal.id}:${knowledgeFingerprint(block)}`;
     }
+
     const parsed = LearningBlockSchema.safeParse(block);
-    if (!parsed.success) throw unavailable();
+    if (!parsed.success) {
+        throw unavailable();
+    }
+
     return {
         ...knowledgeSnippetText(parsed.data, source.selector),
         revision: `${revision}:${knowledgeFingerprint(source.selector)}`,
@@ -119,20 +136,30 @@ async function resolveSaved(
     ResolvedSpeechSource & { authority: StoredKnowledgeSnippetSpeechSource }
 > {
     const origin = source.origin;
-    if (origin.kind !== 'saved') throw unavailable();
+    if (origin.kind !== 'saved') {
+        throw unavailable();
+    }
+
     const [actor] = await tx
         .select({ id: users.id })
         .from(users)
         .where(and(eq(users.id, actorId), eq(users.status, 'active')))
         .for('share');
-    if (!actor) throw unavailable();
+
+    if (!actor) {
+        throw unavailable();
+    }
+
     const access = origin.access;
     const keyDigest =
         access &&
         ('key' in access ? crypto.digest(access.key) : access.keyDigest);
     let workbookOwner: string | undefined;
     if (access?.kind === 'workbook') {
-        if (!keyDigest) throw unavailable();
+        if (!keyDigest) {
+            throw unavailable();
+        }
+
         // Match the existing workbook lifecycle lock order: workbook, live share, note.
         const [candidate] = await tx
             .select({ workbookId: workbookShares.workbookId })
@@ -143,7 +170,11 @@ async function resolveSaved(
                     eq(workbookShares.keyDigest, keyDigest),
                 ),
             );
-        if (!candidate) throw unavailable();
+
+        if (!candidate) {
+            throw unavailable();
+        }
+
         const [workbook] = await tx
             .select({ ownerId: workbooks.ownerId })
             .from(workbooks)
@@ -154,7 +185,11 @@ async function resolveSaved(
                 ),
             )
             .for('share');
-        if (!workbook) throw unavailable();
+
+        if (!workbook) {
+            throw unavailable();
+        }
+
         const [live] = await tx
             .select({ workbookId: workbookShares.workbookId })
             .from(workbookShares)
@@ -175,23 +210,38 @@ async function resolveSaved(
                     eq(members.noteId, source.noteId),
                 ),
             );
-        if (!live || !member) throw unavailable();
+
+        if (!live || !member) {
+            throw unavailable();
+        }
+
         workbookOwner = workbook.ownerId;
     }
+
     const [note] = await tx
         .select()
         .from(notes)
         .where(and(eq(notes.id, source.noteId), eq(notes.status, 'saved')))
         .for('share');
-    if (!note || (workbookOwner && workbookOwner !== note.ownerId))
+
+    if (!note || (workbookOwner && workbookOwner !== note.ownerId)) {
         throw unavailable();
+    }
+
     const [owner] = await tx
         .select({ id: users.id })
         .from(users)
         .where(and(eq(users.id, note.ownerId), eq(users.status, 'active')));
-    if (!owner) throw unavailable();
+
+    if (!owner) {
+        throw unavailable();
+    }
+
     if (access?.kind === 'note') {
-        if (!keyDigest) throw unavailable();
+        if (!keyDigest) {
+            throw unavailable();
+        }
+
         const [share] = await tx
             .select({ id: noteShares.noteId })
             .from(noteShares)
@@ -203,14 +253,26 @@ async function resolveSaved(
                 ),
             )
             .for('share');
-        if (!share) throw unavailable();
-    } else if (!access && note.ownerId !== actorId) throw unavailable();
-    if (note.version !== origin.expectedNoteVersion)
+
+        if (!share) {
+            throw unavailable();
+        }
+    } else if (!access && note.ownerId !== actorId) {
+        throw unavailable();
+    }
+
+    if (note.version !== origin.expectedNoteVersion) {
         throw new SpeechError('speech_source_changed');
+    }
+
     const block = KnowledgeBodySchema.parse(note.body).document.content?.find(
         (node) => node.attrs?.block?.id === source.blockId,
     )?.attrs?.block;
-    if (!block) throw unavailable();
+
+    if (!block) {
+        throw unavailable();
+    }
+
     const authority: StoredKnowledgeSnippetSpeechSource = {
         ...source,
         origin: {
@@ -227,6 +289,7 @@ async function resolveSaved(
                 : {}),
         },
     };
+
     return {
         ...knowledgeSnippetText(block, source.selector),
         revision: `${note.id}:saved:${note.version}:${block.id}:${knowledgeFingerprint(source.selector)}`,

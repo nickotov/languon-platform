@@ -67,7 +67,9 @@ export function createApp(options?: {
     userProfiles?: UserProfileRouteDependencies;
 }): OpenAPIHono {
     const app = new OpenAPIHono();
-    if (options?.navigation) app.route('/', options.navigation);
+    if (options?.navigation) {
+        app.route('/', options.navigation);
+    }
 
     app.route('/', createHealthRoutes(options?.operational));
     if (options?.authentication) {
@@ -78,6 +80,7 @@ export function createApp(options?: {
                 policy: options.authentication.policy,
             }),
         );
+
         app.route(
             '/',
             createPasskeyAuthRoutes({
@@ -86,56 +89,125 @@ export function createApp(options?: {
             }),
         );
     }
+
     if (options?.administration) {
         app.route('/', createAdministrationRoutes(options.administration));
     }
-    if (options?.adminMcpTokens) app.route('/', options.adminMcpTokens);
-    if (options?.textAiRouting) app.route('/', options.textAiRouting);
-    if (options?.conversations) app.route('/', options.conversations);
-    if (options?.learnerPortraits) app.route('/', options.learnerPortraits);
-    if (options?.workbooks) app.route('/', options.workbooks);
-    if (options?.workbookLearning) app.route('/', options.workbookLearning);
-    if (options?.knowledgeBlockFields)
+
+    if (options?.adminMcpTokens) {
+        app.route('/', options.adminMcpTokens);
+    }
+
+    if (options?.textAiRouting) {
+        app.route('/', options.textAiRouting);
+    }
+
+    if (options?.conversations) {
+        app.route('/', options.conversations);
+    }
+
+    if (options?.learnerPortraits) {
+        app.route('/', options.learnerPortraits);
+    }
+
+    if (options?.workbooks) {
+        app.route('/', options.workbooks);
+    }
+
+    if (options?.workbookLearning) {
+        app.route('/', options.workbookLearning);
+    }
+
+    if (options?.knowledgeBlockFields) {
         app.route('/', options.knowledgeBlockFields);
-    if (options?.knowledgeExerciseEvaluations)
+    }
+
+    if (options?.knowledgeExerciseEvaluations) {
         app.route('/', options.knowledgeExerciseEvaluations);
-    if (options?.knowledgePrivateTranslations)
+    }
+
+    if (options?.knowledgePrivateTranslations) {
         app.route('/', options.knowledgePrivateTranslations);
-    if (options?.knowledgeMedia) app.route('/', options.knowledgeMedia);
-    if (options?.knowledgeLibrary) app.route('/', options.knowledgeLibrary);
-    if (options?.knowledgeBlockCopy) app.route('/', options.knowledgeBlockCopy);
-    if (options?.knowledgeSentences) app.route('/', options.knowledgeSentences);
-    if (options?.knowledgeVocabulary)
+    }
+
+    if (options?.knowledgeMedia) {
+        app.route('/', options.knowledgeMedia);
+    }
+
+    if (options?.knowledgeLibrary) {
+        app.route('/', options.knowledgeLibrary);
+    }
+
+    if (options?.knowledgeBlockCopy) {
+        app.route('/', options.knowledgeBlockCopy);
+    }
+
+    if (options?.knowledgeSentences) {
+        app.route('/', options.knowledgeSentences);
+    }
+
+    if (options?.knowledgeVocabulary) {
         app.route('/', options.knowledgeVocabulary);
-    if (options?.knowledgeTranscription)
+    }
+
+    if (options?.knowledgeTranscription) {
         app.route('/', options.knowledgeTranscription);
-    if (options?.transcriptionAdministration)
+    }
+
+    if (options?.transcriptionAdministration) {
         app.route('/', options.transcriptionAdministration);
-    if (options?.knowledge) app.route('/', options.knowledge);
-    if (options?.textsAi) app.route('/', options.textsAi);
-    if (options?.textSelections) app.route('/', options.textSelections);
-    if (options?.texts) app.route('/', options.texts);
+    }
+
+    if (options?.knowledge) {
+        app.route('/', options.knowledge);
+    }
+
+    if (options?.textsAi) {
+        app.route('/', options.textsAi);
+    }
+
+    if (options?.textSelections) {
+        app.route('/', options.textSelections);
+    }
+
+    if (options?.texts) {
+        app.route('/', options.texts);
+    }
 
     if (options?.dictionaries) {
         app.route('/', options.dictionaries);
     }
+
     if (options?.sentenceLearning) {
         app.route('/', options.sentenceLearning);
     }
-    if (options?.speech) app.route('/', options.speech);
-    if (options?.modelPrices) app.route('/', options.modelPrices);
+
+    if (options?.speech) {
+        app.route('/', options.speech);
+    }
+
+    if (options?.modelPrices) {
+        app.route('/', options.modelPrices);
+    }
+
     if (options?.learning) {
         app.route('/', options.learning);
     }
+
     // Preferences include PUT/OPTIONS beneath /users; mount their route-specific
     // policy before the older profile wildcard preflight handler.
     if (options?.textAi) {
         app.route('/', options.textAi);
     }
-    if (options?.learnerAiCredits) app.route('/', options.learnerAiCredits);
+
+    if (options?.learnerAiCredits) {
+        app.route('/', options.learnerAiCredits);
+    }
+
     if (options?.userProfiles) {
         app.route('/', createUserProfileRoutes(options.userProfiles));
     }
+
     app.doc('/openapi.json', {
         info: {
             description: 'Public API for Languon applications.',

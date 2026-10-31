@@ -36,10 +36,11 @@ export class DrizzleKnowledgeTranscriptionStore implements KnowledgeTranscriptio
     }
 
     submit(...input: Parameters<KnowledgeTranscriptionJobStore['submit']>) {
-        if (!this.options.executionReady)
+        if (!this.options.executionReady) {
             throw transcriptionUnavailable(
                 'Transcription credentials and a compatible executor are required.',
             );
+        }
 
         return submitTranscription(this.context, ...input);
     }

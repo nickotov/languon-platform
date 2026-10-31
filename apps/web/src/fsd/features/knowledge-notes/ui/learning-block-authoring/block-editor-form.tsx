@@ -61,7 +61,11 @@ export function BlockEditorForm({
                 )) ||
             (kind === 'bilingual-text' &&
                 /^segments\.\d+\.translation$/u.test(name));
-        if (!eligible) return null;
+
+        if (!eligible) {
+            return null;
+        }
+
         function getTarget() {
             return form.current
                 ? blockFieldTarget(
@@ -72,16 +76,22 @@ export function BlockEditorForm({
                   )
                 : null;
         }
+
         function accept(next: string) {
             onAccept(next);
             setDirty(true);
         }
+
         const target = getTarget();
         let fieldKey = name;
-        if (target?.kind === 'vocabulary')
+        if (target?.kind === 'vocabulary') {
             fieldKey = `${target.entryId}:${target.field}`;
-        if (target?.kind === 'bilingual-text')
+        }
+
+        if (target?.kind === 'bilingual-text') {
             fieldKey = `${target.segmentId}:${target.targetLanguage}`;
+        }
+
         return (
             <BlockFieldAiAction
                 ai={ai}
@@ -106,6 +116,7 @@ export function BlockEditorForm({
         (field) =>
             !['title', 'language', 'translationLanguage'].includes(field.name),
     );
+
     return (
         <form
             id={formId}

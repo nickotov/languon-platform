@@ -41,19 +41,25 @@ export async function sentenceWorkerValid(
                 sql`select public.languon_knowledge_job_source_available(${job.id}::uuid,${job.jobKind},${job.learnerId}::uuid) as available`,
             );
 
-            if (valid?.available !== true) return 'access_revoked';
+            if (valid?.available !== true) {
+                return 'access_revoked';
+            }
 
             return null;
         } catch (error) {
             const cause = error as { code?: string; cause?: { code?: string } };
-            if (cause.code === '23514' || cause.cause?.code === '23514')
+            if (cause.code === '23514' || cause.cause?.code === '23514') {
                 return 'access_revoked';
+            }
 
             throw error;
         }
     }
 
-    if (!job.dictionaryId) return 'access_revoked';
+    if (!job.dictionaryId) {
+        return 'access_revoked';
+    }
+
     try {
         const access =
             job.authority.kind === 'owner'
@@ -83,11 +89,14 @@ export async function sentenceWorkerValid(
                     job.format,
                 ) &&
                     version !== 2)
-            )
+            ) {
                 return 'invalid_model_output';
+            }
         }
     } catch (error) {
-        if (error instanceof SentenceUnavailableError) return 'access_revoked';
+        if (error instanceof SentenceUnavailableError) {
+            return 'access_revoked';
+        }
 
         throw error;
     }
@@ -97,7 +106,10 @@ export async function sentenceWorkerValid(
         .from(jobEntries)
         .where(eq(jobEntries.jobId, job.id));
 
-    if (!provenance.length) return 'stale_content';
+    if (!provenance.length) {
+        return 'stale_content';
+    }
+
     const current = await tx
         .select({
             id: cards.id,
@@ -124,8 +136,10 @@ export async function sentenceWorkerValid(
                         c.learningVersion === e.learningVersion,
                 ),
         )
-    )
+    ) {
         return 'stale_content';
+    }
+
     if (job.jobKind === 'sentence-check') {
         try {
             await readableExercise(
@@ -136,8 +150,9 @@ export async function sentenceWorkerValid(
                 true,
             );
         } catch (error) {
-            if (error instanceof SentenceUnavailableError)
+            if (error instanceof SentenceUnavailableError) {
                 return 'stale_content';
+            }
 
             throw error;
         }
@@ -193,7 +208,10 @@ export async function sentenceWorkerLocked(
         .from(workerJobs)
         .where(eq(workerJobs.id, lease.jobId));
 
-    if (!candidate) return null;
+    if (!candidate) {
+        return null;
+    }
+
     const invalid = await sentenceWorkerValid(tx, candidate);
     await lockSentenceLearner(tx, candidate.learnerId);
     await lockSentenceWorkerRow(tx, lease.jobId);
@@ -204,11 +222,16 @@ export async function sentenceWorkerLocked(
 
     if (job?.sourceKind === 'knowledge-vocabulary') {
         const authorized = await authorizePrivateSentenceLease(tx, job, lease);
-        if (!authorized) return null;
+        if (!authorized) {
+            return null;
+        }
+
         job = authorized;
     }
 
-    if (!job || !leased(job, lease, now)) return null;
+    if (!job || !leased(job, lease, now)) {
+        return null;
+    }
 
     return { job, invalid };
 }

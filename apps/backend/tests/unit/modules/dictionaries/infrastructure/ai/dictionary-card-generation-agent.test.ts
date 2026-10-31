@@ -13,9 +13,11 @@ describe('dictionary card review agent instructions', () => {
         expect(instructions).toContain(
             'enabled Source and Translation noun entries',
         );
+
         expect(instructions).toContain(
             'taf meaning informal work should become le taf',
         );
+
         expect(instructions).toContain('count nouns and mass nouns');
         expect(instructions).toContain('inactive values');
         expect(instructions).toContain('explicitly accept');

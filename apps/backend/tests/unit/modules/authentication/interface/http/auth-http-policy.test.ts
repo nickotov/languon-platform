@@ -17,9 +17,11 @@ describe('AuthHttpPolicy', () => {
         expect(() =>
             policy.assertCookieRequestOrigin('https://app.languon.example'),
         ).not.toThrow();
+
         expect(() =>
             policy.assertCookieRequestOrigin('https://evil.example'),
         ).toThrow(InvalidRequestOriginError);
+
         expect(() => policy.assertCookieRequestOrigin(null)).toThrow(
             InvalidRequestOriginError,
         );
@@ -83,6 +85,7 @@ describe('AuthHttpPolicy', () => {
         expect(production.refreshCookieName()).toBe(
             '__Host-languon_admin_refresh',
         );
+
         expect(development.refreshCookieName()).toBe('languon_admin_refresh');
     });
 
@@ -97,9 +100,11 @@ describe('AuthHttpPolicy', () => {
         expect(
             policy.parseBearerAuthorization('Bearer header.payload.signature'),
         ).toBe('header.payload.signature');
+
         expect(() => policy.parseBearerAuthorization('Basic token')).toThrow(
             InvalidBearerAuthorizationError,
         );
+
         expect(() => policy.parseBearerAuthorization('Bearer one two')).toThrow(
             InvalidBearerAuthorizationError,
         );
@@ -117,18 +122,21 @@ describe('AuthHttpPolicy', () => {
         expect(policy.clientAddress('203.0.113.9', '198.51.100.2')).toBe(
             '203.0.113.9',
         );
+
         expect(
             policy.clientAddress(
                 '10.0.0.3',
                 'attacker.example, 198.51.100.7, 10.0.0.2',
             ),
         ).toBe('198.51.100.7');
+
         expect(
             policy.clientAddress(
                 '10.0.0.3',
                 '192.0.2.200, 198.51.100.7, 10.0.0.2',
             ),
         ).toBe('198.51.100.7');
+
         expect(
             policy.clientAddress('2001:db8:1234::2', '2001:db8:ffff::9'),
         ).toBe('2001:db8:ffff::9');

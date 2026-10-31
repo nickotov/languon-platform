@@ -51,8 +51,10 @@ function fixture() {
         workerId: 'worker',
         createProvider,
     });
+
     return { store, lease, result, transcribe, createProvider, worker };
 }
+
 afterEach(() => vi.useRealTimers());
 describe('Knowledge transcription worker bounds and failure semantics', () => {
     it('claims once and persists the result without editing or saving a note', async () => {
@@ -60,15 +62,18 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
         expect(await worker.processNext(new AbortController().signal)).toBe(
             true,
         );
+
         expect(store.claim).toHaveBeenCalledWith('worker');
         expect(transcribe).toHaveBeenCalledTimes(1);
         expect(store.finish).toHaveBeenCalledWith(lease, result);
     });
+
     it('settles technical failure without automatically retrying external work', async () => {
         const { store, lease, transcribe, worker } = fixture();
         transcribe.mockRejectedValueOnce(
             new Error('Synthetic provider failure'),
         );
+
         await worker.processNext(new AbortController().signal);
         expect(transcribe).toHaveBeenCalledTimes(1);
         expect(store.finish).toHaveBeenCalledWith(
@@ -77,6 +82,7 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
             'transcription_failed',
         );
     });
+
     it('never dispatches an already expired admitted operation', async () => {
         const { lease, store, createProvider, worker } = fixture();
         lease.deadlineAt = new Date(Date.now() - 1);
@@ -88,13 +94,16 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
             'transcription_failed',
         );
     });
+
     it('retains observed usage when cancellation races a completed provider response', async () => {
         const { transcribe, store, lease, result, worker } = fixture();
         const controller = new AbortController();
         transcribe.mockImplementationOnce(async () => {
             controller.abort();
+
             return result;
         });
+
         await worker.processNext(controller.signal);
         expect(store.finish).toHaveBeenCalledWith(
             lease,
@@ -102,6 +111,7 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
             'operation_interrupted',
         );
     });
+
     it('interrupts a slow provider when its lease heartbeat loses authority', async () => {
         vi.useFakeTimers();
         const { store, transcribe, lease, worker } = fixture();
@@ -116,6 +126,7 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
                     ),
                 ),
         );
+
         const running = worker.processNext(new AbortController().signal);
         await vi.advanceTimersByTimeAsync(15_001);
         await running;
@@ -124,6 +135,7 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
             null,
             'operation_interrupted',
         );
+
         expect(transcribe).toHaveBeenCalledTimes(1);
     });
 });

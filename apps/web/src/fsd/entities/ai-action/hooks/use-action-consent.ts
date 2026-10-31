@@ -18,14 +18,17 @@ function actionQuote(error: unknown): ActionAllowanceQuote | null {
         typeof detail !== 'object' ||
         !('code' in detail) ||
         detail.code !== 'action_confirmation_required'
-    )
+    ) {
         return null;
+    }
+
     const details = 'details' in detail ? detail.details : null;
     const parsed = ActionAllowanceQuoteSchema.safeParse(
         details && typeof details === 'object' && 'quote' in details
             ? details.quote
             : undefined,
     );
+
     return parsed.success ? parsed.data : null;
 }
 
@@ -37,6 +40,7 @@ export function useActionConsent() {
         resolve(id: string): void;
         reject(error: Error): void;
     } | null>(null);
+
     useEffect(
         () => () => {
             pending.current?.reject(new ActionConsentCancelledError());
@@ -55,12 +59,16 @@ export function useActionConsent() {
                     return await send(confirmedQuoteId);
                 } catch (error) {
                     const offer = actionQuote(error);
-                    if (!offer) throw error;
+                    if (!offer) {
+                        throw error;
+                    }
+
                     confirmedQuoteId = await new Promise<string>(
                         (resolve, reject) => {
                             pending.current?.reject(
                                 new ActionConsentCancelledError(),
                             );
+
                             pending.current = { quote: offer, resolve, reject };
                             setQuote(offer);
                         },
@@ -72,8 +80,10 @@ export function useActionConsent() {
     );
     const confirm = useCallback(() => {
         const current = pending.current;
-        if (!current || Date.parse(current.quote.expiresAt) <= Date.now())
+        if (!current || Date.parse(current.quote.expiresAt) <= Date.now()) {
             return;
+        }
+
         pending.current = null;
         setQuote(null);
         current.resolve(current.quote.id);
@@ -84,6 +94,8 @@ export function useActionConsent() {
         setQuote(null);
         current?.reject(new ActionConsentCancelledError());
     }, []);
+
     return { run, quote, confirm, cancel };
 }
+
 export type ActionConsent = ReturnType<typeof useActionConsent>;

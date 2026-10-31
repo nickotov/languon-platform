@@ -51,11 +51,16 @@ export function WorkspaceHistory({
     const selected =
         revisions.find((revision) => revision.version === version) ??
         revisions[0];
+
     function select(next: number) {
         setVersion(next);
     }
+
     async function restore() {
-        if (!selected) return;
+        if (!selected) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         try {
@@ -71,6 +76,7 @@ export function WorkspaceHistory({
                     id: crypto.randomUUID(),
                 };
             }
+
             await requestWithSession((token) =>
                 knowledgeApi.restore(token, noteId, {
                     operationId: operation.current!.id,
@@ -78,6 +84,7 @@ export function WorkspaceHistory({
                     revisionVersion: selected.version,
                 }),
             );
+
             await onRestored();
             operation.current = null;
             onClose();
@@ -87,6 +94,7 @@ export function WorkspaceHistory({
             setBusy(false);
         }
     }
+
     return (
         <Dialog
             open={open}
@@ -169,6 +177,7 @@ function RevisionButton({
     function select() {
         onSelect(version);
     }
+
     return (
         <Button variant={selected ? 'primary' : 'secondary'} onClick={select}>
             {label} · {date}

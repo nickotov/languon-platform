@@ -18,6 +18,7 @@ vi.mock('../src/fsd/entities/session', () => ({
     useSessionStore: (selector: (state: unknown) => unknown) =>
         selector({ user: { id: 'owner' } }),
 }));
+
 vi.mock('../src/fsd/features/auth', () => ({
     useAuth: () => ({
         requestWithSession: (run: (token: string) => unknown) => run('token'),
@@ -43,6 +44,7 @@ function deferred<T>() {
     const promise = new Promise<T>((settle) => {
         resolve = settle;
     });
+
     return { promise, resolve };
 }
 
@@ -63,6 +65,7 @@ describe('working draft recovery', () => {
             content,
             updatedAt: '2026-10-19T00:00:00.000Z',
         };
+
         mocks.workspace.mockResolvedValue({
             noteId: 'note',
             status: 'draft',
@@ -72,6 +75,7 @@ describe('working draft recovery', () => {
             shareEnabled: false,
             limits: { referenceChars: 40_000, editorChars: 40_000 },
         } satisfies KnowledgeWorkspace);
+
         mocks.updateWorking
             .mockImplementationOnce(() => first.promise)
             .mockImplementationOnce(
@@ -85,6 +89,7 @@ describe('working draft recovery', () => {
                         version: 3,
                         content: input.content,
                     };
+
                     return Promise.resolve({
                         branch: saved,
                         branches: [saved],
@@ -92,9 +97,11 @@ describe('working draft recovery', () => {
                     });
                 },
             );
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
+
         function wrapper({ children }: { children: ReactNode }) {
             return (
                 <QueryClientProvider client={client}>
@@ -102,9 +109,11 @@ describe('working draft recovery', () => {
                 </QueryClientProvider>
             );
         }
+
         const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
             wrapper,
         });
+
         await waitFor(() => expect(result.current.edit).not.toBeNull());
 
         act(() =>
@@ -113,29 +122,35 @@ describe('working draft recovery', () => {
                 title: 'First edit',
             })),
         );
+
         let firstSave!: Promise<boolean>;
         act(() => {
             firstSave = result.current.retryRecovery();
         });
+
         act(() =>
             result.current.change((current) => ({
                 ...current,
                 title: 'Second edit',
             })),
         );
+
         await act(async () => {
             const saved = {
                 ...branch,
                 version: 2,
                 content: { ...content, title: 'First edit' },
             };
+
             first.resolve({
                 branch: saved,
                 branches: [saved],
                 conflict: false,
             });
+
             await firstSave;
         });
+
         expect(result.current.status).toBe('unsaved');
         expect(result.current.edit?.content.title).toBe('Second edit');
         expect(result.current.edit?.synced.title).toBe('First edit');
@@ -143,6 +158,7 @@ describe('working draft recovery', () => {
         await act(async () => {
             await result.current.retryRecovery();
         });
+
         expect(result.current.status).toBe('saved');
         expect(result.current.edit?.synced.title).toBe('Second edit');
     });
@@ -158,6 +174,7 @@ describe('working draft recovery', () => {
             content,
             updatedAt: '2026-10-19T00:00:00.000Z',
         };
+
         mocks.workspace.mockResolvedValue({
             noteId: 'note',
             status: 'draft',
@@ -167,6 +184,7 @@ describe('working draft recovery', () => {
             shareEnabled: false,
             limits: { referenceChars: 40_000, editorChars: 40_000 },
         } satisfies KnowledgeWorkspace);
+
         mocks.updateWorking.mockImplementation(
             (
                 _: string,
@@ -174,6 +192,7 @@ describe('working draft recovery', () => {
                 input: { content: KnowledgeNoteContent },
             ) => {
                 const saved = { ...branch, version: 2, content: input.content };
+
                 return Promise.resolve({
                     branch: saved,
                     branches: [saved],
@@ -181,9 +200,11 @@ describe('working draft recovery', () => {
                 });
             },
         );
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
+
         function wrapper({ children }: { children: ReactNode }) {
             return (
                 <QueryClientProvider client={client}>
@@ -191,9 +212,11 @@ describe('working draft recovery', () => {
                 </QueryClientProvider>
             );
         }
+
         const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
             wrapper,
         });
+
         await waitFor(() => expect(result.current.edit).not.toBeNull());
 
         act(() => {
@@ -201,6 +224,7 @@ describe('working draft recovery', () => {
                 ...current,
                 title: 'A title',
             }));
+
             result.current.change((current) => ({
                 ...current,
                 body: {
@@ -217,10 +241,12 @@ describe('working draft recovery', () => {
                 },
             }));
         });
+
         await waitFor(
             () => expect(mocks.updateWorking).toHaveBeenCalledTimes(1),
             { timeout: 3_000 },
         );
+
         await waitFor(() => expect(result.current.status).toBe('saved'));
         expect(result.current.edit?.content.title).toBe('A title');
         expect(
@@ -274,16 +300,20 @@ describe('working draft recovery', () => {
             version: 3,
             basePublishedVersion: 2,
         };
+
         mocks.workspace
             .mockResolvedValueOnce(initial)
             .mockResolvedValueOnce(afterRestore);
+
         mocks.resolveWorking.mockResolvedValue({
             ...afterRestore,
             branches: [rebased],
         } satisfies KnowledgeWorkspace);
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
+
         function wrapper({ children }: { children: ReactNode }) {
             return (
                 <QueryClientProvider client={client}>
@@ -291,19 +321,23 @@ describe('working draft recovery', () => {
                 </QueryClientProvider>
             );
         }
+
         const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
             wrapper,
         });
+
         await waitFor(() => expect(result.current.edit).not.toBeNull());
 
         await act(async () => {
             await result.current.reload();
         });
+
         expect(result.current.workspace?.branches).toHaveLength(2);
         expect(result.current.edit?.content.title).toBe('Unpublished wording');
         await act(async () => {
             await result.current.resolveCurrent();
         });
+
         expect(mocks.resolveWorking).toHaveBeenCalledWith(
             'token',
             'note',
@@ -313,6 +347,7 @@ describe('working draft recovery', () => {
                 discardBranches: [{ id: 'restored', expectedVersion: 1 }],
             }),
         );
+
         expect(result.current.workspace?.branches).toHaveLength(1);
         expect(result.current.edit?.version).toBe(3);
         expect(result.current.edit?.content.title).toBe('Unpublished wording');
@@ -328,6 +363,7 @@ function loadingFixture(branches = true): KnowledgeWorkspace {
         content,
         updatedAt: '2026-10-30T00:00:00.000Z',
     };
+
     return {
         noteId: 'note',
         status: 'draft',
@@ -344,6 +380,7 @@ function loadingWrapper({ children }: { children: ReactNode }) {
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
     );
+
     return (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
@@ -364,14 +401,17 @@ it('keeps every successful initial-query render loading until the working branch
                 workspace: !!state.workspace,
                 initializing: state.isInitializing,
             });
+
             return state;
         },
         { wrapper: loadingWrapper },
     );
+
     await waitFor(() => expect(result.current.edit?.branchId).toBe('initial'));
     const hydrationRenders = renders.filter(
         (state) => state.success && !state.workspace,
     );
+
     expect(hydrationRenders.length).toBeGreaterThan(0);
     expect(hydrationRenders.every((state) => state.initializing)).toBe(true);
     expect(result.current.isInitializing).toBe(false);
@@ -382,6 +422,7 @@ it('does not mask a genuine initial request error as loading', async () => {
     const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
         wrapper: loadingWrapper,
     });
+
     await waitFor(() => expect(result.current.query.isError).toBe(true));
     expect(result.current.isInitializing).toBe(false);
 });
@@ -391,6 +432,7 @@ it('does not leave a branchless successful response loading forever', async () =
     const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
         wrapper: loadingWrapper,
     });
+
     await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
     expect(result.current.edit).toBeNull();
     expect(result.current.isInitializing).toBe(false);

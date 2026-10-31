@@ -74,18 +74,21 @@ export function createKnowledgeRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     envelope('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     // Scoped middleware is essential: root mounts multiple routers at '/'.
     for (const path of ['/knowledge', '/knowledge/*']) {
         app.use(path, async (c, next) => {
@@ -100,8 +103,10 @@ export function createKnowledgeRoutes({
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -116,6 +121,7 @@ export function createKnowledgeRoutes({
                     ),
             }),
         );
+
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -125,14 +131,18 @@ export function createKnowledgeRoutes({
                 'Access-Control-Allow-Methods',
                 'GET, POST, PATCH, DELETE, OPTIONS',
             );
+
             c.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
             );
+
             c.header('Vary', 'Origin');
+
             return c.body(null, 204);
         });
     }
+
     app.onError((error, c) => {
         let code: KnowledgeErrorCode = 'internal_error';
         let message = 'The request could not be completed.';
@@ -176,10 +186,13 @@ export function createKnowledgeRoutes({
                 status = 503;
             }
         }
+
         return c.json(envelope(code, message), status);
     });
+
     const auth = (c: Parameters<typeof authenticationRequestMetadata>[0]) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return [
             policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -191,6 +204,7 @@ export function createKnowledgeRoutes({
         c: Parameters<typeof authenticationRequestMetadata>[0],
     ) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return {
             signal: metadata.signal,
             clientAddress: metadata.clientAddress,
@@ -198,6 +212,7 @@ export function createKnowledgeRoutes({
     };
     const shareKey = (c: Parameters<typeof authenticationRequestMetadata>[0]) =>
         SharedKeySchema.parse(c.req.header('X-Languon-Share-Key'));
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -215,6 +230,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -237,6 +253,7 @@ export function createKnowledgeRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -256,6 +273,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -280,6 +298,7 @@ export function createKnowledgeRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -291,6 +310,7 @@ export function createKnowledgeRoutes({
         async (c) =>
             c.json(await service.list(...auth(c), c.req.valid('query')), 200),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -312,6 +332,7 @@ export function createKnowledgeRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -331,6 +352,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -353,6 +375,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -377,6 +400,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -403,6 +427,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -426,6 +451,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -449,6 +475,7 @@ export function createKnowledgeRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -463,6 +490,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -480,6 +508,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -500,6 +529,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -525,6 +555,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -542,9 +573,11 @@ export function createKnowledgeRoutes({
                 c.req.valid('param').noteId,
                 DeleteKnowledgeNoteRequestSchema.parse(c.req.valid('json')),
             );
+
             return c.json({ deleted: true as const }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -567,6 +600,7 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -592,5 +626,6 @@ export function createKnowledgeRoutes({
                 200,
             ),
     );
+
     return app;
 }

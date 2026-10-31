@@ -61,6 +61,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
                 REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
             }),
         );
+
         app = createApp({ authentication: authentication.options });
     });
 
@@ -93,6 +94,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             email,
             password: initialPassword,
         });
+
         expect(signup.response.status).toBe(202);
         const signupBody = SignUpResponseSchema.parse(signup.body);
         expect(signupBody).toMatchObject({ status: 'verification_pending' });
@@ -101,14 +103,17 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             code: '0000',
             flowId: signupBody.verification.flowId,
         });
+
         expect(verification.response.status).toBe(200);
         const verificationBody = AuthenticationSuccessResponseSchema.parse(
             verification.body,
         );
+
         expect(verificationBody).toMatchObject({
             status: 'authenticated',
             user: { primaryEmail: email },
         });
+
         const firstCookie = cookieFrom(verification.response);
         expect(firstCookie).toMatch(/^languon_refresh=/);
         expect(JSON.stringify(verificationBody)).not.toContain(
@@ -119,6 +124,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             '/users/me',
             verificationBody.accessToken,
         );
+
         expect(currentUser.response.status).toBe(200);
         expect(
             CurrentUserResponseSchema.parse(currentUser.body).user.primaryEmail,
@@ -129,6 +135,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             {},
             { accessToken: verificationBody.accessToken },
         );
+
         expect(registrationOptions.response.status).toBe(200);
         expect(
             PasskeyRegistrationOptionsResponseSchema.parse(
@@ -143,6 +150,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             {},
             { cookie: firstCookie },
         );
+
         expect(refreshed.response.status).toBe(200);
         const rotatedCookie = cookieFrom(refreshed.response);
         expect(rotatedCookie).not.toBe(firstCookie);
@@ -152,6 +160,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             {},
             { cookie: rotatedCookie },
         );
+
         expect(logout.response.status).toBe(200);
         expect(logout.response.headers.get('Set-Cookie')).toContain(
             'Max-Age=0',
@@ -162,6 +171,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             {},
             { cookie: rotatedCookie },
         );
+
         expect(rejectedRefresh.response.status).toBe(401);
         expect(
             AuthErrorResponseSchema.parse(rejectedRefresh.body),
@@ -177,12 +187,14 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             flowId: recoveryBody.recovery.flowId,
             newPassword: replacementPassword,
         });
+
         expect(reset.response.status).toBe(200);
 
         const oldLogin = await post('/auth/login/password', {
             email,
             password: initialPassword,
         });
+
         expect(oldLogin.response.status).toBe(401);
         expect(AuthErrorResponseSchema.parse(oldLogin.body)).toMatchObject({
             error: { code: 'invalid_credentials' },
@@ -192,6 +204,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             email,
             password: replacementPassword,
         });
+
         expect(newLogin.response.status).toBe(200);
         expect(PasswordLoginResponseSchema.parse(newLogin.body)).toMatchObject({
             status: 'authenticated',
@@ -200,16 +213,32 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
 
     it('changes the current password and replaces the authenticated session', async () => {
         const email = 'password.change@example.test';
-        const signup = await post('/auth/sign-up', { email, password: initialPassword });
+        const signup = await post('/auth/sign-up', {
+            email,
+            password: initialPassword,
+        });
+
         expect(signup.response.status).toBe(202);
-        const flowId = SignUpResponseSchema.parse(signup.body).verification.flowId;
-        const verification = await post('/auth/email-verification/verify', { code: '0000', flowId });
+        const flowId = SignUpResponseSchema.parse(signup.body).verification
+            .flowId;
+        const verification = await post('/auth/email-verification/verify', {
+            code: '0000',
+            flowId,
+        });
+
         expect(verification.response.status).toBe(200);
-        const first = AuthenticationSuccessResponseSchema.parse(verification.body);
-        const change = await post('/auth/password/change', {
-            currentPassword: initialPassword,
-            newPassword: replacementPassword,
-        }, { accessToken: first.accessToken });
+        const first = AuthenticationSuccessResponseSchema.parse(
+            verification.body,
+        );
+        const change = await post(
+            '/auth/password/change',
+            {
+                currentPassword: initialPassword,
+                newPassword: replacementPassword,
+            },
+            { accessToken: first.accessToken },
+        );
+
         expect(change.response.status, JSON.stringify(change.body)).toBe(200);
         const changed = AuthenticationSuccessResponseSchema.parse(change.body);
         expect(changed.accessToken).not.toBe(first.accessToken);
@@ -236,6 +265,7 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
             },
             method: 'POST',
         });
+
         return { body: (await response.json()) as unknown, response };
     }
 
@@ -243,13 +273,16 @@ describeIfInfrastructure('composed authentication HTTP journey', () => {
         const response = await app.request(path, {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
+
         return { body: (await response.json()) as unknown, response };
     }
 
     function cookieFrom(response: Response): string {
         const setCookie = response.headers.get('Set-Cookie');
-        if (!setCookie)
+        if (!setCookie) {
             throw new Error('Expected the response to set a cookie.');
+        }
+
         return setCookie.split(';', 1)[0] as string;
     }
 });

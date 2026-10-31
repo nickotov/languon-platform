@@ -35,6 +35,7 @@ export function usesActionAccounting(
         execution.actionAccountingVersion === 1
     );
 }
+
 export function createConversationActionAccounting(input: {
     withOperation<T>(work: (tx: AiCreditTransaction) => Promise<T>): Promise<T>;
     withTransaction<T>(
@@ -79,9 +80,12 @@ export function createConversationActionAccounting(input: {
                     : null,
                 at: new Date(),
             });
+
             const snapshot = input.execution.snapshot;
-            if (!snapshot)
+            if (!snapshot) {
                 throw new Error('Action provider snapshot is missing.');
+            }
+
             const [attempt] = await tx
                 .select()
                 .from(attempts)
@@ -98,16 +102,19 @@ export function createConversationActionAccounting(input: {
                           usage,
                       )
                     : null;
+
             if (
                 call.purpose === 'answer' &&
                 (call.outputLimitReached || usage?.outputLimitReached)
-            )
+            ) {
                 await tx
                     .update(turns)
                     .set({
                         usage: sql`jsonb_set(${turns.usage}, '{outputLimitReached}', 'true'::jsonb)`,
                     })
                     .where(eq(turns.id, input.turnId));
+            }
+
             await recordProviderExpense(
                 tx,
                 {
@@ -125,6 +132,7 @@ export function createConversationActionAccounting(input: {
             );
         });
     }
+
     return {
         admit: (call) =>
             input.withOperation(async (tx) => {
@@ -134,29 +142,36 @@ export function createConversationActionAccounting(input: {
                     ) ||
                     call.inputTokenEstimate >
                         input.execution.admittedMaxInputTokens
-                )
+                ) {
                     throw new ConversationError(
                         'context_too_large',
                         'The request exceeds its admitted context allowance.',
                     );
+                }
+
                 const capacity = await readTextAiCapacity(tx, {
                     actorId: input.ownerId,
                     now: new Date(),
                     budget: input.execution.budget,
                 });
+
                 if (
                     !textAiProviderBudgetAllows(
                         capacity.providerUsage,
                         true,
                         input.execution.budget,
                     )
-                )
+                ) {
                     throw new ConversationError(
                         'capacity_unavailable',
                         'AI capacity is currently unavailable. Try again later.',
                     );
-                if (!input.leaseToken)
+                }
+
+                if (!input.leaseToken) {
                     throw new Error('Claimed execution lease is required.');
+                }
+
                 const attempt = await new DrizzleActionAccountingParticipant(
                     tx,
                 ).admitAttempt({
@@ -173,10 +188,12 @@ export function createConversationActionAccounting(input: {
                     budget: input.execution.budget,
                     at: new Date(),
                 });
+
                 await tx
                     .update(turns)
                     .set({ providerDispatched: true })
                     .where(eq(turns.id, input.turnId));
+
                 return { maxOutputTokens: attempt.outputLimit };
             }),
         settle: (call, usage) => record(call, true, usage),
@@ -191,7 +208,10 @@ export async function settleConversationAction(
     turn: typeof turns.$inferSelect,
     explicitStop = turn.failureCode === 'explicit_stop',
 ) {
-    if (!usesActionAccounting(turn.execution)) return;
+    if (!usesActionAccounting(turn.execution)) {
+        return;
+    }
+
     const outcome =
         turn.status === 'succeeded'
             ? 'success'
@@ -203,8 +223,12 @@ export async function settleConversationAction(
         .select()
         .from(attempts)
         .where(eq(attempts.actionId, turn.id));
+
     for (const attempt of pending) {
-        if (attempt.state !== 'dispatched') continue;
+        if (attempt.state !== 'dispatched') {
+            continue;
+        }
+
         await participant.recordAttempt({
             actionId: turn.id,
             ownerId: turn.ownerId,
@@ -212,9 +236,14 @@ export async function settleConversationAction(
             successful: false,
             at: new Date(),
         });
+
         const snapshot = turn.execution.snapshot as
             TextAiExecutionSnapshot | undefined;
-        if (!snapshot) throw new Error('Pinned provider execution is missing.');
+
+        if (!snapshot) {
+            throw new Error('Pinned provider execution is missing.');
+        }
+
         await recordProviderExpense(
             tx,
             {
@@ -231,6 +260,7 @@ export async function settleConversationAction(
             { nativePrice: turn.execution.providerPrice },
         );
     }
+
     const action = await new DrizzleActionAccountingParticipant(tx).settle({
         actionId: turn.id,
         ownerId: turn.ownerId,
@@ -262,10 +292,12 @@ export async function settleConversationAction(
         chargedCredits: formatCreditMilli(action.chargedMilli ?? 0n),
         measurement: action.measurement,
     };
+
     await tx
         .update(turns)
         .set({ usage: projection, billing })
         .where(eq(turns.id, turn.id));
+
     turn.usage = projection;
     turn.billing = billing;
 }
@@ -275,7 +307,10 @@ export async function prepareConversationActionSettlement(
     tx: AiCreditTransaction,
     turn: typeof turns.$inferSelect,
 ) {
-    if (!usesActionAccounting(turn.execution)) return;
+    if (!usesActionAccounting(turn.execution)) {
+        return;
+    }
+
     await new DrizzleActionAccountingParticipant(tx).lockForSettlement(
         turn.ownerId,
     );

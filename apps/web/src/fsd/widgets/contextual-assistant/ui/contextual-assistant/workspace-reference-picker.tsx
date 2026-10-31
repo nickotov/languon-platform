@@ -132,36 +132,53 @@ export function WorkspaceReferencePicker({
         setTranslation(reference?.translation ?? '');
         setIncludeTranslation(false);
     }, [reference]);
+
     function search(event: ChangeEvent<HTMLInputElement>) {
         setQuery(event.target.value);
     }
+
     function useSourceSelection() {
         const node = sourceRef.current;
-        if (!node || node.selectionStart === node.selectionEnd) return;
+        if (!node || node.selectionStart === node.selectionEnd) {
+            return;
+        }
+
         setPassage(node.value.slice(node.selectionStart, node.selectionEnd));
     }
+
     function useFullSource() {
         setPassage(reference?.content ?? '');
     }
+
     function useTranslationSelection() {
         const node = translationRef.current;
-        if (!node || node.selectionStart === node.selectionEnd) return;
+        if (!node || node.selectionStart === node.selectionEnd) {
+            return;
+        }
+
         setTranslation(
             node.value.slice(node.selectionStart, node.selectionEnd),
         );
     }
+
     function useFullTranslation() {
         setTranslation(reference?.translation ?? '');
     }
+
     function toggleTranslation(event: ChangeEvent<HTMLInputElement>) {
         setIncludeTranslation(event.target.checked);
     }
+
     function back() {
         setSelectedId(null);
         searchRef.current?.focus();
     }
+
     function attach() {
-        if (!reference || !passage.trim()) return;
+        if (!reference || !passage.trim()) {
+            return;
+        }
+
         const accepted = onAttach({
             id: crypto.randomUUID(),
             kind: 'text-reference',
@@ -176,14 +193,25 @@ export function WorkspaceReferencePicker({
                   }
                 : {}),
         });
-        if (accepted) onClose();
+
+        if (accepted) {
+            onClose();
+        }
     }
+
     function key(event: KeyboardEvent<HTMLElement>) {
-        if (event.key !== 'Escape') return;
+        if (event.key !== 'Escape') {
+            return;
+        }
+
         event.stopPropagation();
-        if (selectedId) back();
-        else onClose();
+        if (selectedId) {
+            back();
+        } else {
+            onClose();
+        }
     }
+
     return (
         <section
             className={styles.picker}
@@ -346,6 +374,7 @@ function ReferenceRow({
     function select() {
         onSelect(id);
     }
+
     return (
         <button
             type='button'

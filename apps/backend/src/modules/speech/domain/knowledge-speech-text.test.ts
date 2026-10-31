@@ -7,10 +7,12 @@ it('uses explicit audio language, then transcript language, then note language',
         type: 'audio' as const,
         sourceText: 'Bonjour.',
     };
+
     expect(knowledgeNarrationText(block, 'en', 'ru')).toEqual({
         text: 'Bonjour.',
         language: 'en',
     });
+
     const transcribed = {
         ...block,
         transcript: {
@@ -18,6 +20,7 @@ it('uses explicit audio language, then transcript language, then note language',
             segments: [{ id: randomUUID(), text: 'Bonjour.' }],
         },
     };
+
     expect(knowledgeNarrationText(transcribed, 'en', 'ru').language).toBe('fr');
     expect(
         knowledgeNarrationText(
@@ -26,11 +29,13 @@ it('uses explicit audio language, then transcript language, then note language',
             'ru',
         ).language,
     ).toBe('fr-CA');
+
     expect(
         knowledgeNarrationText({ ...block, language: 'fr-CA' }, null, 'ru')
             .language,
     ).toBe('fr-CA');
 });
+
 it('keeps vocabulary translation out of source-language narration', () => {
     expect(
         knowledgeNarrationText(
@@ -54,6 +59,7 @@ it('keeps vocabulary translation out of source-language narration', () => {
         ),
     ).toEqual({ text: 'bonjour\nBonjour Marie.', language: 'fr' });
 });
+
 it('narrates grammar examples in their language and requires explicit language for explanation-only rules', () => {
     expect(
         knowledgeNarrationText(
@@ -68,15 +74,18 @@ it('narrates grammar examples in their language and requires explicit language f
             'ru',
         ),
     ).toEqual({ text: 'Je suis ici.', language: 'fr' });
+
     const block = {
         id: randomUUID(),
         type: 'grammar' as const,
         language: 'fr',
         rule: 'Французское правило.',
     };
+
     expect(knowledgeNarrationText(block, 'fr', 'ru')).toEqual({
         text: block.rule,
         language: 'ru',
     });
+
     expect(() => knowledgeNarrationText(block, 'fr', null)).toThrow();
 });

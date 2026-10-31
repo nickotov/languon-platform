@@ -75,11 +75,13 @@ export function appendPreparedLibraryText(
     if (
         current.sourceLanguage !== added.sourceLanguage ||
         current.targetLanguage !== added.targetLanguage
-    )
+    ) {
         throw new TextDomainError(
             'invalid_request',
             'Append requires matching source and target languages.',
         );
+    }
+
     if (current.alignment && added.alignment) {
         const alignment = appendLibraryAlignment(
             current.alignment,
@@ -95,7 +97,7 @@ export function appendPreparedLibraryText(
         };
     }
 
-    if (!current.alignment && !added.alignment)
+    if (!current.alignment && !added.alignment) {
         return {
             sourceText: TextSourceSchema.parse(
                 current.sourceText + '\n\n' + added.sourceText,
@@ -103,6 +105,7 @@ export function appendPreparedLibraryText(
             alignment: null,
             status: 'draft' as const,
         };
+    }
 
     throw new TextDomainError(
         'invalid_request',
@@ -127,11 +130,13 @@ export async function publishLibraryText(
             .where(eq(usersTable.id, actorId))
             .for('update');
 
-        if (actor?.status !== 'active')
+        if (actor?.status !== 'active') {
             throw new TextDomainError(
                 'text_not_found',
                 'The destination is unavailable.',
             );
+        }
+
         await tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${`texts-idempotency:${actorId}:${request.operationId}`},0))`,
         );
@@ -147,11 +152,12 @@ export async function publishLibraryText(
             );
 
         if (prior) {
-            if (prior.fingerprint !== fingerprint)
+            if (prior.fingerprint !== fingerprint) {
                 throw new TextDomainError(
                     'idempotency_conflict',
                     'This request key was already used.',
                 );
+            }
 
             return textDocument(
                 await text(persistence, tx, actorId, prior.result.id, false),
@@ -166,11 +172,13 @@ export async function publishLibraryText(
             prepared.targetLanguage,
         );
 
-        if (sourceLanguage === targetLanguage)
+        if (sourceLanguage === targetLanguage) {
             throw new TextDomainError(
                 'invalid_request',
                 'Source and translation languages must differ.',
             );
+        }
+
         const alignment = prepared.alignment
             ? TextAlignmentSchema.parse(prepared.alignment)
             : null;
@@ -179,11 +187,13 @@ export async function publishLibraryText(
             alignment &&
             alignment.source.map((segment) => segment.text).join('') !==
                 sourceText
-        )
+        ) {
             throw new TextDomainError(
                 'invalid_request',
                 'Source text and aligned segments must agree.',
             );
+        }
+
         const now = persistence.clock.now();
         let result: TextDocument;
         if (request.destination.kind === 'new') {
@@ -204,11 +214,13 @@ export async function publishLibraryText(
                 })
                 .returning();
 
-            if (!created)
+            if (!created) {
                 throw new TextDomainError(
                     'version_conflict',
                     'Could not save the text.',
                 );
+            }
+
             await revision(persistence, tx, created);
             result = textDocument(created);
         } else {
@@ -238,11 +250,13 @@ export async function publishLibraryText(
                 .where(eq(textsTable.id, current.id))
                 .returning();
 
-            if (!updated)
+            if (!updated) {
                 throw new TextDomainError(
                     'version_conflict',
                     'The text changed. Preview again.',
                 );
+            }
+
             await revision(persistence, tx, updated);
             result = textDocument(updated);
         }

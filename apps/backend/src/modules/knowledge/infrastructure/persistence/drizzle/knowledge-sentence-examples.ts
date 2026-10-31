@@ -52,14 +52,19 @@ function authoredSentence(
             targetLanguage,
             sourceLanguage,
         )
-    )
+    ) {
         return null;
+    }
+
     const pattern = new RegExp(
         word.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'),
         'iu',
     );
     const match = pattern.exec(sourceText);
-    if (!match) return null;
+    if (!match) {
+        return null;
+    }
+
     const start = match.index;
     const end = start + match[0].length;
     const boundaries = sentenceGraphemeBoundaries(sourceText);
@@ -81,8 +86,10 @@ function authoredSentence(
         !boundaries.has(end) ||
         !words.has(start) ||
         !words.has(end)
-    )
+    ) {
         return null;
+    }
+
     const pieces = [
         { text: sourceText.slice(0, start), start: 0, target: null },
         {
@@ -133,9 +140,15 @@ export async function seedKnowledgeSentenceExamples(
             (entry) => entry.entryId === candidate.entryId,
         );
 
-        if (!entry) continue;
+        if (!entry) {
+            continue;
+        }
+
         const content = authoredSentence(source, entry, direction);
-        if (!content) continue;
+        if (!content) {
+            continue;
+        }
+
         await publisher.publishGenerated({
             ...identity,
             jobId: seededOperation({

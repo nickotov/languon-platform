@@ -55,19 +55,23 @@ function response(
         { headers: { 'content-type': 'application/json' } },
     );
 }
+
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
 });
+
 describe('synthetic probe through production SDK', () => {
     it('fingerprints every registered actual flow contract', () => {
         const flows = createTextAiSyntheticFlows();
         expect(Object.keys(flows)).toHaveLength(12);
-        for (const flow of Object.values(flows))
+        for (const flow of Object.values(flows)) {
             expect(textAiSyntheticFlowContractRevision(flow)).toMatch(
                 /^[a-f0-9]{64}$/,
             );
+        }
     });
+
     it.each([true, false])(
         'retains bounded usage on malformed structured output (reported=%s)',
         async (reported) => {
@@ -83,6 +87,7 @@ describe('synthetic probe through production SDK', () => {
                     },
                 },
             });
+
             vi.stubGlobal(
                 'fetch',
                 vi.fn(async () =>
@@ -98,19 +103,23 @@ describe('synthetic probe through production SDK', () => {
                     ),
                 ),
             );
+
             // JSON serialization omits explicit undefined usage only in this fixture.
-            if (!reported)
+            if (!reported) {
                 vi.stubGlobal(
                     'fetch',
                     vi.fn(async () => {
                         const result = response('not-json');
                         const body = await result.json();
                         delete body.usage;
+
                         return new Response(JSON.stringify(body), {
                             headers: { 'content-type': 'application/json' },
                         });
                     }),
                 );
+            }
+
             const selected = {
                 ...request,
                 kind: 'flow' as const,
@@ -127,6 +136,7 @@ describe('synthetic probe through production SDK', () => {
                 },
                 new AbortController().signal,
             );
+
             expect(result).toMatchObject({
                 valid: false,
                 failure: 'invalid_output',
@@ -136,18 +146,22 @@ describe('synthetic probe through production SDK', () => {
             });
         },
     );
+
     it('makes one fixed-endpoint request with bounded output and no tools/retries', async () => {
         const executor = createTextAiProbeExecutor({ credentials, flows: {} });
         const fetch = vi.fn(async (url: unknown, init?: RequestInit) => {
             expect(String(url)).toBe(
                 'https://api.deepseek.com/chat/completions',
             );
+
             const body = JSON.parse(String(init?.body));
             expect(body.max_tokens).toBe(128);
             expect(body.model).toBe('deepseek-flash');
             expect(body.tools).toBeUndefined();
+
             return response('OK');
         });
+
         vi.stubGlobal('fetch', fetch);
         const reservation: TextAiProbeReservation = {
             id: '00000000-0000-4000-8000-000000000002',
@@ -157,6 +171,7 @@ describe('synthetic probe through production SDK', () => {
             maximumCostMicros: 10_000n,
             startedAt: new Date(),
         };
+
         expect(
             await executor.execute(reservation, new AbortController().signal),
         ).toMatchObject({
@@ -165,8 +180,10 @@ describe('synthetic probe through production SDK', () => {
             outputTokens: 10,
             measurement: 'measured',
         });
+
         expect(fetch).toHaveBeenCalledTimes(1);
     });
+
     it('changes evidence for credentials and actual flow contracts', () => {
         const flow = {
             instructions: 'Actual owned flow instruction',
@@ -195,12 +212,15 @@ describe('synthetic probe through production SDK', () => {
             kind: 'flow' as const,
             flowId: 'sentence-check',
         };
+
         expect(a.identity(selected).fingerprint).not.toBe(
             b.identity(selected).fingerprint,
         );
+
         expect(a.identity(selected).fingerprint).not.toBe(
             c.identity(selected).fingerprint,
         );
+
         const changedValidation = createTextAiProbeExecutor({
             credentials,
             flows: {
@@ -210,9 +230,11 @@ describe('synthetic probe through production SDK', () => {
                 },
             },
         });
+
         expect(a.identity(selected).fingerprint).not.toBe(
             changedValidation.identity(selected).fingerprint,
         );
+
         const initial = a.identity(selected).fingerprint;
         const route = providerCatalog.findTextAiModel(selected.routeId)!;
         const lookup = vi.spyOn(providerCatalog, 'findTextAiModel');
@@ -220,21 +242,25 @@ describe('synthetic probe through production SDK', () => {
             ...route,
             requestPolicyRevision: 'changed-request-policy',
         });
+
         expect(a.identity(selected).fingerprint).not.toBe(initial);
         lookup.mockReturnValue({
             ...route,
             adapterRevision: 'changed-adapter',
         });
+
         expect(a.identity(selected).fingerprint).not.toBe(initial);
         expect(a.identity(selected).fingerprint).not.toContain(
             credentials.DEEPSEEK_API_KEY,
         );
     });
+
     it('rejects arbitrary routes and unsupported flows while allowing explicit synthetic gateway checks', () => {
         const executor = createTextAiProbeExecutor({
             credentials: { ...credentials, EVOLINK_API_KEY: 'fake' },
             flows: {},
         });
+
         expect(() =>
             executor.identity({
                 routeId: 'https://attacker.test',
@@ -242,6 +268,7 @@ describe('synthetic probe through production SDK', () => {
                 kind: 'quick',
             }),
         ).toThrow('probe_route_unavailable');
+
         expect(() =>
             executor.identity({
                 ...request,
@@ -249,6 +276,7 @@ describe('synthetic probe through production SDK', () => {
                 flowId: 'sentence-check',
             }),
         ).toThrow('probe_route_unavailable');
+
         expect(
             executor.identity({ routeId: 'evolink/gpt-6-luna', kind: 'quick' }),
         ).toMatchObject({
@@ -256,6 +284,7 @@ describe('synthetic probe through production SDK', () => {
             providerId: 'evolink',
         });
     });
+
     it('validates the actual selected schema and domain predicate', async () => {
         const executor = createTextAiProbeExecutor({
             credentials,
@@ -269,10 +298,12 @@ describe('synthetic probe through production SDK', () => {
                 },
             },
         });
+
         vi.stubGlobal(
             'fetch',
             vi.fn(async () => response('{"ok":true}')),
         );
+
         const selected = {
             ...request,
             kind: 'flow' as const,
@@ -286,10 +317,12 @@ describe('synthetic probe through production SDK', () => {
             maximumCostMicros: 10_000n,
             startedAt: new Date(),
         };
+
         expect(
             await executor.execute(reservation, new AbortController().signal),
         ).toMatchObject({ valid: true, measurement: 'measured' });
     });
+
     it('checks streamed prose in one bounded call and records first visible output', async () => {
         const executor = createTextAiProbeExecutor({
             credentials,
@@ -339,6 +372,7 @@ describe('synthetic probe through production SDK', () => {
                         },
                     },
                 ];
+
                 return new Response(
                     chunks
                         .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
@@ -347,6 +381,7 @@ describe('synthetic probe through production SDK', () => {
                 );
             },
         );
+
         vi.stubGlobal('fetch', providerFetch);
         const selected = {
             ...request,
@@ -361,6 +396,7 @@ describe('synthetic probe through production SDK', () => {
             maximumCostMicros: 10_000n,
             startedAt: new Date(),
         };
+
         expect(
             await executor.execute(reservation, new AbortController().signal),
         ).toMatchObject({
@@ -370,14 +406,17 @@ describe('synthetic probe through production SDK', () => {
             inputTokens: 100,
             outputTokens: 10,
         });
+
         expect(providerFetch).toHaveBeenCalledTimes(1);
     });
+
     it('does not turn absent provider usage into a zero-cost measured pass', async () => {
         const executor = createTextAiProbeExecutor({ credentials, flows: {} });
         vi.stubGlobal(
             'fetch',
             vi.fn(async () => response('OK', null)),
         );
+
         const reservation: TextAiProbeReservation = {
             id: '00000000-0000-4000-8000-000000000002',
             identity: executor.identity(request),
@@ -386,6 +425,7 @@ describe('synthetic probe through production SDK', () => {
             maximumCostMicros: 10_000n,
             startedAt: new Date(),
         };
+
         expect(
             await executor.execute(reservation, new AbortController().signal),
         ).toMatchObject({

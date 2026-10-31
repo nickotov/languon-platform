@@ -16,6 +16,7 @@ const boundedText = (maximum: number) =>
             (value) =>
                 ![...value].some((character) => {
                     const code = character.codePointAt(0)!;
+
                     return (
                         code <= 8 ||
                         code === 11 ||

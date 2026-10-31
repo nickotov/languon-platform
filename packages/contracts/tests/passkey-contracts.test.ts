@@ -40,6 +40,7 @@ describe('passkey option contracts', () => {
         expect(
             PasskeyRegistrationOptionsResponseSchema.parse(response),
         ).toEqual(response);
+
         expect(
             PasskeyRegistrationOptionsResponseSchema.safeParse({
                 ...response,
@@ -69,6 +70,7 @@ describe('passkey option contracts', () => {
         expect(
             PasskeyAuthenticationOptionsResponseSchema.parse(response),
         ).toEqual(response);
+
         expect(
             PasskeyAuthenticationOptionsResponseSchema.safeParse({
                 ...response,
@@ -120,6 +122,7 @@ describe('passkey verification contracts', () => {
                 credential,
             }).success,
         ).toBe(true);
+
         expect(
             PasskeyAuthenticationVerifyRequestSchema.safeParse({
                 flowId,
@@ -164,6 +167,7 @@ describe('safe passkey metadata', () => {
         expect(PasskeyNameSchema.parse('  Security key  ')).toBe(
             'Security key',
         );
+
         expect(PasskeyNameSchema.safeParse('🔑'.repeat(80)).success).toBe(true);
         expect(PasskeyNameSchema.safeParse('   ').success).toBe(false);
         expect(PasskeyNameSchema.safeParse('🔑'.repeat(81)).success).toBe(

@@ -45,6 +45,7 @@ const en = {
     copyLink: 'Copy link',
     linkReady: 'Share link ready.',
 };
+
 export type WorkbookLabels = typeof en;
 const messages: Record<string, WorkbookLabels> = {
     en,
@@ -199,6 +200,7 @@ const messages: Record<string, WorkbookLabels> = {
         linkReady: 'Lien prêt.',
     },
 };
+
 export function workbookLabels(locale: string): WorkbookLabels {
     return messages[locale] ?? en;
 }

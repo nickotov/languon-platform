@@ -45,17 +45,20 @@ describe('sentence library boundaries', () => {
             version: 0,
             sharing: 'shared',
         };
+
         expect(SentenceLibraryItemSchema.safeParse(item).success).toBe(true);
         expect(
             SentenceLibraryItemSchema.safeParse({ ...item, creatorId: id })
                 .success,
         ).toBe(false);
+
         expect(
             SentenceLibraryItemSchema.safeParse({
                 ...item,
                 creatorArchived: true,
             }).success,
         ).toBe(false);
+
         expect(
             AdminSentenceLibraryItemSchema.safeParse({
                 ...item,
@@ -69,17 +72,20 @@ describe('sentence library boundaries', () => {
         expect(
             SentenceLibraryQuerySchema.safeParse({ creatorId: id }).success,
         ).toBe(false);
+
         expect(
             AdminSentenceLibraryQuerySchema.safeParse({ creatorId: id })
                 .success,
         ).toBe(true);
     });
+
     it('bounds dictionary discovery and exposes no account-private fields', () => {
         expect(AdminSentenceDictionaryQuerySchema.parse({}).limit).toBe(25);
         expect(
             AdminSentenceDictionaryQuerySchema.safeParse({ limit: 101 })
                 .success,
         ).toBe(false);
+
         const response = {
             items: [
                 {
@@ -93,15 +99,18 @@ describe('sentence library boundaries', () => {
             ],
             nextCursor: null,
         };
+
         expect(
             AdminSentenceDictionaryResponseSchema.safeParse(response).success,
         ).toBe(true);
+
         expect(
             AdminSentenceDictionaryResponseSchema.safeParse({
                 ...response,
                 items: [{ ...response.items[0], generatedCount: -1 }],
             }).success,
         ).toBe(false);
+
         expect(
             AdminSentenceDictionaryResponseSchema.safeParse({
                 ...response,
@@ -122,35 +131,43 @@ describe('sentence library boundaries', () => {
             contentState: 'all',
             limit: 25,
         });
+
         expect(
             AdminSentenceLibraryQuerySchema.parse({ creatorArchived: 'false' })
                 .creatorArchived,
         ).toBe(false);
+
         expect(AdminSentenceLibraryQuerySchema.parse({}).globalArchive).toBe(
             'all',
         );
+
         expect(
             SentenceLibraryQuerySchema.safeParse({ creatorArchived: 'false' })
                 .success,
         ).toBe(false);
+
         expect(
             AdminSentenceLibraryQuerySchema.safeParse({
                 creatorArchived: 'yes',
             }).success,
         ).toBe(false);
+
         expect(
             SentenceLibraryQuerySchema.safeParse({ limit: 101 }).success,
         ).toBe(false);
     });
+
     it('requires bounded unique versioned selection and an idempotent mutation', () => {
         const mutation = {
             operationId: id,
             operation: 'archive',
             selection: selected,
         };
+
         expect(
             SentenceLibraryMutationRequestSchema.safeParse(mutation).success,
         ).toBe(true);
+
         for (const selection of [
             { type: 'selected', items: [] },
             { type: 'selected', items: [...selected.items, ...selected.items] },
@@ -179,12 +196,14 @@ describe('sentence library boundaries', () => {
                 }).success,
             ).toBe(false);
         }
+
         expect(
             SentenceLibraryMutationRequestSchema.safeParse({
                 ...mutation,
                 operation: 'delete',
             }).success,
         ).toBe(false);
+
         expect(
             SentenceLibraryMutationRequestSchema.safeParse({
                 ...mutation,
@@ -192,6 +211,7 @@ describe('sentence library boundaries', () => {
             }).success,
         ).toBe(false);
     });
+
     it('all-matching confirmation has filters but cannot smuggle a pagination cursor', () => {
         expect(
             SentenceLibrarySnapshotRequestSchema.safeParse({
@@ -199,6 +219,7 @@ describe('sentence library boundaries', () => {
                 query: { personalArchive: 'archived' },
             }).success,
         ).toBe(true);
+
         expect(
             SentenceLibrarySnapshotRequestSchema.safeParse({
                 operation: 'archive',
@@ -206,6 +227,7 @@ describe('sentence library boundaries', () => {
             }).success,
         ).toBe(false);
     });
+
     it('restricts destructive operations to admin contracts and requires a bounded reason', () => {
         const mutation = {
             operationId: id,
@@ -214,16 +236,19 @@ describe('sentence library boundaries', () => {
             reason: 'Remove archived test content',
             confirmation: 'delete-archived-examples',
         };
+
         expect(
             AdminSentenceLibraryMutationRequestSchema.safeParse(mutation)
                 .success,
         ).toBe(true);
+
         expect(
             AdminSentenceLibraryMutationRequestSchema.safeParse({
                 ...mutation,
                 confirmation: undefined,
             }).success,
         ).toBe(false);
+
         expect(
             AdminSentenceLibraryMutationRequestSchema.safeParse({
                 ...mutation,
@@ -231,18 +256,21 @@ describe('sentence library boundaries', () => {
                 confirmation: undefined,
             }).success,
         ).toBe(true);
+
         expect(
             AdminSentenceLibraryMutationRequestSchema.safeParse({
                 ...mutation,
                 reason: '  ',
             }).success,
         ).toBe(false);
+
         expect(
             AdminSentenceLibraryMutationRequestSchema.safeParse({
                 ...mutation,
                 reason: 'x'.repeat(501),
             }).success,
         ).toBe(false);
+
         expect(
             AdminSentenceLibraryQuerySchema.parse({ relation: 'generated' })
                 .relation,
@@ -256,12 +284,14 @@ describe('sentence preparation boundaries', () => {
             offset: 0,
             limit: 10,
         });
+
         expect(
             SentencePreparationBatchesQuerySchema.parse({
                 offset: '20',
                 limit: '25',
             }),
         ).toEqual({ offset: 20, limit: 25 });
+
         for (const input of [
             { offset: -1 },
             { offset: 1_000_001 },
@@ -272,12 +302,14 @@ describe('sentence preparation boundaries', () => {
                 SentencePreparationBatchesQuerySchema.safeParse(input).success,
             ).toBe(false);
         }
+
         expect(
             SentencePreparationBatchesResponseSchema.safeParse({
                 items: [],
                 nextOffset: null,
             }).success,
         ).toBe(true);
+
         expect(
             SentencePreparationBatchesResponseSchema.safeParse({
                 items: [],
@@ -285,6 +317,7 @@ describe('sentence preparation boundaries', () => {
             }).success,
         ).toBe(false);
     });
+
     it('starts full-dictionary preparation with a bounded initial practice scope', () => {
         const request = {
             operationId: id,
@@ -292,15 +325,18 @@ describe('sentence preparation boundaries', () => {
             mode: 'new-only',
             initialRoundScope: { type: 'manual', entryIds: [id] },
         };
+
         expect(
             SentencePreparationStartRequestSchema.safeParse(request).success,
         ).toBe(true);
+
         expect(
             SentencePreparationStartRequestSchema.safeParse({
                 ...request,
                 initialRoundScope: { type: 'manual', entryIds: [id, id] },
             }).success,
         ).toBe(false);
+
         expect(
             SentencePreparationStartRequestSchema.safeParse({
                 ...request,
@@ -308,16 +344,19 @@ describe('sentence preparation boundaries', () => {
             }).success,
         ).toBe(false);
     });
+
     it('accepts additive prepared partition references without changing ordinary setup', () => {
         expect(SentencePrepareRequestSchema.safeParse(setup).success).toBe(
             true,
         );
+
         expect(
             SentencePrepareRequestSchema.safeParse({
                 ...setup,
                 preparedBatchId: id,
             }).success,
         ).toBe(true);
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...setup,
@@ -328,6 +367,7 @@ describe('sentence preparation boundaries', () => {
             }).success,
         ).toBe(true);
     });
+
     it('bounds the exposed initial batch and rejects impossible coverage', () => {
         const aggregate = {
             id,
@@ -352,15 +392,18 @@ describe('sentence preparation boundaries', () => {
             createdAt: '2026-10-06T00:00:00.000Z',
             updatedAt: '2026-10-06T00:00:00.000Z',
         };
+
         expect(SentencePreparationSchema.safeParse(aggregate).success).toBe(
             true,
         );
+
         expect(
             SentencePreparationSchema.safeParse({
                 ...aggregate,
                 preparedCount: 201,
             }).success,
         ).toBe(false);
+
         expect(
             SentencePreparationSchema.safeParse({
                 ...aggregate,
@@ -370,6 +413,7 @@ describe('sentence preparation boundaries', () => {
                 },
             }).success,
         ).toBe(false);
+
         expect(
             SentencePreparationSchema.safeParse({ ...aggregate, batches: [] })
                 .success,

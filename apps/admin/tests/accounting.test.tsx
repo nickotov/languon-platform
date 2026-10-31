@@ -19,6 +19,7 @@ import { adminI18nProvider } from '../src/shared/i18n/admin-i18n-provider';
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 const id = '00000000-0000-4000-8000-000000000042';
 const at = '2026-10-22T00:00:00.000Z';
 const report: AccountingReport = {
@@ -55,6 +56,7 @@ const report: AccountingReport = {
         },
     ],
 };
+
 beforeEach(() => {
     accessTokenStore.set('admin-token');
     vi.stubGlobal(
@@ -66,6 +68,7 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
@@ -73,6 +76,7 @@ afterEach(() => {
     vi.unstubAllGlobals();
     accessTokenStore.clear();
 });
+
 const response = (value: unknown, status = 200) =>
     new Response(JSON.stringify(value), {
         status,
@@ -92,9 +96,11 @@ describe('accounting administration', () => {
                 onReload={vi.fn()}
             />,
         );
+
         expect(
             screen.getByLabelText('USD per million input tokens'),
         ).toHaveValue('');
+
         const values = {
             Provider: 'provider',
             Model: 'model',
@@ -104,15 +110,19 @@ describe('accounting administration', () => {
             'Price source reference': 'Verified provider pricing 2026-10-22',
             'Reason for change': 'Calibrate measured provider expense',
         };
-        for (const [label, value] of Object.entries(values))
+
+        for (const [label, value] of Object.entries(values)) {
             fireEvent.change(screen.getByLabelText(label), {
                 target: { value },
             });
+        }
+
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Publish provider cost revision',
             }),
         );
+
         await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
         expect(submit.mock.calls[0]?.[0]).toMatchObject({
             expectedVersion: 0,
@@ -155,18 +165,21 @@ describe('accounting administration', () => {
         await vi.advanceTimersByTimeAsync(60_000);
         expect(request).toHaveBeenCalledTimes(3);
     });
+
     it('publishes an uncalibrated action budget explicitly without inventing a number', async () => {
         const fetcher = vi
             .fn<typeof fetch>()
             .mockResolvedValue(
                 response({ version: 2, defaultMaxCreditsPerAction: null }),
             );
+
         vi.stubGlobal('fetch', fetcher);
         await adminApi.publishAccountingSettings({
             expectedVersion: 1,
             defaultMaxCreditsPerAction: null,
             reason: 'Await economic calibration',
         });
+
         expect(fetcher.mock.calls[0]?.[1]?.method).toBe('PATCH');
         expect(
             JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body)),
@@ -187,26 +200,33 @@ describe('accounting administration', () => {
                 onClose={vi.fn()}
             />,
         );
+
         fireEvent.change(screen.getByLabelText('External reference'), {
             target: { value: 'bank-42' },
         });
+
         fireEvent.change(
             screen.getByLabelText('Amount (USD, up to 6 decimals)'),
             { target: { value: '0.000123' } },
         );
+
         fireEvent.change(screen.getByLabelText('Customer user ID'), {
             target: { value: id },
         });
+
         fireEvent.change(
             screen.getByLabelText('Purchased credits (up to 3 decimals)'),
             { target: { value: '0.125' } },
         );
+
         fireEvent.change(screen.getByLabelText('Reason for change'), {
             target: { value: 'Received external payment' },
         });
+
         await user.click(
             screen.getByRole('button', { name: 'Save manual record' }),
         );
+
         await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
         expect(submit.mock.calls[0]?.[0]).toMatchObject({
             kind: 'payment',
@@ -215,24 +235,29 @@ describe('accounting administration', () => {
             originalCurrency: null,
             originalAmount: null,
         });
+
         expect(submit.mock.calls[0]?.[0]).not.toHaveProperty(
             'revokeAvailableCredits',
         );
     });
+
     it('shows unknown cost and balance explicitly and hides incomplete margin', () => {
         render(<AccountingReportPanel report={report} />);
         expect(
             screen.getByText(/1 measured · 2 estimated · 3 unknown/),
         ).toBeInTheDocument();
+
         expect(
             screen.getByText('Known usage expense (USD, incomplete)'),
         ).toBeInTheDocument();
+
         expect(screen.getAllByText('Unknown')).toHaveLength(2);
         expect(screen.queryByText('0.999877')).not.toBeInTheDocument();
         expect(
             screen.getByText('Stale report — refresh required'),
         ).toBeInTheDocument();
     });
+
     it('preserves precise USD and credit strings and the idempotency key across explicit retries', async () => {
         const body = {
             kind: 'payment' as const,
@@ -260,6 +285,7 @@ describe('accounting administration', () => {
                     data: body,
                 }),
             );
+
         vi.stubGlobal('fetch', fetcher);
         await expect(adminApi.recordAccounting(body)).rejects.toThrow();
         expect(fetcher).toHaveBeenCalledTimes(1);
@@ -268,6 +294,7 @@ describe('accounting administration', () => {
         expect(fetcher.mock.calls[0]?.[1]?.body).toBe(
             fetcher.mock.calls[1]?.[1]?.body,
         );
+
         expect(
             JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body)),
         ).toMatchObject({
@@ -276,6 +303,7 @@ describe('accounting administration', () => {
             idempotencyKey: id,
         });
     });
+
     it('never automatically replays a policy mutation after authentication failure', async () => {
         const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
             response(
@@ -289,6 +317,7 @@ describe('accounting administration', () => {
                 401,
             ),
         );
+
         vi.stubGlobal('fetch', fetcher);
         await expect(
             adminApi.publishCapabilityPolicy({
@@ -298,8 +327,10 @@ describe('accounting administration', () => {
                 reason: 'Keep interviews free',
             }),
         ).rejects.toThrow();
+
         expect(fetcher).toHaveBeenCalledTimes(1);
     });
+
     it('rejects invalid manual USD and report periods before a request', () => {
         const fetcher = vi.fn<typeof fetch>();
         vi.stubGlobal('fetch', fetcher);
@@ -315,6 +346,7 @@ describe('accounting administration', () => {
                 amountUsd: '1e3',
             }),
         ).toThrow();
+
         expect(() => adminApi.accountingReport({ from: at, to: at })).toThrow();
         expect(fetcher).not.toHaveBeenCalled();
     });

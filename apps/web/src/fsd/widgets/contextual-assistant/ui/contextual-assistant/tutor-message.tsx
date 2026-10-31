@@ -96,7 +96,10 @@ export function TutorMessage({
         .map((part) => part.text)
         .join('');
     const displayedText = useStreamingText(text, streaming);
-    if (!canonical) return null;
+    if (!canonical) {
+        return null;
+    }
+
     const isUser = message.role === 'user';
     const materials = message.parts.filter(
         (part) => part.type === 'data-material',
@@ -126,10 +129,14 @@ export function TutorMessage({
     function propose() {
         onPropose?.(message);
     }
+
     const proposalAction = onPropose ? propose : undefined;
     function retry() {
-        if (turn) onRetry(turn);
+        if (turn) {
+            onRetry(turn);
+        }
     }
+
     return (
         <article className={styles.message}>
             {changed && <div className={styles.divider}>{copy.changed}</div>}
@@ -171,11 +178,16 @@ export function TutorMessage({
                         const finished = tool.state === 'output-available';
                         const error = tool.state === 'output-error';
                         let name = copy.preparingNote;
-                        if (tool.type === 'tool-read_source_context')
+                        if (tool.type === 'tool-read_source_context') {
                             name = copy.reading;
-                        if (tool.type === 'tool-propose_learning_blocks')
+                        }
+
+                        if (tool.type === 'tool-propose_learning_blocks') {
                             name = labels.preparingBlocks;
+                        }
+
                         const state = error ? copy.toolFailed : copy.running;
+
                         return (
                             <p key={tool.toolCallId} className={styles.notice}>
                                 {finished ? (

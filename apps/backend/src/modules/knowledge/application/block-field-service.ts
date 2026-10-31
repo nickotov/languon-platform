@@ -49,11 +49,14 @@ export class KnowledgeBlockFieldService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!ip.allowed)
+
+        if (!ip.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         const actor = await this.dependencies.authenticate(token);
         const limit = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-block-field-actor',
@@ -62,11 +65,14 @@ export class KnowledgeBlockFieldService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!limit.allowed)
+
+        if (!limit.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         return actor.userId;
     }
 
@@ -83,11 +89,14 @@ export class KnowledgeBlockFieldService {
             capability: 'text-translation',
             signal: context.signal,
         });
-        if (!burst.allowed)
+
+        if (!burst.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many AI requests. Try again shortly.',
             );
+        }
+
         return {
             job: await this.dependencies.store.request(
                 ownerId,
@@ -100,6 +109,7 @@ export class KnowledgeBlockFieldService {
             ),
         };
     }
+
     async get(
         token: string,
         context: KnowledgeRequestContext,
@@ -118,6 +128,7 @@ export class KnowledgeBlockFieldService {
             ),
         };
     }
+
     async cancel(
         token: string,
         context: KnowledgeRequestContext,

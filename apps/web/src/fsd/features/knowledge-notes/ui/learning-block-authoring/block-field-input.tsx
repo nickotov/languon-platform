@@ -38,10 +38,12 @@ export function BlockFieldInput({
         setCurrent(event.currentTarget.value);
         onValueChange?.(event.currentTarget.value);
     }
+
     function acceptValue(value: string) {
         setCurrent(value);
         onValueChange?.(value);
     }
+
     const enhanced = enhance?.({
         name: inputName,
         value: current,
@@ -87,6 +89,7 @@ export function BlockFieldInput({
             />
         );
     }
+
     return (
         <div className={styles.fieldControl}>
             {control}

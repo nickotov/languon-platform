@@ -75,22 +75,30 @@ export async function acceptCardAuthoring(
                 .for('update');
 
             const job = await lockOwnedJob(tx, input.ownerId, input.jobId);
-            if (job.kind !== 'card-authoring')
+            if (job.kind !== 'card-authoring') {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             const proposal = await lockProposal(tx, job.id);
-            if (!proposal) throw new DictionaryGenerationNotReviewableError();
+            if (!proposal) {
+                throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.reviewState === 'accepted') {
                 if (
                     proposal.acceptedCandidateFingerprint !==
                     input.acceptanceFingerprint
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
+
                 const acceptedJob = await readView(tx, job, input.context.now);
                 if (
                     acceptedJob.kind !== 'card-authoring' ||
                     !acceptedJob.outcome
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
 
                 return {
                     expired: false as const,
@@ -101,10 +109,14 @@ export async function acceptCardAuthoring(
                 };
             }
 
-            if (proposal.reviewState === 'expired')
+            if (proposal.reviewState === 'expired') {
                 return { expired: true as const };
-            if (proposal.reviewState !== 'reviewable' || !proposal.payload)
+            }
+
+            if (proposal.reviewState !== 'reviewable' || !proposal.payload) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.expiresAt <= input.context.now) {
                 await expireProposal(tx, job.id, input.context.now);
 
@@ -139,7 +151,10 @@ export async function acceptCardAuthoring(
                 )
                 .for('update');
 
-            if (!current) throw new DictionaryGenerationJobNotFoundError();
+            if (!current) {
+                throw new DictionaryGenerationJobNotFoundError();
+            }
+
             if (
                 current.dictionary.lifecycle !== 'active' ||
                 current.dictionary.version !== job.expectedDictionaryVersion ||
@@ -147,8 +162,10 @@ export async function acceptCardAuthoring(
                 current.dictionary.sourceLanguageTag !==
                     job.sourceLanguageTag ||
                 current.dictionary.targetLanguageTag !== job.targetLanguageTag
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             const candidateOverrides = domainOverrides(
                 input.candidate.overrides,
             );
@@ -174,9 +191,14 @@ export async function acceptCardAuthoring(
                     .limit(1)
                     .for('update');
 
-                if (!lockedCard) throw new DictionaryCardNotFoundError();
-                if (lockedCard.version !== target.expectedCardVersion)
+                if (!lockedCard) {
+                    throw new DictionaryCardNotFoundError();
+                }
+
+                if (lockedCard.version !== target.expectedCardVersion) {
                     throw new DictionaryVersionConflictError();
+                }
+
                 targetCard = lockedCard;
             }
 
@@ -191,8 +213,10 @@ export async function acceptCardAuthoring(
                     card: rawTranslationContext,
                     dictionary: current.dictionary.translationContext,
                 }) !== jobInput.translationContext
-            )
+            ) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
+
             assertCardSettingsOverrideTransition({
                 dictionary: domainSettings(current.settings),
                 next: candidateOverrides,
@@ -211,10 +235,12 @@ export async function acceptCardAuthoring(
                 .from(dictionaryCardsTable)
                 .where(eq(dictionaryCardsTable.dictionaryId, job.dictionaryId));
 
-            if (!targetCard)
+            if (!targetCard) {
                 assertDictionaryCardCapacity(
                     Number(cardState?.active ?? 0) + 1,
                 );
+            }
+
             const [ownerCardCount] = await tx
                 .select({ value: count() })
                 .from(dictionaryCardsTable)
@@ -385,7 +411,10 @@ export async function acceptCardAuthoring(
                       .values({ ...cardValues, id: cardId })
                       .returning();
 
-            if (!card) throw new DictionaryVersionConflictError();
+            if (!card) {
+                throw new DictionaryVersionConflictError();
+            }
+
             const revisionId = context.ids.generate();
             await tx.insert(dictionaryCardRevisionsTable).values({
                 acceptedGenerationJobId: job.id,
@@ -428,7 +457,9 @@ export async function acceptCardAuthoring(
                 )
                 .returning({ version: dictionariesTable.version });
 
-            if (!updatedDictionary) throw new DictionaryVersionConflictError();
+            if (!updatedDictionary) {
+                throw new DictionaryVersionConflictError();
+            }
 
             await tx
                 .update(dictionaryGenerationProposalsTable)
@@ -452,8 +483,9 @@ export async function acceptCardAuthoring(
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
 
             const acceptedJob = await readView(tx, job, input.context.now);
-            if (acceptedJob.kind !== 'card-authoring' || !acceptedJob.outcome)
+            if (acceptedJob.kind !== 'card-authoring' || !acceptedJob.outcome) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
 
             return {
                 expired: false as const,
@@ -462,7 +494,9 @@ export async function acceptCardAuthoring(
         },
     );
 
-    if (result.expired) throw new DictionaryGenerationProposalExpiredError();
+    if (result.expired) {
+        throw new DictionaryGenerationProposalExpiredError();
+    }
 
     return result.value;
 }

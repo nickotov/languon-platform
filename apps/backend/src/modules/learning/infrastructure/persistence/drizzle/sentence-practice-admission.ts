@@ -51,8 +51,10 @@ export async function sentencePracticePrepare(
         access,
         context,
         async (tx, owned, id) => {
-            if (input.replayExerciseIds && input.mode !== 'review-only')
+            if (input.replayExerciseIds && input.mode !== 'review-only') {
                 throw new LearningInvalidRequestError();
+            }
+
             const prepared = await sentencePracticePreparedSelection(
                 persistence,
                 tx,
@@ -120,7 +122,10 @@ export async function sentencePracticeAdmit(
     );
 
     const learnerId = access.learnerId;
-    if (!learnerId) throw new LearningInvalidRequestError();
+    if (!learnerId) {
+        throw new LearningInvalidRequestError();
+    }
+
     const format =
         kind === 'sentence-generation'
             ? (persistence.policy.generationFormat ?? 'sentence-generation:v1')
@@ -128,8 +133,9 @@ export async function sentencePracticeAdmit(
     const execution = await persistence.policy
         .resolveExecution(tx, learnerId, format, now, storedFormat)
         .catch((error: unknown) => {
-            if (error instanceof TextAiSelectionUnavailableError)
+            if (error instanceof TextAiSelectionUnavailableError) {
                 throw new SentenceModelUnavailableError();
+            }
 
             throw error;
         });
@@ -139,8 +145,10 @@ export async function sentencePracticeAdmit(
         !execution.revisionId ||
         execution.selectionVersion !== 1 ||
         !execution.snapshot.creditPricing
-    )
+    ) {
         throw new SentenceModelUnavailableError();
+    }
+
     try {
         execution.snapshot = await prepareLegacyAction(
             tx,
@@ -153,8 +161,9 @@ export async function sentencePracticeAdmit(
         if (
             error instanceof OperatorBudgetUnavailableError ||
             error instanceof ProviderCostAdmissionUnavailableError
-        )
+        ) {
             throw new SentenceModelUnavailableError();
+        }
 
         throw error;
     }
@@ -178,8 +187,10 @@ export async function sentencePracticeAdmit(
             true,
             execution.budget,
         )
-    )
+    ) {
         throw new SentenceCapacityUnavailableError();
+    }
+
     const pricing = execution.snapshot.creditPricing!;
     const budget = execution.budget;
     const [referenceReview] =
@@ -274,18 +285,19 @@ export async function sentencePracticeAdmit(
         })
         .returning();
 
-    if (knowledgeSource)
+    if (knowledgeSource) {
         await attachKnowledgeSentenceJobSource(tx, {
             jobId: job!.id,
             actorId: learnerId,
             binding: knowledgeSource,
             inputPayload: payload,
         });
+    }
 
     const provenance =
         'candidates' in payload ? payload.candidates : payload.targets;
 
-    if (!knowledgeSource)
+    if (!knowledgeSource) {
         await tx.insert(jobEntries).values(
             provenance.map((e) => ({
                 jobId: job!.id,
@@ -294,6 +306,7 @@ export async function sentencePracticeAdmit(
                 learningVersion: e.learningVersion,
             })),
         );
+    }
 
     await reserveSentenceAttempt(tx, job!, 1, now);
     const [updated] = await tx.select().from(jobs).where(eq(jobs.id, job!.id));

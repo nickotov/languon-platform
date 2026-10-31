@@ -19,8 +19,11 @@ export function WorkspaceActions({
         void ws.save();
     }
 
-    if (ws.aiActive ?? ws.translation.active) return null;
-    if (ws.proposal)
+    if (ws.aiActive ?? ws.translation.active) {
+        return null;
+    }
+
+    if (ws.proposal) {
         return (
             <div className={styles.actions}>
                 <Button
@@ -43,7 +46,9 @@ export function WorkspaceActions({
                 </Button>
             </div>
         );
-    if (ws.mode === 'read')
+    }
+
+    if (ws.mode === 'read') {
         return (
             <Button
                 desktopIconOnly
@@ -54,7 +59,9 @@ export function WorkspaceActions({
                 {copy('edit')}
             </Button>
         );
-    if (ws.mode === 'edit')
+    }
+
+    if (ws.mode === 'edit') {
         return (
             <div className={styles.actions}>
                 <Button
@@ -74,6 +81,7 @@ export function WorkspaceActions({
                 </Button>
             </div>
         );
+    }
 
     return (
         <div className={styles.actions}>

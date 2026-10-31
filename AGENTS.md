@@ -97,7 +97,7 @@ Search is read-only; normal implementation/verification authority still applies.
 
 - For handwritten code changes, apply [code readability](docs/code-readability.md):
   logical grouping, meaningful decisions, cohesive helpers and reason/invariant
-  comments. Follow its staged lint enrollment and verify behavior preservation.
+  comments. Run its mechanical checks and verify behavior preservation.
 - Node.js 24, strict TypeScript, pnpm workspaces and Turborepo.
 - Install dependencies in the importing workspace; shared tooling stays at root.
   Do not rely on undocumented global tools.

@@ -45,30 +45,42 @@ export function SharedWorkbookPage({ locator }: { locator: string }) {
     const signInHref = href(
         `/login?returnTo=${encodeURIComponent(`/shared/workbooks/${locator}`)}`,
     );
+
     function choose(event: ChangeEvent<HTMLSelectElement>) {
         setSelectedId(event.target.value);
     }
+
     function previous() {
         const item = notes[index - 1];
-        if (item) setSelectedId(item.id);
+        if (item) {
+            setSelectedId(item.id);
+        }
     }
+
     function next() {
         const item = notes[index + 1];
-        if (item) setSelectedId(item.id);
+        if (item) {
+            setSelectedId(item.id);
+        }
     }
+
     function copy() {
         void model.copy();
     }
+
     function reload() {
         void model.query.refetch();
     }
-    if (model.key === null || (model.key && model.query.isPending))
+
+    if (model.key === null || (model.key && model.query.isPending)) {
         return (
             <main className={styles.page}>
                 <LoadingState>{labels.loading}</LoadingState>
             </main>
         );
-    if (!model.key || !workbook || model.query.isError)
+    }
+
+    if (!model.key || !workbook || model.query.isError) {
         return (
             <main className={styles.page}>
                 <InlineAlert
@@ -79,6 +91,8 @@ export function SharedWorkbookPage({ locator }: { locator: string }) {
                 </InlineAlert>
             </main>
         );
+    }
+
     return (
         <main className={styles.page}>
             <header>

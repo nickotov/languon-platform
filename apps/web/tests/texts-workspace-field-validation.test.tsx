@@ -60,6 +60,7 @@ describe('workspace field-specific validation', () => {
         expect(screen.getByRole('alert')).toHaveTextContent(
             'Choose a translation language.',
         );
+
         expect(screen.getByLabelText('Source text')).not.toHaveAttribute(
             'aria-invalid',
             'true',
@@ -74,6 +75,7 @@ describe('workspace field-specific validation', () => {
         render(
             <Harness value={{ ...initial, sourceText: '😀'.repeat(20_001) }} />,
         );
+
         const text = screen.getByLabelText('Source text');
         expect(text).toHaveAttribute('aria-invalid', 'true');
         expect(screen.getByText(/^The text is too long/)).toBeVisible();
@@ -83,6 +85,7 @@ describe('workspace field-specific validation', () => {
         expect(
             screen.queryByText(/^The text is too long/),
         ).not.toBeInTheDocument();
+
         expect(screen.getByLabelText('Translation language')).toHaveAttribute(
             'aria-invalid',
             'true',
@@ -95,9 +98,11 @@ describe('workspace field-specific validation', () => {
         expect(button.closest('section')).toContainElement(
             screen.getByLabelText('Source text'),
         );
+
         expect(button.closest('div')?.parentElement).toHaveTextContent(
             '20,000',
         );
+
         expect(
             screen.queryByText(/To save a draft without translating/),
         ).not.toBeInTheDocument();
@@ -105,6 +110,7 @@ describe('workspace field-specific validation', () => {
         fireEvent.change(screen.getByLabelText('Source text'), {
             target: { value: '' },
         });
+
         expect(
             screen.queryByRole('button', { name: 'Translate via AI' }),
         ).not.toBeInTheDocument();
@@ -122,6 +128,7 @@ describe('workspace field-specific validation', () => {
             targetLanguage: 'targetRequired',
             sourceText: 'textRequired',
         });
+
         expect(
             workspaceValidation({
                 ...initial,

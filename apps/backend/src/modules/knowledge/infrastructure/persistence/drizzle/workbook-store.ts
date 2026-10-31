@@ -34,11 +34,12 @@ import { usersTable } from '../../../../users/infrastructure/persistence/drizzle
 
 type Row = typeof workbooks.$inferSelect;
 function version(row: Row, expected: number) {
-    if (row.version !== expected)
+    if (row.version !== expected) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The workbook changed. Reload before applying changes.',
         );
+    }
 }
 
 async function owned(tx: KnowledgeTransaction, ownerId: string, id: string) {
@@ -55,7 +56,9 @@ async function owned(tx: KnowledgeTransaction, ownerId: string, id: string) {
         )
         .for('update');
 
-    if (!row) throw knowledgeUnavailable();
+    if (!row) {
+        throw knowledgeUnavailable();
+    }
 
     return row;
 }
@@ -147,11 +150,12 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 .onConflictDoNothing();
 
             const row = await owned(tx, ownerId, input.id);
-            if (row.title !== input.title || row.version !== 1)
+            if (row.title !== input.title || row.version !== 1) {
                 throw new KnowledgeDomainError(
                     'idempotency_conflict',
                     'The workbook identity has already been used.',
                 );
+            }
 
             return read(tx, row);
         });
@@ -199,11 +203,13 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 share &&
                 input.noteIds.some((noteId) => !oldIds.has(noteId)) &&
                 !input.acknowledgeSharedAddition
-            )
+            ) {
                 throw new KnowledgeDomainError(
                     'invalid_request',
                     'Adding notes makes their saved content readable through this shared workbook. Confirm before continuing.',
                 );
+            }
+
             if (input.noteIds.length) {
                 const notes = await tx
                     .select({ id: knowledgeNotesTable.id })
@@ -217,8 +223,10 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                     .orderBy(asc(knowledgeNotesTable.id))
                     .for('update');
 
-                if (notes.length !== input.noteIds.length)
+                if (notes.length !== input.noteIds.length) {
                     throw knowledgeUnavailable();
+                }
+
                 const memberships = await tx
                     .select()
                     .from(members)
@@ -228,15 +236,16 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                     memberships.some(
                         (membership) => membership.workbookId !== id,
                     )
-                )
+                ) {
                     throw new KnowledgeDomainError(
                         'invalid_request',
                         'Remove the note from its current workbook before adding it here.',
                     );
+                }
             }
 
             await tx.delete(members).where(eq(members.workbookId, id));
-            if (input.noteIds.length)
+            if (input.noteIds.length) {
                 await tx.insert(members).values(
                     input.noteIds.map((noteId, position) => ({
                         noteId,
@@ -244,6 +253,7 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                         workbookId: id,
                     })),
                 );
+            }
 
             return read(tx, await touch(tx, row));
         });
@@ -276,11 +286,13 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 .from(shares)
                 .where(eq(shares.workbookId, id));
 
-            if (existing)
+            if (existing) {
                 return {
                     locator: existing.locator,
                     key: this.crypto.key(existing.locator),
                 };
+            }
+
             const locator = this.crypto.locator();
             const key = this.crypto.key(locator);
             await tx.insert(shares).values({
@@ -315,8 +327,10 @@ export class DrizzleWorkbookStore implements WorkbookStore {
         if (
             !this.crypto.verify(key, capability?.keyDigest ?? null) ||
             !capability
-        )
+        ) {
             throw knowledgeUnavailable();
+        }
+
         const [row] = await tx
             .select()
             .from(workbooks)
@@ -328,7 +342,10 @@ export class DrizzleWorkbookStore implements WorkbookStore {
             )
             .for('share');
 
-        if (!row) throw knowledgeUnavailable();
+        if (!row) {
+            throw knowledgeUnavailable();
+        }
+
         const [live] = await tx
             .select()
             .from(shares)
@@ -339,14 +356,19 @@ export class DrizzleWorkbookStore implements WorkbookStore {
             !live ||
             live.locator !== locator ||
             !this.crypto.verify(key, live.keyDigest)
-        )
+        ) {
             throw knowledgeUnavailable();
+        }
+
         const [owner] = await tx
             .select({ status: usersTable.status })
             .from(usersTable)
             .where(eq(usersTable.id, row.ownerId));
 
-        if (owner?.status !== 'active') throw knowledgeUnavailable();
+        if (owner?.status !== 'active') {
+            throw knowledgeUnavailable();
+        }
+
         const saved = await tx
             .select({ note: knowledgeNotesTable })
             .from(members)
@@ -416,11 +438,12 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 .orderBy(asc(members.position), asc(members.noteId))
                 .for('share', { of: knowledgeNotesTable });
 
-            if (rows.some(({ note }) => note.status !== 'saved'))
+            if (rows.some(({ note }) => note.status !== 'saved')) {
                 throw new KnowledgeDomainError(
                     'version_conflict',
                     'Save all notes before copying this workbook.',
                 );
+            }
 
             return this.publishCopy(
                 tx,
@@ -442,11 +465,13 @@ export class DrizzleWorkbookStore implements WorkbookStore {
             .from(workbooks)
             .where(eq(workbooks.id, input.id));
 
-        if (existing)
+        if (existing) {
             throw new KnowledgeDomainError(
                 'idempotency_conflict',
                 'This destination identity has already been used.',
             );
+        }
+
         // Prepare every content snapshot before publishing any destination row.
         const copied: {
             note: KnowledgeNote;

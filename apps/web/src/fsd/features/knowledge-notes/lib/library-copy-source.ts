@@ -5,9 +5,13 @@ import type { KnowledgeLibraryContext } from '../api/library-copy-api';
 export async function resolveLibraryCopySource(
     context: KnowledgeLibraryContext,
 ) {
-    if (!context.workingSource) return { noteVersion: context.noteVersion };
+    if (!context.workingSource) {
+        return { noteVersion: context.noteVersion };
+    }
+
     const source = context.resolveWorkingSource
         ? await context.resolveWorkingSource()
         : context.workingSource;
+
     return { workingSource: KnowledgeLibraryWorkingSourceSchema.parse(source) };
 }

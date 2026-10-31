@@ -17,12 +17,18 @@ function sourceDescriptor(
     exercise: ExerciseLearningBlock,
     blocks: readonly LearningBlock[],
 ) {
-    if (!exercise.source) return null;
+    if (!exercise.source) {
+        return null;
+    }
+
     const source = blocks.find(
         (block) => block.id === exercise.source!.blockId,
     );
-    if (!source)
+
+    if (!source) {
         throw new WorkbookLearningError('Exercise source is unavailable.');
+    }
+
     const ids = exercise.source.segmentIds;
     if (source.type === 'bilingual-text') {
         return {
@@ -30,10 +36,12 @@ function sourceDescriptor(
             language: source.language,
             passages: ids.map((id) => {
                 const segment = source.segments.find((item) => item.id === id);
-                if (!segment)
+                if (!segment) {
                     throw new WorkbookLearningError(
                         'Exercise passage is unavailable.',
                     );
+                }
+
                 return {
                     text: segment.text,
                     translations: source.translations.map((translation) => ({
@@ -47,12 +55,15 @@ function sourceDescriptor(
             }),
         };
     }
+
     if (source.type === 'audio' || source.type === 'video') {
         const segments = source.transcript?.segments;
-        if (!segments)
+        if (!segments) {
             throw new WorkbookLearningError(
                 'Exercise transcript is unavailable.',
             );
+        }
+
         return {
             type: source.type,
             media:
@@ -71,14 +82,17 @@ function sourceDescriptor(
                 : {}),
             passages: ids.map((id) => {
                 const segment = segments.find((item) => item.id === id);
-                if (!segment)
+                if (!segment) {
                     throw new WorkbookLearningError(
                         'Exercise transcript passage is unavailable.',
                     );
+                }
+
                 return { text: segment.text, timing: segment.timing ?? null };
             }),
         };
     }
+
     throw new WorkbookLearningError('Exercise source has no passages.');
 }
 
@@ -92,8 +106,11 @@ export function exerciseSemanticDescriptor(
         const correctIndex = exercise.choices.findIndex(
             (choice) => choice.id === exercise.correctChoiceId,
         );
-        if (correctIndex < 0)
+
+        if (correctIndex < 0) {
             throw new WorkbookLearningError('Correct choice is unavailable.');
+        }
+
         format = {
             kind: exercise.format,
             choices: exercise.choices.map((choice) => choice.text),
@@ -117,6 +134,7 @@ export function exerciseSemanticDescriptor(
             acceptedAnswers: exercise.acceptedAnswers ?? [],
         };
     }
+
     return JSON.stringify(
         {
             descriptorVersion: 1,
@@ -127,8 +145,10 @@ export function exerciseSemanticDescriptor(
             source: sourceDescriptor(exercise, blocks),
         },
         (_key, value: unknown) => {
-            if (!value || typeof value !== 'object' || Array.isArray(value))
+            if (!value || typeof value !== 'object' || Array.isArray(value)) {
                 return value;
+            }
+
             return Object.fromEntries(
                 Object.entries(value).sort(([left], [right]) =>
                     left < right ? -1 : left > right ? 1 : 0,
@@ -156,20 +176,28 @@ export function evaluateWorkbookAnswer(
     exercise: ExerciseLearningBlock,
     answer: WorkbookAttemptAnswer,
 ): WorkbookAttemptEvaluation {
-    if (exercise.format !== answer.format)
+    if (exercise.format !== answer.format) {
         throw new WorkbookLearningError(
             'Answer format does not match the exercise.',
         );
-    if (exercise.format === 'free-text') return { status: 'unchecked' };
+    }
+
+    if (exercise.format === 'free-text') {
+        return { status: 'unchecked' };
+    }
+
     let correct = false;
     if (
         exercise.format === 'multiple-choice' &&
         answer.format === 'multiple-choice'
     ) {
-        if (!exercise.choices.some((choice) => choice.id === answer.choiceId))
+        if (!exercise.choices.some((choice) => choice.id === answer.choiceId)) {
             throw new WorkbookLearningError('Answer choice is unavailable.');
+        }
+
         correct = answer.choiceId === exercise.correctChoiceId;
     }
+
     if (
         exercise.format === 'fill-in-the-blank' &&
         answer.format === 'fill-in-the-blank'
@@ -178,14 +206,17 @@ export function evaluateWorkbookAnswer(
         const submitted = new Map(
             answer.gaps.map((gap) => [gap.id, gap.answer]),
         );
+
         if (
             submitted.size !== answer.gaps.length ||
             submitted.size !== gaps.length ||
             gaps.some((gap) => !submitted.has(gap.id))
-        )
+        ) {
             throw new WorkbookLearningError(
                 'Answers must match every exercise gap exactly once.',
             );
+        }
+
         correct = gaps.every((gap) =>
             gap.acceptedAnswers.some(
                 (accepted) =>
@@ -194,6 +225,7 @@ export function evaluateWorkbookAnswer(
             ),
         );
     }
+
     return {
         status: correct ? 'correct' : 'incorrect',
         method: 'deterministic',

@@ -9,10 +9,14 @@ export function checkPreparedAnswer(
     block: ExerciseLearningBlock,
     answer: LearningAnswer,
 ): boolean | undefined {
-    if (block.format === 'multiple-choice')
+    if (block.format === 'multiple-choice') {
         return typeof answer === 'string' && answer === block.correctChoiceId;
-    if (block.format !== 'fill-in-the-blank' || typeof answer === 'string')
+    }
+
+    if (block.format !== 'fill-in-the-blank' || typeof answer === 'string') {
         return undefined;
+    }
+
     return block.parts.every(
         (part) =>
             part.kind === 'text' ||

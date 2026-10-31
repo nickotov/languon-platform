@@ -31,12 +31,12 @@ Updated: 2026-09-15
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| Tests | Focused i18n/Profile tests 15 passed; affected web suite 24 files/156 tests passed. |
-| Lint/typecheck/build | Root lint, web typecheck, isolated `.next-e2e` production build and `git diff --check` passed. Build output contains the favicon route; generated `next-env.d.ts` change restored. |
-| Runtime/browser | Managed Chrome 152 session `languon-profile-copy-3d0dea79e995296a79ffdf5bad475302` checked synthetic signup, Account and Security at 320px and desktop, warning/input/checkbox/footer at 320px. No page errors or unexpected failed requests. `GET /favicon.ico` follows to existing `/icon` with 200 `image/png`. Session closed. |
-| Documentation/user-flow | Existing guides already describe visible Account labels and Security/passkey controls; no expected journey or command changed. Guide checks and mappings for `magic-profile-page` and `profile-account-controls` passed. |
+| Check                   | Result                                                                                                                                                                                                                                                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tests                   | Focused i18n/Profile tests 15 passed; affected web suite 24 files/156 tests passed.                                                                                                                                                                                                                                                |
+| Lint/typecheck/build    | Root lint, web typecheck, isolated `.next-e2e` production build and `git diff --check` passed. Build output contains the favicon route; generated `next-env.d.ts` change restored.                                                                                                                                                 |
+| Runtime/browser         | Managed Chrome 152 session `languon-profile-copy-3d0dea79e995296a79ffdf5bad475302` checked synthetic signup, Account and Security at 320px and desktop, warning/input/checkbox/footer at 320px. No page errors or unexpected failed requests. `GET /favicon.ico` follows to existing `/icon` with 200 `image/png`. Session closed. |
+| Documentation/user-flow | Existing guides already describe visible Account labels and Security/passkey controls; no expected journey or command changed. Guide checks and mappings for `magic-profile-page` and `profile-account-controls` passed.                                                                                                           |
 
 ## Outcome and evidence
 

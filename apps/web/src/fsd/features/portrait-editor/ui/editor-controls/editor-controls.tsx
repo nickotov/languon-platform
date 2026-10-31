@@ -41,6 +41,7 @@ export function EditorSection({
                   `${count} élément${count === 1 ? '' : 's'}`,
                   `${count} elemento${count === 1 ? '' : 's'}`,
               );
+
     return (
         <section className={styles.section} aria-labelledby={id}>
             <header className={styles.header}>
@@ -63,6 +64,7 @@ export function EditorSection({
         </section>
     );
 }
+
 export function ChoiceChip({
     value,
     label,
@@ -79,8 +81,10 @@ export function ChoiceChip({
     function handleToggle() {
         onToggle(value);
     }
+
     const className = [styles.chip, selected ? styles.selected : ''].join(' ');
     const Icon = selected ? Check : Plus;
+
     return (
         <button
             className={className}
@@ -94,6 +98,7 @@ export function ChoiceChip({
         </button>
     );
 }
+
 function RemovableEntry({
     entry,
     onRemove,
@@ -108,8 +113,10 @@ function RemovableEntry({
     function handleRemove() {
         onRemove(entry);
     }
+
     const label = `${labels[locale].remove}: ${entry}`;
     const className = [styles.chip, styles.selected].join(' ');
+
     return (
         <li>
             <button
@@ -125,6 +132,7 @@ function RemovableEntry({
         </li>
     );
 }
+
 export function CustomEntryList({
     label,
     entries,
@@ -153,14 +161,20 @@ export function CustomEntryList({
         portraitCharacterCount(draft) > 200 ||
         duplicate ||
         atLimit;
+
     function handleAdd() {
-        if (invalid) return;
+        if (invalid) {
+            return;
+        }
+
         onChange([...entries, draft.trim()]);
         setDraft('');
     }
+
     function handleRemove(value: string) {
         onChange(entries.filter((entry) => entry !== value));
     }
+
     const limitText = copy(
         locale,
         'Remove an item to add another.',
@@ -168,6 +182,7 @@ export function CustomEntryList({
         'Supprimez un élément pour en ajouter un autre.',
         'Elimina un elemento para añadir otro.',
     );
+
     return (
         <div className={styles.stack}>
             {entries.length > 0 && (

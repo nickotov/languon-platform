@@ -111,6 +111,7 @@ export class AuthenticationService {
     } {
         const emailAvailable =
             this.dependencies.emailSender.capability().available;
+
         return {
             email: {
                 passwordRecovery: emailAvailable,
@@ -172,6 +173,7 @@ export class AuthenticationService {
                 purpose: 'email_verification',
                 userId,
             });
+
             await Promise.all([
                 this.linkRateLimitSubject(input.context, {
                     alias: issued.challenge.flowId,
@@ -186,6 +188,7 @@ export class AuthenticationService {
                     ttlMs: 60 * 60_000,
                 }),
             ]);
+
             const result =
                 await this.dependencies.store.registerOrReplacePendingSignup({
                     account: {
@@ -230,6 +233,7 @@ export class AuthenticationService {
                 outcome: 'success',
                 ...(result === 'pending_created' ? { userId } : {}),
             });
+
             return {
                 status: 'verification_pending',
                 verification: this.toFlow(issued.challenge),
@@ -324,16 +328,19 @@ export class AuthenticationService {
                 60 * 60 * 1_000,
             ],
         ]);
+
         const challenge = await this.dependencies.store.findChallenge({
             flowId: input.flowId,
             purpose: 'email_verification',
         });
+
         if (!challenge) {
             await this.recordFailure(
                 input.context,
                 'auth.email_verification',
                 'invalid_challenge',
             );
+
             throw new VerificationFailedError();
         }
 
@@ -351,12 +358,14 @@ export class AuthenticationService {
             now: this.dependencies.clock.now(),
             session: prepared.storedSession,
         });
+
         if (result.kind !== 'verified') {
             await this.recordFailure(
                 input.context,
                 'auth.email_verification',
                 result.kind,
             );
+
             throw new VerificationFailedError();
         }
 
@@ -367,6 +376,7 @@ export class AuthenticationService {
             sessionId: prepared.storedSession.id,
             userId: result.account.userId,
         });
+
         return this.dependencies.sessionIssuer.toSuccess(
             prepared,
             result.account,
@@ -394,6 +404,7 @@ export class AuthenticationService {
                 15 * 60 * 1_000,
             ],
         ]);
+
         const account =
             await this.dependencies.store.findAccountByCanonicalEmail(
                 email.canonicalValue,
@@ -413,22 +424,27 @@ export class AuthenticationService {
                 'invalid_credentials',
                 account?.userId,
             );
+
             throw new InvalidCredentialsError();
         }
+
         if (account.status === 'pending') {
             const challenge =
                 await this.dependencies.store.findActiveChallengeForUser({
                     purpose: 'email_verification',
                     userId: account.userId,
                 });
+
             if (!challenge) {
                 throw new VerificationFailedError();
             }
+
             return {
                 status: 'email_verification_required',
                 verification: this.toFlow(challenge),
             };
         }
+
         if (account.status !== 'active' || !account.emailVerifiedAt) {
             await this.recordFailure(
                 input.context,
@@ -436,6 +452,7 @@ export class AuthenticationService {
                 'invalid_credentials',
                 account.userId,
             );
+
             throw new InvalidCredentialsError();
         }
 
@@ -467,10 +484,12 @@ export class AuthenticationService {
                 userId: account.userId,
             },
         );
+
         if (committed.kind !== 'issued' && replacementCredential) {
             const current = await this.dependencies.store.findAccountByUserId(
                 account.userId,
             );
+
             if (
                 current?.status === 'active' &&
                 current.emailVerifiedAt &&
@@ -484,6 +503,7 @@ export class AuthenticationService {
                         current.passwordCredential,
                         this.operationOptions(input.context),
                     );
+
                 if (currentVerification.matches) {
                     committed =
                         await this.dependencies.store.issueSessionForActiveUser(
@@ -497,6 +517,7 @@ export class AuthenticationService {
                 }
             }
         }
+
         if (committed.kind !== 'issued') {
             throw new InvalidCredentialsError();
         }
@@ -508,6 +529,7 @@ export class AuthenticationService {
             sessionId: prepared.storedSession.id,
             userId: account.userId,
         });
+
         return this.dependencies.sessionIssuer.toSuccess(
             prepared,
             committed.account,
@@ -535,6 +557,7 @@ export class AuthenticationService {
                 60 * 60 * 1_000,
             ],
         ]);
+
         const account =
             await this.dependencies.store.findAccountByCanonicalEmail(
                 email.canonicalValue,
@@ -562,9 +585,11 @@ export class AuthenticationService {
                 challenge: issued.challenge,
                 expectedStatus: 'active',
             });
+
         if (result.kind === 'limited') {
             throw new RateLimitExceededError(result.retryAfterSeconds);
         }
+
         if (result.kind === 'issued') {
             await this.dependencies.emailSender.sendVerificationCode(
                 {
@@ -577,6 +602,7 @@ export class AuthenticationService {
                 this.operationOptions(input.context),
             );
         }
+
         return {
             recovery:
                 result.kind === 'issued'
@@ -602,6 +628,7 @@ export class AuthenticationService {
                 60 * 60 * 1_000,
             ],
         ]);
+
         const challenge = await this.dependencies.store.findChallenge({
             flowId: input.flowId,
             purpose: 'password_reset',
@@ -612,9 +639,11 @@ export class AuthenticationService {
             input.newPassword,
             this.operationOptions(input.context),
         );
+
         if (!challenge) {
             throw new VerificationFailedError();
         }
+
         const result = await this.dependencies.store.commitPasswordReset({
             codeMatches: this.codeMatches(challenge, input.code),
             flowId: challenge.flowId,
@@ -625,6 +654,7 @@ export class AuthenticationService {
             ),
             now,
         });
+
         if (result !== 'reset') {
             await this.recordFailure(
                 input.context,
@@ -632,14 +662,17 @@ export class AuthenticationService {
                 result,
                 challenge.userId,
             );
+
             throw new VerificationFailedError();
         }
+
         await this.record({
             context: input.context,
             eventType: 'auth.password_reset',
             outcome: 'success',
             userId: challenge.userId,
         });
+
         return { status: 'password_reset' };
     }
 
@@ -658,6 +691,7 @@ export class AuthenticationService {
         ) {
             throw new PasswordUnchangedError();
         }
+
         this.dependencies.passwordPolicy.assertAcceptable(input.newPassword);
         await this.limit(input.context, [
             ['password.change.user', input.userId, 10, 15 * 60 * 1_000],
@@ -668,20 +702,25 @@ export class AuthenticationService {
                 15 * 60 * 1_000,
             ],
         ]);
+
         const account = await this.dependencies.store.findAccountByUserId(
             input.userId,
         );
+
         if (!account?.passwordCredential || account.status !== 'active') {
             throw new AuthenticationRequiredError();
         }
+
         const verification = await this.dependencies.passwordHasher.verify(
             input.currentPassword,
             account.passwordCredential,
             this.operationOptions(input.context),
         );
+
         if (!verification.matches) {
             throw new InvalidCredentialsError();
         }
+
         const newHash = await this.dependencies.passwordHasher.hash(
             input.newPassword,
             this.operationOptions(input.context),
@@ -709,9 +748,11 @@ export class AuthenticationService {
                 revokedAt: now,
                 userId: account.userId,
             });
+
         if (result.kind !== 'issued') {
             throw new AuthenticationRequiredError();
         }
+
         await this.record({
             context: input.context,
             eventType: 'auth.password_change',
@@ -719,6 +760,7 @@ export class AuthenticationService {
             sessionId: prepared.storedSession.id,
             userId: account.userId,
         });
+
         return this.dependencies.sessionIssuer.toSuccess(
             prepared,
             result.account,
@@ -732,6 +774,7 @@ export class AuthenticationService {
         const digest = this.dependencies.refreshCredentials.digest(
             input.refreshCredential,
         );
+
         await this.limit(input.context, [
             ['session.refresh.token', digest, 30, 15 * 60 * 1_000],
             [
@@ -741,8 +784,10 @@ export class AuthenticationService {
                 15 * 60 * 1_000,
             ],
         ]);
+
         const predecessor =
             await this.dependencies.store.findRefreshSessionByDigest(digest);
+
         if (!predecessor || predecessor.revokedAt) {
             await this.recordFailure(
                 input.context,
@@ -750,8 +795,10 @@ export class AuthenticationService {
                 'unavailable',
                 predecessor?.userId,
             );
+
             throw new AuthenticationRequiredError();
         }
+
         if (predecessor.consumedAt) {
             // The atomic rotation operation is still invoked so the store can revoke
             // the complete family while holding the relevant session lock.
@@ -760,6 +807,7 @@ export class AuthenticationService {
                 now: this.dependencies.clock.now(),
                 successor: predecessor,
             });
+
             if (replay.kind !== 'replay') {
                 await this.recordFailure(
                     input.context,
@@ -767,14 +815,17 @@ export class AuthenticationService {
                     replay.kind,
                     predecessor.userId,
                 );
+
                 throw new AuthenticationRequiredError();
             }
+
             await this.recordFailure(
                 input.context,
                 'auth.session_refresh',
                 'replay',
                 predecessor.userId,
             );
+
             throw new AuthenticationRequiredError();
         }
 
@@ -788,13 +839,16 @@ export class AuthenticationService {
             if (error instanceof RangeError) {
                 throw new AuthenticationRequiredError();
             }
+
             throw error;
         }
+
         const result = await this.dependencies.store.rotateRefreshSession({
             digest,
             now: this.dependencies.clock.now(),
             successor: prepared.storedSession,
         });
+
         if (result.kind !== 'rotated') {
             await this.recordFailure(
                 input.context,
@@ -802,8 +856,10 @@ export class AuthenticationService {
                 result.kind,
                 predecessor.userId,
             );
+
             throw new AuthenticationRequiredError();
         }
+
         return this.dependencies.sessionIssuer.toSuccess(
             prepared,
             result.account,
@@ -823,6 +879,7 @@ export class AuthenticationService {
                 revokedAt: this.dependencies.clock.now(),
             });
         }
+
         return { status: 'signed_out' };
     }
 
@@ -835,12 +892,14 @@ export class AuthenticationService {
             revokedAt: this.dependencies.clock.now(),
             userId: input.userId,
         });
+
         await this.record({
             context: input.context,
             eventType: 'auth.logout_all',
             outcome: 'success',
             userId: input.userId,
         });
+
         return { status: 'all_sessions_revoked' };
     }
 
@@ -861,6 +920,7 @@ export class AuthenticationService {
                 userId: input.userId,
             }),
         ]);
+
         if (
             !account ||
             account.status !== 'active' ||
@@ -869,6 +929,7 @@ export class AuthenticationService {
         ) {
             throw new AuthenticationRequiredError();
         }
+
         return { account, session };
     }
 
@@ -889,6 +950,7 @@ export class AuthenticationService {
         ) {
             throw new RecentAuthenticationRequiredError();
         }
+
         return active;
     }
 
@@ -907,6 +969,7 @@ export class AuthenticationService {
         const passkeys = await this.dependencies.store.listActivePasskeys(
             input.userId,
         );
+
         return passkeys.map(({ createdAt, id, lastUsedAt, name }) => ({
             createdAt,
             id,
@@ -935,9 +998,11 @@ export class AuthenticationService {
                 passkeyId: input.passkeyId,
                 userId: input.userId,
             });
+
             if (!renamed) {
                 throw new PasskeyOperationFailedError();
             }
+
             await this.record({
                 context: input.context,
                 eventType: 'auth.passkey_rename',
@@ -945,6 +1010,7 @@ export class AuthenticationService {
                 outcome: 'success',
                 userId: input.userId,
             });
+
             return {
                 createdAt: renamed.createdAt,
                 id: renamed.id,
@@ -958,6 +1024,7 @@ export class AuthenticationService {
                 'failed',
                 input.userId,
             );
+
             throw error;
         }
     }
@@ -977,15 +1044,18 @@ export class AuthenticationService {
             ) {
                 throw new RecentAuthenticationRequiredError();
             }
+
             const revoked = await this.dependencies.store.revokePasskey({
                 now: this.dependencies.clock.now(),
                 passkeyId: input.passkeyId,
                 sessionId: input.sessionId,
                 userId: input.userId,
             });
+
             if (!revoked) {
                 throw new PasskeyOperationFailedError();
             }
+
             await this.record({
                 context: input.context,
                 eventType: 'auth.passkey_revoke',
@@ -993,6 +1063,7 @@ export class AuthenticationService {
                 outcome: 'success',
                 userId: input.userId,
             });
+
             return { status: 'passkey_revoked' };
         } catch (error) {
             await this.recordFailure(
@@ -1001,6 +1072,7 @@ export class AuthenticationService {
                 'failed',
                 input.userId,
             );
+
             throw error;
         }
     }
@@ -1020,6 +1092,7 @@ export class AuthenticationService {
         if (!this.dependencies.sessionIssuer.isRecentlyAuthenticated(session)) {
             throw new RecentAuthenticationRequiredError();
         }
+
         await this.limit(input.context, [
             ['passkey.registration.user', input.userId, 10, 15 * 60 * 1_000],
             [
@@ -1029,6 +1102,7 @@ export class AuthenticationService {
                 15 * 60 * 1_000,
             ],
         ]);
+
         const existing = await this.dependencies.store.listActivePasskeys(
             input.userId,
         );
@@ -1058,6 +1132,7 @@ export class AuthenticationService {
             },
             this.operationOptions(input.context),
         );
+
         return {
             expiresAt: new Date(
                 this.dependencies.clock.now().getTime() + 5 * 60 * 1_000,
@@ -1096,6 +1171,7 @@ export class AuthenticationService {
                     15 * 60_000,
                 ],
             ]);
+
             const { session } = await this.requireActiveSession(input);
             if (
                 !this.dependencies.sessionIssuer.isRecentlyAuthenticated(
@@ -1104,11 +1180,13 @@ export class AuthenticationService {
             ) {
                 throw new RecentAuthenticationRequiredError();
             }
+
             const challenge =
                 await this.dependencies.webAuthnChallenges.consume(
                     input.flowId,
                     this.operationOptions(input.context),
                 );
+
             if (
                 !challenge ||
                 challenge.purpose !== 'registration' ||
@@ -1116,6 +1194,7 @@ export class AuthenticationService {
             ) {
                 throw new PasskeyOperationFailedError();
             }
+
             const verified =
                 await this.dependencies.passkeyVerifier.verifyRegistration({
                     credential: input.credential,
@@ -1145,9 +1224,11 @@ export class AuthenticationService {
                 sessionId: input.sessionId,
                 userId: input.userId,
             });
+
             if (!registered) {
                 throw new PasskeyOperationFailedError();
             }
+
             await this.record({
                 context: input.context,
                 eventType: 'auth.passkey_registration',
@@ -1156,6 +1237,7 @@ export class AuthenticationService {
                 sessionId: input.sessionId,
                 userId: input.userId,
             });
+
             return {
                 passkey: {
                     createdAt: passkey.createdAt,
@@ -1172,6 +1254,7 @@ export class AuthenticationService {
                 'failed',
                 input.userId,
             );
+
             throw error;
         }
     }
@@ -1193,6 +1276,7 @@ export class AuthenticationService {
                 15 * 60 * 1_000,
             ],
         ]);
+
         const options =
             await this.dependencies.passkeyVerifier.generateAuthenticationOptions();
         const flowId = this.dependencies.ids.generate();
@@ -1205,6 +1289,7 @@ export class AuthenticationService {
             },
             this.operationOptions(input.context),
         );
+
         return {
             expiresAt: new Date(
                 this.dependencies.clock.now().getTime() + 5 * 60 * 1_000,
@@ -1236,21 +1321,26 @@ export class AuthenticationService {
                     15 * 60_000,
                 ],
             ]);
+
             const challenge =
                 await this.dependencies.webAuthnChallenges.consume(
                     input.flowId,
                     this.operationOptions(input.context),
                 );
+
             if (!challenge || challenge.purpose !== 'authentication') {
                 throw new PasskeyOperationFailedError();
             }
+
             const passkey =
                 await this.dependencies.store.findPasskeyByCredentialId(
                     input.credential.id,
                 );
+
             if (!passkey || passkey.revokedAt) {
                 throw new PasskeyOperationFailedError();
             }
+
             auditedUserId = passkey.userId;
             const verified =
                 await this.dependencies.passkeyVerifier.verifyAuthentication({
@@ -1266,12 +1356,14 @@ export class AuthenticationService {
                         userHandle: passkey.userHandle,
                     },
                 });
+
             if (
                 verified.credentialId !== passkey.credentialId ||
                 verified.userHandle !== passkey.userHandle
             ) {
                 throw new PasskeyOperationFailedError();
             }
+
             const prepared =
                 await this.dependencies.sessionIssuer.prepareInitial({
                     ...(input.clientLabel === undefined
@@ -1290,9 +1382,11 @@ export class AuthenticationService {
                     verifiedCounter: verified.counter,
                     verifiedDeviceType: verified.deviceType,
                 });
+
             if (result.kind !== 'authenticated') {
                 throw new PasskeyOperationFailedError();
             }
+
             await this.record({
                 context: input.context,
                 eventType: 'auth.passkey_authentication',
@@ -1301,6 +1395,7 @@ export class AuthenticationService {
                 sessionId: prepared.storedSession.id,
                 userId: passkey.userId,
             });
+
             return this.dependencies.sessionIssuer.toSuccess(
                 prepared,
                 result.account,
@@ -1312,6 +1407,7 @@ export class AuthenticationService {
                 'failed',
                 auditedUserId,
             );
+
             throw error;
         }
     }
@@ -1337,6 +1433,7 @@ export class AuthenticationService {
             purpose: input.purpose,
             userId: input.userId,
         });
+
         return {
             challenge: {
                 attemptsUsed: 0,
@@ -1411,6 +1508,7 @@ export class AuthenticationService {
                 subject,
                 windowMs,
             });
+
             if (!decision.allowed) {
                 throw new RateLimitExceededError(decision.retryAfterSeconds);
             }
@@ -1448,6 +1546,7 @@ export class AuthenticationService {
             ...(input.sessionId ? { sessionId: input.sessionId } : {}),
             ...(input.userId ? { userId: input.userId } : {}),
         };
+
         // Recording must never turn an already committed authentication mutation
         // into an externally reported failure. The recorder owns its own alerting.
         await this.dependencies.securityEvents

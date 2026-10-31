@@ -52,8 +52,10 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
         if (
             !this.policy.routingEnabled ||
             this.policy.pricingAdmissionEnabled === false
-        )
+        ) {
             throw new TextAiSelectionUnavailableError();
+        }
+
         const tx = this.transaction;
         let managed: Awaited<ReturnType<typeof resolveAdminTextAiRouting>>;
         try {
@@ -66,13 +68,17 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     : {}),
             });
         } catch (error) {
-            if (error instanceof TextAiRoutingUnavailableError)
+            if (error instanceof TextAiRoutingUnavailableError) {
                 throw new TextAiSelectionUnavailableError();
+            }
 
             throw error;
         }
 
-        if (!managed) throw new TextAiSelectionUnavailableError();
+        if (!managed) {
+            throw new TextAiSelectionUnavailableError();
+        }
+
         let snapshot = managed.snapshot;
         const candidates = snapshot.routingAuthority!.candidates;
         const observed = await tx
@@ -144,8 +150,10 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                     flow !== 'conversation' &&
                     flow !== 'portrait-interview' &&
                     !currentSupports(isTextAiCapacityCapableObservation))
-            )
+            ) {
                 continue;
+            }
+
             const capable =
                 flow === 'conversation' || flow === 'portrait-interview'
                     ? isConversationExecutionCapableObservation
@@ -165,20 +173,27 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
                             input.requiredWorkerFormat ?? input.format,
                         ),
                 )
-            )
+            ) {
                 continue;
+            }
+
             if (
                 await isTextAiCircuitOpen(tx, {
                     execution: candidate.snapshot,
                     format: input.format,
                     now: input.now,
                 })
-            )
+            ) {
                 continue;
+            }
+
             ready.push(candidate);
         }
 
-        if (!ready.length) throw new TextAiSelectionUnavailableError();
+        if (!ready.length) {
+            throw new TextAiSelectionUnavailableError();
+        }
+
         snapshot = {
             ...ready[0]!.snapshot,
             routingAuthority: {
@@ -187,14 +202,18 @@ export class DrizzleTextAiAdmissionParticipant implements TextAiAdmissionPartici
             },
         };
 
-        if (flow.startsWith('sentence-'))
+        if (flow.startsWith('sentence-')) {
             await tx.execute(
                 sql`select set_config('languon.learning_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,
             );
-        if (flow.startsWith('text-'))
+        }
+
+        if (flow.startsWith('text-')) {
             await tx.execute(
                 sql`select set_config('languon.texts_execution_revision','1',true), set_config('languon.text_ai_selection_revision','1',true), set_config('languon.ai_credit_settlement_revision','1',true)`,
             );
+        }
+
         await ensureActionBudgetDefault(tx, input.userId, input.now);
 
         return {

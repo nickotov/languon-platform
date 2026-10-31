@@ -21,9 +21,11 @@ it('includes authored video descriptions and exercise hints in the immutable edi
         hint: 'Look at the station.',
         group: { id: groupId, title: 'Listening practice', parentBlockId: id },
     });
+
     expect(learningBlockPlainText(video)).toContain(
         'Author description: a train arrives.',
     );
+
     const text = learningBlockPlainText(exercise);
     expect(text).toContain('Listening practice');
     expect(text).toContain('Look at the station.');

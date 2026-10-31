@@ -27,7 +27,11 @@ export async function resolveKnowledgeAudioDraftSource(
             and(eq(branches.id, source.branchId), eq(branches.noteId, note.id)),
         )
         .for('share');
-    if (!branch) throw new SpeechError('speech_source_unavailable', 404);
+
+    if (!branch) {
+        throw new SpeechError('speech_source_unavailable', 404);
+    }
+
     return {
         text: source.sourceText,
         language: source.language,

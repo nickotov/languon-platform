@@ -28,8 +28,10 @@ function fixture() {
             refreshTokenTtlSeconds: 3600,
         }),
     });
+
     return { app, store, authenticate, consume };
 }
+
 describe('Texts AI HTTP boundary', () => {
     it.each([
         ['denied', 'detection'],
@@ -40,12 +42,14 @@ describe('Texts AI HTTP boundary', () => {
         'fails closed before enqueue when admission is %s for %s',
         async (failure, operation) => {
             const { app, store, authenticate, consume } = fixture();
-            if (failure === 'denied')
+            if (failure === 'denied') {
                 consume.mockResolvedValue({ allowed: false });
-            else
+            } else {
                 consume.mockRejectedValue(
                     new GenerationBurstUnavailableError(),
                 );
+            }
+
             const response = await app.request(`/texts/ai/${operation}`, {
                 method: 'POST',
                 headers: {
@@ -61,14 +65,17 @@ describe('Texts AI HTTP boundary', () => {
                         : {}),
                 }),
             });
+
             expect(response.status).toBe(failure === 'denied' ? 429 : 503);
             expect(authenticate).toHaveBeenCalledOnce();
             expect(consume).toHaveBeenCalledWith(
                 expect.objectContaining({ capability: `text-${operation}` }),
             );
+
             expect(store.enqueue).not.toHaveBeenCalled();
         },
     );
+
     it('rejects disallowed origins before authentication or admission', async () => {
         const { app, store, authenticate } = fixture();
         const response = await app.request(`/texts/ai/jobs/${randomUUID()}`, {
@@ -77,12 +84,14 @@ describe('Texts AI HTTP boundary', () => {
                 Authorization: 'Bearer synthetic',
             },
         });
+
         expect(response.status).toBe(403);
         expect((await response.json()).error.code).toBe('invalid_request');
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
         expect(authenticate).not.toHaveBeenCalled();
         expect(store.get).not.toHaveBeenCalled();
     });
+
     it('requires authentication before loading private job data', async () => {
         const { app, store } = fixture();
         const response = await app.request(`/texts/ai/jobs/${randomUUID()}`);
@@ -90,13 +99,16 @@ describe('Texts AI HTTP boundary', () => {
         expect((await response.json()).error.code).toBe(
             'authentication_required',
         );
+
         expect(store.get).not.toHaveBeenCalled();
     });
+
     it('maps reservation exhaustion to the typed payment response', async () => {
         const { app, store } = fixture();
         vi.mocked(store.enqueue).mockRejectedValue(
             new TextsCreditsExhaustedError(),
         );
+
         const response = await app.request('/texts/ai/detection', {
             method: 'POST',
             headers: {
@@ -109,6 +121,7 @@ describe('Texts AI HTTP boundary', () => {
                 sourceText: 'Hello.',
             }),
         });
+
         expect(response.status).toBe(402);
         expect((await response.json()).error.code).toBe('ai_credits_exhausted');
     });

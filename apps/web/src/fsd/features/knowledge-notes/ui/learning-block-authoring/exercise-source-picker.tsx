@@ -23,13 +23,19 @@ export function ExerciseSourcePicker({
     );
     const source = available.find((block) => block.id === sourceId);
     let passages: { id: string; text: string }[] = [];
-    if (source?.type === 'bilingual-text') passages = source.segments;
-    if (source?.type === 'audio' || source?.type === 'video')
+    if (source?.type === 'bilingual-text') {
+        passages = source.segments;
+    }
+
+    if (source?.type === 'audio' || source?.type === 'video') {
         passages = source.transcript?.segments ?? [];
+    }
+
     function choose(event: ChangeEvent<HTMLSelectElement>) {
         setSourceId(event.target.value);
         setSelected([]);
     }
+
     function toggle(event: ChangeEvent<HTMLInputElement>) {
         const id = event.target.value;
         const checked = event.target.checked;
@@ -39,9 +45,11 @@ export function ExerciseSourcePicker({
                 : current.filter((value) => value !== id),
         );
     }
+
     const sourceLabel = labels.field('Hint source');
     const passagesLabel = labels.field('Relevant passages for hints');
     const noSource = labels.field('No linked source');
+
     return (
         <fieldset className={styles.group}>
             <legend>{sourceLabel}</legend>
@@ -64,6 +72,7 @@ export function ExerciseSourcePicker({
                             ? Array.from(passage.text).slice(0, 240).join('') +
                               '…'
                             : passage.text;
+
                     return (
                         <label key={passage.id} className={styles.passage}>
                             <input

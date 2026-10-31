@@ -9,11 +9,13 @@ export function learningBlockPlainText(block: LearningBlock): string {
         block.examples?.forEach((item) =>
             parts.push(item.text, item.translation ?? ''),
         );
+
         block.commonMistakes?.forEach((item) =>
             parts.push(item.incorrect, item.correct, item.explanation ?? ''),
         );
     }
-    if (block.type === 'vocabulary')
+
+    if (block.type === 'vocabulary') {
         block.entries.forEach((item) =>
             parts.push(
                 item.term,
@@ -24,12 +26,15 @@ export function learningBlockPlainText(block: LearningBlock): string {
                 item.exampleTranslation ?? '',
             ),
         );
+    }
+
     if (block.type === 'bilingual-text') {
         block.segments.forEach((item) => parts.push(item.text));
         block.translations.forEach((translation) =>
             translation.segments.forEach((item) => parts.push(item.text)),
         );
     }
+
     if (block.type === 'video') {
         parts.push(block.description ?? '');
         parts.push(
@@ -38,9 +43,15 @@ export function learningBlockPlainText(block: LearningBlock): string {
                 : block.source.url,
         );
     }
-    if (block.type === 'audio') parts.push(block.sourceText ?? '');
-    if (block.type === 'audio' || block.type === 'video')
+
+    if (block.type === 'audio') {
+        parts.push(block.sourceText ?? '');
+    }
+
+    if (block.type === 'audio' || block.type === 'video') {
         block.transcript?.segments.forEach((item) => parts.push(item.text));
+    }
+
     if (block.type === 'exercise') {
         parts.push(
             block.group?.title ?? '',
@@ -50,9 +61,12 @@ export function learningBlockPlainText(block: LearningBlock): string {
             block.explanation,
             block.evaluationCriteria ?? '',
         );
-        if (block.format === 'multiple-choice')
+
+        if (block.format === 'multiple-choice') {
             block.choices.forEach((item) => parts.push(item.text));
-        if (block.format === 'fill-in-the-blank')
+        }
+
+        if (block.format === 'fill-in-the-blank') {
             block.parts.forEach((part) =>
                 parts.push(
                     part.kind === 'text'
@@ -60,13 +74,20 @@ export function learningBlockPlainText(block: LearningBlock): string {
                         : part.acceptedAnswers.join(' / '),
                 ),
             );
-        if (block.format === 'free-text')
+        }
+
+        if (block.format === 'free-text') {
             parts.push(...(block.acceptedAnswers ?? []));
+        }
     }
+
     return parts.filter(Boolean).join('\n');
 }
 
 export function editorLeafText(node: Node): string {
-    if (node.type.name !== 'learningBlock') return '\n';
+    if (node.type.name !== 'learningBlock') {
+        return '\n';
+    }
+
     return `\n${learningBlockPlainText(LearningBlockSchema.parse(node.attrs.block))}\n`;
 }

@@ -56,16 +56,18 @@ const context: KnowledgeBlockCopyContext = {
     onApplied: vi.fn(),
     onApplyingChange: vi.fn(),
 };
+
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
 });
+
 it('shows dependency and media counts before explicit independent-copy application', async () => {
     const calls: Record<string, unknown>[] = [];
     vi.stubGlobal(
         'fetch',
         vi.fn(async (url: string, init: RequestInit) => {
-            if (url.includes('/workspaces?'))
+            if (url.includes('/workspaces?')) {
                 return Response.json({
                     workspaces: [
                         {
@@ -80,9 +82,15 @@ it('shows dependency and media counts before explicit independent-copy applicati
                     offset: 0,
                     limit: 50,
                 });
-            if (url.endsWith('/workspace')) return Response.json({ workspace });
+            }
+
+            if (url.endsWith('/workspace')) {
+                return Response.json({ workspace });
+            }
+
             const request = JSON.parse(String(init.body));
             calls.push(request);
+
             return Response.json({
                 branch: request.preview ? null : { ...branch, version: 5 },
                 selectedCount: 1,
@@ -93,6 +101,7 @@ it('shows dependency and media counts before explicit independent-copy applicati
             });
         }),
     );
+
     const audioId = '44444444-4444-4444-8444-444444444444';
     const segmentId = '55555555-5555-4555-8555-555555555555';
     const audio = LearningBlockSchema.parse({
@@ -115,29 +124,35 @@ it('shows dependency and media counts before explicit independent-copy applicati
         explanation: 'It says noon.',
         source: { blockId: audioId, segmentIds: [segmentId] },
     });
+
     render(<CopyBlocksToNote context={context} blocks={[audio, block]} />);
     fireEvent.click(
         screen.getByRole('button', { name: 'Copy blocks to a note' }),
     );
+
     fireEvent.click(
         screen.getByRole('checkbox', { name: 'Selected exercise' }),
     );
+
     await screen.findByRole('option', { name: 'Destination' });
     fireEvent.change(
         screen.getByRole('combobox', { name: 'Destination note' }),
         { target: { value: destinationId } },
     );
+
     await screen.findByRole('combobox', { name: 'Destination working draft' });
     await waitFor(() =>
         expect(
             screen.getByRole('button', { name: 'Preview copy' }),
         ).toBeEnabled(),
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Preview copy' }));
     await screen.findByText('Linked source blocks included: 1');
     expect(
         screen.getByText('Uploaded audio assets copied independently: 1'),
     ).toBeVisible();
+
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({
         preview: true,
@@ -145,10 +160,12 @@ it('shows dependency and media counts before explicit independent-copy applicati
         expectedBranchVersion: 4,
         blockIds: [id],
     });
+
     expect(context.onApplied).not.toHaveBeenCalled();
     fireEvent.click(
         screen.getByRole('button', { name: 'Copy into working draft' }),
     );
+
     await screen.findByRole('status');
     expect(calls[1]).toEqual({ ...calls[0], preview: false });
     expect(context.beforeApply).toHaveBeenCalledWith(destinationId);
@@ -157,16 +174,20 @@ it('shows dependency and media counts before explicit independent-copy applicati
         version: 5,
     });
 });
+
 it('retains one frozen operation for uncertain-copy retries without reporting false success', async () => {
     const requests: Record<string, unknown>[] = [];
     let failures = 1;
     vi.stubGlobal(
         'fetch',
         vi.fn(async (url: string, init: RequestInit) => {
-            if (url.endsWith('/workspace')) return Response.json({ workspace });
+            if (url.endsWith('/workspace')) {
+                return Response.json({ workspace });
+            }
+
             const request = JSON.parse(String(init.body));
             requests.push(request);
-            if (!request.preview && failures-- > 0)
+            if (!request.preview && failures-- > 0) {
                 return Response.json(
                     {
                         error: {
@@ -177,6 +198,8 @@ it('retains one frozen operation for uncertain-copy retries without reporting fa
                     },
                     { status: 503 },
                 );
+            }
+
             return Response.json({
                 branch: request.preview ? null : { ...branch, version: 5 },
                 selectedCount: 1,
@@ -187,20 +210,25 @@ it('retains one frozen operation for uncertain-copy retries without reporting fa
             });
         }),
     );
+
     const { result } = renderHook(() =>
         useBlockCopy(context, [id], { noteId: destinationId, branchId }),
     );
+
     await act(async () => {
         await result.current.preview();
     });
+
     await act(async () => {
         await result.current.apply();
     });
+
     expect(result.current.error).toBe(true);
     expect(result.current.copied).toBe(false);
     await act(async () => {
         await result.current.apply();
     });
+
     expect(result.current.copied).toBe(true);
     expect(requests[2]).toEqual(requests[1]);
 });
@@ -219,7 +247,7 @@ it.each([
         vi.stubGlobal(
             'fetch',
             vi.fn(async (url: string, init: RequestInit) => {
-                if (url.includes('/workspaces?'))
+                if (url.includes('/workspaces?')) {
                     return Response.json({
                         workspaces: [
                             {
@@ -234,8 +262,12 @@ it.each([
                         offset: 0,
                         limit: 50,
                     });
-                if (url.endsWith('/workspace'))
+                }
+
+                if (url.endsWith('/workspace')) {
                     return Response.json({ workspace });
+                }
+
                 const request = JSON.parse(String(init.body));
                 expect(request).toMatchObject({
                     branchId,
@@ -246,11 +278,13 @@ it.each([
                         expectedVersion: 4,
                     },
                 });
+
                 expect(request.blockIds).toEqual(
                     kind === 'exercise'
                         ? ['44444444-4444-4444-8444-444444444444', id]
                         : [id],
                 );
+
                 return Response.json({
                     branch: null,
                     selectedCount: request.blockIds.length,
@@ -261,6 +295,7 @@ it.each([
                 });
             }),
         );
+
         const audioId = '44444444-4444-4444-8444-444444444444';
         const segmentId = '55555555-5555-4555-8555-555555555555';
         const audio = LearningBlockSchema.parse({
@@ -313,6 +348,7 @@ it.each([
             branchId,
             expectedVersion: 4,
         };
+
         render(
             <KnowledgeEditor
                 value={body}
@@ -331,6 +367,7 @@ it.each([
                 }}
             />,
         );
+
         fireEvent.click(
             await screen.findByRole('button', {
                 name:
@@ -339,29 +376,35 @@ it.each([
                         : 'Block settings: Uploaded recording',
             }),
         );
+
         const duplicate = await screen.findByRole('menuitem', {
             name: action,
         });
+
         expect(duplicate).toBeEnabled();
         fireEvent.click(duplicate);
         expect(
             await screen.findByRole('checkbox', { name: 'Uploaded recording' }),
         ).toBeChecked();
+
         if (action === 'Copy block') {
             await screen.findByRole('option', { name: 'Destination' });
             expect(
                 screen.getByRole('button', { name: 'Preview copy' }),
             ).toBeDisabled();
+
             fireEvent.change(
                 screen.getByRole('combobox', { name: 'Destination note' }),
                 { target: { value: destinationId } },
             );
         }
+
         await waitFor(() =>
             expect(
                 screen.getByRole('button', { name: 'Preview copy' }),
             ).toBeEnabled(),
         );
+
         fireEvent.click(screen.getByRole('button', { name: 'Preview copy' }));
         expect(
             await screen.findByText(

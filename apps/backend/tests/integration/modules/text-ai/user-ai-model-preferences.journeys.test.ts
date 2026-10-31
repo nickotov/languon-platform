@@ -95,6 +95,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
             }),
         );
+
         app = createApp({
             authentication: authentication.options,
             dictionaries: createDictionaryComposition({
@@ -126,10 +127,12 @@ run('real composed text-AI preference HTTP journey', () => {
             'DICTIONARY_AI_MANAGED_ROUTING_ENABLED',
             priorEnvironment.routing,
         );
+
         restoreEnvironment(
             'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED',
             priorEnvironment.deepseek,
         );
+
         restoreEnvironment('DEEPSEEK_API_KEY', priorEnvironment.deepseekKey);
         restoreEnvironment(
             'DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED',
@@ -170,6 +173,7 @@ run('real composed text-AI preference HTTP journey', () => {
             method: 'POST',
             body: { email, password: 'A safe text preference password 47!' },
         });
+
         expect(signup.status).toBe(202);
         const flowId = SignUpResponseSchema.parse(await signup.json())
             .verification.flowId;
@@ -177,12 +181,14 @@ run('real composed text-AI preference HTTP journey', () => {
             method: 'POST',
             body: { code: '0000', flowId },
         });
+
         expect(verification.status).toBe(200);
         const token = AuthenticationSuccessResponseSchema.parse(
             await verification.json(),
         ).accessToken;
         const claims =
             await authentication.productDependencies.accessTokens.verify(token);
+
         return { token, userId: claims.userId };
     }
 
@@ -197,6 +203,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 targetLanguage: 'fr',
             },
         });
+
         expect(created.status).toBe(201);
         const current = DictionaryResponseSchema.parse(
             await created.json(),
@@ -210,8 +217,10 @@ run('real composed text-AI preference HTTP journey', () => {
                 values: { source: 'book', translation: 'livre' },
             },
         });
+
         expect(card.status).toBe(201);
         const result = DictionaryCardResponseSchema.parse(await card.json());
+
         return {
             cardId: result.card.id,
             cardVersion: result.card.version,
@@ -260,13 +269,16 @@ run('real composed text-AI preference HTTP journey', () => {
                 credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
                 fetchProvider: async () => new Response('{}', { status: 200 }),
             });
+
             const models = await request('/text-ai/models', {
                 token: learner.token,
             });
+
             expect(models.status).toBe(200);
             const catalog = TextAiModelsResponseSchema.parse(
                 await models.json(),
             );
+
             expect(catalog).toEqual({ defaultModelId: null, models: [] });
             expect(JSON.stringify(catalog)).not.toMatch(
                 /credential|endpoint|api[_-]?key/i,
@@ -275,6 +287,7 @@ run('real composed text-AI preference HTTP journey', () => {
             const initial = await request('/users/me/ai-model-preference', {
                 token: learner.token,
             });
+
             expect(initial.status).toBe(200);
             expect(
                 TextAiPreferenceResponseSchema.parse(await initial.json()),
@@ -294,6 +307,7 @@ run('real composed text-AI preference HTTP journey', () => {
                     maxCreditsPerAction: '20.125',
                 },
             });
+
             expect(saved.status).toBe(200);
             expect(
                 TextAiPreferenceResponseSchema.parse(await saved.json()),
@@ -304,9 +318,11 @@ run('real composed text-AI preference HTTP journey', () => {
                 version: 2,
                 maxCreditsPerAction: '20.125',
             });
+
             const reloaded = await request('/users/me/ai-model-preference', {
                 token: learner.token,
             });
+
             expect(
                 TextAiPreferenceResponseSchema.parse(await reloaded.json()),
             ).toMatchObject({
@@ -321,6 +337,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 token: learner.token,
                 body: { expectedVersion: 0, mode: 'auto' },
             });
+
             expect(stale.status).toBe(409);
             expect(
                 TextAiErrorResponseSchema.parse(await stale.json()),
@@ -337,13 +354,16 @@ run('real composed text-AI preference HTTP journey', () => {
                     modelId: 'gemini-2.5-pro',
                 },
             });
+
             expect(denied.status).toBe(409);
             expect(
                 TextAiErrorResponseSchema.parse(await denied.json()),
             ).toMatchObject({ error: { code: 'model_unavailable' } });
+
             const retained = await request('/users/me/ai-model-preference', {
                 token: learner.token,
             });
+
             expect(
                 TextAiPreferenceResponseSchema.parse(await retained.json()),
             ).toMatchObject({
@@ -353,6 +373,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 version: 2,
                 maxCreditsPerAction: '20.125',
             });
+
             const generatedFor = await dictionary(learner.token);
             const replayKey = randomUUID();
             const selected = await enqueue(
@@ -360,6 +381,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 generatedFor,
                 replayKey,
             );
+
             expect(selected.status).toBe(202);
             const selectedBody = (await selected.json()) as {
                 job: { id: string };
@@ -369,10 +391,12 @@ run('real composed text-AI preference HTTP journey', () => {
                 generatedFor,
                 replayKey,
             );
+
             expect(replay.status).toBe(202);
             expect((await replay.json()) as { job: { id: string } }).toEqual(
                 selectedBody,
             );
+
             const [kieJob] = await authentication.productDependencies.database
                 .select({
                     id: dictionaryGenerationJobsTable.id,
@@ -385,11 +409,13 @@ run('real composed text-AI preference HTTP journey', () => {
                 .where(
                     eq(dictionaryGenerationJobsTable.id, selectedBody.job.id),
                 );
+
             expect(kieJob).toMatchObject({
                 id: selectedBody.job.id,
                 selectedExecutionSnapshot: { modelId: 'deepseek-flash' },
                 selectedExecutionVersion: 1,
             });
+
             expect(kieJob?.id).toBe(selectedBody.job.id);
 
             const auto = await request('/users/me/ai-model-preference', {
@@ -401,6 +427,7 @@ run('real composed text-AI preference HTTP journey', () => {
                     maxCreditsPerAction: '30.125',
                 },
             });
+
             expect(auto.status).toBe(200);
             expect(
                 TextAiPreferenceResponseSchema.parse(await auto.json()),
@@ -427,6 +454,7 @@ run('real composed text-AI preference HTTP journey', () => {
                 supportedFormats: [dictionaryGenerationFormat],
                 workerId: 'old-worker-without-selection-capability',
             });
+
             expect(incompatibleClaim).toBeNull();
             const claim = await generationStore.claim({
                 context: {
@@ -442,15 +470,18 @@ run('real composed text-AI preference HTTP journey', () => {
                 textAiSelectionRevision: 1,
                 workerId: 'selection-capable-journey-worker',
             });
+
             expect(claim).toMatchObject({
                 id: selectedBody.job.id,
                 providerExecution: { modelId: 'deepseek-flash' },
             });
+
             const defaulted = await enqueue(
                 learner.token,
                 generatedFor,
                 randomUUID(),
             );
+
             expect(defaulted.status).toBe(202);
             const defaultedBody = (await defaulted.json()) as {
                 job: { id: string };
@@ -470,6 +501,7 @@ run('real composed text-AI preference HTTP journey', () => {
                             defaultedBody.job.id,
                         ),
                     );
+
             expect(deepSeekJob).toMatchObject({
                 executionRevisionId: routing.id,
                 selectedExecutionSnapshot: { modelId: 'deepseek-flash' },
@@ -480,21 +512,25 @@ run('real composed text-AI preference HTTP journey', () => {
                 generatedFor,
                 replayKey,
             );
+
             expect(replayAfterBudget.status).toBe(202);
             expect(await replayAfterBudget.json()).toEqual(selectedBody);
             const jobCount = await db
                 .select({ id: dictionaryGenerationJobsTable.id })
                 .from(dictionaryGenerationJobsTable);
+
             expect(jobCount).toHaveLength(2);
             await authentication.productDependencies.database
                 .update(usersTable)
                 .set({ status: 'disabled' })
                 .where(eq(usersTable.id, learner.userId));
+
             const inactive = await request('/users/me/ai-model-preference', {
                 method: 'PUT',
                 token: learner.token,
                 body: { expectedVersion: 3, mode: 'auto' },
             });
+
             expect(inactive.status).toBe(401);
             expect(
                 TextAiErrorResponseSchema.parse(await inactive.json()),
@@ -505,6 +541,9 @@ run('real composed text-AI preference HTTP journey', () => {
 });
 
 function restoreEnvironment(name: string, value: string | undefined) {
-    if (value === undefined) delete process.env[name];
-    else process.env[name] = value;
+    if (value === undefined) {
+        delete process.env[name];
+    } else {
+        process.env[name] = value;
+    }
 }

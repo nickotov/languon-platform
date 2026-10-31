@@ -42,7 +42,10 @@ export async function sentenceLibraryMutateInternal(
 ) {
     return persistence.database.transaction(async (tx) => {
         // Capacity precedes administration/user/dictionary locks, matching admission.
-        if (input.operation === 'delete') await lockTextAiCapacity(tx);
+        if (input.operation === 'delete') {
+            await lockTextAiCapacity(tx);
+        }
+
         const scope = await sentenceLibraryAuthorize(
             persistence,
             tx,
@@ -71,8 +74,9 @@ export async function sentenceLibraryMutateInternal(
             );
 
         if (prior) {
-            if (prior.fingerprint !== digest)
+            if (prior.fingerprint !== digest) {
                 throw new SentenceConflictError('operation_conflict');
+            }
 
             return {
                 operationId: input.operationId,
@@ -81,19 +85,21 @@ export async function sentenceLibraryMutateInternal(
         }
 
         let chosen: SentenceLibrarySnapshotItem[];
-        if (input.selection.type === 'selected')
+        if (input.selection.type === 'selected') {
             chosen = input.selection.items.map((i) => ({
                 exerciseId: i.exerciseId,
                 version: i.expectedVersion,
                 creatorVersion: -1,
             }));
-        else {
+        } else {
             if (
                 !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
                     input.selection.snapshotToken,
                 )
-            )
+            ) {
                 throw new SentenceConflictError('stale_content');
+            }
+
             const [snapshot] = await tx
                 .select()
                 .from(snapshots)
@@ -108,8 +114,10 @@ export async function sentenceLibraryMutateInternal(
                 snapshot.operation !== input.operation ||
                 snapshot.scope !== (scope.admin ? 'admin' : 'personal') ||
                 snapshot.expiresAt <= context.now
-            )
+            ) {
                 throw new SentenceConflictError('stale_content');
+            }
+
             chosen = snapshot.items;
         }
 
@@ -142,16 +150,20 @@ export async function sentenceLibraryMutateInternal(
                                     (r.creatorVersion ?? 0))))
                 );
             })
-        )
+        ) {
             throw new SentenceConflictError('stale_content');
+        }
+
         if (input.operation === 'delete' && chosen.length) {
             const deletion = {
                 exerciseIds: chosen.map((i) => i.exerciseId),
                 now: context.now,
             };
 
-            if (await sentenceDeletionBusy(tx, deletion))
+            if (await sentenceDeletionBusy(tx, deletion)) {
                 throw new SentenceLibraryDeletionBusyError();
+            }
+
             await eraseSentenceDerivedContent(tx, deletion);
         } else {
             const isGlobal = input.operation.startsWith('global-');
@@ -168,7 +180,7 @@ export async function sentenceLibraryMutateInternal(
                     updatedAt: context.now,
                 }));
 
-                if (isGlobal)
+                if (isGlobal) {
                     await tx
                         .insert(global)
                         .values(values)
@@ -181,7 +193,7 @@ export async function sentenceLibraryMutateInternal(
                                 updatedAt: context.now,
                             },
                         });
-                else
+                } else {
                     await tx
                         .insert(personal)
                         .values(
@@ -199,6 +211,7 @@ export async function sentenceLibraryMutateInternal(
                                 updatedAt: context.now,
                             },
                         });
+                }
             }
         }
 
@@ -217,7 +230,7 @@ export async function sentenceLibraryMutateInternal(
             createdAt: context.now,
         });
 
-        if (scope.admin)
+        if (scope.admin) {
             await persistence.adminHooks!.onAdminMutation(
                 tx,
                 scope.admin,
@@ -225,6 +238,7 @@ export async function sentenceLibraryMutateInternal(
                 result,
                 context.now,
             );
+        }
 
         return result;
     });

@@ -27,6 +27,7 @@ test('custom-section membership cannot exceed the atomic stop-selected bound', (
             },
         ],
     };
+
     assert.doesNotThrow(() => serializeCustomSections(document));
     assert.equal(
         validateStopSelectedBody({
@@ -37,6 +38,7 @@ test('custom-section membership cannot exceed the atomic stop-selected bound', (
         }),
         true,
     );
+
     assert.throws(
         () =>
             serializeCustomSections({
@@ -59,6 +61,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         true,
     );
+
     assert.equal(
         validateBatchBody({
             extra: true,
@@ -66,6 +69,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         false,
     );
+
     assert.equal(
         validateStopBody({
             commandId: 'lint',
@@ -73,6 +77,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         true,
     );
+
     assert.equal(validateStopBody({ commandId: 'lint' }), false);
     assert.equal(
         validateStopSelectedBody({
@@ -85,6 +90,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         true,
     );
+
     assert.equal(validateStopSelectedBody({ runs: [] }), false);
     assert.equal(
         validateStopSelectedBody({
@@ -95,6 +101,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         true,
     );
+
     assert.equal(
         validateStopSelectedBody({
             runs: Array.from({ length: 65 }, () => ({
@@ -104,6 +111,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         false,
     );
+
     assert.equal(
         validateStopSelectedBody({
             runs: [
@@ -116,6 +124,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         false,
     );
+
     assert.equal(
         validateStopSelectedBody({
             runs: [
@@ -127,6 +136,7 @@ test('accepts only closed start, stop, and empty request objects', () => {
         }),
         false,
     );
+
     assert.equal(validateEmptyBody({}), true);
     assert.equal(validateEmptyBody({ inherited: false }), false);
 });

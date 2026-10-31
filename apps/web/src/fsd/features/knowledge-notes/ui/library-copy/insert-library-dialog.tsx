@@ -56,7 +56,10 @@ export function InsertDialog({
         setError(false);
         setCursor(null);
         setBusy(false);
-        if (!item || kind !== 'dictionary') return;
+        if (!item || kind !== 'dictionary') {
+            return;
+        }
+
         setBusy(true);
         void Promise.all([
             context.requestWithSession((token) =>
@@ -72,29 +75,41 @@ export function InsertDialog({
             ),
         ])
             .then(([owner, result]) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 if (
                     owner.dictionary.version !== result.dictionaryVersion ||
                     owner.dictionary.settings.version !== result.settingsVersion
-                )
+                ) {
                     throw new Error('Dictionary changed.');
+                }
+
                 setDictionary(owner.dictionary);
                 setCards(result.data);
                 setCursor(result.nextCursor);
             })
             .catch(() => {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             })
             .finally(() => {
-                if (!controller.signal.aborted) setBusy(false);
+                if (!controller.signal.aborted) {
+                    setBusy(false);
+                }
             });
+
         return () => controller.abort();
     }, [item, kind, context.requestWithSession]);
+
     function chooseKind(event: ChangeEvent<HTMLSelectElement>) {
         setKind(event.target.value as 'dictionary' | 'text');
         setItem(null);
         setPreview(null);
     }
+
     function select(event: ChangeEvent<HTMLInputElement>) {
         const id = event.target.value;
         const checked = event.target.checked;
@@ -105,8 +120,12 @@ export function InsertDialog({
                 : current.filter((value) => value !== id),
         );
     }
+
     async function more() {
-        if (!item || !cursor || !dictionary || busy) return;
+        if (!item || !cursor || !dictionary || busy) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         const epoch = generation.current;
@@ -114,12 +133,18 @@ export function InsertDialog({
             const result = await context.requestWithSession((token) =>
                 dictionaryApi.listCards(token, item.id, { limit: 100, cursor }),
             );
+
             if (
                 result.dictionaryVersion !== dictionary.version ||
                 result.settingsVersion !== dictionary.settingsVersion
-            )
+            ) {
                 throw new Error('Dictionary changed.');
-            if (epoch !== generation.current) return;
+            }
+
+            if (epoch !== generation.current) {
+                return;
+            }
+
             setCards((current) => [...current, ...result.data]);
             setCursor(result.nextCursor);
         } catch {
@@ -129,14 +154,21 @@ export function InsertDialog({
             setBusy(false);
         }
     }
+
     async function prepare() {
-        if (!item || busy || disabled) return;
+        if (!item || busy || disabled) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         const epoch = generation.current;
         try {
             if (kind === 'dictionary') {
-                if (!dictionary) throw new Error('Dictionary unavailable.');
+                if (!dictionary) {
+                    throw new Error('Dictionary unavailable.');
+                }
+
                 setPreview(
                     vocabularyLibraryBlock(
                         dictionary,
@@ -147,7 +179,11 @@ export function InsertDialog({
                 const result = await context.requestWithSession((token) =>
                     textsApi.getText(token, item.id),
                 );
-                if (epoch !== generation.current) return;
+
+                if (epoch !== generation.current) {
+                    return;
+                }
+
                 setPreview(textLibraryBlock(result.text));
             }
         } catch {
@@ -157,11 +193,17 @@ export function InsertDialog({
             setBusy(false);
         }
     }
+
     function insert() {
-        if (preview && !disabled && onInsert(preview)) onClose();
-        else setError(true);
+        if (preview && !disabled && onInsert(preview)) {
+            onClose();
+        } else {
+            setError(true);
+        }
     }
+
     const hasMore = cursor !== null;
+
     return (
         <Dialog
             open

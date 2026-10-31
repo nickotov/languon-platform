@@ -50,6 +50,7 @@ it('requires authenticated, strict reference-only copy requests and returns a de
     };
     const json = { 'Content-Type': 'application/json' },
         headers = { ...json, Authorization: 'Bearer a.b.c' };
+
     expect(
         (
             await app.request(url, {
@@ -59,6 +60,7 @@ it('requires authenticated, strict reference-only copy requests and returns a de
             })
         ).status,
     ).toBe(401);
+
     expect(
         (
             await app.request(url, {
@@ -68,18 +70,21 @@ it('requires authenticated, strict reference-only copy requests and returns a de
             })
         ).status,
     ).toBe(400);
+
     expect(copy).not.toHaveBeenCalled();
     const preview = await app.request(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(input),
     });
+
     expect(preview.status).toBe(200);
     expect(await preview.json()).toMatchObject({
         branch: null,
         dependencyCount: 1,
         mediaCount: 1,
     });
+
     expect(copy).toHaveBeenCalledTimes(1);
     expect(
         (
@@ -90,5 +95,6 @@ it('requires authenticated, strict reference-only copy requests and returns a de
             })
         ).status,
     ).toBe(403);
+
     expect(copy).toHaveBeenCalledTimes(1);
 });

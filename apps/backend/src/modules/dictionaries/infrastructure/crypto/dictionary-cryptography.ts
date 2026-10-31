@@ -8,13 +8,18 @@ export interface DictionaryEntropySource {
 }
 
 function canonicalJson(value: unknown): string {
-    if (value === undefined) return 'null';
+    if (value === undefined) {
+        return 'null';
+    }
+
     if (value === null || typeof value !== 'object') {
         return JSON.stringify(value);
     }
+
     if (Array.isArray(value)) {
         return `[${value.map(canonicalJson).join(',')}]`;
     }
+
     return `{${Object.entries(value as Record<string, unknown>)
         .filter(([, item]) => item !== undefined)
         .sort(([left], [right]) => left.localeCompare(right))
@@ -34,6 +39,7 @@ export class HmacDictionaryCryptography implements DictionaryCryptography {
             typeof input.secret === 'string'
                 ? Buffer.from(input.secret, 'utf8')
                 : input.secret;
+
         if (this.secret.byteLength < 32) {
             throw new Error(
                 'Dictionary HMAC secret must contain at least 32 bytes.',
@@ -54,6 +60,7 @@ export class HmacDictionaryCryptography implements DictionaryCryptography {
         const key = Buffer.from(this.entropy.randomBytes(32)).toString(
             'base64url',
         );
+
         return {
             digest: this.shareDigest(key, version),
             key,
@@ -79,6 +86,7 @@ export class HmacDictionaryCryptography implements DictionaryCryptography {
                 ? storedDigest!
                 : 'hmac-sha256:v1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         );
+
         return (
             actual.byteLength === expected.byteLength &&
             timingSafeEqual(actual, expected)
@@ -89,9 +97,11 @@ export class HmacDictionaryCryptography implements DictionaryCryptography {
         if (!Number.isSafeInteger(version) || version < 1) {
             throw new RangeError('Dictionary digest version must be positive.');
         }
+
         const digest = createHmac('sha256', this.secret)
             .update(value, 'utf8')
             .digest('base64url');
+
         return `hmac-sha256:v${version}:${digest}`;
     }
 }

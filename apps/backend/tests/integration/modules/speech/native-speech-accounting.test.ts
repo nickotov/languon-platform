@@ -67,6 +67,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic native speech operator limits',
             });
+
             const nativeRules: ProviderNativePricingRules = {
                 version: 1,
                 validFrom: '2020-01-01T00:00:00Z',
@@ -93,6 +94,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             };
+
             await new DrizzleProviderPriceStore(db).publish(
                 {
                     providerId: 'kie',
@@ -115,6 +117,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 new Date(),
             );
         }, 120_000);
+
         afterAll(async () => {
             await client?.end();
         });
@@ -131,6 +134,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .insert(usersTable)
                 .values({ id: actorId, status: 'active' });
+
             const text = input.paid
                 ? `Bonjour aux amis qui souhaitent apprendre une nouvelle langue avec une belle prononciation et une pratique quotidienne. ${actorId}`
                 : `bonjour ${actorId}`;
@@ -218,10 +222,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         expect(body.model).toBe(KIE_GEMINI_MODEL);
                         expect(body.input.dialogue_turns).toHaveLength(1);
                         expect(body.input.dialogue_turns[0].text).toBe(text);
+
                         return Response.json({ code: 200, data: { taskId } });
                     }
+
                     expect(parsed.pathname).toBe('/api/v1/jobs/recordInfo');
                     expect(parsed.searchParams.get('taskId')).toBe(taskId);
+
                     return Response.json({
                         code: 200,
                         data: {
@@ -298,6 +305,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .from(jobs)
                         .where(eq(jobs.payerId, actorId))
                 )[0]!;
+
             async function admit() {
                 if (input.paid) {
                     if (!tariffSeeded) {
@@ -318,8 +326,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 provisional: false,
                             },
                         });
+
                         tariffSeeded = true;
                     }
+
                     await db.transaction((tx) =>
                         new DrizzleAiCreditTransactionParticipant(
                             tx,
@@ -333,25 +343,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         }),
                     );
                 }
+
                 const prepared = await speech.service.prepare(actorId, {
                     source,
                     operationId: randomUUID(),
                 });
-                if (!input.paid) return prepared;
+
+                if (!input.paid) {
+                    return prepared;
+                }
+
                 expect(prepared.state).toBe('confirmation_required');
+
                 return speech.service.confirm(actorId, {
                     quoteId: prepared.quote!.id,
                     operationId: randomUUID(),
                 });
             }
+
             async function poll() {
                 const row = await job();
                 await db
                     .update(jobs)
                     .set({ nextPollAt: new Date(Date.now() - 1000) })
                     .where(eq(jobs.id, row.id));
+
                 return speech.worker.runOnce();
             }
+
             const expense = async () =>
                 (
                     await db
@@ -364,6 +383,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             ),
                         )
                 )[0]!;
+
             return {
                 actorId,
                 text,
@@ -386,11 +406,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 await db.select().from(modelPriceRevisionsTable),
             ).toHaveLength(0);
+
             expect((await f.job()).providerPriceSnapshot).toMatchObject({
                 meter: 'speech-tokens',
                 usdPer1000Characters: null,
                 nativeRules: { version: 1 },
             });
+
             await f.speech.worker.runOnce();
             await f.poll();
             expect((await f.job()).state).toBe('ready');
@@ -399,14 +421,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 measurement: 'measured',
                 costSource: 'calculated',
             });
+
             expect(await f.wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             expect(
                 await f.speech.service.status(f.actorId, admitted.requestId!),
             ).toMatchObject({ state: 'ready', fixture: false });
         });
+
         it('settles Paid native speech once while customer charges remain character-based', async () => {
             const f = await fixture({ paid: true });
             const admitted = await f.admit();
@@ -418,10 +443,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 consumedCredits: BigInt(Array.from(f.text).length),
                 reservedCredits: 0n,
             });
+
             expect(await f.expense()).toMatchObject({
                 amountUsdMicros: 6150n,
                 measurement: 'measured',
             });
+
             expect(
                 await db
                     .select()
@@ -434,6 +461,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
             ).toHaveLength(1);
         });
+
         it('retains unknown native expense when the provider omits its billable usage', async () => {
             const f = await fixture({ credits: null });
             await f.admit();
@@ -445,6 +473,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 measurement: 'unknown',
                 costSource: 'unknown',
             });
+
             const budget = (
                 await db
                     .select()
@@ -456,8 +485,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ),
                     )
             )[0]!;
+
             expect(budget.consumedMicros).toBe(budget.reservedMicros);
         });
+
         it('retains billed provider metadata across a CDN failure before valid audio arrives', async () => {
             const f = await fixture();
             await f.admit();
@@ -465,11 +496,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             f.download.mockRejectedValueOnce(
                 new Error('Synthetic CDN failure'),
             );
+
             await f.poll();
             expect((await f.job()).state).toBe('processing');
             expect((await f.job()).providerUsage).toMatchObject({
                 providerCreditsConsumed: '1.23',
             });
+
             await f.poll();
             expect((await f.job()).state).toBe('ready');
             expect(await f.expense()).toMatchObject({ amountUsdMicros: 6150n });
@@ -479,6 +512,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toHaveLength(1);
         });
+
         it('keeps the first expense and usage through a storage failure without resubmission', async () => {
             const f = await fixture({ paid: true });
             await f.admit();
@@ -487,12 +521,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             put.mockRejectedValueOnce(
                 new Error('Synthetic storage interruption'),
             );
+
             await f.poll();
             const stored = await f.job();
             expect(stored.state).toBe('storing');
             expect(stored.providerUsage).toMatchObject({
                 providerCreditsConsumed: '1.23',
             });
+
             await f.poll();
             expect((await f.job()).state).toBe('ready');
             expect((await f.job()).providerUsage).toEqual(stored.providerUsage);
@@ -501,6 +537,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     String(url).endsWith('/createTask'),
                 ),
             ).toHaveLength(1);
+
             expect(await f.expense()).toMatchObject({ amountUsdMicros: 6150n });
             expect(
                 await db
@@ -509,6 +546,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(aiOperatorAttemptCostsTable.actionId, stored.id)),
             ).toHaveLength(1);
         });
+
         it('releases Paid customer funds on provider failure while preserving reported provider expense', async () => {
             const f = await fixture({ paid: true, failed: true, credits: 0.5 });
             await f.admit();
@@ -519,16 +557,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             expect(await f.expense()).toMatchObject({
                 amountUsdMicros: 2500n,
                 measurement: 'measured',
             });
         });
+
         it('rejects unverified broker task bounds and immutable usage tampering', async () => {
             const blocked = await fixture({ verifiedBound: false });
             await expect(blocked.admit()).rejects.toMatchObject({
                 code: 'speech_provider_unavailable',
             });
+
             expect(blocked.http).not.toHaveBeenCalled();
             const f = await fixture();
             await f.admit();
@@ -545,8 +586,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                     .where(eq(jobs.id, (await f.job()).id)),
             ).rejects.toThrow();
+
             expect(await f.expense()).toMatchObject({ amountUsdMicros: 6150n });
         });
+
         it('requires the real worker lease and pinned monetary evidence even with forged session flags', async () => {
             const f = await fixture();
             await f.admit();
@@ -555,6 +598,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(jobs)
                 .set({ nextPollAt: new Date(0) })
                 .where(eq(jobs.id, (await f.job()).id));
+
             const claim = await f.speech.store.claim(new Date());
             expect(claim).not.toBeNull();
             const role = `native_speech_${randomUUID().replaceAll('-', '')}`;
@@ -563,6 +607,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client.unsafe(
                 `grant update(provider_usage,provider_execution_facts) on speech_jobs to ${role}`,
             );
+
             let restricted: PostgresClient | undefined;
             try {
                 const script = await readFile(
@@ -572,6 +617,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                     'utf8',
                 );
+
                 await client.unsafe(
                     script
                         .split('\n')
@@ -579,33 +625,40 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"dictionary_worker_role"', role),
                 );
+
                 const url = new URL(getTestDatabaseUrl());
                 url.searchParams.set('options', `-c role=${role}`);
                 restricted = createPostgresClient({
                     databaseUrl: url.toString(),
                     maxConnections: 1,
                 });
+
                 await restricted`select set_config('languon.speech_worker_version','1',false)`;
                 await expect(
                     restricted`update speech_jobs set provider_usage='{"requests":1,"providerCostUsd":"0"}'::jsonb where id=${claim!.id}::uuid`,
                 ).rejects.toThrow('permission denied');
+
                 const usage = JSON.stringify({
                     requests: 1,
                     characters: Array.from(f.text).length,
                     providerCreditsConsumed: '1.23',
                 });
+
                 for (const lease of [null, randomUUID()]) {
                     await expect(
                         restricted`select languon_retain_speech_provider_observation(${claim!.id}::uuid,${lease}::uuid,${restricted.json(JSON.parse(usage))}::jsonb,null)`,
                     ).rejects.toThrow('expected live dispatch lease');
                 }
+
                 const foreign = JSON.stringify({
                     requests: 1,
                     providerCostUsd: '0',
                 });
+
                 await expect(
                     restricted`select languon_retain_speech_provider_observation(${claim!.id}::uuid,${claim!.leaseToken}::uuid,${restricted.json(JSON.parse(foreign))}::jsonb,null)`,
                 ).rejects.toThrow('pinned provider contract');
+
                 expect((await f.job()).providerUsage).toBeNull();
                 await restricted`select languon_retain_speech_provider_observation(${claim!.id}::uuid,${claim!.leaseToken}::uuid,${restricted.json(JSON.parse(usage))}::jsonb,null)`;
                 // Identical replay is accepted, but an expired lease never is.
@@ -614,6 +667,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await expect(
                     restricted`select languon_retain_speech_provider_observation(${claim!.id}::uuid,${claim!.leaseToken}::uuid,${restricted.json(JSON.parse(usage))}::jsonb,null)`,
                 ).rejects.toThrow('expected live dispatch lease');
+
                 await restricted`update speech_jobs set lease_expires_at=clock_timestamp()+interval '1 minute' where id=${claim!.id}::uuid`;
                 await f.speech.store.pending(claim!, 0, new Date());
                 await f.poll();
@@ -626,6 +680,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client.unsafe(`drop role ${role}`);
             }
         });
+
         it('records an unexpected native overrun in full, refunds the learner and denies further daily spend', async () => {
             await db.insert(aiAccountingSettingsRevisionsTable).values({
                 id: randomUUID(),
@@ -637,6 +692,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic tight daily limit for provider overrun evidence',
             });
+
             const f = await fixture({ paid: true, failed: true, credits: 100 });
             await f.admit();
             await f.speech.worker.runOnce();
@@ -646,25 +702,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(row.providerUsage).toMatchObject({
                 providerCreditsConsumed: '100',
             });
+
             expect(await f.expense()).toMatchObject({
                 amountUsdMicros: 500000n,
                 measurement: 'measured',
             });
+
             const [attempt] = await db
                 .select()
                 .from(aiOperatorAttemptCostsTable)
                 .where(eq(aiOperatorAttemptCostsTable.actionId, row.id));
+
             expect(attempt).toMatchObject({
                 reservedMicros: 71680n,
                 consumedMicros: 500000n,
             });
+
             expect(await f.wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             await expect(f.admit()).rejects.toMatchObject({
                 code: 'speech_provider_budget',
             });
+
             expect(
                 f.http.mock.calls.filter(([url]) =>
                     String(url).endsWith('/createTask'),

@@ -6,6 +6,7 @@ import { learningApi } from '@/fsd/features/workbook-learning/api/learning-api';
 vi.mock('@/fsd/features/workbook-learning/api/learning-api', () => ({
     learningApi: { workbookProgress: vi.fn() },
 }));
+
 const workbookId = '11111111-1111-4111-8111-111111111111';
 const props = {
     workbookId,
@@ -15,18 +16,22 @@ const props = {
     requestWithSession: <T,>(operation: (token: string) => Promise<T>) =>
         operation('session'),
 };
+
 beforeEach(() => vi.clearAllMocks());
 function mount(actorId: string | undefined) {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     render(
         <QueryClientProvider client={client}>
             <WorkbookProgress {...props} actorId={actorId} />
         </QueryClientProvider>,
     );
+
     return client;
 }
+
 it('shows explicit completed notes and updated completions separately, then hides stale progress on lost access', async () => {
     vi.mocked(learningApi.workbookProgress).mockResolvedValue({
         workbookId,
@@ -35,22 +40,26 @@ it('shows explicit completed notes and updated completions separately, then hide
         completedNotes: 2,
         updatedSinceCompletion: 1,
     });
+
     const client = mount(props.actorId);
     expect(await screen.findByText('Completed notes: 2 / 3')).toBeVisible();
     expect(screen.getByText('Updated since completion: 1')).toBeVisible();
     vi.mocked(learningApi.workbookProgress).mockRejectedValue(
         new Error('revoked'),
     );
+
     await client.invalidateQueries({ queryKey: ['workbook-progress'] });
     await waitFor(() =>
         expect(screen.getByRole('alert')).toHaveTextContent(
             'Could not load progress.',
         ),
     );
+
     expect(
         screen.queryByText('Completed notes: 2 / 3'),
     ).not.toBeInTheDocument();
 });
+
 it('does not request private workbook progress for anonymous readers', () => {
     mount(undefined);
     expect(learningApi.workbookProgress).not.toHaveBeenCalled();

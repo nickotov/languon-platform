@@ -29,7 +29,10 @@ export function reviewedRouteOptions(
 export function routingInitialValues(
     revision: TextAiRoutingRevision | null,
 ): Partial<TextAiRoutingConfiguration> & { reason: string } {
-    if (revision) return { ...revision.configuration, reason: '' };
+    if (revision) {
+        return { ...revision.configuration, reason: '' };
+    }
+
     return {
         enabledRouteIds: [],
         default: { primaryRouteId: '', fallbackRouteIds: [] },
@@ -40,7 +43,10 @@ export function routingInitialValues(
 }
 
 export function probeEvidenceAge(expiresAt: string | null, now = Date.now()) {
-    if (!expiresAt) return 'none';
+    if (!expiresAt) {
+        return 'none';
+    }
+
     return new Date(expiresAt).getTime() > now ? 'fresh' : 'stale';
 }
 
@@ -50,10 +56,18 @@ export function latestRouteProbe(
     selection?: { kind: TextAiProbe['kind']; flowId?: string | undefined },
 ) {
     return probes.reduce<TextAiProbe | undefined>((latest, probe) => {
-        if (probe.routeId !== routeId) return latest;
-        if (selection && probe.kind !== selection.kind) return latest;
-        if (selection?.kind === 'flow' && probe.flowId !== selection.flowId)
+        if (probe.routeId !== routeId) {
             return latest;
+        }
+
+        if (selection && probe.kind !== selection.kind) {
+            return latest;
+        }
+
+        if (selection?.kind === 'flow' && probe.flowId !== selection.flowId) {
+            return latest;
+        }
+
         return !latest ||
             Date.parse(probe.startedAt) > Date.parse(latest.startedAt)
             ? probe

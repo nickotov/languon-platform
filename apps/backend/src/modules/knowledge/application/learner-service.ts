@@ -19,6 +19,7 @@ export class LearnerService {
             rateLimiter: RateLimiter;
         },
     ) {}
+
     private async actor(token: string, context: KnowledgeRequestContext) {
         context.signal.throwIfAborted();
         const ip = await this.dependencies.rateLimiter.consume({
@@ -28,11 +29,14 @@ export class LearnerService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!ip.allowed)
+
+        if (!ip.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',
             );
+        }
+
         const principal = await this.dependencies.authenticate(token);
         const user = await this.dependencies.rateLimiter.consume({
             scope: 'workbook-learning-actor',
@@ -41,22 +45,29 @@ export class LearnerService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!user.allowed)
+
+        if (!user.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',
             );
+        }
+
         context.signal.throwIfAborted();
+
         return principal.userId;
     }
+
     private id(noteId: string) {
         return KnowledgeNoteIdParamsSchema.parse({ noteId }).noteId;
     }
+
     private access(access: unknown) {
         return access === undefined
             ? undefined
             : WorkbookLearningShareAccessSchema.parse(access);
     }
+
     async workbookProgress(
         token: string,
         context: KnowledgeRequestContext,
@@ -69,6 +80,7 @@ export class LearnerService {
             this.access(access),
         );
     }
+
     async read(
         token: string,
         context: KnowledgeRequestContext,
@@ -81,6 +93,7 @@ export class LearnerService {
             this.access(access),
         );
     }
+
     async attempt(
         token: string,
         context: KnowledgeRequestContext,
@@ -95,6 +108,7 @@ export class LearnerService {
             this.access(access),
         );
     }
+
     async event(
         token: string,
         context: KnowledgeRequestContext,
@@ -109,6 +123,7 @@ export class LearnerService {
             this.access(access),
         );
     }
+
     async complete(
         token: string,
         context: KnowledgeRequestContext,

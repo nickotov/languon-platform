@@ -22,6 +22,7 @@ export async function copyKnowledgeBlocks(
         noteId: destinationNoteId,
     }).noteId;
     const body = c.CopyKnowledgeBlocksRequestSchema.parse(input);
+
     return context.requestWithSession(async (token) => {
         const response = await fetch(
             `${resolveApiUrl(process.env.NODE_ENV, process.env.NEXT_PUBLIC_API_URL)}/knowledge/notes/${encodeURIComponent(noteId)}/blocks/copy`,
@@ -41,6 +42,7 @@ export async function copyKnowledgeBlocks(
         const payload: unknown = await response.json();
         if (!response.ok) {
             const error = c.KnowledgeErrorResponseSchema.safeParse(payload);
+
             throw new KnowledgeApiError(
                 response.status,
                 error.success
@@ -52,6 +54,7 @@ export async function copyKnowledgeBlocks(
                       },
             );
         }
+
         return c.CopyKnowledgeBlocksResponseSchema.parse(payload);
     });
 }

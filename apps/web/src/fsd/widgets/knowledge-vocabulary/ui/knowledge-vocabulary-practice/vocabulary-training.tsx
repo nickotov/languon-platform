@@ -55,6 +55,7 @@ export function VocabularyTraining({
         fr: 'Pratique des phrases',
         ru: 'Практика предложений',
     }[locale];
+
     function start(
         configuration: Configuration,
         fullscreen?: Promise<boolean>,
@@ -64,15 +65,18 @@ export function VocabularyTraining({
         setRunning(true);
         void session.start(configuration);
     }
+
     function close() {
         setRunning(false);
         session.reset();
         setup.invalidate();
     }
+
     function openHistory() {
         setHistoryOpen(true);
         history.invalidate();
     }
+
     return (
         <>
             <FlashcardPracticeLauncher
@@ -90,8 +94,11 @@ export function VocabularyTraining({
                             (!capability.isError &&
                                 !capability.data?.sentencesEnabled),
                         onSelect: () => {
-                            if (capability.isError) void capability.refetch();
-                            else setSetupOpen(true);
+                            if (capability.isError) {
+                                void capability.refetch();
+                            } else {
+                                setSetupOpen(true);
+                            }
                         },
                     },
                     {

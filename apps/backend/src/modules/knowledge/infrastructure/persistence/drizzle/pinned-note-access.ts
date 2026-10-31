@@ -31,7 +31,10 @@ export async function pinKnowledgeNoteSource(
     const note = await readLearnerNote(tx, crypto, actorId, noteId, access);
     let grant: KnowledgeLearningSourceBinding['grant'] = null;
     if (note.ownerId !== actorId || access?.kind === 'workbook') {
-        if (!access) throw knowledgeUnavailable();
+        if (!access) {
+            throw knowledgeUnavailable();
+        }
+
         if (access.kind === 'workbook') {
             const [share] = await tx
                 .select()
@@ -39,8 +42,10 @@ export async function pinKnowledgeNoteSource(
                 .where(eq(knowledgeWorkbookSharesTable.locator, access.locator))
                 .for('share');
 
-            if (!share || !crypto.verify(access.key, share.keyDigest))
+            if (!share || !crypto.verify(access.key, share.keyDigest)) {
                 throw knowledgeUnavailable();
+            }
+
             grant = {
                 kind: 'workbook',
                 locator: share.locator,
@@ -60,8 +65,10 @@ export async function pinKnowledgeNoteSource(
                 )
                 .for('share');
 
-            if (!share || !crypto.verify(access.key, share.keyDigest))
+            if (!share || !crypto.verify(access.key, share.keyDigest)) {
                 throw knowledgeUnavailable();
+            }
+
             grant = {
                 kind: 'note',
                 locator: share.locator,
@@ -91,7 +98,10 @@ export async function readPinnedKnowledgeNoteSource(
         )
         .for('share');
 
-    if (!actor) throw knowledgeUnavailable();
+    if (!actor) {
+        throw knowledgeUnavailable();
+    }
+
     if (binding.grant?.kind === 'workbook') {
         const [workbook] = await tx
             .select()
@@ -105,7 +115,10 @@ export async function readPinnedKnowledgeNoteSource(
             )
             .for('share');
 
-        if (!workbook) throw knowledgeUnavailable();
+        if (!workbook) {
+            throw knowledgeUnavailable();
+        }
+
         const [share] = await tx
             .select()
             .from(knowledgeWorkbookSharesTable)
@@ -133,7 +146,9 @@ export async function readPinnedKnowledgeNoteSource(
                 ),
             );
 
-        if (!share || !member) throw knowledgeUnavailable();
+        if (!share || !member) {
+            throw knowledgeUnavailable();
+        }
     }
 
     const [note] = await tx
@@ -148,7 +163,10 @@ export async function readPinnedKnowledgeNoteSource(
         )
         .for('share');
 
-    if (!note) throw knowledgeUnavailable();
+    if (!note) {
+        throw knowledgeUnavailable();
+    }
+
     const [owner] = await tx
         .select({ id: usersTable.id })
         .from(usersTable)
@@ -159,7 +177,10 @@ export async function readPinnedKnowledgeNoteSource(
             ),
         );
 
-    if (!owner) throw knowledgeUnavailable();
+    if (!owner) {
+        throw knowledgeUnavailable();
+    }
+
     if (binding.grant?.kind === 'note') {
         const [share] = await tx
             .select()
@@ -174,9 +195,12 @@ export async function readPinnedKnowledgeNoteSource(
             )
             .for('share');
 
-        if (!share) throw knowledgeUnavailable();
-    } else if (!binding.grant && binding.actorId !== note.ownerId)
+        if (!share) {
+            throw knowledgeUnavailable();
+        }
+    } else if (!binding.grant && binding.actorId !== note.ownerId) {
         throw knowledgeUnavailable();
+    }
 
     return { note };
 }

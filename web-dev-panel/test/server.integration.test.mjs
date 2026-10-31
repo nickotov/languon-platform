@@ -12,6 +12,7 @@ const revision = `sha256:${'a'.repeat(64)}`;
 
 function rawRequest(origin, { headers = {}, method = 'GET', path = '/' } = {}) {
     const url = new URL(origin);
+
     return new Promise((resolveRequest, rejectRequest) => {
         const request = httpRequest(
             {
@@ -26,6 +27,7 @@ function rawRequest(origin, { headers = {}, method = 'GET', path = '/' } = {}) {
                 response.once('end', () => resolveRequest(response.statusCode));
             },
         );
+
         request.once('error', rejectRequest);
         request.end();
     });
@@ -38,9 +40,13 @@ async function waitForStatus(origin, cookie, commandId, expected) {
         });
         const snapshot = await response.json();
         const command = snapshot.commands.find(({ id }) => id === commandId);
-        if (command.run?.status === expected) return command;
+        if (command.run?.status === expected) {
+            return command;
+        }
+
         await new Promise((resolveWait) => setTimeout(resolveWait, 20));
     }
+
     throw new Error(`${commandId} did not reach ${expected}`);
 }
 
@@ -66,33 +72,40 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             `${origin}/custom-sections.js`,
             { headers: { Cookie: cookie } },
         );
+
         assert.equal(customSectionsModule.status, 200);
         assert.match(
             customSectionsModule.headers.get('content-type'),
             /^text\/javascript/u,
         );
+
         assert.equal(
             bootstrap.headers.get('access-control-allow-origin'),
             null,
         );
+
         assert.match(
             bootstrap.headers.get('content-security-policy'),
             /default-src 'none'/u,
         );
+
         const withoutSession = await fetch(`${origin}/api/snapshot`);
         assert.equal(withoutSession.status, 401);
         const wrongHost = await rawRequest(origin, {
             headers: { Cookie: cookie, Host: 'localhost:4411' },
             path: '/api/snapshot',
         });
+
         assert.equal(wrongHost, 421);
         const query = await fetch(`${origin}/api/snapshot?unexpected=true`, {
             headers: { Cookie: cookie },
         });
+
         assert.equal(query.status, 400);
         const missingEventMetadata = await fetch(`${origin}/api/events`, {
             headers: { Cookie: cookie },
         });
+
         assert.equal(missingEventMetadata.status, 401);
 
         const controlHeaders = {
@@ -106,40 +119,47 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             headers: { ...controlHeaders, 'Content-Type': 'text/plain' },
             method: 'POST',
         });
+
         assert.equal(wrongContentType.status, 415);
         const malformed = await fetch(`${origin}/api/start`, {
             body: '{',
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(malformed.status, 400);
         const oversized = await fetch(`${origin}/api/start`, {
             body: JSON.stringify({ value: 'x'.repeat(33_000) }),
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(oversized.status, 413);
         const unknownField = await fetch(`${origin}/api/start`, {
             body: JSON.stringify({ selections: [], unexpected: true }),
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(unknownField.status, 400);
         const emptyStopSelected = await fetch(`${origin}/api/stop-selected`, {
             body: JSON.stringify({ runs: [] }),
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(emptyStopSelected.status, 400);
         const openStopSelected = await fetch(`${origin}/api/stop-selected`, {
             body: JSON.stringify({ runs: [], unexpected: true }),
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(openStopSelected.status, 400);
         const options = await fetch(`${origin}/api/start`, {
             method: 'OPTIONS',
         });
+
         assert.equal(options.status, 404);
         assert.equal(options.headers.get('access-control-allow-origin'), null);
 
@@ -160,6 +180,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             },
             method: 'POST',
         });
+
         assert.equal(forbidden.status, 403);
         const forbiddenStopSelected = await fetch(
             `${origin}/api/stop-selected`,
@@ -180,6 +201,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 method: 'POST',
             },
         );
+
         assert.equal(forbiddenStopSelected.status, 403);
 
         const post = (path, body) =>
@@ -199,6 +221,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 runId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
             })),
         });
+
         assert.ok(Buffer.byteLength(maximumStopBody) > 8 * 1024);
         assert.ok(Buffer.byteLength(maximumStopBody) <= 32 * 1024);
         const maximumStopRequest = await fetch(`${origin}/api/stop-selected`, {
@@ -206,6 +229,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(maximumStopRequest.status, 409);
 
         const maximumStartBody = JSON.stringify({
@@ -214,6 +238,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 sourceRevision: revision,
             })),
         });
+
         assert.ok(Buffer.byteLength(maximumStartBody) > 8 * 1024);
         assert.ok(Buffer.byteLength(maximumStartBody) <= 32 * 1024);
         const maximumStartRequest = await fetch(`${origin}/api/start`, {
@@ -221,6 +246,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             headers: controlHeaders,
             method: 'POST',
         });
+
         assert.equal(maximumStartRequest.status, 409);
 
         const selection = {
@@ -232,6 +258,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             post('/api/start', { selections: [selection] }),
             post('/api/start', { selections: [selection] }),
         ]);
+
         assert.deepEqual(starts.map(({ status }) => status).sort(), [202, 409]);
         const running = await waitForStatus(origin, cookie, 'alpha', 'running');
 
@@ -243,10 +270,12 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             },
             signal: controller.signal,
         });
+
         assert.equal(events.status, 200);
         const firstEvent = new TextDecoder().decode(
             (await events.body.getReader().read()).value,
         );
+
         assert.match(firstEvent, /event: snapshot/u);
         controller.abort();
 
@@ -254,11 +283,13 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
             commandId: 'alpha',
             runId: '00000000-0000-0000-0000-000000000000',
         });
+
         assert.equal(stale.status, 409);
         const stopped = await post('/api/stop', {
             commandId: 'alpha',
             runId: running.run.id,
         });
+
         assert.equal(stopped.status, 202);
         await waitForStatus(origin, cookie, 'alpha', 'cancelled');
 
@@ -271,6 +302,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
         const batchStart = await post('/api/start', {
             selections: [alphaSelection, betaSelection],
         });
+
         assert.equal(batchStart.status, 202);
         const batchRuns = (await batchStart.json()).runs;
 
@@ -288,16 +320,19 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 },
             ],
         });
+
         assert.equal(invalidStopSelected.status, 409);
         const invalidStopBody = await invalidStopSelected.json();
         assert.deepEqual(invalidStopBody.issues, [
             { commandId: 'beta', reason: 'run ID is stale' },
         ]);
+
         assert.equal(
             (await waitForStatus(origin, cookie, 'alpha', 'running')).run
                 .status,
             'running',
         );
+
         assert.equal(
             (await waitForStatus(origin, cookie, 'beta', 'running')).run.status,
             'running',
@@ -309,15 +344,18 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 runId: id,
             })),
         });
+
         assert.equal(stopSelected.status, 202);
         assert.equal(
             stopSelected.headers.get('access-control-allow-origin'),
             null,
         );
+
         assert.match(
             stopSelected.headers.get('content-security-policy'),
             /default-src 'none'/u,
         );
+
         assert.deepEqual(
             (await stopSelected.json()).runs.map(({ commandId, status }) => ({
                 commandId,
@@ -328,6 +366,7 @@ test('native HTTP boundary synchronizes races, SSE, logs, and safe stops', async
                 { commandId: 'beta', status: 'stopping' },
             ],
         );
+
         await Promise.all([
             waitForStatus(origin, cookie, 'alpha', 'cancelled'),
             waitForStatus(origin, cookie, 'beta', 'cancelled'),

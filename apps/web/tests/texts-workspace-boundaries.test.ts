@@ -18,11 +18,13 @@ const translation = [
     'Nous nous reposions sur la rive. ',
     'Des oiseaux chantaient.',
 ];
+
 function documentFor(
     sourceText = source,
     translationText = translation,
 ): TextDocument {
     let offset = 0;
+
     return {
         id,
         folderId: id,
@@ -39,6 +41,7 @@ function documentFor(
             source: sourceText.map((text, index) => {
                 const startOffset = offset;
                 offset += Array.from(text).length;
+
                 return {
                     pairId: ids[index]!,
                     text,
@@ -55,8 +58,10 @@ function documentFor(
         },
     };
 }
+
 const request = <T>(operation: (token: string) => Promise<T>) =>
     operation('test-token');
+
 async function savePairs(
     document: TextDocument,
     pairs = workspacePairs(document),
@@ -64,6 +69,7 @@ async function savePairs(
     const save = vi
         .spyOn(textsApi, 'saveText')
         .mockResolvedValue({ text: document });
+
     await persistWorkspace({
         request,
         folderId: id,
@@ -80,10 +86,15 @@ async function savePairs(
         reviewedVersion: null,
         onCreated: vi.fn(),
     });
+
     const body = save.mock.calls[0]![2];
-    if (body.kind !== 'edits') throw new Error('Expected paired edits');
+    if (body.kind !== 'edits') {
+        throw new Error('Expected paired edits');
+    }
+
     return body.pairs;
 }
+
 afterEach(() => vi.restoreAllMocks());
 describe('workspace sentence boundary preservation', () => {
     it('shows lexical content without paragraph and inter-sentence boundary whitespace in both editors', () => {
@@ -93,9 +104,11 @@ describe('workspace sentence boundary preservation', () => {
             source: 'The river flows quietly.',
             translation: 'La rivière coule doucement.',
         });
+
         expect(pairs[1]?.source).toBe('We rested on the bank.');
         expect(pairs[1]?.translation).toBe('Nous nous reposions sur la rive.');
     });
+
     it('restores paragraph boundaries in the edits request after replacing both first-pair textareas', async () => {
         const document = documentFor();
         const pairs = workspacePairs(document);
@@ -104,15 +117,19 @@ describe('workspace sentence boundary preservation', () => {
             source: 'The river flows slowly.',
             translation: 'La rivière coule lentement.',
         };
+
         const sent = await savePairs(document, pairs);
         expect(sent.map((pair) => pair.source).join('')).toBe(
             'The river flows slowly.\n\nWe rested on the bank. Birds sang nearby.',
         );
+
         expect(sent.map((pair) => pair.translation).join('')).toBe(
             'La rivière coule lentement.\n\nNous nous reposions sur la rive. Des oiseaux chantaient.',
         );
+
         expect(sent.map((pair) => pair.pairId)).toEqual(ids);
     });
+
     it('round-trips original leading/trailing whitespace exactly, including CRLF and nonbreaking spaces', async () => {
         const originalSource = [
             '\t  A  sentence.\r\n\r\n',
@@ -127,11 +144,13 @@ describe('workspace sentence boundary preservation', () => {
         const sent = await savePairs(
             documentFor(originalSource, originalTranslation),
         );
+
         expect(sent.map((pair) => pair.source)).toEqual(originalSource);
         expect(sent.map((pair) => pair.translation)).toEqual(
             originalTranslation,
         );
     });
+
     it('preserves internal spaces and user-entered whitespace while restoring the original boundaries', async () => {
         const document = documentFor();
         const pairs = workspacePairs(document);
@@ -140,10 +159,12 @@ describe('workspace sentence boundary preservation', () => {
             source: 'A  river\t flows.',
             translation: 'Une  rivière coule. ',
         };
+
         const sent = await savePairs(document, pairs);
         expect(sent[0]?.source).toBe('A  river\t flows.\n\n');
         expect(sent[0]?.translation).toBe('Une  rivière coule. \n\n');
     });
+
     it.each(['source', 'translation'] as const)(
         'rejects a whitespace-only %s edit before restoring structural separators',
         async (side) => {
@@ -180,6 +201,7 @@ describe('workspace sentence boundary preservation', () => {
             await act(async () => {
                 saved = await result.current.save();
             });
+
             expect(saved).toBe(false);
             expect(setShowErrors).toHaveBeenCalledWith(true);
             expect(save).not.toHaveBeenCalled();

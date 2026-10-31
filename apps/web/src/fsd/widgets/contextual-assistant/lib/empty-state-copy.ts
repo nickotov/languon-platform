@@ -94,6 +94,7 @@ const copy = {
         ],
     },
 };
+
 export function emptyStateCopy(
     locale: Locale,
     kind: ConversationSource['kind'],
@@ -104,6 +105,7 @@ export function emptyStateCopy(
         dictionary: labels.dictionaryQuestions,
         knowledge: labels.knowledgeQuestions,
     };
+
     return {
         heading: labels.heading,
         intro: labels[kind],

@@ -55,15 +55,19 @@ function harness() {
             },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
+
     return { app, request, get, update, models, requireActiveSession, userId };
 }
+
 describe('text AI authenticated HTTP routes', () => {
     it('authenticates reads and derives preference identity from verified claims', async () => {
         const { request, get, models, requireActiveSession, userId } =
             harness();
+
         expect(
             (await request('GET', '/users/me/ai-model-preference')).status,
         ).toBe(200);
+
         expect((await request('GET', '/text-ai/models')).status).toBe(200);
         expect(get).toHaveBeenCalledWith(userId);
         expect(models).toHaveBeenCalledWith(userId);
@@ -72,6 +76,7 @@ describe('text AI authenticated HTTP routes', () => {
             sessionId: 'session',
         });
     });
+
     it('rejects missing authentication, foreign identity, invalid modes and hostile origins', async () => {
         const { app, request, update } = harness();
         expect((await app.request('/text-ai/models')).status).toBe(401);
@@ -80,11 +85,13 @@ describe('text AI authenticated HTTP routes', () => {
             { mode: 'auto', modelId: 'deepseek-flash', expectedVersion: 0 },
             { mode: 'explicit', expectedVersion: 0 },
             { mode: 'auto', expectedVersion: -1 },
-        ])
+        ]) {
             expect(
                 (await request('PUT', '/users/me/ai-model-preference', body))
                     .status,
             ).toBe(400);
+        }
+
         expect(
             (
                 await request(
@@ -95,29 +102,35 @@ describe('text AI authenticated HTTP routes', () => {
                 )
             ).status,
         ).toBe(403);
+
         expect(update).not.toHaveBeenCalled();
     });
+
     it('updates only the authenticated learner and provides PUT preflight', async () => {
         const { request, update, userId } = harness();
         const response = await request('PUT', '/users/me/ai-model-preference', {
             mode: 'auto',
             expectedVersion: 0,
         });
+
         expect(response.status).toBe(200);
         expect(update).toHaveBeenCalledWith(userId, {
             mode: 'auto',
             expectedVersion: 0,
         });
+
         expect(response.headers.get('Cache-Control')).toBe('no-store');
         const preflight = await request(
             'OPTIONS',
             '/users/me/ai-model-preference',
         );
+
         expect(preflight.status).toBe(204);
         expect(preflight.headers.get('Access-Control-Allow-Methods')).toContain(
             'PUT',
         );
     });
+
     it.each([
         [new TextAiPreferenceConflictError(), 409, 'conflict'],
         [new TextAiModelUnavailableError(), 409, 'model_unavailable'],
@@ -129,6 +142,7 @@ describe('text AI authenticated HTTP routes', () => {
             mode: 'auto',
             expectedVersion: 0,
         });
+
         expect(response.status).toBe(status);
         await expect(response.json()).resolves.toMatchObject({
             error: { code },

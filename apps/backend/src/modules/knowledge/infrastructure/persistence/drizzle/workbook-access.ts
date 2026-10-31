@@ -24,8 +24,10 @@ export async function readWorkbookSharedNote(
         .from(shares)
         .where(eq(shares.locator, proof.locator));
 
-    if (!capability || !crypto.verify(proof.key, capability.keyDigest))
+    if (!capability || !crypto.verify(proof.key, capability.keyDigest)) {
         throw knowledgeUnavailable();
+    }
+
     const [workbook] = await tx
         .select()
         .from(workbooks)
@@ -37,7 +39,10 @@ export async function readWorkbookSharedNote(
         )
         .for('share');
 
-    if (!workbook) throw knowledgeUnavailable();
+    if (!workbook) {
+        throw knowledgeUnavailable();
+    }
+
     const [live] = await tx
         .select()
         .from(shares)
@@ -48,14 +53,19 @@ export async function readWorkbookSharedNote(
         !live ||
         live.locator !== proof.locator ||
         !crypto.verify(proof.key, live.keyDigest)
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
+
     const [owner] = await tx
         .select({ status: usersTable.status })
         .from(usersTable)
         .where(eq(usersTable.id, workbook.ownerId));
 
-    if (owner?.status !== 'active') throw knowledgeUnavailable();
+    if (owner?.status !== 'active') {
+        throw knowledgeUnavailable();
+    }
+
     const [result] = await tx
         .select({ note: knowledgeNotesTable })
         .from(members)
@@ -73,7 +83,9 @@ export async function readWorkbookSharedNote(
         )
         .for('share', { of: knowledgeNotesTable });
 
-    if (!result) throw knowledgeUnavailable();
+    if (!result) {
+        throw knowledgeUnavailable();
+    }
 
     return result.note;
 }

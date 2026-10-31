@@ -68,14 +68,19 @@ export function BlockProposalCard({
             isApplied ||
             wrongBranch ||
             (mode === 'proposal' && isStale)
-        )
-            return;
-        const insertion =
-            mode === 'cursor' ? context.captureInsertion?.() : null;
-        if (mode === 'cursor' && !insertion) {
-            setChanged(true);
+        ) {
             return;
         }
+
+        const insertion =
+            mode === 'cursor' ? context.captureInsertion?.() : null;
+
+        if (mode === 'cursor' && !insertion) {
+            setChanged(true);
+
+            return;
+        }
+
         context.onApplyingChange?.(true);
         setBusy(true);
         setError(false);
@@ -84,13 +89,17 @@ export function BlockProposalCard({
             const branch = await context.beforeApply();
             if (branch.branchId !== proposal.branchId) {
                 setChanged(true);
+
                 return;
             }
+
             const insertionPosition = insertion?.resolve();
             if (insertion && insertionPosition === null) {
                 setChanged(true);
+
                 return;
             }
+
             const result = await blockProposalsApi.apply(
                 context.requestWithSession,
                 context.conversationId,
@@ -99,6 +108,7 @@ export function BlockProposalCard({
                 mode === 'proposal' ? undefined : 'add-separately',
                 insertionPosition ?? undefined,
             );
+
             setAppliedIds(result.proposal.blocks.map((block) => block.id));
             setApplied(true);
             await context.onApplied(result.branch);
@@ -107,61 +117,78 @@ export function BlockProposalCard({
             if (
                 failure instanceof ConversationApiError &&
                 failure.status === 409
-            )
+            ) {
                 setChanged(true);
-            else setError(true);
+            } else {
+                setError(true);
+            }
         } finally {
             insertion?.release();
             context.onApplyingChange?.(false);
             setBusy(false);
         }
     }
+
     function apply() {
         void accept('proposal');
     }
+
     function addSeparately() {
         void accept('add-separately');
     }
+
     function addAtCursor() {
         void accept('cursor');
     }
+
     function dismiss() {
         setReview(false);
         setDismissed(true);
     }
+
     function restore() {
         setDismissed(false);
     }
+
     function openReview() {
         setReview(true);
     }
+
     function closeReview() {
         setReview(false);
     }
+
     function toggleHeight() {
         setFullHeight((value) => !value);
     }
+
     function askAgain() {
         context.onAskAgain?.(proposal);
     }
+
     function showInSheet() {
         const ids = appliedIds ?? proposal.blocks.map((block) => block.id);
         if (placement) {
             placement.setMobileTab('document');
             placement.setMode('split');
         }
+
         if (context.onShowBlocks) {
             context.onShowBlocks(ids);
+
             return;
         }
+
         window.requestAnimationFrame(() => {
             const element = document.querySelector<HTMLElement>(
                 `[data-learning-block-id="${ids[0]}"]`,
             );
+
             element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             element?.focus({ preventScroll: true });
         });
     }
+
     const targetIdentity = proposal.target
         ? context.getBlockLabel?.(proposal.target.blockId) ||
           `${labels.blockIdentity} ${proposal.target.blockId}`
@@ -175,7 +202,8 @@ export function BlockProposalCard({
     const panelClass = fullHeight
         ? `${styles.review} ${styles.fullHeight}`
         : styles.review;
-    if (dismissed)
+
+    if (dismissed) {
         return (
             <article className={styles.preview} aria-label={labels.title}>
                 <p>{labels.dismissed}</p>
@@ -184,8 +212,11 @@ export function BlockProposalCard({
                 </Button>
             </article>
         );
+    }
+
     const canInsertAtCursor =
         Boolean(context.captureInsertion) && !isApplied && !wrongBranch;
+
     return (
         <article
             ref={media.ref}

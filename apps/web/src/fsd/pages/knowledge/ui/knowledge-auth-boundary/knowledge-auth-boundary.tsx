@@ -18,9 +18,12 @@ export function KnowledgeAuthBoundary({
     const { t, href } = useI18n();
     const login = href(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     useEffect(() => {
-        if (status === 'signed-out') router.replace(login);
+        if (status === 'signed-out') {
+            router.replace(login);
+        }
     }, [status, router, login]);
-    if (status !== 'authenticated')
+
+    if (status !== 'authenticated') {
         return (
             <div>
                 <LoadingState>{t('knowledge.loading')}</LoadingState>
@@ -29,5 +32,7 @@ export function KnowledgeAuthBoundary({
                 )}
             </div>
         );
+    }
+
     return children;
 }

@@ -39,6 +39,7 @@ export function BlockReferenceChips({
         </div>
     );
 }
+
 function ReferenceChip({
     item,
     missing,
@@ -56,6 +57,7 @@ function ReferenceChip({
     function remove() {
         onRemove(item.id);
     }
+
     return (
         <span className={styles.chip} data-missing={missing}>
             <Layers size={14} aria-hidden />
@@ -67,6 +69,7 @@ function ReferenceChip({
         </span>
     );
 }
+
 export function BlockReferencePicker({
     available,
     selected,
@@ -90,20 +93,24 @@ export function BlockReferencePicker({
     useEffect(() => {
         search.current?.focus();
     }, []);
+
     function change(event: ChangeEvent<HTMLInputElement>) {
         setQuery(event.target.value);
     }
+
     function key(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.stopPropagation();
             onClose();
         }
     }
+
     const matches = available.filter((item) =>
         `${item.title} ${kinds[item.type]}`
             .toLocaleLowerCase(locale)
             .includes(query.toLocaleLowerCase(locale)),
     );
+
     return (
         <section
             role='dialog'
@@ -149,6 +156,7 @@ export function BlockReferencePicker({
         </section>
     );
 }
+
 function ReferenceOption({
     item,
     selected,
@@ -165,9 +173,13 @@ function ReferenceOption({
     const { locale } = useI18n();
     const kind = knowledgeLearningBlockLabels(locale).view.kinds[item.type];
     function choose() {
-        if (selected) onRemove(item.id);
-        else onAdd(item.id);
+        if (selected) {
+            onRemove(item.id);
+        } else {
+            onAdd(item.id);
+        }
     }
+
     return (
         <button
             type='button'
@@ -197,6 +209,7 @@ export function MessageBlockReferences({
     const { locale } = useI18n();
     const copy = blockReferenceCopy(locale);
     const kinds = knowledgeLearningBlockLabels(locale).view.kinds;
+
     return (
         <div className={styles.chips}>
             {ids.map((id) => {
@@ -204,6 +217,7 @@ export function MessageBlockReferences({
                 const label = item
                     ? item.title || kinds[item.type]
                     : copy.missing;
+
                 return (
                     <span className={styles.chip} key={id}>
                         <Layers size={14} aria-hidden />

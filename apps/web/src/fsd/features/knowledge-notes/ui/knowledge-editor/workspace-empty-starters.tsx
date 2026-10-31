@@ -21,14 +21,20 @@ export function WorkspaceEmptyStarters({
     function preserveSelection(event: MouseEvent) {
         event.preventDefault();
     }
+
     function write() {
         editor.commands.focus('start');
     }
+
     function undo() {
         editor.chain().focus().undo().run();
     }
+
     function insertTemplate(kind: 'lesson' | 'language') {
-        if (!editor.isEmpty || disabled) return;
+        if (!editor.isEmpty || disabled) {
+            return;
+        }
+
         const headings =
             kind === 'lesson'
                 ? [
@@ -52,6 +58,7 @@ export function WorkspaceEmptyStarters({
             },
             { type: 'paragraph' },
         ]);
+
         editor
             .chain()
             .focus()
@@ -60,6 +67,7 @@ export function WorkspaceEmptyStarters({
                 content,
             )
             .run();
+
         showToast({
             content: t('knowledge.templateInserted'),
             tone: 'success',
@@ -71,12 +79,15 @@ export function WorkspaceEmptyStarters({
             ),
         });
     }
+
     function lesson() {
         insertTemplate('lesson');
     }
+
     function language() {
         insertTemplate('language');
     }
+
     return (
         <div
             className={styles.empty}

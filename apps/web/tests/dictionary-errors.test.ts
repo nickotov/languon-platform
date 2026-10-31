@@ -34,10 +34,12 @@ describe('safe dictionary recovery messages', () => {
             ).toBe(key);
         },
     );
+
     it('distinguishes a failed connection from an opaque unexpected error', () => {
         expect(
             dictionaryErrorMessage(new TypeError('Failed to fetch'), t),
         ).toBe('dictionary.error.network');
+
         expect(dictionaryErrorMessage(new Error('opaque detail'), t)).toBe(
             'dictionary.error.generic',
         );

@@ -96,6 +96,7 @@ export function ConversationHistory({
     const { locale } = useI18n();
     const copy = labels[locale];
     const title = `${copy.here}${sourceLabel ? ` · ${sourceLabel}` : ''}`;
+
     return (
         <section className={styles.history}>
             <div className={styles.toolbar}>
@@ -129,7 +130,7 @@ export function ConversationHistory({
                             deleting === option.value &&
                             onConfirmDelete &&
                             onCancelDelete
-                        )
+                        ) {
                             return (
                                 <li key={option.value}>
                                     <ConversationDeleteConfirmation
@@ -140,6 +141,8 @@ export function ConversationHistory({
                                     />
                                 </li>
                             );
+                        }
+
                         return (
                             <HistoryRow
                                 key={option.value}
@@ -186,33 +189,42 @@ function HistoryRow({
     function select() {
         onSelect(option.value);
     }
+
     function remove() {
         onDelete(option.value);
     }
+
     function startEdit() {
         setTitle(option.label);
         setError(false);
         setEditing(true);
     }
+
     function change(event: ChangeEvent<HTMLInputElement>) {
         setTitle(event.target.value);
         setError(false);
     }
+
     function cancel() {
         setEditing(false);
         setError(false);
         requestAnimationFrame(() => renameButton.current?.focus());
     }
+
     function editKey(event: KeyboardEvent<HTMLInputElement>) {
         if (event.key === 'Escape') {
             event.preventDefault();
             cancel();
         }
     }
+
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const next = title.trim();
-        if (!next || next.length > 200 || pending) return;
+        if (!next || next.length > 200 || pending) {
+            return;
+        }
+
         setPending(true);
         try {
             await onRename(option.value, next);
@@ -225,6 +237,7 @@ function HistoryRow({
             setPending(false);
         }
     }
+
     return (
         <li className={rowClass}>
             {editing ? (

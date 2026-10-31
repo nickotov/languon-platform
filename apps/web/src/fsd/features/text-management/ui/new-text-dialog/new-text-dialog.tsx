@@ -24,6 +24,7 @@ type Props = {
 export function NewTextDialog(props: Props) {
     return props.open ? <NewTextForm {...props} /> : null;
 }
+
 function NewTextForm({ initialFolderId, onClose, requestWithSession }: Props) {
     const { t, href } = useI18n();
     const router = useRouter();
@@ -36,6 +37,7 @@ function NewTextForm({ initialFolderId, onClose, requestWithSession }: Props) {
     function confirm(event: ChangeEvent<HTMLInputElement>) {
         setConfirmed(event.target.checked);
     }
+
     const options = [
         { value: '', label: t('texts.organization.independent') },
         ...(folders.data ?? []).map((folder) => ({
@@ -43,35 +45,49 @@ function NewTextForm({ initialFolderId, onClose, requestWithSession }: Props) {
             label: folder.name,
         })),
     ];
+
     function change(event: ChangeEvent<HTMLSelectElement>) {
         setDestination(event.target.value);
         setConfirmed(false);
     }
+
     function create() {
         setCreating(true);
     }
+
     function closeCreate() {
         setCreating(false);
     }
+
     function created(folder: TextFolder) {
         setDestination(folder.id);
         setConfirmed(false);
         setCreating(false);
     }
+
     function proceed() {
-        if ((shared && !confirmed) || (destination && !folder)) return;
+        if ((shared && !confirmed) || (destination && !folder)) {
+            return;
+        }
+
         const params = new URLSearchParams();
-        if (destination) params.set('folderId', destination);
+        if (destination) {
+            params.set('folderId', destination);
+        }
+
         if (shared && folder?.shareId && folder.shareVersion != null) {
             params.set('shareId', folder.shareId);
             params.set('shareVersion', String(folder.shareVersion));
         }
+
         const path = params.size
             ? `/texts/new?${params.toString()}`
             : '/texts/new';
+
         onClose();
         router.push(href(path));
     }
+
     return (
         <>
             <Dialog

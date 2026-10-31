@@ -15,6 +15,7 @@ export function selectedModel(snapshot, capability) {
     const flow = capability.formats[0]?.split(':')[0];
     const policy = configuration?.overrides?.[flow] ?? configuration?.default;
     const route = capability.routeId ?? policy?.primaryRouteId;
+
     return textAiModelCatalog.find(
         (model) => `${model.providerId}/${model.id}` === route,
     );
@@ -27,8 +28,10 @@ export function workerSupports(worker, model, capability, format) {
         worker.provider_id !== model.providerId ||
         worker.adapter_revision !== model.adapterRevision ||
         !['available', 'unverified'].includes(worker.status)
-    )
+    ) {
         return false;
+    }
+
     const observation = Object.fromEntries(
         Object.entries(worker).map(([key, value]) => [
             key.replace(/_([a-z])/g, (_, character) => character.toUpperCase()),
@@ -42,6 +45,7 @@ export function workerSupports(worker, model, capability, format) {
           : ['conversation', 'interview'].includes(capability.id)
             ? readiness.isConversationExecutionCapableObservation
             : readiness.isTextAiCapacityCapableObservation;
+
     return predicate(observation, format);
 }
 
@@ -54,6 +58,7 @@ export function customerFunded(snapshot, capability) {
         conversation: 'conversation',
         interview: 'portrait-interview',
     }[capability.id];
+
     return (
         (snapshot.policies?.find((policy) => policy.capability === name)
             ?.funding ??
@@ -86,6 +91,7 @@ export function probeEvidence(
             reason: 'The current execution identity could not be resolved.',
         };
     }
+
     const evidence = snapshot.probes?.find(
         (probe) =>
             probe.route_id === routeId &&
@@ -93,6 +99,7 @@ export function probeEvidence(
             probe.kind === 'flow' &&
             probe.fingerprint === fingerprint,
     );
+
     // The database function is the same authority used for real dispatch. It
     // retains prior matching successes and provider/route-wide hard failures;
     // elapsed time alone must never create activation evidence.
@@ -103,6 +110,7 @@ export function probeEvidence(
                 probe.flow_id === flowId &&
                 probe.kind === 'flow',
         );
+
         return {
             ready: false,
             stale: false,
@@ -111,7 +119,8 @@ export function probeEvidence(
                 : 'No selected-flow check exists for this route and flow. A quick response or a check for another flow does not activate it.',
         };
     }
-    if (evidence.dispatch_allowed !== true)
+
+    if (evidence.dispatch_allowed !== true) {
         return {
             ready: false,
             stale: false,
@@ -124,6 +133,8 @@ export function probeEvidence(
                       ? ' (the last matching check is still running).'
                       : '.'),
         };
+    }
+
     return {
         ready: true,
         stale:

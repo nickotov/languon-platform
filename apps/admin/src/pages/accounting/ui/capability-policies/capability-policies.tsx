@@ -31,21 +31,27 @@ export function CapabilityPolicies() {
                 setError(null);
             }
         } catch (caught) {
-            if (!signal?.aborted)
+            if (!signal?.aborted) {
                 setError(
                     caught instanceof Error
                         ? caught.message
                         : 'Unable to load policies.',
                 );
+            }
         } finally {
-            if (!signal?.aborted) setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
+
     useEffect(() => {
         const controller = new AbortController();
         void load(controller.signal);
+
         return () => controller.abort();
     }, [load]);
+
     const reload = () => {
         setEditing(null);
         void load();
@@ -60,7 +66,10 @@ export function CapabilityPolicies() {
         funding: CapabilityPolicy['funding'];
         reason: string;
     }) => {
-        if (!editing) return;
+        if (!editing) {
+            return;
+        }
+
         setPending(true);
         try {
             await adminApi.publishCapabilityPolicy({
@@ -68,6 +77,7 @@ export function CapabilityPolicies() {
                 expectedVersion: editing.version,
                 ...values,
             });
+
             setEditing(null);
             await load();
         } catch (caught) {
@@ -100,6 +110,7 @@ export function CapabilityPolicies() {
         { value: 'operator', label: t('accounting.funding.operator') },
         { value: 'customer', label: t('accounting.funding.customer') },
     ];
+
     return (
         <Card title={t('accounting.policies')}>
             <Typography.Paragraph>
@@ -164,6 +175,7 @@ export function CapabilityPolicies() {
         </Card>
     );
 }
+
 function EditPolicy({
     policy,
     onEdit,
@@ -173,5 +185,6 @@ function EditPolicy({
 }) {
     const t = useTranslate();
     const handleEdit = () => onEdit(policy);
+
     return <Button onClick={handleEdit}>{t('actions.edit')}</Button>;
 }

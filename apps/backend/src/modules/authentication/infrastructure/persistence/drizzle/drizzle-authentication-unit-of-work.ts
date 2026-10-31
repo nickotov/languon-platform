@@ -44,7 +44,10 @@ class TransactionalAuthenticationRepository implements AuthenticationTransaction
             .where(eq(passwordCredentialsTable.userId, userId))
             .limit(1);
         const row = rows[0];
-        if (!row) return null;
+        if (!row) {
+            return null;
+        }
+
         if (row.algorithm !== 'argon2id') {
             throw new Error('Persisted password algorithm is unsupported.');
         }

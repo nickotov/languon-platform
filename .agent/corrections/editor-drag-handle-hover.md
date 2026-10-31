@@ -44,7 +44,7 @@ its prepared-content requirement rather than using an arbitrary first match.
 ## Final evidence and outcome
 
 - `pnpm --filter @languon/web exec vitest run
-  tests/knowledge-prose-block-drag.test.tsx`: 13/13 passed.
+tests/knowledge-prose-block-drag.test.tsx`: 13/13 passed.
 - `pnpm test:e2e:critical -- --flow interactive-workbooks`: 3/3 passed, no
   retries/skips, run 71cd70c0-c08f-4da3-bfb5-00df30cb1aab. Real Chromium with
   disposable PostgreSQL/Redis and deterministic providers, no paid calls or user

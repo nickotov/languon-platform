@@ -12,6 +12,7 @@ describe('admin contracts', () => {
         expect(AdminReasonSchema.parse('  account owner request  ')).toBe(
             'account owner request',
         );
+
         expect(() => AdminReasonSchema.parse('no')).toThrow();
         expect(() => AdminReasonSchema.parse('x'.repeat(501))).toThrow();
     });
@@ -26,6 +27,7 @@ describe('admin contracts', () => {
             expectedVersion: 3,
             reason: 'verified support request',
         });
+
         expect(() =>
             AdminUserStatusMutationRequestSchema.parse({
                 expectedVersion: 0,
@@ -41,12 +43,14 @@ describe('admin contracts', () => {
             page: 2,
             pageSize: 50,
         });
+
         expect(
             AdminAuditEventsQuerySchema.parse({
                 page: undefined,
                 pageSize: undefined,
             }),
         ).toEqual({ page: 1, pageSize: 25 });
+
         expect(() => AdminUsersQuerySchema.parse({ pageSize: 101 })).toThrow();
         expect(() => AdminUsersQuerySchema.parse({ role: 'owner' })).toThrow();
     });
@@ -64,18 +68,22 @@ describe('fractional admin credit compatibility transport', () => {
             expiresAt: null,
             reason: 'Correct fractional credit grant',
         };
+
         expect(
             AdminAiCreditAdjustmentRequestSchema.parse(input).amountCredits,
         ).toBe(-0.125);
+
         expect(AdminAiCreditAmountSchema.parse(0.001)).toBe(0.001);
-        for (const amountCredits of [0.0001, 0.1 + 0.2, Infinity, NaN])
+        for (const amountCredits of [0.0001, 0.1 + 0.2, Infinity, NaN]) {
             expect(() =>
                 AdminAiCreditAdjustmentRequestSchema.parse({
                     ...input,
                     amountCredits,
                 }),
             ).toThrow();
+        }
     });
+
     it('permits fractional model and speech tariffs without rounding rates', async () => {
         const { ModelPricePublishRequestSchema } =
             await import('../src/speech');
@@ -91,16 +99,19 @@ describe('fractional admin credit compatibility transport', () => {
             provisional: true,
             reason: 'Calibrate exact fractional model rate',
         };
+
         expect(
             ModelPricePublishRequestSchema.parse(price)
                 .inputCreditsPerMillionTokens,
         ).toBe(0.125);
+
         expect(() =>
             ModelPricePublishRequestSchema.parse({
                 ...price,
                 outputCreditsPerMillionTokens: 0.0001,
             }),
         ).toThrow();
+
         expect(
             ModelPricePublishRequestSchema.parse({
                 ...price,
@@ -130,20 +141,24 @@ describe('optional cached-input customer tariff', () => {
             provisional: false,
             reason: 'Publish cached customer tariff',
         };
+
         expect(
             ModelPricePublishRequestSchema.parse(price)
                 .cachedInputCreditsPerMillionTokens,
         ).toBeUndefined();
+
         expect(
             ModelPricePublishRequestSchema.parse({
                 ...price,
                 cachedInputCreditsPerMillionTokens: null,
             }).cachedInputCreditsPerMillionTokens,
         ).toBeNull();
+
         const cached = ModelPricePublishRequestSchema.parse({
             ...price,
             cachedInputCreditsPerMillionTokens: 0.125,
         });
+
         expect(cached.cachedInputCreditsPerMillionTokens).toBe(0.125);
         expect(cached.inputCreditsPerMillionTokens).toBe(1.125);
         expect(() =>
@@ -153,6 +168,7 @@ describe('optional cached-input customer tariff', () => {
             }),
         ).toThrow();
     });
+
     it('allows a positive fractional speech rate with an explicit zero minimum', async () => {
         const { ModelPricePublishRequestSchema } =
             await import('../src/speech');
@@ -169,9 +185,11 @@ describe('optional cached-input customer tariff', () => {
             provisional: false,
             reason: 'Publish fractional speech tariff',
         };
+
         expect(ModelPricePublishRequestSchema.parse(price).minimumCredits).toBe(
             0,
         );
+
         expect(() =>
             ModelPricePublishRequestSchema.parse({
                 ...price,

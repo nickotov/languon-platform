@@ -14,6 +14,7 @@ export function WorkspacePassagePreview({
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     const removeLabel = `${copy.remove}: ${copy.selection}`;
+
     return (
         <div className={styles.workspaceAttachment} data-passage='true'>
             <TextQuote size={16} aria-hidden='true' />

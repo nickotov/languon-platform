@@ -41,7 +41,9 @@ export function useTextWorkspaceJob(
     });
 
     useEffect(() => {
-        if (active && poll.data?.job.id === job?.id) setJob(poll.data!.job);
+        if (active && poll.data?.job.id === job?.id) {
+            setJob(poll.data!.job);
+        }
     }, [poll.data, job?.id, active]);
 
     useEffect(
@@ -51,10 +53,11 @@ export function useTextWorkspaceJob(
             if (
                 current &&
                 (current.state === 'queued' || current.state === 'running')
-            )
+            ) {
                 void cleanup
                     .current((token) => textsApi.cancelAiJob(token, current.id))
                     .catch(() => undefined);
+            }
         },
         [],
     );
@@ -69,13 +72,17 @@ export function useTextWorkspaceJob(
               },
         detect = false,
     ) {
-        if (starting.current || active) return;
+        if (starting.current || active) {
+            return;
+        }
+
         starting.current = true;
         const fingerprint = JSON.stringify({ ...body, operationId: undefined });
         const operationId =
             retryOperation.current?.fingerprint === fingerprint
                 ? retryOperation.current.operationId
                 : body.operationId;
+
         retryOperation.current = { fingerprint, operationId };
         const submission = { ...body, operationId };
         const fence = ++generation.current;
@@ -96,21 +103,24 @@ export function useTextWorkspaceJob(
                           } as EnqueueTextTranslationRequest),
                 ),
             );
+
             if (generation.current === fence) {
                 retryOperation.current = null;
                 setJob(response.job);
             } else if (
                 response.job.state === 'queued' ||
                 response.job.state === 'running'
-            )
+            ) {
                 await cleanup.current((token) =>
                     textsApi.cancelAiJob(token, response.job.id),
                 );
+            }
         } catch (cause) {
-            if (generation.current === fence)
+            if (generation.current === fence) {
                 setError(
                     cause instanceof ActionConsentCancelledError ? null : cause,
                 );
+            }
         } finally {
             if (generation.current === fence) {
                 starting.current = false;
@@ -125,17 +135,25 @@ export function useTextWorkspaceJob(
         retryOperation.current = null;
         starting.current = false;
         setPending(false);
-        if (!current) return;
+        if (!current) {
+            return;
+        }
+
         try {
             const response = await request((token) =>
                 textsApi.cancelAiJob(token, current.id),
             );
-            if (generation.current === fence) setJob(response.job);
+
+            if (generation.current === fence) {
+                setJob(response.job);
+            }
         } catch (cause) {
-            if (generation.current === fence)
+            if (generation.current === fence) {
                 setError(
                     cause instanceof ActionConsentCancelledError ? null : cause,
                 );
+            }
+
             throw cause;
         }
     }
@@ -144,12 +162,16 @@ export function useTextWorkspaceJob(
         if (
             starting.current ||
             (job && job.state !== 'cancelled' && job.state !== 'failed')
-        )
+        ) {
             return false;
+        }
+
         setJob(next);
         setError(null);
+
         return true;
     }
+
     function clear() {
         actionConsent.cancel();
         generation.current += 1;

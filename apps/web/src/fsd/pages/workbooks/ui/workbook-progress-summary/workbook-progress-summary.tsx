@@ -11,6 +11,7 @@ export function WorkbookProgressSummary(props: {
     const { requestWithSession } = useAuth();
     const { locale } = useI18n();
     const actorId = useSessionStore((state) => state.user?.id);
+
     return (
         <WorkbookProgress
             {...props}

@@ -34,5 +34,6 @@ export function documentMediaTypeForFile(
     if (declaredType && extensionType && declaredType !== extensionType) {
         return null;
     }
+
     return declaredType ?? extensionType ?? null;
 }

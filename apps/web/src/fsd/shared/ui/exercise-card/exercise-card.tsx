@@ -74,7 +74,7 @@ export function ExerciseCard({
 
     const locked = revealed || status === 'loading' || status === 'error';
 
-    if (status === 'loading')
+    if (status === 'loading') {
         return (
             <section
                 aria-busy='true'
@@ -93,6 +93,7 @@ export function ExerciseCard({
                 </div>
             </section>
         );
+    }
 
     return (
         <section

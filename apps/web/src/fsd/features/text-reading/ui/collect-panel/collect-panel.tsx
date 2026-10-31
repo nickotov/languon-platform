@@ -25,7 +25,10 @@ export function CollectPanel({
     const [chosen, setChosen] = useState('');
     const [name, setName] = useState('');
     const selection = c.selection;
-    if (!selection) return null;
+    if (!selection) {
+        return null;
+    }
+
     const [from, to] = c.direction;
     const selected = c.dictionaries.find((d) => d.id === chosen);
     const target = selected
@@ -38,7 +41,9 @@ export function CollectPanel({
         : null;
     const busy = target ? c.isInflight(target) : false;
     const submit = () => {
-        if (target) c.submit(target);
+        if (target) {
+            c.submit(target);
+        }
     };
 
     function createDictionary() {
@@ -50,7 +55,9 @@ export function CollectPanel({
     }
 
     function submitNewDictionary() {
-        if (name.trim()) c.submit({ kind: 'new', name: name.trim() });
+        if (name.trim()) {
+            c.submit({ kind: 'new', name: name.trim() });
+        }
     }
 
     function cancel() {

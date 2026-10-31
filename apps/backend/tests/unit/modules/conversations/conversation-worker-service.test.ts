@@ -45,6 +45,7 @@ function longTurn(): ClaimedConversationTurn {
         })),
         editedPairIds: [],
     };
+
     return {
         id,
         conversationId: id,
@@ -100,6 +101,7 @@ function fixture(turn = longTurn()) {
             throw new Error('Unexpected note proposal.');
         }),
     };
+
     return { turn, memory, store };
 }
 
@@ -109,15 +111,18 @@ describe('conversation worker bounded source context', () => {
         turn.conversationCreatedAt = new Date(
             Date.now() - 120_000,
         ).toISOString();
+
         turn.message.createdAt = new Date().toISOString();
         turn.message.content =
             'Explain "zafiro" 👋\\\n in the passage near the end.';
+
         const project = (length: number) => {
             const attachments = [0, 1].map((index) => ({
                 id: `00000000-0000-4000-8000-00000000000${index + 3}`,
                 label: `Copied passage ${index}`,
                 content: 'مثال 👋 \\"\n'.repeat(length),
             }));
+
             return {
                 attachments,
                 modelContent: projectTutorUserMessage({
@@ -137,13 +142,16 @@ describe('conversation worker bounded source context', () => {
         while (
             tutorCurrentMessageBytes(project(length + 1).modelContent) <=
             currentTutorMessageByteLimit
-        )
+        ) {
             length++;
+        }
+
         const original = project(length);
         turn.message = { ...turn.message, ...original };
         expect(tutorCurrentMessageBytes(original.modelContent)).toBeGreaterThan(
             7_900,
         );
+
         assertTutorCurrentMessageFits(original.modelContent);
         const { store, memory } = fixture(turn);
         memory.messages.set('old-history', {
@@ -155,6 +163,7 @@ describe('conversation worker bounded source context', () => {
                 ),
             createdAt: new Date(Date.now() - 60_000).toISOString(),
         });
+
         const observations =
             '<observations>\n- The learner supplied two exact copied passages with Arabic, emoji, quotes, backslashes and newlines, and asks about zafiro. Current source translation uses sapphire.\n</observations>';
         const provider = scriptedTutorModel([
@@ -176,45 +185,56 @@ describe('conversation worker bounded source context', () => {
                     accounting,
                     maxInputTokens: 64_000,
                 });
+
                 return {
                     run: async (input) => {
                         expect(
                             bytes(JSON.stringify(input.sourceContext)),
                         ).toBeLessThanOrEqual(12_000);
+
                         try {
                             return await runner.run(input);
                         } catch (error) {
                             runnerError = error;
+
                             throw error;
                         }
                     },
                 };
             },
         });
+
         await worker.processNext(new AbortController().signal);
         expect(runnerError).toBeUndefined();
         expect(store.finish).toHaveBeenCalledExactlyOnceWith(turn, 'succeeded');
         expect(
             accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['observation', 'answer', 'observation', 'answer']);
+
         expect(accounting.settle).toHaveBeenCalledTimes(4);
         expect(accounting.fail).not.toHaveBeenCalled();
         const retrieved =
             vi.mocked(store.recordMaterial).mock.calls[0]?.[1] ?? [];
+
         expect(bytes(retrieved)).toBeGreaterThan(20_000);
         expect(bytes(retrieved)).toBeLessThanOrEqual(24_000);
-        for (const [call] of accounting.admit.mock.calls)
+        for (const [call] of accounting.admit.mock.calls) {
             expect(call.inputTokenEstimate).toBeLessThanOrEqual(64_000);
+        }
+
         expect(memory.messages.get(turn.message.id)?.attachments).toEqual(
             original.attachments,
         );
+
         expect(memory.messages.get(turn.message.id)?.content).toBe(
             turn.message.content,
         );
+
         expect(JSON.stringify(provider.requests.at(-1)?.prompt)).toContain(
             'sapphire',
         );
     });
+
     it('uses relevant bounded context for a translated text over 80k and retrieves surrounding frozen passages', async () => {
         const { turn, store } = fixture();
         const original = structuredClone(turn.sourceSnapshot);
@@ -228,14 +248,17 @@ describe('conversation worker bounded source context', () => {
                     expect(bytes(next.sourceContext)).toBeLessThanOrEqual(
                         12_000,
                     );
+
                     expect(next.sourceContext).toMatchObject({
                         scope: 'partial',
                         snapshotScope: 'complete',
                         availableMaterialCount: original.material.length,
                     });
+
                     expect(JSON.stringify(next.sourceContext)).toContain(
                         'zafiro',
                     );
+
                     const selected = await next.readContext({
                         query: 'zafiro',
                         limit: 3,
@@ -243,26 +266,32 @@ describe('conversation worker bounded source context', () => {
                     const target = original.material.findIndex((item) =>
                         item.content.includes('zafiro'),
                     );
+
                     expect(selected.material.map((item) => item.id)).toEqual(
                         original.material
                             .slice(target - 1, target + 2)
                             .map((item) => item.id),
                     );
+
                     expect(JSON.stringify(selected.material)).toContain(
                         'sapphire',
                     );
+
                     expect(selected.total).toBe(original.material.length);
                     expect(bytes(selected)).toBeLessThanOrEqual(24_000);
                     expect(
                         store.recordMaterial,
                     ).toHaveBeenCalledExactlyOnceWith(turn, selected.material);
+
                     return { text: 'Zafiro means sapphire.' };
                 },
             }),
         });
+
         await expect(
             worker.processNext(new AbortController().signal),
         ).resolves.toBe(true);
+
         expect(input).toBeDefined();
         expect(turn.sourceSnapshot).toEqual(original);
         expect(store.finish).toHaveBeenCalledExactlyOnceWith(turn, 'succeeded');
@@ -288,18 +317,21 @@ describe('conversation worker bounded source context', () => {
                     accounting,
                     maxInputTokens: 64_000,
                 });
+
                 return {
                     run: async (input) => {
                         try {
                             return await runner.run(input);
                         } catch (error) {
                             runnerError = error;
+
                             throw error;
                         }
                     },
                 };
             },
         });
+
         await worker.processNext(new AbortController().signal);
         expect(runnerError).toBeUndefined();
         expect(store.finish).toHaveBeenCalledExactlyOnceWith(turn, 'succeeded');
@@ -307,14 +339,19 @@ describe('conversation worker bounded source context', () => {
         expect(JSON.stringify(provider.requests.at(-1)?.prompt)).toContain(
             'sapphire',
         );
+
         expect(JSON.stringify(provider.requests.at(-1)?.prompt)).toContain(
             'partial',
         );
-        for (const [call] of accounting.admit.mock.calls)
+
+        for (const [call] of accounting.admit.mock.calls) {
             expect(call.inputTokenEstimate).toBeLessThanOrEqual(64_000);
+        }
+
         expect(
             accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['answer', 'observation', 'answer']);
+
         expect(accounting.settle).toHaveBeenCalledTimes(3);
         expect(accounting.fail).not.toHaveBeenCalled();
     });
@@ -333,17 +370,21 @@ describe('conversation worker bounded source context', () => {
             snapshot,
             'Explain zafiro',
         );
+
         expect(bytes(projection.initialContext)).toBeLessThanOrEqual(12_000);
         expect(projection.initialContext).toMatchObject({
             provenance: 'draft',
             scope: 'partial',
             snapshotScope: 'selected-material',
         });
+
         const selected = projection.read({ query: 'zafiro', limit: 3 });
         expect(JSON.stringify(selected)).toContain('zafiro');
         expect(bytes(selected)).toBeLessThanOrEqual(24_000);
-        for (const item of selected.material)
+        for (const item of selected.material) {
             CopiedAttachmentSchema.parse(item);
+        }
+
         expect(snapshot.material[0]?.content).toBe(content);
     });
 
@@ -354,12 +395,14 @@ describe('conversation worker bounded source context', () => {
             turn.sourceSnapshot,
             'zafiro',
         );
+
         expect(projection.initialContext).not.toHaveProperty('material');
         expect(projection.initialContext).toMatchObject({
             scope: 'partial',
             includedMaterialCount: 0,
             availableMaterialCount: turn.sourceSnapshot.material.length,
         });
+
         expect(
             JSON.stringify(projection.read({ query: 'zafiro', limit: 1 })),
         ).toContain('zafiro');
@@ -371,17 +414,21 @@ describe('conversation worker bounded source context', () => {
             observationTokens: 1_500,
             maxTokensPerBatch: 3_000,
         });
+
         expect(
             tutorMemoryThresholds(128_000, 40_000).messageTokens,
         ).toBeLessThan(16_000);
+
         expect(() => tutorMemoryThresholds(64_000, 63_000)).toThrow(
             'This conversation is too long for an AI response. Start a fresh chat.',
         );
+
         expect(tutorMemoryThresholds(64_000, 64_000 - 4096)).toEqual({
             messageTokens: 512,
             observationTokens: 256,
             maxTokensPerBatch: 512,
         });
+
         expect(() => tutorMemoryThresholds(64_000, 64_000 - 4095)).toThrow(
             'This conversation is too long for an AI response. Start a fresh chat.',
         );

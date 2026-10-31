@@ -37,6 +37,7 @@ export function LearningBlockNodeView({
         editor,
         selector: ({ editor: current }) => current.state.doc,
     });
+
     const block = LearningBlockSchema.parse(node.attrs.block);
     const labels = (extension.options as { labels: BlockAuthoringLabels })
         .labels;
@@ -67,15 +68,21 @@ export function LearningBlockNodeView({
     function toggleExpansion() {
         authoring?.toggleExpansion(expansionId);
     }
+
     function attempted(id: string, value: boolean) {
-        if (block.type !== 'exercise') return;
+        if (block.type !== 'exercise') {
+            return;
+        }
+
         authoring?.recordAttempt(
             id,
             value,
             exercisePracticeIdentity(block, viewOptions?.exerciseRevision),
         );
+
         viewOptions?.onAttemptedChange?.(id, value);
     }
+
     const groupSummary =
         block.type === 'exercise' &&
         (mediaGroup ? groupIndex === 1 : firstInGroup) ? (
@@ -88,12 +95,18 @@ export function LearningBlockNodeView({
     const className = selected
         ? `${styles.root} ${styles.selected}`
         : styles.root;
+
     function select() {
-        if (!editable) return;
+        if (!editable) {
+            return;
+        }
+
         const position = getPos();
-        if (typeof position === 'number')
+        if (typeof position === 'number') {
             editor.commands.setNodeSelection(position);
+        }
     }
+
     function selectWithKeyboard(event: KeyboardEvent<HTMLDivElement>) {
         if (
             editable &&
@@ -106,19 +119,27 @@ export function LearningBlockNodeView({
                 block.id,
                 event.key === 'ArrowUp' ? -1 : 1,
             );
+
             return;
         }
-        if (event.key !== 'Enter' && event.key !== ' ') return;
+
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+
         event.preventDefault();
         select();
     }
+
     function dragGroup(event: DragEvent<HTMLDivElement>) {
-        if (grouped && group.length > 1)
+        if (grouped && group.length > 1) {
             event.dataTransfer.setData(
                 exerciseGroupDragType,
                 JSON.stringify(group.map((item) => item.block.id)),
             );
+        }
     }
+
     function edit(value: LearningBlock) {
         authoring?.setEditing({
             kind: value.type,
@@ -129,16 +150,19 @@ export function LearningBlockNodeView({
                 : {}),
         });
     }
+
     function duplicateOnServer(value: LearningBlock) {
         authoring?.setServerDuplicateMembers(group.map((item) => item.block));
         authoring?.setCopyToAnotherNote(false);
         authoring?.setServerDuplicate(value);
     }
+
     function copyOnServer(value: LearningBlock) {
         authoring?.setServerDuplicateMembers(group.map((item) => item.block));
         authoring?.setCopyToAnotherNote(true);
         authoring?.setServerDuplicate(value);
     }
+
     const dragTitle =
         (block.type === 'exercise' ? block.group?.title : undefined) ??
         block.title ??
@@ -162,16 +186,20 @@ export function LearningBlockNodeView({
             <GripVertical size={18} aria-hidden />
         </div>
     ) : undefined;
+
     function saveLibrary() {
         const current = blocks(editor).find(
             (item) => item.block.id === block.id,
         )?.block;
+
         if (
             current?.type === 'vocabulary' ||
             current?.type === 'bilingual-text'
-        )
+        ) {
             authoring?.setLibraryBlock(current);
+        }
     }
+
     const additionalActions = blockAuthoringMenuActions({
         block,
         labels,
@@ -203,6 +231,7 @@ export function LearningBlockNodeView({
                 renderBlockMenu={authoring?.renderBlockMenu}
             />
         ) : undefined;
+
     return (
         <NodeViewWrapper
             contentEditable={false}

@@ -50,15 +50,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ) as {
                 entries: { idx: number; tag: string }[];
             };
+
             journal.entries = journal.entries.filter((entry) => entry.idx < 89);
             prefixFolder = await mkdtemp(
                 join(tmpdir(), 'languon-accounting-cutover-'),
             );
+
             await mkdir(join(prefixFolder, 'meta'));
             await writeFile(
                 join(prefixFolder, 'meta/_journal.json'),
                 JSON.stringify(journal),
             );
+
             await Promise.all(
                 journal.entries.map((entry) =>
                     copyFile(
@@ -68,6 +71,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             );
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await runPostgresMigrations({
@@ -75,11 +79,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 migrationsFolder: prefixFolder,
                 purpose: grantDisposableMigrationPurpose(),
             });
+
             ownerId = randomUUID();
             await database
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
         });
+
         afterAll(async () => {
             await client.end();
             await rm(prefixFolder, { recursive: true, force: true });
@@ -96,6 +102,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: null,
                 }),
             );
+
             await expect(migrateTestDatabase(client)).rejects.toMatchObject({
                 cause: {
                     code: '55000',
@@ -104,10 +111,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 },
             });
+
             const rows = await database
                 .select()
                 .from(aiCreditGrantsTable)
                 .where(eq(aiCreditGrantsTable.ownerId, ownerId));
+
             expect(rows).toHaveLength(1);
             expect(rows[0]?.amount).toBe(7n);
             expect(grant.created).toBe(true);
@@ -118,6 +127,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             async (state) => {
                 const id = randomUUID(),
                     at = new Date();
+
                 await database.transaction(async (tx) => {
                     await lockTextAiCapacity(tx);
                     await tx.insert(operations).values({
@@ -142,9 +152,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         updatedAt: at,
                     });
                 });
+
                 expect(
                     await database.select().from(aiCreditGrantsTable),
                 ).toEqual([]);
+
                 await expect(migrateTestDatabase(client)).rejects.toMatchObject(
                     {
                         cause: {
@@ -155,6 +167,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         },
                     },
                 );
+
                 expect(
                     await database
                         .select()

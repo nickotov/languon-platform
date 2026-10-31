@@ -30,6 +30,7 @@ export function KnowledgeProposalContent({
                           formattingAdjusted: false,
                       }
                     : parseProposalMarkdown(content);
+
             return {
                 ...result,
                 body: normalizeEditorDocument(result.document),
@@ -48,8 +49,14 @@ export function KnowledgeProposalContent({
         }
     }, [content, format]);
     let errorNotice = copy.formatUnavailable;
-    if (parsed.error === 'unsafe-link') errorNotice = copy.unsafeLink;
-    if (parsed.error === 'limit') errorNotice = copy.formatLimit;
+    if (parsed.error === 'unsafe-link') {
+        errorNotice = copy.unsafeLink;
+    }
+
+    if (parsed.error === 'limit') {
+        errorNotice = copy.formatLimit;
+    }
+
     return (
         <div className={styles.content}>
             {parsed.headingMapped && (

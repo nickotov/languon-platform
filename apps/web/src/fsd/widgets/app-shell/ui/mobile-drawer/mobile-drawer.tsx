@@ -24,12 +24,17 @@ export function MobileDrawer({
         event.preventDefault();
         shell.closeDrawer();
     }
+
     function dismissBackdrop(event: React.MouseEvent<HTMLDialogElement>) {
-        if (event.target === event.currentTarget) shell.closeDrawer();
+        if (event.target === event.currentTarget) {
+            shell.closeDrawer();
+        }
     }
+
     function closeDrawer() {
         shell.closeDrawer();
     }
+
     function navigate() {
         shell.closeDrawer(false);
     }
@@ -37,15 +42,23 @@ export function MobileDrawer({
     useEffect(() => {
         const dialog = dialogRef.current;
 
-        if (!dialog) return;
+        if (!dialog) {
+            return;
+        }
 
-        if (shell.drawerOpen && !dialog.open) dialog.showModal();
+        if (shell.drawerOpen && !dialog.open) {
+            dialog.showModal();
+        }
 
-        if (!shell.drawerOpen && dialog.open) dialog.close();
+        if (!shell.drawerOpen && dialog.open) {
+            dialog.close();
+        }
     }, [shell.drawerOpen]);
 
     useEffect(() => {
-        if (!shell.drawerOpen) return;
+        if (!shell.drawerOpen) {
+            return;
+        }
 
         const previousOverflow = document.body.style.overflow;
 

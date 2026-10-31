@@ -38,7 +38,7 @@ BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 | BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing.md) | pending     |
 | BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)           | pending     |
 | BL-017 | [Versioned Langfuse prompt resolution](017-versioned-langfuse-prompts.md)                                | pending     |
-| BL-018 | [Codebase-wide mechanical formatting and lint normalization](018-codebase-mechanical-formatting.md)      | pending     |
+| BL-018 | [Codebase-wide mechanical formatting and lint normalization](018-codebase-mechanical-formatting-done.md) | done        |
 | BL-019 | [Codebase-wide readability review and refactoring](019-codebase-readability-refactoring.md)              | pending     |
 
 The 2026-10-31 tutor/readability discussion is split into BL-012–BL-017.

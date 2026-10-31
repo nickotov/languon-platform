@@ -24,7 +24,9 @@ export class SmokeError extends Error {
 }
 
 export function requireSafe(condition, code) {
-    if (!condition) throw new SmokeError(code);
+    if (!condition) {
+        throw new SmokeError(code);
+    }
 }
 
 export function micros(value) {
@@ -32,9 +34,11 @@ export function micros(value) {
         typeof value === 'string' && /^(0|[1-9]\d*)(\.\d{1,6})?$/.test(value),
         'invalid-money',
     );
+
     const [whole, fraction = ''] = value.split('.');
     const result = BigInt(whole) * 1_000_000n + BigInt(fraction.padEnd(6, '0'));
     requireSafe(result <= BigInt(Number.MAX_SAFE_INTEGER), 'invalid-money');
+
     return Number(result);
 }
 
@@ -47,6 +51,7 @@ export function assertSnapshot(snapshot, account, expectedUserId) {
             account.admin === false,
         'synthetic-account-mismatch',
     );
+
     const config = snapshot.routing?.configuration;
     const policy = config?.overrides?.conversation ?? config?.default;
     requireSafe(
@@ -56,6 +61,7 @@ export function assertSnapshot(snapshot, account, expectedUserId) {
             config.enabledRouteIds.includes(ROUTE),
         'route-not-allowed',
     );
+
     for (const [key, maximum] of [
         ['max_provider_cost_usd_per_action', ACTION_MICROS],
         ['max_provider_cost_usd_per_account_day', 1_000_000],
@@ -67,6 +73,7 @@ export function assertSnapshot(snapshot, account, expectedUserId) {
             'operator-limit-not-bounded',
         );
     }
+
     requireSafe(
         snapshot.learner &&
             !snapshot.learner.unlimited &&
@@ -74,6 +81,7 @@ export function assertSnapshot(snapshot, account, expectedUserId) {
             Number(snapshot.learner.max_credits_per_action) <= 50,
         'learner-budget-not-bounded',
     );
+
     requireSafe(
         BigInt(snapshot.learner.available_milli) >=
             BigInt(
@@ -83,6 +91,7 @@ export function assertSnapshot(snapshot, account, expectedUserId) {
             ),
         'learner-balance-insufficient',
     );
+
     requireSafe(
         ['customer', 'operator'].includes(conversationFunding(snapshot)),
         'conversation-funding-unsupported',

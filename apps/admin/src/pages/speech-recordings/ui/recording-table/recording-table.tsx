@@ -80,6 +80,7 @@ export function RecordingTable({
             ),
         },
     ];
+
     return (
         <Table
             rowKey='id'
@@ -111,5 +112,6 @@ function PreviewButton({
 }) {
     const t = useTranslate();
     const handlePreview = () => onPreview(item);
+
     return <Button onClick={handlePreview}>{t('speech.preview')}</Button>;
 }

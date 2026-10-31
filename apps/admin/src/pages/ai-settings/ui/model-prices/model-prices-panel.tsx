@@ -34,6 +34,7 @@ export function ModelPricesPanel() {
     ];
     const rowKey = (price: ModelPrice) =>
         `${price.providerId}:${price.modelId}:${price.meter}`;
+
     return (
         <Card title={t('pricing.title')}>
             <Typography.Paragraph>
@@ -74,17 +75,21 @@ export function ModelPricesPanel() {
         </Card>
     );
 }
+
 function PriceRates({ price }: { price: ModelPrice }) {
     const t = useTranslate();
     let label = t('pricing.tokenRates', {
         input: price.inputCreditsPerMillionTokens,
         output: price.outputCreditsPerMillionTokens,
     });
-    if (price.meter === 'speech-characters')
+
+    if (price.meter === 'speech-characters') {
         label = t('pricing.characterRates', {
             rate: price.creditsPer1000Characters,
             minimum: price.minimumCredits,
         });
+    }
+
     const cachedLabel =
         price.cachedInputCreditsPerMillionTokens == null
             ? t('pricing.cachedInputFallback')
@@ -92,6 +97,7 @@ function PriceRates({ price }: { price: ModelPrice }) {
                   rate: price.cachedInputCreditsPerMillionTokens,
               });
     const showCachedRate = price.meter === 'text-tokens';
+
     return (
         <Space wrap>
             <Typography.Text>{label}</Typography.Text>
@@ -104,6 +110,7 @@ function PriceRates({ price }: { price: ModelPrice }) {
         </Space>
     );
 }
+
 function EditPriceButton({
     price,
     onEdit,
@@ -113,7 +120,9 @@ function EditPriceButton({
 }) {
     const t = useTranslate();
     const handleEdit = () => onEdit(price);
-    if (price.meter === 'text-tokens')
+    if (price.meter === 'text-tokens') {
         return <Tag>{t('pricing.historicalText')}</Tag>;
+    }
+
     return <Button onClick={handleEdit}>{t('pricing.edit')}</Button>;
 }

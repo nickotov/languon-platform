@@ -21,6 +21,7 @@ test('accepts confirmed dedicated targets and runs only the sentence journey', a
     assert.doesNotThrow(() =>
         assertDisposableEnvironment(disposableEnvironment),
     );
+
     const original = { ...process.env };
     Object.assign(process.env, disposableEnvironment);
     try {
@@ -29,10 +30,14 @@ test('accepts confirmed dedicated targets and runs only the sentence journey', a
         });
     } finally {
         for (const name of Object.keys(disposableEnvironment)) {
-            if (original[name] === undefined) delete process.env[name];
-            else process.env[name] = original[name];
+            if (original[name] === undefined) {
+                delete process.env[name];
+            } else {
+                process.env[name] = original[name];
+            }
         }
     }
+
     assert.deepEqual(calls, [
         [
             'pnpm',
@@ -57,6 +62,7 @@ test('rejects default-port, non-sentence database, and mismatched Redis targets'
             }),
         /non-default port/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({
@@ -65,6 +71,7 @@ test('rejects default-port, non-sentence database, and mismatched Redis targets'
             }),
         /languon_auth_sentence/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({

@@ -21,27 +21,35 @@ export const adminDataProvider: DataProvider = {
                 pageSize,
                 ...userFilters(filters),
             });
+
             return {
                 data: response.data as unknown as TData[],
                 total: response.total,
             };
         }
+
         if (resource === 'audit-events') {
             const response = await adminApi.auditEvents({
                 page,
                 pageSize,
                 ...auditFilters(filters),
             });
+
             return {
                 data: response.data as unknown as TData[],
                 total: response.total,
             };
         }
+
         throw unsupported(resource);
     },
     getOne: async ({ id, resource }: Parameters<DataProvider['getOne']>[0]) => {
-        if (resource !== 'users') throw unsupported(resource);
+        if (resource !== 'users') {
+            throw unsupported(resource);
+        }
+
         const response = await adminApi.user(String(id));
+
         return { data: response.user as never };
     },
     update: async ({
@@ -49,12 +57,16 @@ export const adminDataProvider: DataProvider = {
         resource,
         variables,
     }: Parameters<DataProvider['update']>[0]) => {
-        if (resource !== 'users') throw unsupported(resource);
+        if (resource !== 'users') {
+            throw unsupported(resource);
+        }
+
         const input = variables as {
             expectedVersion?: number;
             operation?: 'disable' | 'restore' | 'deletion/cancel';
             reason?: string;
         };
+
         if (
             (input.operation !== 'disable' &&
                 input.operation !== 'restore' &&
@@ -64,6 +76,7 @@ export const adminDataProvider: DataProvider = {
         ) {
             throw new Error('A valid user status operation is required.');
         }
+
         const response = await adminApi.mutateUser(
             String(id),
             input.operation,
@@ -72,6 +85,7 @@ export const adminDataProvider: DataProvider = {
                 reason: input.reason,
             },
         );
+
         return { data: response.user as never };
     },
     custom: async ({
@@ -82,9 +96,11 @@ export const adminDataProvider: DataProvider = {
         if (url === 'dashboard' && method === 'get') {
             return { data: (await adminApi.dashboard()) as never };
         }
+
         if (url === 'ai-settings' && method === 'get') {
             return { data: (await adminApi.aiSettings()) as never };
         }
+
         if (url === 'ai-settings' && method === 'patch') {
             return {
                 data: (await adminApi.mutateAiSettings(
@@ -92,6 +108,7 @@ export const adminDataProvider: DataProvider = {
                 )) as never,
             };
         }
+
         throw unsupported(url);
     },
     create: async ({ resource }) => {
@@ -107,6 +124,7 @@ function userFilters(
 ): Partial<Pick<AdminUsersQuery, 'search' | 'status'>> {
     const search = filterValue(filters, 'search');
     const status = filterValue(filters, 'status');
+
     return {
         ...(typeof search === 'string' && search ? { search } : {}),
         ...(status === 'active' ||
@@ -123,6 +141,7 @@ function auditFilters(
 ): Partial<Pick<AdminAuditEventsQuery, 'action' | 'outcome'>> {
     const action = filterValue(filters, 'action');
     const outcome = filterValue(filters, 'outcome');
+
     return {
         ...(action === 'membership_granted' ||
         action === 'membership_revoked' ||
@@ -144,6 +163,7 @@ function filterValue(
     const filter = filters?.find(
         (candidate) => 'field' in candidate && candidate.field === field,
     );
+
     return filter && 'value' in filter ? filter.value : undefined;
 }
 

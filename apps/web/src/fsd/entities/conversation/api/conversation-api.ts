@@ -44,14 +44,19 @@ const base = resolveApiUrl(
     process.env.NODE_ENV,
     process.env.NEXT_PUBLIC_API_URL,
 );
+
 function headers(token: string, shareKey?: string) {
     return {
         Authorization: `Bearer ${token}`,
         ...(shareKey ? { 'X-Languon-Share-Key': shareKey } : {}),
     };
 }
+
 async function assertResponse(response: Response) {
-    if (response.ok) return;
+    if (response.ok) {
+        return;
+    }
+
     const body: unknown = await response.json().catch(() => null);
     const parsed = ConversationErrorResponseSchema.safeParse(body);
     const error: ConversationErrorDetail = parsed.success
@@ -60,6 +65,7 @@ async function assertResponse(response: Response) {
               code: 'service_unavailable',
               message: 'Conversation request failed.',
           };
+
     throw new ConversationApiError(response.status, {
         ...error,
         correlationId:
@@ -69,6 +75,7 @@ async function assertResponse(response: Response) {
             'client-request',
     });
 }
+
 async function request<T>(
     token: string,
     path: string,
@@ -96,9 +103,12 @@ async function request<T>(
             : { body: JSON.stringify(options.body) }),
         signal: options.signal ?? AbortSignal.timeout(30_000),
     });
+
     await assertResponse(response);
+
     return schema.parse(await response.json());
 }
+
 export const conversationApi = {
     readModelPreference: (token: string, signal?: AbortSignal) =>
         request(
@@ -117,8 +127,15 @@ export const conversationApi = {
             sourceKind: source.kind,
             sourceId: source.id,
         });
-        if (source.shareLocator) query.set('shareLocator', source.shareLocator);
-        if (source.shareKind) query.set('shareKind', source.shareKind);
+
+        if (source.shareLocator) {
+            query.set('shareLocator', source.shareLocator);
+        }
+
+        if (source.shareKind) {
+            query.set('shareKind', source.shareKind);
+        }
+
         return request(
             token,
             `/conversations?${query}`,
@@ -321,11 +338,14 @@ export const conversationApi = {
                 signal,
             },
         );
+
         await assertResponse(response);
         if (
             !response.headers.get('content-type')?.includes('text/event-stream')
-        )
+        ) {
             throw new Error('Invalid stream response');
+        }
+
         await readEventStream(
             response,
             (event) => {
@@ -336,11 +356,13 @@ export const conversationApi = {
                     } catch {
                         /* Legacy/invalid controls fail closed. */
                     }
+
                     const control =
                         ConversationStreamUnavailableSchema.safeParse(raw);
                     const status = control.success
                         ? (control.data.status ?? 404)
                         : 404;
+
                     throw new ConversationApiError(status, {
                         code: 'conversation_not_found',
                         message: 'This conversation is unavailable.',
@@ -349,9 +371,13 @@ export const conversationApi = {
                             'conversation-stream',
                     });
                 }
+
                 // SSE controls are not canonical conversation data. Heartbeats keep
                 // the connection alive; unknown named controls are forward-compatible.
-                if (event.event !== 'conversation') return;
+                if (event.event !== 'conversation') {
+                    return;
+                }
+
                 onEvent(ConversationEventSchema.parse(JSON.parse(event.data)));
             },
             signal,

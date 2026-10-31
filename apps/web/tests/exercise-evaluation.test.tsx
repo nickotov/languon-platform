@@ -16,6 +16,7 @@ vi.mock('@/fsd/features/workbook-learning/api/learning-api', () => ({
         cancelEvaluation: vi.fn(),
     },
 }));
+
 const noteId = '11111111-1111-4111-8111-111111111111';
 const exerciseId = '22222222-2222-4222-8222-222222222222';
 const jobId = '33333333-3333-4333-8333-333333333333';
@@ -47,6 +48,7 @@ const pending: KnowledgeExerciseEvaluationJob = {
 };
 const requestWithSession = <T,>(operation: (token: string) => Promise<T>) =>
     operation('token');
+
 beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(learningApi.attempt).mockResolvedValue({ attempt });
@@ -58,6 +60,7 @@ beforeEach(() => {
         },
     });
 });
+
 describe('inline exercise AI lifecycle', () => {
     it('polls the server job identity, retains private result and never re-submits on poll', async () => {
         vi.mocked(learningApi.evaluate).mockResolvedValue({ job: pending });
@@ -70,6 +73,7 @@ describe('inline exercise AI lifecycle', () => {
                 validAlternative: true,
             },
         };
+
         vi.mocked(learningApi.evaluation).mockResolvedValue({
             job: {
                 ...pending,
@@ -83,6 +87,7 @@ describe('inline exercise AI lifecycle', () => {
                 completedAt: attempt.createdAt,
             },
         });
+
         const onCompleted = vi.fn().mockResolvedValue(undefined);
         const { result } = renderHook(() =>
             useExerciseEvaluation({
@@ -93,9 +98,11 @@ describe('inline exercise AI lifecycle', () => {
                 onCompleted,
             }),
         );
+
         act(() => {
             void result.current.run(input);
         });
+
         await waitFor(
             () =>
                 expect(
@@ -104,6 +111,7 @@ describe('inline exercise AI lifecycle', () => {
                 ).toBe('correct'),
             { timeout: 2_000 },
         );
+
         expect(learningApi.evaluation).toHaveBeenCalledWith(
             'token',
             noteId,
@@ -111,9 +119,11 @@ describe('inline exercise AI lifecycle', () => {
             undefined,
             expect.any(AbortSignal),
         );
+
         expect(learningApi.evaluate).toHaveBeenCalledOnce();
         expect(onCompleted).toHaveBeenCalledOnce();
     });
+
     it('cancels a late accepted job after its view has closed', async () => {
         let resolve!: (value: { job: KnowledgeExerciseEvaluationJob }) => void;
         vi.mocked(learningApi.evaluate).mockReturnValue(
@@ -121,6 +131,7 @@ describe('inline exercise AI lifecycle', () => {
                 resolve = done;
             }),
         );
+
         const onCompleted = vi.fn().mockResolvedValue(undefined);
         const { result, unmount } = renderHook(() =>
             useExerciseEvaluation({
@@ -131,29 +142,36 @@ describe('inline exercise AI lifecycle', () => {
                 onCompleted,
             }),
         );
+
         act(() => {
             void result.current.run(input);
         });
+
         await waitFor(() =>
             expect(learningApi.evaluate).toHaveBeenCalledOnce(),
         );
+
         unmount();
         await act(async () => {
             resolve({ job: pending });
         });
+
         expect(learningApi.cancelEvaluation).toHaveBeenCalledWith(
             'token',
             noteId,
             jobId,
             undefined,
         );
+
         expect(learningApi.evaluation).not.toHaveBeenCalled();
         expect(onCompleted).not.toHaveBeenCalled();
     });
+
     it('keeps failure separate from correctness and does not reveal a prepared answer', async () => {
         vi.mocked(learningApi.evaluate).mockRejectedValue(
             new Error('unavailable'),
         );
+
         const { result } = renderHook(() =>
             useExerciseEvaluation({
                 noteId,
@@ -163,15 +181,18 @@ describe('inline exercise AI lifecycle', () => {
                 onCompleted: vi.fn(),
             }),
         );
+
         act(() => {
             void result.current.run(input);
         });
+
         await waitFor(() =>
             expect(result.current.states[exerciseId]).toEqual({
                 pending: false,
                 failed: true,
             }),
         );
+
         expect(learningApi.attempt).toHaveBeenCalledOnce();
         expect(result.current.states[exerciseId]?.attempt).toBeUndefined();
     });

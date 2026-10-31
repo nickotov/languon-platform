@@ -15,6 +15,7 @@ export function conflictFieldValue(
     const selected = Object.assign(emptyPortraitItems(), {
         [field]: items[field],
     });
+
     return (
         portraitDetails(selected, locale).find((row) => row.value)?.value ?? '—'
     );

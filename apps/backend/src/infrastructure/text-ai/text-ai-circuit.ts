@@ -24,6 +24,7 @@ export function textAiCircuitKey(
 ): string {
     return `${execution.providerId}/${execution.modelId}/${format}`;
 }
+
 export async function isTextAiCircuitOpen(
     tx: Transaction,
     input: TextAiCircuitScope,
@@ -33,8 +34,10 @@ export async function isTextAiCircuitOpen(
         .from(circuits)
         .where(eq(circuits.id, textAiCircuitKey(input.execution, input.format)))
         .limit(1);
+
     return Boolean(row?.openUntil && row.openUntil > input.now);
 }
+
 /** Called only after a fenced provider fault. Uses the established row-lock
  * sequence so concurrent failures increment exactly once apiece. */
 export async function recordTextAiCircuitFailure(
@@ -46,6 +49,7 @@ export async function recordTextAiCircuitFailure(
         .insert(circuits)
         .values({ id, consecutiveFailures: 0, updatedAt: input.now })
         .onConflictDoNothing();
+
     const [row] = await tx
         .select({
             consecutiveFailures: circuits.consecutiveFailures,
@@ -70,6 +74,7 @@ export async function recordTextAiCircuitFailure(
         })
         .where(eq(circuits.id, id));
 }
+
 export async function recordTextAiCircuitSuccess(
     tx: Transaction,
     input: TextAiCircuitScope,

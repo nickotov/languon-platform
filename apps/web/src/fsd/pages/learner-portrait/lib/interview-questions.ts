@@ -96,6 +96,7 @@ const titles: Partial<Record<InterviewTopic, string[]>> = {
         '¿Quieres compartir un rango de edad?',
     ],
 };
+
 export function localInterviewQuestion(
     topic: InterviewTopic,
     locale: InterviewLocale,
@@ -109,6 +110,7 @@ export function localInterviewQuestion(
               id: `choice-${i}`,
               label: labels[index]!,
           }));
+
     return {
         topic,
         locale,
@@ -117,6 +119,7 @@ export function localInterviewQuestion(
         options,
     };
 }
+
 export function countInterviewItems(items: PortraitItems) {
     return (
         items.languages.length +
@@ -181,6 +184,7 @@ const help: Partial<Record<InterviewTopic, string[]>> = {
         'Opcional. Solo ayuda a elegir ejemplos relevantes, nunca la dificultad ni el tono.',
     ],
 };
+
 export function interviewQuestionHelp(
     topic: InterviewTopic,
     locale: InterviewLocale,
@@ -226,6 +230,7 @@ const placeholders: Partial<Record<InterviewTopic, string[]>> = {
         'Ej.: juegos de mesa',
     ],
 };
+
 export function interviewAnswerPlaceholder(
     topic: InterviewTopic,
     locale: InterviewLocale,

@@ -117,6 +117,7 @@ run('pasted-term generation persistence', () => {
         dictionaryStore = new DrizzleDictionaryStore(database, {
             generate: randomUUID,
         });
+
         generationStore = new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         });
@@ -162,28 +163,33 @@ run('pasted-term generation persistence', () => {
             ...enqueue,
             context: operationContext(2),
         });
+
         expect(replay).toEqual(created);
         expect(created).toMatchObject({
             dictionary: { activeCardCount: 0, version: 1 },
             job: { kind: 'import-pairs', state: 'queued' },
             mode: 'ai',
         });
+
         expect(
             await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.ownerId, ownerId)),
         ).toHaveLength(1);
+
         expect(
             await database
                 .select()
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.ownerId, ownerId)),
         ).toHaveLength(1);
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({ nextAttemptAt: instant(10_000) })
             .where(eq(dictionaryGenerationJobsTable.id, created.job.id));
+
         await expect(
             generationStore.observeOperationalState({
                 context: operationContext(2),
@@ -194,10 +200,12 @@ run('pasted-term generation persistence', () => {
             queueImportPairsOldestAgeMs: 0,
             queueOldestRunnableAgeMs: 0,
         });
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({ nextAttemptAt: instant(1) })
             .where(eq(dictionaryGenerationJobsTable.id, created.job.id));
+
         await expect(
             generationStore.observeOperationalState({
                 context: operationContext(2),
@@ -222,6 +230,7 @@ run('pasted-term generation persistence', () => {
             supportedFormats: [dictionaryImportPairsGenerationFormat],
             workerId: 'import-worker',
         });
+
         expect(claim).toMatchObject({
             id: created.job.id,
             input: {
@@ -239,6 +248,7 @@ run('pasted-term generation persistence', () => {
                 ],
             },
         });
+
         const candidate = {
             overrides,
             values: {
@@ -263,6 +273,7 @@ run('pasted-term generation persistence', () => {
             failures: [],
             warnings: [],
         };
+
         await expect(
             generationStore.complete({
                 context: operationContext(4),
@@ -275,6 +286,7 @@ run('pasted-term generation persistence', () => {
                 workerId: claim!.workerId,
             }),
         ).resolves.toBe(true);
+
         const accepted = await generationStore.acceptBatch({
             acceptanceFingerprint: fingerprint('M'),
             context: operationContext(6),
@@ -282,25 +294,30 @@ run('pasted-term generation persistence', () => {
             ownerId,
             selected: [{ candidate, rowIndex: 7 }],
         });
+
         expect(accepted).toMatchObject({
             job: { kind: 'import-pairs', state: 'accepted' },
             outcome: { authorship: 'mixed', dictionaryVersion: 2 },
         });
+
         const [card] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(
                 eq(dictionaryCardsTable.dictionaryId, created.dictionary.id),
             );
+
         expect(card).toMatchObject({ authorship: 'mixed', source: 'bank' });
         await database
             .update(dictionaryGenerationJobsTable)
             .set({ providerReservedAttempts: 3 })
             .where(eq(dictionaryGenerationJobsTable.id, created.job.id));
+
         const measurement = await generationStore.observeOperationalState({
             context: operationContext(7),
             windowStartedAt: instant(-60_000),
         });
+
         expect(measurement).toEqual({
             schemaVersion: 1,
             windowSeconds: 60,
@@ -386,6 +403,7 @@ run('pasted-term generation persistence', () => {
     it('keeps periodic observation windows on dedicated timestamp indexes', async () => {
         const plans = await database.transaction(async (tx) => {
             await tx.execute(sql`set local enable_seqscan = off`);
+
             return Promise.all([
                 tx.execute(sql`explain (format json)
                     select count(*) from dictionary_generation_jobs
@@ -420,8 +438,9 @@ run('pasted-term generation persistence', () => {
             'dictionary_document_uploads_created_idx',
             'dictionary_document_uploads_upload_completed_idx',
             'dictionary_document_uploads_scan_completed_idx',
-        ])
+        ]) {
             expect(serialized).toContain(indexName);
+        }
     });
 
     it('retries only persisted retryable import-pairs failures with trusted lineage', async () => {
@@ -452,6 +471,7 @@ run('pasted-term generation persistence', () => {
             supportedFormats: [dictionaryImportPairsGenerationFormat],
             workerId: 'import-retry-worker',
         });
+
         await generationStore.complete({
             context: operationContext(3),
             fencingToken: claim!.fencingToken,
@@ -485,6 +505,7 @@ run('pasted-term generation persistence', () => {
             reviewExpiresAt: operationContext(60_000).now,
             workerId: claim!.workerId,
         });
+
         const retryInput = {
             context: operationContext(4),
             expectedDictionaryVersion: 1,
@@ -501,11 +522,13 @@ run('pasted-term generation persistence', () => {
             ...retryInput,
             context: operationContext(5),
         });
+
         expect(replay).toEqual(successor);
         const [persisted] = await database
             .select({ input: dictionaryGenerationJobsTable.inputPayload })
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, successor.id));
+
         expect(persisted?.input).toMatchObject({
             importFingerprint: fingerprint('O'),
             predecessor: { jobId: created.job.id, rowIndexes: [4] },
@@ -521,6 +544,7 @@ run('pasted-term generation persistence', () => {
                 },
             ],
         });
+
         await expect(
             generationStore.enqueueImportPairsRetry({
                 ...retryInput,
@@ -596,10 +620,12 @@ run('pasted-term generation persistence', () => {
             supportedFormats: [dictionaryImportPairsGenerationFormat],
             workerId: 'import-context-worker',
         });
+
         expect(claim?.input).toMatchObject({
             instruction: 'Prefer short everyday examples',
             translationContext: 'Retail banking terminology',
         });
+
         const candidate = {
             overrides,
             values: {
@@ -611,6 +637,7 @@ run('pasted-term generation persistence', () => {
                 translation: 'banque',
             },
         };
+
         await generationStore.complete({
             context: operationContext(4),
             fencingToken: claim!.fencingToken,
@@ -633,6 +660,7 @@ run('pasted-term generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         await generationStore.acceptBatch({
             acceptanceFingerprint: fingerprint('V'),
             context: operationContext(5),
@@ -640,10 +668,12 @@ run('pasted-term generation persistence', () => {
             ownerId,
             selected: [{ candidate, rowIndex: 0 }],
         });
+
         const [card] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+
         expect(card?.translationContext).toBeNull();
     });
 
@@ -677,10 +707,12 @@ run('pasted-term generation persistence', () => {
             supportedFormats: [dictionaryPastedTermsGenerationFormat],
             workerId: 'pasted-context-worker',
         });
+
         expect(claim?.input).toMatchObject({
             sharedContext: 'Use beginner-friendly definitions',
             translationContext: 'Museum acquisition terminology',
         });
+
         const candidate = {
             overrides,
             values: {
@@ -692,6 +724,7 @@ run('pasted-term generation persistence', () => {
                 translation: 'collection',
             },
         };
+
         await generationStore.complete({
             context: operationContext(4),
             fencingToken: claim!.fencingToken,
@@ -713,6 +746,7 @@ run('pasted-term generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         await generationStore.acceptBatch({
             acceptanceFingerprint: fingerprint('X'),
             context: operationContext(5),
@@ -720,10 +754,12 @@ run('pasted-term generation persistence', () => {
             ownerId,
             selected: [{ candidate, rowIndex: 0 }],
         });
+
         const [card] = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+
         expect(card?.translationContext).toBeNull();
     });
 
@@ -749,6 +785,7 @@ run('pasted-term generation persistence', () => {
         const currentInput = persisted!.inputPayload as Record<string, unknown>;
         const { translationContext: _translationContext, ...legacyInput } =
             currentInput;
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -809,6 +846,7 @@ run('pasted-term generation persistence', () => {
             supportedFormats: [dictionaryPastedTermsGenerationFormat],
             workerId: 'batch-worker',
         });
+
         expect(claim).toMatchObject({
             id: job.id,
             input: {
@@ -820,6 +858,7 @@ run('pasted-term generation persistence', () => {
                 sharedContext: 'Art vocabulary',
             },
         });
+
         await expect(
             generationStore.complete({
                 context: operationContext(3),
@@ -831,6 +870,7 @@ run('pasted-term generation persistence', () => {
                 workerId: claim!.workerId,
             }),
         ).resolves.toBe(true);
+
         return job;
     }
 
@@ -861,6 +901,7 @@ run('pasted-term generation persistence', () => {
         expect(accepted.outcome.cards.map((card) => card.rowIndex)).toEqual([
             0, 1,
         ]);
+
         expect(accepted.outcome.warnings).toEqual([
             expect.objectContaining({
                 code: 'duplicate_source',
@@ -868,11 +909,13 @@ run('pasted-term generation persistence', () => {
                 rowIndex: 1,
             }),
         ]);
+
         const cards = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id))
             .orderBy(asc(dictionaryCardsTable.sortKey));
+
         expect(cards).toMatchObject([
             { authorship: 'ai-generated', source: 'canvas', version: 1 },
             {
@@ -882,18 +925,21 @@ run('pasted-term generation persistence', () => {
                 version: 1,
             },
         ]);
+
         const revisions = await database
             .select()
             .from(dictionaryCardRevisionsTable)
             .where(
                 eq(dictionaryCardRevisionsTable.dictionaryId, dictionary.id),
             );
+
         expect(revisions).toHaveLength(2);
         expect(
             revisions.every(
                 (revision) => revision.acceptedGenerationJobId === job.id,
             ),
         ).toBe(true);
+
         const [persistedJob] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
@@ -902,6 +948,7 @@ run('pasted-term generation persistence', () => {
             .select()
             .from(dictionaryGenerationProposalsTable)
             .where(eq(dictionaryGenerationProposalsTable.jobId, job.id));
+
         expect(persistedJob?.inputPayload).toBeNull();
         expect(persistedProposal).toMatchObject({
             acceptedBatchOutcome: accepted.outcome,
@@ -925,6 +972,7 @@ run('pasted-term generation persistence', () => {
                 ],
             }),
         ).resolves.toEqual(accepted);
+
         await expect(
             generationStore.acceptBatch({
                 acceptanceFingerprint: fingerprint('D'),
@@ -939,6 +987,7 @@ run('pasted-term generation persistence', () => {
                 ],
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationCandidateConflictError);
+
         await expect(
             database
                 .select()
@@ -973,6 +1022,7 @@ run('pasted-term generation persistence', () => {
                 ],
             }),
         ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
         await expect(
             database
                 .select()
@@ -1006,6 +1056,7 @@ run('pasted-term generation persistence', () => {
                 ],
             }),
         ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
         await expect(
             database
                 .select()
@@ -1035,6 +1086,7 @@ run('pasted-term generation persistence', () => {
             supportedFormats: [dictionaryPastedTermsGenerationFormat],
             workerId: 'batch-worker',
         });
+
         await generationStore.complete({
             context: operationContext(3),
             fencingToken: priorClaim!.fencingToken,
@@ -1147,6 +1199,7 @@ run('pasted-term generation persistence', () => {
             failures: [],
             warnings: [],
         };
+
         await generationStore.complete({
             context: operationContext(4),
             fencingToken: claim!.fencingToken,
@@ -1156,6 +1209,7 @@ run('pasted-term generation persistence', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         await expect(
             generationStore.read({
                 context: operationContext(5),
@@ -1196,6 +1250,7 @@ run('pasted-term generation persistence', () => {
                 },
             },
         });
+
         await generationStore.enqueue({
             cardId: created.card.id,
             context: operationContext(2),
@@ -1208,6 +1263,7 @@ run('pasted-term generation persistence', () => {
             instruction: null,
             ownerId,
         });
+
         const batch = await generationStore.enqueuePastedTerms({
             context: operationContext(3),
             dictionaryId: dictionary.id,
@@ -1219,6 +1275,7 @@ run('pasted-term generation persistence', () => {
             sharedContext: null,
             text: 'canvas',
         });
+
         await database.insert(dictionaryGenerationProviderCircuitTable).values({
             consecutiveFailures: 3,
             id: 'single-card:v1',
@@ -1313,6 +1370,7 @@ run('pasted-term generation persistence', () => {
             .select()
             .from(dictionaryGenerationProposalsTable)
             .where(eq(dictionaryGenerationProposalsTable.jobId, job.id));
+
         expect(cardCount?.value).toBe(10_000);
         expect(revisionCount?.value).toBe(0);
         expect(persistedJob?.inputPayload).not.toBeNull();
@@ -1322,6 +1380,7 @@ run('pasted-term generation persistence', () => {
             reviewState: 'reviewable',
             terminalAt: null,
         });
+
         expect(persistedProposal?.payload).not.toBeNull();
     });
 });

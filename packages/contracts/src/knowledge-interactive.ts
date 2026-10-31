@@ -20,14 +20,19 @@ const boundedPayload = z.unknown().superRefine((value, ctx) => {
     while (pending.length) {
         const item = pending.pop()!;
         count += 1;
-        if (typeof item.value === 'string') characters += item.value.length;
+        if (typeof item.value === 'string') {
+            characters += item.value.length;
+        }
+
         if (count > 30_000 || characters > 160_000 || item.depth > 24) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Interactive document exceeds its payload limit.',
             });
+
             return;
         }
+
         if (item.value && typeof item.value === 'object') {
             const entries = Object.entries(item.value);
             if (entries.length + pending.length > 30_000) {
@@ -36,8 +41,10 @@ const boundedPayload = z.unknown().superRefine((value, ctx) => {
                     message:
                         'Interactive document exceeds its structure limit.',
                 });
+
                 return;
             }
+
             for (const [key, child] of entries) {
                 characters += key.length;
                 pending.push({ value: child, depth: item.depth + 1 });
@@ -54,10 +61,14 @@ const rootSchema = z
     .strict();
 
 function sourceSegments(block: LearningBlock): string[] {
-    if (block.type === 'bilingual-text')
+    if (block.type === 'bilingual-text') {
         return block.segments.map((segment) => segment.id);
-    if (block.type === 'audio' || block.type === 'video')
+    }
+
+    if (block.type === 'audio' || block.type === 'video') {
         return block.transcript?.segments.map((segment) => segment.id) ?? [];
+    }
+
     return [];
 }
 
@@ -73,14 +84,17 @@ export function createInteractiveKnowledgeBodySchema(
         z.custom<KnowledgeNode>().superRefine((value, ctx) => {
             const root = rootSchema.safeParse(value);
             if (!root.success) {
-                for (const issue of root.error.issues)
+                for (const issue of root.error.issues) {
                     ctx.addIssue({
                         code: 'custom',
                         path: issue.path,
                         message: issue.message,
                     });
+                }
+
                 return;
             }
+
             const blocks = new Map<string, LearningBlock>();
             const prose: unknown[] = [];
             for (const [index, child] of root.data.content.entries()) {
@@ -92,36 +106,49 @@ export function createInteractiveKnowledgeBodySchema(
                 ) {
                     const parsed =
                         KnowledgeLearningBlockNodeSchema.safeParse(child);
+
                     if (!parsed.success) {
-                        for (const issue of parsed.error.issues)
+                        for (const issue of parsed.error.issues) {
                             ctx.addIssue({
                                 ...issue,
                                 path: ['content', index, ...issue.path],
                             });
+                        }
+
                         continue;
                     }
+
                     const block = parsed.data.attrs.block;
-                    if (blocks.has(block.id))
+                    if (blocks.has(block.id)) {
                         ctx.addIssue({
                             code: 'custom',
                             path: ['content', index],
                             message: 'Learning block IDs must be unique.',
                         });
+                    }
+
                     blocks.set(block.id, block);
                     prose.push({ type: 'paragraph' });
-                } else prose.push(child);
+                } else {
+                    prose.push(child);
+                }
             }
+
             const proseResult = legacyDocument.safeParse({
                 type: 'doc',
                 content: prose,
             });
-            if (!proseResult.success)
-                for (const issue of proseResult.error.issues)
+
+            if (!proseResult.success) {
+                for (const issue of proseResult.error.issues) {
                     ctx.addIssue({
                         code: 'custom',
                         path: issue.path,
                         message: issue.message,
                     });
+                }
+            }
+
             const exerciseGroups = new Map<string, string>();
             for (const block of blocks.values()) {
                 if (block.type === 'exercise' && block.group) {
@@ -132,12 +159,14 @@ export function createInteractiveKnowledgeBodySchema(
                                 title: block.group.title,
                                 parentBlockId: block.group.parentBlockId,
                             })
-                    )
+                    ) {
                         ctx.addIssue({
                             code: 'custom',
                             message:
                                 'Exercises in the same group must share its title and media parent.',
                         });
+                    }
+
                     exerciseGroups.set(
                         block.group.id,
                         JSON.stringify({
@@ -145,33 +174,41 @@ export function createInteractiveKnowledgeBodySchema(
                             parentBlockId: block.group.parentBlockId,
                         }),
                     );
+
                     if (block.group.parentBlockId) {
                         const parent = blocks.get(block.group.parentBlockId);
                         if (
                             !parent ||
                             (parent.type !== 'audio' && parent.type !== 'video')
-                        )
+                        ) {
                             ctx.addIssue({
                                 code: 'custom',
                                 message:
                                     'Exercise group parent must reference audio or video in this document.',
                             });
+                        }
                     }
                 }
-                if (block.type !== 'exercise' || !block.source) continue;
+
+                if (block.type !== 'exercise' || !block.source) {
+                    continue;
+                }
+
                 const source = blocks.get(block.source.blockId);
                 const ids = new Set(source ? sourceSegments(source) : []);
                 if (
                     !source ||
                     block.source.segmentIds.some((id) => !ids.has(id))
-                )
+                ) {
                     ctx.addIssue({
                         code: 'custom',
                         message:
                             'Exercise source must reference existing text or transcript segments in this document.',
                     });
+                }
             }
         }),
     );
+
     return z.object({ schemaVersion: z.literal(2), document }).strict();
 }

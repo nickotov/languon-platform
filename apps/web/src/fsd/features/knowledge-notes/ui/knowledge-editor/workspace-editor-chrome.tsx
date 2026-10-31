@@ -29,6 +29,7 @@ export function WorkspaceEditorChrome({
     useEffect(() => {
         setToolbarRoot(document.getElementById(workspace.toolbarRootId));
     }, [workspace.toolbarRootId]);
+
     const selection = editor.state.selection;
     const passage = editor.state.doc.textBetween(
         selection.from,
@@ -47,6 +48,7 @@ export function WorkspaceEditorChrome({
             variant='workspace'
         />
     );
+
     return (
         <div className={styles.root} data-workspace-editor>
             {toolbarRoot ? createPortal(toolbar, toolbarRoot) : toolbar}

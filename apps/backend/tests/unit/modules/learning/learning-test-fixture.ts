@@ -50,5 +50,6 @@ export function fixture(enabled = true) {
         },
         store,
     } satisfies LearningServiceDependencies;
+
     return { service: new LearningService(dependencies), dependencies, store };
 }

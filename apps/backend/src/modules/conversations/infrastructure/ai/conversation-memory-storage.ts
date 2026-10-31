@@ -68,13 +68,15 @@ export class ConversationMemoryStorage extends MemoryStorage {
         if (
             threadId !== this.options.conversationId ||
             (resourceId && resourceId !== this.options.ownerId)
-        )
+        ) {
             unsupported();
+        }
     }
 
     async dangerouslyClearAll(): Promise<void> {
         unsupported();
     }
+
     override async init(): Promise<void> {
         /* Application migrations own the schema. */
     }
@@ -86,6 +88,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
     }): Promise<StorageThreadType> {
         this.assertScope(threadId);
         const state = await this.options.port.readState('thread');
+
         return {
             id: threadId,
             resourceId: this.options.ownerId,
@@ -107,6 +110,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
     async saveThread({ thread }: { thread: StorageThreadType }) {
         this.assertScope(thread.id, thread.resourceId);
         await this.options.port.writeState({ thread: serialize(thread) });
+
         return thread;
     }
 
@@ -116,6 +120,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
         metadata: Record<string, unknown>;
     }) {
         const thread = await this.getThreadById({ threadId: input.id });
+
         return this.saveThread({
             thread: {
                 ...thread,
@@ -129,18 +134,23 @@ export class ConversationMemoryStorage extends MemoryStorage {
     async deleteThread(): Promise<void> {
         unsupported();
     }
+
     override async cloneThread(): Promise<never> {
         return unsupported();
     }
+
     override async getResourceById(): Promise<never> {
         return unsupported();
     }
+
     override async saveResource(): Promise<never> {
         return unsupported();
     }
+
     override async updateResource(): Promise<never> {
         return unsupported();
     }
+
     override async listMessagesByResourceId(): Promise<never> {
         return unsupported();
     }
@@ -149,8 +159,10 @@ export class ConversationMemoryStorage extends MemoryStorage {
         if (
             input.filter?.resourceId &&
             input.filter.resourceId !== this.options.ownerId
-        )
+        ) {
             unsupported();
+        }
+
         const thread = await this.getThreadById({
             threadId: this.options.conversationId,
         });
@@ -158,6 +170,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
             ([key, value]) => thread.metadata?.[key] === value,
         );
         const page = input.page ?? 0;
+
         return {
             threads: page === 0 && matches ? [thread] : [],
             total: matches ? 1 : 0,
@@ -174,6 +187,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
             limit: 500,
             order: 'asc',
         });
+
         return {
             messages: messages.map((message) =>
                 toTutorModelMessage(
@@ -188,13 +202,17 @@ export class ConversationMemoryStorage extends MemoryStorage {
     async listMessages(input: StorageListMessagesInput) {
         for (const id of Array.isArray(input.threadId)
             ? input.threadId
-            : [input.threadId])
+            : [input.threadId]) {
             this.assertScope(id, input.resourceId);
+        }
+
         if (
             input.filter?.metadata &&
             Object.keys(input.filter.metadata).length > 0
-        )
+        ) {
             unsupported();
+        }
+
         const page = input.page ?? 0;
         const limit =
             input.perPage === false ? 500 : Math.min(input.perPage ?? 100, 500);
@@ -220,10 +238,13 @@ export class ConversationMemoryStorage extends MemoryStorage {
                   }
                 : {}),
         });
-        if (input.perPage === false && total > limit)
+
+        if (input.perPage === false && total > limit) {
             throw new Error(
                 'Conversation context requires a narrower history window.',
             );
+        }
+
         const messages = rows.map((message) =>
             toTutorModelMessage(
                 message,
@@ -231,14 +252,21 @@ export class ConversationMemoryStorage extends MemoryStorage {
                 this.options.ownerId,
             ),
         );
+
         for (const include of input.include ?? []) {
-            if (include.threadId) this.assertScope(include.threadId);
+            if (include.threadId) {
+                this.assertScope(include.threadId);
+            }
+
             const found = await this.listMessagesById({
                 messageIds: [include.id],
             });
+
             for (const message of found.messages) {
-                if (!messages.some((existing) => existing.id === message.id))
+                if (!messages.some((existing) => existing.id === message.id)) {
                     messages.push(message);
+                }
+
                 const [before, after] = await Promise.all([
                     this.options.port.listMessages({
                         before: message.createdAt.toISOString(),
@@ -259,6 +287,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
                         order: 'asc',
                     }),
                 ]);
+
                 for (const neighbor of [
                     ...before.messages,
                     ...after.messages,
@@ -267,7 +296,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
                         !messages.some(
                             (existing) => existing.id === neighbor.id,
                         )
-                    )
+                    ) {
                         messages.push(
                             toTutorModelMessage(
                                 neighbor,
@@ -275,9 +304,11 @@ export class ConversationMemoryStorage extends MemoryStorage {
                                 this.options.ownerId,
                             ),
                         );
+                    }
                 }
             }
         }
+
         const direction = input.orderBy?.direction === 'ASC' ? 1 : -1;
         messages.sort(
             (a, b) =>
@@ -285,6 +316,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
                 (a.createdAt.getTime() - b.createdAt.getTime() ||
                     a.id.localeCompare(b.id)),
         );
+
         return {
             messages,
             total,
@@ -298,9 +330,14 @@ export class ConversationMemoryStorage extends MemoryStorage {
         const saved: TutorMemoryMessage[] = [];
         for (const message of messages) {
             this.assertScope(message.threadId, message.resourceId);
-            if (message.role !== 'user' && message.role !== 'assistant')
+            if (message.role !== 'user' && message.role !== 'assistant') {
                 return unsupported();
-            if (message.id === 'om-continuation') continue;
+            }
+
+            if (message.id === 'om-continuation') {
+                continue;
+            }
+
             // User text/copies are admitted by the application. SDK-only source
             // provenance and memory markers must never replace that visible text.
             const canonical =
@@ -314,8 +351,11 @@ export class ConversationMemoryStorage extends MemoryStorage {
                           })
                       ).messages[0]
                     : undefined;
-            if (message.role === 'user' && canonical?.role !== 'user')
+
+            if (message.role === 'user' && canonical?.role !== 'user') {
                 unsupported();
+            }
+
             saved.push({
                 id: message.id,
                 role: message.role,
@@ -327,7 +367,9 @@ export class ConversationMemoryStorage extends MemoryStorage {
                 modelContent: serialize(message.content),
             });
         }
+
         await this.options.port.saveMessages(saved);
+
         return { messages };
     }
 
@@ -341,28 +383,41 @@ export class ConversationMemoryStorage extends MemoryStorage {
             const original = existing.messages.find(
                 (message) => message.id === update.id,
             );
-            if (!original) return unsupported();
+
+            if (!original) {
+                return unsupported();
+            }
+
             return {
                 ...original,
                 ...update,
                 content: { ...original.content, ...update.content },
             } as MastraDBMessage;
         });
+
         await this.saveMessages({ messages: updated });
+
         return updated;
     }
 
     private async index(): Promise<string[]> {
         const state = await this.options.port.readState('observations:index');
+
         return Array.isArray(state?.ids)
             ? state.ids.filter((id): id is string => typeof id === 'string')
             : [];
     }
 
     private async readRecord(id: string): Promise<ObservationalMemoryRecord> {
-        if (!(await this.index()).includes(id)) return unsupported();
+        if (!(await this.index()).includes(id)) {
+            return unsupported();
+        }
+
         const raw = await this.options.port.readState(recordKey(id));
-        if (!raw) throw new Error('Conversation memory record is unavailable.');
+        if (!raw) {
+            throw new Error('Conversation memory record is unavailable.');
+        }
+
         const record = {
             ...raw,
             createdAt: new Date(String(raw.createdAt)),
@@ -374,7 +429,9 @@ export class ConversationMemoryStorage extends MemoryStorage {
                 ? new Date(String(raw.lastBufferedAtTime))
                 : null,
         } as ObservationalMemoryRecord;
+
         this.assertScope(record.threadId, record.resourceId);
+
         return record;
     }
 
@@ -384,7 +441,10 @@ export class ConversationMemoryStorage extends MemoryStorage {
     ) {
         this.assertScope(record.threadId, record.resourceId);
         const ids = await this.index();
-        if (!append && !ids.includes(record.id)) unsupported();
+        if (!append && !ids.includes(record.id)) {
+            unsupported();
+        }
+
         await this.options.port.writeState({
             [recordKey(record.id)]: serialize({
                 ...record,
@@ -406,6 +466,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
     ) {
         this.assertScope(threadId, resourceId);
         const id = (await this.index()).at(-1);
+
         return id ? this.readRecord(id) : null;
     }
 
@@ -418,6 +479,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
         this.assertScope(threadId, resourceId);
         const ids = (await this.index()).reverse();
         const records = await Promise.all(ids.map((id) => this.readRecord(id)));
+
         return records
             .filter(
                 (record) =>
@@ -434,12 +496,19 @@ export class ConversationMemoryStorage extends MemoryStorage {
         input: CreateObservationalMemoryInput,
     ) {
         this.assertScope(input.threadId, input.resourceId);
-        if (input.scope !== 'thread') unsupported();
+        if (input.scope !== 'thread') {
+            unsupported();
+        }
+
         const current = await this.getObservationalMemory(
             input.threadId,
             input.resourceId,
         );
-        if (current) return current;
+
+        if (current) {
+            return current;
+        }
+
         const record: ObservationalMemoryRecord = {
             id: randomUUID(),
             scope: 'thread',
@@ -464,7 +533,9 @@ export class ConversationMemoryStorage extends MemoryStorage {
                 ? { observedTimezone: input.observedTimezone }
                 : {}),
         };
+
         await this.writeRecord(record, true);
+
         return record;
     }
 
@@ -509,7 +580,9 @@ export class ConversationMemoryStorage extends MemoryStorage {
             isObserving: false,
             observedMessageIds: [],
         };
+
         await this.writeRecord(record, true);
+
         return record;
     }
 
@@ -526,12 +599,14 @@ export class ConversationMemoryStorage extends MemoryStorage {
     override async setObservingFlag(id: string, isObserving: boolean) {
         await this.writeRecord({ ...(await this.readRecord(id)), isObserving });
     }
+
     override async setReflectingFlag(id: string, isReflecting: boolean) {
         await this.writeRecord({
             ...(await this.readRecord(id)),
             isReflecting,
         });
     }
+
     override async setPendingMessageTokens(
         id: string,
         pendingMessageTokens: number,
@@ -541,20 +616,29 @@ export class ConversationMemoryStorage extends MemoryStorage {
             pendingMessageTokens,
         });
     }
+
     override async setBufferingObservationFlag(id: string, value: boolean) {
-        if (value) unsupported();
+        if (value) {
+            unsupported();
+        }
+
         await this.writeRecord({
             ...(await this.readRecord(id)),
             isBufferingObservation: false,
         });
     }
+
     override async setBufferingReflectionFlag(id: string, value: boolean) {
-        if (value) unsupported();
+        if (value) {
+            unsupported();
+        }
+
         await this.writeRecord({
             ...(await this.readRecord(id)),
             isBufferingReflection: false,
         });
     }
+
     override async clearObservationalMemory(): Promise<void> {
         unsupported();
     }

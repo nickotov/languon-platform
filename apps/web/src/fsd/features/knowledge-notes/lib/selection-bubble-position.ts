@@ -25,9 +25,16 @@ export function selectionBubblePosition({
     const above = selection.top - bubble.height - gap;
     const below = selection.bottom + gap;
     let top = above;
-    if (touch || above < topEdge) top = below;
-    if (top > bottomEdge && above >= topEdge) top = above;
+    if (touch || above < topEdge) {
+        top = below;
+    }
+
+    if (top > bottomEdge && above >= topEdge) {
+        top = above;
+    }
+
     top = Math.max(topEdge, Math.min(top, bottomEdge));
+
     return {
         left: left - root.left,
         top: top - root.top,

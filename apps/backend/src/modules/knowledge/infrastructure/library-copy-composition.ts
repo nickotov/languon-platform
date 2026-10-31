@@ -30,6 +30,7 @@ export function createKnowledgeLibraryCopyComposition(options: {
         authenticate: options.authenticate,
         rateLimiter: options.rateLimiter,
     });
+
     return {
         store,
         service,

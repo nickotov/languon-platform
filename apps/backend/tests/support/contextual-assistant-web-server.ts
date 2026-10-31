@@ -16,15 +16,18 @@ const server = serve({
             new URL(request.url).pathname ===
                 '/auth/email-verification/verify' &&
             response.status === 200
-        )
+        ) {
             await fixture.credit(
                 AuthenticationSuccessResponseSchema.parse(
                     await response.clone().json(),
                 ).accessToken,
             );
+        }
+
         return response;
     },
 });
+
 console.log('Contextual assistant test fixture ready at http://127.0.0.1:4006');
 try {
     while (!controller.signal.aborted) {

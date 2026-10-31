@@ -157,7 +157,9 @@ export async function claimPrivateSentenceInput(
         capability: string;
     } | null;
 
-    if (!value) return null;
+    if (!value) {
+        return null;
+    }
 
     return { ...job, ...value };
 }
@@ -167,7 +169,10 @@ export async function authorizePrivateSentenceLease(
     job: SentenceJobRow,
     lease: SentenceLease,
 ) {
-    if (!lease.capability) return null;
+    if (!lease.capability) {
+        return null;
+    }
+
     const [row] = await privateSentenceQuery(
         tx,
         sql`select public.languon_read_private_sentence_job(${job.id}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${lease.capability}) as value`,

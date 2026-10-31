@@ -40,9 +40,12 @@ export function createLearnerInterviewerAgent(model: MastraModelConfig) {
             modelSettings: { maxRetries: 0, maxOutputTokens: 4096 },
         },
     });
+
     agent.__registerPrimitives({ logger: noopLogger });
+
     return agent;
 }
+
 export function createLearnerInterviewerRunner(options: {
     model:
         | ModelRouterModelId
@@ -62,8 +65,11 @@ export function createLearnerInterviewerRunner(options: {
                 'specificationVersion' in options.model
                     ? options.model
                     : await resolveModelConfig(options.model);
-            if (model.specificationVersion !== 'v2')
+
+            if (model.specificationVersion !== 'v2') {
                 throw new Error('The selected interview model is unavailable.');
+            }
+
             const validatedAccounting = createValidatedInterviewAccounting(
                 options.accounting,
             );
@@ -100,11 +106,13 @@ export function createLearnerInterviewerRunner(options: {
                         ),
                     },
                 });
+
                 gate.signal.throwIfAborted();
                 // No coercion, markdown stripping, repair calls, or silently truncated answers.
                 let result: ReturnType<
                     typeof PortraitInterviewerOutputSchema.parse
                 >;
+
                 try {
                     // The SDK object is authoritative, but its tolerant JSON parser can
                     // strip markdown or repair controls. Require a genuine JSON wire
@@ -113,13 +121,17 @@ export function createLearnerInterviewerRunner(options: {
                     result = PortraitInterviewerOutputSchema.parse(
                         output.object,
                     );
-                    if (result.proposedItems)
+
+                    if (result.proposedItems) {
                         validateReusablePortraitItems(result.proposedItems);
+                    }
                 } catch {
                     throw new PortraitInterviewInvalidModelOutputError();
                 }
+
                 signal.throwIfAborted();
                 await validatedAccounting.approve();
+
                 return result;
             } catch (error) {
                 const safeError =
@@ -132,19 +144,24 @@ export function createLearnerInterviewerRunner(options: {
                 const completedInvalid = await validatedAccounting.reject(
                     signal.aborted ? 'aborted' : 'provider-error',
                 );
+
                 gate.abort(safeError);
                 if (
                     safeError instanceof
                         PortraitInterviewInvalidModelOutputError &&
                     completedInvalid &&
                     !signal.aborted
-                )
+                ) {
                     throw markCompletedInvalidProviderResult(safeError);
-                if (gate.providerFailure && options.providerId)
+                }
+
+                if (gate.providerFailure && options.providerId) {
                     throw new ProviderExecutionError(
                         gate.providerFailure.error,
                         options.providerId,
                     );
+                }
+
                 throw safeError;
             }
         },

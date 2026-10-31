@@ -53,6 +53,7 @@ function show(onApply = vi.fn().mockReturnValue(true)) {
         />,
     );
 }
+
 afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -67,12 +68,14 @@ describe('atomic block authoring fields', () => {
                 headers: { 'Content-Type': 'application/json' },
             }),
         );
+
         vi.stubGlobal('fetch', fetcher);
         const apply = vi.fn().mockReturnValue(true);
         show(apply);
         const check = await screen.findByRole('button', {
             name: 'Check translation',
         });
+
         await waitFor(() => expect(check).not.toBeDisabled());
         fireEvent.click(check);
         await screen.findByText('радость');
@@ -85,23 +88,29 @@ describe('atomic block authoring fields', () => {
             sourceLanguage: 'fr',
             targetLanguage: 'ru',
         });
+
         fireEvent.change(screen.getByLabelText('Word or phrase'), {
             target: { value: 'travail' },
         });
+
         expect(
             await screen.findByText(
                 'This field or its source changed. Check again before applying this suggestion.',
             ),
         ).toBeInTheDocument();
+
         expect(
             screen.queryByRole('button', { name: 'Accept', exact: true }),
         ).not.toBeInTheDocument();
+
         fireEvent.change(screen.getByLabelText('Word or phrase'), {
             target: { value: 'joie' },
         });
+
         fireEvent.click(
             await screen.findByRole('button', { name: 'Accept', exact: true }),
         );
+
         expect(screen.getByLabelText('Translation')).toHaveValue('радость');
         expect(apply).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
@@ -117,6 +126,7 @@ describe('atomic block authoring fields', () => {
             }),
         );
     });
+
     it('cancels a job returned after the editor was removed and never applies late output', async () => {
         let resolvePost!: (response: Response) => void;
         const fetcher = vi
@@ -140,12 +150,14 @@ describe('atomic block authoring fields', () => {
                     { status: 200 },
                 ),
             );
+
         vi.stubGlobal('fetch', fetcher);
         const apply = vi.fn();
         const view = show(apply);
         const check = await screen.findByRole('button', {
             name: 'Check translation',
         });
+
         await waitFor(() => expect(check).not.toBeDisabled());
         fireEvent.click(check);
         await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
@@ -166,24 +178,30 @@ describe('atomic block authoring fields', () => {
                 ),
             );
         });
+
         await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
         expect(fetcher.mock.calls[1]![0]).toContain(`/${jobId}/cancel`);
         expect(apply).not.toHaveBeenCalled();
     });
+
     it('preserves local edits and waits for explicit discard', () => {
         show();
         fireEvent.change(screen.getByLabelText('Word or phrase'), {
             target: { value: 'travail' },
         });
+
         fireEvent.click(
             screen.getAllByRole('button', { name: 'Cancel', exact: true })[0]!,
         );
+
         expect(
             screen.getByRole('alertdialog', { name: 'Discard changes?' }),
         ).toBeInTheDocument();
+
         fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
         expect(screen.getByLabelText('Word or phrase')).toHaveValue('travail');
     });
+
     it('allowlists translation paths and captures source and language for stale protection', () => {
         const data = new FormData();
         data.set('language', 'fr');
@@ -198,10 +216,12 @@ describe('atomic block authoring fields', () => {
                 data,
             ),
         ).toMatchObject({ entryId: rowId, sourceText: 'joie' });
+
         expect(
             blockFieldTarget('vocabulary', 'entries.0.id', 'x', data),
         ).toBeNull();
     });
+
     it('copies an exercise set with a shared fresh group and independent question identities', () => {
         const groupId = crypto.randomUUID();
         const make = () =>
@@ -219,11 +239,13 @@ describe('atomic block authoring fields', () => {
         expect(copied.map((block) => block.id)).not.toEqual(
             originals.map((block) => block.id),
         );
+
         expect(
             copied[0]!.type === 'exercise' &&
                 copied[1]!.type === 'exercise' &&
                 copied[0]!.group?.id === copied[1]!.group?.id,
         ).toBe(true);
+
         expect(copied[0]!.type === 'exercise' && copied[0]!.group?.id).not.toBe(
             groupId,
         );
@@ -235,11 +257,13 @@ it('reuses the operation identity after an unknown submit failure', async () => 
         .fn()
         .mockRejectedValueOnce(new TypeError('Network interrupted'))
         .mockResolvedValueOnce(Response.json(result));
+
     vi.stubGlobal('fetch', fetcher);
     show();
     const check = await screen.findByRole('button', {
         name: 'Check translation',
     });
+
     await waitFor(() => expect(check).not.toBeDisabled());
     fireEvent.click(check);
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
@@ -279,35 +303,44 @@ it('keeps incomplete multilingual drafts while switching languages and preserves
             sources={[]}
         />,
     );
+
     fireEvent.change(screen.getByLabelText('Original passage'), {
         target: { value: 'Good morning.' },
     });
+
     fireEvent.change(screen.getByLabelText('Translated passage'), {
         target: { value: 'Доброе утро.' },
     });
+
     expect(
         await screen.findByText(
             'The original changed. Review every prepared translation before applying changes.',
         ),
     ).toBeInTheDocument();
+
     fireEvent.change(
         screen.getByRole('combobox', { name: 'Prepared translation' }),
         { target: { value: 'fr' } },
     );
+
     expect(screen.getByLabelText('Original passage')).toHaveValue(
         'Good morning.',
     );
+
     expect(screen.getByLabelText('Translated passage')).toHaveValue('Bonjour.');
     fireEvent.change(screen.getByLabelText('Translated passage'), {
         target: { value: 'Bonjour, ce matin.' },
     });
+
     fireEvent.change(
         screen.getByRole('combobox', { name: 'Prepared translation' }),
         { target: { value: 'ru' } },
     );
+
     expect(screen.getByLabelText('Translated passage')).toHaveValue(
         'Доброе утро.',
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).toHaveBeenCalledOnce();
     expect(apply.mock.calls[0]![0]).toMatchObject({
@@ -356,36 +389,44 @@ it('requires every existing prepared language to cover a new source segment with
             sources={[]}
         />,
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Add row' }));
     fireEvent.change(screen.getAllByLabelText('Original passage')[1]!, {
         target: { value: 'Good night.' },
     });
+
     fireEvent.change(screen.getAllByLabelText('Translated passage')[1]!, {
         target: { value: 'Спокойной ночи.' },
     });
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).not.toHaveBeenCalled();
     fireEvent.change(
         screen.getByRole('combobox', { name: 'Prepared translation' }),
         { target: { value: 'fr' } },
     );
+
     expect(screen.getAllByLabelText('Original passage')[1]).toHaveValue(
         'Good night.',
     );
+
     fireEvent.change(screen.getAllByLabelText('Translated passage')[1]!, {
         target: { value: 'Bonne nuit.' },
     });
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).toHaveBeenCalledOnce();
     const saved = apply.mock.calls[0]![0];
     expect(
         saved.translations.map((value: { language: string }) => value.language),
     ).toEqual(['ru', 'fr']);
+
     expect(
         saved.translations.every(
             (value: { segments: unknown[] }) => value.segments.length === 2,
         ),
     ).toBe(true);
+
     expect(saved.segments[0].id).toBe(segment);
     expect(saved.translations[0].segments[1].sourceSegmentId).toBe(
         saved.segments[1].id,
@@ -393,8 +434,10 @@ it('requires every existing prepared language to cover a new source segment with
 });
 
 it('keeps existing language controls behind the quiet pair disclosure and retains an optional definition', async () => {
-    if (vocabulary.type !== 'vocabulary')
+    if (vocabulary.type !== 'vocabulary') {
         throw new Error('Expected vocabulary');
+    }
+
     const block = LearningBlockSchema.parse({
         ...vocabulary,
         title: 'Words',
@@ -413,25 +456,31 @@ it('keeps existing language controls behind the quiet pair disclosure and retain
             sources={[]}
         />,
     );
+
     const languages = await screen.findByRole('button', {
         name: 'Languages: French → Russian',
     });
+
     expect(languages.closest('details')).not.toHaveAttribute('open');
     expect(screen.getByLabelText('Content language')).not.toBeVisible();
     fireEvent.click(languages);
     await waitFor(() =>
         expect(languages).toHaveAttribute('aria-expanded', 'true'),
     );
+
     fireEvent.change(screen.getByLabelText('Content language'), {
         target: { value: 'de' },
     });
+
     fireEvent.change(screen.getByLabelText('Word or phrase'), {
         target: { value: 'Freude' },
     });
+
     expect(screen.getByText('· Freude')).toBeInTheDocument();
     expect(screen.getByLabelText('Definition')).toHaveValue(
         'A feeling of happiness.',
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply.mock.calls[0]![0]).toMatchObject({
         language: 'de',

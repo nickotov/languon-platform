@@ -80,7 +80,7 @@ export function createConversationRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     {
                         error: {
@@ -91,13 +91,16 @@ export function createConversationRoutes({
                     },
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     for (const path of [
         '/conversations',
         '/conversations/*',
@@ -113,8 +116,10 @@ export function createConversationRoutes({
                 c.header('Access-Control-Allow-Origin', origin);
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -132,18 +137,22 @@ export function createConversationRoutes({
                     ),
             }),
         );
+
         app.options(path, (c) => {
             c.header(
                 'Access-Control-Allow-Methods',
                 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
             );
+
             c.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Languon-Share-Key, Last-Event-ID',
             );
+
             return c.body(null, 204);
         });
     }
+
     app.onError((failure, c) => {
         let status: 400 | 401 | 403 | 404 | 409 | 429 | 500 | 503 = 500;
         let code = 'internal_error';
@@ -185,6 +194,7 @@ export function createConversationRoutes({
             code = 'invalid_origin';
             message = 'The request origin is not allowed.';
         }
+
         return c.json(
             {
                 error: {
@@ -200,6 +210,7 @@ export function createConversationRoutes({
             status,
         );
     });
+
     const access = (c: Context) =>
         service.access(
             policy.parseBearerAuthorization(
@@ -216,6 +227,7 @@ export function createConversationRoutes({
             c.req.raw.signal,
             c.req.header('X-Languon-Share-Key'),
         );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -238,6 +250,7 @@ export function createConversationRoutes({
         }),
         async (c) => {
             const q = c.req.valid('query');
+
             return c.json(
                 {
                     conversations: await service.store.list(await access(c), {
@@ -253,6 +266,7 @@ export function createConversationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -277,6 +291,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -294,6 +309,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -322,6 +338,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -338,9 +355,11 @@ export function createConversationRoutes({
                 await access(c),
                 c.req.valid('param').conversationId,
             );
+
             return c.json({ deleted: true as const }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -361,6 +380,7 @@ export function createConversationRoutes({
                 actor,
                 c.req.raw.signal,
             );
+
             try {
                 return c.json(
                     {
@@ -379,6 +399,7 @@ export function createConversationRoutes({
             }
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -392,6 +413,7 @@ export function createConversationRoutes({
         }),
         async (c) => {
             const p = c.req.valid('param');
+
             return c.json(
                 {
                     turn: await service.store.stop(
@@ -404,6 +426,7 @@ export function createConversationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -433,6 +456,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -457,6 +481,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -470,6 +495,7 @@ export function createConversationRoutes({
         }),
         async (c) => {
             const p = c.req.valid('param');
+
             return c.json(
                 await service.store.textReference(
                     await access(c),
@@ -480,6 +506,7 @@ export function createConversationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -500,6 +527,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'put',
@@ -528,6 +556,7 @@ export function createConversationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -547,6 +576,7 @@ export function createConversationRoutes({
             const input = UpdateKnowledgeDraftRequestSchema.parse(
                 c.req.valid('json'),
             );
+
             return c.json(
                 {
                     draft: await service.store.updateDraft(
@@ -561,6 +591,7 @@ export function createConversationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -579,9 +610,11 @@ export function createConversationRoutes({
                 p.conversationId,
                 p.draftId,
             );
+
             return c.json({ deleted: true as const }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -595,6 +628,7 @@ export function createConversationRoutes({
         }),
         async (c) => {
             const p = c.req.valid('param');
+
             return c.json(
                 {
                     note: await service.store.publishDraft(
@@ -610,6 +644,7 @@ export function createConversationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -642,14 +677,17 @@ export function createConversationRoutes({
             const lease = await service.admitStream(actor, c.req.raw.signal);
             const release = () => {
                 c.req.raw.signal.removeEventListener('abort', releaseOnAbort);
+
                 return lease.release();
             };
             const releaseOnAbort = () => {
                 void release();
             };
+
             c.req.raw.signal.addEventListener('abort', releaseOnAbort, {
                 once: true,
             });
+
             try {
                 c.req.raw.signal.throwIfAborted();
                 const conversationId = c.req.valid('param').conversationId;
@@ -665,6 +703,7 @@ export function createConversationRoutes({
                     actor,
                     conversationId,
                 );
+
                 c.req.raw.signal.throwIfAborted();
                 const activeTurns = new Map(
                     initialDetail.turns
@@ -681,72 +720,101 @@ export function createConversationRoutes({
                         () => stream.abort(),
                         Math.max(0, deadline - Date.now()),
                     );
+
                     try {
                         let lastZeroSnapshotData: string | undefined;
                         let unchangedPolls = 0;
                         while (!stream.aborted && Date.now() < deadline) {
                             const currentActor = await revalidate(c);
-                            if (stream.aborted || Date.now() >= deadline) break;
+                            if (stream.aborted || Date.now() >= deadline) {
+                                break;
+                            }
+
                             const previousCursor = after;
                             const batch = await service.store.events(
                                 currentActor,
                                 conversationId,
                                 after,
                             );
-                            if (stream.aborted || Date.now() >= deadline) break;
+
+                            if (stream.aborted || Date.now() >= deadline) {
+                                break;
+                            }
+
                             let emitted = false;
                             for (const event of batch) {
-                                if (stream.aborted || Date.now() >= deadline)
+                                if (stream.aborted || Date.now() >= deadline) {
                                     break;
+                                }
+
                                 if (event.type === 'snapshot') {
                                     activeTurns.clear();
                                     for (const turn of event.data.turns) {
                                         if (
                                             turn.status === 'queued' ||
                                             turn.status === 'running'
-                                        )
+                                        ) {
                                             activeTurns.set(
                                                 turn.id,
                                                 turn.status,
                                             );
+                                        }
                                     }
                                 } else if (event.type === 'turn') {
                                     if (
                                         event.data.status === 'queued' ||
                                         event.data.status === 'running'
-                                    )
+                                    ) {
                                         activeTurns.set(
                                             event.data.id,
                                             event.data.status,
                                         );
-                                    else activeTurns.delete(event.data.id);
+                                    } else {
+                                        activeTurns.delete(event.data.id);
+                                    }
                                 }
+
                                 if (
                                     event.type === 'snapshot' &&
                                     event.id === 0
                                 ) {
                                     const data = JSON.stringify(event.data);
-                                    if (lastZeroSnapshotData === data) continue;
+                                    if (lastZeroSnapshotData === data) {
+                                        continue;
+                                    }
+
                                     lastZeroSnapshotData = data;
-                                } else lastZeroSnapshotData = undefined;
+                                } else {
+                                    lastZeroSnapshotData = undefined;
+                                }
+
                                 await stream.writeSSE({
                                     id: String(event.id),
                                     event: 'conversation',
                                     data: JSON.stringify(event),
                                 });
+
                                 emitted = true;
                                 after = event.id;
                             }
-                            if (stream.aborted || Date.now() >= deadline) break;
-                            if (!emitted)
+
+                            if (stream.aborted || Date.now() >= deadline) {
+                                break;
+                            }
+
+                            if (!emitted) {
                                 await stream.writeSSE({
                                     event: 'heartbeat',
                                     data: '{}',
                                 });
+                            }
+
                             // A full persisted page may have more replay waiting. Drain only
                             // on cursor progress, and revalidate at the top of every page.
-                            if (batch.length >= 100 && after > previousCursor)
+                            if (batch.length >= 100 && after > previousCursor) {
                                 continue;
+                            }
+
                             unchangedPolls = emitted ? 0 : unchangedPolls + 1;
                             // Keep startup and running output responsive. A queued
                             // chat with four unchanged polls uses a spread-out
@@ -754,6 +822,7 @@ export function createConversationRoutes({
                             const fastPoll =
                                 [...activeTurns.values()].includes('running') ||
                                 (activeTurns.size > 0 && unchangedPolls < 4);
+
                             await stream.sleep(
                                 fastPoll
                                     ? 125
@@ -768,13 +837,18 @@ export function createConversationRoutes({
                             (failure instanceof ConversationError ||
                                 failure instanceof KnowledgeDomainError) &&
                             failure.code.endsWith('not_found')
-                        )
+                        ) {
                             status = 404;
-                        else if (failure instanceof Error) {
+                        } else if (failure instanceof Error) {
                             const mapped = mapDictionaryHttpError(failure);
-                            if (mapped.status === 401 || mapped.status === 403)
+                            if (
+                                mapped.status === 401 ||
+                                mapped.status === 403
+                            ) {
                                 status = mapped.status;
+                            }
                         }
+
                         // An ordinary EOF lets the client reconnect after transient failures;
                         // only a terminal access error invalidates the visible conversation.
                         if (!stream.aborted && status) {
@@ -793,20 +867,26 @@ export function createConversationRoutes({
                         await release();
                     }
                 });
+
                 // streamSSE sets its own cache header. Prevent intermediaries (including
                 // Next compression) from buffering small private event batches.
                 response.headers.set(
                     'Cache-Control',
                     'private, no-store, no-transform',
                 );
+
                 response.headers.set('X-Accel-Buffering', 'no');
+
                 return response;
             } catch (failure) {
                 await release();
+
                 throw failure;
             }
         },
     );
+
     registerConversationBlockProposalRoutes(app, service.store, access);
+
     return app;
 }

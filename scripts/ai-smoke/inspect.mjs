@@ -26,6 +26,7 @@ export async function openInspection(root, env, userId) {
             !env.DICTIONARY_AI_PROVIDER_FIXTURE_MODE,
         'real-development-required',
     );
+
     requireSafe(
         (env.AUTH_ALLOWED_ORIGINS ?? '')
             .split(',')
@@ -33,6 +34,7 @@ export async function openInspection(root, env, userId) {
             .includes(ORIGIN),
         'synthetic-origin-not-configured',
     );
+
     const { createPostgresClient } =
         await import('../../packages/database/dist/index.js');
     const client = createPostgresClient({
@@ -41,6 +43,7 @@ export async function openInspection(root, env, userId) {
         connectTimeoutSeconds: 3,
     });
     const expected = await expectedMigrations(root);
+
     return {
         close: () => client.end({ timeout: 2 }),
         inspect: () =>
@@ -48,15 +51,18 @@ export async function openInspection(root, env, userId) {
                 await sql`set local statement_timeout='5000ms'`;
                 const applied =
                     await sql`select created_at,hash from languon_migrations.history order by created_at`;
+
                 requireSafe(
                     migrationStatus(applied, expected).status === 'pass',
                     'migration-mismatch',
                 );
+
                 const snapshot = await readSnapshot(sql, EMAIL);
                 const [account] =
                     await sql`select u.id,u.status,e.canonical_email as email,(e.verified_at is not null) as verified,
                 exists(select 1 from admin_memberships m where m.user_id=u.id and m.revoked_at is null) as admin
                 from users u join user_emails e on e.user_id=u.id and e.is_primary where u.id=${userId}`;
+
                 assertSnapshot(snapshot, account, userId);
                 const checks = evaluateReadiness(
                     snapshot,
@@ -64,10 +70,12 @@ export async function openInspection(root, env, userId) {
                     'runtime',
                     selectCapabilities(env, ['conversation']),
                 );
+
                 requireSafe(
                     checks.every((check) => check.status === 'pass'),
                     'conversation-readiness-blocked',
                 );
+
                 const [amounts] = await sql`select
                 to_char(now() at time zone 'UTC','YYYY-MM-DD') as day,
                 extract(epoch from now())::text as epoch,
@@ -78,15 +86,18 @@ export async function openInspection(root, env, userId) {
                     amounts.active === '0',
                     'synthetic-account-active-action',
                 );
+
                 requireSafe(
                     Math.abs(Date.now() / 1000 - Number(amounts.epoch)) < 30,
                     'database-clock-mismatch',
                 );
+
                 requireSafe(
                     Number.isSafeInteger(Number(expense.exposure)) &&
                         Number(expense.exposure) >= 0,
                     'invalid-expense-snapshot',
                 );
+
                 return {
                     day: amounts.day,
                     globalExposureMicros: Number(expense.exposure),
@@ -106,6 +117,7 @@ export async function openInspection(root, env, userId) {
                 const expenses =
                     await sql`select provider_id,model_id,cost_source,amount_usd_micros::text as amount
                 from ai_provider_expense_records where action_id=${turnId}`;
+
                 requireSafe(
                     action?.state === 'settled' &&
                         action.outcome === 'success' &&
@@ -113,6 +125,7 @@ export async function openInspection(root, env, userId) {
                         action.operator_state === 'settled',
                     'provider-action-not-settled',
                 );
+
                 requireSafe(
                     expenses.length > 0 &&
                         expenses.every(
@@ -124,10 +137,12 @@ export async function openInspection(root, env, userId) {
                         ),
                     'provider-expense-missing-or-route-mismatch',
                 );
+
                 const total = expenses.reduce(
                     (sum, expense) => sum + BigInt(expense.amount),
                     0n,
                 );
+
                 requireSafe(
                     total > 0n &&
                         total <= BigInt(ACTION_MICROS) &&
@@ -135,6 +150,7 @@ export async function openInspection(root, env, userId) {
                         BigInt(action.consumed) <= BigInt(ACTION_MICROS),
                     'provider-expense-outside-allowance',
                 );
+
                 return Number(total);
             }),
         bindSession: (login) =>
@@ -142,6 +158,7 @@ export async function openInspection(root, env, userId) {
                 await sql`set local statement_timeout='5000ms'`;
                 const [session] =
                     await sql`select id from auth_sessions where id=${login.session.id} and user_id=${userId} and revoked_at is null and absolute_expires_at>now()`;
+
                 requireSafe(Boolean(session), 'api-database-session-mismatch');
             }),
     };

@@ -10,15 +10,18 @@ import { emptyWorkspaceInput } from '@/fsd/pages/texts/lib/workspace-content';
 const id = '123e4567-e89b-42d3-a456-426614174000';
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test');
+
 function wrapper({ children }: PropsWithChildren) {
     const [client] = useState(
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
     );
+
     return (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 }
+
 const input = {
     ...emptyWorkspaceInput,
     sourceText: 'Hello.',
@@ -32,12 +35,15 @@ const base = {
     createdAt: '2026-10-15T00:00:00.000Z',
     completedAt: '2026-10-15T00:00:00.000Z',
 };
+
 function detected(language: string | null) {
     return { ...base, result: { language, confidence: 'high' } } as TextAiJob;
 }
+
 function useFlow(value = input, isCurrent = () => true) {
     const detection = useTextWorkspaceJob(request);
     const translation = useTextWorkspaceJob(request);
+
     return useTextWorkspaceAuto({
         input: value,
         folderId: id,
@@ -47,6 +53,7 @@ function useFlow(value = input, isCurrent = () => true) {
         isCurrent,
     });
 }
+
 afterEach(() => vi.restoreAllMocks());
 describe('automatic workspace language orchestration', () => {
     it('detects only on Translate and submits a real language without saving a draft', async () => {
@@ -66,8 +73,10 @@ describe('automatic workspace language orchestration', () => {
             targetLanguage: 'ru',
             sourceText: 'Hello.',
         });
+
         expect(create).not.toHaveBeenCalled();
     });
+
     it('retries translation admission without repeating successful detection or operation identity', async () => {
         const detect = vi
             .spyOn(textsApi, 'detectLanguage')
@@ -88,12 +97,14 @@ describe('automatic workspace language orchestration', () => {
             translate.mock.calls[0]?.[1].operationId,
         );
     });
+
     it.each([null, 'unsupported', 'ru'])(
         'stops safely for detected %s',
         async (language) => {
             vi.spyOn(textsApi, 'detectLanguage').mockResolvedValue({
                 job: detected(language),
             });
+
             const translate = vi.spyOn(textsApi, 'translateText');
             const { result } = renderHook(() => useFlow(), { wrapper });
             await act(() => result.current.start());
@@ -102,9 +113,11 @@ describe('automatic workspace language orchestration', () => {
                     language === 'ru' ? 'same' : 'unknown',
                 ),
             );
+
             expect(translate).not.toHaveBeenCalled();
         },
     );
+
     it('fences a cancelled admission and cancels its late job', async () => {
         let resolve!: (value: { job: TextAiJob }) => void;
         vi.spyOn(textsApi, 'detectLanguage').mockReturnValue(
@@ -112,6 +125,7 @@ describe('automatic workspace language orchestration', () => {
                 resolve = done;
             }),
         );
+
         const cancel = vi
             .spyOn(textsApi, 'cancelAiJob')
             .mockResolvedValue({ job: detected('en') });
@@ -121,16 +135,20 @@ describe('automatic workspace language orchestration', () => {
         act(() => {
             pending = result.current.start();
         });
+
         act(() => result.current.invalidate());
         await act(async () => {
             resolve({
                 job: { ...detected('en'), state: 'queued', result: null },
             });
+
             await pending;
         });
+
         expect(cancel).toHaveBeenCalled();
         expect(translate).not.toHaveBeenCalled();
     });
+
     it.each(['input', 'actor'])(
         'fences a late result after %s changes',
         async (change) => {
@@ -140,9 +158,11 @@ describe('automatic workspace language orchestration', () => {
                     resolve = done;
                 }),
             );
+
             vi.spyOn(textsApi, 'cancelAiJob').mockResolvedValue({
                 job: detected('en'),
             });
+
             const translate = vi.spyOn(textsApi, 'translateText');
             let current = true;
             const { result, rerender } = renderHook(
@@ -153,15 +173,22 @@ describe('automatic workspace language orchestration', () => {
             act(() => {
                 pending = result.current.start();
             });
-            if (change === 'actor') current = false;
-            else rerender({ value: { ...input, sourceText: 'A new input.' } });
+
+            if (change === 'actor') {
+                current = false;
+            } else {
+                rerender({ value: { ...input, sourceText: 'A new input.' } });
+            }
+
             await act(async () => {
                 resolve({ job: detected('en') });
                 await pending;
             });
+
             expect(translate).not.toHaveBeenCalled();
         },
     );
+
     it('bypasses detection with a manual language', async () => {
         const detect = vi.spyOn(textsApi, 'detectLanguage');
         const translate = vi
@@ -171,6 +198,7 @@ describe('automatic workspace language orchestration', () => {
             () => useFlow({ ...input, sourceLanguage: 'en' }),
             { wrapper },
         );
+
         await act(() => result.current.start());
         expect(translate).toHaveBeenCalled();
         expect(detect).not.toHaveBeenCalled();

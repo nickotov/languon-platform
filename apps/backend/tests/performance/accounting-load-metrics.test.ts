@@ -12,9 +12,11 @@ describe('accounting performance evidence boundaries', () => {
                 0.95,
             ),
         ).toBe(95);
+
         expect(percentile([4], 0.95)).toBe(4);
         expect(() => percentile([], 0.95)).toThrow();
     });
+
     it('requires explicit isolated targets before creating fixture data', () => {
         const valid = {
             ALLOW_ACCOUNTING_PERFORMANCE_TESTS: 'true',
@@ -24,9 +26,11 @@ describe('accounting performance evidence boundaries', () => {
                 'languon_auth_accounting_load_test',
             ACCOUNTING_PERF_REDIS_URL: 'redis://localhost:56381/3',
         };
+
         expect(validatePerformanceTargets(valid).databaseName).toBe(
             valid.ACCOUNTING_PERF_DATABASE_CONFIRM,
         );
+
         for (const patch of [
             { ALLOW_ACCOUNTING_PERFORMANCE_TESTS: 'false' },
             {
@@ -40,9 +44,10 @@ describe('accounting performance evidence boundaries', () => {
                 ACCOUNTING_PERF_DATABASE_URL:
                     'postgres://localhost:5432/languon_auth_accounting_load_test',
             },
-        ])
+        ]) {
             expect(() =>
                 validatePerformanceTargets({ ...valid, ...patch }),
             ).toThrow();
+        }
     });
 });

@@ -35,7 +35,10 @@ export async function sentencePreparationResolvePreparedBatch(
     context.signal.throwIfAborted();
     const { dictionary } = await authorizeSentence(tx, access);
     const [batch] = await tx.select().from(batches).where(eq(batches.id, id));
-    if (!batch) throw new SentenceUnavailableError();
+    if (!batch) {
+        throw new SentenceUnavailableError();
+    }
+
     const [row] = await tx
         .select()
         .from(preparations)
@@ -47,11 +50,18 @@ export async function sentencePreparationResolvePreparedBatch(
             ),
         );
 
-    if (!row) throw new SentenceUnavailableError();
-    if (row.pauseReason === 'stale' || row.pauseReason === 'access')
+    if (!row) {
+        throw new SentenceUnavailableError();
+    }
+
+    if (row.pauseReason === 'stale' || row.pauseReason === 'access') {
         throw new SentenceConflictError('stale_content');
-    if (!(await sentencePreparationFresh(tx, row, [batch])))
+    }
+
+    if (!(await sentencePreparationFresh(tx, row, [batch]))) {
         throw new SentenceConflictError('stale_content');
+    }
+
     await sentencePreparationRefreshManifest(
         persistence,
         tx,
@@ -112,7 +122,10 @@ export async function sentencePreparationListBatches(
                 ),
             );
 
-        if (!row) throw new SentenceUnavailableError();
+        if (!row) {
+            throw new SentenceUnavailableError();
+        }
+
         const page = await tx
             .select()
             .from(batches)

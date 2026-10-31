@@ -25,6 +25,7 @@ describe('rail contextual flyout intent', () => {
         act(() => vi.advanceTimersByTime(240));
         expect(result.current.open).toBe(false);
     });
+
     it('ignores touch hover and retains explicitly pinned panels until dismissal', () => {
         vi.useFakeTimers();
         const { result, unmount } = renderHook(useHoverIntent);

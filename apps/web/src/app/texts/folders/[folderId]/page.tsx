@@ -5,5 +5,6 @@ export default async function Page({
     params: Promise<{ folderId: string }>;
 }) {
     const { folderId } = await params;
+
     return <TextFolderPage folderId={folderId} />;
 }

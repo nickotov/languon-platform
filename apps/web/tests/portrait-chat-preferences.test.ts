@@ -36,6 +36,7 @@ it('writes one explicit manual override without persisting other inherited value
         ...displayed,
         wording: 'balanced',
     });
+
     expect(changed).toMatchObject({
         mode: 'practice',
         replyLanguage: 'en',
@@ -44,6 +45,7 @@ it('writes one explicit manual override without persisting other inherited value
         wording: 'balanced',
         approach: 'theory-first',
     });
+
     expect(changed.portrait?.inheritedFields).toEqual([
         'replyLanguage',
         'tone',
@@ -63,6 +65,7 @@ it('adopting or resetting portrait fields preserves manual fallback and independ
         manual,
         inheritPortraitField(manual),
     );
+
     expect(adopted.wording).toBe('academic');
     expect(adopted.mode).toBe('correct');
     expect(adopted.portrait?.inheritedFields).toHaveLength(6);
@@ -70,6 +73,7 @@ it('adopting or resetting portrait fields preserves manual fallback and independ
         { ...manual, portrait: { enabled: true, inheritedFields: ['tone'] } },
         'wording',
     );
+
     expect(reset.portrait?.inheritedFields).toEqual(['tone', 'wording']);
 });
 
@@ -83,6 +87,7 @@ it('excluding a portrait preserves manual defaults and inheritance for later exp
         ...effective,
         portrait: { ...manual.portrait!, enabled: false },
     });
+
     expect(next.tone).toBe('academic');
     expect(next.portrait).toEqual({
         enabled: false,
@@ -100,6 +105,7 @@ it('Automatic clears an optional override without changing other manual fallback
         ...manual,
         detail: undefined,
     });
+
     expect(next.detail).toBeUndefined();
     expect(next.wording).toBe('academic');
     expect(next.mode).toBe('explain');
@@ -123,6 +129,7 @@ it('manual Automatic wording cannot re-inherit the portrait through the legacy e
         ...displayed,
         wording: undefined,
     });
+
     expect(changed.explanationLevel).toBe('auto');
     expect(changed.wording).toBeUndefined();
     expect(changed.portrait?.inheritedFields).toEqual(['detail']);

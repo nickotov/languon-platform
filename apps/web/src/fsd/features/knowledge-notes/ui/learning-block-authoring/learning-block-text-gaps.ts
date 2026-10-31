@@ -19,13 +19,20 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
         // Decoration lookups also run for focus/selection-only updates. Documents
         // are immutable, so avoid rescanning thousands of prose nodes each time.
         const byDocument = new WeakMap<ProseMirrorNode, DecorationSet>();
+
         return [
             new Plugin({
                 props: {
                     decorations(state) {
-                        if (!editor.isEditable) return null;
+                        if (!editor.isEditable) {
+                            return null;
+                        }
+
                         const cached = byDocument.get(state.doc);
-                        if (cached) return cached;
+                        if (cached) {
+                            return cached;
+                        }
+
                         const decorations: Decoration[] = [];
                         const first = state.doc.firstChild;
                         if (first?.type.name === 'learningBlock') {
@@ -45,11 +52,15 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                                 }),
                             );
                         }
+
                         const positioned = blocksInDocument(state.doc);
                         const ends = new Map<string, string>();
                         const hiddenParagraphs = new Set<number>();
                         for (const item of positioned) {
-                            if (ends.has(item.block.id)) continue;
+                            if (ends.has(item.block.id)) {
+                                continue;
+                            }
+
                             const group = authoringBlockGroup(
                                 positioned,
                                 item.block.id,
@@ -72,14 +83,17 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                                                 node.type.name ===
                                                     'paragraph' &&
                                                 node.childCount === 0
-                                            )
+                                            ) {
                                                 hiddenParagraphs.add(position);
+                                            }
+
                                             return false;
                                         },
                                     );
                                 }
                             }
                         }
+
                         state.doc.forEach((node, position, index) => {
                             if (hiddenParagraphs.has(position)) {
                                 decorations.push(
@@ -89,15 +103,23 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                                         { class: styles.groupSpacer! },
                                     ),
                                 );
+
                                 return;
                             }
-                            if (node.type.name !== 'learningBlock') return;
+
+                            if (node.type.name !== 'learningBlock') {
+                                return;
+                            }
+
                             const next = state.doc.maybeChild(index + 1);
                             const block = node.attrs.block as LearningBlock;
-                            if (ends.get(block.id) !== block.id) return;
+                            if (ends.get(block.id) !== block.id) {
+                                return;
+                            }
+
                             const at = position + node.nodeSize;
                             if (next?.type.name === 'paragraph') {
-                                if (next.childCount === 0)
+                                if (next.childCount === 0) {
                                     decorations.push(
                                         Decoration.node(
                                             at,
@@ -108,8 +130,11 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                                             },
                                         ),
                                     );
+                                }
+
                                 return;
                             }
+
                             decorations.push(
                                 textGap(
                                     at,
@@ -119,11 +144,14 @@ export const LearningBlockTextGaps = Extension.create<{ label: string }>({
                                 ),
                             );
                         });
+
                         const result = DecorationSet.create(
                             state.doc,
                             decorations,
                         );
+
                         byDocument.set(state.doc, result);
+
                         return result;
                     },
                 },
@@ -144,18 +172,25 @@ function textGap(at: number, key: string, label: string, side: number) {
             button.addEventListener('mousedown', (event) =>
                 event.preventDefault(),
             );
+
             button.addEventListener('click', () => {
-                if (!view.editable) return;
+                if (!view.editable) {
+                    return;
+                }
+
                 const transaction = view.state.tr.insert(
                     at,
                     view.state.schema.nodes.paragraph!.create(),
                 );
+
                 transaction.setSelection(
                     TextSelection.near(transaction.doc.resolve(at + 1)),
                 );
+
                 view.dispatch(transaction);
                 view.focus();
             });
+
             return button;
         },
         {

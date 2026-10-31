@@ -32,6 +32,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             modelId: 'elevenlabs/text-to-speech-turbo-2-5',
             meter: 'speech-characters' as const,
         };
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             await resetTestDatabase(client);
@@ -40,6 +41,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .insert(usersTable)
                 .values({ id: owner, status: 'active', createdAt: new Date() });
+
             await db.insert(adminMembershipsTable).values({
                 id: randomUUID(),
                 userId: owner,
@@ -48,9 +50,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 grantReason: 'Disposable tariff test administrator',
             });
         });
+
         afterAll(async () => {
             await client.end();
         });
+
         it('serializes competing publications and retains immutable history', async () => {
             const initial = await db.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).current(model),
@@ -76,15 +80,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ),
             );
+
             expect(
                 results.filter((r) => r.status === 'fulfilled'),
             ).toHaveLength(1);
+
             expect(results.find((r) => r.status === 'rejected')).toMatchObject({
                 reason: expect.any(ModelPriceConflictError),
             });
+
             const next = await db.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).current(model),
             );
+
             expect(next.rateRevisionId).not.toBe(initial.rateRevisionId);
             expect(next.version).toBe(initial.version + 1);
             const [historical] = await db
@@ -93,9 +101,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(
                     eq(modelPriceRevisionsTable.id, initial.rateRevisionId!),
                 );
+
             expect(historical?.rates.creditsPer1000Characters).toBe(
                 initial.creditsPer1000Characters,
             );
+
             await expect(
                 db
                     .update(modelPriceRevisionsTable)
@@ -107,6 +117,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ),
                     ),
             ).rejects.toThrow();
+
             // Restore effective tariff by publishing, never by editing history.
             await db.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).publish(
@@ -124,6 +135,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             );
         });
+
         it('persists positive milli-credit speech rates without inventing a minimum fee', async () => {
             const current = await db.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).current(model),
@@ -145,6 +157,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             expect(published.creditsPer1000Characters).toBe(0.001);
             expect(published.minimumCredits).toBe(0);
             const [row] = await db
@@ -153,9 +166,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(
                     eq(modelPriceRevisionsTable.id, published.rateRevisionId!),
                 );
+
             expect(row?.rates.creditsPer1000Characters).toBe(0.001);
             expect(row?.rates.minimumCredits).toBe(0);
         });
+
         it('keeps optional cached customer input rates in immutable JSON revisions', async () => {
             const curated = textAiModelCatalog[0]!;
             const textModel = {
@@ -184,6 +199,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             expect(cached.cachedInputCreditsPerMillionTokens).toBe(0.125);
             expect(cached.inputCreditsPerMillionTokens).toBe(1.125);
             const fallbackCommand = {
@@ -201,11 +217,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             expect(fallback.cachedInputCreditsPerMillionTokens).toBeNull();
             const [historical] = await db
                 .select()
                 .from(modelPriceRevisionsTable)
                 .where(eq(modelPriceRevisionsTable.id, cached.rateRevisionId!));
+
             expect(historical?.rates.cachedInputCreditsPerMillionTokens).toBe(
                 0.125,
             );

@@ -20,12 +20,17 @@ export async function eraseKnowledgeSpeech(
             .from(owned)
             .where(eq(owned.noteId, noteId))
     ).map((r) => r.id);
+
     await tx
         .delete(quotes)
         .where(
             sql`${quotes.source}->>'kind' in ('knowledge-block','knowledge-snippet','knowledge-audio-draft') and ${quotes.source}->>'noteId'=${noteId}`,
         );
-    if (!ids.length) return;
+
+    if (!ids.length) {
+        return;
+    }
+
     const [active] = await tx
         .select({ id: jobs.id })
         .from(jobs)
@@ -37,11 +42,14 @@ export async function eraseKnowledgeSpeech(
         )
         .limit(1)
         .for('share');
-    if (active)
+
+    if (active) {
         throw new KnowledgeDomainError(
             'deletion_busy',
             'Wait for this note’s audio generation to finish before deleting it.',
         );
+    }
+
     await tx
         .update(recordings)
         .set({
@@ -51,5 +59,6 @@ export async function eraseKnowledgeSpeech(
             version: sql`${recordings.version}+1`,
         })
         .where(inArray(recordings.id, ids));
+
     await tx.delete(bindings).where(inArray(bindings.recordingId, ids));
 }

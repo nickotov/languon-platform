@@ -28,6 +28,7 @@ export function DashboardPage() {
         url: 'dashboard',
     });
     const data = dashboard.query.data?.data;
+
     return (
         <div className={styles.stack}>
             <header className={styles.heading}>

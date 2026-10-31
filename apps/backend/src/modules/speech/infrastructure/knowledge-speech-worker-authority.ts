@@ -20,6 +20,7 @@ export async function knowledgeSpeechSourceState(
         sql`select public.languon_speech_knowledge_source_state(${jobId}::uuid,${leaseToken ?? null}::uuid) as state`,
     );
     const state = rows[0]?.state;
+
     return state === 'legacy' || state === 'available' ? state : 'unavailable';
 }
 
@@ -43,8 +44,10 @@ export async function rejectKnowledgeSpeechResult(
                 outcome: 'failure',
             },
         );
+
         billingState = 'released_no_charge';
     }
+
     await tx
         .update(jobs)
         .set({
@@ -55,6 +58,7 @@ export async function rejectKnowledgeSpeechResult(
             leaseExpiresAt: null,
         })
         .where(eq(jobs.id, row.id));
+
     await tx
         .update(recordings)
         .set({

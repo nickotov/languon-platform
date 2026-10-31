@@ -16,6 +16,7 @@ export async function startDevelopmentPanel({
     if (platform !== 'win32') {
         await restart({ panelDirectory });
     }
+
     const child = spawnChild(process.execPath, ['src/main.mjs'], {
         cwd: panelDirectory,
         stdio: 'inherit',
@@ -29,11 +30,13 @@ export async function startDevelopmentPanel({
         console.error(error.message);
         parent.exitCode = 1;
     });
+
     child.once('close', (code, signal) => {
         parent.removeListener('SIGINT', interrupt);
         parent.removeListener('SIGTERM', terminate);
         parent.exitCode = code ?? (signal === 'SIGINT' ? 130 : 143);
     });
+
     return child;
 }
 

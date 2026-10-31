@@ -37,7 +37,7 @@ export async function reserveSelectionAttempt(
     now: Date,
 ) {
     if (usesLegacyAction(job.selectedExecutionSnapshot)) {
-        if (attempt === 1)
+        if (attempt === 1) {
             await reserveLegacyAction(tx, {
                 id: job.id,
                 requestKey: job.operationId,
@@ -50,11 +50,15 @@ export async function reserveSelectionAttempt(
                 inputOverheadTokens: cardAuthoringInputOverhead,
                 at: now,
             });
+        }
 
         return;
     }
 
-    if (!job.aiCreditAccounted) return;
+    if (!job.aiCreditAccounted) {
+        return;
+    }
+
     const id = randomUUID();
     try {
         const result = await new DrizzleAiCreditTransactionParticipant(
@@ -78,8 +82,9 @@ export async function reserveSelectionAttempt(
             })
             .where(eq(jobs.id, job.id));
     } catch (error) {
-        if (error instanceof AiCreditInsufficientBalanceError)
+        if (error instanceof AiCreditInsufficientBalanceError) {
             throw new SelectionCreditsError();
+        }
 
         throw error;
     }
@@ -110,16 +115,20 @@ export async function settleSelectionAttempt(
             at: now,
         });
 
-        if (terminal)
+        if (terminal) {
             await settleLegacyAction(tx, {
                 id: job.id,
                 ownerId: job.ownerId,
                 outcome,
                 at: now,
             });
+        }
     }
 
-    if (job.providerReservationState !== 'active') return;
+    if (job.providerReservationState !== 'active') {
+        return;
+    }
+
     if (
         usage &&
         (!Number.isSafeInteger(usage.inputTokens) ||
@@ -128,17 +137,19 @@ export async function settleSelectionAttempt(
             usage.outputTokens < 0 ||
             usage.inputTokens > job.providerMaxInputTokensPerAttempt ||
             usage.outputTokens > job.providerMaxOutputTokensPerAttempt)
-    )
+    ) {
         throw new Error('Sentence provider usage exceeds reservation');
+    }
+
     if (job.aiCreditAccounted && job.aiCreditReservationId) {
         const credits = new DrizzleAiCreditTransactionParticipant(tx);
-        if (!job.aiCreditProviderDispatchedAt)
+        if (!job.aiCreditProviderDispatchedAt) {
             await credits.releaseUndispatchedAttempt({
                 ownerId: job.ownerId,
                 releasedAt: now,
                 reservationId: job.aiCreditReservationId,
             });
-        else {
+        } else {
             // Customer eligibility is independent of incurred provider usage.
             const measured =
                 outcome !== 'failure' && usage
@@ -154,13 +165,13 @@ export async function settleSelectionAttempt(
                       )
                     : 0n;
 
-            if (outcome === 'failure' || !usage)
+            if (outcome === 'failure' || !usage) {
                 await credits.settleFailedAttempt({
                     ownerId: job.ownerId,
                     reservationId: job.aiCreditReservationId,
                     settledAt: now,
                 });
-            else {
+            } else {
                 await credits.settleAttempt({
                     ownerId: job.ownerId,
                     reservationId: job.aiCreditReservationId,

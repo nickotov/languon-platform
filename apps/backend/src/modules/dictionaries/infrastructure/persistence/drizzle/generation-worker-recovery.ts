@@ -120,13 +120,14 @@ export async function recoverGenerationJobs(
                 ),
             );
 
-        if (job.kind === 'document-terms' && (cancelled || exhausted))
+        if (job.kind === 'document-terms' && (cancelled || exhausted)) {
             await scheduleDocumentCleanup(
                 tx,
                 job.id,
                 input.context.now,
                 cancelled ? 'cancelled' : 'failed',
             );
+        }
     }
 
     const cancelledQueued = await tx
@@ -202,12 +203,13 @@ export async function recoverGenerationJobs(
                 ),
             );
 
-        if (job.kind === 'document-terms' && job.cancellationRequestedAt)
+        if (job.kind === 'document-terms' && job.cancellationRequestedAt) {
             await scheduleDocumentCleanup(
                 tx,
                 job.id,
                 input.context.now,
                 'cancelled',
             );
+        }
     }
 }

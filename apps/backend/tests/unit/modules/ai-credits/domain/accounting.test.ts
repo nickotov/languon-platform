@@ -18,11 +18,13 @@ describe('exact USD and purchase attribution', () => {
         expect(() => parseFixed('1e3', 6)).toThrow();
         expect(() => parseFixed('1.0000001', 6)).toThrow();
     });
+
     it('attributes actual purchase value and never overstates fractional micros', () => {
         expect(purchaseValueMicros(1000000n, 1n, 3n)).toBe(333333n);
         expect(purchaseValueMicros(0n, 1n, 3n)).toBe(0n);
         expect(() => purchaseValueMicros(1n, 4n, 3n)).toThrow();
     });
+
     it('exposes refunds of consumed value without counting a refund of unused credits as loss', () => {
         expect(
             refundedConsumedValueMicros({
@@ -32,6 +34,7 @@ describe('exact USD and purchase attribution', () => {
                 issued: 10n,
             }),
         ).toBe(0n);
+
         expect(
             refundedConsumedValueMicros({
                 paid: 100n,
@@ -41,6 +44,7 @@ describe('exact USD and purchase attribution', () => {
             }),
         ).toBe(50n);
     });
+
     it('does not issue a purchase lot larger than the fully revocable payment limit', () => {
         const request = {
             kind: 'payment',
@@ -54,9 +58,11 @@ describe('exact USD and purchase attribution', () => {
             feeUsd: '0',
             credits: '1000000000000',
         };
+
         expect(AccountingPaymentRequestSchema.safeParse(request).success).toBe(
             true,
         );
+
         expect(
             AccountingPaymentRequestSchema.safeParse({
                 ...request,
@@ -64,6 +70,7 @@ describe('exact USD and purchase attribution', () => {
             }).success,
         ).toBe(false);
     });
+
     it('requires manual evidence and ordered bill periods', () => {
         const bill = {
             kind: 'provider_bill',
@@ -77,15 +84,18 @@ describe('exact USD and purchase attribution', () => {
             periodStart: '2026-09-01T00:00:00Z',
             periodEnd: '2026-10-01T00:00:00Z',
         };
+
         expect(AccountingRecordRequestSchema.safeParse(bill).success).toBe(
             true,
         );
+
         expect(
             AccountingRecordRequestSchema.safeParse({
                 ...bill,
                 periodEnd: bill.periodStart,
             }).success,
         ).toBe(false);
+
         expect(
             AccountingRecordRequestSchema.safeParse({
                 ...bill,

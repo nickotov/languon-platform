@@ -33,7 +33,10 @@ export function publishedLearningIdentities(
     body: unknown,
 ): LearningEpochIdentity[] {
     const parsed = KnowledgeBodySchema.parse(body);
-    if (parsed.schemaVersion === 1) return [];
+    if (parsed.schemaVersion === 1) {
+        return [];
+    }
+
     const blocks = (parsed.document.content ?? []).flatMap((node) =>
         node.type === 'learningBlock' && node.attrs?.block
             ? [node.attrs.block]
@@ -41,7 +44,7 @@ export function publishedLearningIdentities(
     );
 
     return blocks.flatMap<LearningEpochIdentity>((block) => {
-        if (block.type === 'exercise')
+        if (block.type === 'exercise') {
             return [
                 {
                     kind: 'exercise' as const,
@@ -53,7 +56,9 @@ export function publishedLearningIdentities(
                     ),
                 },
             ];
-        if (block.type === 'vocabulary')
+        }
+
+        if (block.type === 'vocabulary') {
             return block.entries.map((entry) => ({
                 kind: 'vocabulary' as const,
                 blockId: block.id,
@@ -63,6 +68,7 @@ export function publishedLearningIdentities(
                     entry,
                 ),
             }));
+        }
 
         return [];
     });

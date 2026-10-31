@@ -35,43 +35,52 @@ export class OpenAiTranscriptionPriceSource implements ProviderPriceSource {
                 unavailable = true;
             }
         }
+
         return targets.map((target) => {
             if (
                 target.providerId !== model.providerId ||
                 target.modelId !== model.modelId ||
                 target.meter !== model.meter
-            )
+            ) {
                 return sourceFailure(
                     target,
                     'unsupported',
                     'Only the registered direct OpenAI file-transcription route is supported.',
                 );
-            if (unavailable || evidence === null)
+            }
+
+            if (unavailable || evidence === null) {
                 return sourceFailure(
                     target,
                     'unavailable',
                     'The official transcription model metadata could not be read.',
                 );
+            }
+
             const section = evidence
                 .split(/^### Transcription audio duration\s*$/m)[1]
                 ?.split(/^## /m)[0];
             const price = section?.match(
                 /^\| Price \| \$([0-9]+(?:\.[0-9]+)?) \| minute \|\s*$/m,
             )?.[1];
+
             if (
                 !evidence.includes('Model ID: `gpt-transcribe`') ||
                 !/^\| Transcription \| `v1\/audio\/transcriptions` \| Supported \|\s*$/m.test(
                     evidence,
                 ) ||
                 !price
-            )
+            ) {
                 return sourceFailure(
                     target,
                     'source-changed',
                     'The exact official transcription identity, endpoint or duration-price table changed; review is required.',
                 );
+            }
+
             try {
                 const rate = publishedRate(price);
+
                 return sourceFailure(
                     target,
                     'source-changed',

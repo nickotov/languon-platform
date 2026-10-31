@@ -19,7 +19,9 @@ export function LibraryDeletionDialog({ state }: { state: LibraryState }) {
 
     const deletion = state.deletion;
 
-    if (!deletion) return null;
+    if (!deletion) {
+        return null;
+    }
 
     const count =
         deletion.kind === 'all' ? deletion.count : deletion.targets.length;

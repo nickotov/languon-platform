@@ -53,6 +53,7 @@ const meta = {
         ),
     ],
 } satisfies Meta<typeof SentenceWithHints>;
+
 export default meta;
 export const Default: StoryObj<typeof meta> = {
     args: { exercise, revealedHintIds: [], onReveal() {} },

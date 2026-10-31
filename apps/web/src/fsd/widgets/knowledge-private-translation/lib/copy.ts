@@ -65,6 +65,7 @@ const copy = {
         private: 'Tu vista bilingüe privada',
     },
 };
+
 export function privateTranslationCopy(locale: Locale) {
     return copy[locale];
 }

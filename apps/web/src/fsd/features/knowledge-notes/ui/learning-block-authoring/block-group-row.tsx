@@ -31,9 +31,11 @@ export function GroupRow({
     const [exampleTranslation, setExampleTranslation] = useState(
         row.exampleTranslation ?? '',
     );
+
     function remove() {
         onRemove(rowId);
     }
+
     const rowLabel = `${labels.field(group.name === 'entries' ? 'Entry' : 'Item')} ${index + 1}`;
     const removeLabel = `${labels.remove}: ${rowLabel}`;
     const primaryFields =
@@ -48,18 +50,28 @@ export function GroupRow({
         group.name === 'entries'
             ? group.fields.find((field) => field.name === 'definition')
             : undefined;
+
     function renderField(field: BlockField) {
         const name = `${group.name}.${index}.${field.name}`;
         let onValueChange: ((value: string) => void) | undefined;
-        if (field.name === 'term') onValueChange = setTerm;
-        if (field.name === 'example') onValueChange = setExample;
-        if (field.name === 'exampleTranslation')
+        if (field.name === 'term') {
+            onValueChange = setTerm;
+        }
+
+        if (field.name === 'example') {
+            onValueChange = setExample;
+        }
+
+        if (field.name === 'exampleTranslation') {
             onValueChange = setExampleTranslation;
+        }
+
         const hidden =
             group.name === 'entries' &&
             field.name === 'exampleTranslation' &&
             !example.trim() &&
             !exampleTranslation.trim();
+
         return (
             <div key={field.name} hidden={hidden}>
                 <BlockFieldInput
@@ -73,6 +85,7 @@ export function GroupRow({
             </div>
         );
     }
+
     return (
         <div className={styles.row}>
             <input

@@ -26,20 +26,29 @@ export function ArchiveConfirmation({
         c.error.code === 'capacity_unavailable';
     const rateLimited =
         c.error instanceof LibraryApiError && c.error.code === 'rate_limited';
-    if (!value && !c.error) return null;
+
+    if (!value && !c.error) {
+        return null;
+    }
+
     const operation = value?.operation ?? 'archive';
     const count = value?.count ?? 0;
     let title = L('failTitle');
-    if (tooMany) title = L('tooManyTitle');
-    else if (rateLimited) title = L('limitTitle');
-    else if (conflict) title = L('staleTitle');
-    else if (value)
+    if (tooMany) {
+        title = L('tooManyTitle');
+    } else if (rateLimited) {
+        title = L('limitTitle');
+    } else if (conflict) {
+        title = L('staleTitle');
+    } else if (value) {
         title = L(
             operation === 'archive'
                 ? 'confirmRemoveTitle'
                 : 'confirmRestoreTitle',
             { n: count },
         );
+    }
+
     const filters = value?.filters ?? c.filters;
     const mine = {
         active: L('mineAvailable'),
@@ -60,9 +69,11 @@ export function ArchiveConfirmation({
     const label = reversed
         ? direction(dictionary.targetLanguage, dictionary.sourceLanguage)
         : direction(dictionary.sourceLanguage, dictionary.targetLanguage);
+
     function confirm() {
         void c.confirm();
     }
+
     const footer = (
         <DialogActions>
             <Button
@@ -85,6 +96,7 @@ export function ArchiveConfirmation({
             ) : null}
         </DialogActions>
     );
+
     return (
         <Dialog
             open

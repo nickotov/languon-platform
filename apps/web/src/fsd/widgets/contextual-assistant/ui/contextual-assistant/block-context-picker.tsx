@@ -25,10 +25,12 @@ export function BlockContextPicker({
     function showTexts() {
         setTexts(true);
     }
+
     function showBlocks() {
         setTexts(false);
     }
-    if (texts)
+
+    if (texts) {
         return (
             <div>
                 <Button variant='ghost' size='compact' onClick={showBlocks}>
@@ -37,6 +39,8 @@ export function BlockContextPicker({
                 {libraryPicker}
             </div>
         );
+    }
+
     return (
         <BlockReferencePicker
             available={available}

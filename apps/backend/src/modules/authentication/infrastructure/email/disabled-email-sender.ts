@@ -16,6 +16,7 @@ export class DisabledEmailSender implements EmailSender {
         options?: EmailSendOptions,
     ): Promise<void> {
         options?.signal?.throwIfAborted();
+
         throw new EmailDeliveryUnavailableError();
     }
 }

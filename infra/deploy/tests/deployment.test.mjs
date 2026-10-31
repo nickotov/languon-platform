@@ -35,6 +35,7 @@ test('shared speech activation requires expanded rollback support and explicit o
             workerProcessable: [1],
         },
     };
+
     await deployment.deploy();
     deployment.manifest = {
         ...manifest,
@@ -44,11 +45,13 @@ test('shared speech activation requires expanded rollback support and explicit o
             apiEnqueued: [1],
         },
     };
+
     const before = calls.length;
     await assert.rejects(
         () => deployment.deploy(),
         /Shared speech admission requires/,
     );
+
     assert.equal(
         calls.slice(before).some((args) => args.includes('migrator')),
         false,
@@ -63,6 +66,7 @@ test('absent shared speech metadata overrides stale operator enablement and pins
         SPEECH_GENERATION_ENABLED: 'true',
         DICTIONARY_AUDIO_OWNER_BUDGET_UNITS: '9999999',
     };
+
     const dormant = deployment.commandEnvironment('blue');
     assert.equal(dormant.SPEECH_GENERATION_ENABLED, 'false');
     assert.equal(dormant.SPEECH_PLAYBACK_ENABLED, 'false');
@@ -75,12 +79,14 @@ test('absent shared speech metadata overrides stale operator enablement and pins
             workerProcessable: [1],
         },
     };
+
     assert.equal(
         deployment.commandEnvironment('blue')
             .DICTIONARY_AUDIO_OWNER_BUDGET_UNITS,
         '20000',
     );
 });
+
 const digest = 'a'.repeat(64);
 const manifest = {
     schemaVersion: 2,
@@ -154,6 +160,7 @@ async function fixture(behavior = {}) {
         ) {
             throw new Error('migration fixture failed');
         }
+
         if (
             behavior.failNginxTest &&
             args.includes('nginx') &&
@@ -161,12 +168,14 @@ async function fixture(behavior = {}) {
         ) {
             throw new Error('nginx fixture failed');
         }
+
         if (
             behavior.failReadiness &&
             args.some((value) => String(value).includes('-backend:4000/readyz'))
         ) {
             throw new Error('readiness fixture failed');
         }
+
         if (
             behavior.failCleanup &&
             args.includes('--project-name') &&
@@ -175,6 +184,7 @@ async function fixture(behavior = {}) {
         ) {
             throw new Error('cleanup fixture failed');
         }
+
         if (
             args.includes('--eval') &&
             args.some((value) => String(value).includes('has_table_privilege'))
@@ -237,8 +247,11 @@ async function fixture(behavior = {}) {
                 stderr: '',
             };
         }
-        if (args.includes('sh') && args.includes('-c'))
+
+        if (args.includes('sh') && args.includes('-c')) {
             throw new Error('no old workers');
+        }
+
         return {
             stdout: args.some((value) => String(value).startsWith('http'))
                 ? (behavior.responseSha ?? options.env?.RELEASE_SHA ?? sha)
@@ -246,6 +259,7 @@ async function fixture(behavior = {}) {
             stderr: '',
         };
     };
+
     return {
         calls,
         environments,
@@ -284,9 +298,11 @@ test('orders migration before inactive start, readiness, switch, smoke and clean
     const nginx = rendered.findIndex((line) =>
         line.includes('edge.compose.yaml'),
     );
+
     assert.ok(
         migration >= 0 && migration < recoveryGate && recoveryGate < start,
     );
+
     assert.ok(start < readiness && readiness < nginx);
     assert.equal(audit.outcome, 'succeeded');
     assert.equal(audit.newSlot, 'blue');
@@ -297,16 +313,19 @@ test('migration failure never starts or switches a slot and records bounded audi
     const { deployment, calls, directory } = await fixture({
         failMigration: true,
     });
+
     await assert.rejects(() => deployment.deploy(), /migration fixture failed/);
     const rendered = calls.map((call) => call.join(' '));
     assert.equal(
         rendered.some((line) => line.includes('up --detach --no-build')),
         false,
     );
+
     assert.equal(
         rendered.some((line) => line.includes('nginx -s reload')),
         false,
     );
+
     const audit = JSON.parse(
         (
             await readFile(
@@ -315,6 +334,7 @@ test('migration failure never starts or switches a slot and records bounded audi
             )
         ).trim(),
     );
+
     assert.equal(audit.failurePhase, 'migration');
     assert.equal(audit.outcome, 'failed');
 });
@@ -337,6 +357,7 @@ test('readiness failure preserves the active slot and removes only the candidate
     const failureCalls = calls
         .slice(beforeFailure)
         .map((call) => call.join(' '));
+
     assert.equal(state.activeSlot, 'blue');
     assert.equal(
         failureCalls.some((line) =>
@@ -345,6 +366,7 @@ test('readiness failure preserves the active slot and removes only the candidate
         false,
         'ordinary deployment must not mutate live deletion state',
     );
+
     assert.equal(
         failureCalls.some(
             (line) =>
@@ -352,6 +374,7 @@ test('readiness failure preserves the active slot and removes only the candidate
         ),
         true,
     );
+
     assert.equal(
         failureCalls.some((line) => line.includes('nginx -s reload')),
         false,
@@ -365,6 +388,7 @@ test('production backup gate is bound to production evidence', async () => {
         ...deployment.config,
         BACKUP_MANIFEST_PATH: '/backup/latest.json',
     };
+
     await deployment.verifyBackupGate();
     assert.deepEqual(calls.at(-1).slice(1, 4), [
         'check-fresh',
@@ -383,10 +407,12 @@ test('production verifies worker table privileges before readiness', async () =>
         calls.some((call) => call.join(' ').includes('has_table_privilege')),
         true,
     );
+
     assert.match(
         calls.at(-1).join(' '),
         /run --rm --no-deps dictionary-worker node/,
     );
+
     assert.match(calls.at(-1).join(' '), /has_table_privilege/);
     assert.doesNotMatch(calls.at(-1).join(' '), / exec /);
     behavior.workerPrivileges = {
@@ -441,10 +467,12 @@ test('production verifies worker table privileges before readiness', async () =>
         adminMemberships: false,
         adminAuditEvents: false,
     };
+
     await assert.rejects(
         () => deployment.verifyDictionaryWorkerDatabasePrivileges('blue'),
         /least-privilege boundary/,
     );
+
     behavior.workerPrivileges.users = false;
     behavior.workerPrivileges.documentUploads = false;
     await assert.rejects(
@@ -470,6 +498,7 @@ test('production runs the trusted worker privilege gate before slot startup', as
     const slotStart = rendered.findIndex((line) =>
         line.includes('up --detach --no-build --wait'),
     );
+
     assert.ok(privilegeGate >= 0 && privilegeGate < slotStart);
 });
 
@@ -482,6 +511,7 @@ test('failed NGINX validation restores the previously mounted upstream file', as
         () => deployment.validateAndSwitch('blue', true),
         /nginx fixture failed/,
     );
+
     assert.equal(await readFile(upstream, 'utf8'), original);
 });
 
@@ -490,6 +520,7 @@ test('runtime directory is mounted so atomic upstream replacement is visible to 
         'infra/deploy/compose/edge.compose.yaml',
         'utf8',
     );
+
     assert.match(compose, /DEPLOY_RUNTIME_DIR[^\n]*:\/etc\/nginx\/languon:ro/);
     assert.doesNotMatch(compose, /active-upstream\.conf:\/etc/);
 });
@@ -518,6 +549,7 @@ test('rollback redeploys the previous images without running an older migrator',
             ]),
         ),
     };
+
     behavior.responseSha = deployment.manifest.sourceSha;
     await deployment.deploy();
     const beforeRollback = calls.length;
@@ -534,6 +566,7 @@ test('rollback redeploys the previous images without running an older migrator',
         ),
         false,
     );
+
     const rollbackEnvironments = environments.slice(beforeRollback);
     assert.equal(
         rollbackEnvironments.some(
@@ -542,6 +575,7 @@ test('rollback redeploys the previous images without running an older migrator',
         ),
         true,
     );
+
     assert.equal(
         rollbackEnvironments.some(
             (environment) =>
@@ -550,12 +584,14 @@ test('rollback redeploys the previous images without running an older migrator',
         ),
         true,
     );
+
     assert.equal(
         rollbackEnvironments.some((environment) =>
             environment.BACKEND_IMAGE?.includes(secondDigest),
         ),
         false,
     );
+
     assert.equal(audit.outcome, 'rolled-back');
 });
 
@@ -577,6 +613,7 @@ test('cleanup failure preserves the committed new slot and state', async () => {
     const failureCalls = calls
         .slice(beforeFailure)
         .map((call) => call.join(' '));
+
     assert.equal(state.activeSlot, 'green');
     assert.equal(
         failureCalls.some(
@@ -585,6 +622,7 @@ test('cleanup failure preserves the committed new slot and state', async () => {
         ),
         false,
     );
+
     assert.equal(
         failureCalls.filter((line) => line.includes('nginx -s reload')).length,
         1,
@@ -610,6 +648,7 @@ test('audit persistence failure never tears down the committed new slot', async 
     const failureCalls = calls
         .slice(beforeFailure)
         .map((call) => call.join(' '));
+
     assert.equal(state.activeSlot, 'green');
     assert.equal(
         failureCalls.some(

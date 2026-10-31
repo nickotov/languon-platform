@@ -18,27 +18,35 @@ function parseArguments(values) {
             'Usage: cli.mjs <deploy|verify|rollback> --environment <stage|production> --manifest <path> [--config <path>] [--state-directory <path>] [--runtime-directory <path>]',
         );
     }
+
     const options = { command };
     for (let index = 0; index < rest.length; index += 2) {
         const key = rest[index];
         const value = rest[index + 1];
-        if (!key?.startsWith('--') || value === undefined)
+        if (!key?.startsWith('--') || value === undefined) {
             throw new Error(`Invalid argument ${key}.`);
+        }
+
         options[key.slice(2)] = value;
     }
+
     return options;
 }
 
 export async function main(values = process.argv.slice(2)) {
     const options = parseArguments(values);
     const environment = validateEnvironment(options.environment);
-    if (!options.manifest) throw new Error('--manifest is required.');
+    if (!options.manifest) {
+        throw new Error('--manifest is required.');
+    }
+
     const allowLocalRegistry = options['allow-local-registry'] === 'true';
     if (allowLocalRegistry && process.env.LANGUON_LOCAL_REHEARSAL !== 'true') {
         throw new Error(
             'Local registry manifests are permitted only by the guarded rehearsal.',
         );
     }
+
     const manifest = await readReleaseManifest(path.resolve(options.manifest), {
         allowLocalRegistry,
     });
@@ -49,6 +57,7 @@ export async function main(values = process.argv.slice(2)) {
         environment,
         await readDeployConfig(configPath),
     );
+
     await validateAdminPasswordFile(config.ADMIN_HTPASSWD_PATH);
     const repositoryRoot = path.resolve(
         path.dirname(fileURLToPath(import.meta.url)),

@@ -10,6 +10,7 @@ const headers = {
     Origin: 'http://localhost:3000',
     'Content-Type': 'application/json',
 };
+
 function fixture() {
     const actorId = randomUUID(),
         noteId = randomUUID(),
@@ -34,6 +35,7 @@ function fixture() {
         },
         burstLimiter: { consume: vi.fn(async () => ({ allowed: true })) },
     } as ConstructorParameters<typeof KnowledgePrivateTranslationService>[0]);
+
     return {
         actorId,
         noteId,
@@ -50,6 +52,7 @@ function fixture() {
         path: `/knowledge/${noteId}/blocks/${blockId}/private-translations`,
     };
 }
+
 describe('private knowledge translation HTTP authority', () => {
     it('requires authentication and forwards verified actor plus complete header grant', async () => {
         const f = fixture();
@@ -64,6 +67,7 @@ describe('private knowledge translation HTTP authority', () => {
                 'X-Languon-Share-Key': key,
             },
         });
+
         expect(result.status).toBe(200);
         expect(result.headers.get('cache-control')).toBe('private, no-store');
         expect(f.store.list).toHaveBeenCalledWith({
@@ -73,6 +77,7 @@ describe('private knowledge translation HTTP authority', () => {
             access: { kind: 'note', locator, key },
         });
     });
+
     it('rejects caller supplied content, actor IDs, unsupported languages and incomplete grants', async () => {
         const f = fixture();
         for (const extra of [
@@ -89,8 +94,10 @@ describe('private knowledge translation HTTP authority', () => {
                     ...extra,
                 }),
             });
+
             expect(response.status).toBe(400);
         }
+
         expect(
             (
                 await f.app.request(f.path, {
@@ -101,20 +108,25 @@ describe('private knowledge translation HTTP authority', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(f.store.request).not.toHaveBeenCalled();
     });
+
     it('does not reveal a revoked source or other actor job through reads/cancel', async () => {
         const f = fixture();
         f.store.job.mockRejectedValue(
             new KnowledgeDomainError('knowledge_not_found', 'Unavailable'),
         );
+
         f.store.cancel.mockRejectedValue(
             new KnowledgeDomainError('knowledge_not_found', 'Unavailable'),
         );
+
         const id = randomUUID();
         expect(
             (await f.app.request(`${f.path}/jobs/${id}`, { headers })).status,
         ).toBe(404);
+
         expect(
             (
                 await f.app.request(`${f.path}/jobs/${id}/cancel`, {

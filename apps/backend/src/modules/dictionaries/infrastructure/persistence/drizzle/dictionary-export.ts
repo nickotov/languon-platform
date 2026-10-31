@@ -84,7 +84,10 @@ export async function streamDictionaryExport(
                     )
                     .limit(exportPageSize);
 
-                if (rows.length === 0) break;
+                if (rows.length === 0) {
+                    break;
+                }
+
                 await input.onCards(
                     rows.map((row) => mapCard(row, current.settings)),
                 );

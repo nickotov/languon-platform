@@ -89,12 +89,15 @@ describe('dictionary interchange', () => {
         await user.click(
             screen.getByRole('button', { name: 'Preview import' }),
         );
+
         expect(
             await screen.findByText(/can accept 0 more rows/u),
         ).toBeInTheDocument();
+
         expect(
             screen.getByRole('button', { name: 'Import 1 cards' }),
         ).toBeDisabled();
+
         expect(onCommit).not.toHaveBeenCalled();
     });
 
@@ -138,6 +141,7 @@ describe('dictionary interchange', () => {
         expect(
             screen.queryByRole('button', { name: 'Import 1 ready row' }),
         ).not.toBeInTheDocument();
+
         expect(onCommit).not.toHaveBeenCalled();
     });
 
@@ -158,16 +162,19 @@ describe('dictionary interchange', () => {
                 truncated: true,
             },
         } satisfies PreviewDictionaryImportResponse;
+
         function Harness() {
             const [currentPreview, setCurrentPreview] = useState(preview);
+
             return (
                 <DictionaryImportPanel
                     aiAvailable
                     languages={languages}
                     onCommit={vi.fn().mockResolvedValue(undefined)}
                     onPreview={async (request) => {
-                        if (request.content.includes('second'))
+                        if (request.content.includes('second')) {
                             setCurrentPreview(largePreview);
+                        }
                     }}
                     optionalFieldsEnabled
                     pending={false}
@@ -183,6 +190,7 @@ describe('dictionary interchange', () => {
                 />
             );
         }
+
         render(<Harness />);
 
         const content = screen.getByLabelText('Import text');
@@ -190,6 +198,7 @@ describe('dictionary interchange', () => {
         await user.click(
             screen.getByRole('button', { name: 'Preview import' }),
         );
+
         await user.click(screen.getByRole('switch', { name: /enrich/iu }));
         expect(
             screen.getByRole('button', { name: 'Generate 1 card reviews' }),
@@ -199,14 +208,17 @@ describe('dictionary interchange', () => {
         await user.click(
             screen.getByRole('button', { name: 'Preview import' }),
         );
+
         expect(
             await screen.findByRole('button', {
                 name: 'Generate 100 card reviews',
             }),
         ).toBeEnabled();
+
         expect(
             screen.getByText(/this is a sample of the import/iu),
         ).toBeVisible();
+
         expect(
             screen.getByText(/up to 100 pairs from this preview/iu),
         ).toBeVisible();
@@ -216,6 +228,7 @@ describe('dictionary interchange', () => {
         const file = new File([new Uint8Array([0xc3, 0x28])], 'terms.csv', {
             type: 'text/csv',
         });
+
         await expect(readDictionaryImportFile(file)).rejects.toMatchObject({
             reason: 'invalid_utf8',
         });
@@ -231,9 +244,11 @@ describe('dictionary interchange', () => {
                 },
             }),
         );
+
         await expect(copyDictionaryExport(response)).rejects.toBeInstanceOf(
             DictionaryExportSaveError,
         );
+
         expect(cancel).toHaveBeenCalledWith('dictionary_export_fallback_limit');
     });
 
@@ -244,18 +259,21 @@ describe('dictionary interchange', () => {
         const showSaveFilePicker = vi.fn().mockResolvedValue({
             createWritable: () => Promise.resolve(new WritableStream()),
         });
+
         showSaveFilePicker.mockImplementation(
             () =>
                 new Promise((resolve) => {
                     resolvePicker = resolve;
                 }),
         );
+
         const load = vi.fn().mockResolvedValue({
             filename: 'dictionary.csv',
             response: new Response('source,translation', {
                 headers: { 'Content-Type': 'text/csv; charset=utf-8' },
             }),
         });
+
         Object.defineProperty(window, 'showSaveFilePicker', {
             configurable: true,
             value: showSaveFilePicker,
@@ -268,10 +286,12 @@ describe('dictionary interchange', () => {
                 load,
                 suggestedName: 'dictionary.csv',
             });
+
             expect(load).not.toHaveBeenCalled();
             resolvePicker({
                 createWritable: () => Promise.resolve(new WritableStream()),
             });
+
             await saved;
         } finally {
             Reflect.deleteProperty(window, 'showSaveFilePicker');
@@ -287,6 +307,7 @@ describe('dictionary interchange', () => {
                 ],
             }),
         );
+
         expect(load).toHaveBeenCalledOnce();
     });
 
@@ -298,6 +319,7 @@ describe('dictionary interchange', () => {
                 .fn()
                 .mockRejectedValue(new DOMException('cancelled', 'AbortError')),
         });
+
         try {
             await expect(
                 saveDictionaryExport({
@@ -310,6 +332,7 @@ describe('dictionary interchange', () => {
         } finally {
             Reflect.deleteProperty(window, 'showSaveFilePicker');
         }
+
         expect(load).not.toHaveBeenCalled();
     });
 
@@ -322,6 +345,7 @@ describe('dictionary interchange', () => {
                 createWritable: () => Promise.resolve(writable),
             }),
         });
+
         try {
             await expect(
                 saveDictionaryExport({
@@ -334,6 +358,7 @@ describe('dictionary interchange', () => {
         } finally {
             Reflect.deleteProperty(window, 'showSaveFilePicker');
         }
+
         expect(abort).toHaveBeenCalledOnce();
     });
 });

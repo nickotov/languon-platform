@@ -9,6 +9,7 @@ export function ExercisePreview(
 ) {
     const { block, labels } = props;
     const compact = props.variant === 'compact';
+
     return (
         <div className={styles.preview}>
             <p className={styles.question}>{block.question}</p>

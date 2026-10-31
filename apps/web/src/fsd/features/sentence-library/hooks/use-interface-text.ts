@@ -8,5 +8,6 @@ export function useInterfaceText() {
     const date = (iso: string) => formatDate(iso, locale);
     const direction = (from: string, to: string) =>
         L('dirLong', { from: lang(from), to: lang(to) });
+
     return { locale, L, lang, date, direction };
 }

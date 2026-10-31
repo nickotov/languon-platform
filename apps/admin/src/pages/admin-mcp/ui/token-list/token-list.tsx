@@ -51,13 +51,19 @@ function TokenCard({
     const [open, setOpen] = useState(false);
     const [form] = Form.useForm<{ reason: string }>();
     let status = 'mcp.active';
-    if (token.revokedAt) status = 'mcp.revoked';
-    else if (Date.parse(token.expiresAt) <= Date.now()) status = 'mcp.expired';
+    if (token.revokedAt) {
+        status = 'mcp.revoked';
+    } else if (Date.parse(token.expiresAt) <= Date.now()) {
+        status = 'mcp.expired';
+    }
+
     const canRevoke = token.revokedAt === null;
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
     const handleFinish = async ({ reason }: { reason: string }) => {
-        if (await onRevoke(token.id, reason)) setOpen(false);
+        if (await onRevoke(token.id, reason)) {
+            setOpen(false);
+        }
     };
     const items = [
         { key: 'owner', label: t('mcp.owner'), children: token.ownerUserId },
@@ -91,6 +97,7 @@ function TokenCard({
             children: <TokenLimitSummary limits={token.limits} />,
         },
     ];
+
     return (
         <>
             <Card

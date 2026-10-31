@@ -39,6 +39,7 @@ const bilingual = BilingualTextLearningBlockSchema.parse({
         },
     ],
 });
+
 describe('library copy projections', () => {
     it('preserves prepared pronunciation/examples without AI regeneration', () => {
         const result = vocabularyLibraryRows(vocabulary, [entryId]);
@@ -55,16 +56,20 @@ describe('library copy projections', () => {
                 },
             },
         ]);
+
         expect(vocabulary.entries[0]?.term).toBe('cat');
     });
+
     it('refuses fabricated selections or mismatched block types', () => {
         expect(() => vocabularyLibraryRows(vocabulary, [id])).toThrow(
             'unavailable',
         );
+
         expect(() => vocabularyLibraryRows(bilingual, [entryId])).toThrow(
             'vocabulary',
         );
     });
+
     it('creates independent aligned identities in source order', () => {
         const copied = textLibraryContent(bilingual, 'ru', () => freshId);
         expect(copied.alignment!.source[0]).toEqual({
@@ -74,12 +79,15 @@ describe('library copy projections', () => {
             endOffset: 13,
             paragraphIndex: 0,
         });
+
         expect(copied.alignment!.translation[0]).toEqual({
             pairId: freshId,
             text: 'Кот спит.',
         });
+
         expect(textLibraryContent(bilingual, 'de').alignment).toBeNull();
     });
+
     it('appends aligned pairs without rewriting old identities or manual translations', () => {
         const first = textLibraryContent(
             bilingual,
@@ -101,10 +109,12 @@ describe('library copy projections', () => {
             endOffset: 28,
             paragraphIndex: 1,
         });
+
         expect(joined.source.map((s) => s.text).join('')).toBe(
             'A cat sleeps.\n\nA cat sleeps.',
         );
     });
+
     it('preserves passage boundaries and contiguous offsets for authored or private translations', () => {
         const secondId = '00000000-0000-4000-8000-000000000005';
         const block = BilingualTextLearningBlockSchema.parse({
@@ -127,6 +137,7 @@ describe('library copy projections', () => {
         const copied = textLibraryContent(block, 'fr', () =>
             identities.shift()!,
         );
+
         expect(copied.sourceText).toBe('A cat sleeps.\n\nA dog runs.');
         expect(copied.alignment!.source).toEqual([
             {
@@ -144,12 +155,15 @@ describe('library copy projections', () => {
                 paragraphIndex: 1,
             },
         ]);
+
         expect(
             copied.alignment!.translation.map((pair) => pair.text).join(''),
         ).toBe('Un chat dort.\n\nUn chien court.');
+
         expect(textLibraryContent(block, 'de').sourceText).toBe(
             copied.sourceText,
         );
+
         const existing = textLibraryContent(
             bilingual,
             'ru',
@@ -159,19 +173,23 @@ describe('library copy projections', () => {
         expect(appended.source.map((pair) => pair.text).join('')).toBe(
             'A cat sleeps.\n\nA cat sleeps.\n\nA dog runs.',
         );
+
         expect(appended.source[2]).toMatchObject({
             startOffset: 28,
             endOffset: 41,
             paragraphIndex: 2,
         });
+
         expect(appended.translation[2]?.text).toBe('\n\nUn chien court.');
     });
+
     it('rejects duplicate inserted pair identities and aggregate destination overflow', () => {
         const first = textLibraryContent(
             bilingual,
             'ru',
             () => freshId,
         ).alignment!;
+
         expect(() => appendLibraryAlignment(first, first)).toThrow();
         const oversized = {
             ...first,
@@ -183,6 +201,7 @@ describe('library copy projections', () => {
                 },
             ],
         };
+
         expect(() =>
             appendLibraryAlignment(
                 oversized,

@@ -117,7 +117,6 @@ owns backend quotes/metadata/Redis; frontend owns corresponding UI.
 No fixed review-cycle quota or passing unrelated tests close these findings.
 Remediation review must assess changed paths and final exact-source evidence.
 
-
 ## Expanded remediation scope checkpoint
 
 The security reviewer distinguished pre-existing SEC-052-04 (broad nonfinancial
@@ -128,7 +127,6 @@ those permissions and must not claim to have fixed them. No general RLS or domai
 erasure redesign is included. Luna independently reviewed the scope at the user's
 request and recommended these same boundaries. The final security reviewer closed
 SEC-052-05/06 with actual restricted-role evidence.
-
 
 Final expanded security remediation verdict: **READY** for the frozen financial
 and restricted-role boundary captured by remediation manifest SHA

@@ -3,11 +3,13 @@ import { parseCreditMilli } from './ai-credit-amount';
 const CreditAmountSchema = z.string().refine((value) => {
     try {
         parseCreditMilli(value);
+
         return true;
     } catch {
         return false;
     }
 }, 'Expected exact nonnegative decimal credits.');
+
 /** Server-owned offer; confirming repeats the original request and idempotency key. */
 export const ActionAllowanceQuoteSchema = z
     .object({

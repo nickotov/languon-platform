@@ -13,6 +13,9 @@ export const ShellNavigationContext = createContext<ShellNavigation | null>(
 );
 export function useShellNavigation() {
     const value = useContext(ShellNavigationContext);
-    if (!value) throw new Error('Missing shell navigation');
+    if (!value) {
+        throw new Error('Missing shell navigation');
+    }
+
     return value;
 }

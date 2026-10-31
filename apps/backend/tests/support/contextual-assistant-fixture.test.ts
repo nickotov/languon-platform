@@ -27,6 +27,7 @@ describe('contextual assistant browser fixture', () => {
         const original = provider.model.doGenerate.bind(provider.model);
         provider.model.doGenerate = async (input) => {
             expect(purpose.getStore()).toBe('answer');
+
             return original(input);
         };
 
@@ -51,7 +52,9 @@ describe('contextual assistant browser fixture', () => {
     it('round-trips generated grammar Markdown with actual narrative boundaries', () => {
         const proposal = JSON.parse(JSON.stringify(markdownGrammarProposal()));
         const grammar = LearningBlockSchema.parse(proposal.blocks[0]);
-        if (grammar.type !== 'grammar') throw new Error('Expected grammar');
+        if (grammar.type !== 'grammar') {
+            throw new Error('Expected grammar');
+        }
 
         expect(grammar.rule).toContain('\n\n- Il faut que tu viennes.');
         expect(grammar.rule).not.toContain('\\\\n');
@@ -72,6 +75,7 @@ describe('contextual assistant browser fixture', () => {
                 ],
             },
         ];
+
         expect(mentionedBlockIds(prompt)).toEqual(ids);
     });
 
@@ -175,6 +179,7 @@ describe('contextual assistant browser fixture', () => {
             id: randomUUID(),
             role: 'user' as const,
         };
+
         memory.messages.set(firstMessage.id, firstMessage);
         memory.messages.set(message.id, message);
         const provider = scriptedTutorModel([

@@ -44,6 +44,7 @@ const request = () => ({
     scope: { type: 'all' as const },
     visitedExerciseIds: [],
 });
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'app-only private sentence source retention',
     () => {
@@ -64,10 +65,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             blockId: string;
             access: { kind: 'note'; locator: string; key: string };
         };
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -81,15 +84,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     status: 'active' as const,
                 })),
             );
+
             await db.insert(aiCreditAccountsTable).values(
                 [reader, other].map((userId) => ({
                     userId,
                     mode: 'unlimited' as const,
                 })),
             );
+
             const crypto = new KnowledgeShareCrypto(
                 'synthetic-sentence-private-retention',
             );
+
             knowledge = new DrizzleKnowledgeStore(
                 db,
                 {
@@ -98,6 +104,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 crypto,
             );
+
             const note = await knowledge.create(owner, {
                 operationId: randomUUID(),
                 content: KnowledgeNoteContentSchema.parse({
@@ -134,6 +141,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             });
+
             noteId = note.id;
             source = {
                 actorId: reader,
@@ -144,6 +152,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ...(await knowledge.issueShare(owner, noteId)),
                 },
             };
+
             const model = textAiModelCatalog[0]!;
             const snapshot: TextAiExecutionSnapshot = {
                 adapterRevision: model.adapterRevision,
@@ -167,6 +176,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdByUserId: owner,
                 catalogSnapshot: snapshot,
             });
+
             await seedLegacyActionFixture(db);
             paid = new DrizzleKnowledgeSentencePaid(db, crypto, {
                 resolveExecution: async () => ({
@@ -176,18 +186,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     budget: snapshot.aggregateBudget,
                 }),
             });
+
             free = new DrizzleKnowledgeSentenceFreeStore(db, crypto, (tx) =>
                 paid.admission(tx),
             );
+
             worker = new DrizzleSentenceWorkerStore(db);
         }, 120_000);
+
         afterAll(async () => client?.end());
         async function submit(actorSource: VocabularyPracticeActor = source) {
             const result = await free.next(actorSource, request(), context());
-            if (result.kind !== 'job')
+            if (result.kind !== 'job') {
                 throw new Error('Expected admitted private action');
+            }
+
             return result.job;
         }
+
         async function claim() {
             const result = await worker.claimNext(
                 {
@@ -205,29 +221,39 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 context(),
             );
-            if (!result) throw new Error('Expected private worker claim');
+
+            if (!result) {
+                throw new Error('Expected private worker claim');
+            }
+
             return result;
         }
+
         async function assertRedacted(jobId: string, state: string) {
             const [row] = await db
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, jobId));
+
             expect(row).toMatchObject({
                 executionState: state,
                 inputPayload: null,
                 knowledgeSource: null,
                 sourceExerciseId: null,
             });
+
             const [link] = await db
                 .select()
                 .from(sources)
                 .where(eq(sources.jobId, jobId));
+
             expect(link).toMatchObject({ actorId: reader, noteId, blockId });
             expect(link!.binding.sourceSnapshot.type).toBe('vocabulary');
             expect(link!.inputPayload).not.toBeNull();
+
             return row!;
         }
+
         it('retains live-authorized app history after completed, failed and cancelled parent bodies are physically scrubbed', async () => {
             const failed = await submit();
             const failureLease = await claim();
@@ -238,25 +264,32 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).toBe('committed');
+
             await assertRedacted(failed.id, 'failed');
             expect(
                 (await paid.getJob(source, failed.id, context())).state,
             ).toBe('failed');
+
             const cancelled = await submit();
             expect(
                 (await paid.cancelJob(source, cancelled.id, context())).state,
             ).toBe('cancelled');
+
             await assertRedacted(cancelled.id, 'cancelled');
             expect(
                 (await paid.getJob(source, cancelled.id, context())).state,
             ).toBe('cancelled');
+
             const completed = await submit();
             const claimed = await claim();
-            if (claimed.kind !== 'sentence-generation')
+            if (claimed.kind !== 'sentence-generation') {
                 throw new Error('Expected generation');
+            }
+
             expect(await worker.markDispatched(claimed.lease, context())).toBe(
                 'dispatch',
             );
+
             const target = claimed.input.candidates[0]!;
             const content = validateSentenceGeneration(claimed.input, {
                 sourceText: 'The cat sleeps.',
@@ -274,6 +307,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             });
+
             expect(
                 await worker.completeGeneration(
                     claimed.lease,
@@ -281,11 +315,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).toBe('committed');
+
             await assertRedacted(completed.id, 'completed');
             expect(
                 (await paid.getJob(source, completed.id, context())).result
                     ?.kind,
             ).toBe('exercise');
+
             await expect(
                 paid.getJob(
                     { ...source, actorId: other },
@@ -293,10 +329,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).rejects.toThrow();
+
             await knowledge.revokeShare(owner, noteId);
             await expect(
                 paid.getJob(source, completed.id, context()),
             ).rejects.toThrow();
+
             expect(
                 await db
                     .select()
@@ -304,6 +342,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(sources.noteId, noteId)),
             ).toHaveLength(3);
         });
+
         it('deletes source-bound links on permanent note deletion while an independently copied note keeps its own private job', async () => {
             const original = await submit();
             const copy = await knowledge.copyShared(
@@ -313,29 +352,35 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { operationId: randomUUID(), expectedVersion: 1 },
             );
             const copiedBlock = copy.body.document.content?.[0]?.attrs?.block;
-            if (copiedBlock?.type !== 'vocabulary')
+            if (copiedBlock?.type !== 'vocabulary') {
                 throw new Error('Expected copied vocabulary');
+            }
+
             const independent = await submit({
                 actorId: other,
                 noteId: copy.id,
                 blockId: copiedBlock.id,
             });
+
             await knowledge.delete(owner, noteId, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
             });
+
             expect(
                 await db
                     .select()
                     .from(sources)
                     .where(eq(sources.jobId, original.id)),
             ).toHaveLength(0);
+
             expect(
                 await db
                     .select()
                     .from(sources)
                     .where(eq(sources.jobId, independent.id)),
             ).toHaveLength(1);
+
             expect(
                 (
                     await paid.getJob(
@@ -349,10 +394,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                 ).state,
             ).toBe('queued');
+
             const [parent] = await db
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, original.id));
+
             expect(parent).toMatchObject({
                 executionState: 'cancelled',
                 inputPayload: null,
@@ -360,6 +407,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceExerciseId: null,
             });
         });
+
         it('erases a purged actor private source on a foreign note and preserves another actor independent material', async () => {
             const original = await submit();
             const copy = await knowledge.copyShared(
@@ -369,8 +417,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { operationId: randomUUID(), expectedVersion: 1 },
             );
             const copiedBlock = copy.body.document.content?.[0]?.attrs?.block;
-            if (copiedBlock?.type !== 'vocabulary')
+            if (copiedBlock?.type !== 'vocabulary') {
                 throw new Error('Expected copied vocabulary');
+            }
+
             const independent = await submit({
                 actorId: other,
                 noteId: copy.id,
@@ -381,6 +431,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(usersTable)
                 .set({ status: 'deletion_pending' })
                 .where(eq(usersTable.id, reader));
+
             await db.insert(accountDeletionRequestsTable).values({
                 userId: reader,
                 state: 'pending',
@@ -389,10 +440,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 nextAttemptAt: new Date(now.getTime() - 60_000),
                 updatedAt: now,
             });
+
             const purgeStore = new DrizzleAccountPurgeStore(db);
             const workerId = 'sentence-retention-purge';
             const claim = await purgeStore.claimDue({ now, workerId });
-            if (!claim) throw new Error('Expected purge claim');
+            if (!claim) {
+                throw new Error('Expected purge claim');
+            }
+
             expect(
                 await purgeStore.finish({
                     ...claim,
@@ -400,18 +455,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workerId,
                 }),
             ).toBe(true);
+
             expect(
                 await db
                     .select()
                     .from(sources)
                     .where(eq(sources.jobId, original.id)),
             ).toHaveLength(0);
+
             expect(
                 await db
                     .select()
                     .from(sources)
                     .where(eq(sources.jobId, independent.id)),
             ).toHaveLength(1);
+
             expect((await knowledge.get(owner, noteId)).id).toBe(noteId);
             expect(
                 (

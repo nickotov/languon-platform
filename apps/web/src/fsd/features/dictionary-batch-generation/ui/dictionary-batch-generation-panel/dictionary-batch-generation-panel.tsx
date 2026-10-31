@@ -107,8 +107,9 @@ export function DictionaryBatchGenerationPanel({
             job?.state !== 'review' ||
             !job.proposal ||
             initializedReviewJobId.current === job.id
-        )
+        ) {
             return;
+        }
 
         initializedReviewJobId.current = job.id;
 
@@ -792,7 +793,9 @@ function fieldEnabled(
 
     const overrides = candidate.overrides;
 
-    if (field === 'source' || field === 'translation') return true;
+    if (field === 'source' || field === 'translation') {
+        return true;
+    }
 
     if (field === 'transcription') {
         return overrides.transcriptionEnabled ?? settings.transcriptionEnabled;
@@ -804,7 +807,9 @@ function fieldEnabled(
 
     const exampleEnabled = overrides.exampleEnabled ?? settings.exampleEnabled;
 
-    if (field === 'example') return exampleEnabled;
+    if (field === 'example') {
+        return exampleEnabled;
+    }
 
     return (
         exampleEnabled &&
@@ -863,8 +868,11 @@ function toggledSet(
 ) {
     const next = new Set(current);
 
-    if (included) next.add(value);
-    else next.delete(value);
+    if (included) {
+        next.add(value);
+    } else {
+        next.delete(value);
+    }
 
     return next;
 }

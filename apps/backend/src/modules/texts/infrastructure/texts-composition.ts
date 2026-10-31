@@ -25,6 +25,7 @@ export function createTextsCryptography(
             .digest(),
     });
 }
+
 export interface TextsContentCompositionDependencies {
     database: TextsContentDatabase;
     accessTokens: AccessTokenSigner;
@@ -60,9 +61,11 @@ export function createTextsContentComposition(
                 userId: claims.userId,
                 sessionId: claims.sessionId,
             });
+
             return { userId: claims.userId };
         },
     });
+
     return {
         store,
         service,

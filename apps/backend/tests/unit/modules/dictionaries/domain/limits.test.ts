@@ -20,6 +20,7 @@ describe('dictionary text limits', () => {
             description: 'A personal list',
             name: 'German nouns',
         });
+
         expect(
             normalizeCardValues({
                 definition: ' dormant definition ',
@@ -45,6 +46,7 @@ describe('dictionary text limits', () => {
         expect(
             normalizeDictionaryDetails({ description: null, name: exactLimit }),
         ).toEqual({ description: null, name: exactLimit });
+
         expect(() =>
             normalizeDictionaryDetails({
                 description: null,
@@ -56,6 +58,7 @@ describe('dictionary text limits', () => {
                 reason: 'too_long',
             }),
         );
+
         expect(() =>
             normalizeCardValues({
                 definition: null,
@@ -80,6 +83,7 @@ describe('dictionary text limits', () => {
                 name: 'Safe',
             }).description,
         ).toBe('line one\nline two');
+
         expect(() =>
             normalizeDictionaryDetails({
                 description: 'unsafe\u0000text',
@@ -103,6 +107,7 @@ describe('dictionary text limits', () => {
                 { cards: 0, dictionaries: 0, revisions: 0 },
             ),
         ).not.toThrow();
+
         expect(() =>
             assertDictionaryOwnerCapacity(
                 {
@@ -117,6 +122,7 @@ describe('dictionary text limits', () => {
                 resource: 'dictionaries',
             }),
         );
+
         expect(() =>
             assertDictionaryOwnerCapacity(
                 {
@@ -131,6 +137,7 @@ describe('dictionary text limits', () => {
                 resource: 'cards',
             }),
         );
+
         expect(() =>
             assertDictionaryOwnerCapacity(
                 {

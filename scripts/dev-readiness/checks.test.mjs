@@ -12,6 +12,7 @@ const { createTextAiRouteFingerprint } = await tsImport(
     '../../apps/backend/src/infrastructure/text-ai/route-fingerprint.ts',
     import.meta.url,
 );
+
 import { migrationStatus } from './database.mjs';
 
 const evaluateReadiness = (...args) =>
@@ -31,6 +32,7 @@ const env = {
         .flatMap((c) => c.formats)
         .join(','),
 };
+
 function snapshot() {
     return {
         routing: {
@@ -130,11 +132,13 @@ test('refuses remote, query overrides, production, and mismatched database witho
         { APP_ENV: 'production' },
         { NODE_ENV: 'production' },
         { POSTGRES_DB: 'other' },
-    ])
+    ]) {
         assert.throws(
             () => validateLocalEnvironment({ ...env, ...overrides }),
             (error) => !error.message.includes('secret'),
         );
+    }
+
     assert.deepEqual(validateLocalEnvironment(env), {
         host: '127.0.0.1',
         port: '55444',
@@ -151,6 +155,7 @@ test('configured setup passes and phase configuration needs no running workers',
             (c) => c.status === 'pass',
         ),
     );
+
     assert.equal(
         evaluateReadiness(value, env).find((c) => c.id === 'texts:worker')
             .status,
@@ -164,14 +169,17 @@ test('reproduces old formats and absent prices with precise remediation', () => 
     value.workers.forEach((worker) => {
         worker.text_ai_supported_formats = ['text-detection:v1'];
     });
+
     const result = evaluateReadiness(value, {
         ...env,
         DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'text-detection:v1',
     });
+
     assert.match(
         result.find((c) => c.id === 'texts:worker').message,
         /text-detection:v2/,
     );
+
     assert.match(
         result
             .filter((c) => c.id === 'texts:environment')
@@ -179,6 +187,7 @@ test('reproduces old formats and absent prices with precise remediation', () => 
             .join(' '),
         /text-translation:v3/,
     );
+
     assert.equal(
         result.find((c) => c.id === 'provider-price').status,
         'blocked',
@@ -201,17 +210,20 @@ test('exact nonzero fractional learner balance is usable and unlimited skips zer
         learnerRequested: true,
         learner: { available_milli: '1', max_credits_per_action: '0.001' },
     };
+
     assert.match(
         evaluateReadiness(value, env).find((c) => c.id === 'learner-balance')
             .message,
         /0.001/,
     );
+
     value.learner.available_milli = '0';
     assert.equal(
         evaluateReadiness(value, env).find((c) => c.id === 'learner-balance')
             .status,
         'blocked',
     );
+
     value.learner.unlimited = true;
     assert.equal(
         evaluateReadiness(value, env).some((c) => c.id === 'learner-balance'),
@@ -223,6 +235,7 @@ test('new capability requirements are evaluated without changing runner', () => 
     const result = evaluateReadiness(snapshot(), env, 'runtime', [
         { id: 'future', formats: ['future:v1'] },
     ]);
+
     assert.equal(
         result.find((c) => c.id === 'future:worker').status,
         'blocked',
@@ -276,11 +289,13 @@ test('optional disabled capabilities are omitted unless explicitly requested', (
         TEXTS_AI_ENABLED: 'false',
         LEARNING_SENTENCES_ENABLED: 'false',
     };
+
     assert.ok(
         !evaluateReadiness(snapshot(), disabled).some(
             (c) => c.id.startsWith('texts:') || c.id.startsWith('sentences:'),
         ),
     );
+
     const selected = selectCapabilities(disabled, [
         'texts,sentences',
         'interview',
@@ -290,10 +305,12 @@ test('optional disabled capabilities are omitted unless explicitly requested', (
         result.find((c) => c.id === 'texts:enabled').status,
         'blocked',
     );
+
     assert.equal(
         result.find((c) => c.id === 'sentences:enabled').status,
         'blocked',
     );
+
     assert.ok(!result.some((c) => c.id.startsWith('dictionary:')));
     assert.throws(() => selectCapabilities(env, ['typo']));
 });
@@ -301,8 +318,9 @@ test('optional disabled capabilities are omitted unless explicitly requested', (
 test('runtime wait is bounded and rejects malformed duration', async () => {
     const { parseWaitMs } = await import('../dev-doctor.mjs');
     assert.equal(parseWaitMs('15000'), 15000);
-    for (const value of ['-1', '15001', 'Infinity', '1.5', ''])
+    for (const value of ['-1', '15001', 'Infinity', '1.5', '']) {
         assert.throws(() => parseWaitMs(value));
+    }
 });
 
 test('free selected interview ignores learner credit balance and budget', () => {
@@ -317,9 +335,11 @@ test('free selected interview ignores learner credit balance and budget', () => 
             (check) => check.status === 'pass',
         ),
     );
+
     value.policies = [
         { capability: 'portrait-interview', funding: 'customer' },
     ];
+
     assert.equal(
         evaluateReadiness(value, env, 'runtime', registry).find(
             (check) => check.id === 'learner-balance',
@@ -341,6 +361,7 @@ test('legacy and mismatched worker identities cannot claim execution readiness',
             ...worker,
             ...overrides,
         }));
+
         assert.equal(
             evaluateReadiness(
                 value,
@@ -361,6 +382,7 @@ test('new routing is mandatory and stale learner choices cannot override admin r
             (check) => check.status === 'pass',
         ),
     );
+
     delete value.routing;
     assert.equal(
         evaluateReadiness(value, env, 'configuration').find(
@@ -376,9 +398,11 @@ test('all primary and fallback routes and per-flow tariffs are inspected', () =>
         primaryRouteId: 'openrouter/openai/gpt-6-luna',
         fallbackRouteIds: ['deepseek/deepseek-flash'],
     };
+
     value.routing.configuration.enabledRouteIds.push(
         'openrouter/openai/gpt-6-luna',
     );
+
     delete value.routing.configuration.flowTariffs['text-translation'];
     const result = evaluateRaw(
         value,
@@ -386,6 +410,7 @@ test('all primary and fallback routes and per-flow tariffs are inspected', () =>
         'configuration',
         selectCapabilities(env, ['texts']),
     );
+
     assert.ok(
         result.some(
             (check) =>
@@ -396,6 +421,7 @@ test('all primary and fallback routes and per-flow tariffs are inspected', () =>
                 check.status === 'blocked',
         ),
     );
+
     assert.ok(
         result.some(
             (check) =>
@@ -406,6 +432,7 @@ test('all primary and fallback routes and per-flow tariffs are inspected', () =>
                 check.status === 'blocked',
         ),
     );
+
     assert.ok(!JSON.stringify(result).includes('synthetic-private-key'));
 });
 
@@ -431,16 +458,19 @@ test('quick-only, changed credential and hard failures cannot establish flow rea
             'blocked',
         );
     }
+
     const value = snapshot();
     value.probes.forEach(
         (probe) => (probe.evidence_expires_at = '2020-01-01T00:00:00Z'),
     );
+
     assert.match(
         evaluateReadiness(value, env, 'configuration', registry).find(
             (check) => check.id === 'flow-check',
         ).message,
         /aged/,
     );
+
     assert.equal(
         evaluateReadiness(
             value,
@@ -462,6 +492,7 @@ test('EvoLink credential and routing alone cannot approve learner data processin
         'configuration',
         selectCapabilities(env, ['conversation']),
     ).find((check) => check.id === 'selected-model');
+
     assert.equal(check.status, 'blocked');
     assert.match(check.message, /processing\/privacy/);
 });
@@ -476,6 +507,7 @@ test('flow-check diagnostics distinguish missing, invalidated and blocked eviden
     missing.probes = missing.probes.filter(
         (probe) => probe.flow_id !== 'conversation',
     );
+
     expectBlocked(flowCheck(missing), /No selected-flow check exists/);
 
     const quickOnly = snapshot();
@@ -483,17 +515,20 @@ test('flow-check diagnostics distinguish missing, invalidated and blocked eviden
         ...probe,
         kind: 'quick',
     }));
+
     expectBlocked(flowCheck(quickOnly), /quick response.*does not activate/);
 
     const changed = flowCheck(snapshot(), {
         ...env,
         DEEPSEEK_API_KEY: 'changed-key',
     });
+
     expectBlocked(changed, /do not match the current execution identity/);
     assert.match(
         changed.message,
         /Affected route: deepseek\/deepseek-flash; flow: conversation/,
     );
+
     assert.match(changed.message, /explicitly approve its operator expense/);
     assert.ok(!changed.message.includes('changed-key'));
 
@@ -503,11 +538,13 @@ test('flow-check diagnostics distinguish missing, invalidated and blocked eviden
         state: 'failed',
         dispatch_allowed: false,
     }));
+
     expectBlocked(flowCheck(failed), /last matching check failed/);
     assert.match(
         flowCheck(failed).message,
         /Hard failures require a successful explicit recheck/,
     );
+
     const transient = snapshot();
     transient.probes = transient.probes.map((probe) => ({
         ...probe,
@@ -515,16 +552,19 @@ test('flow-check diagnostics distinguish missing, invalidated and blocked eviden
         failure: 'timeout',
         dispatch_allowed: false,
     }));
+
     const temporaryBlock = flowCheck(transient);
     expectBlocked(
         temporaryBlock,
         /wait for bounded recovery.*before considering another paid check/,
     );
+
     assert.ok(
         !temporaryBlock.message.includes(
             'then explicitly approve its operator expense and run',
         ),
     );
+
     // The database authority, not diagnostic wording or elapsed time here,
     // decides whether a prior matching success permits recovery.
     transient.probes.forEach((probe) => (probe.dispatch_allowed = true));
@@ -551,6 +591,7 @@ test('only database-authorized recovery with a prior matching pass can restore r
         completed_at: '2020-01-01T00:00:00Z',
         dispatch_allowed: false,
     }));
+
     assert.equal(check(failedOnly), 'blocked');
     const recovered = snapshot();
     recovered.probes = recovered.probes.map((probe) => ({
@@ -560,6 +601,7 @@ test('only database-authorized recovery with a prior matching pass can restore r
         completed_at: '2020-01-01T00:00:00Z',
         dispatch_allowed: true,
     }));
+
     assert.equal(check(recovered), 'pass');
     const hardThenTimeout = snapshot();
     hardThenTimeout.probes = hardThenTimeout.probes.map((probe) => ({
@@ -569,6 +611,7 @@ test('only database-authorized recovery with a prior matching pass can restore r
         completed_at: '2020-01-01T00:00:00Z',
         dispatch_allowed: false,
     }));
+
     assert.equal(check(hardThenTimeout), 'blocked');
     const legacySnapshot = snapshot();
     legacySnapshot.probes.forEach((probe) => delete probe.dispatch_allowed);
@@ -581,6 +624,7 @@ test('knowledge actions reuse Texts routing and require the exact new worker for
         selected.map((capability) => capability.id),
         ['knowledge-actions'],
     );
+
     assert.deepEqual(selected[0].formats, ['text-translation:v4']);
     assert.equal(selected[0].criticalFlow, 'interactive-workbooks');
     const value = snapshot();
@@ -589,18 +633,21 @@ test('knowledge actions reuse Texts routing and require the exact new worker for
             (check) => check.status === 'pass',
         ),
     );
+
     value.workers.forEach((worker) => {
         worker.text_ai_supported_formats =
             worker.text_ai_supported_formats.filter(
                 (format) => format !== 'text-translation:v4',
             );
     });
+
     assert.equal(
         evaluateReadiness(value, env, 'runtime', selected).find(
             (check) => check.id === 'knowledge-actions:worker',
         ).status,
         'blocked',
     );
+
     assert.equal(
         evaluateReadiness(
             value,
@@ -621,21 +668,25 @@ test('knowledge action readiness follows Texts enablement, execution identity an
             (capability) => capability.id === 'knowledge-actions',
         ),
     );
+
     assert.equal(
         evaluateReadiness(value, disabled, 'runtime', selected).find(
             (check) => check.id === 'knowledge-actions:enabled',
         ).status,
         'blocked',
     );
+
     value.workers.forEach((worker) => {
         worker.texts_execution_revision = null;
     });
+
     assert.equal(
         evaluateReadiness(value, env, 'runtime', selected).find(
             (check) => check.id === 'knowledge-actions:worker',
         ).status,
         'blocked',
     );
+
     const free = snapshot();
     free.policies = [{ capability: 'text-translation', funding: 'operator' }];
     delete free.routing.configuration.flowTariffs['text-translation'];
@@ -645,6 +696,7 @@ test('knowledge action readiness follows Texts enablement, execution identity an
         ).status,
         'pass',
     );
+
     free.policies[0].funding = 'customer';
     assert.equal(
         evaluateReadiness(free, env, 'configuration', selected).find(

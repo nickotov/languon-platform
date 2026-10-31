@@ -20,9 +20,11 @@ describe('interactive document publication gate', () => {
             type: 'video',
             source: { kind: 'youtube', videoId: 'abcdefghijk' },
         });
+
         expect(hasKnowledgeText(body)).toBe(true);
         expect(knowledgePlainText(body)).toContain('abcdefghijk');
     });
+
     it('includes authored block content in fallback context and statistics', () => {
         const body = document({
             id,
@@ -30,9 +32,11 @@ describe('interactive document publication gate', () => {
             language: 'en',
             rule: 'Use the past simple for completed actions.',
         });
+
         expect(hasKnowledgeText(body)).toBe(true);
         expect(knowledgePlainText(body)).toContain('completed actions');
     });
+
     it('keeps empty prose drafts unpublished', () => {
         expect(
             hasKnowledgeText({ type: 'doc', content: [{ type: 'paragraph' }] }),
@@ -53,6 +57,7 @@ it('keeps horizontal-rule fallback offsets aligned with the pinned editor withou
             { type: 'paragraph', content: [{ type: 'text', text: 'B' }] },
         ],
     };
+
     expect(knowledgePlainText(body)).toBe('A\n\n\nB');
     expect(hasKnowledgeText(body)).toBe(true);
     expect(

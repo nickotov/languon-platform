@@ -44,8 +44,10 @@ export async function rotateShare(
             owner?.status !== 'active' ||
             current.dictionary.version !== input.expectedDictionaryVersion ||
             current.dictionary.lifecycle !== 'active'
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
+
         await tx
             .update(dictionariesTable)
             .set({
@@ -90,7 +92,9 @@ export async function findSharedCandidate(
         )
         .limit(1);
 
-    if (!row?.shareKeyDigest || !row.shareKeyVersion) return null;
+    if (!row?.shareKeyDigest || !row.shareKeyVersion) {
+        return null;
+    }
 
     return {
         dictionaryId: row.id,
@@ -130,7 +134,9 @@ export async function readSharedDictionary(
             .limit(1)
             .for('share', { of: dictionariesTable });
 
-        if (!row) throw new SharedDictionaryNotFoundError();
+        if (!row) {
+            throw new SharedDictionaryNotFoundError();
+        }
 
         const cursor = decodeCursor(input.query.cursor, isCardCursor);
         if (

@@ -16,13 +16,17 @@ import { loadAccountPurgeEnvironment } from '../../config/environment';
 const localEnvironmentPath = fileURLToPath(
     new URL('../../../../../.env.local', import.meta.url),
 );
-if (existsSync(localEnvironmentPath)) loadEnvFile(localEnvironmentPath);
+
+if (existsSync(localEnvironmentPath)) {
+    loadEnvFile(localEnvironmentPath);
+}
 
 async function main(): Promise<void> {
     const [operation] = process.argv.slice(2);
     if (operation !== 'run' && operation !== 'healthcheck') {
         throw new Error('Account purge command requires run or healthcheck.');
     }
+
     const environment = loadAccountPurgeEnvironment(process.env);
     const sql = createPostgresClient({
         databaseUrl: environment.databaseUrl,
@@ -64,8 +68,14 @@ async function main(): Promise<void> {
     process.on('SIGTERM', stop);
     try {
         await sql`select 1`;
-        if (storage) await storage.readiness(controller.signal);
-        if (operation === 'healthcheck') return;
+        if (storage) {
+            await storage.readiness(controller.signal);
+        }
+
+        if (operation === 'healthcheck') {
+            return;
+        }
+
         while (!controller.signal.aborted) {
             try {
                 const processed = await service.processNext({
@@ -73,14 +83,19 @@ async function main(): Promise<void> {
                     signal: controller.signal,
                     workerId,
                 });
-                if (processed) continue;
+
+                if (processed) {
+                    continue;
+                }
             } catch (error) {
-                if (!controller.signal.aborted)
+                if (!controller.signal.aborted) {
                     console.error(
                         'Account purge attempt failed and will retry.',
                         error instanceof Error ? error.name : 'unknown',
                     );
+                }
             }
+
             await new Promise<void>((resolve) => {
                 const timer = setTimeout(resolve, environment.pollIntervalMs);
                 controller.signal.addEventListener(
@@ -93,6 +108,7 @@ async function main(): Promise<void> {
                 );
             });
         }
+
         await service.releaseWorkerLeases({ now: new Date(), workerId });
     } finally {
         process.off('SIGINT', stop);
@@ -106,5 +122,6 @@ main().catch((error: unknown) => {
         'Account purge worker failed.',
         error instanceof Error ? error.message : 'unknown error',
     );
+
     process.exitCode = 1;
 });

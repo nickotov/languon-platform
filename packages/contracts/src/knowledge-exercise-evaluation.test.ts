@@ -17,9 +17,11 @@ describe('private inline exercise evaluation contracts', () => {
             attemptId: otherId,
             replyLanguage: 'ru',
         };
+
         expect(RequestKnowledgeExerciseEvaluationSchema.parse(request)).toEqual(
             request,
         );
+
         for (const extra of [
             { answer: 'A fabricated answer' },
             { correct: true },
@@ -34,6 +36,7 @@ describe('private inline exercise evaluation contracts', () => {
             ).toBe(false);
         }
     });
+
     it('distinguishes accepted alternatives from incorrect answers and non-AI evaluations', () => {
         expect(
             KnowledgeExerciseEvaluationResultSchema.parse({
@@ -42,6 +45,7 @@ describe('private inline exercise evaluation contracts', () => {
                 validAlternative: true,
             }),
         ).toMatchObject({ validAlternative: true });
+
         expect(
             KnowledgeExerciseEvaluationResultSchema.safeParse({
                 status: 'incorrect',
@@ -49,6 +53,7 @@ describe('private inline exercise evaluation contracts', () => {
                 validAlternative: true,
             }).success,
         ).toBe(false);
+
         expect(
             WorkbookAttemptEvaluationSchema.safeParse({
                 status: 'correct',
@@ -56,6 +61,7 @@ describe('private inline exercise evaluation contracts', () => {
                 validAlternative: true,
             }).success,
         ).toBe(false);
+
         expect(
             WorkbookAttemptEvaluationSchema.safeParse({
                 status: 'incorrect',
@@ -63,6 +69,7 @@ describe('private inline exercise evaluation contracts', () => {
                 validAlternative: true,
             }).success,
         ).toBe(false);
+
         expect(
             KnowledgeExerciseEvaluationResultSchema.safeParse({
                 status: 'correct',
@@ -71,6 +78,7 @@ describe('private inline exercise evaluation contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('refuses completion without its own exact private attempt and revision', () => {
         const pending = {
             id,
@@ -85,9 +93,11 @@ describe('private inline exercise evaluation contracts', () => {
             createdAt: '2026-10-29T00:00:00Z',
             completedAt: null,
         };
+
         expect(
             KnowledgeExerciseEvaluationJobSchema.safeParse(pending).success,
         ).toBe(true);
+
         expect(
             KnowledgeExerciseEvaluationJobSchema.safeParse({
                 ...pending,
@@ -95,6 +105,7 @@ describe('private inline exercise evaluation contracts', () => {
                 completedAt: '2026-10-29T00:00:01Z',
             }).success,
         ).toBe(false);
+
         const attempt = {
             id: otherId,
             noteId: id,
@@ -121,15 +132,18 @@ describe('private inline exercise evaluation contracts', () => {
                 validAlternative: true,
             },
         };
+
         expect(
             KnowledgeExerciseEvaluationJobSchema.safeParse(completed).success,
         ).toBe(true);
+
         expect(
             KnowledgeExerciseEvaluationJobSchema.safeParse({
                 ...completed,
                 attempt: { ...attempt, exerciseRevision: 'b'.repeat(64) },
             }).success,
         ).toBe(false);
+
         expect(
             KnowledgeExerciseEvaluationJobSchema.safeParse({
                 ...completed,

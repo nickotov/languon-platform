@@ -50,8 +50,12 @@ export function useCardDraft({
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
+
     useEffect(() => {
-        if (previousSession.current === session) return;
+        if (previousSession.current === session) {
+            return;
+        }
+
         previousSession.current = session;
         appliedKeys.current.clear();
         setBaseline(card);
@@ -62,6 +66,7 @@ export function useCardDraft({
             items: [createDraftVersion(card, null)],
         });
     }, [session, card]);
+
     useEffect(() => {
         if (
             changedSession ||
@@ -69,8 +74,10 @@ export function useCardDraft({
             !incomingKey ||
             (ai?.job && ai.job.state !== 'review') ||
             appliedKeys.current.has(incomingKey)
-        )
+        ) {
             return;
+        }
+
         appliedKeys.current.add(incomingKey);
         const latest = versions.items.at(-1)!;
         const source = latest.draft.values.source.trim();
@@ -90,14 +97,17 @@ export function useCardDraft({
             ai?.format === 'card-authoring:v3'
                 ? (incoming.translationContext ?? null) === context
                 : context === null;
+
         if (!sourceMatches || !contextMatches) {
             setStaleResult(true);
             setVersions((current) => ({
                 ...current,
                 awaitingSuccessor: false,
             }));
+
             return;
         }
+
         setStaleResult(false);
         const generation =
             ai?.job && ai.format
@@ -120,6 +130,7 @@ export function useCardDraft({
                 ([field, value]) =>
                     field !== 'source' && Boolean(value?.trim()),
             );
+
         setVersions({
             activeIndex: preserve
                 ? versions.items.length
@@ -129,6 +140,7 @@ export function useCardDraft({
                 ? [...versions.items, next]
                 : [...versions.items.slice(0, -1), next],
         });
+
         setAppliedResult({ key: incomingKey, session, version: next });
     }, [
         incoming,
@@ -143,19 +155,23 @@ export function useCardDraft({
         changedSession,
         session,
     ]);
+
     useEffect(() => {
         if (
             !['failed', 'cancelled', 'expired', 'discarded'].includes(
                 ai?.job?.state ?? '',
             )
-        )
+        ) {
             return;
+        }
+
         setVersions((current) =>
             current.awaitingSuccessor
                 ? { ...current, awaitingSuccessor: false }
                 : current,
         );
     }, [ai?.job?.state]);
+
     function updateActive(update: (current: DraftVersion) => DraftVersion) {
         setVersions((current) => ({
             ...current,
@@ -164,12 +180,14 @@ export function useCardDraft({
             ),
         }));
     }
+
     function setValue<K extends keyof DictionaryCardValues>(
         key: K,
         value: DictionaryCardValues[K],
     ) {
         updateActive((current) => editCardDraftValue(current, key, value));
     }
+
     function setOverride<K extends keyof DictionaryCardOverrides>(
         key: K,
         value: DictionaryCardOverrides[K],
@@ -182,12 +200,14 @@ export function useCardDraft({
             },
         }));
     }
+
     function replaceOverrides(overrides: DictionaryCardOverrides) {
         updateActive((current) => ({
             ...current,
             draft: { ...current.draft, overrides },
         }));
     }
+
     function setTranslationContext(translationContext: string | null) {
         updateActive((current) => ({
             ...current,
@@ -195,6 +215,7 @@ export function useCardDraft({
             selectedSuggestions: {},
         }));
     }
+
     function markSaved(saved: DictionaryCard) {
         setBaseline(saved);
         setVersions((current) => ({
@@ -206,12 +227,14 @@ export function useCardDraft({
             ),
         }));
     }
+
     function setActiveVersion(index: number) {
         setVersions((current) => ({
             ...current,
             activeIndex: Math.max(0, Math.min(index, current.items.length - 1)),
         }));
     }
+
     const discardedSuggestionIds = activeVersion.proposal
         ? [...cardAuthoringSuggestionIds(activeVersion.proposal)].filter(
               (id) =>
@@ -220,6 +243,7 @@ export function useCardDraft({
                   ),
           )
         : [];
+
     return {
         activeVersion,
         activeVersionIndex: versions.activeIndex,

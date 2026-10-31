@@ -82,7 +82,7 @@ export function AccountArea({
         </button>
     );
 
-    if (drawer)
+    if (drawer) {
         return (
             <div className={rail ? styles.railFooter : styles.footer}>
                 {trigger}
@@ -93,6 +93,7 @@ export function AccountArea({
                 ) : null}
             </div>
         );
+    }
 
     return (
         <div className={rail ? styles.railFooter : styles.footer}>
@@ -225,5 +226,6 @@ function AccountSettingsLink({
             {label}
         </Link>
     );
+
     return popover ? <PopoverClose asChild>{link}</PopoverClose> : link;
 }

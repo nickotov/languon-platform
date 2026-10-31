@@ -60,6 +60,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             get: vi.fn(),
             cancel: vi.fn(),
         };
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
@@ -70,6 +71,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+
             store = new DrizzleKnowledgePrivateTranslationStore({
                 database: db,
                 crypto,
@@ -77,6 +79,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 enabled: true,
             });
         }, 120_000);
+
         beforeEach(async () => {
             author = randomUUID();
             reader = randomUUID();
@@ -87,6 +90,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     status: 'active' as const,
                 })),
             );
+
             block = {
                 id: randomUUID(),
                 type: 'bilingual-text',
@@ -94,6 +98,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 segments: [{ id: randomUUID(), text: 'Hello world.' }],
                 translations: [],
             };
+
             const note = await notes.create(author, {
                 operationId: randomUUID(),
                 content: KnowledgeNoteContentSchema.parse({
@@ -113,9 +118,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             });
+
             noteId = note.id;
             jobs.enqueueKnowledgeTranslation.mockReset();
         });
+
         afterAll(async () => client?.end());
         async function shared() {
             return {
@@ -123,6 +130,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ...(await notes.issueShare(author, noteId)),
             };
         }
+
         async function overlay(actorId = reader) {
             const row = {
                 actorId,
@@ -140,9 +148,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ],
                 updatedAt: new Date(),
             };
+
             await db.insert(overlays).values(row);
+
             return row;
         }
+
         it('preserves rendered passage boundaries in admitted source and contiguous model segment offsets', async () => {
             block = {
                 ...block,
@@ -151,6 +162,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { id: randomUUID(), text: 'Second paragraph.' },
                 ],
             };
+
             await db
                 .update(knowledgeNotesTable)
                 .set({
@@ -165,9 +177,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 })
                 .where(eq(knowledgeNotesTable.id, noteId));
+
             jobs.enqueueKnowledgeTranslation.mockResolvedValue({
                 id: randomUUID(),
             });
+
             const beforeAdmission = vi.fn(async () => {});
             await store.request(
                 { actorId: author, noteId, blockId: block.id },
@@ -175,8 +189,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 signal(),
                 beforeAdmission,
             );
+
             const [, input, segments, binding] =
                 jobs.enqueueKnowledgeTranslation.mock.calls[0]!;
+
             expect(input.sourceText).toBe('Hello world.\n\nSecond paragraph.');
             expect(segments).toEqual([
                 {
@@ -194,9 +210,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     paragraphIndex: 1,
                 },
             ]);
+
             expect(binding.sourceSnapshot.segments).toEqual(block.segments);
             expect(beforeAdmission).toHaveBeenCalledOnce();
         });
+
         it('rejects an author-prepared target before consuming burst admission or creating a paid job', async () => {
             block = {
                 ...block,
@@ -212,6 +230,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             };
+
             await db
                 .update(knowledgeNotesTable)
                 .set({
@@ -226,6 +245,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 })
                 .where(eq(knowledgeNotesTable.id, noteId));
+
             const beforeAdmission = vi.fn(async () => {});
             await expect(
                 store.request(
@@ -235,9 +255,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     beforeAdmission,
                 ),
             ).rejects.toMatchObject({ code: 'invalid_request' });
+
             expect(beforeAdmission).not.toHaveBeenCalled();
             expect(jobs.enqueueKnowledgeTranslation).not.toHaveBeenCalled();
         });
+
         it('isolates actor overlays, hides stale source fingerprints, and denies revoked grants', async () => {
             const access = await shared();
             await overlay();
@@ -247,10 +269,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 blockId: block.id,
                 access,
             };
+
             expect((await store.list(source)).translations).toHaveLength(1);
             expect(
                 (await store.list({ ...source, actorId: other })).translations,
             ).toEqual([]);
+
             expect(
                 (
                     await store.list({
@@ -260,28 +284,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).translations,
             ).toEqual([]);
+
             await db
                 .update(overlays)
                 .set({ sourceFingerprint: '0'.repeat(64) })
                 .where(eq(overlays.noteId, noteId));
+
             expect((await store.list(source)).translations).toEqual([]);
             await notes.revokeShare(author, noteId);
             await expect(store.list(source)).rejects.toMatchObject({
                 code: 'knowledge_not_found',
             });
         });
+
         it('pins verified source text/segment identity and bills the requester without accepting authored substitutions', async () => {
             const access = await shared();
             jobs.enqueueKnowledgeTranslation.mockResolvedValue({
                 id: randomUUID(),
             });
+
             await store.request(
                 { actorId: reader, noteId, blockId: block.id, access },
                 { operationId: randomUUID(), targetLanguage: 'fr' },
                 signal(),
             );
+
             const [actor, input, segments, binding] =
                 jobs.enqueueKnowledgeTranslation.mock.calls[0]!;
+
             expect(actor).toBe(reader);
             expect(input).toMatchObject({
                 sourceText: 'Hello world.',
@@ -289,6 +319,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 targetLanguage: 'fr',
                 folderId: null,
             });
+
             expect(segments[0].pairId).toBe(block.segments[0]!.id);
             expect(binding).toMatchObject({
                 actorId: reader,
@@ -296,6 +327,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteId,
                 blockId: block.id,
             });
+
             expect(JSON.stringify(binding)).not.toContain(access.key);
             await notes.revokeShare(author, noteId);
             await expect(
@@ -304,12 +336,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
         });
+
         it('rejects disabled generation and changed source before contacting the job engine', async () => {
             const disabled = new DrizzleKnowledgePrivateTranslationStore({
                 database: db,
                 crypto,
                 jobs,
             });
+
             await expect(
                 disabled.request(
                     { actorId: author, noteId, blockId: block.id },
@@ -317,6 +351,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     signal(),
                 ),
             ).rejects.toMatchObject({ code: 'service_unavailable' });
+
             const pinned = await db.transaction((tx) =>
                 pinKnowledgeLearningSource(
                     tx,
@@ -330,13 +365,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ...pinned.binding,
                 sourceFingerprint: '0'.repeat(64),
             };
+
             await expect(
                 db.transaction((tx) =>
                     readPinnedKnowledgeLearningSource(tx, wrong),
                 ),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             expect(jobs.enqueueKnowledgeTranslation).not.toHaveBeenCalled();
         });
+
         it('pins the selected private translation through preview/publication and keeps the saved Text independent', async () => {
             const access = await shared();
             const row = await overlay();
@@ -371,9 +409,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 signal(),
                 access,
             );
+
             expect(preview.text.alignment?.translation[0]?.text).toBe(
                 'Bonjour le monde.',
             );
+
             await db
                 .update(overlays)
                 .set({
@@ -386,25 +426,30 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 })
                 .where(eq(overlays.noteId, noteId));
+
             await expect(
                 publication.copy(reader, request, signal(), access),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             expect(
                 await db
                     .select()
                     .from(textsTable)
                     .where(eq(textsTable.ownerId, reader)),
             ).toHaveLength(0);
+
             await db
                 .update(overlays)
                 .set({ updatedAt: row.updatedAt, segments: row.segments })
                 .where(eq(overlays.noteId, noteId));
+
             const copied = await publication.copy(
                 reader,
                 request,
                 signal(),
                 access,
             );
+
             await db.transaction((tx) => eraseOwnerKnowledge(tx, author));
             expect(
                 await db
@@ -412,6 +457,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(overlays)
                     .where(eq(overlays.noteId, noteId)),
             ).toHaveLength(0);
+
             expect(
                 await db
                     .select()
@@ -424,6 +470,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
             ).toHaveLength(1);
         });
+
         it('erases an actor private overlays on another owner source without deleting its content', async () => {
             await overlay();
             await overlay(other);
@@ -434,12 +481,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(overlays)
                     .where(eq(overlays.actorId, reader)),
             ).toHaveLength(0);
+
             expect(
                 await db
                     .select()
                     .from(overlays)
                     .where(eq(overlays.actorId, other)),
             ).toHaveLength(1);
+
             expect((await notes.get(author, noteId)).id).toBe(noteId);
         });
     },

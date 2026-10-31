@@ -35,12 +35,15 @@ async function response(
             },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
-        if (!result.ok)
+
+        if (!result.ok) {
             throw new BrowserApiError(result.status, {
                 code: 'speech_unavailable',
                 message: 'Pronunciation is temporarily unavailable.',
                 correlationId: 'speech-request',
             });
+        }
+
         return result;
     });
 }
@@ -54,6 +57,7 @@ export function speechApi(requestWithSession: RequestWithSession) {
                 signal,
                 SpeechAvailabilityRequestSchema.parse({ sources }),
             );
+
             return SpeechAvailabilityResponseSchema.parse(await result.json());
         },
         async prepare(source: SpeechSource, signal: AbortSignal) {
@@ -66,6 +70,7 @@ export function speechApi(requestWithSession: RequestWithSession) {
                     operationId: crypto.randomUUID(),
                 }),
             );
+
             return SpeechResponseSchema.parse(await result.json());
         },
         async confirm(
@@ -79,6 +84,7 @@ export function speechApi(requestWithSession: RequestWithSession) {
                 signal,
                 SpeechConfirmRequestSchema.parse({ quoteId, operationId }),
             );
+
             return SpeechResponseSchema.parse(await result.json());
         },
         async status(requestId: string, signal: AbortSignal) {
@@ -87,6 +93,7 @@ export function speechApi(requestWithSession: RequestWithSession) {
                 `/requests/${encodeURIComponent(requestId)}`,
                 signal,
             );
+
             return SpeechResponseSchema.parse(await result.json());
         },
         async bytes(playbackId: string, signal: AbortSignal) {
@@ -106,8 +113,10 @@ export function speechApi(requestWithSession: RequestWithSession) {
                 ].includes(blob.type) ||
                 blob.size > 5 * 1024 * 1024 ||
                 blob.size === 0
-            )
+            ) {
                 throw new Error('Invalid pronunciation audio');
+            }
+
             return blob;
         },
     };

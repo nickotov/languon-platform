@@ -55,22 +55,32 @@ export async function flashcardPrepare(
                 .limit(500);
 
             selectedTotal += rows.length;
-            if (selectedTotal > 10_000) throw new LearningInvalidRequestError();
+            if (selectedTotal > 10_000) {
+                throw new LearningInvalidRequestError();
+            }
+
             for (const row of rows) {
                 context.signal.throwIfAborted();
                 const item = present(row, owned, input.configuration);
-                if (!item) continue;
+                if (!item) {
+                    continue;
+                }
+
                 entryIds.push(row.id);
                 if (
                     [...item.front, ...item.back].some(
                         (field) => field.fallback,
                     )
-                )
+                ) {
                     fallbackCount++;
+                }
             }
 
             const last = rows.at(-1);
-            if (!last || rows.length < 500) break;
+            if (!last || rows.length < 500) {
+                break;
+            }
+
             after = { sortKey: last.sortKey, id: last.id };
         }
 

@@ -242,6 +242,7 @@ function gatewayModels(): TextAiModelDefinition[] {
             processingControlsRevision: 'openrouter-restricted:v1',
         },
     ];
+
     return routes.map((route) => ({
         ...route,
         adapterRevision: 'openai-compatible:v1',
@@ -306,11 +307,13 @@ export function textAiExecutionLimits(
         formats.length === 1 &&
         (formats[0] === 'text-translation:v2' ||
             formats[0] === 'text-translation:v3')
-    )
+    ) {
         return {
             perCallMaxInputTokens: 128_000,
             perCallMaxOutputTokens: 32_768,
         };
+    }
+
     return {
         perCallMaxInputTokens: model.perCallMaxInputTokens,
         perCallMaxOutputTokens: model.perCallMaxOutputTokens,

@@ -32,12 +32,15 @@ export function createContextualTutorTools(
             const result = await action();
             input.signal.throwIfAborted();
             await input.onTool?.({ id: callId, name, state: 'succeeded' });
+
             return result;
         } catch (error) {
             await input.onTool?.({ id: callId, name, state: 'failed' });
+
             throw error;
         }
     }
+
     const tools = {
         read_source_context: createTool({
             id: 'read_source_context',
@@ -67,19 +70,24 @@ export function createContextualTutorTools(
                     context.agent?.toolCallId,
                     async () => {
                         input.signal.throwIfAborted();
-                        if (++retrievals > 4)
+                        if (++retrievals > 4) {
                             throw new Error(
                                 'The source retrieval limit was reached; ask a narrower question.',
                             );
+                        }
+
                         const result = await input.readContext(query);
                         if (
                             Buffer.byteLength(JSON.stringify(result), 'utf8') >
                             retrievedSourceContextBytes
-                        )
+                        ) {
                             throw new Error(
                                 'The selected source material is too large; select a smaller passage.',
                             );
+                        }
+
                         input.signal.throwIfAborted();
+
                         return {
                             ...result,
                             coverage:
@@ -106,18 +114,24 @@ export function createContextualTutorTools(
                     context.agent?.toolCallId,
                     async () => {
                         input.signal.throwIfAborted();
-                        if (input.readOnlySource)
+                        if (input.readOnlySource) {
                             throw new Error(
                                 'Shared conversations cannot propose document changes.',
                             );
-                        if (proposed)
+                        }
+
+                        if (proposed) {
                             throw new Error(
                                 'A note draft has already been proposed during this response.',
                             );
+                        }
+
                         const content =
                             LegacyKnowledgeNoteContentSchema.parse(candidate);
+
                         proposed = true;
                         const draft = await input.onDraft(content);
+
                         return {
                             id: draft.id,
                             status: 'draft' as const,
@@ -127,12 +141,17 @@ export function createContextualTutorTools(
                 ),
         }),
     };
-    if (input.readOnlySource)
+
+    if (input.readOnlySource) {
         return { read_source_context: tools.read_source_context };
-    if (input.canProposeBlocks && input.onBlockProposal)
+    }
+
+    if (input.canProposeBlocks && input.onBlockProposal) {
         return {
             ...tools,
             propose_learning_blocks: createLearningBlockProposalTool(input),
         };
+    }
+
     return tools;
 }

@@ -62,18 +62,21 @@ export function createWorkbookRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     error('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     for (const path of ['/knowledge/workbooks', '/knowledge/workbooks/*']) {
         app.use(path, async (c, next) => {
             c.header('Cache-Control', 'private, no-store');
@@ -87,8 +90,10 @@ export function createWorkbookRoutes({
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -103,6 +108,7 @@ export function createWorkbookRoutes({
                     ),
             }),
         );
+
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -112,14 +118,18 @@ export function createWorkbookRoutes({
                 'Access-Control-Allow-Methods',
                 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
             );
+
             c.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key, X-Languon-Share-Kind, X-Languon-Share-Locator',
             );
+
             c.header('Vary', 'Origin');
+
             return c.body(null, 204);
         });
     }
+
     app.onError((caught, c) => {
         let code: KnowledgeErrorCode = 'internal_error';
         let message = 'The request could not be completed.';
@@ -127,17 +137,21 @@ export function createWorkbookRoutes({
         if (caught instanceof KnowledgeDomainError) {
             code = caught.code;
             message = caught.message;
-            if (code === 'knowledge_not_found') status = 404;
-            else if (
+            if (code === 'knowledge_not_found') {
+                status = 404;
+            } else if (
                 [
                     'version_conflict',
                     'idempotency_conflict',
                     'deletion_busy',
                 ].includes(code)
-            )
+            ) {
                 status = 409;
-            else if (code === 'rate_limited') status = 429;
-            else status = 400;
+            } else if (code === 'rate_limited') {
+                status = 429;
+            } else {
+                status = 400;
+            }
         } else if (caught instanceof InvalidBearerAuthorizationError) {
             code = 'authentication_required';
             message = 'Sign in to continue.';
@@ -162,12 +176,15 @@ export function createWorkbookRoutes({
                 status = 503;
             }
         }
+
         return c.json(error(code, message), status);
     });
+
     const context = (
         c: Parameters<typeof authenticationRequestMetadata>[0],
     ) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return {
             signal: metadata.signal,
             clientAddress: metadata.clientAddress,
@@ -180,6 +197,7 @@ export function createWorkbookRoutes({
             ),
             context(c),
         ] as const;
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -192,6 +210,7 @@ export function createWorkbookRoutes({
         }),
         async (c) => c.json({ workbooks: await service.list(...auth(c)) }, 200),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -211,6 +230,7 @@ export function createWorkbookRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -237,6 +257,7 @@ export function createWorkbookRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -256,6 +277,7 @@ export function createWorkbookRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -279,6 +301,7 @@ export function createWorkbookRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'put',
@@ -302,6 +325,7 @@ export function createWorkbookRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -319,9 +343,11 @@ export function createWorkbookRoutes({
                 c.req.valid('param').workbookId,
                 c.req.valid('json'),
             );
+
             return c.json({ deleted: true as const }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -343,6 +369,7 @@ export function createWorkbookRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -363,9 +390,11 @@ export function createWorkbookRoutes({
                 c.req.valid('param').workbookId,
                 c.req.valid('json'),
             );
+
             return c.json({ disabled: true as const }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -392,6 +421,7 @@ export function createWorkbookRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -420,5 +450,6 @@ export function createWorkbookRoutes({
                 201,
             ),
     );
+
     return app;
 }

@@ -17,6 +17,7 @@ const safe = {
     AUTH_TEST_REDIS_URL: 'redis://127.0.0.1:56444/1',
     AUTH_TEST_REDIS_CONFIRM: '127.0.0.1:56444/1',
 };
+
 test('accepts only the exclusively named and confirmed local journey targets', () => {
     assert.doesNotThrow(() => assertContextualAssistantEnvironment(safe));
     for (const [key, value] of Object.entries({
@@ -27,10 +28,12 @@ test('accepts only the exclusively named and confirmed local journey targets', (
         AUTH_TEST_DATABASE_CONFIRM: 'other',
         AUTH_TEST_REDIS_URL: 'redis://127.0.0.1:6379/0',
         AUTH_TEST_REDIS_CONFIRM: 'other',
-    }))
+    })) {
         assert.throws(() =>
             assertContextualAssistantEnvironment({ ...safe, [key]: value }),
         );
+    }
+
     assert.throws(() => assertContextualAssistantEnvironment({}));
 });
 
@@ -43,19 +46,23 @@ test('restores exact preexisting generated-file bytes even when browser executio
         await assert.rejects(
             withPreservedFile(path, async () => {
                 await writeFile(path, 'generated isolated-dist types');
+
                 throw new Error('Browser failure');
             }),
             /Browser failure/,
         );
+
         assert.deepEqual(await readFile(path), original);
         await rm(path);
         await assert.rejects(
             withPreservedFile(path, async () => {
                 await writeFile(path, 'generated new file');
+
                 throw new Error('Browser failure');
             }),
             /Browser failure/,
         );
+
         await assert.rejects(readFile(path), { code: 'ENOENT' });
     } finally {
         await rm(directory, { recursive: true, force: true });
@@ -66,6 +73,7 @@ test('runs HTTP journeys before browser selection and stops on a failing HTTP ph
     const previous = Object.fromEntries(
         Object.keys(safe).map((key) => [key, process.env[key]]),
     );
+
     Object.assign(process.env, safe);
     try {
         const calls = [];
@@ -75,31 +83,39 @@ test('runs HTTP journeys before browser selection and stops on a failing HTTP ph
             },
             ['--', '--grep', 'closing reconnects'],
         );
+
         assert.equal(calls.length, 2);
         assert.ok(
             calls[0].args.includes(
                 'tests/integration/modules/conversations/contextual-assistant.journeys.test.ts',
             ),
         );
+
         assert.ok(!calls[0].args.includes('--grep'));
         assert.deepEqual(calls[1].args.slice(-2), [
             '--grep',
             'closing reconnects',
         ]);
+
         assert.ok(!calls[1].args.includes('--'));
         let phases = 0;
         await assert.rejects(
             runContextualAssistantE2e(async () => {
                 phases += 1;
+
                 throw new Error('HTTP failure');
             }, []),
             /HTTP failure/,
         );
+
         assert.equal(phases, 1);
     } finally {
         for (const [key, value] of Object.entries(previous)) {
-            if (value === undefined) delete process.env[key];
-            else process.env[key] = value;
+            if (value === undefined) {
+                delete process.env[key];
+            } else {
+                process.env[key] = value;
+            }
         }
     }
 });
@@ -121,6 +137,7 @@ test('file preservation rejects concurrent wrappers and releases the lock after 
         started();
         await held;
     });
+
     try {
         await ready;
         let secondRan = false;
@@ -130,6 +147,7 @@ test('file preservation rejects concurrent wrappers and releases the lock after 
             }),
             /Another verification runner/,
         );
+
         assert.equal(secondRan, false);
         assert.equal(await readFile(path, 'utf8'), 'temporary-types');
         release();
@@ -141,9 +159,11 @@ test('file preservation rejects concurrent wrappers and releases the lock after 
             }),
             /intentional failure/,
         );
+
         await withPreservedFile(path, async () => {
             await writeFile(path, 'another-run');
         });
+
         assert.equal(await readFile(path, 'utf8'), 'canonical');
     } finally {
         release();

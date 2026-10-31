@@ -58,36 +58,55 @@ export function ReviewEditor({
         ? editor.items
         : (editor.conflict?.approved?.items ?? emptyPortraitItems());
     let blocker: string | null = null;
-    if (showConflict) blocker = portraitCopy(locale, 'chooseAll');
-    else if (!editor.meaningful) blocker = portraitCopy(locale, 'nothing');
-    else if (!editor.valid) blocker = portraitCopy(locale, 'invalid');
+    if (showConflict) {
+        blocker = portraitCopy(locale, 'chooseAll');
+    } else if (!editor.meaningful) {
+        blocker = portraitCopy(locale, 'nothing');
+    } else if (!editor.valid) {
+        blocker = portraitCopy(locale, 'invalid');
+    }
+
     function openRestart() {
         setRestartOpen(true);
     }
+
     function closeRestart() {
         setRestartOpen(false);
     }
+
     function save() {
         void editor.save(summaryLocale);
     }
+
     function openDiscard() {
         setDiscardOpen(true);
     }
+
     function closeDiscard() {
-        if (!management.pending) setDiscardOpen(false);
+        if (!management.pending) {
+            setDiscardOpen(false);
+        }
     }
+
     function dismissProposal() {
         setDismissed(true);
     }
+
     function acceptProposal(items: PortraitItems) {
-        if (proposalStale) setStaleProposal(items);
-        else editor.setItems(items);
+        if (proposalStale) {
+            setStaleProposal(items);
+        } else {
+            editor.setItems(items);
+        }
+
         setDismissed(true);
     }
+
     function reconcile(items: PortraitItems) {
         editor.reconcile(items);
         setStaleProposal(null);
     }
+
     return (
         <main className={`${styles.page} ${styles.wide}`}>
             <ButtonLink

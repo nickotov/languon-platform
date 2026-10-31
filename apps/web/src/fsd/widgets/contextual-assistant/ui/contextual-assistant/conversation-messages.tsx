@@ -108,8 +108,11 @@ export function ConversationMessages({
                 previousVersion !== null &&
                 canonical.sourceVersion !== null &&
                 previousVersion !== canonical.sourceVersion;
-            if (canonical.role === 'user')
+
+            if (canonical.role === 'user') {
                 previousVersion = canonical.sourceVersion;
+            }
+
             return {
                 message,
                 changed,
@@ -139,12 +142,21 @@ export function ConversationMessages({
             part.state === 'input-available',
     );
     let tool: 'reading' | 'preparing' | 'preparingBlocks' | undefined;
-    if (currentTool?.type === 'tool-read_source_context') tool = 'reading';
-    if (currentTool?.type === 'tool-propose_knowledge_note') tool = 'preparing';
-    if (currentTool?.type === 'tool-propose_learning_blocks')
+    if (currentTool?.type === 'tool-read_source_context') {
+        tool = 'reading';
+    }
+
+    if (currentTool?.type === 'tool-propose_knowledge_note') {
+        tool = 'preparing';
+    }
+
+    if (currentTool?.type === 'tool-propose_learning_blocks') {
         tool = 'preparingBlocks';
+    }
+
     const responding = active || pending;
     const queued = pending || activeTurn?.status === 'queued';
+
     return (
         <div
             className={styles.frame}

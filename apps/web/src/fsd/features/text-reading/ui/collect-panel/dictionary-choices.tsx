@@ -24,20 +24,25 @@ export function DictionaryChoices({
     const [hidden, setHidden] = useState(false);
     useEffect(() => {
         setHidden(false);
-        if (!chosen || !requestWithSession) return;
+        if (!chosen || !requestWithSession) {
+            return;
+        }
+
         const control = new AbortController();
         void requestWithSession((token) =>
             dictionaryApi.readDictionary(token, chosen, control.signal),
         )
             .then((response) => {
-                if (!control.signal.aborted)
+                if (!control.signal.aborted) {
                     setHidden(
                         !response.dictionary.settings.values
                             .definitionEnabled ||
                             !response.dictionary.settings.values.exampleEnabled,
                     );
+                }
             })
             .catch(() => undefined);
+
         return () => control.abort();
     }, [chosen, requestWithSession]);
 

@@ -100,9 +100,11 @@ const values = {
         'Insérer le contenu sélectionné',
     ],
 };
+
 export type LibraryLabels = { [Key in keyof typeof values]: string };
 export function libraryLabels(locale: Locale): LibraryLabels {
     const index = { en: 0, ru: 1, es: 2, fr: 3 }[locale];
+
     return Object.fromEntries(
         Object.entries(values).map(([key, words]) => [key, words[index]]),
     ) as LibraryLabels;

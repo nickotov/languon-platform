@@ -88,28 +88,34 @@ const mapping: Record<
         dimension: 'cache_write_token',
     },
 };
+
 function multiply(value: string, integer: bigint): string {
     const normalized = publishedRate(value);
     const [whole, fraction = ''] = normalized.split('.');
     const digits = (BigInt(`${whole}${fraction}`) * integer)
         .toString()
         .padStart(fraction.length + 1, '0');
+
     return publishedRate(
         fraction.length
             ? `${digits.slice(0, -fraction.length)}.${digits.slice(-fraction.length)}`
             : digits,
     );
 }
+
 function validateMoney(value: z.infer<typeof price>): string {
     const units = publishedRate(value.uc);
     if (
         !/^\d+$/.test(units) ||
         multiply(value.cny, 100_000n) !== units ||
         multiply(value.credits, 10_000n) !== units
-    )
+    ) {
         throw new Error('Native currency ratios changed.');
+    }
+
     return units;
 }
+
 function threshold(value: unknown): number {
     const expression = z
         .object({
@@ -132,36 +138,57 @@ function threshold(value: unknown): number {
         .strict()
         .parse(value);
     const result = Number(expression.args[1].value);
-    if (!Number.isSafeInteger(result) || result < 0 || result >= 2_147_483_647)
+    if (
+        !Number.isSafeInteger(result) ||
+        result < 0 ||
+        result >= 2_147_483_647
+    ) {
         throw new Error('Unsupported context tier.');
+    }
+
     return result + 1; // published condition is strictly greater than the threshold
 }
+
 function normalize(raw: z.infer<typeof response>): ProviderNativePricingRules {
     const factor = /(?:^|:)USD-CNY=(\d+(?:\.\d+)?)$/.exec(
         raw.meta.exchange_rate_version,
     )?.[1];
-    if (!factor) throw new Error('Native exchange-rate provenance changed.');
+
+    if (!factor) {
+        throw new Error('Native exchange-rate provenance changed.');
+    }
+
     const denominator = multiply(factor, 100_000n);
     const components = raw.model.components
         .filter((value) => {
             const role = z.object({ role: z.string() }).parse(value).role;
-            if (role.startsWith('image_gen:')) return false; // image-generation tools are not enabled by the text execution contract
-            if (!mapping[role])
+            if (role.startsWith('image_gen:')) {
+                return false;
+            } // image-generation tools are not enabled by the text execution contract
+
+            if (!mapping[role]) {
                 throw new Error('Unknown text price component.');
+            }
+
             return true;
         })
         .map((value) => component.parse(value));
+
     if (
         new Set(components.map((value) => value.role)).size !==
             components.length ||
         !components.some((value) => value.role === 'input') ||
         !components.some((value) => value.role === 'output')
-    )
+    ) {
         throw new Error('Text price components are incomplete.');
+    }
+
     for (const value of components) {
         const metadata = mapping[value.role]!;
-        if (value.dimension !== metadata.dimension)
+        if (value.dimension !== metadata.dimension) {
             throw new Error('Component dimension changed.');
+        }
+
         const quantity = z
             .object({
                 op: z.literal('divide'),
@@ -182,8 +209,12 @@ function normalize(raw: z.infer<typeof response>): ProviderNativePricingRules {
             })
             .strict()
             .parse(value.quantity_rule);
-        if (!quantity) throw new Error('Unknown quantity rule.');
+
+        if (!quantity) {
+            throw new Error('Unknown quantity rule.');
+        }
     }
+
     const boundaries = [
         ...new Set([
             0,
@@ -207,6 +238,7 @@ function normalize(raw: z.infer<typeof response>): ProviderNativePricingRules {
                 value.tiers
                     .filter((entry) => start >= threshold(entry.when))
                     .at(-1) ?? value;
+
             return {
                 meter: mapping[value.role]!.meter,
                 pricePerUnit: validateMoney(chosen.rate),
@@ -217,6 +249,7 @@ function normalize(raw: z.infer<typeof response>): ProviderNativePricingRules {
             };
         }),
     }));
+
     return {
         version: 1,
         validFrom: raw.meta.updated_at,
@@ -236,6 +269,7 @@ export class EvoLinkPriceSource implements ProviderPriceSource {
         private readonly fetcher: typeof fetch = fetch,
         private readonly now: () => Date = () => new Date(),
     ) {}
+
     async fetchPrices(
         targets: ProviderPriceTarget[],
         signal?: AbortSignal,
@@ -253,8 +287,10 @@ export class EvoLinkPriceSource implements ProviderPriceSource {
                         'The model meter does not match EvoLink text pricing.',
                     ),
                 );
+
                 continue;
             }
+
             const url = new URL(
                 `/v1/catalog/models/${encodeURIComponent(target.modelId)}/pricing-rules?view=full`,
                 'https://api.evolink.ai',
@@ -270,8 +306,10 @@ export class EvoLinkPriceSource implements ProviderPriceSource {
                         'Official EvoLink pricing is unavailable.',
                     ),
                 );
+
                 continue;
             }
+
             try {
                 const parsed = response.parse(raw);
                 if (
@@ -286,8 +324,10 @@ export class EvoLinkPriceSource implements ProviderPriceSource {
                             'Official EvoLink pricing freshness has expired or its effective timestamp is not current.',
                         ),
                     );
+
                     continue;
                 }
+
                 if (
                     parsed.model.model_id !== target.modelId ||
                     parsed.model.lifecycle !== 'active'
@@ -299,8 +339,10 @@ export class EvoLinkPriceSource implements ProviderPriceSource {
                             'The exact active model is absent from EvoLink pricing.',
                         ),
                     );
+
                     continue;
                 }
+
                 results.push({
                     target,
                     status: 'available',
@@ -321,6 +363,7 @@ export class EvoLinkPriceSource implements ProviderPriceSource {
                 );
             }
         }
+
         return results;
     }
 }

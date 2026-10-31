@@ -58,7 +58,10 @@ export function claim(
             .orderBy(operations.createdAt)
             .limit(1);
 
-        if (!found) return null;
+        if (!found) {
+            return null;
+        }
+
         // Keep the same capacity -> owner -> operation lock order as dispatch,
         // manual updates, deletion and credit settlement.
         await tx
@@ -84,12 +87,17 @@ export function claim(
             )
             .for('update');
 
-        if (!candidate) return null;
+        if (!candidate) {
+            return null;
+        }
+
         if (candidate.state === 'running') {
-            if (!persistence.recover)
+            if (!persistence.recover) {
                 throw new Error(
                     'Interview recovery settlement adapter required',
                 );
+            }
+
             await persistence.recover(tx, candidate.id, now);
             await tx
                 .update(operations)
@@ -119,8 +127,10 @@ export function claim(
                 defaultTextAiProviderBudgetPolicy,
         });
 
-        if (capacity.globalRunning >= 10 || capacity.actorRunning >= 1)
+        if (capacity.globalRunning >= 10 || capacity.actorRunning >= 1) {
             return null;
+        }
+
         const leaseToken = randomUUID();
         const [row] = await tx
             .update(operations)
@@ -143,8 +153,10 @@ export async function heartbeat(
 ) {
     await withOperation(persistence, claim, async (tx) => {
         const now = new Date();
-        if (await isInvalid(tx, claim, now))
+        if (await isInvalid(tx, claim, now)) {
             throw new PortraitDraftUnavailableError();
+        }
+
         await tx
             .update(operations)
             .set({
@@ -182,8 +194,9 @@ export async function withOperation<T>(
             row.state !== 'running' ||
             !row.leaseUntil ||
             row.leaseUntil <= new Date()
-        )
+        ) {
             throw new PortraitConflictError();
+        }
 
         return work(tx);
     });
@@ -240,7 +253,10 @@ export async function complete(
             .where(eq(interviews.id, claim.interviewId))
             .for('update');
 
-        if (!interview) throw new PortraitDraftUnavailableError();
+        if (!interview) {
+            throw new PortraitDraftUnavailableError();
+        }
+
         const userContent =
             claim.input.kind === 'skip'
                 ? 'Skipped'
@@ -250,10 +266,12 @@ export async function complete(
                     claim.input.selected?.join(', ') ??
                     '');
 
-        if (interview.context.messages.length >= 40)
+        if (interview.context.messages.length >= 40) {
             throw new PortraitInterviewResourceLimitError(
                 'Interview context limit reached; review the portrait or begin a new interview.',
             );
+        }
+
         const messages: InterviewContext['messages'] = [
             ...interview.context.messages,
             { role: 'user', content: userContent },

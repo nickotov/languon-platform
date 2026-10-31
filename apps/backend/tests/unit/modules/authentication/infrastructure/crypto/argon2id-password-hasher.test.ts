@@ -12,9 +12,11 @@ describe('Argon2idPasswordHasher', () => {
         expect(passwordHash.encoded).toMatch(
             /^\$argon2id\$v=19\$m=19456,t=2,p=1\$/,
         );
+
         await expect(
             hasher.verify('correct horse battery staple 🐴', passwordHash),
         ).resolves.toEqual({ matches: true, needsRehash: false });
+
         await expect(
             hasher.verify('an incorrect password phrase', passwordHash),
         ).resolves.toEqual({ matches: false, needsRehash: false });
@@ -23,16 +25,28 @@ describe('Argon2idPasswordHasher', () => {
     it('hashes and verifies with a live HTTP request abort signal', async () => {
         const hasher = new Argon2idPasswordHasher();
         const signal = new Request('http://localhost').signal;
-        const passwordHash = await hasher.hash('A synthetic password 89!', { signal });
-        await expect(hasher.verify('A synthetic password 89!', passwordHash)).resolves.toMatchObject({ matches: true });
-        await expect(hasher.verify('A synthetic password 89!', passwordHash, { signal })).resolves.toMatchObject({ matches: true });
+        const passwordHash = await hasher.hash('A synthetic password 89!', {
+            signal,
+        });
+
+        await expect(
+            hasher.verify('A synthetic password 89!', passwordHash),
+        ).resolves.toMatchObject({ matches: true });
+
+        await expect(
+            hasher.verify('A synthetic password 89!', passwordHash, { signal }),
+        ).resolves.toMatchObject({ matches: true });
     });
 
     it('does not continue hashing after the source request is cancelled', async () => {
         const hasher = new Argon2idPasswordHasher();
         const controller = new AbortController();
         controller.abort();
-        await expect(hasher.hash('A synthetic password 89!', { signal: controller.signal })).rejects.toThrow();
+        await expect(
+            hasher.hash('A synthetic password 89!', {
+                signal: controller.signal,
+            }),
+        ).rejects.toThrow();
     });
 
     it('requests opportunistic rehash when deployment parameters advance', async () => {
@@ -67,6 +81,7 @@ describe('Argon2idPasswordHasher', () => {
         expect(
             () => new Argon2idPasswordHasher({ memoryCostKiB: 19 * 1024 - 1 }),
         ).toThrow(RangeError);
+
         expect(() => new Argon2idPasswordHasher({ timeCost: 1 })).toThrow(
             RangeError,
         );

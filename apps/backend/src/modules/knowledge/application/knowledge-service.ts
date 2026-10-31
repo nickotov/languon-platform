@@ -44,12 +44,15 @@ export class KnowledgeService {
                 windowMs: 60_000,
                 signal: context.signal,
             });
-            if (!result.allowed)
+
+            if (!result.allowed) {
                 throw new KnowledgeDomainError(
                     'rate_limited',
                     'Too many requests. Please try again shortly.',
                 );
+            }
         }
+
         const principal = await this.dependencies.authenticate(token);
         const result = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-owner',
@@ -58,13 +61,17 @@ export class KnowledgeService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!result.allowed)
+
+        if (!result.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',
             );
+        }
+
         return principal.userId;
     }
+
     async list(
         token: string,
         context: KnowledgeRequestContext,
@@ -75,12 +82,14 @@ export class KnowledgeService {
             ListKnowledgeQuerySchema.parse(query),
         );
     }
+
     async get(token: string, context: KnowledgeRequestContext, noteId: string) {
         return this.dependencies.store.get(
             await this.owner(token, context),
             this.noteId(noteId),
         );
     }
+
     async create(
         token: string,
         context: KnowledgeRequestContext,
@@ -91,6 +100,7 @@ export class KnowledgeService {
             CreateKnowledgeNoteRequestSchema.parse(input),
         );
     }
+
     async update(
         token: string,
         context: KnowledgeRequestContext,
@@ -103,6 +113,7 @@ export class KnowledgeService {
             UpdateKnowledgeNoteRequestSchema.parse(input),
         );
     }
+
     async delete(
         token: string,
         context: KnowledgeRequestContext,
@@ -115,6 +126,7 @@ export class KnowledgeService {
             DeleteKnowledgeNoteRequestSchema.parse(input),
         );
     }
+
     async revisions(
         token: string,
         context: KnowledgeRequestContext,
@@ -125,6 +137,7 @@ export class KnowledgeService {
             this.noteId(noteId),
         );
     }
+
     async restore(
         token: string,
         context: KnowledgeRequestContext,
@@ -137,9 +150,11 @@ export class KnowledgeService {
             RestoreKnowledgeNoteRequestSchema.parse(input),
         );
     }
+
     private noteId(noteId: string) {
         return KnowledgeNoteIdParamsSchema.parse({ noteId }).noteId;
     }
+
     async listWorkspaces(
         token: string,
         context: KnowledgeRequestContext,
@@ -150,6 +165,7 @@ export class KnowledgeService {
             ListKnowledgeQuerySchema.parse(query),
         );
     }
+
     async getWorkspace(
         token: string,
         context: KnowledgeRequestContext,
@@ -160,6 +176,7 @@ export class KnowledgeService {
             this.noteId(noteId),
         );
     }
+
     async createDraft(
         token: string,
         context: KnowledgeRequestContext,
@@ -170,6 +187,7 @@ export class KnowledgeService {
             CreateKnowledgeWorkspaceDraftRequestSchema.parse(input),
         );
     }
+
     async updateWorking(
         token: string,
         context: KnowledgeRequestContext,
@@ -182,6 +200,7 @@ export class KnowledgeService {
             UpdateKnowledgeWorkingRequestSchema.parse(input),
         );
     }
+
     async resolveWorking(
         token: string,
         context: KnowledgeRequestContext,
@@ -194,6 +213,7 @@ export class KnowledgeService {
             ResolveKnowledgeWorkingRequestSchema.parse(input),
         );
     }
+
     async saveWorkspace(
         token: string,
         context: KnowledgeRequestContext,
@@ -206,6 +226,7 @@ export class KnowledgeService {
             SaveKnowledgeWorkspaceRequestSchema.parse(input),
         );
     }
+
     async saveWorkspaceCopy(
         token: string,
         context: KnowledgeRequestContext,
@@ -218,6 +239,7 @@ export class KnowledgeService {
             SaveKnowledgeCopyRequestSchema.parse(input),
         );
     }
+
     async getShare(
         token: string,
         context: KnowledgeRequestContext,
@@ -228,6 +250,7 @@ export class KnowledgeService {
             this.noteId(noteId),
         );
     }
+
     async issueShare(
         token: string,
         context: KnowledgeRequestContext,
@@ -238,6 +261,7 @@ export class KnowledgeService {
             this.noteId(noteId),
         );
     }
+
     async revokeShare(
         token: string,
         context: KnowledgeRequestContext,
@@ -248,6 +272,7 @@ export class KnowledgeService {
             this.noteId(noteId),
         );
     }
+
     async readShared(
         context: KnowledgeRequestContext,
         locator: string,
@@ -261,13 +286,17 @@ export class KnowledgeService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!rate.allowed)
+
+        if (!rate.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',
             );
+        }
+
         return this.dependencies.store.readShared(locator, key);
     }
+
     async copyShared(
         token: string,
         context: KnowledgeRequestContext,

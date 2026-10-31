@@ -33,10 +33,14 @@ export class ConversationWorkerService {
             timeoutMs?: number;
         },
     ) {}
+
     async processNext(signal: AbortSignal): Promise<boolean> {
         signal.throwIfAborted();
         const turn = await this.dependencies.store.claim();
-        if (!turn) return false;
+        if (!turn) {
+            return false;
+        }
+
         const controller = new AbortController();
         const combined = AbortSignal.any([
             signal,
@@ -49,7 +53,10 @@ export class ConversationWorkerService {
         );
         let heartbeatPending: Promise<void> | undefined;
         const timer = setInterval(() => {
-            if (heartbeatPending) return;
+            if (heartbeatPending) {
+                return;
+            }
+
             heartbeatPending = this.dependencies.store
                 .heartbeat(turn)
                 .catch(() => controller.abort())
@@ -57,6 +64,7 @@ export class ConversationWorkerService {
                     heartbeatPending = undefined;
                 });
         }, this.dependencies.heartbeatMs ?? 5_000);
+
         try {
             const runner = await this.dependencies.createRunner(turn);
             const source = projectConversationSource(
@@ -64,6 +72,7 @@ export class ConversationWorkerService {
                 turn.sourceSnapshot,
                 turn.message.content,
             );
+
             await runner.run({
                 conversationId: turn.conversationId,
                 readOnlySource: isReadOnlyKnowledgeSource(turn.source),
@@ -81,11 +90,13 @@ export class ConversationWorkerService {
                         isReadOnlyKnowledgeSource(turn.source) ||
                         !turn.sourceSnapshot.blockTarget ||
                         !this.dependencies.store.proposeBlocks
-                    )
+                    ) {
                         throw new ConversationError(
                             'read_only_source',
                             'This source cannot propose learning blocks.',
                         );
+                    }
+
                     return this.dependencies.store.proposeBlocks(
                         turn,
                         proposal,
@@ -107,11 +118,13 @@ export class ConversationWorkerService {
                     await this.dependencies.store.recordTool(turn, call);
                 },
                 onDraft: async (content) => {
-                    if (isReadOnlyKnowledgeSource(turn.source))
+                    if (isReadOnlyKnowledgeSource(turn.source)) {
                         throw new ConversationError(
                             'read_only_source',
                             'Shared conversations cannot propose document changes.',
                         );
+                    }
+
                     return this.dependencies.store.propose(
                         turn,
                         content,
@@ -136,13 +149,16 @@ export class ConversationWorkerService {
                         limit,
                         ...(blockIds ? { blockIds } : {}),
                     });
+
                     await this.dependencies.store.recordMaterial(
                         turn,
                         selected.material,
                     );
+
                     return selected;
                 },
             });
+
             await buffer.flush();
             combined.throwIfAborted();
             await this.dependencies.store.finish(turn, 'succeeded');
@@ -156,6 +172,7 @@ export class ConversationWorkerService {
                     : combined.aborted
                       ? 'response_interrupted'
                       : 'generation_failed';
+
             try {
                 await this.dependencies.store.finish(
                     turn,
@@ -163,14 +180,16 @@ export class ConversationWorkerService {
                     failure,
                 );
             } catch (finishError) {
-                if (!(finishError instanceof ConversationError))
-                    throw finishError; /* Expired/lost source is finalized by lease recovery without exposing content. */
+                if (!(finishError instanceof ConversationError)) {
+                    throw finishError;
+                } /* Expired/lost source is finalized by lease recovery without exposing content. */
             }
         } finally {
             buffer.dispose();
             clearInterval(timer);
             await heartbeatPending;
         }
+
         return true;
     }
 }

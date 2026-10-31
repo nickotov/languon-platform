@@ -49,7 +49,10 @@ export async function heartbeat(
 ) {
     return transaction(persistence, async (tx) => {
         const locked = await lockJob(persistence, tx, lease, context.now);
-        if (!locked) return { owned: false, cancellationRequested: false };
+        if (!locked) {
+            return { owned: false, cancellationRequested: false };
+        }
+
         if (locked.invalid) {
             await terminal(
                 persistence,
@@ -70,8 +73,9 @@ export async function heartbeat(
             })
             .where(eq(jobs.id, lease.jobId));
 
-        if (locked.job.externalSourceKind === 'knowledge-block')
+        if (locked.job.externalSourceKind === 'knowledge-block') {
             await renewPrivateKnowledgeTranslation(tx, lease);
+        }
 
         return { owned: true, cancellationRequested: false };
     });
@@ -86,7 +90,10 @@ export async function markDispatched(
 
     return transaction(persistence, async (tx) => {
         const locked = await lockJob(persistence, tx, lease, context.now);
-        if (!locked) return false;
+        if (!locked) {
+            return false;
+        }
+
         if (locked.invalid) {
             await terminal(
                 persistence,
@@ -109,8 +116,10 @@ export async function markDispatched(
                         now: context.now,
                     });
                 } catch (error) {
-                    if (!(error instanceof TextAiSelectionUnavailableError))
+                    if (!(error instanceof TextAiSelectionUnavailableError)) {
                         throw error;
+                    }
+
                     await terminal(
                         persistence,
                         tx,
@@ -131,8 +140,10 @@ export async function markDispatched(
             return true;
         }
 
-        if (!job.aiCreditReservationId)
+        if (!job.aiCreditReservationId) {
             throw new TextsAiError('generation_not_available');
+        }
+
         await new DrizzleAiCreditTransactionParticipant(
             tx,
         ).markProviderDispatched({
@@ -152,20 +163,24 @@ export async function markDispatched(
 
 function validateJobResult(job: TextsJobRow, result: TextJobResult) {
     if (job.inputPayload?.kind === 'text-translation') {
-        if (job.inputPayload.knowledgeExerciseEvaluation)
+        if (job.inputPayload.knowledgeExerciseEvaluation) {
             return validateKnowledgeExerciseEvaluationResult(
                 job.inputPayload.knowledgeExerciseEvaluation,
                 result,
             );
-        if (job.inputPayload.knowledgeFieldAction)
+        }
+
+        if (job.inputPayload.knowledgeFieldAction) {
             return validateKnowledgeFieldResult(
                 job.inputPayload.knowledgeFieldAction,
                 result,
             );
+        }
     }
 
-    if (job.jobKind === 'text-translation')
+    if (job.jobKind === 'text-translation') {
         return TextTranslationProposalSchema.parse(result);
+    }
 
     return TextDetectionResultSchema.parse(result);
 }
@@ -181,7 +196,10 @@ export async function complete(
 
     return transaction(persistence, async (tx) => {
         const locked = await lockJob(persistence, tx, lease, context.now);
-        if (!locked) return false;
+        if (!locked) {
+            return false;
+        }
+
         const { job, invalid } = locked;
         if (invalid) {
             await terminal(persistence, tx, job, context.now, invalid, usage);
@@ -212,8 +230,10 @@ export async function complete(
                         ),
                     ) ||
                 proposal.alignment.editedPairIds.length
-            )
+            ) {
                 throw new TextsAiError('invalid_model_output');
+            }
+
             validateTranslation(
                 original.segments,
                 proposal.alignment.translation,
@@ -224,7 +244,7 @@ export async function complete(
         if (
             job.inputPayload?.kind === 'text-translation' &&
             job.inputPayload.knowledgeExerciseEvaluation
-        )
+        ) {
             await publishKnowledgeExerciseEvaluation(
                 tx,
                 job,
@@ -233,6 +253,8 @@ export async function complete(
                     validated,
                 ),
             );
+        }
+
         await recordTextAiCircuitSuccess(tx, scope(job, context.now));
         if (job.externalSourceKind === 'knowledge-block') {
             await publishPrivateKnowledgeTranslation(
@@ -269,7 +291,10 @@ export async function fail(
 ) {
     return transaction(persistence, async (tx) => {
         const locked = await lockJob(persistence, tx, lease, context.now);
-        if (!locked) return false;
+        if (!locked) {
+            return false;
+        }
+
         const { job, invalid } = locked;
         const code = invalid ?? input.code;
         const retryAt =
@@ -287,7 +312,7 @@ export async function fail(
         if (
             job.aiCreditProviderDispatchedAt &&
             (code === 'provider_unavailable' || code === 'provider_timeout')
-        )
+        ) {
             await recordTextAiCircuitFailure(tx, {
                 ...scope(job, context.now),
                 category:
@@ -295,6 +320,8 @@ export async function fail(
                         ? 'provider_timeout'
                         : 'provider_error',
             });
+        }
+
         if (!retryAt) {
             await terminal(
                 persistence,

@@ -10,7 +10,9 @@ export function WorkspaceLayoutSwitch() {
     const placement = useCompanionLayout();
     const { t } = useI18n();
     const id = useId();
-    if (!placement?.workspace) return null;
+    if (!placement?.workspace) {
+        return null;
+    }
 
     const options = [
         {
@@ -35,15 +37,19 @@ export function WorkspaceLayoutSwitch() {
     const enabled = options.filter(
         (option) => option.mode !== 'chat' || placement.allowChatLayout,
     );
+
     function select(event: MouseEvent<HTMLButtonElement>) {
         placement?.setMode(event.currentTarget.value as Mode);
     }
+
     function handleKey(event: KeyboardEvent<HTMLDivElement>) {
         if (
             !placement ||
             !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
-        )
+        ) {
             return;
+        }
+
         event.preventDefault();
         const index = enabled.findIndex(
             (option) => option.mode === placement.mode,
@@ -54,19 +60,31 @@ export function WorkspaceLayoutSwitch() {
                 ((event.key === 'ArrowRight') !== rtl ? 1 : -1) +
                 enabled.length) %
             enabled.length;
-        if (event.key === 'Home') next = 0;
-        if (event.key === 'End') next = enabled.length - 1;
+
+        if (event.key === 'Home') {
+            next = 0;
+        }
+
+        if (event.key === 'End') {
+            next = enabled.length - 1;
+        }
+
         const mode = enabled[next]?.mode;
-        if (!mode) return;
+        if (!mode) {
+            return;
+        }
+
         placement.setMode(mode);
         requestAnimationFrame(() =>
             document.getElementById(`${id}-${mode}`)?.focus(),
         );
     }
+
     function renderOption(option: (typeof options)[number]) {
         const selected = placement?.mode === option.mode;
         const disabled = option.mode === 'chat' && !placement?.allowChatLayout;
         const hint = `${option.label} — ${option.hint}`;
+
         return (
             <Tooltip key={option.mode} content={hint} placement='bottom'>
                 <button
@@ -87,6 +105,7 @@ export function WorkspaceLayoutSwitch() {
             </Tooltip>
         );
     }
+
     return (
         <div
             role='radiogroup'
@@ -102,28 +121,46 @@ export function WorkspaceLayoutSwitch() {
 export function WorkspaceMobileTabs() {
     const placement = useCompanionLayout();
     const { t } = useI18n();
-    if (!placement?.workspace) return null;
+    if (!placement?.workspace) {
+        return null;
+    }
+
     function selectDocument() {
         placement?.setMobileTab('document');
     }
+
     function selectTutor() {
-        if (placement?.mode === 'focus') placement.setMode('split');
+        if (placement?.mode === 'focus') {
+            placement.setMode('split');
+        }
+
         placement?.setMobileTab('tutor');
     }
+
     function handleKey(event: KeyboardEvent<HTMLDivElement>) {
         if (
             !placement ||
             !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
-        )
+        ) {
             return;
+        }
+
         event.preventDefault();
         let tab: 'document' | 'tutor' =
             placement.mobileTab === 'document' ? 'tutor' : 'document';
-        if (event.key === 'Home') tab = 'document';
-        if (event.key === 'End') tab = 'tutor';
+
+        if (event.key === 'Home') {
+            tab = 'document';
+        }
+
+        if (event.key === 'End') {
+            tab = 'tutor';
+        }
+
         if (tab === 'tutor' && placement.mode === 'focus') {
             placement.setMode('split');
         }
+
         placement.setMobileTab(tab);
         requestAnimationFrame(() =>
             document
@@ -135,7 +172,9 @@ export function WorkspaceMobileTabs() {
                 ?.focus(),
         );
     }
+
     const documentSelected = placement.mobileTab === 'document';
+
     return (
         <div
             className={styles.mobileTabs}

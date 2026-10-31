@@ -63,6 +63,7 @@ describe('read-only document block composition', () => {
             type: 'paragraph',
             content: [{ type: 'text', text: ' ' }],
         };
+
         for (const preserved of [hardBreak, spaces]) {
             const value = body([
                 blockNode(exercise(id)),
@@ -88,14 +89,17 @@ describe('read-only document block composition', () => {
             id,
             second,
         ]);
+
         expect(plan.groups.get(third)?.map((item) => item.id)).toEqual([third]);
         expect(plan.body.document.content).toEqual([
             value.document.content![0],
             value.document.content![3],
             value.document.content![4],
         ]);
+
         expect(value.document.content).toHaveLength(5);
     });
+
     it('embeds only immediately following questions for the same media without moving meaningful prose', () => {
         const audio: LearningBlock = {
             id,
@@ -127,6 +131,7 @@ describe('read-only document block composition', () => {
             value.document.content![3],
             value.document.content![4],
         ]);
+
         renderReader(value);
         expect(screen.getByText('Read before continuing')).toBeVisible();
         expect(
@@ -134,13 +139,16 @@ describe('read-only document block composition', () => {
                 name: new RegExp(firstQuestion.question),
             }),
         ).toBeVisible();
+
         expect(
             screen.getByRole('button', {
                 name: new RegExp(laterQuestion.question),
             }),
         ).toBeVisible();
+
         expect(screen.queryByText('Prepared answer')).not.toBeInTheDocument();
     });
+
     it('uses presentation-only media membership without pretending a question has transcript grounding', () => {
         const question = {
             ...exercise(second),
@@ -153,9 +161,11 @@ describe('read-only document block composition', () => {
                 blockNode(question),
             ]),
         );
+
         expect(plan.linked.get(id)).toEqual([question]);
         expect(plan.linked.get(id)?.[0]?.source).toBeUndefined();
     });
+
     it('uses reader settings for library/copy/custom actions without exposing author controls or outer button rows', async () => {
         const practice = vi.fn();
         const request = vi.fn();
@@ -189,24 +199,31 @@ describe('read-only document block composition', () => {
                 }),
             },
         );
+
         expect(
             screen.getByRole('button', { name: 'Existing host action' }),
         ).toBeVisible();
+
         expect(
             screen.queryByRole('button', { name: 'Copy blocks to a note' }),
         ).not.toBeInTheDocument();
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Block settings: Words' }),
         );
+
         expect(
             await screen.findByRole('menuitem', { name: 'Copy block' }),
         ).toBeVisible();
+
         expect(
             screen.queryByRole('menuitem', { name: 'Edit' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('menuitem', { name: 'Delete' }),
         ).not.toBeInTheDocument();
+
         fireEvent.click(screen.getByRole('menuitem', { name: 'Train words' }));
         expect(practice).toHaveBeenCalledTimes(1);
         expect(request).not.toHaveBeenCalled();

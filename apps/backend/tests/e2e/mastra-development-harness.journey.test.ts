@@ -48,10 +48,12 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
                 mode: 'provision',
             }),
         ]);
+
         expect(initialResults.map(({ created }) => created).sort()).toEqual([
             false,
             true,
         ]);
+
         expect(initialResults.every(({ reset }) => reset === false)).toBe(true);
 
         let target = createPostgresClient({ databaseUrl: targetUrl.href });
@@ -69,6 +71,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             inner join user_emails on user_emails.user_id = users.id
             where users.id = ${developmentHarnessFixture.principalId}
         `;
+
         expect(Number(migrationCount[0]?.count)).toBe(expectedMigrationCount);
         expect(fixtures).toEqual([
             expect.objectContaining({
@@ -101,6 +104,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             inputData: { delayMs: 0, message: 'disposable journey' },
             requestContext,
         });
+
         expect(workflowResult).toMatchObject({
             result: {
                 principalId: developmentHarnessFixture.principalId,
@@ -108,6 +112,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             },
             status: 'success',
         });
+
         const score = await primitives.verificationScorer.run({
             input: {
                 expectedPrincipalId: developmentHarnessFixture.principalId,
@@ -117,12 +122,14 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
                     ? workflowResult.result
                     : undefined!,
         });
+
         expect(score).toMatchObject({ score: 1 });
 
         await target`
             insert into users (id, status)
             values ('00000000-0000-4000-8000-000000000099', 'active')
         `;
+
         await target.end();
 
         const repeated = await runPlaygroundLifecycle({
@@ -130,6 +137,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             migrationsFolder,
             mode: 'provision',
         });
+
         expect(repeated.created).toBe(false);
 
         target = createPostgresClient({ databaseUrl: targetUrl.href });
@@ -137,6 +145,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             select count(*) from users
             where id = '00000000-0000-4000-8000-000000000099'
         `;
+
         expect(persistedMarker[0]?.count).toBe('1');
         await target.end();
 
@@ -146,6 +155,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
         const ordinaryHasUsers = await ordinary<{ users: string | null }[]>`
             select to_regclass('public.users')::text as users
         `;
+
         expect(ordinaryHasUsers[0]?.users).toBeNull();
         await ordinary.end();
 
@@ -166,6 +176,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             migrationsFolder,
             mode: 'reset',
         });
+
         expect(reset).toMatchObject({ created: true, reset: true });
 
         target = createPostgresClient({ databaseUrl: targetUrl.href });
@@ -181,10 +192,12 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
                 )::text as marker_count
             from users
         `;
+
         expect(afterReset[0]).toEqual({
             fixture_count: '1',
             marker_count: '0',
         });
+
         await target.end();
 
         await expect(
@@ -207,6 +220,7 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
             select count(*) from users
             where id = ${developmentHarnessFixture.principalId}
         `;
+
         expect(afterConcurrentLifecycle[0]?.count).toBe('1');
         await target.end();
     });

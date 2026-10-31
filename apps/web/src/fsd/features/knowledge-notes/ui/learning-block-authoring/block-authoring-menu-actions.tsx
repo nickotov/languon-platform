@@ -22,7 +22,7 @@ export function blockAuthoringMenuActions({
     onToggle(): void;
 }): MenuItem[] {
     const actions = [...external];
-    if (block.type === 'vocabulary' || block.type === 'bilingual-text')
+    if (block.type === 'vocabulary' || block.type === 'bilingual-text') {
         actions.push({
             label: labels.field(
                 block.type === 'vocabulary'
@@ -34,7 +34,9 @@ export function blockAuthoringMenuActions({
             separatorBefore: true,
             onSelect: onSave,
         });
-    if (block.type === 'vocabulary')
+    }
+
+    if (block.type === 'vocabulary') {
         actions.push({
             label: labels.field(
                 expanded ? 'Hide all translations' : 'Show all translations',
@@ -43,5 +45,7 @@ export function blockAuthoringMenuActions({
             onSelect: onToggle,
             separatorBefore: true,
         });
+    }
+
     return actions;
 }

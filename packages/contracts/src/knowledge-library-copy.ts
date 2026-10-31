@@ -27,6 +27,7 @@ const source = {
     workingSource: KnowledgeLibraryWorkingSourceSchema.optional(),
     blockId: z.uuid(),
 };
+
 function validateSource(
     value: {
         noteVersion?: number | undefined;
@@ -38,12 +39,13 @@ function validateSource(
     if (
         (value.noteVersion !== undefined) ===
         (value.workingSource !== undefined)
-    )
+    ) {
         context.addIssue({
             code: 'custom',
             path: ['workingSource'],
             message: 'Choose exactly one saved or owned working source.',
         });
+    }
 }
 
 export const CopyKnowledgeVocabularyRequestSchema = z
@@ -113,12 +115,13 @@ export const CopyKnowledgeTextRequestSchema = z
     .strict()
     .superRefine((value, context) => {
         validateSource(value, context);
-        if (value.workingSource && value.privateTranslation)
+        if (value.workingSource && value.privateTranslation) {
             context.addIssue({
                 code: 'custom',
                 path: ['privateTranslation'],
                 message: 'Private translation receipts require a saved source.',
             });
+        }
     });
 export const KnowledgeTextLibraryPreviewSchema = z
     .object({

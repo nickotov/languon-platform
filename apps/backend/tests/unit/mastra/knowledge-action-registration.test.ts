@@ -6,6 +6,7 @@ describe('job-bound knowledge action agent registration', () => {
         const runtime = createCanonicalMastra({
             textsAi: { model: 'deepseek/deepseek-flash' },
         });
+
         expect(Object.keys(runtime.listAgents())).toEqual(
             expect.arrayContaining([
                 'textTranslationAgent',
@@ -15,10 +16,12 @@ describe('job-bound knowledge action agent registration', () => {
             ]),
         );
     });
+
     it('does not expose job-bound learner agents in default unauthenticated Studio', () => {
         expect(Object.keys(createCanonicalMastra().listAgents())).not.toEqual(
             expect.arrayContaining(['knowledgeBlockFieldAgent']),
         );
+
         expect(Object.keys(createCanonicalMastra().listAgents())).not.toEqual(
             expect.arrayContaining(['knowledgeExerciseEvaluationAgent']),
         );

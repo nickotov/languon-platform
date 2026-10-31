@@ -63,6 +63,7 @@ function harness(overrides: Partial<SpeechJob> = {}) {
         putForReference: vi.fn().mockResolvedValue(job.storage),
         delete: vi.fn(),
     } as unknown as AudioObjectStorage;
+
     return {
         job,
         store,
@@ -83,6 +84,7 @@ describe('shared speech worker recovery', () => {
         vi.mocked(h.provider.poll).mockRejectedValue(
             new SpeechOutputUnavailableError({ usage }),
         );
+
         await h.worker.runOnce();
         expect(h.store.pending).toHaveBeenCalledWith(
             h.job,
@@ -90,9 +92,11 @@ describe('shared speech worker recovery', () => {
             expect.any(Date),
             { usage },
         );
+
         expect(h.provider.submit).not.toHaveBeenCalled();
         expect(h.store.fail).not.toHaveBeenCalled();
     });
+
     it('persists provider usage with inventory before audio storage and forwards failed-task observations', async () => {
         const h = harness();
         const usage = { requests: 1 as const, providerCreditsConsumed: '1.23' };
@@ -101,6 +105,7 @@ describe('shared speech worker recovery', () => {
             audio: createFixtureAudio(),
             usage,
         });
+
         await h.worker.runOnce();
         expect(h.store.storing).toHaveBeenCalledWith(
             h.job,
@@ -108,13 +113,16 @@ describe('shared speech worker recovery', () => {
             expect.any(Date),
             { usage },
         );
+
         const failed = harness({
             state: 'processing',
             taskId: 'accepted-task',
         });
+
         vi.mocked(failed.provider.poll).mockRejectedValue(
             new SpeechTaskFailedError('generation_failed', { usage }),
         );
+
         await failed.worker.runOnce();
         expect(failed.store.fail).toHaveBeenCalledWith(
             failed.job,
@@ -125,6 +133,7 @@ describe('shared speech worker recovery', () => {
             { usage },
         );
     });
+
     it('publishes validated audio through inventory before completion', async () => {
         const h = harness();
         await h.worker.runOnce();
@@ -133,24 +142,29 @@ describe('shared speech worker recovery', () => {
         expect(h.storage.putForReference).toHaveBeenCalledOnce();
         expect(h.store.complete).toHaveBeenCalledOnce();
     });
+
     it('preserves ambiguous submissions without trying again', async () => {
         const h = harness();
         vi.mocked(h.provider.submit).mockRejectedValue(
             new SpeechSubmissionError('unknown', false),
         );
+
         await h.worker.runOnce();
         expect(h.store.fail).toHaveBeenCalledWith(
             h.job,
             'unknown',
             expect.any(Date),
         );
+
         expect(h.provider.submit).toHaveBeenCalledOnce();
     });
+
     it('identifies a known unsubmitted provider operation for zero expense', async () => {
         const h = harness();
         vi.mocked(h.provider.submit).mockRejectedValue(
             new SpeechSubmissionError('not_submitted', false),
         );
+
         await h.worker.runOnce();
         expect(h.store.fail).toHaveBeenCalledExactlyOnceWith(
             h.job,
@@ -160,6 +174,7 @@ describe('shared speech worker recovery', () => {
             true,
         );
     });
+
     it('never republishes from a stale lease', async () => {
         const h = harness();
         vi.mocked(h.store.storing).mockResolvedValue(false);
@@ -167,6 +182,7 @@ describe('shared speech worker recovery', () => {
         expect(h.storage.putForReference).not.toHaveBeenCalled();
         expect(h.store.complete).not.toHaveBeenCalled();
     });
+
     it('recovers an existing immutable object without resynthesizing', async () => {
         const audio = createFixtureAudio();
         const h = harness({ state: 'storing', checksum: audio.checksum });
@@ -176,25 +192,30 @@ describe('shared speech worker recovery', () => {
         expect(h.provider.poll).not.toHaveBeenCalled();
         expect(h.store.complete).toHaveBeenCalledOnce();
     });
+
     it('retries storage failures as storage work instead of resubmitting', async () => {
         const h = harness();
         vi.mocked(h.storage.putForReference).mockRejectedValue(
             new Error('temporary storage outage'),
         );
+
         await h.worker.runOnce();
         expect(h.store.fail).not.toHaveBeenCalled();
         expect(h.store.pending).toHaveBeenCalled();
     });
+
     it('known-task polling failures retain task identity', async () => {
         const h = harness({ state: 'processing', taskId: 'provider-task' });
         vi.mocked(h.provider.poll).mockRejectedValue(
             new Error('temporary poll outage'),
         );
+
         await h.worker.runOnce();
         expect(h.provider.submit).not.toHaveBeenCalled();
         expect(h.store.pending).toHaveBeenCalled();
         expect(h.store.fail).not.toHaveBeenCalled();
     });
+
     it('settles definitive provider-task failure without resubmitting or persisting provider diagnostics', async () => {
         const h = harness({ state: 'processing', taskId: 'provider-task' });
         const failure = new SpeechTaskFailedError();
@@ -202,6 +223,7 @@ describe('shared speech worker recovery', () => {
             failMsg: 'synthetic private provider diagnostic',
             outputUrl: 'https://invalid.example/synthetic-private-output',
         });
+
         vi.mocked(h.provider.poll).mockRejectedValue(failure);
         await h.worker.runOnce();
         expect(h.provider.submit).not.toHaveBeenCalled();
@@ -213,11 +235,13 @@ describe('shared speech worker recovery', () => {
             expect.any(Date),
         );
     });
+
     it('settles typed provider unavailability with a safe reason and no resubmission', async () => {
         const h = harness({ state: 'processing', taskId: 'provider-task' });
         vi.mocked(h.provider.poll).mockRejectedValue(
             new SpeechTaskFailedError('provider_unavailable'),
         );
+
         await h.worker.runOnce();
         expect(h.provider.submit).not.toHaveBeenCalled();
         expect(h.store.pending).not.toHaveBeenCalled();
@@ -229,12 +253,14 @@ describe('shared speech worker recovery', () => {
             'speech_provider_unavailable',
         );
     });
+
     it('retries physical deletions from durable inventory', async () => {
         const h = harness();
         vi.mocked(h.store.claim).mockResolvedValue(null);
         vi.mocked(h.store.deletionInventory).mockResolvedValue([
             { id: 'deleted-recording', storage: h.job.storage },
         ]);
+
         expect(await h.worker.runOnce()).toBe(false);
         expect(h.storage.delete).toHaveBeenCalledWith(h.job.storage);
         expect(h.store.deleted).toHaveBeenCalledWith(
@@ -242,16 +268,19 @@ describe('shared speech worker recovery', () => {
             expect.any(Date),
         );
     });
+
     it('keeps a known task when its historical provider is temporarily unavailable', async () => {
         const h = harness({
             state: 'processing',
             taskId: 'known-upstream-task',
         });
+
         await new SpeechWorker({
             store: h.store,
             storage: h.storage,
             providers: new Map(),
         }).runOnce();
+
         expect(h.store.fail).not.toHaveBeenCalled();
         expect(h.store.pending).toHaveBeenCalledWith(
             h.job,
@@ -259,6 +288,7 @@ describe('shared speech worker recovery', () => {
             expect.any(Date),
         );
     });
+
     it('publishes inventoried bytes even when the historical provider has been removed', async () => {
         const audio = createFixtureAudio();
         const h = harness({ state: 'storing', checksum: audio.checksum });
@@ -268,18 +298,22 @@ describe('shared speech worker recovery', () => {
             storage: h.storage,
             providers: new Map(),
         }).runOnce();
+
         expect(h.store.complete).toHaveBeenCalledOnce();
         expect(h.store.fail).not.toHaveBeenCalled();
     });
+
     it('keeps failed physical deletions in unavailable durable inventory for later retry', async () => {
         const h = harness();
         vi.mocked(h.store.claim).mockResolvedValue(null);
         vi.mocked(h.store.deletionInventory).mockResolvedValue([
             { id: 'failed-delete', storage: h.job.storage },
         ]);
+
         vi.mocked(h.storage.delete).mockRejectedValue(
             new Error('offline private storage'),
         );
+
         expect(await h.worker.runOnce()).toBe(false);
         expect(h.store.deleted).not.toHaveBeenCalled();
         expect(h.store.releaseDeadlines).toHaveBeenCalled();

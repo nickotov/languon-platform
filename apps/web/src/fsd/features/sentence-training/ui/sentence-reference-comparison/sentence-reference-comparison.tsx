@@ -23,6 +23,7 @@ export function SentenceReferenceComparison({
 }) {
     const { t } = useSentenceCopy();
     const [open, setOpen] = useState(true);
+
     return (
         <section
             aria-label={t('Free comparison')}

@@ -2,10 +2,12 @@ export function percentile(
     samples: readonly number[],
     fraction: number,
 ): number {
-    if (!samples.length || fraction <= 0 || fraction > 1)
+    if (!samples.length || fraction <= 0 || fraction > 1) {
         throw new RangeError(
             'Nonempty samples and fraction in (0,1] required.',
         );
+    }
+
     return [...samples].sort((a, b) => a - b)[
         Math.ceil(samples.length * fraction) - 1
     ]!;
@@ -29,10 +31,12 @@ export function validatePerformanceTargets(env: NodeJS.ProcessEnv) {
         !redis.port ||
         redis.port === '6379' ||
         redis.pathname !== '/3'
-    )
+    ) {
         throw new Error(
             'An explicitly confirmed isolated performance database and loopback Redis DB3 on non-default ports are required.',
         );
+    }
+
     return {
         databaseUrl: database.toString(),
         redisUrl: redis.toString(),

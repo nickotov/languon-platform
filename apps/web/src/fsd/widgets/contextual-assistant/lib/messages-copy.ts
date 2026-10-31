@@ -112,6 +112,7 @@ const messages = {
         hint: 'Les suggestions remplissent la question. Rien n’est envoyé avant d’appuyer sur Envoyer.',
     },
 };
+
 export function messagesCopy(locale: Locale) {
     return messages[locale];
 }

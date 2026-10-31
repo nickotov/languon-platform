@@ -29,9 +29,12 @@ function createEditor(content: object[]) {
         extensions: [StarterKit, learningBlock],
         content: { type: 'doc', content },
     });
+
     editors.push(editor);
+
     return editor;
 }
+
 function chrome(editor: Editor) {
     return (
         <I18nProvider locale='en' messages={en}>
@@ -56,7 +59,10 @@ it.each([false, true])(
     'does not show prose actions or empty starters for a selected block (leading paragraph: %s)',
     (leadingParagraph) => {
         const content: object[] = [{ type: 'learningBlock', attrs: { block } }];
-        if (leadingParagraph) content.unshift({ type: 'paragraph' });
+        if (leadingParagraph) {
+            content.unshift({ type: 'paragraph' });
+        }
+
         const editor = createEditor(content);
         const position = leadingParagraph ? 2 : 0;
         editor.view.dispatch(
@@ -64,12 +70,14 @@ it.each([false, true])(
                 NodeSelection.create(editor.state.doc, position),
             ),
         );
+
         render(chrome(editor));
         expect(
             screen.queryByRole('toolbar', {
                 name: en['knowledge.selectionActions'],
             }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('group', { name: en['knowledge.beginWriting'] }),
         ).not.toBeInTheDocument();
@@ -87,15 +95,18 @@ it('keeps prose actions for selected text and removes them when the caret is col
     const geometry = vi
         .spyOn(editor.view, 'coordsAtPos')
         .mockReturnValue({ top: 10, bottom: 30, left: 10, right: 80 });
+
     editor.view.dispatch(
         editor.state.tr.setSelection(
             TextSelection.create(editor.state.doc, 1, 9),
         ),
     );
+
     const view = render(chrome(editor));
     expect(
         screen.getByRole('toolbar', { name: en['knowledge.selectionActions'] }),
     ).toBeInTheDocument();
+
     act(() => {
         editor.view.dispatch(
             editor.state.tr.setSelection(
@@ -103,11 +114,13 @@ it('keeps prose actions for selected text and removes them when the caret is col
             ),
         );
     });
+
     view.rerender(chrome(editor));
     expect(
         screen.queryByRole('toolbar', {
             name: en['knowledge.selectionActions'],
         }),
     ).not.toBeInTheDocument();
+
     geometry.mockRestore();
 });

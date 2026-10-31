@@ -49,18 +49,23 @@ export function AiCreditAdjustmentDialog({
     const expires = Form.useWatch('expires', form);
 
     const handleOpenChange = (visible: boolean) => {
-        if (!visible) return;
+        if (!visible) {
+            return;
+        }
+
         form.setFieldsValue({
             amount: 1,
             expires: false,
             kind: 'add',
             reason: '',
         });
+
         form.setFieldValue('expiresAt', undefined);
     };
     const handleFinish = async (values: AdjustmentFields) => {
         const signedAmount =
             values.kind === 'remove' ? -values.amount : values.amount;
+
         await onSubmit({
             amountCredits: signedAmount,
             expectedVersion: account.managementVersion,

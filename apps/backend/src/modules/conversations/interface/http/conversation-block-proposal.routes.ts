@@ -53,11 +53,13 @@ export function registerConversationBlockProposalRoutes(
             },
         }),
         async (c) => {
-            if (!store.listBlockProposals)
+            if (!store.listBlockProposals) {
                 throw new ConversationError(
                     'service_unavailable',
                     'Block proposals are unavailable.',
                 );
+            }
+
             return c.json(
                 await store.listBlockProposals(
                     await access(c),
@@ -67,6 +69,7 @@ export function registerConversationBlockProposalRoutes(
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -92,12 +95,15 @@ export function registerConversationBlockProposalRoutes(
             },
         }),
         async (c) => {
-            if (!store.applyBlockProposal)
+            if (!store.applyBlockProposal) {
                 throw new ConversationError(
                     'service_unavailable',
                     'Block proposals are unavailable.',
                 );
+            }
+
             const params = c.req.valid('param');
+
             return c.json(
                 await store.applyBlockProposal(
                     await access(c),

@@ -123,20 +123,21 @@ Do not move a monolith into a controller hook or memoize cheap expressions solel
 to make JSX shorter. Extract a hook for cohesive stateful behavior. Preserve event
 timing, stale-closure handling, accessible states and error/retry behavior.
 
-## Enforcement and staged rollout
+## Enforcement and clarity review
 
 `scripts/eslint-readability.mjs` defines reusable brace and spacing rules. Normal
-`pnpm lint` currently enforces them on the explicitly enrolled reference files and
-the policy's own scripts/tests. Persistence retains its established size/spacing
-policy. BL-018 expands the shared rules to all maintained source after mechanical
-normalization; BL-019 owns systematic clarity review. No repository-wide compliance
-is claimed before those tasks finish.
+`pnpm lint` enforces them across maintained applications, packages, scripts,
+infrastructure, tooling and tests. Generated/native output, imported pricing
+snapshots and historical design/evidence artifacts are excluded. Persistence
+retains its additional established size constraint. BL-018 owns the mechanical
+normalization; BL-019 owns systematic clarity review. Passing lint alone does not
+establish whole-codebase clarity.
 
-While enrollment is staged, apply this guide to all new/substantively changed
-code. Enroll such files in the strict list with focused lint fixes in their own
-scope. Do not disable rules to hide violations or sweep unrelated files into a
-bounded task. Prettier preserves logical blank lines; lint configuration order
-must keep these rules active after `eslint-config-prettier`.
+Apply this guide to all new/substantively changed code. Do not disable rules to
+hide violations or sweep unrelated files into a bounded task. Prettier preserves
+logical blank lines; lint configuration order must keep these rules active after
+`eslint-config-prettier`. Frozen artifacts retain their source identities rather
+than being reformatted to satisfy a maintained-code gate.
 
 ## Author and reviewer checks
 

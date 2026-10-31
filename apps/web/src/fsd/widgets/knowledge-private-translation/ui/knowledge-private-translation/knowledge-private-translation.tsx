@@ -53,18 +53,23 @@ export function KnowledgePrivateTranslation(
               }
             : {}),
     };
+
     function changeLanguage(event: ChangeEvent<HTMLSelectElement>) {
         model.setLanguage(TextLanguageSchema.parse(event.target.value));
     }
+
     function generate() {
         void model.generate();
     }
+
     function cancel() {
         void model.cancel();
     }
+
     function retry() {
         void model.retry();
     }
+
     return (
         <details className={styles.root}>
             <summary>{copy.title}</summary>

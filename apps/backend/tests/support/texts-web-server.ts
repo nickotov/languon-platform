@@ -64,16 +64,23 @@ import {
     deleteNamespacedKeys,
 } from '../integration/support/test-redis';
 
-if (process.env.TEXTS_WEB_FIXTURE !== 'true' || process.env.APP_ENV !== 'test')
+if (
+    process.env.TEXTS_WEB_FIXTURE !== 'true' ||
+    process.env.APP_ENV !== 'test'
+) {
     throw new Error('Explicit test-only Texts web fixture opt-in required');
+}
+
 const target = new URL(getTestDatabaseUrl());
 if (
     target.pathname !== '/languon_auth_texts_ui_web_test' ||
     !['55443', '55487'].includes(target.port)
-)
+) {
     throw new Error(
         'Texts web fixture requires exclusive disposable UI web database',
     );
+}
+
 const redisTarget = new URL(process.env.AUTH_TEST_REDIS_URL!);
 if (
     !['127.0.0.1', 'localhost'].includes(redisTarget.hostname) ||
@@ -82,10 +89,12 @@ if (
     process.env.ALLOW_DISPOSABLE_REDIS_TESTS !== 'true' ||
     process.env.AUTH_TEST_REDIS_CONFIRM !==
         `${redisTarget.hostname}:${redisTarget.port}/1`
-)
+) {
     throw new Error(
         'Texts web fixture requires confirmed exclusive local Redis DB1',
     );
+}
+
 const origin = process.env.TEXTS_WEB_ORIGIN ?? 'http://localhost:3335';
 const secret = 'synthetic-texts-web-dictionary-secret-at-least-40-bytes';
 const namespace = uniqueAuthRedisNamespace('texts-web');
@@ -124,6 +133,7 @@ async function start() {
             REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
         }),
     );
+
     const d = authentication.productDependencies;
     // Full translation journeys fund the configured output ceiling; reduced-budget consent has separate coverage.
     await seedLegacyActionFixture(d.database, '100');
@@ -133,6 +143,7 @@ async function start() {
     const consumeAuthenticationLimit = d.rateLimiter.consume.bind(
         d.rateLimiter,
     );
+
     d.rateLimiter.consume = (input) =>
         consumeAuthenticationLimit({
             ...input,
@@ -141,11 +152,14 @@ async function start() {
                     ? 40
                     : input.limit,
         });
+
     const authenticate = async (token: string) => {
         const claims = await d.accessTokens.verify(token);
         await d.authentication.requireActiveSession(claims);
+
         return { userId: claims.userId, sessionId: claims.sessionId };
     };
+
     content = createTextsContentComposition({
         ...d,
         // Three synthetic browser journeys share one localhost address. Retain
@@ -164,6 +178,7 @@ async function start() {
         policy: authentication.options.policy,
         loadProposal: loadTextTranslationProposal,
     });
+
     ai = createTextsAiComposition({
         burstLimiter: new RedisGenerationBurstLimiter(d.rateLimiter),
         database: d.database,
@@ -175,6 +190,7 @@ async function start() {
         admissionParticipant: (tx) =>
             new DrizzleTextAiAdmissionParticipant(tx, selectionPolicy),
     });
+
     const execution = createTextsWorkerComposition({
         database: d.database,
         clock: d.clock,
@@ -207,10 +223,12 @@ async function start() {
                         ].includes(execution.supportedFormats[0] ?? '') ||
                         execution.perCallMaxInputTokens !== 128000 ||
                         execution.perCallMaxOutputTokens !== 32768)
-                )
+                ) {
                     throw new Error(
                         'Texts translation must use the admitted Flash v2 execution profile',
                     );
+                }
+
                 return {
                     draft:
                         input.kind === 'text-detection'
@@ -247,6 +265,7 @@ async function start() {
             },
         },
     });
+
     worker = execution.worker;
     selection = createTextSelectionModule({
         database: d.database,
@@ -264,6 +283,7 @@ async function start() {
                 const bank = input.source === 'bank';
                 const frenchGoal =
                     input.sourceLanguage === 'fr' && input.source === 'but';
+
                 if (
                     frenchGoal &&
                     (input.occurrenceContext?.sentence !==
@@ -272,10 +292,12 @@ async function start() {
                         input.occurrenceContext.nextSentence !== null ||
                         input.occurrenceContext.startOffset !== 3 ||
                         input.occurrenceContext.endOffset !== 6)
-                )
+                ) {
                     throw new Error(
                         'French selection must retain its raw occurrence and exact sentence context',
                     );
+                }
+
                 if (
                     bank &&
                     (!input.occurrenceContext?.sentence.includes(
@@ -284,10 +306,12 @@ async function start() {
                         !input.occurrenceContext.previousSentence?.includes(
                             'The river flows slowly.',
                         ))
-                )
+                ) {
                     throw new Error(
                         'Bank selection must carry its containing sentence and edited river neighbor',
                     );
+                }
+
                 return {
                     delta: {
                         ...(input.requestedFields.includes('source')
@@ -340,12 +364,14 @@ async function start() {
             },
         },
     });
+
     // Dashboard entry cards use the real portrait stores and authenticated routes.
     // This Texts-only fixture starts no interview worker or external model client.
     const learnerPortraits = createLearnerPortraitModule({
         database: d.database,
         selectionPolicy,
     });
+
     app = createApp({
         learnerAiCredits: createLearnerAiCreditBalanceModule({
             ...d,
@@ -425,6 +451,7 @@ async function start() {
             },
         }),
     });
+
     const administrator = await signup();
     const creator = await d.accessTokens.verify(administrator);
     const model = textAiModelCatalog.find(
@@ -456,6 +483,7 @@ async function start() {
             supportedFormats: [...model.supportedFormats],
         },
     });
+
     await d.database
         .insert(dictionaryAiConfigurationTable)
         .values({
@@ -468,6 +496,7 @@ async function start() {
             target: dictionaryAiConfigurationTable.id,
             set: { activeRevisionId: revisionId, updatedAt: now },
         });
+
     await d.database
         .insert(dictionaryAiWorkerObservationsTable)
         .values({
@@ -493,6 +522,7 @@ async function start() {
         })
         .onConflictDoNothing();
 }
+
 async function request(
     path: string,
     token?: string,
@@ -511,24 +541,34 @@ async function request(
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
 }
+
 async function signup() {
     const response = await request('/auth/sign-up', undefined, {
         email: `texts-${randomUUID()}@example.test`,
         password: 'Synthetic safe journey password 47!',
     });
-    if (response.status !== 202) throw new Error(await response.text());
+
+    if (response.status !== 202) {
+        throw new Error(await response.text());
+    }
+
     const { verification } = SignUpResponseSchema.parse(await response.json());
     const verified = await request(
         '/auth/email-verification/verify',
         undefined,
         { flowId: verification.flowId, code: '0000' },
     );
-    if (verified.status !== 200) throw new Error(await verified.text());
+
+    if (verified.status !== 200) {
+        throw new Error(await verified.text());
+    }
+
     const token = AuthenticationSuccessResponseSchema.parse(
         await verified.json(),
     ).accessToken;
     const claims =
         await authentication.productDependencies.accessTokens.verify(token);
+
     await authentication.productDependencies.database.transaction((tx) =>
         new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
             ownerId: claims.userId,
@@ -539,6 +579,7 @@ async function signup() {
             sourceReference: randomUUID(),
         }),
     );
+
     return token;
 }
 
@@ -561,6 +602,7 @@ const server = serve({
                 await authentication.productDependencies.accessTokens.verify(
                     payload.accessToken,
                 );
+
             if (!credited.has(claims.userId)) {
                 await authentication.productDependencies.database.transaction(
                     (tx) =>
@@ -575,12 +617,15 @@ const server = serve({
                             sourceReference: randomUUID(),
                         }),
                 );
+
                 credited.add(claims.userId);
             }
         }
+
         return response;
     },
 });
+
 process.once('SIGINT', () => controller.abort());
 process.once('SIGTERM', () => controller.abort());
 console.log('Texts web fixture ready at http://127.0.0.1:4005');

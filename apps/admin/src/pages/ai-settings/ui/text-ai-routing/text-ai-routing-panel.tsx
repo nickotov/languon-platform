@@ -28,12 +28,15 @@ export function TextAiRoutingPanel({
     useEffect(() => {
         setDisablingRoute(null);
     }, [version]);
+
     const handleDisable = (routeId: string) => {
         routing.clearMutationError();
         setDisablingRoute(routeId);
     };
     const handleCloseDisable = () => {
-        if (!routing.pending) setDisablingRoute(null);
+        if (!routing.pending) {
+            setDisablingRoute(null);
+        }
     };
 
     const handleRefresh = () => {

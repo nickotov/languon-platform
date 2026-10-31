@@ -31,13 +31,13 @@ coming-soon actions for capabilities that do not exist.
 ## Acceptance criteria
 
 - [x] AC-1 — Replace the old global header with the Magic top bar and working
-  home, locale, and persisted theme controls.
+      home, locale, and persisted theme controls.
 - [x] AC-2 — Add the responsive authenticated `/profile` page and exact four-tab
-  settings composition.
+      settings composition.
 - [x] AC-3 — Render only current session identity; keep unsupported datasets
-  empty and label them coming soon.
+      empty and label them coming soon.
 - [x] AC-4 — Mock unsupported actions through accessible informational toasts,
-  with no remote or destructive operation.
+      with no remote or destructive operation.
 - [x] AC-5 — Add focused automated, guide/E2E, and browser acceptance evidence.
 
 ## Test strategy
@@ -113,20 +113,20 @@ coming-soon actions for capabilities that do not exist.
 
 ## Validation
 
-| Check              | Status         | Evidence |
-| ------------------ | -------------- | -------- |
-| Unit               | Pass           | 147 web tests |
-| Integration        | Not applicable | No new server boundary |
-| Contract           | Not applicable | No public contract change |
-| E2E                | Pass           | Profile 1/1; UI-kit 1/1 |
-| Browser/device     | Pass           | Desktop/mobile auth and profile journey |
-| Typecheck          | Pass           | Web TypeScript check |
-| Lint               | Pass           | Web ESLint check |
-| Build              | Pass           | Next webpack build; `/profile` emitted |
-| Database migration | Not applicable |          |
-| User-flow guide    | Pass           | 9 guides validated |
-| User-flow E2E      | Pass           | Profile and UI-kit mappings synchronized |
-| Independent review | Pass           | Approved after remediation |
+| Check              | Status         | Evidence                                         |
+| ------------------ | -------------- | ------------------------------------------------ |
+| Unit               | Pass           | 147 web tests                                    |
+| Integration        | Not applicable | No new server boundary                           |
+| Contract           | Not applicable | No public contract change                        |
+| E2E                | Pass           | Profile 1/1; UI-kit 1/1                          |
+| Browser/device     | Pass           | Desktop/mobile auth and profile journey          |
+| Typecheck          | Pass           | Web TypeScript check                             |
+| Lint               | Pass           | Web ESLint check                                 |
+| Build              | Pass           | Next webpack build; `/profile` emitted           |
+| Database migration | Not applicable |                                                  |
+| User-flow guide    | Pass           | 9 guides validated                               |
+| User-flow E2E      | Pass           | Profile and UI-kit mappings synchronized         |
+| Independent review | Pass           | Approved after remediation                       |
 | Security review    | Not applicable | No policy, persistence, or external write change |
 
 ## Remaining work

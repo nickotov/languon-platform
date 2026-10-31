@@ -34,13 +34,18 @@ export function useBlockCopy(
         setPlan(null);
         setCopied(false);
     }, []);
+
     function chooseBlocks(ids: string[]) {
         setSelected(ids);
         setPlan(null);
         setCopied(false);
     }
+
     async function preview() {
-        if (!destination || selected.length === 0 || busy) return;
+        if (!destination || selected.length === 0 || busy) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         setCopied(false);
@@ -56,8 +61,11 @@ export function useBlockCopy(
             const branch = workspace.branches.find(
                 (value) => value.id === destination.branchId,
             );
-            if (!branch)
+
+            if (!branch) {
                 throw new Error('The destination draft is unavailable.');
+            }
+
             const request = CopyKnowledgeBlocksRequestSchema.parse({
                 operationId: crypto.randomUUID(),
                 source,
@@ -71,6 +79,7 @@ export function useBlockCopy(
                 destination.noteId,
                 request,
             );
+
             setPlan({ request, destinationNoteId: destination.noteId, result });
         } catch {
             setError(true);
@@ -79,8 +88,12 @@ export function useBlockCopy(
             setBusy(false);
         }
     }
+
     async function apply() {
-        if (!plan || busy) return;
+        if (!plan || busy) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         context.onApplyingChange?.(true);
@@ -93,8 +106,11 @@ export function useBlockCopy(
                 plan.destinationNoteId,
                 { ...plan.request, preview: false },
             );
-            if (!result.branch)
+
+            if (!result.branch) {
                 throw new Error('The copied working draft is unavailable.');
+            }
+
             await context.onApplied?.(plan.destinationNoteId, result.branch);
             setCopied(true);
             setPlan(null);
@@ -105,6 +121,7 @@ export function useBlockCopy(
             setBusy(false);
         }
     }
+
     return {
         selected,
         chooseBlocks,

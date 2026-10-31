@@ -4,8 +4,8 @@ title: Learner portrait and AI interview
 status: ready-for-design
 summary: Copyable Magic Patterns brief for the learner portrait, interview, manual editing, and chat controls.
 source_paths:
-  - .agent/features/051-learner-portrait/FEATURE.md
-  - docs/learner-portrait-design.md
+    - .agent/features/051-learner-portrait/FEATURE.md
+    - docs/learner-portrait-design.md
 ---
 
 # Learner portrait and AI interview
@@ -257,13 +257,13 @@ Build the interactive React prototype using local fictional data. No real API ca
 
 ## Design review checklist
 
-| Brief IDs | Required coverage |
-| --- | --- |
-| LP-UI-01–02 | Entry states, optional introduction, truthful free/paid notice and expandable data explanation |
+| Brief IDs   | Required coverage                                                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| LP-UI-01–02 | Entry states, optional introduction, truthful free/paid notice and expandable data explanation                                               |
 | LP-UI-03–05 | Guided one-question flow, options/custom answers, 200/1000 character counters, reviewable proposals, supported locales and bounded redirects |
-| LP-UI-06–08 | Manual editing, consistent summary, approval/use separation and returning-user management |
-| LP-UI-09 | Existing/new chat behavior, visible overrides, global/per-chat controls and history limitation |
-| LP-UI-10–11 | Recovery, expiry, conflicts, deletion, charging changes and failure preservation |
-| LP-UI-12 | All major interactions on desktop/mobile, keyboard accessibility and both themes |
+| LP-UI-06–08 | Manual editing, consistent summary, approval/use separation and returning-user management                                                    |
+| LP-UI-09    | Existing/new chat behavior, visible overrides, global/per-chat controls and history limitation                                               |
+| LP-UI-10–11 | Recovery, expiry, conflicts, deletion, charging changes and failure preservation                                                             |
+| LP-UI-12    | All major interactions on desktop/mobile, keyboard accessibility and both themes                                                             |
 
 The returned design becomes a review candidate. Its selected revision must be preserved before implementation. Prototype code is design input; production integration uses the existing shared UI and CSS Modules/token contracts. Backend checkpoint evidence does not establish UI completion or rendered fidelity.

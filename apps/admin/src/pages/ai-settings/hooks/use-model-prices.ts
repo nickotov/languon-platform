@@ -19,16 +19,24 @@ export function useModelPrices() {
         adminApi
             .modelPrices(abort.signal)
             .then((response) => {
-                if (!abort.signal.aborted) setPrices(response.prices);
+                if (!abort.signal.aborted) {
+                    setPrices(response.prices);
+                }
             })
             .catch((caught: unknown) => {
-                if (!abort.signal.aborted) setError(asError(caught));
+                if (!abort.signal.aborted) {
+                    setError(asError(caught));
+                }
             })
             .finally(() => {
-                if (!abort.signal.aborted) setLoading(false);
+                if (!abort.signal.aborted) {
+                    setLoading(false);
+                }
             });
+
         return () => abort.abort();
     }, [revision]);
+
     const refresh = () => {
         setEditing(null);
         setSaveError(null);
@@ -40,7 +48,9 @@ export function useModelPrices() {
         setEditing(price);
     };
     const close = () => {
-        if (!inFlight.current) setEditing(null);
+        if (!inFlight.current) {
+            setEditing(null);
+        }
     };
     const publish = async (values: {
         creditsPer1000Characters?: number;
@@ -51,7 +61,10 @@ export function useModelPrices() {
         provisional: boolean;
         reason: string;
     }) => {
-        if (!editing || blocked || inFlight.current) return;
+        if (!editing || blocked || inFlight.current) {
+            return;
+        }
+
         inFlight.current = true;
         setPending(true);
         setSaveError(null);
@@ -78,6 +91,7 @@ export function useModelPrices() {
                 provisional: values.provisional,
                 reason: values.reason.trim(),
             });
+
             refresh();
         } catch (caught) {
             setSaveError(asError(caught));
@@ -87,6 +101,7 @@ export function useModelPrices() {
             setPending(false);
         }
     };
+
     return {
         prices,
         loading,
@@ -101,6 +116,7 @@ export function useModelPrices() {
         publish,
     };
 }
+
 function asError(error: unknown) {
     return error instanceof Error
         ? error

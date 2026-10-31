@@ -16,7 +16,11 @@ export function adminProbeFixtureEnabled(
         values,
         diagnostics,
     );
-    if (parsed.ADMIN_E2E_SYNTHETIC_PROBES !== 'true') return false;
+
+    if (parsed.ADMIN_E2E_SYNTHETIC_PROBES !== 'true') {
+        return false;
+    }
+
     const url = new URL(values.DATABASE_URL ?? '');
     if (
         !['development', 'test'].includes(values.APP_ENV ?? '') ||
@@ -33,5 +37,6 @@ export function adminProbeFixtureEnabled(
             'Synthetic admin probes require a dedicated disposable admin E2E database and synthetic credentials.',
         );
     }
+
     return true;
 }

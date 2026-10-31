@@ -79,7 +79,10 @@ export async function enqueue(
     },
 ): Promise<TextAiJob> {
     context.signal.throwIfAborted();
-    if (!persistence.policy) throw new TextsAiError('generation_not_available');
+    if (!persistence.policy) {
+        throw new TextsAiError('generation_not_available');
+    }
+
     const input: TextJobInput =
         kind === 'text-detection'
             ? { kind, ...EnqueueTextDetectionRequestSchema.parse(raw) }
@@ -124,8 +127,9 @@ export async function enqueue(
             ) ||
             input.segments.map((segment) => segment.text).join('') !==
                 input.sourceText
-        )
+        ) {
             throw new TextsAiError('invalid_request');
+        }
     }
 
     const fingerprint = createHmac(
@@ -164,10 +168,13 @@ export async function enqueue(
             .for('update');
 
         if (previous) {
-            if (previous.expiresAt <= context.now)
+            if (previous.expiresAt <= context.now) {
                 throw new TextsAiError('generation_proposal_expired');
-            if (previous.requestFingerprint !== fingerprint)
+            }
+
+            if (previous.requestFingerprint !== fingerprint) {
                 throw new TextsAiError('idempotency_conflict');
+            }
 
             return withActionBilling(
                 tx,
@@ -197,8 +204,10 @@ export async function enqueue(
             !execution.revisionId ||
             execution.selectionVersion !== 1 ||
             !execution.snapshot.creditPricing
-        )
+        ) {
             throw new TextsAiError('generation_not_available');
+        }
+
         try {
             execution.snapshot = await prepareLegacyAction(
                 tx,
@@ -211,8 +220,9 @@ export async function enqueue(
             if (
                 error instanceof OperatorBudgetUnavailableError ||
                 error instanceof ProviderCostAdmissionUnavailableError
-            )
+            ) {
                 throw new TextsAiError('generation_not_available');
+            }
 
             throw error;
         }
@@ -235,8 +245,10 @@ export async function enqueue(
                 true,
                 execution.budget,
             )
-        )
+        ) {
             throw new TextsAiError('rate_limited');
+        }
+
         const budget = execution.budget,
             pricing = execution.snapshot.creditPricing!;
         const creditSummary = await new DrizzleAiCreditTransactionParticipant(
@@ -294,7 +306,7 @@ export async function enqueue(
             })
             .returning();
 
-        if (knowledge)
+        if (knowledge) {
             await attachKnowledgeTranslationJob(
                 tx,
                 ownerId,
@@ -302,6 +314,8 @@ export async function enqueue(
                 knowledge.binding,
                 input.kind === 'text-translation' ? input.targetLanguage : '',
             );
+        }
+
         await reserveTextsAttempt(tx, job!, 1, context.now);
 
         return withActionBilling(
@@ -324,7 +338,10 @@ export async function find(
         .from(jobs)
         .where(and(eq(jobs.id, jobId), eq(jobs.ownerId, ownerId)));
 
-    if (!candidate) throw new TextsAiError('generation_job_not_found');
+    if (!candidate) {
+        throw new TextsAiError('generation_job_not_found');
+    }
+
     // Reading or stopping an existing job must survive edits to its destination
     // Text. Knowledge-backed jobs still require their current source grant.
     await authorizeTextsJob(tx, {
@@ -353,10 +370,13 @@ export async function get(
 
     return transaction(persistence, async (tx) => {
         const job = await find(persistence, tx, ownerId, jobId);
-        if (job.format === 'text-translation:v4')
+        if (job.format === 'text-translation:v4') {
             throw new TextsAiError('generation_job_not_found');
-        if (job.expiresAt <= context.now)
+        }
+
+        if (job.expiresAt <= context.now) {
             throw new TextsAiError('generation_proposal_expired');
+        }
 
         return withActionBilling(
             tx,
@@ -377,10 +397,17 @@ export async function cancel(
 
     return transaction(persistence, async (tx) => {
         const job = await find(persistence, tx, ownerId, jobId);
-        if (job.format === 'text-translation:v4')
+        if (job.format === 'text-translation:v4') {
             throw new TextsAiError('generation_job_not_found');
-        if (job.expiresAt <= context.now && job.executionState === 'completed')
+        }
+
+        if (
+            job.expiresAt <= context.now &&
+            job.executionState === 'completed'
+        ) {
             throw new TextsAiError('generation_proposal_expired');
+        }
+
         if (
             job.executionState === 'queued' ||
             job.executionState === 'running'
@@ -437,17 +464,24 @@ export async function valid(
     job: TextsJobRow,
     now: Date,
 ) {
-    if (job.expiresAt <= now) return 'generation_proposal_expired';
-    if (!job.inputPayload) return 'stale_content';
+    if (job.expiresAt <= now) {
+        return 'generation_proposal_expired';
+    }
+
+    if (!job.inputPayload) {
+        return 'stale_content';
+    }
+
     try {
         await authorizeTextsJob(tx, job);
 
         return null;
     } catch (error) {
-        if (error instanceof TextsAiError)
+        if (error instanceof TextsAiError) {
             return error.code === 'version_conflict'
                 ? 'stale_content'
                 : 'access_revoked';
+        }
 
         throw error;
     }
@@ -503,7 +537,10 @@ export async function lockJob(
         .from(jobs)
         .where(eq(jobs.id, lease.jobId));
 
-    if (!candidate) return null;
+    if (!candidate) {
+        return null;
+    }
+
     const invalid = await valid(persistence, tx, candidate, now);
     const [job] = await tx
         .select()
@@ -511,7 +548,9 @@ export async function lockJob(
         .where(eq(jobs.id, lease.jobId))
         .for('update');
 
-    if (!job || !owned(job, lease, now)) return null;
+    if (!job || !owned(job, lease, now)) {
+        return null;
+    }
 
     return { job, invalid };
 }

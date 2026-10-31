@@ -85,6 +85,7 @@ function structured(
             try {
                 schema.parse(value);
                 validate?.(value);
+
                 return true;
             } catch {
                 return false;
@@ -200,8 +201,9 @@ export function createTextAiSyntheticFlows(): Record<
                     rows.length !== 1 ||
                     rows[0]?.rowIndex !== 0 ||
                     rows[0]?.input !== 'book'
-                )
+                ) {
                     throw new Error('Synthetic row identity mismatch.');
+                }
             },
         );
     const flows: Record<TextAiFlowId, TextAiSyntheticFlow> = {
@@ -239,8 +241,9 @@ export function createTextAiSyntheticFlows(): Record<
                     rows[0]?.rowIndex !== 0 ||
                     rows[0]?.source !== 'book' ||
                     rows[0]?.translation !== 'libro'
-                )
+                ) {
                     throw new Error('Synthetic imported pair mismatch.');
+                }
             },
         ),
         'sentence-generation': structured(
@@ -312,8 +315,9 @@ export function createTextAiSyntheticFlows(): Record<
                     result.translation.length !== 1 ||
                     result.translation[0]?.pairId !==
                         '00000000-0000-4000-8000-000000000003'
-                )
+                ) {
                     throw new Error('Synthetic text alignment mismatch.');
+                }
             },
         ),
         'text-selection-card': structured(
@@ -356,15 +360,21 @@ export function createTextAiSyntheticFlows(): Record<
             PortraitInterviewerOutputSchema,
             (value) => {
                 const result = PortraitInterviewerOutputSchema.parse(value);
-                if (result.proposedItems)
+                if (result.proposedItems) {
                     validateReusablePortraitItems(result.proposedItems);
+                }
             },
         ),
     };
+
     // Adding a registered flow without its real check contract must fail closed.
     for (const id of TextAiFlowIdSchema.options) {
-        if (!flows[id]) throw new Error('Missing synthetic flow contract.');
+        if (!flows[id]) {
+            throw new Error('Missing synthetic flow contract.');
+        }
+
         flows[id].validationRevision = textAiSyntheticValidationRevisions[id];
     }
+
     return flows;
 }

@@ -24,8 +24,10 @@ describe('DictionaryGenerationService batch dispatch', () => {
             'provider_timeout',
             'provider_rate_limited',
             'ocr_failed',
-        ] as const)
+        ] as const) {
             expect(isDictionaryGenerationFailureRetryable(code)).toBe(true);
+        }
+
         for (const code of [
             'malware_detected',
             'invalid_document',
@@ -38,8 +40,9 @@ describe('DictionaryGenerationService batch dispatch', () => {
             'internal_error',
             'scan_failed',
             'cleanup_failed',
-        ] as const)
+        ] as const) {
             expect(isDictionaryGenerationFailureRetryable(code)).toBe(false);
+        }
     });
 
     it('retries selected document proposal failures as a pasted successor', async () => {
@@ -229,6 +232,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
             pastedTermsGeneration: { available: true },
             singleCardGeneration: { available: false },
         });
+
         await service.enqueuePastedTerms(
             'token',
             'batch-idempotency-key',
@@ -241,6 +245,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
             },
             requestContext,
         );
+
         expect(enqueuePastedTerms).toHaveBeenCalledWith(
             expect.objectContaining({
                 dictionaryId: 'dictionary-id',
@@ -291,6 +296,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
             '30000000-0000-4000-8000-000000000002',
             '30000000-0000-4000-8000-000000000001',
         ];
+
         await service.regenerateCardAuthoring(
             'token',
             'prior-job-id',
@@ -325,6 +331,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
             },
             requestContext,
         );
+
         expect(enqueueCardAuthoring).toHaveBeenCalledWith(
             expect.objectContaining({
                 predecessor: {
@@ -418,6 +425,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
         const selected: Array<{ candidate: never; rowIndex: number }> = [];
         const acceptBatch = vi.fn(async (input) => {
             selected.push(...input.selected);
+
             return { job: {}, outcome: {} };
         });
         const candidate = {
@@ -480,6 +488,7 @@ describe('DictionaryGenerationService batch dispatch', () => {
             },
             requestContext,
         );
+
         expect(selected.map((row) => row.rowIndex)).toEqual([2, 8]);
         expect(acceptBatch).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -9,6 +9,7 @@ const title = z
     .refine(
         (value) => !/[\uD800-\uDFFF]/u.test(value) && !value.includes('\u0000'),
     );
+
 export const WorkbookIdParamsSchema = z
     .object({ workbookId: z.uuid() })
     .strict();

@@ -18,9 +18,12 @@ export function TextsAuthBoundary({
     const { t, href } = useI18n();
     const login = href(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     useEffect(() => {
-        if (status === 'signed-out') router.replace(login);
+        if (status === 'signed-out') {
+            router.replace(login);
+        }
     }, [status, router, login]);
-    if (status !== 'authenticated')
+
+    if (status !== 'authenticated') {
         return (
             <div>
                 <LoadingState>{t('texts.manage.loading')}</LoadingState>
@@ -29,5 +32,7 @@ export function TextsAuthBoundary({
                 )}
             </div>
         );
+    }
+
     return children;
 }

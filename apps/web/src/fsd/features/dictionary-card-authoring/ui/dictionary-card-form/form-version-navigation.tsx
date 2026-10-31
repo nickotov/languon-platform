@@ -16,7 +16,9 @@ export function FormVersionNavigation({
 }) {
     const { t } = useI18n();
 
-    if (total < 2) return null;
+    if (total < 2) {
+        return null;
+    }
 
     function previousVersion() {
         onChange(current - 1);

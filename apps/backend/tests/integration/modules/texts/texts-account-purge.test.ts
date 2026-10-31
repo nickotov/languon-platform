@@ -39,6 +39,7 @@ async function seed() {
         ownSelection = randomUUID(),
         dictionary = randomUUID(),
         card = randomUUID();
+
     await client`insert into users(id,status) values(${owner},'deletion_pending'),(${reader},'active')`;
     await client`insert into dictionary_ai_configuration_revisions(id,version,created_by_user_id,catalog_snapshot) values(${revision},1,${reader},'{}')`;
     await client`insert into text_folders(id,owner_id,name,created_at,updated_at) values(${folder},${owner},'Private folder',${now.toISOString()},${now.toISOString()}),(${copiedFolder},${reader},'Independent copy',${now.toISOString()},${now.toISOString()})`;
@@ -58,6 +59,7 @@ async function seed() {
             await tx`insert into dictionary_text_selection_jobs(id,owner_id,source_owner_id,operation_id,request_hash,execution_state,input_payload,source_authority,target,selected_execution_snapshot,execution_revision_id,expires_at,provider_input_cost_micros_per_million_tokens,provider_output_cost_micros_per_million_tokens,provider_reserved_cost_micros,provider_reserved_input_tokens,provider_reserved_output_tokens,provider_max_cost_micros_per_attempt,provider_max_input_tokens_per_attempt,provider_max_output_tokens_per_attempt) values(${jobId},${actorId},${owner},${randomUUID()},'fingerprint','queued','{"source":"article"}','{"kind":"text"}','{"kind":"existing"}','{}',${revision},${new Date(now.getTime() + 86_400_000).toISOString()},0,0,10,100,100,10,100,100)`;
         }
     });
+
     return {
         owner,
         reader,
@@ -71,6 +73,7 @@ async function seed() {
         card,
     };
 }
+
 async function settle(ids: Awaited<ReturnType<typeof seed>>) {
     // Fixtures represent normally worker-settled outcomes; the deletion participant
     // itself is never permitted to synthesize cancellation or billing settlement.
@@ -84,37 +87,46 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         }, 120000);
+
         afterAll(async () => {
             await client?.end();
         });
+
         it('flags own and foreign source-dependent work, blocks purge, and leaves settlement to workers', async () => {
             const ids = await seed();
             await database().transaction((tx) =>
                 requestTextsCancellation(tx, ids.owner, now),
             );
+
             const jobs =
                 await client`select execution_state,cancellation_requested_at,provider_reservation_state from texts_ai_jobs union all select execution_state,cancellation_requested_at,provider_reservation_state from dictionary_text_selection_jobs`;
+
             expect(jobs).toHaveLength(3);
-            for (const job of jobs)
+            for (const job of jobs) {
                 expect(job).toMatchObject({
                     execution_state: 'queued',
                     provider_reservation_state: 'active',
                     cancellation_requested_at: expect.any(String),
                 });
+            }
+
             expect(
                 await database().transaction((tx) =>
                     textsDeletionBusy(tx, ids.owner),
                 ),
             ).toBe(true);
+
             await expect(
                 database().transaction((tx) =>
                     eraseTextsOwnedContent(tx, ids.owner, now),
                 ),
             ).rejects.toThrow('not quiescent');
+
             await client`update users set status='deletion_pending' where id=${ids.owner}`;
             await client`insert into account_deletion_requests(user_id,state,scheduled_at,purge_at,next_attempt_at,lease_deadline,lease_worker_id,fencing_token,updated_at) values(${ids.owner},'running',clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '1 minute',clock_timestamp()-interval '1 minute',clock_timestamp()+interval '5 minutes','texts-busy-purge',1,clock_timestamp())`;
             expect(
@@ -128,6 +140,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                 ).activeJobs,
             ).toBeGreaterThan(0);
+
             await client`update texts_ai_jobs set execution_state='cancelled',completed_at=${now.toISOString()},input_payload=null where id=${ids.ownJob}`;
             await client`update dictionary_text_selection_jobs set execution_state='completed',input_payload=null,source_authority=null,target=null where id in (${ids.foreignJob},${ids.ownSelection})`;
             expect(
@@ -135,6 +148,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     textsDeletionBusy(tx, ids.owner),
                 ),
             ).toBe(true);
+
             // Even terminal jobs keep purge blocked until provider accounting settles.
             await settle(ids);
             expect(
@@ -143,6 +157,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toBe(false);
         });
+
         it('archives numerical usage and erases owned content under the purge role while retaining independent copies/cards', async () => {
             const ids = await seed();
             await settle(ids);
@@ -153,17 +168,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
                 'utf8',
             );
+
             await client.unsafe(
                 `do $$ begin if not exists(select 1 from pg_roles where rolname='${role}') then create role ${role} nologin; end if; end $$;`,
             );
+
             for (const statement of roleSql
                 .replace(/^\\set.*$/gm, '')
                 .replace(/^--.*$/gm, '')
                 .replaceAll(':"account_purge_role"', `"${role}"`)
                 .split(';')
                 .map((part) => part.trim())
-                .filter(Boolean))
+                .filter(Boolean)) {
                 await client.unsafe(statement);
+            }
+
             await expect(
                 database().transaction(async (tx) => {
                     await tx.execute(sql.raw(`set local role ${role}`));
@@ -172,6 +191,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     );
                 }),
             ).rejects.toThrow();
+
             await expect(
                 database().transaction(async (tx) => {
                     await tx.execute(sql.raw(`set local role ${role}`));
@@ -180,12 +200,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     );
                 }),
             ).rejects.toThrow();
+
             await database().transaction(async (tx) => {
                 await tx.execute(sql.raw(`set local role ${role}`));
                 await eraseTextsOwnedContent(tx, ids.owner, now);
             });
+
             const archived =
                 await client`select actual_cost_micros,actual_input_tokens,actual_output_tokens from dictionary_generation_provider_usage_archive where id=${ids.ownJob}`;
+
             expect(archived).toEqual([
                 {
                     actual_cost_micros: 7,
@@ -193,6 +216,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     actual_output_tokens: 30,
                 },
             ]);
+
             for (const table of [
                 'texts_ai_jobs',
                 'dictionary_text_selection_jobs',
@@ -209,12 +233,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ).toHaveLength(0);
             }
+
             expect(
                 await client`select 1 from texts where id=${ids.copiedText}`,
             ).toHaveLength(1);
+
             expect(
                 await client`select 1 from dictionary_cards where id=${ids.card}`,
             ).toHaveLength(1);
+
             expect(
                 await client`select source_owner_id,dictionary_id,card_id from dictionary_text_selection_jobs where id=${ids.foreignJob}`,
             ).toEqual([
@@ -224,11 +251,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     card_id: ids.card,
                 },
             ]);
+
             await client`insert into account_deletion_requests(user_id,state,scheduled_at,updated_at,purge_at,next_attempt_at,lease_worker_id,lease_deadline,fencing_token) values(${ids.owner},'running',${new Date(now.getTime() - 30 * 86_400_000).toISOString()},${now.toISOString()},${now.toISOString()},${now.toISOString()},'texts-purge-worker',${new Date(now.getTime() + 60_000).toISOString()},1)`;
             const restricted = createPostgresClient({
                 databaseUrl: getTestDatabaseUrl(),
                 maxConnections: 1,
             });
+
             try {
                 await restricted.unsafe(`set role ${role}`);
                 expect(
@@ -245,6 +274,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await restricted.unsafe('reset role');
                 await restricted.end();
             }
+
             expect(
                 await client`select status from users where id=${ids.owner}`,
             ).toEqual([{ status: 'purged' }]);

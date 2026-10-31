@@ -45,7 +45,9 @@ const DialogContext = createContext<{ onClose(): void } | null>(null);
 export function useDialog() {
     const context = useContext(DialogContext);
 
-    if (!context) throw new Error('useDialog must be used within a Dialog');
+    if (!context) {
+        throw new Error('useDialog must be used within a Dialog');
+    }
 
     return context;
 }
@@ -100,18 +102,29 @@ export function Dialog({
     useLayoutEffect(() => {
         const dialog = ref.current;
 
-        if (!dialog) return;
+        if (!dialog) {
+            return;
+        }
+
         closingNative.current = false;
         const opener = document.activeElement;
 
-        if (open && !dialog.open) dialog.showModal();
+        if (open && !dialog.open) {
+            dialog.showModal();
+        }
 
-        if (!open && dialog.open) dialog.close();
+        if (!open && dialog.open) {
+            dialog.close();
+        }
+
         // Close while the native node is still connected so the browser can
         // restore its opener before React removes the controlled dialog.
         return () => {
             closingNative.current = true;
-            if (dialog.open) dialog.close();
+            if (dialog.open) {
+                dialog.close();
+            }
+
             // React can detach the focused dialog child before native close.
             // Restore the captured opener after that commit, unless reopened.
             queueMicrotask(() => {
@@ -119,13 +132,16 @@ export function Dialog({
                     !ref.current?.open &&
                     opener instanceof HTMLElement &&
                     opener.isConnected
-                )
+                ) {
                     opener.focus();
+                }
             });
         };
     }, [open]);
 
-    if (!open) return null;
+    if (!open) {
+        return null;
+    }
 
     return (
         <DialogContext.Provider value={{ onClose }}>
@@ -150,15 +166,18 @@ export function Dialog({
                 onCancel={(event) => {
                     event.preventDefault();
 
-                    if (canDismissWithEscape) onClose();
+                    if (canDismissWithEscape) {
+                        onClose();
+                    }
                 }}
                 onClick={(event) => {
                     if (
                         dismissible &&
                         dismissOnOverlayClick &&
                         event.target === event.currentTarget
-                    )
+                    ) {
                         onClose();
+                    }
                 }}
                 onClose={(event) => {
                     // Native close events are queued. Ignore cleanup events
@@ -169,8 +188,9 @@ export function Dialog({
                         open &&
                         dismissible &&
                         !closingNative.current
-                    )
+                    ) {
                         onClose();
+                    }
                 }}
                 ref={ref}
                 role={role}

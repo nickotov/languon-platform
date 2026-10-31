@@ -25,21 +25,27 @@ if (
     process.env.APP_ENV !== 'test' ||
     process.env.ADMIN_E2E_SPEECH_FIXTURES !== 'true' ||
     !url
-)
+) {
     throw new Error('Explicit test-only speech fixture opt-in is required.');
+}
+
 const target = new URL(url);
 if (
     !['localhost', '127.0.0.1'].includes(target.hostname) ||
     !/(?:admin.*e2e|e2e.*admin).*test/i.test(target.pathname) ||
     !target.port ||
     target.port === '5432'
-)
+) {
     throw new Error(
         'A dedicated disposable loopback admin E2E database on a nondefault port is required.',
     );
+}
+
 const [mode, actorId, value, cardId] = process.argv.slice(2);
-if (!actorId || !/^[0-9a-f-]{36}$/i.test(actorId))
+if (!actorId || !/^[0-9a-f-]{36}$/i.test(actorId)) {
     throw new Error('A fixture actor UUID is required.');
+}
+
 const fixtureActorId: string = actorId;
 const client = createPostgresClient({ databaseUrl: url, maxConnections: 2 });
 const database = createDrizzleDatabase(client, databaseSchema);
@@ -66,18 +72,21 @@ const service = new SpeechService({
     storage,
     burstLimiter: { consume: async () => ({ allowed: true }) },
 });
+
 /** Seed only the operator prerequisites for this synthetic Free fixture. */
 async function seedSpeechAccounting() {
     await database.transaction(async (tx) => {
         await tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended('admin-speech-fixture-accounting',0))`,
         );
+
         const at = new Date('2026-01-01T00:00:00.000Z');
         const [settings] = await tx
             .select()
             .from(accountingSettings)
             .orderBy(desc(accountingSettings.version))
             .limit(1);
+
         if (
             !settings?.maxProviderCostUsdPerAction ||
             !settings.maxProviderCostUsdPerAccountDay ||
@@ -95,6 +104,7 @@ async function seedSpeechAccounting() {
                 reason: 'Synthetic admin speech operator allowances',
             });
         }
+
         const [price] = await tx
             .select()
             .from(providerPrices)
@@ -107,7 +117,8 @@ async function seedSpeechAccounting() {
             )
             .orderBy(desc(providerPrices.version))
             .limit(1);
-        if (!price)
+
+        if (!price) {
             await tx.insert(providerPrices).values({
                 id: randomUUID(),
                 providerId: 'fixture',
@@ -131,6 +142,7 @@ async function seedSpeechAccounting() {
                     reason: 'Synthetic reviewed pronunciation provider price',
                 },
             });
+        }
     });
 }
 
@@ -186,13 +198,16 @@ async function createSavedSource(text: string, label: string) {
         cardId: created.card.id,
         field: 'source',
     };
+
     return { dictionary, created, source };
 }
 
 try {
     if (mode === 'seed') {
-        if (!value || !/^[a-zA-Z0-9-]{1,80}$/.test(value))
+        if (!value || !/^[a-zA-Z0-9-]{1,80}$/.test(value)) {
             throw new Error('Synthetic fixture run ID is required.');
+        }
+
         await seedSpeechAccounting();
         const text = `bonjour ${value}`;
         const { dictionary, created, source } = await createSavedSource(
@@ -203,31 +218,40 @@ try {
             source,
             operationId: randomUUID(),
         });
-        if (!response.requestId || response.state !== 'queued')
+
+        if (!response.requestId || response.state !== 'queued') {
             throw new Error('Fixture did not admit free pronunciation.');
+        }
+
         const worker = new SpeechWorker({
             store,
             storage,
             providers: new Map([[provider.configurationId, provider]]),
         });
+
         for (let i = 0; i < 5; i++) {
             await worker.runOnce();
             if (
                 (await service.status(actorId, response.requestId)).state ===
                 'ready'
-            )
+            ) {
                 break;
+            }
         }
+
         const [binding] = await database
             .select()
             .from(speechBindingsTable)
             .where(eq(speechBindingsTable.id, response.requestId));
+
         if (
             !binding ||
             (await service.status(actorId, response.requestId)).state !==
                 'ready'
-        )
+        ) {
             throw new Error('Synthetic pronunciation did not become ready.');
+        }
+
         console.log(
             JSON.stringify({
                 recordingId: binding.recordingId,
@@ -237,10 +261,12 @@ try {
             }),
         );
     } else if (mode === 'join') {
-        if (!value || !cardId)
+        if (!value || !cardId) {
             throw new Error(
                 'Fixture dictionary and card identifiers are required.',
             );
+        }
+
         const original: SpeechSource = {
             kind: 'dictionary-field',
             access: { kind: 'owner', dictionaryId: value },
@@ -252,6 +278,7 @@ try {
             resolved.text,
             `join-${randomUUID()}`,
         );
+
         if (
             (
                 await service.prepare(actorId, {
@@ -259,26 +286,34 @@ try {
                     operationId: randomUUID(),
                 })
             ).state !== 'ready'
-        )
+        ) {
             throw new Error('Joining fixture did not reuse saved audio.');
+        }
+
         console.log(JSON.stringify({ joined: true }));
     } else if (mode === 'assert-deleted') {
         const [recording] = await database
             .select()
             .from(speechRecordingsTable)
             .where(eq(speechRecordingsTable.id, value!));
+
         if (
             !recording ||
             recording.state !== 'deleted' ||
             recording.text !== '' ||
             (await storage.read(recording.storage))
-        )
+        ) {
             throw new Error('Deleted fixture retained text or audio.');
+        }
+
         const audit = await database.execute(
             sql`select id from admin_audit_events where actor_user_id=${actorId} and action='speech_recordings_deleted' and metadata->'recordingIds' @> ${JSON.stringify([value])}::jsonb`,
         );
-        if (audit.length === 0)
+
+        if (audit.length === 0) {
             throw new Error('Fixture removal lacks an audit event.');
+        }
+
         console.log(
             JSON.stringify({
                 deleted: true,
@@ -287,7 +322,9 @@ try {
                 audited: true,
             }),
         );
-    } else throw new Error('Unsupported fixture operation.');
+    } else {
+        throw new Error('Unsupported fixture operation.');
+    }
 } finally {
     await client.end();
 }

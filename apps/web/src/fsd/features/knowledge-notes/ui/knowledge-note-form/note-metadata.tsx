@@ -40,13 +40,16 @@ export function NoteMetadata({
                 value: language.tag,
                 label: language.displayNames[locale],
             })) ?? [];
+
         for (const language of [
             value.studiedLanguage,
             value.explanationLanguage,
         ]) {
-            if (language && !choices.some((item) => item.value === language))
+            if (language && !choices.some((item) => item.value === language)) {
                 choices.push({ value: language, label: language });
+            }
         }
+
         return [{ value: '', label: '—' }, ...choices];
     }, [
         languages.data,
@@ -54,21 +57,26 @@ export function NoteMetadata({
         value.studiedLanguage,
         value.explanationLanguage,
     ]);
+
     function changeSummary(event: ChangeEvent<HTMLTextAreaElement>) {
         const summary = event.target.value;
         onChange((current) => ({ ...current, summary }));
     }
+
     function changeStudied(event: ChangeEvent<HTMLSelectElement>) {
         const studiedLanguage = event.target.value || null;
         onChange((current) => ({ ...current, studiedLanguage }));
     }
+
     function changeExplanation(event: ChangeEvent<HTMLSelectElement>) {
         const explanationLanguage = event.target.value || null;
         onChange((current) => ({ ...current, explanationLanguage }));
     }
+
     function changeCategories(categories: KnowledgeCategory[]) {
         onChange((current) => ({ ...current, categories }));
     }
+
     const summaryField = (
         <Textarea
             label={t('knowledge.summary')}
@@ -122,7 +130,8 @@ export function NoteMetadata({
         .filter(Boolean)
         .map((tag) => options.find((option) => option.value === tag)?.label)
         .join(' → ');
-    if (workspace)
+
+    if (workspace) {
         return (
             <WorkspaceProperties
                 languages={languageSummary}
@@ -133,6 +142,8 @@ export function NoteMetadata({
                 languageFields={languageFields}
             />
         );
+    }
+
     return (
         <div className={styles.legacyFields}>
             {summaryField}

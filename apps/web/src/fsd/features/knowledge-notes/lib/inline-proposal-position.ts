@@ -13,5 +13,6 @@ export function inlineProposalPosition(
             root.width - width + 8 * unit,
         ),
     );
+
     return { top: last.bottom - root.top + 8 * unit, left, width };
 }

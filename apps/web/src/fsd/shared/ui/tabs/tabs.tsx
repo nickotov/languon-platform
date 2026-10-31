@@ -79,7 +79,9 @@ export function Tabs({
         .map((item) => item.value);
 
     const select = (next: string) => {
-        if (value === undefined) setInternalValue(next);
+        if (value === undefined) {
+            setInternalValue(next);
+        }
 
         onValueChange?.(next);
     };
@@ -88,8 +90,9 @@ export function Tabs({
         if (
             !['ArrowLeft', 'ArrowRight', 'End', 'Home'].includes(event.key) ||
             enabled.length === 0
-        )
+        ) {
             return;
+        }
 
         event.preventDefault();
 
@@ -115,7 +118,9 @@ export function Tabs({
 
         const nextValue = enabled[next];
 
-        if (!nextValue) return;
+        if (!nextValue) {
+            return;
+        }
 
         select(nextValue);
 

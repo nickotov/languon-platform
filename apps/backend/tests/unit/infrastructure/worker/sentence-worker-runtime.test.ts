@@ -17,7 +17,9 @@ function fixture(
 ) {
     const model = textAiModelCatalog[providerIndex]!;
     const onProviderFailure = vi.fn((_event: unknown) => {
-        if (observerThrows) throw new Error('Observer failed');
+        if (observerThrows) {
+            throw new Error('Observer failed');
+        }
     });
     const job: ClaimedSentenceJob = {
         kind: 'sentence-check',
@@ -95,14 +97,18 @@ function fixture(
                 ? 'https://api.kie.ai/gemini-2.5-pro/v1/chat/completions'
                 : 'https://api.deepseek.com/chat/completions',
         );
+
         expect(init?.method).toBe('POST');
         expect(JSON.parse(String(init?.body))).toMatchObject({
             model: model.id,
             max_tokens: model.perCallMaxOutputTokens,
         });
+
         transportSignal = init?.signal ?? undefined;
+
         return response;
     });
+
     vi.stubGlobal('fetch', fetch);
     const service = createSentenceWorkerRuntime({
         store,
@@ -166,6 +172,7 @@ function fixture(
                 { headers: { 'Content-Type': 'application/json' } },
             ),
         );
+
         await vi.advanceTimersByTimeAsync(0);
     }
 
@@ -198,6 +205,7 @@ describe('production sentence worker execution deadline', () => {
                     ),
                 ms,
             );
+
             return controller.signal;
         });
     });
@@ -220,6 +228,7 @@ describe('production sentence worker execution deadline', () => {
             30_000,
             expect.any(Object),
         );
+
         await f.respond();
         await expect(f.run).resolves.toBe(true);
         expect(f.store.completeCheck).toHaveBeenCalledOnce();
@@ -227,6 +236,7 @@ describe('production sentence worker execution deadline', () => {
             feedback: { percentage: 100 },
             usage: { inputTokens: 100, outputTokens: 20 },
         });
+
         expect(f.store.fail).not.toHaveBeenCalled();
         expect(f.fetch).toHaveBeenCalledOnce();
     });
@@ -242,6 +252,7 @@ describe('production sentence worker execution deadline', () => {
                 code: 'model_unavailable',
                 retryAt: null,
             });
+
             expect(f.onProviderFailure).not.toHaveBeenCalled();
             expect(f.fetch).not.toHaveBeenCalled();
         },
@@ -282,6 +293,7 @@ describe('production sentence worker execution deadline', () => {
         expect(f.store.fail.mock.calls[0]?.[1]).toMatchObject({
             code: 'provider_timeout',
         });
+
         await f.respond();
         expect(f.store.completeCheck).not.toHaveBeenCalled();
         expect(f.fetch).toHaveBeenCalledOnce();
@@ -294,6 +306,7 @@ describe('production sentence worker execution deadline', () => {
             owned: true,
             cancellationRequested: true,
         });
+
         await vi.advanceTimersByTimeAsync(10_000);
         await f.run;
         expect(f.signal()?.aborted).toBe(true);
@@ -310,6 +323,7 @@ describe('production sentence worker execution deadline', () => {
             owned: false,
             cancellationRequested: false,
         });
+
         f.store.fail.mockResolvedValue('lost');
         await vi.advanceTimersByTimeAsync(10_000);
         await f.run;
@@ -319,6 +333,7 @@ describe('production sentence worker execution deadline', () => {
             expect.objectContaining({ retryAt: null }),
             expect.any(Object),
         );
+
         await f.respond();
         expect(f.store.completeCheck).not.toHaveBeenCalled();
         expect(f.fetch).toHaveBeenCalledOnce();
@@ -338,6 +353,7 @@ describe('production sentence worker execution deadline', () => {
             'worker',
             expect.any(Object),
         );
+
         expect(f.fetch).toHaveBeenCalledOnce();
     });
 });

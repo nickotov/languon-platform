@@ -31,6 +31,7 @@ it('renders validated Tiptap text and safe links without interpreting stored mar
     const html = renderToStaticMarkup(
         <KnowledgeBody body={body} language='ja' />,
     );
+
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).not.toContain('<img');
     expect(html).toContain('href="https://example.org/word"');

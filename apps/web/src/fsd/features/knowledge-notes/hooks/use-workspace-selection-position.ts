@@ -11,10 +11,16 @@ export function useWorkspaceSelectionPosition(
     useLayoutEffect(() => {
         const bubble = ref.current;
         const root = bubble?.parentElement;
-        if (!bubble || !root) return;
+        if (!bubble || !root) {
+            return;
+        }
+
         const scroll = root.closest<HTMLElement>('[data-workspace-scroll]');
         function position() {
-            if (!bubble || !root || editor.isDestroyed) return;
+            if (!bubble || !root || editor.isDestroyed) {
+                return;
+            }
+
             const selection = editor.state.selection;
             const start = editor.view.coordsAtPos(selection.from);
             const end = editor.view.coordsAtPos(selection.to);
@@ -46,10 +52,12 @@ export function useWorkspaceSelectionPosition(
                     '(max-width: 767px), (pointer: coarse)',
                 ).matches,
             });
+
             bubble.style.left = `${result.left}px`;
             bubble.style.top = `${result.top}px`;
             bubble.style.visibility = result.visible ? 'visible' : 'hidden';
         }
+
         position();
         scroll?.addEventListener('scroll', position, { passive: true });
         window.addEventListener('resize', position);
@@ -59,8 +67,10 @@ export function useWorkspaceSelectionPosition(
             typeof ResizeObserver === 'undefined'
                 ? null
                 : new ResizeObserver(position);
+
         observer?.observe(root);
         observer?.observe(bubble);
+
         return () => {
             scroll?.removeEventListener('scroll', position);
             window.removeEventListener('resize', position);

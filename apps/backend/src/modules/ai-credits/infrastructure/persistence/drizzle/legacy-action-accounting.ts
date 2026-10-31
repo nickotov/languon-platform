@@ -77,10 +77,12 @@ export async function prepareLegacyAction(
     if (
         funding === 'customer' &&
         snapshot.routingAuthority?.tariffPublished === false
-    )
+    ) {
         throw new ProviderCostAdmissionUnavailableError(
             'A reviewed flow tariff is required for paid generation.',
         );
+    }
+
     const preference = await ensureActionBudgetDefault(tx, ownerId, at);
     const settings = await capability.settings();
     const budget = preference?.maxCreditsPerAction ?? null;
@@ -88,10 +90,12 @@ export async function prepareLegacyAction(
         !settings.maxProviderCostUsdPerAction ||
         !settings.maxProviderCostUsdPerAccountDay ||
         !settings.maxProviderCostUsdPerDay
-    )
+    ) {
         throw new OperatorBudgetUnavailableError(
             'Operator spending limits must be configured.',
         );
+    }
+
     const zeroCustomerTariff =
         snapshot.creditPricing &&
         [
@@ -101,10 +105,12 @@ export async function prepareLegacyAction(
                 snapshot.creditPricing.inputCreditsPerMillionTokens,
         ].every((rate) => rate === 0);
 
-    if (funding === 'customer' && !budget && !zeroCustomerTariff)
+    if (funding === 'customer' && !budget && !zeroCustomerTariff) {
         throw new OperatorBudgetUnavailableError(
             'An action budget must be configured.',
         );
+    }
+
     const pinnedCandidate = snapshot.routingAuthority?.candidates.find(
         (candidate) =>
             candidate.routeId === `${snapshot.providerId}/${snapshot.modelId}`,
@@ -118,12 +124,15 @@ export async function prepareLegacyAction(
             at,
         }));
 
-    if (!price)
+    if (!price) {
         throw new ProviderCostAdmissionUnavailableError(
             'Reviewed provider pricing is required before paid generation.',
         );
-    if (!snapshot.creditPricing)
+    }
+
+    if (!snapshot.creditPricing) {
         throw new Error('Action customer tariff is missing.');
+    }
 
     return {
         ...snapshot,
@@ -169,8 +178,10 @@ export async function reserveLegacyAction(
         policy.version !== input.snapshot.actionPolicyVersion ||
         (policy.funding === 'operator') !==
             (input.snapshot.actionFunding === 'operator')
-    )
+    ) {
         throw new Error('Action funding policy changed before admission.');
+    }
+
     const tariff = input.snapshot.creditPricing!;
     const actionTariff = {
         inputCreditsPerMillionTokens: String(
@@ -194,8 +205,10 @@ export async function reserveLegacyAction(
             input.holdMaximumInputTokens < 0 ||
             input.holdMaximumInputTokens >
                 input.snapshot.aggregateBudget.maxInputTokensPerAttempt)
-    )
+    ) {
         throw new Error('Invalid aggregate action input allowance.');
+    }
+
     const maximum = roundActionChargeMilli(
         maximumActionChargeNumerator(
             {
@@ -282,8 +295,10 @@ export async function admitLegacyAttempt(
         at: Date;
     },
 ) {
-    if (input.attempt > 2)
+    if (input.attempt > 2) {
         throw new Error('Action safe attempt limit reached.');
+    }
+
     // This is an execution ceiling enforced by provider preflight, rather than an exact tokenizer claim.
     const inputLimit = Math.min(
         input.budget.maxInputTokensPerAttempt,
@@ -301,8 +316,10 @@ export async function admitLegacyAttempt(
             ),
         );
 
-    if (previous)
+    if (previous) {
         throw new Error('Provider attempt cannot be dispatched twice.');
+    }
+
     try {
         const attempt = await new DrizzleActionAccountingParticipant(
             tx,
@@ -341,8 +358,9 @@ export async function admitLegacyAttempt(
                     'Action call limit reached.',
                     'Action operator execution allowance exceeded.',
                 ].includes(error.message))
-        )
+        ) {
             return null;
+        }
 
         throw error;
     }
@@ -375,20 +393,25 @@ export async function recordLegacyAttempt(
             ),
         );
 
-    if (!attempt) return;
+    if (!attempt) {
+        return;
+    }
+
     let usage: ProviderTokenUsage | undefined;
-    if (!input.dispatched) usage = { inputTokens: 0, outputTokens: 0 };
-    else if (input.usage) {
+    if (!input.dispatched) {
+        usage = { inputTokens: 0, outputTokens: 0 };
+    } else if (input.usage) {
         try {
             usage = readProviderTokenUsage(input.usage, {
                 maxInputTokens: attempt.inputLimit,
                 maxOutputTokens: attempt.outputLimit,
             });
         } catch {
-            if (input.successful)
+            if (input.successful) {
                 throw new Error(
                     'Provider usage exceeds admitted action allowance.',
                 );
+            }
         }
     }
 
@@ -400,7 +423,10 @@ export async function recordLegacyAttempt(
     const actualPrice =
         dispatch?.providerPrice ?? input.snapshot.actionProviderPrice;
 
-    if (attempt.state === 'settled' && !actualPrice?.nativeRules) return;
+    if (attempt.state === 'settled' && !actualPrice?.nativeRules) {
+        return;
+    }
+
     const measured = usage !== undefined;
     const expense = !input.dispatched
         ? 0n
@@ -471,7 +497,9 @@ export async function admittedLegacyExecution<
             ),
         );
 
-    if (!receipt) throw new Error('Admitted provider receipt is missing.');
+    if (!receipt) {
+        throw new Error('Admitted provider receipt is missing.');
+    }
 
     return {
         ...snapshot,

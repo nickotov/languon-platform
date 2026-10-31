@@ -30,6 +30,7 @@ describe('audio grants for prepared and unprepared blocks', () => {
                 ],
             },
         });
+
         expect(knowledgeAudioAssetIds(body)).toEqual([assetId]);
     });
 });

@@ -3,6 +3,7 @@ import { useTranslate } from '@refinedev/core';
 
 export function PaymentFields() {
     const t = useTranslate();
+
     return (
         <>
             <Form.Item

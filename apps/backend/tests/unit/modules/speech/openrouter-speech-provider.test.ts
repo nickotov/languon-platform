@@ -25,6 +25,7 @@ function mp3(): Uint8Array {
     // Complete MPEG-1 Layer III frame: 128kbps, 44.1kHz, 1152 samples.
     const bytes = new Uint8Array(417);
     bytes.set([0xff, 0xfb, 0x90, 0]);
+
     return bytes;
 }
 
@@ -58,6 +59,7 @@ function setup(
             requestId: 'local-job-1',
             ...overrides,
         });
+
     return { provider, request, submit };
 }
 
@@ -77,6 +79,7 @@ describe('OpenRouterSpeechProvider', () => {
                 accept: 'audio/mpeg',
             },
         });
+
         expect(JSON.parse(init!.body as string)).toEqual({
             model: 'elevenlabs/eleven-v4-turbo',
             input: 'Private saved phrase.',
@@ -88,6 +91,7 @@ describe('OpenRouterSpeechProvider', () => {
                 options: { elevenlabs: { language_code: 'en' } },
             },
         });
+
         expect(init!.signal).toBeInstanceOf(AbortSignal);
         expect(result).toEqual({
             state: 'ready',
@@ -105,6 +109,7 @@ describe('OpenRouterSpeechProvider', () => {
         const { provider, submit } = setup(undefined, {
             profiles: { en: configured },
         });
+
         configured.voice = 'attacker-voice';
         expect(provider.supports('en-US')).toEqual(profile);
         expect(provider.supports('fr')).toBeNull();
@@ -126,6 +131,7 @@ describe('OpenRouterSpeechProvider', () => {
         await expect(
             submit({ profile: { ...profile, [field]: value } }),
         ).rejects.toMatchObject({ outcome: 'not_submitted', retryable: false });
+
         expect(request).not.toHaveBeenCalled();
     });
 
@@ -141,11 +147,13 @@ describe('OpenRouterSpeechProvider', () => {
         const { submit, request, provider } = setup(undefined, {
             profiles: { en: invalid },
         });
+
         expect(provider.supports('en')).toBeNull();
         await expect(submit({ profile: invalid })).rejects.toMatchObject({
             outcome: 'not_submitted',
             retryable: false,
         });
+
         expect(request).not.toHaveBeenCalled();
     });
 
@@ -157,6 +165,7 @@ describe('OpenRouterSpeechProvider', () => {
                 outcome: 'not_submitted',
                 retryable: false,
             });
+
             expect(request).not.toHaveBeenCalled();
         },
     );
@@ -176,6 +185,7 @@ describe('OpenRouterSpeechProvider', () => {
             retryable: false,
             message: 'Speech submission failed.',
         });
+
         expect(request).not.toHaveBeenCalled();
     });
 
@@ -190,9 +200,11 @@ describe('OpenRouterSpeechProvider', () => {
         await expect(submit({ text })).resolves.toMatchObject({
             state: 'ready',
         });
+
         expect(
             JSON.parse(request.mock.calls[0]![1]!.body as string).input,
         ).toBe(text);
+
         expect(request).toHaveBeenCalledTimes(1);
     });
 
@@ -210,6 +222,7 @@ describe('OpenRouterSpeechProvider', () => {
         await expect(
             submit({ signal: AbortSignal.abort(new Error('private reason')) }),
         ).rejects.toMatchObject({ outcome: 'not_submitted', retryable: false });
+
         expect(request).not.toHaveBeenCalled();
     });
 
@@ -229,6 +242,7 @@ describe('OpenRouterSpeechProvider', () => {
                 retryable: false,
                 message: 'Speech submission failed.',
             });
+
             expect(request).toHaveBeenCalledTimes(1);
         },
     );
@@ -244,6 +258,7 @@ describe('OpenRouterSpeechProvider', () => {
                 outcome: 'unknown',
                 retryable: false,
             });
+
             expect(request).toHaveBeenCalledTimes(1);
         },
     );
@@ -261,6 +276,7 @@ describe('OpenRouterSpeechProvider', () => {
             retryable: false,
             message: 'Speech submission failed.',
         });
+
         expect(String(error)).not.toContain('secret-fixture-key');
         expect(String(error)).not.toContain('Private saved phrase.');
         expect(request).toHaveBeenCalledTimes(1);
@@ -270,6 +286,7 @@ describe('OpenRouterSpeechProvider', () => {
         const controller = new AbortController();
         const request = vi.fn<typeof fetch>().mockImplementation(async () => {
             controller.abort();
+
             return new Promise<Response>(() => {});
         });
         const { submit } = setup(request);
@@ -279,6 +296,7 @@ describe('OpenRouterSpeechProvider', () => {
             outcome: 'unknown',
             retryable: false,
         });
+
         expect(request).toHaveBeenCalledTimes(1);
         expect(request.mock.calls[0]![1]!.signal!.aborted).toBe(true);
     });
@@ -289,8 +307,10 @@ describe('OpenRouterSpeechProvider', () => {
             const request = vi
                 .fn<typeof fetch>()
                 .mockImplementation(async () => {
-                    if (stage === 'dispatch')
+                    if (stage === 'dispatch') {
                         return new Promise<Response>(() => {});
+                    }
+
                     return new Response(new ReadableStream({ start() {} }), {
                         headers: { 'content-type': 'audio/mpeg' },
                     });
@@ -300,6 +320,7 @@ describe('OpenRouterSpeechProvider', () => {
                 outcome: 'unknown',
                 retryable: false,
             });
+
             expect(request.mock.calls[0]![1]!.signal!.aborted).toBe(true);
             expect(request).toHaveBeenCalledTimes(1);
         },
@@ -348,6 +369,7 @@ describe('OpenRouterSpeechProvider', () => {
                 outcome: 'unknown',
                 retryable: false,
             });
+
             expect(request).toHaveBeenCalledTimes(1);
         },
     );
@@ -358,6 +380,7 @@ describe('OpenRouterSpeechProvider', () => {
                 'content-type': 'audio/mpeg; charset=binary',
             }),
         );
+
         await expect(setup(request).submit()).resolves.toMatchObject({
             state: 'ready',
         });
@@ -374,6 +397,7 @@ describe('OpenRouterSpeechProvider', () => {
                 { headers: { 'content-type': 'audio/mpeg' } },
             ),
         );
+
         await expect(setup(request).submit()).rejects.toMatchObject({
             outcome: 'unknown',
             message: 'Speech submission failed.',
@@ -397,6 +421,7 @@ describe('OpenRouterSpeechProvider', () => {
             outcome: 'unknown',
             retryable: false,
         });
+
         expect(cancel).toHaveBeenCalledTimes(1);
         expect(request).toHaveBeenCalledTimes(1);
     });
@@ -418,9 +443,11 @@ describe('OpenRouterSpeechProvider', () => {
                 { headers: { 'content-type': 'audio/mpeg' } },
             ),
         );
+
         await expect(
             setup(request).submit({ signal: controller.signal }),
         ).rejects.toMatchObject({ outcome: 'unknown', retryable: false });
+
         expect(cancel).toHaveBeenCalledTimes(1);
         expect(request).toHaveBeenCalledTimes(1);
     });
@@ -430,6 +457,7 @@ describe('OpenRouterSpeechProvider', () => {
         await expect(provider.poll()).rejects.toBeInstanceOf(
             SpeechTaskFailedError,
         );
+
         expect(request).not.toHaveBeenCalled();
     });
 

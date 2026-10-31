@@ -19,6 +19,7 @@ function validateVersion(version) {
             'Release tag must be a stable vMAJOR.MINOR.PATCH version',
         );
     }
+
     return version;
 }
 
@@ -29,8 +30,9 @@ function resolveReleaseCommit(
 ) {
     validateVersion(version);
     const sourceSha = git(['rev-list', '-n', '1', `refs/tags/${version}`], cwd);
-    if (!SHA_PATTERN.test(sourceSha))
+    if (!SHA_PATTERN.test(sourceSha)) {
         throw new Error(`Unable to resolve ${version} to a commit`);
+    }
 
     try {
         execFileSync(
@@ -49,8 +51,10 @@ function resolveReleaseCommit(
 
 function resolveBranchHead(branchRef = 'origin/stage', cwd = process.cwd()) {
     const sourceSha = git(['rev-parse', `${branchRef}^{commit}`], cwd);
-    if (!SHA_PATTERN.test(sourceSha))
+    if (!SHA_PATTERN.test(sourceSha)) {
         throw new Error(`Unable to resolve ${branchRef}`);
+    }
+
     return sourceSha;
 }
 
@@ -58,21 +62,24 @@ function writeOutput(name, value) {
     const output = process.env.GITHUB_OUTPUT;
     if (!output) {
         process.stdout.write(`${value}\n`);
+
         return;
     }
+
     appendFileSync(output, `${name}=${value}\n`);
 }
 
 function main() {
     const [command, value] = process.argv.slice(2);
-    if (command === 'release')
+    if (command === 'release') {
         writeOutput('source_sha', resolveReleaseCommit(value));
-    else if (command === 'stage')
+    } else if (command === 'stage') {
         writeOutput('source_sha', resolveBranchHead(value || 'origin/stage'));
-    else
+    } else {
         throw new Error(
             'Usage: release-ref.mjs release <version> | stage [remote-ref]',
         );
+    }
 }
 
 if (

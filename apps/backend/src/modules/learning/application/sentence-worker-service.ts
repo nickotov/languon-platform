@@ -38,6 +38,7 @@ export class SentenceWorkerService {
     constructor(
         private readonly dependencies: SentenceWorkerServiceDependencies,
     ) {}
+
     async processNext(signal: AbortSignal): Promise<boolean> {
         const d = this.dependencies;
         signal.throwIfAborted();
@@ -61,7 +62,11 @@ export class SentenceWorkerService {
             },
             context(),
         );
-        if (!job) return false;
+
+        if (!job) {
+            return false;
+        }
+
         if (
             job.kind === 'sentence-generation' &&
             ((['sentence-generation:v1', 'sentence-preparation:v1'].includes(
@@ -78,8 +83,10 @@ export class SentenceWorkerService {
                 { code: 'invalid_model_output', retryAt: null },
                 context(),
             );
+
             return true;
         }
+
         const controller = new AbortController();
         const combined = AbortSignal.any([
             signal,
@@ -89,24 +96,31 @@ export class SentenceWorkerService {
         let heartbeat: Promise<void> | undefined;
         let usage: SentenceTokenUsage | undefined;
         const timer = setInterval(() => {
-            if (heartbeat) return;
+            if (heartbeat) {
+                return;
+            }
+
             heartbeat = d.store
                 .heartbeat(job.lease, d.leaseMs, context())
                 .then((result) => {
-                    if (!result.owned || result.cancellationRequested)
+                    if (!result.owned || result.cancellationRequested) {
                         controller.abort();
+                    }
                 })
                 .catch(() => controller.abort())
                 .finally(() => {
                     heartbeat = undefined;
                 });
         }, d.heartbeatMs);
+
         try {
             if (
                 (await d.store.markDispatched(job.lease, context())) !==
                 'dispatch'
-            )
+            ) {
                 return true;
+            }
+
             const call = {
                 input: job.input,
                 execution: job.execution,
@@ -120,6 +134,7 @@ export class SentenceWorkerService {
                 idempotencyKey: job.providerIdempotencyKey,
                 signal: combined,
             };
+
             if (job.kind === 'sentence-generation') {
                 const result = await abortable(
                     d.provider.generate({
@@ -128,6 +143,7 @@ export class SentenceWorkerService {
                     }),
                     combined,
                 );
+
                 usage = result.usage;
                 combined.throwIfAborted();
                 await d.store.completeGeneration(
@@ -149,6 +165,7 @@ export class SentenceWorkerService {
                     }),
                     combined,
                 );
+
                 usage = result.usage;
                 combined.throwIfAborted();
                 await d.store.completeCheck(
@@ -169,8 +186,10 @@ export class SentenceWorkerService {
                 if (error instanceof SentenceInvalidModelOutputError) {
                     if (
                         error instanceof SentenceProviderInvalidModelOutputError
-                    )
+                    ) {
                         usage ??= error.usage;
+                    }
+
                     try {
                         void Promise.resolve(
                             d.onInvalidModelOutput?.({
@@ -182,6 +201,7 @@ export class SentenceWorkerService {
                         // Telemetry must never interrupt fenced failure/usage settlement.
                     }
                 }
+
                 const code =
                     error instanceof SentenceModelUnavailableError
                         ? 'model_unavailable'
@@ -190,6 +210,7 @@ export class SentenceWorkerService {
                           : combined.aborted
                             ? 'provider_timeout'
                             : 'provider_unavailable';
+
                 await d.store.fail(
                     job.lease,
                     {
@@ -227,8 +248,10 @@ export class SentenceWorkerService {
             clearInterval(timer);
             await heartbeat;
         }
+
         return true;
     }
+
     releaseWorkerLeases(signal: AbortSignal) {
         return this.dependencies.store.releaseWorkerLeases(
             this.dependencies.workerId,
@@ -241,11 +264,14 @@ function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const abort = () =>
             reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+
         if (signal.aborted) {
             operation.catch(() => {});
             abort();
+
             return;
         }
+
         signal.addEventListener('abort', abort, { once: true });
         operation
             .then(resolve, reject)

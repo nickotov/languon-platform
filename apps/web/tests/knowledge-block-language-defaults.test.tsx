@@ -28,12 +28,15 @@ it('preserves the selected speech language without a transcript through local pr
             renderAudioPreparation={preparation}
         />,
     );
+
     fireEvent.change(screen.getByLabelText('Content language'), {
         target: { value: 'fr' },
     });
+
     fireEvent.change(screen.getByLabelText('Speech source text'), {
         target: { value: 'Bonjour tout le monde.' },
     });
+
     await waitFor(() =>
         expect(preparation).toHaveBeenLastCalledWith(
             expect.objectContaining({
@@ -44,6 +47,7 @@ it('preserves the selected speech language without a transcript through local pr
             expect.any(Function),
         ),
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -51,6 +55,7 @@ it('preserves the selected speech language without a transcript through local pr
             sourceText: 'Bonjour tout le monde.',
         }),
     );
+
     expect(apply.mock.calls[0]![0]).not.toHaveProperty('transcript');
 });
 
@@ -71,10 +76,12 @@ it('inherits missing legacy audio language once without resetting a title edit w
             onApply={apply}
         />,
     );
+
     expect(screen.getByLabelText('Content language')).toHaveValue('fr');
     fireEvent.change(screen.getByLabelText('Title'), {
         target: { value: 'New title' },
     });
+
     rerender(
         <I18nProvider locale='en' messages={en}>
             <BlockFormDialog
@@ -86,6 +93,7 @@ it('inherits missing legacy audio language once without resetting a title edit w
             />
         </I18nProvider>,
     );
+
     expect(screen.getByLabelText('Content language')).toHaveValue('fr');
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).toHaveBeenCalledWith(
@@ -118,10 +126,12 @@ it.each([
                 onApply={apply}
             />,
         );
+
         expect(screen.getByLabelText('Content language')).toHaveValue(expected);
         fireEvent.change(screen.getByLabelText('Title'), {
             target: { value: 'Edited recording' },
         });
+
         fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         expect(apply).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -142,14 +152,17 @@ it('initializes a new vocabulary block from note languages', () => {
             onApply={apply}
         />,
     );
+
     expect(screen.getByLabelText('Content language')).toHaveValue('fr');
     expect(screen.getByLabelText('Translation language')).toHaveValue('ru');
     fireEvent.change(screen.getByLabelText('Word or phrase'), {
         target: { value: 'joie' },
     });
+
     fireEvent.change(screen.getByLabelText('Translation'), {
         target: { value: 'радость' },
     });
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({ language: 'fr', translationLanguage: 'ru' }),
@@ -172,6 +185,7 @@ it('does not require discard confirmation when legacy audio only inherits defaul
             onClose={close}
         />,
     );
+
     fireEvent.click(screen.getAllByRole('button', { name: 'Cancel' })[0]!);
     expect(close).toHaveBeenCalledOnce();
     expect(screen.queryByText('Discard changes?')).not.toBeInTheDocument();
@@ -196,13 +210,16 @@ it('updates transcript language when the author explicitly changes the content l
             onApply={apply}
         />,
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Languages: German' }));
     await waitFor(() =>
         expect(screen.getByLabelText('Content language')).toBeVisible(),
     );
+
     fireEvent.change(screen.getByLabelText('Content language'), {
         target: { value: 'fr' },
     });
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({

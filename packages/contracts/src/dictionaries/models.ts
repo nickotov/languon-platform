@@ -162,6 +162,7 @@ export const DictionaryCardEffectiveSettingsSchema = z
 
         const oppositeRole =
             settings.exampleLanguage === 'source' ? 'target' : 'source';
+
         if (settings.exampleTranslationLanguage !== oppositeRole) {
             context.addIssue({
                 code: 'custom',

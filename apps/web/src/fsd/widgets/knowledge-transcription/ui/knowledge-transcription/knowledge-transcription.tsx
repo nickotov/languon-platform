@@ -20,35 +20,45 @@ function AuthorTranscription(props: KnowledgeTranscriptionProps) {
     const selected = audio.some((block) => block.id === state.selected)
         ? state.selected
         : (audio[0]?.id ?? '');
+
     function select(event: ChangeEvent<HTMLSelectElement>) {
         state.setSelected(event.target.value);
     }
+
     function language(event: ChangeEvent<HTMLInputElement>) {
         state.setLanguage(event.target.value);
     }
+
     function prepare() {
         void state.prepare();
     }
+
     function confirm() {
         void state.confirm();
     }
+
     function cancel() {
         void state.cancel();
     }
+
     function retry() {
         void state.retry();
     }
+
     function apply() {
         void state.apply();
     }
+
     const quote = state.job?.state === 'confirmation-required';
     const preview = state.job?.state === 'completed' ? state.job.result : null;
     const jobFailed = state.job?.state === 'failed';
     const cancelled = state.job?.state === 'cancelled';
     const hasSource = audio.length > 0;
     const hasActivity = state.busy || state.job !== null || state.failed;
-    if (!hasSource && !hasActivity)
+    if (!hasSource && !hasActivity) {
         return props.hideWhenEmpty ? null : <p>{copy.empty}</p>;
+    }
+
     return (
         <section className={styles.root} aria-label={copy.title}>
             <h3>{copy.title}</h3>

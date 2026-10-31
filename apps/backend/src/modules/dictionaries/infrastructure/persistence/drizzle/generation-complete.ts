@@ -67,7 +67,10 @@ export async function complete(
             .where(workerCas(input))
             .for('update');
 
-        if (!job) return false;
+        if (!job) {
+            return false;
+        }
+
         const jobProviderBudget = persistedProviderBudget(job);
         if (job.cancellationRequestedAt) {
             await terminalizeCancelled(tx, job, input.context.now);
@@ -95,10 +98,12 @@ export async function complete(
             ? jobInput
             : null;
         const isAuthoring = authoringInput !== null;
-        if (inputHasFormat(jobInput, dictionaryDocumentGenerationFormats))
+        if (inputHasFormat(jobInput, dictionaryDocumentGenerationFormats)) {
             throw new Error(
                 'Document completion requires staged cleanup publication',
             );
+        }
+
         let authoringPredecessor:
             DictionaryCardAuthoringProposalPayload | undefined;
 
@@ -118,10 +123,12 @@ export async function complete(
                     job.expectedSettingsVersion ||
                 predecessorJob.sourceLanguageTag !== job.sourceLanguageTag ||
                 predecessorJob.targetLanguageTag !== job.targetLanguageTag
-            )
+            ) {
                 throw new DictionaryGenerationCompletionConflictError(
                     'predecessor_changed',
                 );
+            }
+
             const predecessorProposal = await lockProposal(
                 tx,
                 predecessorJob.id,
@@ -132,10 +139,12 @@ export async function complete(
                 predecessorProposal.reviewState !== 'reviewable' ||
                 !predecessorProposal.payload ||
                 predecessorProposal.expiresAt <= input.context.now
-            )
+            ) {
                 throw new DictionaryGenerationCompletionConflictError(
                     'predecessor_changed',
                 );
+            }
+
             authoringPredecessor =
                 DictionaryCardAuthoringProposalPayloadSchema.parse(
                     predecessorProposal.payload,
@@ -159,10 +168,13 @@ export async function complete(
                         !discarded.has(suggestion.id),
                 ).length;
 
-                if (remaining >= dictionaryCardAuthoringSuggestionLimitPerField)
+                if (
+                    remaining >= dictionaryCardAuthoringSuggestionLimitPerField
+                ) {
                     throw new DictionaryGenerationCompletionConflictError(
                         'suggestion_capacity_reached',
                     );
+                }
             }
         }
 
@@ -204,10 +216,11 @@ export async function complete(
             } catch (error) {
                 if (
                     error instanceof DictionaryCardAuthoringSuggestionLimitError
-                )
+                ) {
                     throw new DictionaryGenerationCompletionConflictError(
                         'suggestion_capacity_reached',
                     );
+                }
 
                 throw error;
             }
@@ -236,10 +249,12 @@ export async function complete(
                 resolvedRows.some(
                     (row) => persistedRows.get(row.rowIndex) !== row.input,
                 )
-            )
+            ) {
                 throw new Error(
                     'Batch proposal rows do not match persisted input',
                 );
+            }
+
             const existingSources = await tx
                 .select({
                     cardId: dictionaryCardsTable.id,
@@ -299,10 +314,12 @@ export async function complete(
                         persisted.source !== failure.input
                     );
                 })
-            )
+            ) {
                 throw new Error(
                     'Import-pairs proposal rows do not match persisted input',
                 );
+            }
+
             const existingSources = await tx
                 .select({
                     cardId: dictionaryCardsTable.id,
@@ -336,7 +353,10 @@ export async function complete(
                 )
                 .limit(1);
 
-            if (!settings) return false;
+            if (!settings) {
+                return false;
+            }
+
             const singleProposal = parseDictionaryGenerationProposal(proposal);
             assertCardSettingsOverrideTransition({
                 dictionary: domainSettings(settings),
@@ -419,7 +439,10 @@ export async function complete(
             .where(workerCas(input))
             .returning({ id: dictionaryGenerationJobsTable.id });
 
-        if (!updated) throw new Error('Generation completion fencing changed');
+        if (!updated) {
+            throw new Error('Generation completion fencing changed');
+        }
+
         await recordProviderSuccess(tx, job, input.context.now);
 
         return true;

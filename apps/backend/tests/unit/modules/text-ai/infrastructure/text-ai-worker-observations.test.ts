@@ -23,6 +23,7 @@ function fixture() {
         insert: vi.fn(() => ({
             values: (row: Observation) => {
                 rows.push(row);
+
                 return {
                     onConflictDoUpdate: async (update: unknown) => {
                         updates.push(update);
@@ -33,8 +34,10 @@ function fixture() {
     } as unknown as Parameters<
         typeof publishTextAiWorkerObservations
     >[0]['database'];
+
     return { rows, updates, database };
 }
+
 const formats = [
     'single-card:v1',
     'single-card:v1',
@@ -55,11 +58,13 @@ const allRouteIds = [
 const executableChatRouteIds = allRouteIds.filter(
     (id) => !id.startsWith('kie/'),
 );
+
 function routeIds(rows: Observation[]) {
     return [
         ...new Set(rows.map((row) => `${row.providerId}/${row.modelId}`)),
     ].sort();
 }
+
 describe('shared worker capability publication', () => {
     it('uses the non-generating OpenRouter catalog when the completion route rejects HEAD', async () => {
         const f = fixture();
@@ -67,6 +72,7 @@ describe('shared worker capability publication', () => {
             expect(init?.method).toBe('HEAD');
             const url = String(input);
             expect(new URL(url).origin).toBe('https://openrouter.ai');
+
             return new Response(null, {
                 status:
                     url === 'https://openrouter.ai/api/v1/models' ? 200 : 404,
@@ -87,10 +93,12 @@ describe('shared worker capability publication', () => {
         const observations = f.rows.filter(
             (row) => row.providerId === 'openrouter',
         );
+
         expect(observations).toHaveLength(6);
         expect(observations.every((row) => row.status === 'unverified')).toBe(
             true,
         );
+
         expect(fetchProvider).toHaveBeenCalledTimes(3);
         expect(
             f.rows
@@ -109,6 +117,7 @@ describe('shared worker capability publication', () => {
             supportedFormats: formats,
             workerId: 'worker',
         });
+
         expect(f.rows).toHaveLength(6);
         expect(routeIds(f.rows)).toEqual([...allRouteIds].sort());
         expect(f.rows.every((row) => row.status === 'unavailable')).toBe(true);
@@ -116,12 +125,14 @@ describe('shared worker capability publication', () => {
             expect(
                 isTextAiCapacityCapableObservation(row, 'single-card:v1'),
             ).toBe(true);
+
             expect(
                 isSentenceExecutionCapableObservation(
                     row,
                     'sentence-generation:v1',
                 ),
             ).toBe(false);
+
             expect(row.textAiSupportedFormats).toEqual(['single-card:v1']);
             expect(row.learningExecutionRevision).toBeNull();
             expect(row.creditSettlementRevision).toBeNull();
@@ -134,11 +145,13 @@ describe('shared worker capability publication', () => {
             );
         }
     });
+
     it('publishes isolated exact sentence formats and all reviewed revisions only when composed learning is enabled', async () => {
         const f = fixture();
         const fetchProvider = vi.fn<typeof fetch>(
             async () => new Response(null, { status: 200 }),
         );
+
         await publishTextAiWorkerObservations({
             database: f.database,
             credentials: {
@@ -154,10 +167,12 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
+
         expect(f.rows).toHaveLength(12);
         const learning = f.rows.filter((row) =>
             isSentenceExecutionCapableObservation(row, 'sentence-check:v1'),
         );
+
         expect(learning).toHaveLength(6);
         expect(routeIds(learning)).toEqual([...allRouteIds].sort());
         for (const row of learning) {
@@ -166,24 +181,29 @@ describe('shared worker capability publication', () => {
                 'sentence-generation:v2',
                 'sentence-check:v1',
             ]);
+
             expect(row.textAiCapacityRevision).toBe(1);
             expect(row.creditSettlementRevision).toBe(1);
             expect(
                 isTextAiCapacityCapableObservation(row, 'single-card:v1'),
             ).toBe(false);
         }
+
         expect(fetchProvider).toHaveBeenCalledTimes(5);
         expect(f.rows.filter((row) => row.status === 'available')).toHaveLength(
             2,
         );
+
         expect(
             f.rows.filter((row) => row.status === 'unverified'),
         ).toHaveLength(8);
+
         const retired = f.rows.filter((row) => row.providerId === 'kie');
         expect(retired).toHaveLength(2);
         expect(retired.every((row) => row.status === 'unavailable')).toBe(true);
         expect(JSON.stringify(retired)).toContain('retired');
     });
+
     it('advertises preparation only when the new executor explicitly opts in', async () => {
         for (const enabled of [false, true]) {
             const f = fixture();
@@ -197,6 +217,7 @@ describe('shared worker capability publication', () => {
                 learningExecutionEnabled: true,
                 sentencePreparationExecutionEnabled: enabled,
             });
+
             expect(f.rows).toHaveLength(6);
             for (const row of f.rows) {
                 expect(
@@ -205,12 +226,14 @@ describe('shared worker capability publication', () => {
                         'sentence-preparation:v2',
                     ),
                 ).toBe(enabled);
+
                 expect(
                     isSentenceExecutionCapableObservation(
                         row,
                         'sentence-preparation:v1',
                     ),
                 ).toBe(false);
+
                 if (enabled) {
                     expect(
                         isSentenceExecutionCapableObservation(
@@ -223,18 +246,21 @@ describe('shared worker capability publication', () => {
                             'sentence-preparation:v2',
                         ),
                     ).toBe(false);
+
                     expect(
                         isSentenceExecutionCapableObservation(
                             { ...row, learningExecutionRevision: null },
                             'sentence-preparation:v2',
                         ),
                     ).toBe(false);
+
                     expect(
                         isTextAiCapacityCapableObservation(
                             row,
                             'sentence-preparation:v2',
                         ),
                     ).toBe(false);
+
                     expect(
                         isTextAiSelectionCapableObservation(
                             row,
@@ -242,6 +268,7 @@ describe('shared worker capability publication', () => {
                         ),
                     ).toBe(true);
                 }
+
                 expect(row.textAiSupportedFormats).toEqual(
                     enabled
                         ? ['sentence-generation:v2', 'sentence-preparation:v2']
@@ -250,6 +277,7 @@ describe('shared worker capability publication', () => {
             }
         }
     });
+
     it.each([1, 2])(
         'requires preparation v%i executor evidence across overlapping capacity checks',
         (version) => {
@@ -272,6 +300,7 @@ describe('shared worker capability publication', () => {
                 learningExecutionRevision: 1,
                 creditSettlementRevision: 1,
             };
+
             for (const accepts of [
                 isSentenceExecutionCapableObservation,
                 isTextsCapacityCapableObservation,
@@ -281,6 +310,7 @@ describe('shared worker capability publication', () => {
                 expect(
                     accepts({ ...row, textAiSupportedFormats: [base] }, marker),
                 ).toBe(false);
+
                 expect(
                     accepts(
                         {
@@ -290,6 +320,7 @@ describe('shared worker capability publication', () => {
                         marker,
                     ),
                 ).toBe(false);
+
                 expect(
                     accepts(
                         {
@@ -302,34 +333,40 @@ describe('shared worker capability publication', () => {
                         marker,
                     ),
                 ).toBe(false);
+
                 expect(
                     accepts({ ...row, textAiCapacityRevision: null }, marker),
                 ).toBe(false);
             }
+
             expect(
                 isTextsCapacityCapableObservation(
                     { ...row, textsCapacityRevision: null },
                     marker,
                 ),
             ).toBe(false);
+
             expect(
                 isConversationCapacityCapableObservation(
                     { ...row, conversationCapacityRevision: null },
                     marker,
                 ),
             ).toBe(false);
+
             expect(
                 isSentenceExecutionCapableObservation(
                     { ...row, learningExecutionRevision: null },
                     marker,
                 ),
             ).toBe(false);
+
             expect(isTextsExecutionCapableObservation(row, marker)).toBe(false);
             expect(isConversationExecutionCapableObservation(row, marker)).toBe(
                 false,
             );
         },
     );
+
     it('isolates Texts capabilities from legacy workers and publishes capacity separately', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({
@@ -346,6 +383,7 @@ describe('shared worker capability publication', () => {
             textsCapacityEnabled: true,
             textsExecutionEnabled: true,
         });
+
         expect(f.rows).toHaveLength(18);
         const execution = f.rows.filter((row) =>
             row.id.startsWith('texts-execution:'),
@@ -353,6 +391,7 @@ describe('shared worker capability publication', () => {
         const capacity = f.rows.filter((row) =>
             row.id.startsWith('texts-capacity:'),
         );
+
         expect(execution).toHaveLength(6);
         expect(routeIds(execution)).toEqual([...allRouteIds].sort());
         expect(capacity).toHaveLength(6);
@@ -361,21 +400,25 @@ describe('shared worker capability publication', () => {
             expect(
                 isTextsExecutionCapableObservation(row, 'text-translation:v2'),
             ).toBe(true);
+
             expect(
                 isTextsExecutionCapableObservation(
                     { ...row, textAiSupportedFormats: ['text-translation:v1'] },
                     'text-translation:v2',
                 ),
             ).toBe(false);
+
             expect(
                 isTextsExecutionCapableObservation(row, 'text-translation:v1'),
             ).toBe(true);
+
             expect(
                 isTextsExecutionCapableObservation(
                     { ...row, creditSettlementRevision: null },
                     'text-translation:v1',
                 ),
             ).toBe(false);
+
             expect(
                 isTextsExecutionCapableObservation(
                     {
@@ -389,14 +432,17 @@ describe('shared worker capability publication', () => {
                 ),
             ).toBe(false);
         }
+
         for (const row of capacity) {
             expect(
                 isTextsCapacityCapableObservation(row, 'single-card:v1'),
             ).toBe(true);
+
             expect(
                 isTextsExecutionCapableObservation(row, 'text-translation:v1'),
             ).toBe(false);
         }
+
         const old = fixture();
         await publishTextAiWorkerObservations({
             database: old.database,
@@ -406,13 +452,16 @@ describe('shared worker capability publication', () => {
             supportedFormats: ['single-card:v1', 'text-translation:v1'],
             workerId: 'worker',
         });
+
         expect(
             old.rows.every((row) => !isTextsCapacityCapableObservation(row)),
         ).toBe(true);
+
         expect(
             old.rows.every((row) => !isTextsExecutionCapableObservation(row)),
         ).toBe(true);
     });
+
     it('does not refresh any namespace when no registered requested formats apply', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({
@@ -424,9 +473,11 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
+
         expect(f.rows).toHaveLength(0);
         expect(f.updates).toHaveLength(0);
     });
+
     it('publishes unavailable capabilities after failed probes without leaking provider errors', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({
@@ -441,6 +492,7 @@ describe('shared worker capability publication', () => {
             workerId: 'worker',
             learningExecutionEnabled: true,
         });
+
         expect(f.rows).toHaveLength(12);
         expect(f.rows.every((row) => row.status === 'unavailable')).toBe(true);
         expect(JSON.stringify(f.rows)).not.toContain(
@@ -470,9 +522,11 @@ describe('conversation worker capabilities', () => {
             textsExecutionEnabled: true,
             learningExecutionEnabled: true,
         });
+
         const chat = f.rows.filter((row) =>
             isConversationExecutionCapableObservation(row),
         );
+
         expect(chat).toHaveLength(5);
         expect(routeIds(chat)).toEqual([...executableChatRouteIds].sort());
         expect(chat.every((row) => row.status === 'unavailable')).toBe(true);
@@ -480,6 +534,7 @@ describe('conversation worker capabilities', () => {
         const capacity = f.rows.filter((row) =>
             isConversationCapacityCapableObservation(row, 'single-card:v1'),
         );
+
         expect(capacity).toHaveLength(6);
         expect(routeIds(capacity)).toEqual([...allRouteIds].sort());
         for (const row of capacity) {
@@ -489,33 +544,40 @@ describe('conversation worker capabilities', () => {
                     'sentence-generation:v1',
                 ),
             ).toBe(true);
+
             expect(
                 isTextsExecutionCapableObservation(row, 'text-translation:v2'),
             ).toBe(true);
+
             expect(isConversationExecutionCapableObservation(row)).toBe(false);
         }
+
         for (const row of chat) {
             expect(
                 isTextsCapacityCapableObservation(row, 'conversation:v1'),
             ).toBe(true);
+
             expect(
                 isConversationExecutionCapableObservation({
                     ...row,
                     conversationExecutionRevision: null,
                 }),
             ).toBe(false);
+
             expect(
                 isConversationExecutionCapableObservation({
                     ...row,
                     conversationCapacityRevision: null,
                 }),
             ).toBe(false);
+
             expect(
                 isConversationExecutionCapableObservation({
                     ...row,
                     creditSettlementRevision: null,
                 }),
             ).toBe(false);
+
             expect(
                 isConversationExecutionCapableObservation({
                     ...row,
@@ -528,6 +590,7 @@ describe('conversation worker capabilities', () => {
             ).toBe(false);
         }
     });
+
     it.each([
         {},
         { conversationCapacityEnabled: true },
@@ -546,11 +609,13 @@ describe('conversation worker capabilities', () => {
                 textsCapacityEnabled: true,
                 ...options,
             });
+
             expect(
                 f.rows.filter((row) =>
                     isConversationExecutionCapableObservation(row),
                 ),
             ).toEqual([]);
+
             expect(
                 f.rows.filter((row) =>
                     row.textAiSupportedFormats?.includes('conversation:v1'),
@@ -586,9 +651,11 @@ describe('portrait interview worker capabilities', () => {
                 workerId: 'worker',
                 ...flags,
             });
+
             expect(f.rows).toEqual([]);
         },
     );
+
     it('advertises reviewed interview routes in isolated namespaces and rejects borrowed chat identities', async () => {
         const f = fixture();
         await publishTextAiWorkerObservations({
@@ -603,19 +670,23 @@ describe('portrait interview worker capabilities', () => {
             conversationCapacityEnabled: true,
             textsCapacityEnabled: true,
         });
+
         const interviews = f.rows.filter((row) =>
             isConversationExecutionCapableObservation(
                 row,
                 'portrait-interview:v1',
             ),
         );
+
         expect(interviews).toHaveLength(5);
         expect(routeIds(interviews)).toEqual(
             [...executableChatRouteIds].sort(),
         );
+
         expect(interviews.every((row) => row.status === 'unavailable')).toBe(
             true,
         );
+
         for (const interview of interviews) {
             expect(interview.id).toBe(
                 portraitInterviewExecutionObservationId(
@@ -624,35 +695,42 @@ describe('portrait interview worker capabilities', () => {
                     interview.modelId,
                 ),
             );
+
             expect(interview.textAiSupportedFormats).toEqual([
                 'portrait-interview:v1',
             ]);
+
             expect(isConversationExecutionCapableObservation(interview)).toBe(
                 false,
             );
+
             expect(
                 isConversationCapacityCapableObservation(
                     interview,
                     'portrait-interview:v1',
                 ),
             ).toBe(true);
+
             expect(
                 isTextsCapacityCapableObservation(
                     interview,
                     'portrait-interview:v1',
                 ),
             ).toBe(true);
+
             const chatId = conversationExecutionObservationId(
                 interview.workerId,
                 interview.providerId,
                 interview.modelId,
             );
+
             expect(
                 isConversationExecutionCapableObservation(
                     { ...interview, id: chatId },
                     'portrait-interview:v1',
                 ),
             ).toBe(false);
+
             expect(
                 isConversationExecutionCapableObservation(
                     {
@@ -662,6 +740,7 @@ describe('portrait interview worker capabilities', () => {
                     'conversation:v1',
                 ),
             ).toBe(false);
+
             for (const missing of [
                 'textAiCapacityRevision',
                 'textsCapacityRevision',

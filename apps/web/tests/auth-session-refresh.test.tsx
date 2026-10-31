@@ -73,6 +73,7 @@ describe('web access-token refresh', () => {
             passkeys: { authentication: false, registration: false },
             passwordAuthentication: true,
         });
+
         vi.spyOn(authApi, 'refresh').mockRejectedValue(
             new Error('bootstrap has no session'),
         );
@@ -96,6 +97,7 @@ describe('web access-token refresh', () => {
                 <RequestHarness operation={operation} />
             </AuthProvider>,
         );
+
         await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
         useSessionStore.getState().authenticate(expiredSession);
         vi.mocked(authApi.refresh).mockResolvedValueOnce(refreshedSession);
@@ -107,6 +109,7 @@ describe('web access-token refresh', () => {
         await expect(
             screen.findByText('request completed'),
         ).resolves.toBeVisible();
+
         expect(operation).toHaveBeenNthCalledWith(1, 'expired-access-token');
         expect(operation).toHaveBeenNthCalledWith(2, 'refreshed-access-token');
         expect(authApi.refresh).toHaveBeenCalledTimes(2);
@@ -126,21 +129,22 @@ describe('web access-token refresh', () => {
                 <RequestHarness operation={operation} />
             </AuthProvider>,
         );
+
         await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
         useSessionStore.getState().authenticate(expiredSession);
         await user.click(
             screen.getByRole('button', { name: 'Run protected request' }),
         );
+
         await act(async () => {
-            useSessionStore
-                .getState()
-                .authenticate({
-                    ...refreshedSession,
-                    user: {
-                        ...refreshedSession.user,
-                        id: '20000000-0000-4000-8000-000000000001',
-                    },
-                });
+            useSessionStore.getState().authenticate({
+                ...refreshedSession,
+                user: {
+                    ...refreshedSession.user,
+                    id: '20000000-0000-4000-8000-000000000001',
+                },
+            });
+
             rejectRequest(
                 new DictionaryApiError(401, {
                     code: 'authentication_required',
@@ -149,6 +153,7 @@ describe('web access-token refresh', () => {
                 }),
             );
         });
+
         await expect(screen.findByText('failed')).resolves.toBeVisible();
         expect(operation).toHaveBeenCalledTimes(1);
         expect(authApi.refresh).toHaveBeenCalledTimes(1);
@@ -168,6 +173,7 @@ describe('web access-token refresh', () => {
                 <RequestHarness operation={operation} />
             </AuthProvider>,
         );
+
         await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
         useSessionStore.getState().authenticate(expiredSession);
         vi.mocked(authApi.refresh).mockResolvedValueOnce({
@@ -177,9 +183,11 @@ describe('web access-token refresh', () => {
                 id: '20000000-0000-4000-8000-000000000001',
             },
         });
+
         await user.click(
             screen.getByRole('button', { name: 'Run protected request' }),
         );
+
         await expect(screen.findByText('failed')).resolves.toBeVisible();
         expect(operation).toHaveBeenCalledTimes(1);
         expect(authApi.refresh).toHaveBeenCalledTimes(2);
@@ -199,27 +207,30 @@ describe('web access-token refresh', () => {
                 <RequestHarness operation={operation} />
             </AuthProvider>,
         );
+
         await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
         useSessionStore.getState().authenticate(expiredSession);
         await user.click(
             screen.getByRole('button', { name: 'Run protected request' }),
         );
+
         await act(async () => {
-            useSessionStore
-                .getState()
-                .authenticate({
-                    ...refreshedSession,
-                    user: {
-                        ...refreshedSession.user,
-                        id: '20000000-0000-4000-8000-000000000001',
-                    },
-                });
+            useSessionStore.getState().authenticate({
+                ...refreshedSession,
+                user: {
+                    ...refreshedSession.user,
+                    id: '20000000-0000-4000-8000-000000000001',
+                },
+            });
+
             finishRequest('private earlier-owner response');
         });
+
         await expect(screen.findByText('failed')).resolves.toBeVisible();
         expect(
             screen.queryByText('private earlier-owner response'),
         ).not.toBeInTheDocument();
+
         expect(operation).toHaveBeenCalledTimes(1);
     });
 
@@ -238,6 +249,7 @@ describe('web access-token refresh', () => {
                 <RequestHarness operation={operation} />
             </AuthProvider>,
         );
+
         await waitFor(() => expect(authApi.refresh).toHaveBeenCalledTimes(1));
         useSessionStore.getState().authenticate(expiredSession);
 

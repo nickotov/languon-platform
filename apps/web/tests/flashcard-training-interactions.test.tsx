@@ -49,53 +49,65 @@ describe('training fullscreen presentation', () => {
         const exit = vi.fn().mockImplementation(async () => {
             element = null;
         });
+
         Object.defineProperty(document, 'fullscreenElement', {
             configurable: true,
             get: () => element,
         });
+
         Object.defineProperty(document, 'exitFullscreen', {
             configurable: true,
             value: exit,
         });
+
         const { unmount } = renderHook(() => useTrainingDisplay(request));
         unmount();
         await act(async () => {
             await Promise.resolve();
         });
+
         expect(exit).not.toHaveBeenCalled();
         element = document.documentElement;
         await act(async () => {
             resolveRequest(true);
             await request;
         });
+
         expect(exit).toHaveBeenCalledOnce();
         expect(document.fullscreenElement).toBeNull();
     });
+
     it('does not exit Start fullscreen during StrictMode replay but releases it on real unmount', async () => {
         let element: Element | null = document.documentElement;
         const exit = vi.fn().mockImplementation(async () => {
             element = null;
             document.dispatchEvent(new Event('fullscreenchange'));
         });
+
         Object.defineProperty(document, 'fullscreenElement', {
             configurable: true,
             get: () => element,
         });
+
         Object.defineProperty(document, 'exitFullscreen', {
             configurable: true,
             value: exit,
         });
+
         const request = Promise.resolve(true);
         function Wrapper({ children }: { children: ReactNode }) {
             return <StrictMode>{children}</StrictMode>;
         }
+
         const { result, unmount } = renderHook(
             () => useTrainingDisplay(request),
             { wrapper: Wrapper },
         );
+
         await act(async () => {
             await request;
         });
+
         expect(result.current.mode).toBe('fullscreen');
         expect(document.fullscreenElement).toBe(document.documentElement);
         expect(exit).not.toHaveBeenCalled();
@@ -103,25 +115,30 @@ describe('training fullscreen presentation', () => {
         await act(async () => {
             await Promise.resolve();
         });
+
         expect(exit).toHaveBeenCalledOnce();
         expect(document.fullscreenElement).toBeNull();
     });
+
     it('requests native fullscreen synchronously and catches denied fullscreen', async () => {
         const request = vi.fn().mockRejectedValue(new Error('Not permitted'));
         Object.defineProperty(document.documentElement, 'requestFullscreen', {
             configurable: true,
             value: request,
         });
+
         const promise = requestTrainingFullscreen();
         expect(request).toHaveBeenCalledTimes(1);
         await expect(promise).resolves.toBe(false);
     });
+
     it('retains overlay fallback, switches to dialog, and handles native exit', async () => {
         const request = Promise.resolve(false);
         const { result } = renderHook(() => useTrainingDisplay(request));
         await act(async () => {
             await request;
         });
+
         expect(result.current.mode).toBe('overlay');
         expect(result.current.notice).toBe(true);
         act(() => result.current.toDialog());
@@ -131,6 +148,7 @@ describe('training fullscreen presentation', () => {
             configurable: true,
             value: fullscreen,
         });
+
         await act(async () => result.current.toFullscreen());
         expect(result.current.mode).toBe('fullscreen');
         expect(result.current.notice).toBe(false);
@@ -159,6 +177,7 @@ function CardHarness({
         itemKey,
         recover,
     });
+
     return (
         <div
             data-testid='gesture'
@@ -192,6 +211,7 @@ function pointer(
         pointerId: 1,
         pointerType,
     });
+
     fireEvent(node, event);
 }
 
@@ -224,11 +244,13 @@ describe('training card drag and text interaction', () => {
                 />
             </I18nProvider>,
         );
+
         const face = screen.getByLabelText('Front of card 1 / 1');
         expect(face).toHaveClass(flashcardStyles.face!);
         expect(screen.getByTestId('training-card')).toHaveClass(
             flashcardStyles.card!,
         );
+
         const css = postcss.parse(
             readFileSync(
                 resolve(
@@ -242,15 +264,19 @@ describe('training card drag and text interaction', () => {
         css.walkRules((rule) => {
             const values =
                 declarations.get(rule.selector) ?? new Map<string, string>();
+
             rule.walkDecls((declaration) => {
                 values.set(declaration.prop, declaration.value);
             });
+
             declarations.set(rule.selector, values);
         });
+
         expect(declarations.get('.face')?.get('overflow-y')).toBe('auto');
         expect(declarations.get('.face')?.get('touch-action')).toBe('pan-y');
         expect(declarations.get('.card')?.get('touch-action')).toBe('pan-y');
     });
+
     function start(disabled = false) {
         const onFlip = vi.fn();
         const onRate = vi.fn();
@@ -262,11 +288,14 @@ describe('training card drag and text interaction', () => {
             configurable: true,
             value: 320,
         });
+
         node.setPointerCapture = vi.fn();
         node.hasPointerCapture = vi.fn().mockReturnValue(true);
         node.releasePointerCapture = vi.fn();
+
         return { node, onFlip, onRate, ...view };
     }
+
     it('rates only after threshold release and suppresses drag-click flip', () => {
         vi.useFakeTimers();
         const { node, onRate, onFlip } = start();
@@ -280,8 +309,10 @@ describe('training card drag and text interaction', () => {
             'known',
             expect.any(Promise),
         );
+
         expect(onFlip).not.toHaveBeenCalled();
     });
+
     it('does not rate on short drag, return-to-origin, vertical scroll or cancellation', () => {
         const { node, onRate } = start();
         pointer(node, 'pointerdown', 0);
@@ -300,6 +331,7 @@ describe('training card drag and text interaction', () => {
         expect(onRate).not.toHaveBeenCalled();
         expect(node.style.transform).toBe('');
     });
+
     it.each([110, -110])(
         'keeps a committed swipe at its release position until a new card arrives (%s)',
         (distance) => {
@@ -319,6 +351,7 @@ describe('training card drag and text interaction', () => {
                 distance > 0 ? 'known' : 'again',
                 expect.any(Promise),
             );
+
             rerender(<CardHarness onRate={onRate} onFlip={onFlip} disabled />);
             expect(node).toHaveAttribute('data-departing', 'true');
             rerender(
@@ -328,10 +361,12 @@ describe('training card drag and text interaction', () => {
                     itemKey='entry-2'
                 />,
             );
+
             expect(node).toHaveAttribute('data-departing', 'false');
             expect(node.style.transform).toBe('');
         },
     );
+
     it('restores a departed card when saving fails or conflicts', () => {
         const { node, onRate, onFlip, rerender } = start();
         pointer(node, 'pointerdown', 0);
@@ -340,10 +375,12 @@ describe('training card drag and text interaction', () => {
         rerender(
             <CardHarness onRate={onRate} onFlip={onFlip} disabled recover />,
         );
+
         expect(node).toHaveAttribute('data-departing', 'false');
         expect(node.style.transform).toBe('');
         expect(onRate).toHaveBeenCalledOnce();
     });
+
     it('completes the exit only after its opacity fade, without changing position', async () => {
         vi.useFakeTimers();
         const { node, onRate } = start();
@@ -359,12 +396,14 @@ describe('training card drag and text interaction', () => {
         expect(finish).toHaveBeenCalledOnce();
         expect(node.style.transform).toContain('translateX(110px)');
     });
+
     it('omits the animation barrier for reduced motion', () => {
         vi.mocked(matchMedia).mockReturnValue({
             matches: true,
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
         } as unknown as MediaQueryList);
+
         const { node, onRate } = start();
         pointer(node, 'pointerdown', 0);
         pointer(node, 'pointermove', 110);
@@ -372,6 +411,7 @@ describe('training card drag and text interaction', () => {
         expect(onRate).toHaveBeenCalledExactlyOnceWith('known', undefined);
         expect(node.style.transform).toBe('translateX(110px) rotate(0deg)');
     });
+
     it('resolves a pending exit barrier on unmount', async () => {
         const { node, onRate, unmount } = start();
         pointer(node, 'pointerdown', 0);
@@ -381,6 +421,7 @@ describe('training card drag and text interaction', () => {
         unmount();
         await expect(completion).resolves.toBeUndefined();
     });
+
     it('allows touch swipes on text but protects mouse text selection', () => {
         const { node, onRate } = start();
         const text = screen.getByText('Long text');
@@ -396,6 +437,7 @@ describe('training card drag and text interaction', () => {
             expect.any(Promise),
         );
     });
+
     it('freezes rating while waiting for server acknowledgement', () => {
         const { node, onRate } = start(true);
         pointer(node, 'pointerdown', 0);
@@ -403,6 +445,7 @@ describe('training card drag and text interaction', () => {
         pointer(node, 'pointerup', 110);
         expect(onRate).not.toHaveBeenCalled();
     });
+
     it('flips a single click but not a double-click or selected text', () => {
         vi.useFakeTimers();
         const { node, onFlip } = start();
@@ -416,6 +459,7 @@ describe('training card drag and text interaction', () => {
         vi.spyOn(window, 'getSelection').mockReturnValue({
             toString: () => 'selected',
         } as Selection);
+
         fireEvent.click(node, { detail: 1 });
         act(() => vi.advanceTimersByTime(221));
         expect(onFlip).toHaveBeenCalledTimes(1);

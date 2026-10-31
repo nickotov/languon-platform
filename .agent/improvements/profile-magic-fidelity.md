@@ -41,12 +41,12 @@ Updated: 2026-09-15
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| Tests | Web 24 files/154 tests and backend 72 files/501 tests passed; guarded Argon2 + authentication HTTP integration 2 files/9 tests passed; mapped auth/profile Playwright 5 journeys passed. |
-| Lint/typecheck/build | Root lint, web typecheck, web and backend production builds, and `git diff --check` passed. |
+| Check                    | Result                                                                                                                                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tests                    | Web 24 files/154 tests and backend 72 files/501 tests passed; guarded Argon2 + authentication HTTP integration 2 files/9 tests passed; mapped auth/profile Playwright 5 journeys passed.                                                                                              |
+| Lint/typecheck/build     | Root lint, web typecheck, web and backend production builds, and `git diff --check` passed.                                                                                                                                                                                           |
 | Runtime/browser/database | Managed browser checked Account, Security, deletion dialog, locale, dark mode, keyboard dismissal, 320px/desktop. No app console errors or unexpected failed requests. Guarded HTTP integration used dedicated loopback PostgreSQL/Redis; task containers and synthetic data removed. |
-| Documentation/user-flow | `pnpm docs:user-flows:check` and `pnpm user-flow:e2e -- check` for all three mapped guides passed; revision markers updated and mapped journeys executed. |
+| Documentation/user-flow  | `pnpm docs:user-flows:check` and `pnpm user-flow:e2e -- check` for all three mapped guides passed; revision markers updated and mapped journeys executed.                                                                                                                             |
 
 ## Outcome and evidence
 

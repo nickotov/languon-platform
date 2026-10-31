@@ -13,6 +13,7 @@ const actor = {
     primaryEmail: 'owner@example.test',
     role: 'owner',
 };
+
 function setup() {
     const authorizeOperation = vi.fn(async () => ({
         actor,
@@ -64,6 +65,7 @@ function setup() {
             headers: { 'content-type': 'application/json', ...headers },
             body: JSON.stringify(body),
         });
+
     return {
         app,
         post,
@@ -74,6 +76,7 @@ function setup() {
         authorizeSensitiveOperation,
     };
 }
+
 describe('admin synthetic model checks HTTP boundary', () => {
     it('requires recent owner authentication before operator spending', async () => {
         const fixture = setup();
@@ -84,14 +87,17 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 403,
             ),
         );
+
         const response = await fixture.post({
             routeId: 'deepseek/deepseek-flash',
             approvedMaximumCostUsd: '0.01',
             kind: 'quick',
         });
+
         expect(response.status).toBe(403);
         expect(fixture.run).not.toHaveBeenCalled();
     });
+
     it('passes verified admin identity and validated input, never caller identity', async () => {
         const fixture = setup();
         expect(
@@ -104,12 +110,14 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 })
             ).status,
         ).toBe(200);
+
         expect(fixture.run).toHaveBeenCalledWith(actor.id, {
             routeId: 'deepseek/deepseek-flash',
             approvedMaximumCostUsd: '0.01',
             kind: 'flow',
             flowId: 'sentence-check',
         });
+
         expect(
             (
                 await fixture.post({
@@ -120,8 +128,10 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(fixture.run).toHaveBeenCalledTimes(1);
     });
+
     it('rejects missing authorization and missing origin before dispatch', async () => {
         const fixture = setup();
         expect(
@@ -136,6 +146,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 )
             ).status,
         ).toBe(401);
+
         expect(
             (
                 await fixture.post(
@@ -148,8 +159,10 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 )
             ).status,
         ).toBe(403);
+
         expect(fixture.run).not.toHaveBeenCalled();
     });
+
     it('lists checks without spending and maps caps into actionable safe errors', async () => {
         const fixture = setup();
         expect(
@@ -161,16 +174,19 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 })
             ).status,
         ).toBe(200);
+
         expect(fixture.authorizeOperation).toHaveBeenCalledOnce();
         expect(fixture.run).not.toHaveBeenCalled();
         fixture.run.mockRejectedValueOnce(
             new TextAiProbeUnavailableError('probe_limit_reached'),
         );
+
         const response = await fixture.post({
             routeId: 'deepseek/deepseek-flash',
             approvedMaximumCostUsd: '0.01',
             kind: 'quick',
         });
+
         expect(response.status).toBe(429);
         expect(await response.json()).toMatchObject({
             error: {
@@ -180,6 +196,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
             },
         });
     });
+
     it('requires explicit upstream-stop attestation and recent owner auth for recovery', async () => {
         const fixture = setup();
         const request = (body: unknown) =>
@@ -195,6 +212,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                     body: JSON.stringify(body),
                 },
             );
+
         expect(
             (
                 await request({
@@ -203,6 +221,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(fixture.recover).not.toHaveBeenCalled();
         fixture.authorizeSensitiveOperation.mockRejectedValueOnce(
             new AdministrationHttpError(
@@ -211,6 +230,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 403,
             ),
         );
+
         expect(
             (
                 await request({
@@ -219,6 +239,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 })
             ).status,
         ).toBe(403);
+
         expect(fixture.recover).not.toHaveBeenCalled();
         expect(
             (
@@ -228,6 +249,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 })
             ).status,
         ).toBe(200);
+
         expect(fixture.recover).toHaveBeenCalledWith(
             actor.id,
             '0198c400-655c-7b8a-aa46-29a1e2652e62',
@@ -236,6 +258,7 @@ describe('admin synthetic model checks HTTP boundary', () => {
                 confirmedUpstreamStopped: true,
             },
         );
+
         expect(fixture.run).not.toHaveBeenCalled();
     });
 });

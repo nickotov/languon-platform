@@ -50,16 +50,23 @@ export function WorkspaceShareControls({
         if (!enabled) {
             setShare(null);
             setCopied(false);
+
             return;
         }
+
         let active = true;
         void requestWithSession((token) => knowledgeApi.share(token, noteId))
             .then((result) => {
-                if (active) setShare(result);
+                if (active) {
+                    setShare(result);
+                }
             })
             .catch(() => {
-                if (active) setError(true);
+                if (active) {
+                    setError(true);
+                }
             });
+
         return () => {
             active = false;
         };
@@ -73,6 +80,7 @@ export function WorkspaceShareControls({
             const result = await requestWithSession((token) =>
                 knowledgeApi.enableShare(token, noteId),
             );
+
             setShare(result);
             setCopied(false);
             onChange(true);
@@ -91,6 +99,7 @@ export function WorkspaceShareControls({
             await requestWithSession((token) =>
                 knowledgeApi.disableShare(token, noteId),
             );
+
             setShare(null);
             setCopied(false);
             setConfirmDisable(false);
@@ -103,7 +112,10 @@ export function WorkspaceShareControls({
     }
 
     async function copy() {
-        if (!url) return;
+        if (!url) {
+            return;
+        }
+
         try {
             await navigator.clipboard.writeText(url);
             setCopied(true);
@@ -116,12 +128,17 @@ export function WorkspaceShareControls({
         panel.current?.focus({ preventScroll: true });
         setConfirmDisable(true);
     }
+
     function keepSharing() {
         panel.current?.focus({ preventScroll: true });
         setConfirmDisable(false);
     }
+
     function onOpenChange(open: boolean) {
-        if (!open) setConfirmDisable(false);
+        if (!open) {
+            setConfirmDisable(false);
+        }
+
         notifyOpenChange(open);
     }
 

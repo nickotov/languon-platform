@@ -94,6 +94,7 @@ run('restricted sentence worker role', () => {
             },
             context(),
         );
+
     function content(
         input: SentenceGenerationInput,
         targets = input.candidates.slice(0, 2),
@@ -136,16 +137,20 @@ run('restricted sentence worker role', () => {
             targets,
         };
     }
+
     async function generated(id = owner, targetCount = 2) {
         const response = await store.next(access(id), next(), context());
         expect(response.kind).toBe('job');
         const job = await claim();
         expect(job?.kind).toBe('sentence-generation');
-        if (!job || job.kind !== 'sentence-generation')
+        if (!job || job.kind !== 'sentence-generation') {
             throw new Error('No generation');
+        }
+
         expect(await worker.markDispatched(job.lease, context())).toBe(
             'dispatch',
         );
+
         expect(
             await worker.completeGeneration(
                 job.lease,
@@ -159,14 +164,20 @@ run('restricted sentence worker role', () => {
                 context(),
             ),
         ).toBe('committed');
+
         const result = await store.getJob(
             access(id),
             job.lease.jobId,
             context(),
         );
-        if (result.result?.kind !== 'exercise') throw new Error('No exercise');
+
+        if (result.result?.kind !== 'exercise') {
+            throw new Error('No exercise');
+        }
+
         return { exercise: result.result.exercise, lease: job.lease };
     }
+
     beforeAll(async () => {
         client = createTestPostgresClient();
         db = createDrizzleDatabase(client, databaseSchema);
@@ -174,9 +185,11 @@ run('restricted sentence worker role', () => {
         await migrateTestDatabase(client);
         worker = new DrizzleSentenceWorkerStore(db);
     }, 60000);
+
     afterAll(async () => {
         await client?.end();
     });
+
     beforeEach(async () => {
         await client.unsafe('truncate users cascade');
         owner = randomUUID();
@@ -189,10 +202,12 @@ run('restricted sentence worker role', () => {
             { id: owner, status: 'active' },
             { id: reader, status: 'active' },
         ]);
+
         await db.insert(aiCreditAccountsTable).values([
             { userId: owner, mode: 'limited' },
             { userId: reader, mode: 'limited' },
         ]);
+
         await db.insert(dictionariesTable).values({
             id: dictionaryId,
             ownerId: owner,
@@ -206,6 +221,7 @@ run('restricted sentence worker role', () => {
             shareKeyVersion: 1,
             shareKeyRotatedAt: new Date(),
         });
+
         await db.insert(dictionarySettingsTable).values({ dictionaryId });
         await db.insert(dictionaryCardsTable).values([
             {
@@ -227,6 +243,7 @@ run('restricted sentence worker role', () => {
                 sortKey: 2048n,
             },
         ]);
+
         const model = textAiModelCatalog[0]!;
         const snapshot: TextAiExecutionSnapshot = {
             adapterRevision: model.adapterRevision,
@@ -249,12 +266,14 @@ run('restricted sentence worker role', () => {
                 'sentence-check:v1',
             ],
         };
+
         await db.insert(dictionaryAiConfigurationRevisionsTable).values({
             id: revisionId,
             createdByUserId: owner,
             version: 1,
             catalogSnapshot: snapshot,
         });
+
         await seedLegacyActionFixture(db, '100');
         store = new DrizzleSentencePracticeStore(db, {
             resolveExecution: async (_tx, _user, format) => ({
@@ -265,6 +284,7 @@ run('restricted sentence worker role', () => {
             }),
         });
     });
+
     it('claims, dispatches, settles and publishes through least privilege grants', async () => {
         const role = `sentence_worker_${randomUUID().replaceAll('-', '')}`;
         await db.transaction((tx) =>
@@ -277,6 +297,7 @@ run('restricted sentence worker role', () => {
                 sourceReference: `worker-role:${randomUUID()}`,
             }),
         );
+
         await client.unsafe(`CREATE ROLE "${role}" NOLOGIN`);
         try {
             const raw = await readFile(
@@ -291,13 +312,16 @@ run('restricted sentence worker role', () => {
                 .filter((line) => !line.startsWith('\\'))
                 .join('\n')
                 .replaceAll(':"dictionary_worker_role"', `"${role}"`);
+
             await client.unsafe(grants);
             const restricted = Object.create(db) as SentenceDatabase;
             restricted.transaction = async (callback) =>
                 db.transaction(async (tx) => {
                     await tx.execute(sql.raw(`SET LOCAL ROLE "${role}"`));
+
                     return callback(tx);
                 });
+
             worker = new DrizzleSentenceWorkerStore(restricted);
             const saved = await generated();
             const checkJob = await store.enqueueCheck(
@@ -313,12 +337,15 @@ run('restricted sentence worker role', () => {
                 context(),
             );
             const checking = await claim();
-            if (!checking || checking.kind !== 'sentence-check')
+            if (!checking || checking.kind !== 'sentence-check') {
                 throw new Error('No check job');
+            }
+
             expect(checking.lease.jobId).toBe(checkJob.id);
             expect(await worker.markDispatched(checking.lease, context())).toBe(
                 'dispatch',
             );
+
             expect(
                 await worker.completeCheck(
                     checking.lease,
@@ -342,14 +369,17 @@ run('restricted sentence worker role', () => {
                     context(),
                 ),
             ).toBe('committed');
+
             expect(
                 (await store.attempts(access(), { limit: 25 }, context()))
                     .attempts,
             ).toHaveLength(1);
+
             const actions = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.ownerId, owner));
+
             expect(actions).toHaveLength(2);
             expect(
                 actions.every(
@@ -359,6 +389,7 @@ run('restricted sentence worker role', () => {
                         (action.chargedMilli ?? 0n) > 0n,
                 ),
             ).toBe(true);
+
             const preparation = new DrizzleSentencePreparationStore(
                 restricted,
                 {
@@ -401,6 +432,7 @@ run('restricted sentence worker role', () => {
                     items: [],
                     expiresAt: new Date(context().now.getTime() - 1),
                 });
+
             expect(await preparation.tick(context())).toBe(true);
             expect(
                 await db
@@ -415,11 +447,14 @@ run('restricted sentence worker role', () => {
             ).toHaveLength(0);
 
             const preparedJob = await claim();
-            if (!preparedJob || preparedJob.kind !== 'sentence-generation')
+            if (!preparedJob || preparedJob.kind !== 'sentence-generation') {
                 throw new Error('No prepared generation job');
+            }
+
             expect(
                 await worker.markDispatched(preparedJob.lease, context()),
             ).toBe('dispatch');
+
             expect(
                 await worker.completeGeneration(
                     preparedJob.lease,
@@ -430,15 +465,18 @@ run('restricted sentence worker role', () => {
                     context(),
                 ),
             ).toBe('committed');
+
             expect(await preparation.tick(context())).toBe(true);
             expect(await preparation.tick(context())).toBe(true);
             expect(
                 (await ownedPreparation.get(access(), prepared.id, context()))
                     .state,
             ).toBe('completed');
+
             expect(await db.select().from(sentenceExposuresTable)).toHaveLength(
                 exposureBefore.length,
             );
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(
@@ -446,16 +484,19 @@ run('restricted sentence worker role', () => {
                     ),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(sql`select * from sentence_library_snapshots`),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(sql`delete from sentence_preparation_commands`),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(
@@ -483,6 +524,7 @@ run('restricted sentence worker role', () => {
                         settledAt: new Date(),
                     }),
             );
+
             expect(
                 await restricted.transaction((tx) =>
                     tx
@@ -496,6 +538,7 @@ run('restricted sentence worker role', () => {
                         ),
                 ),
             ).toHaveLength(1);
+
             await restricted.transaction((tx) =>
                 tx
                     .update(dictionaryGenerationProviderUsageArchiveTable)
@@ -507,6 +550,7 @@ run('restricted sentence worker role', () => {
                         ),
                     ),
             );
+
             await restricted.transaction((tx) =>
                 tx
                     .delete(dictionaryGenerationProviderUsageArchiveTable)
@@ -517,6 +561,7 @@ run('restricted sentence worker role', () => {
                         ),
                     ),
             );
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(
@@ -524,6 +569,7 @@ run('restricted sentence worker role', () => {
                     ),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(
@@ -531,11 +577,13 @@ run('restricted sentence worker role', () => {
                     ),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(sql`select handle from users where id=${owner}`),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             // This is the combined dictionary/text worker role: existing text publication
             // grants dictionary reads, including translation context. It still cannot
             // read account handles or mutate learner/account/vocabulary fields above.

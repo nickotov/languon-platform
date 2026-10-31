@@ -13,6 +13,7 @@ import { useInterfaceText } from '../../hooks/use-interface-text';
 
 export function LibrarySkeleton({ rows = 5 }: { rows?: number }) {
     const { L } = useInterfaceText();
+
     return (
         <div
             role='status'
@@ -38,6 +39,7 @@ export function LibrarySkeleton({ rows = 5 }: { rows?: number }) {
 
 export function LibraryLoadError({ onRetry }: { onRetry: () => void }) {
     const { L } = useInterfaceText();
+
     return (
         <InlineAlert
             tone='error'
@@ -83,6 +85,7 @@ export function LibraryEmpty({
             : kind === 'archive-empty'
               ? L('archiveEmptyBody')
               : L('noResultsBody');
+
     return (
         <div className={componentStyles.emptyState}>
             <span className={componentStyles.emptyIcon}>
@@ -116,6 +119,7 @@ export function LoadMore({
     onLoad: () => void;
 }) {
     const { L } = useInterfaceText();
+
     return (
         <div className={componentStyles.root}>
             {status === 'error' ? (

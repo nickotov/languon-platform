@@ -48,11 +48,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 credentialsConfigured: false,
                 executionReady: false,
             });
+
             const now = new Date();
             authenticatedAt = now;
             await db
                 .insert(usersTable)
                 .values({ id: actor.userId, status: 'active' });
+
             await db.insert(userEmailsTable).values({
                 id: randomUUID(),
                 userId: actor.userId,
@@ -61,6 +63,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 isPrimary: true,
                 verifiedAt: now,
             });
+
             await db.insert(adminMembershipsTable).values({
                 id: membershipId,
                 userId: actor.userId,
@@ -68,6 +71,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 grantReason: 'Synthetic configuration owner',
                 role: 'owner',
             });
+
             await db.insert(authSessionsTable).values({
                 id: actor.sessionId,
                 userId: actor.userId,
@@ -78,6 +82,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 refreshTokenDigest: 'B'.repeat(43),
             });
         }, 120_000);
+
         afterAll(async () => client?.end(), 120_000);
         async function input(): Promise<KnowledgeTranscriptionAdminPreviewRequest> {
             return {
@@ -99,12 +104,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             };
         }
+
         const future = () => new Date(Date.now() + 300_000);
         it('starts unconfigured without a fabricated rate and atomically publishes one immutable audited revision', async () => {
             expect(await store.read()).toMatchObject({
                 version: 0,
                 current: null,
             });
+
             const candidate = await input();
             const result = await store.apply(actor, candidate, future());
             expect(result).toMatchObject({
@@ -115,10 +122,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     enabled: false,
                 },
             });
+
             const audit = await db
                 .select()
                 .from(adminAuditEventsTable)
                 .where(eq(adminAuditEventsTable.actorUserId, actor.userId));
+
             expect(audit).toHaveLength(1);
             expect(audit[0]!.metadata).toMatchObject({
                 capability: 'knowledge-transcription',
@@ -126,6 +135,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 enabled: false,
             });
         });
+
         it('pins actual credential review privately and exposes only the attestation time and evidence', async () => {
             const fingerprint = 'a'.repeat(64);
             const reviewedStore = new DrizzleTranscriptionAdminStore(db, {
@@ -136,35 +146,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const candidate = await input();
             candidate.config.processingControlsRevision =
                 KNOWLEDGE_TRANSCRIPTION_PROCESSING_REVISION;
+
             candidate.config.dataSharingDisabled = true;
             candidate.config.dataSharingEvidence =
                 'Synthetic actual organization/project opt-in review';
+
             const result = await reviewedStore.apply(
                 actor,
                 candidate,
                 future(),
             );
+
             expect(result.current!.dataSharingAttestedAt).toBe(
                 result.current!.createdAt,
             );
+
             expect(JSON.stringify(result)).not.toContain(
                 'processingCredentialFingerprint',
             );
+
             expect(JSON.stringify(result)).not.toContain(fingerprint);
             const [stored] = await db
                 .select()
                 .from(revisions)
                 .where(eq(revisions.id, candidate.revisionId));
+
             expect(stored!.processingCredentialFingerprint).toBe(fingerprint);
             const rotatedStore = new DrizzleTranscriptionAdminStore(db, {
                 credentialsConfigured: true,
                 executionReady: false,
                 credentialFingerprint: 'b'.repeat(64),
             });
+
             expect((await rotatedStore.read()).readiness.reasons).toContain(
                 'processing_credentials_changed',
             );
         });
+
         it('replays an identical published operation without creating another revision or audit', async () => {
             const candidate = await input();
             await store.apply(actor, candidate, future());
@@ -179,6 +197,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toThrow('changed');
         });
+
         it('fences concurrent optimistic publications and retains the winning configuration', async () => {
             const first = await input();
             const second = {
@@ -190,25 +209,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 store.apply(actor, first, future()),
                 store.apply(actor, second, future()),
             ]);
+
             expect(
                 outcomes.filter((item) => item.status === 'fulfilled'),
             ).toHaveLength(1);
+
             expect(
                 outcomes.filter((item) => item.status === 'rejected'),
             ).toHaveLength(1);
+
             expect((await store.read()).version).toBe(
                 first.expectedVersion + 1,
             );
         });
+
         it('rejects expired previews before creating a configuration row', async () => {
             const candidate = await input();
             await expect(
                 store.apply(actor, candidate, new Date(0)),
             ).rejects.toThrow('changed');
+
             expect((await store.read()).version).toBe(
                 candidate.expectedVersion,
             );
         });
+
         it('rechecks revoked owner membership in the publication transaction', async () => {
             const candidate = await input();
             await db
@@ -220,9 +245,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: new Date(),
                 })
                 .where(eq(adminMembershipsTable.id, membershipId));
+
             await expect(
                 store.apply(actor, candidate, future()),
             ).rejects.toThrow('Administrator access');
+
             await db
                 .update(adminMembershipsTable)
                 .set({
@@ -232,19 +259,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: new Date(),
                 })
                 .where(eq(adminMembershipsTable.id, membershipId));
+
             expect((await store.read()).version).toBe(
                 candidate.expectedVersion,
             );
         });
+
         it('rechecks recent authentication before publication', async () => {
             const candidate = await input();
             await db
                 .update(authSessionsTable)
                 .set({ authenticatedAt: new Date(Date.now() - 360_000) })
                 .where(eq(authSessionsTable.id, actor.sessionId));
+
             await expect(
                 store.apply(actor, candidate, future()),
             ).rejects.toThrow();
+
             await db
                 .update(authSessionsTable)
                 .set({
@@ -252,10 +283,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: new Date(),
                 })
                 .where(eq(authSessionsTable.id, actor.sessionId));
+
             expect((await store.read()).version).toBe(
                 candidate.expectedVersion,
             );
         });
+
         it('database authority rejects rewriting an immutable published configuration', async () => {
             const snapshot = await store.read();
             expect(snapshot.current).not.toBeNull();
@@ -265,6 +298,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .set({ maximumBytes: 1 })
                     .where(eq(revisions.id, snapshot.current!.id)),
             ).rejects.toThrow();
+
             expect((await store.read()).current!.maximumBytes).toBe(
                 snapshot.current!.maximumBytes,
             );

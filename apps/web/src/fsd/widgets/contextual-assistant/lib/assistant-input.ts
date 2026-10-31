@@ -53,15 +53,21 @@ export function appendAssistantAttachment(
     if (
         referenceLimit !== undefined &&
         referenceLength([...previous, attachment]) > referenceLimit
-    )
+    ) {
         return {
             attachments: previous,
             error: `Reference text exceeds the ${referenceLimit.toLocaleString('en-US')}-character limit. Remove a reference or select a shorter passage.`,
         };
-    if (referenceLimit === undefined && previous.length >= 10)
+    }
+
+    if (referenceLimit === undefined && previous.length >= 10) {
         return { attachments: previous, error: copy[locale].limit };
-    if (Array.from(attachment.content).length > 80_000)
+    }
+
+    if (Array.from(attachment.content).length > 80_000) {
         return { attachments: previous, error: copy[locale].tooLarge };
+    }
+
     return { attachments: [...previous, attachment], error: null };
 }
 
@@ -70,8 +76,12 @@ export function knowledgeProposalQuestion(
     explanation: string | undefined,
     locale: Locale,
 ): string {
-    if (!explanation) return question;
+    if (!explanation) {
+        return question;
+    }
+
     // Keep complete Unicode characters while bounding the identifying excerpt.
     const excerpt = Array.from(explanation).slice(0, 1000).join('');
+
     return `${question}\n\n${copy[locale].identify}\n\n${excerpt}`;
 }

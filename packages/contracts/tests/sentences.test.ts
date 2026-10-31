@@ -21,17 +21,20 @@ const check = {
     explanationLanguage: 'en',
     revealedHintIds: ['hint-1'],
 };
+
 describe('sentence boundary contracts', () => {
     it('retains exact answer and counts code points rather than UTF16 units', () => {
         expect(SentenceCheckRequestSchema.parse(check).answer).toBe(
             check.answer,
         );
+
         expect(
             SentenceCheckRequestSchema.safeParse({
                 ...check,
                 answer: '😀'.repeat(SENTENCE_LIMITS.answerCodePoints),
             }).success,
         ).toBe(true);
+
         expect(
             SentenceCheckRequestSchema.safeParse({
                 ...check,
@@ -39,23 +42,27 @@ describe('sentence boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects blank answers, unsafe controls, duplicate hints and private fields', () => {
         for (const answer of [
             ' \n',
             'answer\u0000',
             'answer\u007f',
             'answer\ud800',
-        ])
+        ]) {
             expect(
                 SentenceCheckRequestSchema.safeParse({ ...check, answer })
                     .success,
             ).toBe(false);
+        }
+
         expect(
             SentenceCheckRequestSchema.safeParse({
                 ...check,
                 revealedHintIds: ['hint-1', 'hint-1'],
             }).success,
         ).toBe(false);
+
         expect(
             SentenceCheckRequestSchema.safeParse({
                 ...check,
@@ -63,6 +70,7 @@ describe('sentence boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('bounds and deduplicates scopes and visited IDs', () => {
         const next = {
             operationId: uuid,
@@ -72,6 +80,7 @@ describe('sentence boundary contracts', () => {
             scope: { type: 'all' },
             visitedExerciseIds: [],
         };
+
         expect(SentenceNextRequestSchema.safeParse(next).success).toBe(true);
         expect(
             SentenceNextRequestSchema.safeParse({
@@ -79,12 +88,14 @@ describe('sentence boundary contracts', () => {
                 visitedExerciseIds: [uuid, uuid],
             }).success,
         ).toBe(false);
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...next,
                 scope: { type: 'manual', entryIds: [] },
             }).success,
         ).toBe(false);
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...next,
@@ -92,6 +103,7 @@ describe('sentence boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('represents full selected-word coverage within bounded transport limits', () => {
         const ids = Array.from(
             { length: 101 },
@@ -106,6 +118,7 @@ describe('sentence boundary contracts', () => {
             scope: { type: 'manual', entryIds: ids.slice(0, 100) },
             visitedExerciseIds: ids.slice(0, 100),
         };
+
         expect(SentenceNextRequestSchema.safeParse(next).success).toBe(true);
         expect(Buffer.byteLength(JSON.stringify(next))).toBeLessThan(32_000);
         expect(
@@ -114,6 +127,7 @@ describe('sentence boundary contracts', () => {
                 visitedExerciseIds: ids,
             }).success,
         ).toBe(false);
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...next,
@@ -121,6 +135,7 @@ describe('sentence boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('bounds exact replay validation to review-only and keeps prepare lists distinct from next identity', () => {
         const ids = Array.from(
             { length: 101 },
@@ -132,20 +147,24 @@ describe('sentence boundary contracts', () => {
             mode: 'review-only',
             scope: { type: 'all' },
         };
+
         expect(
             SentencePrepareRequestSchema.safeParse({
                 ...setup,
                 replayExerciseIds: ids.slice(0, 100),
             }).success,
         ).toBe(true);
-        for (const replayExerciseIds of [[], [uuid, uuid], ids])
+
+        for (const replayExerciseIds of [[], [uuid, uuid], ids]) {
             expect(
                 SentencePrepareRequestSchema.safeParse({
                     ...setup,
                     replayExerciseIds,
                 }).success,
             ).toBe(false);
-        for (const mode of ['saved-first', 'new-only'])
+        }
+
+        for (const mode of ['saved-first', 'new-only']) {
             expect(
                 SentencePrepareRequestSchema.safeParse({
                     ...setup,
@@ -153,31 +172,37 @@ describe('sentence boundary contracts', () => {
                     replayExerciseIds: [uuid],
                 }).success,
             ).toBe(false);
+        }
+
         const next = {
             ...setup,
             operationId: uuid,
             sessionId: uuid,
             visitedExerciseIds: [],
         };
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...next,
                 replayExerciseId: uuid,
             }).success,
         ).toBe(true);
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...next,
                 replayExerciseId: 'invalid',
             }).success,
         ).toBe(false);
+
         expect(
             SentenceNextRequestSchema.safeParse({
                 ...next,
                 replayExerciseIds: [uuid],
             }).success,
         ).toBe(false);
-        for (const mode of ['saved-first', 'new-only'])
+
+        for (const mode of ['saved-first', 'new-only']) {
             expect(
                 SentenceNextRequestSchema.safeParse({
                     ...next,
@@ -185,7 +210,9 @@ describe('sentence boundary contracts', () => {
                     replayExerciseId: uuid,
                 }).success,
             ).toBe(false);
+        }
     });
+
     it('publishes isolated bounded sentence errors without extending legacy flashcard errors', () => {
         for (const code of [
             'model_unavailable',
@@ -201,37 +228,45 @@ describe('sentence boundary contracts', () => {
                     correlationId: uuid,
                 },
             };
+
             expect(
                 SentenceErrorResponseSchema.safeParse(response).success,
             ).toBe(true);
+
             expect(
                 LearningErrorResponseSchema.safeParse(response).success,
             ).toBe(false);
         }
+
         const error = {
             code: 'invalid_request',
             message: 'Invalid input.',
             correlationId: uuid,
         };
+
         expect(SentenceErrorResponseSchema.safeParse({ error }).success).toBe(
             true,
         );
+
         expect(
             SentenceErrorResponseSchema.safeParse({
                 error: { ...error, message: 'x'.repeat(301) },
             }).success,
         ).toBe(false);
+
         expect(
             SentenceErrorResponseSchema.safeParse({
                 error: { ...error, retryAfterSeconds: 0 },
             }).success,
         ).toBe(false);
+
         expect(
             SentenceErrorResponseSchema.safeParse({
                 error: { ...error, providerResponse: 'private' },
             }).success,
         ).toBe(false);
     });
+
     it('isolates explicit manual reference reveal without inventing a score', () => {
         const exercise = {
             id: uuid,
@@ -273,38 +308,46 @@ describe('sentence boundary contracts', () => {
             referenceTranslation: 'Wir gehen.',
             createdAt: '2026-10-04T00:00:00.000Z',
         };
+
         expect(
             SentenceReferenceRevealRequestSchema.parse({
                 operationId: uuid,
                 sessionId: uuid,
             }),
         ).toEqual({ operationId: uuid, sessionId: uuid });
+
         expect(
             SentenceReferenceRevealResponseSchema.parse({ review }).review
                 .referenceTranslation,
         ).toBe('Wir gehen.');
+
         expect(
             SentenceManualReviewSchema.safeParse({ ...review, score: 100 })
                 .success,
         ).toBe(false);
+
         expect(
             SentenceManualReviewSchema.safeParse({
                 ...review,
                 feedback: { percentage: 100 },
             }).success,
         ).toBe(false);
+
         expect(
             SentenceExerciseSchema.safeParse({
                 ...exercise,
                 referenceTranslation: 'Wir gehen.',
             }).success,
         ).toBe(false);
+
         expect(SentenceManualReviewsQuerySchema.parse({})).toEqual({
             limit: 25,
         });
+
         expect(
             SentenceManualReviewsQuerySchema.safeParse({ limit: 26 }).success,
         ).toBe(false);
+
         expect(
             SentenceManualReviewSchema.safeParse({
                 ...review,
@@ -312,12 +355,14 @@ describe('sentence boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('isolates sentence capability from strict flashcard capability', () => {
         expect(
             SentenceCapabilitiesResponseSchema.safeParse({
                 sentencesEnabled: true,
             }).success,
         ).toBe(true);
+
         expect(
             SentenceCapabilitiesResponseSchema.safeParse({
                 sentencesEnabled: true,

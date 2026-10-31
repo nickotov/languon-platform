@@ -22,54 +22,76 @@ export function WorkbookDetail({ workbookId }: { workbookId: string }) {
     function reload() {
         void model.query.refetch();
     }
+
     function change(event: ChangeEvent<HTMLInputElement>) {
         setTitle(event.target.value);
     }
+
     function rename(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (title !== null) void model.rename(title);
+        if (title !== null) {
+            void model.rename(title);
+        }
     }
+
     function requestDelete() {
         setConfirmDelete(true);
     }
+
     function cancelDelete() {
         setConfirmDelete(false);
     }
+
     function remove() {
         void model.remove();
     }
+
     function share() {
         void model.share();
     }
+
     function copy() {
         void model.copy();
     }
+
     function revoke() {
         void model.revoke();
     }
+
     function removeNote(id: string) {
-        if (workbook)
+        if (workbook) {
             void model.setNotes(
                 workbook.notes
                     .filter((note) => note.id !== id)
                     .map((note) => note.id),
             );
+        }
     }
+
     function move(index: number, delta: number) {
-        if (!workbook) return;
+        if (!workbook) {
+            return;
+        }
+
         const ids = workbook.notes.map((note) => note.id);
         const target = index + delta;
-        if (target < 0 || target >= ids.length) return;
+        if (target < 0 || target >= ids.length) {
+            return;
+        }
+
         [ids[index], ids[target]] = [ids[target]!, ids[index]!];
         void model.setNotes(ids);
     }
-    if (model.query.isPending)
+
+    if (model.query.isPending) {
         return (
             <main className={styles.page}>
                 <LoadingState>{labels.loading}</LoadingState>
             </main>
         );
-    if (!workbook || model.query.isError)
+    }
+
+    if (!workbook || model.query.isError) {
         return (
             <main className={styles.page}>
                 <InlineAlert
@@ -80,8 +102,11 @@ export function WorkbookDetail({ workbookId }: { workbookId: string }) {
                 </InlineAlert>
             </main>
         );
+    }
+
     const titleValue = title ?? workbook.title;
     const copyBlocked = workbook.notes.some((note) => note.status !== 'saved');
+
     return (
         <main className={styles.page}>
             <Link href={href('/workbooks')} className={styles.link}>

@@ -60,8 +60,10 @@ export async function sentenceLibrarySnapshotInternal(
             and(filterConditions(scope, input.query), eligible)!,
         ).limit(10001);
 
-        if (selected.length > 10000)
+        if (selected.length > 10000) {
             throw new SentenceCapacityUnavailableError(60);
+        }
+
         await pruneSentenceLibrarySnapshots(tx, context.now);
         await tx.execute(
             sql`delete from sentence_library_snapshots where id in (select id from sentence_library_snapshots where actor_id=${scope.actorId}::uuid and dictionary_id=${scope.dictionaryId}::uuid order by expires_at desc,id desc offset 4 limit 100)`,

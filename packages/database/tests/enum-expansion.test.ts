@@ -13,6 +13,7 @@ describe('additive enum migration recognition', () => {
             typeName: '"public"."measurement"',
             sql: `ALTER TYPE "public"."measurement" ADD VALUE IF NOT EXISTS 'speech_success';`,
         });
+
         expect(
             parseEnumExpansion(
                 `-- reviewed expansion\nALTER TYPE "audit" ADD VALUE IF NOT EXISTS 'it''s valid' BEFORE 'previous';`,
@@ -33,7 +34,8 @@ describe('additive enum migration recognition', () => {
             `ALTER TYPE sample RENAME VALUE 'first' TO 'other';`,
             `ALTER TYPE sample ADD VALUE 'second'; DROP TABLE sample;`,
             `CREATE FUNCTION example() RETURNS void AS $$ BEGIN ALTER TYPE sample ADD VALUE 'second'; END $$ LANGUAGE plpgsql;`,
-        ])
+        ]) {
             expect(parseEnumExpansion(sql)).toBeNull();
+        }
     });
 });

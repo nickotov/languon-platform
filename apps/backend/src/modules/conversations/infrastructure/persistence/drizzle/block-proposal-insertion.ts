@@ -12,13 +12,17 @@ const invalid = () =>
     );
 
 function nodeSize(node: KnowledgeNode): number {
-    if (node.type === 'text') return node.text?.length ?? 0;
+    if (node.type === 'text') {
+        return node.text?.length ?? 0;
+    }
+
     if (
         node.type === 'learningBlock' ||
         node.type === 'hardBreak' ||
         node.type === 'horizontalRule'
-    )
+    ) {
         return 1;
+    }
 
     return (
         2 +
@@ -31,16 +35,24 @@ function splitNode(
     offset: number,
 ): [KnowledgeNode | null, KnowledgeNode | null] {
     const size = nodeSize(node);
-    if (offset === 0) return [null, node];
-    if (offset === size) return [node, null];
+    if (offset === 0) {
+        return [null, node];
+    }
+
+    if (offset === size) {
+        return [node, null];
+    }
+
     if (
         offset < 0 ||
         offset > size ||
         node.type === 'learningBlock' ||
         node.type === 'hardBreak' ||
         node.type === 'horizontalRule'
-    )
+    ) {
         throw invalid();
+    }
+
     if (node.type === 'text') {
         const text = node.text ?? '';
         const before = text.charCodeAt(offset - 1);
@@ -50,8 +62,9 @@ function splitNode(
             before <= 0xdbff &&
             after >= 0xdc00 &&
             after <= 0xdfff
-        )
+        ) {
             throw invalid();
+        }
 
         return [
             { ...node, text: text.slice(0, offset) },
@@ -87,7 +100,9 @@ function splitChildren(
         cursor = end;
     }
 
-    if (position !== cursor) throw invalid();
+    if (position !== cursor) {
+        throw invalid();
+    }
 
     return [children, []];
 }
@@ -101,16 +116,25 @@ function sharesGroup(
     right: LearningBlock | undefined,
     mediaIds: Set<string>,
 ): boolean {
-    if (!left || right?.type !== 'exercise') return false;
+    if (!left || right?.type !== 'exercise') {
+        return false;
+    }
+
     if (
         left.type === 'exercise' &&
         left.group?.id &&
         left.group.id === right.group?.id
-    )
+    ) {
         return true;
+    }
+
     const source = right.group?.parentBlockId ?? right.source?.blockId;
-    if ((left.type === 'audio' || left.type === 'video') && source === left.id)
+    if (
+        (left.type === 'audio' || left.type === 'video') &&
+        source === left.id
+    ) {
         return true;
+    }
 
     return (
         left.type === 'exercise' &&
@@ -126,7 +150,10 @@ export function insertProposalBlocks(
     blocks: LearningBlock[],
     position: number,
 ): KnowledgeNode {
-    if (!Number.isInteger(position) || position < 0) throw invalid();
+    if (!Number.isInteger(position) || position < 0) {
+        throw invalid();
+    }
+
     const children = document.content ?? [];
     const mediaIds = new Set(
         children.flatMap((node) => {
@@ -149,8 +176,10 @@ export function insertProposalBlocks(
             block(meaningful(right)[0]),
             mediaIds,
         )
-    )
+    ) {
         throw invalid();
+    }
+
     const result = {
         ...document,
         content: [
@@ -167,7 +196,9 @@ export function insertProposalBlocks(
         document: result,
     });
 
-    if (!parsed.success) throw invalid();
+    if (!parsed.success) {
+        throw invalid();
+    }
 
     return parsed.data.document;
 }

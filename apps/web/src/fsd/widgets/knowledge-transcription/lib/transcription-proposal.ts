@@ -22,11 +22,20 @@ export function captureTranscription(
     const found = draft.blocks.find(
         (block) => block.id === blockId && block.type === 'audio',
     );
-    if (!found) throw new Error('The selected audio block is unavailable.');
+
+    if (!found) {
+        throw new Error('The selected audio block is unavailable.');
+    }
+
     const target = LearningBlockSchema.parse(found);
-    if (target.type !== 'audio') throw new Error('An audio block is required.');
-    if (!target.assetId)
+    if (target.type !== 'audio') {
+        throw new Error('An audio block is required.');
+    }
+
+    if (!target.assetId) {
         throw new Error('Add a recording before requesting a transcription.');
+    }
+
     return {
         noteId,
         branchId: draft.branchId,
@@ -40,6 +49,7 @@ export function captureTranscription(
         },
     };
 }
+
 export function transcriptionReplacement(
     expected: TranscriptionAudioBlock,
     text: string,
@@ -49,5 +59,6 @@ export function transcriptionReplacement(
         language: AssistantLanguageSchema.parse(language),
         segments: [{ id: crypto.randomUUID(), text }],
     });
+
     return { ...expected, transcript };
 }

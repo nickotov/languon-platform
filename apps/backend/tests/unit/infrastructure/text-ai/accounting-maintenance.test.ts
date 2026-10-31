@@ -19,12 +19,14 @@ describe('accounting maintenance scheduling', () => {
             onError,
             intervalMs: 1000,
         });
+
         await vi.advanceTimersByTimeAsync(20000);
         expect(maintain).toHaveBeenCalledOnce();
         let stopped = false;
         const completion = worker.stop().then(() => {
             stopped = true;
         });
+
         expect(stopped).toBe(false);
         finish();
         await completion;
@@ -45,6 +47,7 @@ describe('accounting maintenance scheduling', () => {
             onError,
             intervalMs: 1000,
         });
+
         await vi.advanceTimersByTimeAsync(1000);
         expect(onError).toHaveBeenCalledOnce();
         await vi.advanceTimersByTimeAsync(1000);

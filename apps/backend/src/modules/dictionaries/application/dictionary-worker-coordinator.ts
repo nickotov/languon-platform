@@ -20,8 +20,12 @@ export class DictionaryWorkerCoordinator<TInput> {
         const proposals = () => this.proposals.processNext(input);
         const first = audioFirst ? audio : proposals;
         const second = audioFirst ? proposals : audio;
-        if (await first()) return true;
+        if (await first()) {
+            return true;
+        }
+
         input.signal.throwIfAborted();
+
         return second();
     }
 }

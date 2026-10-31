@@ -36,6 +36,7 @@ export function TutorMark({ workspace = false }: { workspace?: boolean }) {
         </span>
     );
 }
+
 export type TutorHeaderActions = {
     onNew(): void;
     onHistory(): void;
@@ -65,16 +66,25 @@ export function TutorHeader({
     const existing = conversationCopy(locale);
     const placement = useCompanionLayout();
     function toggleDetached() {
-        if (placement) placement.setDetached(!placement.detached);
+        if (placement) {
+            placement.setDetached(!placement.detached);
+        }
     }
+
     function toggleHalfWidth() {
-        if (placement) placement.setHalfWidth(!placement.halfWidth);
+        if (placement) {
+            placement.setHalfWidth(!placement.halfWidth);
+        }
     }
+
     const buttonSize = layout.mobile ? 'large' : 'small';
     const expansionLabel = layout.sheetFull ? copy.partial : copy.expand;
     const expansionIcon = layout.sheetFull ? <ChevronsDown /> : <ChevronsUp />;
     let foldIcon = layout.mobile && !embedded ? <ChevronDown /> : <Minus />;
-    if (workspace) foldIcon = <X />;
+    if (workspace) {
+        foldIcon = <X />;
+    }
+
     const items: MenuItem[] = [
         {
             headingBefore: copy.conversation,
@@ -84,14 +94,15 @@ export function TutorHeader({
             disabled: Boolean(actions.busy),
         },
     ];
-    if (layout.mobile || workspace)
+
+    if (layout.mobile || workspace) {
         items.push({
             label: existing.newChat,
             icon: <SquarePen />,
             onSelect: actions.onNew,
             disabled: Boolean(actions.busy),
         });
-    else if (!layout.attached)
+    } else if (!layout.attached) {
         items.push(
             {
                 separatorBefore: true,
@@ -125,7 +136,9 @@ export function TutorHeader({
                 onSelect: layout.toggleFull,
             },
         );
-    if (placement && layout.attached && !layout.mobile && !workspace)
+    }
+
+    if (placement && layout.attached && !layout.mobile && !workspace) {
         items.push({
             separatorBefore: true,
             headingBefore: copy.layout,
@@ -139,7 +152,9 @@ export function TutorHeader({
             closeOnSelect: false,
             onSelect: toggleHalfWidth,
         });
-    if (placement && !layout.mobile)
+    }
+
+    if (placement && !layout.mobile) {
         items.push({
             separatorBefore: !layout.attached,
             label: copy.detached,
@@ -147,6 +162,8 @@ export function TutorHeader({
             icon: <ExternalLink />,
             onSelect: toggleDetached,
         });
+    }
+
     items.push({
         separatorBefore: true,
         label: existing.deleteChat,
@@ -155,6 +172,7 @@ export function TutorHeader({
         disabled: !actions.canDelete,
         onSelect: actions.onDelete,
     });
+
     return (
         <div
             className={styles.header}

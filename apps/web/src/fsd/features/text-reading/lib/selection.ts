@@ -9,14 +9,18 @@ export function analyzeReadingSelection(
         !selection ||
         selection.isCollapsed ||
         !selection.rangeCount
-    )
+    ) {
         return null;
+    }
+
     const range = selection.getRangeAt(0);
     if (
         !container.contains(range.startContainer) ||
         !container.contains(range.endContainer)
-    )
+    ) {
         return null;
+    }
+
     const element = (node: Node) =>
         (node.nodeType === 1
             ? (node as HTMLElement)
@@ -24,10 +28,16 @@ export function analyzeReadingSelection(
         )?.closest<HTMLElement>('[data-reading-pair]');
     const startElement = element(range.startContainer);
     const endElement = element(range.endContainer);
-    if (!startElement || !endElement) return null;
+    if (!startElement || !endElement) {
+        return null;
+    }
+
     const raw = range.toString();
     const text = raw.trim();
-    if (!text) return null;
+    if (!text) {
+        return null;
+    }
+
     const prefix = document.createRange();
     prefix.selectNodeContents(startElement);
     prefix.setEnd(range.startContainer, range.startOffset);
@@ -50,6 +60,7 @@ export function analyzeReadingSelection(
             localEnd <= part.index + part.segment.trimEnd().length,
     );
     const bounds = range.getBoundingClientRect();
+
     return {
         anchor: {
             contextElement: startElement,

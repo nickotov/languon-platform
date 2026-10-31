@@ -89,8 +89,10 @@ function fixture() {
         retryDelayMs: 50,
         supportedFormats: ['text-translation:v1', 'text-detection:v1'],
     });
+
     return { job, store, provider, worker };
 }
+
 describe('Texts worker', () => {
     it.each(['rejected', 'ambiguous'])(
         'preserves provider retry certainty at the persistence boundary (%s)',
@@ -101,6 +103,7 @@ describe('Texts worker', () => {
                     executionOutcome,
                 }),
             );
+
             await f.worker.processNext(new AbortController().signal);
             const failure = vi.mocked(f.store.fail).mock.calls[0]![1];
             expect(failure.retryDisposition).toBe(
@@ -110,17 +113,20 @@ describe('Texts worker', () => {
             );
         },
     );
+
     it('publishes a proposal preserving exact source and ordered linked IDs', async () => {
         const { job, store, provider, worker } = fixture();
         await expect(
             worker.processNext(new AbortController().signal),
         ).resolves.toBe(true);
+
         expect(provider.run).toHaveBeenCalledWith(
             expect.objectContaining({
                 input: job.input,
                 idempotencyKey: 'test-key',
             }),
         );
+
         expect(store.complete).toHaveBeenCalledWith(
             job.lease,
             expect.objectContaining({
@@ -137,14 +143,17 @@ describe('Texts worker', () => {
             { inputTokens: 100, outputTokens: 100 },
             expect.anything(),
         );
+
         expect(store.fail).not.toHaveBeenCalled();
     });
+
     it('rejects missing or reordered translation segments and retains measured usage', async () => {
         const { store, provider, worker } = fixture();
         vi.mocked(provider.run).mockResolvedValue({
             draft: { translation: [] },
             usage: { inputTokens: 60, outputTokens: 2 },
         });
+
         await worker.processNext(new AbortController().signal);
         expect(store.complete).not.toHaveBeenCalled();
         expect(store.fail).toHaveBeenCalledWith(
@@ -157,6 +166,7 @@ describe('Texts worker', () => {
             expect.anything(),
         );
     });
+
     it('does not dispatch provider after losing its lease', async () => {
         const { store, provider, worker } = fixture();
         vi.mocked(store.markDispatched).mockResolvedValue(false);
@@ -164,23 +174,28 @@ describe('Texts worker', () => {
         expect(provider.run).not.toHaveBeenCalled();
         expect(store.complete).not.toHaveBeenCalled();
     });
+
     it('shutdown leaves a recoverable lease and publishes no proposal', async () => {
         const { store, provider, worker } = fixture();
         const abort = new AbortController();
         vi.mocked(provider.run).mockImplementation(async () => {
             abort.abort();
+
             throw new Error('shutdown');
         });
+
         await worker.processNext(abort.signal);
         expect(store.complete).not.toHaveBeenCalled();
         expect(store.fail).not.toHaveBeenCalled();
     });
+
     it('stops retrying at the bounded attempt limit', async () => {
         const { job, store, provider, worker } = fixture();
         job.lease.attempt = 3;
         vi.mocked(provider.run).mockRejectedValue(
             new Error('upstream body must never escape'),
         );
+
         await worker.processNext(new AbortController().signal);
         expect(store.fail).toHaveBeenCalledWith(
             job.lease,
@@ -188,6 +203,7 @@ describe('Texts worker', () => {
             expect.anything(),
         );
     });
+
     it('detects unknown languages without inventing a catalog language', async () => {
         const { job, store, provider, worker } = fixture();
         job.input = {
@@ -196,9 +212,11 @@ describe('Texts worker', () => {
             operationId: randomUUID(),
             sourceText: '123 456',
         };
+
         vi.mocked(provider.run).mockResolvedValue({
             draft: { language: null, confidence: 'unknown' },
         });
+
         await worker.processNext(new AbortController().signal);
         expect(store.complete).toHaveBeenCalledWith(
             job.lease,
@@ -207,6 +225,7 @@ describe('Texts worker', () => {
             expect.anything(),
         );
     });
+
     it('validates advisory detection output before publishing', async () => {
         const { job, store, provider, worker } = fixture();
         job.input = {
@@ -215,9 +234,11 @@ describe('Texts worker', () => {
             operationId: randomUUID(),
             sourceText: 'Unclear',
         };
+
         vi.mocked(provider.run).mockResolvedValue({
             draft: { language: null, confidence: 'high' },
         });
+
         await worker.processNext(new AbortController().signal);
         expect(store.complete).not.toHaveBeenCalled();
         expect(store.fail).toHaveBeenCalledWith(
@@ -226,6 +247,7 @@ describe('Texts worker', () => {
             expect.anything(),
         );
     });
+
     it('bounds a provider that ignores abort and schedules a timeout retry', async () => {
         vi.useFakeTimers();
         try {
@@ -233,6 +255,7 @@ describe('Texts worker', () => {
             vi.mocked(provider.run).mockImplementation(
                 () => new Promise(() => {}),
             );
+
             const processing = worker.processNext(new AbortController().signal);
             await vi.advanceTimersByTimeAsync(501);
             await processing;
@@ -245,11 +268,13 @@ describe('Texts worker', () => {
                 },
                 expect.anything(),
             );
+
             expect(vi.getTimerCount()).toBe(0);
         } finally {
             vi.useRealTimers();
         }
     });
+
     it('aborts ongoing work when heartbeat observes cancellation without retrying', async () => {
         vi.useFakeTimers();
         try {
@@ -257,10 +282,12 @@ describe('Texts worker', () => {
             vi.mocked(provider.run).mockImplementation(
                 () => new Promise(() => {}),
             );
+
             vi.mocked(store.heartbeat).mockResolvedValue({
                 owned: true,
                 cancellationRequested: true,
             });
+
             const processing = worker.processNext(new AbortController().signal);
             await vi.advanceTimersByTimeAsync(101);
             await processing;

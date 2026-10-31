@@ -12,16 +12,25 @@ function captureBrowserErrors(page: Page) {
             errors.push(message.text());
         }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
         );
-        if (path === '/auth/refresh' && response.status() === 401) return;
+
+        if (path === '/auth/refresh' && response.status() === 401) {
+            return;
+        }
+
         errors.push(`${response.status()} ${path}`);
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -85,6 +94,7 @@ test.describe('web internationalization journeys', () => {
                     'lang',
                     locale,
                 );
+
                 await expect(
                     page.getByRole('heading', {
                         level: 1,
@@ -101,6 +111,7 @@ test.describe('web internationalization journeys', () => {
                 await expect(page).toHaveURL(
                     /\/definitely-missing-i18n-route$/,
                 );
+
                 await expect(page).toHaveTitle(notFoundTitle);
                 await expect(
                     page.getByRole('heading', { name: notFoundCopy }),
@@ -126,6 +137,7 @@ test.describe('web internationalization journeys', () => {
                     new Event('submit', { bubbles: true, cancelable: true }),
                 ),
             );
+
         await expect(
             page.getByText('Check your sign-in details.'),
         ).toBeVisible();
@@ -133,6 +145,7 @@ test.describe('web internationalization journeys', () => {
         await page
             .getByRole('button', { name: 'Settings', exact: true })
             .click();
+
         await page
             .getByRole('combobox', { name: 'Interface language' })
             .selectOption('es');
@@ -141,20 +154,25 @@ test.describe('web internationalization journeys', () => {
         await expect(
             page.getByRole('heading', { name: 'Iniciar sesión' }),
         ).toBeVisible();
+
         await expect(
             page.getByText('Check your sign-in details.'),
         ).not.toBeVisible();
+
         await expect(page.locator('input[name="email"]')).toHaveValue(
             'invalid',
         );
+
         await expect(page.locator('input[name="password"]')).toHaveValue(
             'short',
         );
+
         await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 
         const localeCookie = (await page.context().cookies()).find(
             (cookie) => cookie.name === 'languon-locale',
         );
+
         expect(localeCookie).toMatchObject({
             path: '/',
             sameSite: 'Lax',
@@ -166,9 +184,11 @@ test.describe('web internationalization journeys', () => {
         await page
             .getByRole('button', { name: 'Configuración', exact: true })
             .click();
+
         await expect(
             page.getByRole('combobox', { name: 'Idioma de la interfaz' }),
         ).toHaveValue('es');
+
         assertNoBrowserErrors();
     });
 });

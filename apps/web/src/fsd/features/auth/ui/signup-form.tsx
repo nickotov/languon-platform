@@ -35,7 +35,9 @@ export function SignupForm({ returnTo }: { returnTo?: string | undefined }) {
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
         setError(null);
 

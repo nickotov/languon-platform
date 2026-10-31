@@ -61,6 +61,7 @@ const errors = {
 } as const;
 const correlation = (context: Context) => {
     const candidate = context.req.header('X-Correlation-ID');
+
     return candidate && /^[0-9a-f-]{36}$/i.test(candidate)
         ? candidate
         : randomUUID();
@@ -72,8 +73,10 @@ const failure = (
     message: string,
     retryAfterSeconds?: number,
 ) => {
-    if (retryAfterSeconds !== undefined)
+    if (retryAfterSeconds !== undefined) {
         context.header('Retry-After', String(retryAfterSeconds));
+    }
+
     return context.json(
         {
             error: {
@@ -107,11 +110,13 @@ export function createLearningRoutes({
                       'The request is invalid.',
                   ),
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     app.use('*', async (context, next) => {
         context.header('Cache-Control', 'private, no-store');
         context.header('Referrer-Policy', 'no-referrer');
@@ -122,8 +127,10 @@ export function createLearningRoutes({
             context.header('Access-Control-Allow-Origin', origin);
             context.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.use(
         '*',
         bodyLimit({
@@ -137,22 +144,27 @@ export function createLearningRoutes({
                 ),
         }),
     );
+
     app.onError((error, context) => {
-        if (error instanceof HTTPException && error.status === 400)
+        if (error instanceof HTTPException && error.status === 400) {
             return failure(
                 context,
                 'invalid_request',
                 400,
                 'The request is invalid.',
             );
-        if (error instanceof LearningEntryUnavailableError)
+        }
+
+        if (error instanceof LearningEntryUnavailableError) {
             return failure(
                 context,
                 'entry_not_found',
                 404,
                 'The entry is no longer available.',
             );
-        if (error instanceof LearningUnavailableError)
+        }
+
+        if (error instanceof LearningUnavailableError) {
             return failure(
                 context,
                 context.req.path.includes('/shared-dictionaries/')
@@ -161,20 +173,26 @@ export function createLearningRoutes({
                 404,
                 'The dictionary was not found.',
             );
-        if (error instanceof LearningAuthenticationRequiredError)
+        }
+
+        if (error instanceof LearningAuthenticationRequiredError) {
             return failure(
                 context,
                 'authentication_required',
                 401,
                 'Authentication is required.',
             );
-        if (error instanceof LearningInvalidRequestError)
+        }
+
+        if (error instanceof LearningInvalidRequestError) {
             return failure(
                 context,
                 'invalid_request',
                 400,
                 'The request is invalid.',
             );
+        }
+
         if (error instanceof LearningConflictError) {
             const code = {
                 preferences_conflict: 'version_conflict',
@@ -182,6 +200,7 @@ export function createLearningRoutes({
                 operation_conflict: 'idempotency_conflict',
                 undo_conflict: 'undo_conflict',
             } as const;
+
             return failure(
                 context,
                 code[error.reason],
@@ -189,8 +208,10 @@ export function createLearningRoutes({
                 'The learning state changed. Reload or retry the operation.',
             );
         }
+
         const mapped = mapDictionaryHttpError(error);
         const code = LearningErrorCodeSchema.safeParse(mapped.code);
+
         return failure(
             context,
             code.success ? code.data : 'internal_error',
@@ -199,18 +220,23 @@ export function createLearningRoutes({
             mapped.retryAfterSeconds,
         );
     });
+
     app.options('/learning/*', (context) => {
         context.header(
             'Access-Control-Allow-Methods',
             'GET, POST, PUT, OPTIONS',
         );
+
         context.header(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
         );
+
         context.header('Access-Control-Max-Age', '600');
+
         return context.body(null, 204);
     });
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -237,6 +263,7 @@ export function createLearningRoutes({
                 authorization === undefined
                     ? undefined
                     : policy.parseBearerAuthorization(authorization);
+
             return shared
                 ? {
                       kind: 'shared',
@@ -255,6 +282,7 @@ export function createLearningRoutes({
         const security = shared
             ? [{}, { bearerAuth: [] as string[] }]
             : [{ bearerAuth: [] as string[] }];
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -279,6 +307,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -302,6 +331,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'put',
@@ -328,6 +358,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -357,6 +388,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -386,6 +418,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -406,6 +439,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -435,6 +469,7 @@ export function createLearningRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -467,15 +502,18 @@ export function createLearningRoutes({
                 ),
         );
     };
+
     register(
         '/learning/dictionaries/{dictionaryId}',
         DictionaryIdParamsSchema,
         false,
     );
+
     register(
         '/learning/shared-dictionaries/{shareId}',
         SharedDictionaryParamsSchema,
         true,
     );
+
     return app;
 }

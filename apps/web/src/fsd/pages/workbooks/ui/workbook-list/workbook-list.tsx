@@ -27,21 +27,28 @@ export function WorkbookList() {
         retry: false,
         gcTime: 0,
     });
+
     function change(event: ChangeEvent<HTMLInputElement>) {
         setTitle(event.target.value);
     }
+
     function reload() {
         void query.refetch();
     }
+
     async function create(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (busy) return;
+        if (busy) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         try {
             const result = await requestWithSession((token) =>
                 workbookApi.create(token, { id: operation.current, title }),
             );
+
             router.push(href(`/workbooks/${result.workbook.id}`));
         } catch {
             setError(true);
@@ -49,6 +56,7 @@ export function WorkbookList() {
             setBusy(false);
         }
     }
+
     return (
         <main className={styles.page}>
             <Link href={href('/knowledge')} className={styles.link}>

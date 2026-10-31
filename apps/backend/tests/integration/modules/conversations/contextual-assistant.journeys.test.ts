@@ -38,14 +38,23 @@ async function waitForAdmittedTurn<
             status === 'succeeded' ||
             status === 'failed' ||
             status === 'cancelled'
-        )
+        ) {
             return result;
-        if (status === 'queued') await drive();
-        else if (status === 'running') await delay(50);
-        else throw new Error(`Admitted conversation turn ${turnId} vanished.`);
+        }
+
+        if (status === 'queued') {
+            await drive();
+        } else if (status === 'running') {
+            await delay(50);
+        } else {
+            throw new Error(`Admitted conversation turn ${turnId} vanished.`);
+        }
+
         result = await read();
     }
+
     const status = result.turns.find((turn) => turn.id === turnId)?.status;
+
     throw new Error(
         `Admitted conversation turn ${turnId} did not finish within ${timeoutMs}ms (status: ${status ?? 'missing'}).`,
     );
@@ -70,6 +79,7 @@ describe('admitted conversation turn synchronization', () => {
             },
             1_000,
         );
+
         expect(ticks).toBe(2);
         expect(result.turns[1]?.status).toBe('succeeded');
     });
@@ -98,9 +108,11 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
         beforeAll(async () => {
             fixture = await createContextualAssistantFixture();
         }, 120_000);
+
         afterAll(async () => {
             await fixture?.close();
         }, 120_000);
+
         async function checked(
             path: string,
             token: string,
@@ -116,11 +128,14 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 method,
                 key,
             );
+
             expect(response.status, await response.clone().text()).toBe(
                 expected,
             );
+
             return response.json();
         }
+
         async function conversation(
             token: string,
             source: {
@@ -141,6 +156,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 ),
             ).conversation;
         }
+
         async function detail(token: string, id: string, key?: string) {
             return ConversationDetailSchema.parse(
                 await checked(
@@ -152,6 +168,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 ),
             );
         }
+
         async function draft(
             token: string,
             id: string,
@@ -198,6 +215,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     key,
                 ),
             ).turn;
+
             expect(replay.id).toBe(admitted.id);
             expect(admitted.modelId).toBeNull();
             expect(replay.modelId).toBeNull();
@@ -209,12 +227,15 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 () => detail(token, id, key),
                 () => fixture.conversations.worker!.processNext(signal),
             );
+
             expect(
                 result.turns.find((turn) => turn.id === admitted.id)?.status,
             ).toBe('succeeded');
+
             expect(
                 result.turns.find((turn) => turn.id === admitted.id)?.modelId,
             ).toBeNull();
+
             // Provider identities are private in the HTTP contract. Prove the
             // actual selected execution and dispatch through the real ledger row.
             const [executed] = await fixture.database
@@ -225,17 +246,21 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 })
                 .from(conversationTurnsTable)
                 .where(eq(conversationTurnsTable.id, admitted.id));
+
             expect(executed?.execution.snapshot).toMatchObject({
                 modelId: 'deepseek-flash',
             });
+
             expect(executed?.providerDispatched).toBe(true);
             expect(
                 result.turns.find((turn) => turn.id === admitted.id)?.usage
                     .inputTokens,
             ).toBeGreaterThan(0);
+
             expect(
                 result.messages.filter((message) => message.role === 'user'),
             ).toHaveLength(1);
+
             expect(
                 result.messages.some(
                     (message) =>
@@ -243,6 +268,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                         message.content.includes('river bank'),
                 ),
             ).toBe(true);
+
             expect(result.drafts).toHaveLength(1);
             const subscription = new AbortController();
             const replayResponse = await fixture.app.request(
@@ -256,9 +282,11 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     signal: subscription.signal,
                 },
             );
+
             expect(replayResponse.headers.get('content-type')).toContain(
                 'text/event-stream',
             );
+
             const reader = replayResponse.body!.getReader();
             try {
                 const first = await reader.read();
@@ -271,6 +299,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 subscription.abort();
                 await reader.cancel();
             }
+
             return result.drafts[0]!;
         }
 
@@ -292,10 +321,12 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 kind: 'knowledge',
                 id: note.id,
             });
+
             expect(
                 (await fixture.request(`/conversations/${chat.id}`, stranger))
                     .status,
             ).toBe(404);
+
             const proposed = await draft(owner, chat.id, undefined, true);
             const edited = KnowledgeNoteResponseSchema.parse(
                 await checked(
@@ -323,10 +354,12 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 owner,
                 publication,
             );
+
             expect(stale.status).toBe(409);
             expect((await detail(owner, chat.id)).drafts[0]?.id).toBe(
                 proposed.id,
             );
+
             const revisedDraft = KnowledgeDraftResponseSchema.parse(
                 await checked(
                     `/conversations/${chat.id}/drafts/${proposed.id}`,
@@ -352,6 +385,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     },
                 ),
             ).note;
+
             expect(independent.id).not.toBe(note.id);
             const restored = KnowledgeNoteResponseSchema.parse(
                 await checked(`/knowledge/${note.id}/restore`, owner, {
@@ -360,14 +394,17 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     revisionVersion: 1,
                 }),
             ).note;
+
             expect(restored.version).toBe(3);
             expect(restored.title).toBe(proposedContent.title);
             const revisions = KnowledgeRevisionsResponseSchema.parse(
                 await checked(`/knowledge/${note.id}/revisions`, owner),
             ).revisions;
+
             expect(
                 revisions.map((revision) => revision.version).sort(),
             ).toEqual([1, 2, 3]);
+
             await checked(
                 `/knowledge/${note.id}`,
                 owner,
@@ -377,13 +414,16 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 },
                 'DELETE',
             );
+
             expect(
                 (await fixture.request(`/knowledge/${note.id}`, owner)).status,
             ).toBe(404);
+
             expect(
                 (await fixture.request(`/conversations/${chat.id}`, owner))
                     .status,
             ).toBe(404);
+
             expect(
                 (
                     await fixture.request(
@@ -393,11 +433,13 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     )
                 ).status,
             ).toBe(404);
+
             expect(
                 KnowledgeNoteResponseSchema.parse(
                     await checked(`/knowledge/${independent.id}`, owner),
                 ).note.id,
             ).toBe(independent.id);
+
             expect(
                 ListKnowledgeResponseSchema.parse(
                     await checked('/knowledge', stranger),
@@ -436,10 +478,12 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                 id: dictionary.id,
                 shareLocator: share.shareId,
             };
+
             expect(
                 (await fixture.request('/conversations', reader, { source }))
                     .status,
             ).toBe(404);
+
             const chat = await conversation(reader, source, share.shareKey);
             expect(
                 (
@@ -452,6 +496,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     )
                 ).status,
             ).toBe(404);
+
             const proposed = await draft(reader, chat.id, share.shareKey);
             const independent = KnowledgeNoteResponseSchema.parse(
                 await checked(
@@ -466,11 +511,13 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     share.shareKey,
                 ),
             ).note;
+
             await checked(
                 `/dictionaries/${dictionary.id}/share-key/rotate`,
                 owner,
                 { expectedDictionaryVersion: shared.dictionary.version },
             );
+
             expect(
                 (
                     await fixture.request(
@@ -482,6 +529,7 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
                     )
                 ).status,
             ).toBe(404);
+
             expect(
                 KnowledgeNoteResponseSchema.parse(
                     await checked(`/knowledge/${independent.id}`, reader),

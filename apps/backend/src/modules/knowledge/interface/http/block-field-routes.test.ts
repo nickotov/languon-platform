@@ -10,6 +10,7 @@ const headers = {
     Origin: 'http://localhost:3000',
     'Content-Type': 'application/json',
 };
+
 type FieldStore = ConstructorParameters<
     typeof KnowledgeBlockFieldService
 >[0]['store'];
@@ -63,6 +64,7 @@ function fixture() {
             currentValue: '',
         },
     };
+
     return {
         actorId,
         noteId,
@@ -80,6 +82,7 @@ function fixture() {
         }),
     };
 }
+
 describe('knowledge atomic field HTTP boundaries', () => {
     it('requires sign-in, passes only authenticated actor and marks responses private', async () => {
         const f = fixture();
@@ -89,6 +92,7 @@ describe('knowledge atomic field HTTP boundaries', () => {
             headers,
             body: JSON.stringify(f.input),
         });
+
         expect(response.status).toBe(202);
         expect(response.headers.get('cache-control')).toBe('private, no-store');
         expect(f.store.request).toHaveBeenCalledWith(
@@ -101,6 +105,7 @@ describe('knowledge atomic field HTTP boundaries', () => {
             }),
         );
     });
+
     it('rejects arbitrary paths, caller identity and source-language tampering before store execution', async () => {
         const f = fixture();
         for (const value of [
@@ -121,8 +126,10 @@ describe('knowledge atomic field HTTP boundaries', () => {
                 ).status,
             ).toBe(400);
         }
+
         expect(f.store.request).not.toHaveBeenCalled();
     });
+
     it('strips validated allowance consent metadata without changing the field request', async () => {
         const f = fixture();
         const accepted = await f.app.request(f.path, {
@@ -133,6 +140,7 @@ describe('knowledge atomic field HTTP boundaries', () => {
                 confirmedQuoteId: randomUUID(),
             }),
         });
+
         expect(accepted.status).toBe(202);
         expect(f.store.request.mock.calls[0]?.[2]).toEqual(f.input);
         const invalid = await f.app.request(f.path, {
@@ -140,9 +148,11 @@ describe('knowledge atomic field HTTP boundaries', () => {
             headers,
             body: JSON.stringify({ ...f.input, confirmedQuoteId: 'invalid' }),
         });
+
         expect(invalid.status).toBe(400);
         expect(f.store.request).toHaveBeenCalledTimes(1);
     });
+
     it('rejects an untrusted origin before execution', async () => {
         const f = fixture();
         expect(
@@ -154,17 +164,21 @@ describe('knowledge atomic field HTTP boundaries', () => {
                 })
             ).status,
         ).toBe(403);
+
         expect(f.store.request).not.toHaveBeenCalled();
     });
+
     it('hides foreign/revoked job existence from status and cancellation', async () => {
         const f = fixture();
         f.store.get.mockRejectedValue(new TextsAiError('access_revoked'));
         f.store.cancel.mockRejectedValue(
             new TextsAiError('generation_job_not_found'),
         );
+
         expect(
             (await f.app.request(`${f.path}/${f.job.id}`, { headers })).status,
         ).toBe(404);
+
         expect(
             (
                 await f.app.request(`${f.path}/${f.job.id}/cancel`, {
@@ -174,16 +188,19 @@ describe('knowledge atomic field HTTP boundaries', () => {
             ).status,
         ).toBe(404);
     });
+
     it('keeps insufficient credit distinct from source errors', async () => {
         const f = fixture();
         f.store.request.mockRejectedValue(
             new TextsAiError('ai_credits_exhausted'),
         );
+
         const response = await f.app.request(f.path, {
             method: 'POST',
             headers,
             body: JSON.stringify(f.input),
         });
+
         expect(response.status).toBe(402);
         expect(await response.json()).toMatchObject({
             error: { code: 'ai_credits_exhausted' },

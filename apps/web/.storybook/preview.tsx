@@ -16,6 +16,7 @@ function ThemeCanvas({
     useEffect(() => {
         document.documentElement.dataset.theme = theme;
     }, [theme]);
+
     return <div className={styles.canvas}>{children}</div>;
 }
 
@@ -35,4 +36,5 @@ const preview: Preview = {
     },
     parameters: { a11y: { test: 'error' } },
 };
+
 export default preview;

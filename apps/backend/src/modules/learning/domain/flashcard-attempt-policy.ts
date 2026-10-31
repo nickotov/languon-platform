@@ -28,6 +28,7 @@ export function sameFlashcardAttempt(
             JSON.stringify(input.configuration.back)
     );
 }
+
 export function canUndoFlashcardAttempt(input: {
     targetId: string;
     voided: boolean;

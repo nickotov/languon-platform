@@ -13,12 +13,15 @@ function run(command, args, environment = {}) {
             env: { ...process.env, ...environment },
             stdio: 'inherit',
         });
+
         child.once('error', reject);
         child.once('exit', (code, signal) => {
             if (code === 0) {
                 resolve();
+
                 return;
             }
+
             reject(
                 new Error(
                     `${command} ${args.join(' ')} failed${signal ? ` with signal ${signal}` : ` with exit code ${code ?? 'unknown'}`}.`,

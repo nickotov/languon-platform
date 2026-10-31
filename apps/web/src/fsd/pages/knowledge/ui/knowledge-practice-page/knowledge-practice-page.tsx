@@ -28,6 +28,7 @@ import styles from './knowledge-practice-page.module.css';
 
 export function KnowledgePracticePage({ noteId }: { noteId: string }) {
     const actor = useSessionStore((state) => state.user?.id);
+
     return (
         <KnowledgeAuthBoundary returnTo={`/knowledge/${noteId}/practice`}>
             <SavedNote key={`${actor}:${noteId}`} noteId={noteId} />
@@ -49,13 +50,15 @@ function SavedNote({ noteId }: { noteId: string }) {
         retry: false,
         gcTime: 0,
     });
+
     function retry() {
         void query.refetch();
     }
+
     let content;
-    if (query.isPending)
+    if (query.isPending) {
         content = <LoadingState>{t('knowledge.loading')}</LoadingState>;
-    else if (query.isError || !query.data)
+    } else if (query.isError || !query.data) {
         content = (
             <InlineAlert
                 tone='error'
@@ -66,13 +69,15 @@ function SavedNote({ noteId }: { noteId: string }) {
                 {t('knowledge.loadError')}
             </InlineAlert>
         );
-    else
+    } else {
         content = (
             <SavedPractice
                 key={`${actor}:${query.data.id}:${query.data.version}`}
                 note={query.data}
             />
         );
+    }
+
     return (
         <main className={styles.page}>
             <ButtonLink href={href(`/knowledge/${noteId}`)} variant='ghost'>
@@ -127,16 +132,22 @@ function SavedPractice({ note }: { note: KnowledgeNote }) {
             expectedVersion: note.version,
         },
     };
+
     function blockOptions(block: LearningBlock) {
         const options = {
             ...model.options(block),
             variant: 'learner' as const,
             playback: blockPlayback,
         };
+
         return options;
     }
+
     function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
-        if (!actorId || block.type !== 'vocabulary') return null;
+        if (!actorId || block.type !== 'vocabulary') {
+            return null;
+        }
+
         return (
             <KnowledgeVocabularyPractice
                 noteId={note.id}
@@ -148,10 +159,14 @@ function SavedPractice({ note }: { note: KnowledgeNote }) {
             />
         );
     }
+
     const wrapBlock: NonNullable<
         ComponentProps<typeof NotePreview>['wrapBlock']
     > = (block, render) => {
-        if (!actorId || block.type !== 'bilingual-text') return render();
+        if (!actorId || block.type !== 'bilingual-text') {
+            return render();
+        }
+
         return (
             <KnowledgeBilingualStudy
                 actorId={actorId}
@@ -166,6 +181,7 @@ function SavedPractice({ note }: { note: KnowledgeNote }) {
             </KnowledgeBilingualStudy>
         );
     };
+
     return (
         <>
             {playback.confirmation}

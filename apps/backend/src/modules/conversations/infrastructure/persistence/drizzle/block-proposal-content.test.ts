@@ -14,16 +14,19 @@ const block: LearningBlock = {
     language: 'fr',
     rule: 'Use faire.',
 };
+
 describe('Block proposal content identity', () => {
     it('ignores JSONB property ordering but detects content changes', () => {
         const reordered = Object.fromEntries(
             Object.entries(block).reverse(),
         ) as LearningBlock;
+
         expect(blockContentHash(block)).toBe(blockContentHash(reordered));
         expect(blockContentHash(block)).not.toBe(
             blockContentHash({ ...block, title: 'Different' }),
         );
     });
+
     it('replaces only the target while preserving surrounding prose and other blocks', () => {
         const other = { ...block, id: randomUUID() };
         const paragraph = {
@@ -45,6 +48,7 @@ describe('Block proposal content identity', () => {
         expect((changed as typeof document).content[0]).toEqual(paragraph);
         expect(findProposalBlock(document, block.id)).toEqual(block);
     });
+
     it('freshens copied exercise identities and shared group identity exactly once', () => {
         const group = { id: randomUUID(), title: 'Questions' };
         const items: LearningBlock[] = [1, 2].map((n) => ({
@@ -61,8 +65,10 @@ describe('Block proposal content identity', () => {
         expect(copies[1]?.id).not.toBe(items[1]?.id);
         const a = copies[0];
         const b = copies[1];
-        if (a?.type !== 'exercise' || b?.type !== 'exercise')
+        if (a?.type !== 'exercise' || b?.type !== 'exercise') {
             throw new Error('Expected exercises');
+        }
+
         expect(a.group?.id).toBe(b.group?.id);
         expect(a.group?.id).not.toBe(group.id);
     });

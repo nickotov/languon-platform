@@ -85,12 +85,16 @@ function createColumns(
         {
             key: 'source',
             render: (_value, entry) => {
-                if (entry.sourceKind)
+                if (entry.sourceKind) {
                     return translate(`aiCredits.source.${entry.sourceKind}`);
-                if (entry.measurementSource)
+                }
+
+                if (entry.measurementSource) {
                     return translate(
                         `aiCredits.measurement.${entry.measurementSource}`,
                     );
+                }
+
                 return '—';
             },
             title: translate('aiCredits.historySource'),

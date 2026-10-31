@@ -34,25 +34,36 @@ export function BlockFieldAiAction({
             ? 'Check translation'
             : 'Generate translation',
     );
+
     function run() {
         const next = getTarget();
-        if (next) void ai.run(fieldKey, next);
+        if (next) {
+            void ai.run(fieldKey, next);
+        }
     }
+
     function dismiss() {
         ai.clear(fieldKey);
     }
+
     function accept() {
         if (
             !state ||
             JSON.stringify(state.target) !== JSON.stringify(getTarget()) ||
             state.result?.status !== 'suggested'
-        )
+        ) {
             return;
+        }
+
         onAccept(state.result.proposedValue);
         dismiss();
     }
-    if (!ai.available) return null;
-    if (!state)
+
+    if (!ai.available) {
+        return null;
+    }
+
+    if (!state) {
         return (
             <button
                 type='button'
@@ -64,14 +75,18 @@ export function BlockFieldAiAction({
                 {label}
             </button>
         );
-    if (state.status === 'pending')
+    }
+
+    if (state.status === 'pending') {
         return (
             <p className={styles.status} role='status'>
                 <Loader2 size={14} aria-hidden className={styles.spinner} />
                 {labels.field('Checking with AI…')}
             </p>
         );
-    if (state.status === 'failed')
+    }
+
+    if (state.status === 'failed') {
         return (
             <div className={styles.failed} role='status'>
                 <AlertTriangle size={14} aria-hidden />
@@ -92,7 +107,9 @@ export function BlockFieldAiAction({
                 </button>
             </div>
         );
-    if (stale)
+    }
+
+    if (stale) {
         return (
             <div className={styles.stale} role='status'>
                 <p>
@@ -117,8 +134,10 @@ export function BlockFieldAiAction({
                 </button>
             </div>
         );
+    }
+
     const result = state.result;
-    if (result?.status === 'correct')
+    if (result?.status === 'correct') {
         return (
             <div className={styles.correct} role='status'>
                 <Check size={14} aria-hidden />
@@ -134,7 +153,12 @@ export function BlockFieldAiAction({
                 </button>
             </div>
         );
-    if (result?.status !== 'suggested') return null;
+    }
+
+    if (result?.status !== 'suggested') {
+        return null;
+    }
+
     return (
         <div className={styles.suggestion} role='status'>
             {state.target.currentValue && (

@@ -54,6 +54,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             },
         };
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
@@ -64,13 +65,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+
             media = new DrizzleKnowledgeMediaStore(db, crypto);
             copy = new DrizzleKnowledgeBlockCopyStore(db, crypto);
         }, 120000);
+
         beforeEach(async () => {
             await db.execute(
                 sql`truncate knowledge_notes,knowledge_media_blobs,knowledge_operation_receipts cascade`,
             );
+
             owner = randomUUID();
             reader = randomUUID();
             await db.insert(usersTable).values([
@@ -78,6 +82,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: reader, status: 'active' },
             ]);
         });
+
         afterAll(async () => client?.end());
         it('previews dependency closure and copies hints/audio with fresh identities and independent lifetime', async () => {
             const source = await notes.create(owner, {
@@ -164,6 +169,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 blockIds: [exerciseId],
             };
+
             expect(
                 await copy.copy(reader, destination.id, input),
             ).toMatchObject({
@@ -173,9 +179,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 dependencyCount: 1,
                 mediaCount: 1,
             });
+
             expect(
                 await db.select().from(knowledgeMediaAssetsTable),
             ).toHaveLength(1);
+
             const applied = await copy.copy(reader, destination.id, {
                 ...input,
                 preview: false,
@@ -188,25 +196,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const copiedExercise = copied.find(
                 (block) => block.type === 'exercise',
             );
+
             if (
                 copiedAudio?.type !== 'audio' ||
                 !copiedAudio.assetId ||
                 copiedExercise?.type !== 'exercise'
-            )
+            ) {
                 throw new Error('Missing copied content');
+            }
+
             expect(copiedAudio.id).not.toBe(audioId);
             expect(copiedAudio.assetId).not.toBe(asset.id);
             expect(copiedExercise.source).toEqual({
                 blockId: copiedAudio.id,
                 segmentIds: [copiedAudio.transcript!.segments[0]!.id],
             });
+
             expect(
                 (await notes.get(reader, destination.id)).body.schemaVersion,
             ).toBe(1);
+
             await notes.delete(owner, source.id, {
                 operationId: randomUUID(),
                 expectedVersion: saved.version,
             });
+
             expect(
                 (
                     await media.read(destination.id, copiedAudio.assetId, {
@@ -214,6 +228,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).bytes,
             ).toEqual(audio.bytes);
+
             expect(
                 await copy.copy(reader, destination.id, {
                     ...input,
@@ -223,10 +238,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 replayed: true,
                 branch: { version: applied.branch!.version },
             });
+
             expect(
                 await db.select().from(knowledgeMediaAssetsTable),
             ).toHaveLength(1);
         });
+
         it('rejects foreign working sources, missing blocks and stale destinations without changing the draft', async () => {
             const source = await notes.create(owner, {
                 operationId: randomUUID(),
@@ -253,9 +270,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 blockIds: [randomUUID()],
             };
+
             await expect(
                 copy.copy(reader, destination.id, input),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             await expect(
                 copy.copy(reader, destination.id, {
                     ...input,
@@ -267,12 +286,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             await expect(
                 copy.copy(reader, destination.id, {
                     ...input,
                     expectedBranchVersion: 99,
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             expect(
                 (await notes.getWorkspace(reader, destination.id)).branches[0]!
                     .version,

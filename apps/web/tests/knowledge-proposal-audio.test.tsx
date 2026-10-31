@@ -8,6 +8,7 @@ vi.mock('@/fsd/entities/session', () => ({
     useSessionStore: (select: (state: { user: { id: string } }) => unknown) =>
         select({ user: { id: 'synthetic-owner' } }),
 }));
+
 const id = '11111111-1111-4111-8111-111111111111';
 const blobUrl = `blob:${location.origin}/authorized-proposal-audio`;
 const assetId = '22222222-2222-4222-8222-222222222222';
@@ -36,11 +37,13 @@ beforeEach(() => {
     URL.createObjectURL = vi.fn(() => blobUrl);
     URL.revokeObjectURL = vi.fn();
 });
+
 afterEach(() => {
     vi.unstubAllGlobals();
     URL.createObjectURL = originalCreate;
     URL.revokeObjectURL = originalRevoke;
 });
+
 it('loads authorized prepared bytes once for compact and full review and releases its local URL', async () => {
     const fetch = vi.fn(
         async (_url: string, _init?: RequestInit) =>
@@ -48,6 +51,7 @@ it('loads authorized prepared bytes once for compact and full review and release
                 headers: { 'Content-Type': 'audio/wav' },
             }),
     );
+
     vi.stubGlobal('fetch', fetch);
     const { container, unmount } = render(
         <BlockProposalCard
@@ -57,6 +61,7 @@ it('loads authorized prepared bytes once for compact and full review and release
             disabled={false}
         />,
     );
+
     await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled());
     await waitFor(() =>
         expect(container.querySelector('audio')).toHaveAttribute(
@@ -64,13 +69,16 @@ it('loads authorized prepared bytes once for compact and full review and release
             blobUrl,
         ),
     );
+
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0]?.[0]).toContain(
         `/knowledge/notes/${id}/media/${assetId}`,
     );
+
     expect(fetch.mock.calls[0]?.[1]).toMatchObject({
         headers: { Authorization: 'Bearer synthetic-token' },
     });
+
     expect(String(fetch.mock.calls[0]?.[0])).not.toContain('synthetic-token');
     fireEvent.click(screen.getByRole('button', { name: 'Review' }));
     await screen.findByRole('dialog', { name: 'Review proposed content' });
@@ -79,10 +87,12 @@ it('loads authorized prepared bytes once for compact and full review and release
             (audio) => audio.src === blobUrl,
         ),
     ).toBe(true);
+
     expect(fetch).toHaveBeenCalledTimes(1);
     unmount();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith(blobUrl);
 });
+
 it('does not preload offscreen conversation history until a proposal becomes visible', async () => {
     let observe!: (entries: { isIntersecting: boolean }[]) => void;
     const disconnect = vi.fn();
@@ -92,16 +102,19 @@ it('does not preload offscreen conversation history until a proposal becomes vis
             constructor(callback: typeof observe) {
                 observe = callback;
             }
+
             observe() {}
             disconnect = disconnect;
         },
     );
+
     const fetch = vi.fn(
         async (_url: string, _init?: RequestInit) =>
             new Response(new Blob(['synthetic wav'], { type: 'audio/wav' }), {
                 headers: { 'Content-Type': 'audio/wav' },
             }),
     );
+
     vi.stubGlobal('fetch', fetch);
     const { container } = render(
         <BlockProposalCard
@@ -111,6 +124,7 @@ it('does not preload offscreen conversation history until a proposal becomes vis
             disabled={false}
         />,
     );
+
     expect(fetch).not.toHaveBeenCalled();
     await act(async () => observe([{ isIntersecting: true }]));
     await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled());
@@ -120,13 +134,16 @@ it('does not preload offscreen conversation history until a proposal becomes vis
             blobUrl,
         ),
     );
+
     expect(disconnect).toHaveBeenCalled();
 });
+
 it('keeps rejected media unavailable instead of substituting an external or secret-bearing URL', async () => {
     vi.stubGlobal(
         'fetch',
         vi.fn(async () => new Response(null, { status: 403 })),
     );
+
     const { container } = render(
         <BlockProposalCard
             proposal={proposal}
@@ -135,6 +152,7 @@ it('keeps rejected media unavailable instead of substituting an external or secr
             disabled={false}
         />,
     );
+
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     expect(container.querySelector('audio')).toBeNull();
     expect(screen.getByText('Media is unavailable')).toBeVisible();

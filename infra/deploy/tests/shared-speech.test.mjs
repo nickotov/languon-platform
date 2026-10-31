@@ -45,6 +45,7 @@ test('historical releases cannot implicitly admit shared speech or revised prici
         () => assertSharedSpeechOverlap({}, enabled),
         /Rollback floor/,
     );
+
     assert.throws(() => assertSharedSpeechOverlap(enabled, {}), /Next worker/);
 });
 
@@ -53,6 +54,7 @@ test('shared speech rollout requires complete readers and typed success settleme
         normalizeSharedSpeech(enabled.sharedSpeech),
         enabled.sharedSpeech,
     );
+
     assert.throws(
         () =>
             normalizeSharedSpeech({
@@ -61,6 +63,7 @@ test('shared speech rollout requires complete readers and typed success settleme
             }),
         /billing/,
     );
+
     assert.throws(
         () =>
             normalizeSharedSpeech({
@@ -69,6 +72,7 @@ test('shared speech rollout requires complete readers and typed success settleme
             }),
         /billing/,
     );
+
     assert.throws(
         () =>
             normalizeSharedSpeech({
@@ -77,14 +81,17 @@ test('shared speech rollout requires complete readers and typed success settleme
             }),
         /purgeReadable/,
     );
+
     assert.throws(
         () => normalizeSharedSpeech({ ...speech, apiEnqueued: [1] }),
         /Only enabled/,
     );
+
     assert.throws(
         () => normalizeSharedSpeech({ ...speech, workerProcessable: [1, 1] }),
         /unique/,
     );
+
     assert.doesNotThrow(() => assertSharedSpeechOverlap(floor, enabled));
     assert.doesNotThrow(() => assertSharedSpeechOverlap(enabled, floor));
     assert.throws(
@@ -102,6 +109,7 @@ test('shared speech owns bounded immutable ceilings without retired pronunciatio
         () => normalizeSharedSpeech({ ...speech, speechBudget: undefined }),
         /speechBudget/u,
     );
+
     assert.throws(
         () =>
             normalizeSharedSpeech({
@@ -110,6 +118,7 @@ test('shared speech owns bounded immutable ceilings without retired pronunciatio
             }),
         /2000-character/u,
     );
+
     assert.throws(
         () =>
             normalizeSharedSpeech({
@@ -121,6 +130,7 @@ test('shared speech owns bounded immutable ceilings without retired pronunciatio
             }),
         /ceilings/u,
     );
+
     assert.throws(
         () =>
             assertSharedSpeechOverlap(floor, {
@@ -142,6 +152,7 @@ test('editable-price jobs require revision-aware worker rollback compatibility',
         () => normalizeModelPricing({ ...pricing, apiAdmitted: [1] }),
         /Only enabled/,
     );
+
     assert.throws(
         () =>
             normalizeModelPricing({
@@ -150,10 +161,12 @@ test('editable-price jobs require revision-aware worker rollback compatibility',
             }),
         /cannot cover/,
     );
+
     assert.throws(
         () => assertSharedSpeechOverlap({ sharedSpeech: speech }, enabled),
         /model pricing/,
     );
+
     assert.throws(
         () => assertSharedSpeechOverlap(enabled, { sharedSpeech: speech }),
         /previous model pricing/,
@@ -208,6 +221,7 @@ test('production preflight rejects missing shared execution or mutable pricing p
             ),
         /Shared speech/,
     );
+
     assert.throws(
         () =>
             assertDictionaryWorkerDatabasePrivileges(
@@ -226,6 +240,7 @@ test('speech deployment grants and preflight name the authoritative schema table
     const jobTable = schema.match(
         /speechJobsTable\s*=\s*pgTable\(\s*'([^']+)'/u,
     )?.[1];
+
     assert.equal(jobTable, 'speech_jobs');
     const worker = await readFile(
         'infra/deploy/sql/dictionary-worker-role.sql',
@@ -239,6 +254,7 @@ test('speech deployment grants and preflight name the authoritative schema table
         'infra/deploy/lib/deployment.mjs',
         'utf8',
     );
+
     for (const source of [worker, purge, deployment]) {
         assert.ok(source.includes(jobTable));
         assert.ok(!source.includes('speech_generation_jobs'));

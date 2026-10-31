@@ -28,7 +28,8 @@ export async function seedDictionaryAccountingFixture(
         )
         .orderBy(desc(capabilityPolicyRevisionsTable.version))
         .limit(1);
-    if (policy?.funding !== 'operator')
+
+    if (policy?.funding !== 'operator') {
         await database.insert(capabilityPolicyRevisionsTable).values({
             id: randomUUID(),
             capability: 'dictionary-generation',
@@ -37,12 +38,18 @@ export async function seedDictionaryAccountingFixture(
             createdAt: at,
             reason: 'Synthetic deterministic dictionary browser operator funding',
         });
+    }
+
     const [active] = await database
         .select()
         .from(dictionaryAiConfigurationTable)
         .where(eq(dictionaryAiConfigurationTable.id, 'global'))
         .limit(1);
-    if (active) return;
+
+    if (active) {
+        return;
+    }
+
     const [last] = await database
         .select({ version: dictionaryAiConfigurationRevisionsTable.version })
         .from(dictionaryAiConfigurationRevisionsTable)
@@ -53,12 +60,14 @@ export async function seedDictionaryAccountingFixture(
     const model = textAiModelCatalog.find(
         (candidate) => candidate.id === 'deepseek-flash',
     )!;
+
     await database.insert(usersTable).values({
         id: actorId,
         status: 'active',
         createdAt: at,
         updatedAt: at,
     });
+
     await database.insert(dictionaryAiConfigurationRevisionsTable).values({
         id: revisionId,
         createdByUserId: actorId,
@@ -77,6 +86,7 @@ export async function seedDictionaryAccountingFixture(
             supportedFormats: [...model.supportedFormats],
         },
     });
+
     await database.insert(dictionaryAiConfigurationTable).values({
         id: 'global',
         activeRevisionId: revisionId,

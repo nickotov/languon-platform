@@ -40,36 +40,49 @@ export function VideoPlayer({
     const [suspended, setSuspended] = useState<{ at: number | undefined }>();
     function assignPlayer(element: HTMLVideoElement | null) {
         video.current = element;
-        if (typeof mediaRef === 'function') mediaRef(element);
-        else if (mediaRef) mediaRef.current = element;
+        if (typeof mediaRef === 'function') {
+            mediaRef(element);
+        } else if (mediaRef) {
+            mediaRef.current = element;
+        }
     }
+
     function pausePlayback() {
         video.current?.pause();
         setSuspended({ at: seek?.revision });
     }
+
     function notifyPlay() {
         onPlaybackStart?.(pausePlayback);
     }
+
     const playbackStart = useRef(onPlaybackStart);
     playbackStart.current = onPlaybackStart;
     const pauseCurrent = useRef(pausePlayback);
     pauseCurrent.current = pausePlayback;
     const seekRevision = seek?.revision;
     useEffect(() => {
-        if (seekRevision !== undefined)
+        if (seekRevision !== undefined) {
             playbackStart.current?.(pauseCurrent.current);
+        }
     }, [seekRevision]);
+
     function handleStart() {
         setStarted(true);
         setSuspended(undefined);
         notifyPlay();
     }
+
     function handleFailure() {
         setFailed(true);
         onError?.();
     }
+
     const validated = VideoLearningBlockSchema.shape.source.safeParse(source);
-    if (!validated.success) return <p role='status'>{unavailableLabel}</p>;
+    if (!validated.success) {
+        return <p role='status'>{unavailableLabel}</p>;
+    }
+
     const safeSource = validated.data;
     const videoClass = `${styles.media} ${styles.video}`;
     const unsupported =
@@ -77,14 +90,17 @@ export function VideoPlayer({
         !/\.(mp4|webm|ogv|ogg|mov|m4v)$/iu.test(
             new URL(safeSource.url).pathname,
         );
-    if (deferPlayback && unsupported && safeSource.kind === 'url')
+
+    if (deferPlayback && unsupported && safeSource.kind === 'url') {
         return (
             <a href={safeSource.url} target='_blank' rel='noopener noreferrer'>
                 {openSourceLabel}
             </a>
         );
+    }
+
     const stopped = suspended !== undefined && suspended.at === seek?.revision;
-    if (stopped || (!started && !seek))
+    if (stopped || (!started && !seek)) {
         return (
             <button
                 type='button'
@@ -98,7 +114,9 @@ export function VideoPlayer({
                 </span>
             </button>
         );
-    if (safeSource.kind === 'url')
+    }
+
+    if (safeSource.kind === 'url') {
         return (
             <>
                 <video
@@ -123,11 +141,14 @@ export function VideoPlayer({
                 ) : null}
             </>
         );
+    }
+
     const seconds =
         seek && Number.isFinite(seek.seconds) && seek.seconds >= 0
             ? Math.floor(seek.seconds)
             : undefined;
     const embedUrl = `https://www.youtube-nocookie.com/embed/${safeSource.videoId}${seconds === undefined ? '' : `?start=${seconds}&autoplay=1`}`;
+
     return (
         <iframe
             key={seek?.revision ?? 0}

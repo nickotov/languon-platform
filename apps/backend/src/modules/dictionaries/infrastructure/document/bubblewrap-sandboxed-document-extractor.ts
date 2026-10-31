@@ -64,25 +64,34 @@ const ParserManifestSchema = z
         const paths = new Set<string>();
         const pages = new Set<number>();
         for (const entry of manifest.entries) {
-            if (entry.kind !== 'ocr-page') continue;
-            if (paths.has(entry.page.contentPath))
+            if (entry.kind !== 'ocr-page') {
+                continue;
+            }
+
+            if (paths.has(entry.page.contentPath)) {
                 context.addIssue({
                     code: 'custom',
                     message: 'OCR output paths must be unique.',
                     path: ['entries'],
                 });
-            if (pages.has(entry.page.pageNumber))
+            }
+
+            if (pages.has(entry.page.pageNumber)) {
                 context.addIssue({
                     code: 'custom',
                     message: 'OCR page numbers must be unique.',
                     path: ['entries'],
                 });
-            if (entry.page.pageNumber > manifest.pageCount)
+            }
+
+            if (entry.page.pageNumber > manifest.pageCount) {
                 context.addIssue({
                     code: 'custom',
                     message: 'OCR page number exceeds the document page count.',
                     path: ['entries'],
                 });
+            }
+
             paths.add(entry.page.contentPath);
             pages.add(entry.page.pageNumber);
         }
@@ -104,7 +113,10 @@ export interface BubblewrapSandboxedDocumentExtractorOptions {
 }
 
 function terminate(child: ChildProcessWithoutNullStreams): void {
-    if (!child.pid) return;
+    if (!child.pid) {
+        return;
+    }
+
     try {
         process.kill(-child.pid, 'SIGKILL');
     } catch {
@@ -121,14 +133,18 @@ async function writeInput(
     for await (const chunk of content) {
         signal.throwIfAborted();
         length += chunk.byteLength;
-        if (length > documentIngestionLimitsV1.upload.maximumFileBytes)
+        if (length > documentIngestionLimitsV1.upload.maximumFileBytes) {
             throw new Error('Sandbox parser input exceeds its bound.');
-        if (!child.stdin.write(chunk))
+        }
+
+        if (!child.stdin.write(chunk)) {
             await new Promise<void>((resolve, reject) => {
                 child.stdin.once('drain', resolve);
                 child.stdin.once('error', reject);
             });
+        }
     }
+
     child.stdin.end();
 }
 
@@ -142,10 +158,13 @@ async function collectOutput(
         signal.throwIfAborted();
         const chunk = value as Buffer;
         length += chunk.byteLength;
-        if (length > documentIngestionLimitsV1.parser.maximumIpcOutputBytes)
+        if (length > documentIngestionLimitsV1.parser.maximumIpcOutputBytes) {
             throw new Error('Sandbox parser output exceeds its bound.');
+        }
+
         chunks.push(chunk);
     }
+
     return Buffer.concat(chunks);
 }
 
@@ -155,10 +174,14 @@ async function readRegularFileNoFollow(
     signal: AbortSignal,
 ): Promise<Uint8Array> {
     const observed = await lstat(path);
-    if (observed.isSymbolicLink() || !observed.isFile())
+    if (observed.isSymbolicLink() || !observed.isFile()) {
         throw new Error('Sandbox OCR output must be a regular file.');
-    if (observed.size > maximumBytes)
+    }
+
+    if (observed.size > maximumBytes) {
         throw new Error('Sandbox OCR page exceeds its bound.');
+    }
+
     const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
         const opened = await handle.stat();
@@ -166,8 +189,10 @@ async function readRegularFileNoFollow(
             !opened.isFile() ||
             opened.dev !== observed.dev ||
             opened.ino !== observed.ino
-        )
+        ) {
             throw new Error('Sandbox OCR output changed during validation.');
+        }
+
         const content = Buffer.allocUnsafe(observed.size);
         let position = 0;
         while (position < content.byteLength) {
@@ -178,13 +203,19 @@ async function readRegularFileNoFollow(
                 Math.min(64 * 1_024, content.byteLength - position),
                 position,
             );
-            if (result.bytesRead === 0)
+
+            if (result.bytesRead === 0) {
                 throw new Error('Sandbox OCR output changed during reading.');
+            }
+
             position += result.bytesRead;
         }
+
         const trailing = Buffer.allocUnsafe(1);
-        if ((await handle.read(trailing, 0, 1, position)).bytesRead !== 0)
+        if ((await handle.read(trailing, 0, 1, position)).bytesRead !== 0) {
             throw new Error('Sandbox OCR output changed during reading.');
+        }
+
         return content;
     } finally {
         await handle.close();
@@ -204,27 +235,34 @@ export async function readSandboxOcrOutputs(
         if (
             basename(contentPath) !== contentPath ||
             expectedNames.has(contentPath)
-        )
+        ) {
             throw new Error('Sandbox OCR output path is invalid.');
+        }
+
         expectedNames.add(contentPath);
         const observed = await lstat(join(outputDirectory, contentPath));
-        if (observed.isSymbolicLink() || !observed.isFile())
+        if (observed.isSymbolicLink() || !observed.isFile()) {
             throw new Error('Sandbox OCR output must be a regular file.');
+        }
+
         aggregateBytes += observed.size;
         if (
             observed.size >
                 documentIngestionLimitsV1.ocr.maximumPageInputBytes ||
             aggregateBytes >
                 documentIngestionLimitsV1.parser.maximumTemporaryBytes
-        )
+        ) {
             throw new Error('Sandbox OCR output exceeds its aggregate bound.');
+        }
     }
+
     const directoryNames = await readdir(outputDirectory);
     if (
         directoryNames.length !== expectedNames.size ||
         directoryNames.some((name) => !expectedNames.has(name))
-    )
+    ) {
         throw new Error('Sandbox output directory contains unexpected files.');
+    }
 
     const validated: DictionaryDocumentExtraction['entries'] = [];
     let actualAggregateBytes = 0;
@@ -233,6 +271,7 @@ export async function readSandboxOcrOutputs(
             validated.push(entry);
             continue;
         }
+
         const remainingBytes =
             documentIngestionLimitsV1.parser.maximumTemporaryBytes -
             actualAggregateBytes;
@@ -244,6 +283,7 @@ export async function readSandboxOcrOutputs(
             ),
             signal,
         );
+
         actualAggregateBytes += content.byteLength;
         validated.push({
             kind: 'ocr-page',
@@ -255,6 +295,7 @@ export async function readSandboxOcrOutputs(
             },
         });
     }
+
     return validated;
 }
 
@@ -273,8 +314,10 @@ export class BubblewrapSandboxedDocumentExtractor implements SandboxedDocumentEx
             mediaType: 'text/plain',
             signal,
         });
-        if (result.entries.length !== 1)
+
+        if (result.entries.length !== 1) {
             throw new Error('Sandbox parser readiness failed.');
+        }
     }
 
     public async extract(
@@ -343,8 +386,11 @@ export class BubblewrapSandboxedDocumentExtractor implements SandboxedDocumentEx
         let stderrLength = 0;
         child.stderr.on('data', (value: Buffer) => {
             stderrLength += value.byteLength;
-            if (stderrLength > 4_096) terminate(child);
+            if (stderrLength > 4_096) {
+                terminate(child);
+            }
         });
+
         try {
             const [stdout, exitCode] = await Promise.all([
                 collectOutput(child, signal),
@@ -354,14 +400,18 @@ export class BubblewrapSandboxedDocumentExtractor implements SandboxedDocumentEx
                 }),
                 writeInput(child, input.content, signal),
             ]);
+
             signal.throwIfAborted();
-            if (exitCode !== 0)
+            if (exitCode !== 0) {
                 throw new Error('Sandbox parser returned a failure.');
+            }
+
             const manifest = parseSandboxParserManifest(
                 JSON.parse(
                     new TextDecoder('utf-8', { fatal: true }).decode(stdout),
                 ),
             );
+
             return {
                 entries: await readSandboxOcrOutputs(
                     outputDirectory,

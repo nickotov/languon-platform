@@ -46,16 +46,20 @@ class MemoryStore implements AuthStore {
             ) ?? null
         );
     }
+
     public async findAccountByUserId(userId: string) {
         return this.accounts.get(userId) ?? null;
     }
+
     public async findChallenge(input: {
         flowId: string;
         purpose: StoredVerificationChallenge['purpose'];
     }) {
         const challenge = this.challenges.get(input.flowId);
+
         return challenge?.purpose === input.purpose ? challenge : null;
     }
+
     public async findActiveChallengeForUser(input: {
         purpose: StoredVerificationChallenge['purpose'];
         userId: string;
@@ -70,6 +74,7 @@ class MemoryStore implements AuthStore {
             ) ?? null
         );
     }
+
     public async findPasskeyByCredentialId(credentialId: string) {
         return (
             [...this.passkeys.values()].find(
@@ -77,10 +82,13 @@ class MemoryStore implements AuthStore {
             ) ?? null
         );
     }
+
     public async findPasskeyById(input: { passkeyId: string; userId: string }) {
         const passkey = this.passkeys.get(input.passkeyId);
+
         return passkey?.userId === input.userId ? passkey : null;
     }
+
     public async findRefreshSessionByDigest(digest: string) {
         return (
             [...this.sessions.values()].find(
@@ -88,18 +96,21 @@ class MemoryStore implements AuthStore {
             ) ?? null
         );
     }
+
     public async getActiveSession(input: {
         now: Date;
         sessionId: string;
         userId: string;
     }) {
         const session = this.sessions.get(input.sessionId);
+
         return session?.userId === input.userId &&
             !session.revokedAt &&
             session.absoluteExpiresAt > input.now
             ? session
             : null;
     }
+
     public async registerOrReplacePendingSignup(input: {
         account: {
             canonicalEmail: string;
@@ -114,7 +125,11 @@ class MemoryStore implements AuthStore {
         const existing = await this.findAccountByCanonicalEmail(
             input.account.canonicalEmail,
         );
-        if (existing?.status === 'active') return 'active_noop';
+
+        if (existing?.status === 'active') {
+            return 'active_noop';
+        }
+
         const account: AuthenticationAccount = existing
             ? { ...existing, passwordCredential: input.credential }
             : {
@@ -127,50 +142,68 @@ class MemoryStore implements AuthStore {
                   status: 'pending',
                   userId: input.account.userId,
               };
+
         for (const [id, challenge] of this.challenges) {
             if (
                 challenge.userId === account.userId &&
                 challenge.purpose === 'email_verification'
-            )
+            ) {
                 this.challenges.set(id, {
                     ...challenge,
                     invalidatedAt: input.challenge.issuedAt,
                 });
+            }
         }
+
         this.accounts.set(account.userId, account);
         this.challenges.set(input.challenge.flowId, input.challenge);
+
         return 'pending_created';
     }
+
     public async replaceEmailVerificationChallenge(input: {
         challenge: NewStoredVerificationChallenge;
         previousFlowId: string;
     }): Promise<ChallengeIssueResult> {
         const previous = this.challenges.get(input.previousFlowId);
-        if (!previous) return { kind: 'noop' };
+        if (!previous) {
+            return { kind: 'noop' };
+        }
+
         if (
             input.challenge.issuedAt.getTime() - previous.lastSentAt.getTime() <
             60_000
-        )
+        ) {
             return { kind: 'limited', retryAfterSeconds: 60 };
+        }
+
         this.challenges.set(previous.flowId, {
             ...previous,
             invalidatedAt: input.challenge.issuedAt,
         });
+
         this.challenges.set(input.challenge.flowId, input.challenge);
+
         return {
             kind: 'issued',
             recipient: this.accounts.get(previous.userId)!.email,
         };
     }
+
     public async issuePasswordResetChallenge(input: {
         challenge: NewStoredVerificationChallenge;
         expectedStatus: 'active';
     }): Promise<ChallengeIssueResult> {
         const account = this.accounts.get(input.challenge.userId);
-        if (account?.status !== input.expectedStatus) return { kind: 'noop' };
+        if (account?.status !== input.expectedStatus) {
+            return { kind: 'noop' };
+        }
+
         this.challenges.set(input.challenge.flowId, input.challenge);
+
         return { kind: 'issued', recipient: account.email };
     }
+
     public async commitEmailVerification(input: {
         codeMatches: boolean;
         flowId: string;
@@ -184,29 +217,37 @@ class MemoryStore implements AuthStore {
             challenge.invalidatedAt ||
             input.now >= challenge.expiresAt ||
             challenge.attemptsUsed >= 5
-        )
+        ) {
             return { kind: 'unavailable' };
+        }
+
         if (!input.codeMatches) {
             this.challenges.set(input.flowId, {
                 ...challenge,
                 attemptsUsed: challenge.attemptsUsed + 1,
             });
+
             return { kind: 'incorrect' };
         }
+
         const account = this.accounts.get(challenge.userId)!;
         const active: AuthenticationAccount = {
             ...account,
             emailVerifiedAt: input.now,
             status: 'active',
         };
+
         this.accounts.set(active.userId, active);
         this.challenges.set(input.flowId, {
             ...challenge,
             consumedAt: input.now,
         });
+
         this.sessions.set(input.session.id, input.session);
+
         return { account: active, kind: 'verified' };
     }
+
     public async issueSessionForActiveUser(input: {
         expectedPasswordHash?: string;
         replacementCredential?: StoredPasswordCredential;
@@ -220,15 +261,20 @@ class MemoryStore implements AuthStore {
             (input.expectedPasswordHash &&
                 account.passwordCredential?.encoded !==
                     input.expectedPasswordHash)
-        )
+        ) {
             return { kind: 'unavailable' };
+        }
+
         const updated = input.replacementCredential
             ? { ...account, passwordCredential: input.replacementCredential }
             : account;
+
         this.accounts.set(input.userId, updated);
         this.sessions.set(input.session.id, input.session);
+
         return { account: updated, kind: 'issued' };
     }
+
     public async commitPasswordReset(input: {
         codeMatches: boolean;
         flowId: string;
@@ -240,33 +286,43 @@ class MemoryStore implements AuthStore {
             !challenge ||
             challenge.consumedAt ||
             input.now >= challenge.expiresAt
-        )
+        ) {
             return 'unavailable';
+        }
+
         if (!input.codeMatches) {
             this.challenges.set(input.flowId, {
                 ...challenge,
                 attemptsUsed: challenge.attemptsUsed + 1,
             });
+
             return 'incorrect';
         }
+
         const account = this.accounts.get(challenge.userId)!;
         this.accounts.set(account.userId, {
             ...account,
             passwordCredential: input.newCredential,
         });
+
         this.challenges.set(challenge.flowId, {
             ...challenge,
             consumedAt: input.now,
         });
-        for (const [id, session] of this.sessions)
-            if (session.userId === account.userId)
+
+        for (const [id, session] of this.sessions) {
+            if (session.userId === account.userId) {
                 this.sessions.set(id, {
                     ...session,
                     revokedAt: input.now,
                     revocationReason: 'password_reset',
                 });
+            }
+        }
+
         return 'reset';
     }
+
     public async changePasswordAndReplaceSessions(input: {
         expectedPasswordHash: string;
         newCredential: StoredPasswordCredential;
@@ -278,49 +334,65 @@ class MemoryStore implements AuthStore {
         if (
             !account ||
             account.passwordCredential?.encoded !== input.expectedPasswordHash
-        )
+        ) {
             return { kind: 'unavailable' };
-        for (const [id, session] of this.sessions)
-            if (session.userId === input.userId)
+        }
+
+        for (const [id, session] of this.sessions) {
+            if (session.userId === input.userId) {
                 this.sessions.set(id, {
                     ...session,
                     revokedAt: input.revokedAt,
                     revocationReason: 'password_change',
                 });
+            }
+        }
+
         const updated = { ...account, passwordCredential: input.newCredential };
         this.accounts.set(input.userId, updated);
         this.sessions.set(
             input.replacementSession.id,
             input.replacementSession,
         );
+
         return { account: updated, kind: 'issued' };
     }
+
     public async rotateRefreshSession(input: {
         digest: string;
         now: Date;
         successor: NewStoredAuthenticationSession;
     }): Promise<RefreshRotationCommitResult> {
         const prior = await this.findRefreshSessionByDigest(input.digest);
-        if (!prior || prior.revokedAt || input.now >= prior.absoluteExpiresAt)
+        if (!prior || prior.revokedAt || input.now >= prior.absoluteExpiresAt) {
             return { kind: 'unavailable' };
+        }
+
         if (prior.consumedAt) {
-            for (const [id, session] of this.sessions)
-                if (session.familyId === prior.familyId)
+            for (const [id, session] of this.sessions) {
+                if (session.familyId === prior.familyId) {
                     this.sessions.set(id, {
                         ...session,
                         revokedAt: input.now,
                         revocationReason: 'refresh_replay',
                     });
+                }
+            }
+
             return { kind: 'replay' };
         }
+
         this.sessions.set(prior.id, {
             ...prior,
             consumedAt: input.now,
             successorId: input.successor.id,
         });
+
         this.sessions.set(input.successor.id, input.successor);
+
         return { account: this.accounts.get(prior.userId)!, kind: 'rotated' };
     }
+
     public async revokeAllSessions(input: {
         reason:
             | 'logout_all'
@@ -332,14 +404,17 @@ class MemoryStore implements AuthStore {
         revokedAt: Date;
         userId: string;
     }) {
-        for (const [id, session] of this.sessions)
-            if (session.userId === input.userId)
+        for (const [id, session] of this.sessions) {
+            if (session.userId === input.userId) {
                 this.sessions.set(id, {
                     ...session,
                     revokedAt: input.revokedAt,
                     revocationReason: input.reason,
                 });
+            }
+        }
     }
+
     public async revokeSessionFamilyByDigest(input: {
         digest: string;
         reason:
@@ -352,20 +427,25 @@ class MemoryStore implements AuthStore {
         revokedAt: Date;
     }) {
         const session = await this.findRefreshSessionByDigest(input.digest);
-        if (session)
-            for (const [id, familySession] of this.sessions)
-                if (familySession.familyId === session.familyId)
+        if (session) {
+            for (const [id, familySession] of this.sessions) {
+                if (familySession.familyId === session.familyId) {
                     this.sessions.set(id, {
                         ...familySession,
                         revokedAt: input.revokedAt,
                         revocationReason: input.reason,
                     });
+                }
+            }
+        }
     }
+
     public async listActivePasskeys(userId: string) {
         return [...this.passkeys.values()].filter(
             (passkey) => passkey.userId === userId && !passkey.revokedAt,
         );
     }
+
     public async registerPasskey(input: {
         now: Date;
         passkey: NewStoredAuthenticationPasskey;
@@ -373,8 +453,10 @@ class MemoryStore implements AuthStore {
         userId: string;
     }) {
         this.passkeys.set(input.passkey.id, input.passkey);
+
         return true;
     }
+
     public async renamePasskey(input: {
         name: string;
         now: Date;
@@ -382,11 +464,16 @@ class MemoryStore implements AuthStore {
         userId: string;
     }) {
         const passkey = await this.findPasskeyById(input);
-        if (!passkey) return null;
+        if (!passkey) {
+            return null;
+        }
+
         const renamed = { ...passkey, name: input.name.trim() };
         this.passkeys.set(passkey.id, renamed);
+
         return renamed;
     }
+
     public async revokePasskey(input: {
         now: Date;
         passkeyId: string;
@@ -394,10 +481,15 @@ class MemoryStore implements AuthStore {
         userId: string;
     }) {
         const passkey = await this.findPasskeyById(input);
-        if (!passkey) return false;
+        if (!passkey) {
+            return false;
+        }
+
         this.passkeys.set(passkey.id, { ...passkey, revokedAt: input.now });
+
         return true;
     }
+
     public async commitPasskeyAuthentication(_input: {
         expectedCounter: number;
         now: Date;
@@ -447,6 +539,7 @@ function createHarness(
         digest: (value: string) => `digest:${value}`,
         issue: () => {
             const value = `refresh-${++id}`;
+
             return { digest: `digest:${value}`, value };
         },
     };
@@ -537,6 +630,7 @@ function createHarness(
         },
         ...overrides,
     });
+
     return { events, passwordHasher, sent, service, store };
 }
 
@@ -552,6 +646,7 @@ describe('AuthenticationService', () => {
         });
         const account =
             await store.findAccountByCanonicalEmail('user@example.com');
+
         expect(first.status).toBe('verification_pending');
         expect(sent).toHaveLength(1);
         await service.signUp({
@@ -559,29 +654,36 @@ describe('AuthenticationService', () => {
             email: 'user@example.com',
             password: 'another correct password',
         });
+
         expect(
             store.challenges.get(first.verification.flowId)?.invalidatedAt,
         ).toEqual(now);
+
         expect(
             (await store.findAccountByCanonicalEmail('user@example.com'))
                 ?.passwordCredential?.encoded,
         ).toBe('hash:another correct password');
+
         const replaced =
             await store.findAccountByCanonicalEmail('user@example.com');
+
         store.accounts.set(account!.userId, {
             ...replaced!,
             emailVerifiedAt: now,
             status: 'active',
         });
+
         await service.signUp({
             context,
             email: 'user@example.com',
             password: 'third correct password',
         });
+
         expect(
             (await store.findAccountByCanonicalEmail('user@example.com'))
                 ?.passwordCredential?.encoded,
         ).toBe('hash:another correct password');
+
         expect(sent).toHaveLength(2);
     });
 
@@ -597,6 +699,7 @@ describe('AuthenticationService', () => {
             context,
             flowId: signup.verification.flowId,
         });
+
         expect(success.status).toBe('authenticated');
         expect(success.user.status).toBe('active');
         expect(store.sessions).toHaveLength(1);
@@ -618,6 +721,7 @@ describe('AuthenticationService', () => {
                 password,
             }),
         ).rejects.toBeInstanceOf(InvalidCredentialsError);
+
         expect(passwordHasher.verify).toHaveBeenCalledWith(
             password,
             { encoded: 'hash:dummy password value', parametersVersion: 1 },
@@ -635,6 +739,7 @@ describe('AuthenticationService', () => {
                 `hash:legacy:${password}`,
             ),
         });
+
         passwordHasher.verify.mockImplementation(async (value, hash) => ({
             matches:
                 hash.encoded === `hash:legacy:${value}` ||
@@ -663,6 +768,7 @@ describe('AuthenticationService', () => {
             email: 'user@example.com',
             password,
         });
+
         await expect(
             service.passwordLogin({
                 context,
@@ -688,18 +794,22 @@ describe('AuthenticationService', () => {
             context,
             email: account.email,
         });
+
         await service.resetPassword({
             code: '0000',
             context,
             flowId: forgot.recovery.flowId,
             newPassword: 'replacement password phrase',
         });
+
         expect(
             store.accounts.get(account.userId)?.passwordCredential?.encoded,
         ).toBe('hash:replacement password phrase');
+
         const storedSession = store.sessions.get(
             (login as { session: { id: string } }).session.id,
         );
+
         expect(storedSession?.revocationReason).toBe('password_reset');
     });
 
@@ -719,6 +829,7 @@ describe('AuthenticationService', () => {
             refreshCredential: (login as { refreshCredential: string })
                 .refreshCredential,
         });
+
         expect(refreshed.session.expiresAt).toEqual(originalExpiry);
         await expect(
             service.refresh({
@@ -727,6 +838,7 @@ describe('AuthenticationService', () => {
                     .refreshCredential,
             }),
         ).rejects.toBeInstanceOf(AuthenticationRequiredError);
+
         expect(
             [...store.sessions.values()]
                 .filter(
@@ -738,6 +850,7 @@ describe('AuthenticationService', () => {
                     (session) => session.revocationReason === 'refresh_replay',
                 ),
         ).toBe(true);
+
         expect(events).toContainEqual(
             expect.objectContaining({
                 errorCategory: 'replay',
@@ -746,6 +859,7 @@ describe('AuthenticationService', () => {
                 userId: account.userId,
             }),
         );
+
         expect(JSON.stringify(events)).not.toContain('refresh-');
     });
 
@@ -755,6 +869,7 @@ describe('AuthenticationService', () => {
             rateLimiter: {
                 consume: async (request) => {
                     requests.push(request);
+
                     return {
                         allowed: false,
                         limit: request.limit,
@@ -771,6 +886,7 @@ describe('AuthenticationService', () => {
         await expect(
             service.resendEmailVerification({ context, flowId: 'opaque-flow' }),
         ).rejects.toMatchObject({ retryAfterSeconds: 60 });
+
         await expect(
             service.forgotPassword({ context, email: 'unknown@example.com' }),
         ).rejects.toMatchObject({ retryAfterSeconds: 60 });
@@ -792,7 +908,11 @@ describe('AuthenticationService', () => {
             email: account.email,
             password,
         });
-        if (login.status !== 'authenticated') throw new Error('Login failed.');
+
+        if (login.status !== 'authenticated') {
+            throw new Error('Login failed.');
+        }
+
         const passkey: StoredAuthenticationPasskey = {
             backedUp: false,
             counter: 0,
@@ -808,6 +928,7 @@ describe('AuthenticationService', () => {
             userHandle: 'private-user-handle',
             userId: account.userId,
         };
+
         store.passkeys.set(passkey.id, passkey);
 
         await service.renamePasskey({
@@ -817,12 +938,14 @@ describe('AuthenticationService', () => {
             sessionId: login.session.id,
             userId: account.userId,
         });
+
         await service.revokePasskey({
             context,
             passkeyId: passkey.id,
             sessionId: login.session.id,
             userId: account.userId,
         });
+
         await expect(
             service.renamePasskey({
                 context,
@@ -852,6 +975,7 @@ describe('AuthenticationService', () => {
                 }),
             ]),
         );
+
         const serialized = JSON.stringify(events);
         expect(serialized).not.toContain(passkey.credentialId);
         expect(serialized).not.toContain(passkey.userHandle);

@@ -48,18 +48,23 @@ export function PortraitChatSettings({
                 inheritedFields: value.portrait?.inheritedFields ?? [],
             },
         });
+
         setShowPrivacy(!enabled);
     }
+
     function adopt() {
         onChange(inheritPortraitField(value));
     }
+
     function fresh() {
         onFreshChat();
         setShowPrivacy(false);
     }
+
     function retry() {
         void state.refetch();
     }
+
     return (
         <section className={styles.section}>
             <h3 className={styles.heading}>

@@ -9,6 +9,7 @@ import { createInterchangeViews } from './editor-interchange-views';
 
 export function createEditorView(controller: EditorController) {
     const workspace = deriveEditorWorkspace(controller);
+
     return {
         active: workspace.current.lifecycle === 'active',
         workspace: createWorkspaceViews(controller, workspace),

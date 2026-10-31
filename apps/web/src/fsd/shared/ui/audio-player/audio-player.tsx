@@ -31,7 +31,9 @@ export type AudioPlayerProps = {
 type Status = 'loading' | 'ready' | 'error';
 
 export function formatTime(seconds: number) {
-    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    if (!Number.isFinite(seconds) || seconds < 0) {
+        return '0:00';
+    }
 
     const total = Math.floor(seconds);
 
@@ -83,22 +85,31 @@ export function AudioPlayer({
     }, [src]);
 
     useEffect(() => {
-        if (audioRef.current) audioRef.current.playbackRate = speed;
+        if (audioRef.current) {
+            audioRef.current.playbackRate = speed;
+        }
     }, [speed, status]);
 
     const toggle = useCallback(() => {
         const a = audioRef.current;
 
-        if (!a || !interactive) return;
+        if (!a || !interactive) {
+            return;
+        }
 
-        if (a.paused) void a.play().catch(() => setStatus('error'));
-        else a.pause();
+        if (a.paused) {
+            void a.play().catch(() => setStatus('error'));
+        } else {
+            a.pause();
+        }
     }, [interactive]);
 
     const replay = useCallback(() => {
         const a = audioRef.current;
 
-        if (!a || !interactive) return;
+        if (!a || !interactive) {
+            return;
+        }
 
         const next = replaySeconds
             ? Math.max(0, a.currentTime - replaySeconds)
@@ -108,11 +119,15 @@ export function AudioPlayer({
 
         setCurrent(next);
 
-        if (a.paused) void a.play().catch(() => setStatus('error'));
+        if (a.paused) {
+            void a.play().catch(() => setStatus('error'));
+        }
     }, [interactive, replaySeconds]);
 
     const cycle = () => {
-        if (!interactive || !speeds.length) return;
+        if (!interactive || !speeds.length) {
+            return;
+        }
 
         const next = speeds[(speeds.indexOf(speed) + 1) % speeds.length] ?? 1;
 
@@ -226,8 +241,9 @@ export function AudioPlayer({
                                 onChange={(event) => {
                                     const value = Number(event.target.value);
 
-                                    if (audioRef.current)
+                                    if (audioRef.current) {
                                         audioRef.current.currentTime = value;
+                                    }
 
                                     setCurrent(value);
                                 }}

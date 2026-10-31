@@ -58,6 +58,7 @@ run('composed dictionary routes', () => {
             database,
             new Date('2026-08-21T12:00:00.000Z'),
         );
+
         ownerId = randomUUID();
         authenticatedOwnerId = ownerId;
         await database
@@ -79,6 +80,7 @@ run('composed dictionary routes', () => {
         > = {},
     ) {
         let entropyByte = 0;
+
         return createDictionaryComposition({
             accessTokens: {
                 sign: async () => 'unused',
@@ -154,7 +156,10 @@ run('composed dictionary routes', () => {
                 url: 'https://uploads.example.test/exact',
             }),
             inspectVersions: async (_input) => {
-                if (!putCompleted) throw new Error('PUT has not completed.');
+                if (!putCompleted) {
+                    throw new Error('PUT has not completed.');
+                }
+
                 return {
                     detectedFormat: 'txt',
                     observedVersionId: storageVersionId,
@@ -224,10 +229,12 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(authorized.status).toBe(202);
         const authorizedBody = (await authorized.json()) as {
             upload: { id: string; method: string };
         };
+
         expect(authorizedBody.upload.method).toBe('PUT');
         putCompleted = true;
 
@@ -252,6 +259,7 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(unavailable.status).toBe(503);
         await expect(unavailable.json()).resolves.toMatchObject({
             error: { code: 'generation_not_available' },
@@ -270,11 +278,13 @@ run('composed dictionary routes', () => {
         await expect(completed.json()).resolves.toMatchObject({
             job: { state: 'queued' },
         });
+
         const completedJob = completedBody as { job: { id: string } };
         const cancelled = await lifecycleOnly.routes.request(
             `/dictionary-generation-jobs/${completedJob.job.id}/cancel`,
             { method: 'POST', headers, body: '{}' },
         );
+
         expect(cancelled.status).toBe(200);
     });
 
@@ -289,6 +299,7 @@ run('composed dictionary routes', () => {
             '/dictionary-generation-capabilities',
             { headers },
         );
+
         expect(capabilities.status).toBe(200);
         await expect(capabilities.json()).resolves.toEqual({
             cardAuthoringGeneration: { available: false },
@@ -298,6 +309,7 @@ run('composed dictionary routes', () => {
             pastedTermsGeneration: { available: false },
             singleCardGeneration: { available: true },
         });
+
         const created = await dictionaryComposition.routes.request(
             '/dictionaries',
             {
@@ -354,23 +366,28 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(enqueued.status).toBe(202);
         const enqueuedBody = (await enqueued.json()) as {
             job: { id: string; state: string };
         };
+
         expect(enqueuedBody.job.state).toBe('queued');
 
         const latest = await dictionaryComposition.routes.request(
             `/dictionaries/${dictionary.dictionary.id}/cards/${card.card.id}/generations/latest`,
             { headers },
         );
+
         await expect(latest.json()).resolves.toMatchObject({
             job: { id: enqueuedBody.job.id, state: 'queued' },
         });
+
         const cancelled = await dictionaryComposition.routes.request(
             `/dictionary-generation-jobs/${enqueuedBody.job.id}/cancel`,
             { body: '{}', headers, method: 'POST' },
         );
+
         expect(cancelled.status).toBe(200);
         await expect(cancelled.json()).resolves.toMatchObject({
             job: {
@@ -406,6 +423,7 @@ run('composed dictionary routes', () => {
         expect(created.headers.get('access-control-allow-origin')).toBe(
             'http://localhost:3333',
         );
+
         expect(created.headers.get('cache-control')).toBe('private, no-store');
         const createdBody = (await created.json()) as {
             dictionary: {
@@ -414,12 +432,14 @@ run('composed dictionary routes', () => {
                 version: number;
             };
         };
+
         expect(createdBody.dictionary.languagePairLocked).toBe(false);
 
         const read = await dictionaryComposition.routes.request(
             `/dictionaries/${createdBody.dictionary.id}`,
             { headers },
         );
+
         expect(read.status).toBe(200);
         await expect(read.json()).resolves.toMatchObject({
             dictionary: {
@@ -428,6 +448,7 @@ run('composed dictionary routes', () => {
                 visibility: 'private',
             },
         });
+
         const maximumOrder = Array.from(
             { length: 10_000 },
             (_, index) =>
@@ -444,6 +465,7 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(boundedLargeRequest.status).toBe(400);
     });
 
@@ -492,6 +514,7 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(card.status).toBe(201);
         const cardBody = (await card.json()) as { dictionaryVersion: number };
         const rotated = await dictionaryComposition.routes.request(
@@ -504,6 +527,7 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(rotated.status).toBe(200);
         const rotatedBody = (await rotated.json()) as {
             capability: { shareId: string; shareKey: string };
@@ -515,6 +539,7 @@ run('composed dictionary routes', () => {
                 'X-Languon-Share-Key': rotatedBody.capability.shareKey,
             },
         });
+
         expect(shared.status).toBe(200);
         expect(shared.headers.get('cache-control')).toBe('private, no-store');
         expect(shared.headers.get('referrer-policy')).toBe('no-referrer');
@@ -534,12 +559,14 @@ run('composed dictionary routes', () => {
             },
             nextCursor: null,
         });
+
         expect(JSON.stringify(sharedPayload)).not.toContain('ownerId');
 
         const missing = await dictionaryComposition.routes.request(sharedPath);
         const wrong = await dictionaryComposition.routes.request(sharedPath, {
             headers: { 'X-Languon-Share-Key': 'w'.repeat(43) },
         });
+
         expect(missing.status).toBe(404);
         expect(wrong.status).toBe(404);
         const missingBody = (await missing.json()) as {
@@ -548,6 +575,7 @@ run('composed dictionary routes', () => {
         const wrongBody = (await wrong.json()) as {
             error: { code: string; message: string };
         };
+
         expect({
             code: missingBody.error.code,
             message: missingBody.error.message,
@@ -560,6 +588,7 @@ run('composed dictionary routes', () => {
         await database
             .insert(usersTable)
             .values({ id: readerId, status: 'active' });
+
         authenticatedOwnerId = readerId;
         const forkKey = `dictionary-fork-${randomUUID()}`;
         const fork = async (body: Record<string, unknown>) =>
@@ -582,6 +611,7 @@ run('composed dictionary routes', () => {
         const replayForkBody = (await replayFork.json()) as {
             dictionary: { id: string };
         };
+
         expect(replayForkBody.dictionary.id).toBe(firstForkBody.dictionary.id);
         expect(firstForkBody.dictionary.visibility).toBe('private');
         expect((await fork({ name: 'Different payload' })).status).toBe(409);
@@ -597,6 +627,7 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(rerotated.status).toBe(200);
         authenticatedOwnerId = readerId;
         const replayAfterRotation = await fork({ name: 'Private route copy' });
@@ -608,6 +639,7 @@ run('composed dictionary routes', () => {
                 }
             ).dictionary.id,
         ).toBe(firstForkBody.dictionary.id);
+
         expect((await fork({ name: 'Different payload' })).status).toBe(409);
         authenticatedOwnerId = ownerId;
         expect(
@@ -619,6 +651,7 @@ run('composed dictionary routes', () => {
                 })
             ).status,
         ).toBe(404);
+
         const rerotatedBody = (await rerotated.json()) as {
             capability: { shareId: string; shareKey: string };
             dictionary: { version: number };
@@ -633,6 +666,7 @@ run('composed dictionary routes', () => {
                 method: 'POST',
             },
         );
+
         expect(archived.status).toBe(200);
         authenticatedOwnerId = readerId;
         const replayAfterArchive = await fork({ name: 'Private route copy' });
@@ -644,6 +678,7 @@ run('composed dictionary routes', () => {
                 }
             ).dictionary.id,
         ).toBe(firstForkBody.dictionary.id);
+
         authenticatedOwnerId = ownerId;
         expect(
             (

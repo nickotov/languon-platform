@@ -36,6 +36,7 @@ const fixture = () => ({
     complete: vi.fn().mockResolvedValue(undefined),
     fail: vi.fn().mockResolvedValue(undefined),
 });
+
 describe('durable interview worker', () => {
     it('claims, checks the fence and persists validated result without approving', async () => {
         const store = fixture();
@@ -44,17 +45,21 @@ describe('durable interview worker', () => {
             store,
             createRunner: () => ({ run }),
         });
+
         expect(await worker.processNext(new AbortController().signal)).toBe(
             true,
         );
+
         expect(store.heartbeat).toHaveBeenCalledWith(operation);
         expect(store.complete).toHaveBeenCalledWith(
             operation,
             result,
             expect.any(Date),
         );
+
         expect(store.fail).not.toHaveBeenCalled();
     });
+
     it('never creates the runner after deletion or stop invalidates the lease', async () => {
         const store = fixture();
         store.heartbeat.mockRejectedValue(new Error('deleted'));
@@ -65,32 +70,39 @@ describe('durable interview worker', () => {
         expect(store.fail).toHaveBeenCalledOnce();
         expect(store.complete).not.toHaveBeenCalled();
     });
+
     it('persists a safe invalid-output category without details or an automatic retry', async () => {
         const store = fixture();
         const run = vi
             .fn()
             .mockRejectedValue(new PortraitInterviewInvalidModelOutputError());
+
         await new InterviewWorkerService({
             store,
             createRunner: () => ({ run }),
         }).processNext(new AbortController().signal);
+
         expect(run).toHaveBeenCalledOnce();
         expect(store.fail).toHaveBeenCalledWith(
             operation,
             'invalid_model_output',
             expect.any(Date),
         );
+
         expect(store.complete).not.toHaveBeenCalled();
     });
+
     it('does not automatically redispatch a failed generation', async () => {
         const store = fixture();
         const run = vi
             .fn()
             .mockRejectedValue(new Error('ambiguous provider failure'));
+
         await new InterviewWorkerService({
             store,
             createRunner: () => ({ run }),
         }).processNext(new AbortController().signal);
+
         expect(run).toHaveBeenCalledOnce();
         expect(store.fail).toHaveBeenCalledWith(
             operation,

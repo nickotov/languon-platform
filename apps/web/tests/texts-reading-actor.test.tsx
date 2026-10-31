@@ -11,6 +11,7 @@ import type { ReadingDocument } from '@/fsd/features/text-reading';
 vi.mock('@/fsd/entities/dictionary', () => ({
     dictionaryApi: { listDictionaries: vi.fn() },
 }));
+
 vi.mock('@/fsd/entities/texts', () => ({
     textsApi: {
         enqueueSelection: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock('@/fsd/entities/texts', () => ({
     },
     TextsApiError: class extends Error {},
 }));
+
 const id = '54b51acb-320e-4ea9-86f3-0d4502349b89';
 const doc: ReadingDocument = {
     id,
@@ -66,6 +68,7 @@ function fixture() {
         </I18nProvider>
     );
     const result = render(tree());
+
     return {
         ...result,
         switchActor: () => {
@@ -74,6 +77,7 @@ function fixture() {
         },
     };
 }
+
 async function openCollection(container: HTMLElement) {
     const span = container.querySelector('[data-side="source"]')!;
     const range = document.createRange();
@@ -81,6 +85,7 @@ async function openCollection(container: HTMLElement) {
     range.setEnd(span.firstChild!, 4);
     range.getBoundingClientRect = () =>
         ({ top: 80, left: 40, width: 30, height: 20 }) as DOMRect;
+
     const selection = window.getSelection()!;
     selection.removeAllRanges();
     selection.addRange(range);
@@ -89,6 +94,7 @@ async function openCollection(container: HTMLElement) {
         await screen.findByRole('button', { name: 'Add to dictionary' }),
     );
 }
+
 function dictionaries(name: string) {
     return {
         data: [
@@ -105,6 +111,7 @@ function dictionaries(name: string) {
         nextCursor: null,
     };
 }
+
 beforeEach(() => {
     vi.clearAllMocks();
     actor = 'user-a';
@@ -117,6 +124,7 @@ beforeEach(() => {
         }),
     });
 });
+
 describe('reader actor isolation under the same QueryClient', () => {
     it('aborts a deferred owner dictionary list and ignores its late result after switching actors', async () => {
         let finish!: (value: never) => void;
@@ -128,49 +136,60 @@ describe('reader actor isolation under the same QueryClient', () => {
                     }),
             )
             .mockResolvedValueOnce(dictionaries('B dictionary') as never);
+
         const view = fixture();
         await openCollection(view.container);
         await waitFor(() =>
             expect(dictionaryApi.listDictionaries).toHaveBeenCalledTimes(1),
         );
+
         const signal = vi.mocked(dictionaryApi.listDictionaries).mock
             .calls[0]![2];
+
         view.switchActor();
         expect(signal?.aborted).toBe(true);
         await act(async () =>
             finish(dictionaries('A private dictionary') as never),
         );
+
         expect(
             screen.queryByText('A private dictionary'),
         ).not.toBeInTheDocument();
+
         await openCollection(view.container);
         expect(await screen.findByText('B dictionary')).toBeInTheDocument();
         expect(
             screen.queryByText('A private dictionary'),
         ).not.toBeInTheDocument();
     });
+
     it('clears an already loaded dictionary picker synchronously on actor change', async () => {
         vi.mocked(dictionaryApi.listDictionaries).mockResolvedValueOnce(
             dictionaries('A private dictionary') as never,
         );
+
         const view = fixture();
         await openCollection(view.container);
         expect(
             await screen.findByText('A private dictionary'),
         ).toBeInTheDocument();
+
         view.switchActor();
         expect(
             screen.queryByText('A private dictionary'),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('button', { name: 'Add card' }),
         ).not.toBeInTheDocument();
     });
+
     it('aborts pending collection and prevents old completion, toast, and marks from appearing for the next actor', async () => {
         vi.mocked(dictionaryApi.listDictionaries).mockResolvedValueOnce({
             data: [],
             nextCursor: null,
         } as never);
+
         let finish!: (value: never) => void;
         vi.mocked(textsApi.enqueueSelection).mockImplementationOnce(
             () =>
@@ -178,6 +197,7 @@ describe('reader actor isolation under the same QueryClient', () => {
                     finish = resolve;
                 }),
         );
+
         const view = fixture();
         await openCollection(view.container);
         fireEvent.click(
@@ -185,13 +205,16 @@ describe('reader actor isolation under the same QueryClient', () => {
                 name: 'Create new dictionary',
             }),
         );
+
         fireEvent.change(screen.getByLabelText(/Dictionary name/), {
             target: { value: 'A private dictionary' },
         });
+
         fireEvent.click(screen.getByRole('button', { name: 'Create and add' }));
         await waitFor(() =>
             expect(textsApi.enqueueSelection).toHaveBeenCalledTimes(1),
         );
+
         const signal = vi.mocked(textsApi.enqueueSelection).mock.calls[0]![3];
         view.switchActor();
         expect(signal?.aborted).toBe(true);
@@ -206,9 +229,11 @@ describe('reader actor isolation under the same QueryClient', () => {
                 },
             } as never),
         );
+
         expect(
             screen.queryByRole('link', { name: 'Open dictionary' }),
         ).not.toBeInTheDocument();
+
         expect(screen.queryByText(/Added “Word”/)).not.toBeInTheDocument();
         expect(view.container.querySelector('mark')).toBeNull();
         expect(textsApi.getSelectionJob).not.toHaveBeenCalled();

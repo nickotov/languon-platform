@@ -49,9 +49,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: otherId, status: 'active' },
             ]);
         });
+
         afterAll(async () => {
             await client?.end();
         });
+
         const credits = <T>(
             run: (
                 participant: DrizzleAiCreditTransactionParticipant,
@@ -60,6 +62,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             database.transaction((tx) =>
                 run(new DrizzleAiCreditTransactionParticipant(tx)),
             );
+
         function module() {
             return createLearnerAiCreditBalanceModule({
                 database,
@@ -79,36 +82,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             });
         }
+
         it('defaults missing wallets to zero and does not create accounts, history or holds', async () => {
             const balances = module().balances;
             expect(await balances.get(ownerId, at)).toEqual({
                 mode: 'limited',
                 availableCredits: '0',
             });
+
             expect(await database.select().from(aiCreditAccountsTable)).toEqual(
                 [],
             );
+
             expect(await database.select().from(aiCreditHistoryTable)).toEqual(
                 [],
             );
+
             expect(
                 await database.select().from(aiCreditReservationsTable),
             ).toEqual([]);
         });
+
         it('excludes expired lots and held credits, isolates owners and makes no ledger writes', async () => {
             await credits(async (participant) => {
                 for (const input of [
                     { ownerId, amount: 20125n, expiresAt: null },
                     { ownerId, amount: 100000n, expiresAt: at },
                     { ownerId: otherId, amount: 999000n, expiresAt: null },
-                ])
+                ]) {
                     await participant.issueGrant({
                         ...input,
                         source: 'admin',
                         sourceReference: randomUUID(),
                         createdAt: new Date(at.getTime() - 1000),
                     });
+                }
             });
+
             const dictionaryId = randomUUID();
             const jobId = randomUUID();
             await database.insert(dictionariesTable).values({
@@ -118,6 +128,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguageTag: 'en',
                 targetLanguageTag: 'fr',
             });
+
             await database.insert(dictionaryGenerationJobsTable).values({
                 aiCreditAccounted: true,
                 aiCreditInputCreditsPerMillionTokens: 1000000,
@@ -141,6 +152,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 targetLanguageTag: 'fr',
                 updatedAt: at,
             });
+
             await credits((participant) =>
                 participant.reserveAttempt({
                     at,
@@ -151,6 +163,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reservationId: randomUUID(),
                 }),
             );
+
             const historyBefore = await database
                 .select()
                 .from(aiCreditHistoryTable);
@@ -162,25 +175,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 mode: 'limited',
                 availableCredits: '15.125',
             });
+
             expect(await m.balances.get(otherId, at)).toEqual({
                 mode: 'limited',
                 availableCredits: '999',
             });
+
             const response = await m.routes.request('/users/me/ai-credits', {
                 headers: { Authorization: 'Bearer header.payload.signature' },
             });
+
             expect(response.status).toBe(200);
             expect(await response.json()).toEqual({
                 mode: 'limited',
                 availableCredits: '15.125',
             });
+
             expect(await database.select().from(aiCreditHistoryTable)).toEqual(
                 historyBefore,
             );
+
             expect(
                 await database.select().from(aiCreditReservationsTable),
             ).toEqual(reservationsBefore);
         });
+
         it('reads promptly from a consistent committed snapshot while a wallet writer holds its lock', async () => {
             let releaseWriter!: () => void;
             let writerReady!: () => void;
@@ -204,15 +223,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         createdAt: at,
                         expiresAt: null,
                     });
+
                     writerReady();
                     await released;
                     // Roll back the synthetic writer once the concurrent read finishes.
                     transaction.rollback();
                 })
                 .catch((error: Error) => {
-                    if (!(error instanceof TransactionRollbackError))
+                    if (!(error instanceof TransactionRollbackError)) {
                         throw error;
+                    }
                 });
+
             await ready;
             let deadline: ReturnType<typeof setTimeout> | undefined;
             try {
@@ -234,6 +256,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         );
                     }),
                 ]);
+
                 expect(response.status).toBe(200);
                 expect(await response.json()).toEqual({
                     mode: 'limited',
@@ -244,11 +267,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 releaseWriter();
                 await writer;
             }
+
             expect(await module().balances.get(ownerId, at)).toEqual({
                 mode: 'limited',
                 availableCredits: '15.125',
             });
         });
+
         it('honors effective unlimited access and its expiry without changing the wallet', async () => {
             await credits((participant) =>
                 participant.updatePolicy({
@@ -260,11 +285,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reason: 'Synthetic policy',
                 }),
             );
+
             const balances = module().balances;
             expect(await balances.get(ownerId, at)).toEqual({
                 mode: 'unlimited',
                 availableCredits: null,
             });
+
             expect(
                 await balances.get(ownerId, new Date(at.getTime() + 1000)),
             ).toEqual({ mode: 'limited', availableCredits: '15.125' });

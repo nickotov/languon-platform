@@ -25,12 +25,15 @@ export function ProposalCard({
     function edit() {
         setEditing(true);
     }
+
     function done() {
         setEditing(false);
     }
+
     function accept() {
         onAccept(edited);
     }
+
     return (
         <article className={styles.card}>
             <div className={styles.heading}>

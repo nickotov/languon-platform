@@ -19,6 +19,7 @@ export function ConversationDeleteConfirmation({
     const heading = title
         ? `${copy.delete} “${title}”?`
         : `${copy.deleteChat}?`;
+
     return (
         <section
             className={styles.confirm}

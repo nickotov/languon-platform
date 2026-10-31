@@ -103,6 +103,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Synthetic bounded operator allowance',
             });
+
             await db.insert(aiProviderPriceRevisionsTable).values({
                 id: priceId,
                 providerId: 'openai',
@@ -128,6 +129,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reason: 'Synthetic explicit test rate',
                 },
             });
+
             await db.insert(configs).values({
                 id: configId,
                 version: 1,
@@ -150,9 +152,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Synthetic explicitly enabled fixture',
             });
+
             await db
                 .insert(state)
                 .values({ id: 'global', activeRevisionId: configId });
+
             await db.insert(dictionaryAiWorkerObservationsTable).values({
                 id: workerId,
                 workerId,
@@ -165,21 +169,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 message: 'Synthetic compatible executor fixture',
                 textAiSupportedFormats: ['knowledge-transcription:v1'],
             });
+
             notes = new DrizzleKnowledgeStore(
                 db,
                 { beforeNoteDeletion: async () => {} },
                 new KnowledgeShareCrypto(secret),
             );
+
             media = new DrizzleKnowledgeMediaStore(
                 db,
                 new KnowledgeShareCrypto(secret),
             );
+
             store = new DrizzleKnowledgeTranscriptionStore({
                 database: db,
                 executionReady: true,
                 credentialFingerprint,
             });
         }, 120_000);
+
         beforeEach(async () => {
             owner = randomUUID();
             await db.insert(usersTable).values({ id: owner, status: 'active' });
@@ -193,6 +201,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: null,
                 }),
             );
+
             const note = await notes.create(owner, {
                 operationId: randomUUID(),
                 content: KnowledgeNoteContentSchema.parse({
@@ -220,6 +229,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             });
+
             noteId = note.id;
             const wav = createFixtureAudio();
             const audio = await media.upload(owner, noteId, {
@@ -227,8 +237,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 mimeType: 'audio/wav',
                 durationMs: 1000,
             });
+
             assetId = audio.id;
         });
+
         afterAll(async () => client?.end(), 120_000);
         const request = () => ({
             operationId: randomUUID(),
@@ -236,6 +248,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             assetId,
             languages: ['en'],
         });
+
         async function enqueue() {
             const input = request();
             const quote = await store.submit(
@@ -243,7 +256,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 input,
                 new AbortController().signal,
             );
+
             expect(quote.state).toBe('confirmation-required');
+
             return {
                 input,
                 quote,
@@ -254,17 +269,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             };
         }
+
         const http = (response: () => Response | Promise<Response>) =>
             vi.fn<typeof fetch>(async (url, options) => {
                 expect(url).toBe(
                     'https://api.openai.com/v1/audio/transcriptions',
                 );
+
                 expect(options?.redirect).toBe('error');
                 expect((options?.body as FormData).get('model')).toBe(
                     'gpt-transcribe',
                 );
+
                 return response();
             });
+
         it('requires explicit spend confirmation and does not hold credits during preview', async () => {
             const input = request();
             const quote = await store.submit(
@@ -272,6 +291,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 input,
                 new AbortController().signal,
             );
+
             expect(quote.maximumCredits).toBe('0.017');
             expect(quote.state).toBe('confirmation-required');
             expect(
@@ -280,6 +300,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, input.operationId)),
             ).toHaveLength(0);
+
             expect(
                 (
                     await store.submit(
@@ -289,24 +310,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                 ).state,
             ).toBe('confirmation-required');
+
             const accepted = await store.submit(
                 owner,
                 { ...input, confirmedMaximumCredits: quote.maximumCredits },
                 new AbortController().signal,
             );
+
             expect(accepted.state).toBe('queued');
             const [action] = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, input.operationId));
+
             expect(action).toMatchObject({
                 usageMeter: 'audio-duration',
                 audioInputLimitMilliseconds: 1000,
                 outputLimit: 0,
                 heldMilli: 17n,
             });
+
             await store.cancel(owner, noteId, input.operationId);
         });
+
         it('runs production admission, worker and actual adapter through fake HTTP to usable transcript and exact settlement', async () => {
             const { input } = await enqueue();
             const transport = http(() =>
@@ -322,24 +348,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 workerId,
                 fetch: transport,
             });
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 true,
             );
+
             const saved = await store.read(owner, noteId, input.operationId);
             expect(saved).toMatchObject({
                 state: 'completed',
                 result: { text: 'The cat sleeps.', languages: ['en'] },
             });
+
             expect(transport).toHaveBeenCalledTimes(1);
             const [action] = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, input.operationId));
+
             expect(action).toMatchObject({
                 state: 'settled',
                 chargedMilli: 17n,
                 outcome: 'success',
             });
+
             const [expense] = await db
                 .select()
                 .from(aiProviderExpenseRecordsTable)
@@ -349,16 +380,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         input.operationId,
                     ),
                 );
+
             expect(expense).toMatchObject({
                 sourceKind: 'transcription-attempt',
                 measurement: 'measured',
                 amountUsdMicros: 75n,
             });
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 false,
             );
+
             expect(transport).toHaveBeenCalledTimes(1);
         });
+
         it('releases customer holds on controlled provider failure and never retries ambiguous work', async () => {
             const { input } = await enqueue();
             const transport = http(
@@ -370,19 +405,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 workerId,
                 fetch: transport,
             });
+
             await worker.processNext(new AbortController().signal);
             expect(
                 (await store.read(owner, noteId, input.operationId)).state,
             ).toBe('failed');
+
             const [action] = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, input.operationId));
+
             expect(action).toMatchObject({
                 state: 'settled',
                 chargedMilli: 0n,
                 outcome: 'failure',
             });
+
             const [expense] = await db
                 .select()
                 .from(aiProviderExpenseRecordsTable)
@@ -392,29 +431,36 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         input.operationId,
                     ),
                 );
+
             expect(expense).toMatchObject({
                 measurement: 'unknown',
                 amountUsdMicros: null,
             });
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 false,
             );
+
             expect(transport).toHaveBeenCalledTimes(1);
         });
+
         it('preserves unknown provider cost when a usable response omits duration', async () => {
             const { input } = await enqueue();
             const transport = http(() =>
                 Response.json({ text: 'Speech', languages: [{ code: 'en' }] }),
             );
+
             await createKnowledgeTranscriptionWorker({
                 database: db,
                 apiKey: 'synthetic-only',
                 workerId,
                 fetch: transport,
             }).processNext(new AbortController().signal);
+
             expect(
                 (await store.read(owner, noteId, input.operationId)).state,
             ).toBe('completed');
+
             const [expense] = await db
                 .select()
                 .from(aiProviderExpenseRecordsTable)
@@ -424,11 +470,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         input.operationId,
                     ),
                 );
+
             expect(expense).toMatchObject({
                 measurement: 'unknown',
                 amountUsdMicros: null,
             });
         });
+
         it('retains late financial observations after cancellation without publishing a transcript', async () => {
             const { input } = await enqueue();
             let started!: () => void;
@@ -441,6 +489,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
             const transport = http(async () => {
                 started();
+
                 return reply;
             });
             const pending = createKnowledgeTranscriptionWorker({
@@ -449,6 +498,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 workerId,
                 fetch: transport,
             }).processNext(new AbortController().signal);
+
             await entered;
             await store.cancel(owner, noteId, input.operationId);
             complete(
@@ -458,22 +508,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     usage: { type: 'duration', seconds: 1 },
                 }),
             );
+
             await pending;
             expect(
                 await store.read(owner, noteId, input.operationId),
             ).toMatchObject({ state: 'cancelled', result: null });
+
             const [action] = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, input.operationId));
+
             expect(action?.chargedMilli).toBe(0n);
             const rows =
                 await client`select r.provider_usage from ai_credit_native_call_dispatches r join ai_credit_action_attempts a on a.id=r.attempt_id where a.action_id=${input.operationId}::uuid`;
+
             expect(rows).toHaveLength(1);
             expect(rows[0]!.provider_usage).toMatchObject({
                 audioInputMilliseconds: 1000,
                 requests: 1,
             });
+
             const [frozenExpense] = await db
                 .select()
                 .from(aiProviderExpenseRecordsTable)
@@ -483,28 +538,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         input.operationId,
                     ),
                 );
+
             expect(frozenExpense).toMatchObject({
                 measurement: 'unknown',
                 amountUsdMicros: null,
             });
         });
+
         it('settles queued work before source deletion and rejects operation resurrection', async () => {
             const { input } = await enqueue();
             await db
                 .delete(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, noteId));
+
             const [action] = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, input.operationId));
+
             expect(action).toMatchObject({
                 state: 'settled',
                 chargedMilli: 0n,
             });
+
             await expect(
                 store.submit(owner, input, new AbortController().signal),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
         });
+
         it('rejects forged dispatch witnesses and preserves typed allowance dimensions', async () => {
             const { input } = await enqueue();
             const lease = await store.claim(workerId);
@@ -513,20 +574,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const checksum = createHash('sha256')
                 .update(audio.bytes)
                 .digest('hex');
+
             await expect(
                 client`select languon_authorize_transcription_dispatch(${input.operationId}::uuid,${workerId},${lease!.fencingToken + 1},${checksum},${audio.bytes.length},1000)`,
             ).rejects.toThrow();
+
             await expect(
                 client`update ai_credit_actions set usage_meter='text-tokens',audio_input_limit_milliseconds=NULL,output_limit=1 where id=${input.operationId}::uuid`,
             ).rejects.toThrow();
+
             await expect(
                 client`update knowledge_transcription_jobs set source_duration_ms=2000 where id=${input.operationId}::uuid`,
             ).rejects.toThrow();
+
             const issued =
                 await client`select count(*)::integer as count from ai_credit_native_call_dispatches r join ai_credit_action_attempts a on a.id=r.attempt_id where a.action_id=${input.operationId}::uuid`;
+
             expect(issued[0]!.count).toBe(0);
             await store.cancel(owner, noteId, input.operationId);
         });
+
         it('blocks dispatch without code-owned processing approval despite valid billing and credentials', async () => {
             const { input } = await enqueue();
             const lease = await store.claim(workerId);
@@ -534,9 +601,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 client`update knowledge_transcription_jobs set processing_controls_revision='forged' where id=${input.operationId}::uuid`,
             ).rejects.toThrow();
+
             await client.unsafe(
                 `create or replace function languon_approved_transcription_processing_revision() returns text language sql immutable as $$ select NULL::text $$`,
             );
+
             try {
                 await expect(
                     store.authorizeDispatch(lease!, {
@@ -549,16 +618,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         signal: new AbortController().signal,
                     }),
                 ).rejects.toThrow();
+
                 const [attempts] =
                     await client`select count(*)::integer as count from ai_credit_action_attempts where action_id=${input.operationId}::uuid`;
+
                 expect(attempts!.count).toBe(0);
             } finally {
                 await client.unsafe(
                     `create or replace function languon_approved_transcription_processing_revision() returns text language sql immutable as $$ select '${KNOWLEDGE_TRANSCRIPTION_PROCESSING_REVISION}'::text $$`,
                 );
+
                 await store.cancel(owner, noteId, input.operationId);
             }
         });
+
         it('rejects changed admission credentials and an expired account attestation without reserving or dispatching work', async () => {
             const wrongStore = new DrizzleKnowledgeTranscriptionStore({
                 database: db,
@@ -571,9 +644,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 wrongStore.submit(owner, denied, new AbortController().signal),
             ).rejects.toThrow('configured');
+
             expect(
                 await client`select id from ai_credit_actions where id=${denied.operationId}::uuid`,
             ).toHaveLength(0);
+
             const { input } = await enqueue();
             const lease = await store.claim(workerId);
             expect(lease?.operationId).toBe(input.operationId);
@@ -586,8 +661,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(eq(configs.id, active!.active_revision_id));
             const [versionRow] =
                 await client`select max(version) as maximum from knowledge_transcription_config_revisions`;
-            if (!versionRow)
+
+            if (!versionRow) {
                 throw new Error('Expected a configuration version.');
+            }
+
             const expiredAt = new Date(Date.now() - 31 * 24 * 60 * 60_000);
             const expiredId = randomUUID();
             await db.insert(configs).values({
@@ -597,10 +675,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 dataSharingAttestedAt: expiredAt,
                 createdAt: expiredAt,
             });
+
             await db
                 .update(state)
                 .set({ activeRevisionId: expiredId })
                 .where(eq(state.id, 'global'));
+
             try {
                 const expiredRequest = request();
                 await expect(
@@ -610,9 +690,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         new AbortController().signal,
                     ),
                 ).rejects.toThrow('configured');
+
                 expect(
                     await client`select id from ai_credit_actions where id=${expiredRequest.operationId}::uuid`,
                 ).toHaveLength(0);
+
                 await expect(
                     store.authorizeDispatch(lease!, {
                         ...input,
@@ -624,20 +706,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         signal: new AbortController().signal,
                     }),
                 ).rejects.toThrow('dispatch authorization was rejected');
+
                 await expect(
                     client`select languon_authorize_transcription_dispatch_fenced(${input.operationId}::uuid,${workerId},${lease!.fencingToken},${lease!.leaseToken}::uuid,${createHash('sha256').update(audio.bytes).digest('hex')},${audio.bytes.length},${audio.durationMs},${credentialFingerprint})`,
                 ).rejects.toThrow('organization data sharing attestation');
+
                 const [job] =
                     await client`select attempt_id from knowledge_transcription_jobs where id=${input.operationId}::uuid`;
+
                 expect(job!.attempt_id).toBeNull();
             } finally {
                 await db
                     .update(state)
                     .set({ activeRevisionId: original!.id })
                     .where(eq(state.id, 'global'));
+
                 await store.cancel(owner, noteId, input.operationId);
             }
         });
+
         it('retains issued receipt identity and rejects foreign observations or changed replay', async () => {
             const { input } = await enqueue();
             const lease = await store.claim(workerId);
@@ -651,31 +738,38 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 durationMs: audio.durationMs,
                 signal: new AbortController().signal,
             });
+
             await expect(
                 client`select languon_observe_transcription_call(${input.operationId}::uuid,${randomUUID()}::uuid,1000)`,
             ).rejects.toThrow();
+
             await expect(
                 client`select languon_observe_native_text_call(${permit.receiptId}::uuid,'{"usage":{"requests":1,"inputTokens":1}}'::jsonb)`,
             ).rejects.toThrow();
+
             await store.finish(lease!, {
                 receiptId: permit.receiptId,
                 text: 'The transcript',
                 languages: ['en'],
                 usage: { type: 'duration', seconds: 1 },
             });
+
             await client`select languon_observe_transcription_call(${input.operationId}::uuid,${permit.receiptId}::uuid,1000)`;
             await expect(
                 client`select languon_observe_transcription_call(${input.operationId}::uuid,${permit.receiptId}::uuid,1001)`,
             ).rejects.toThrow();
+
             await expect(
                 client`update knowledge_transcription_jobs set result=NULL where id=${input.operationId}::uuid`,
             ).rejects.toThrow();
         });
+
         it('runs the real worker with deployed restricted grants and refuses raw media and forged receipts', async () => {
             const foreignOwner = randomUUID();
             await db
                 .insert(usersTable)
                 .values({ id: foreignOwner, status: 'active' });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: foreignOwner,
@@ -686,6 +780,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: null,
                 }),
             );
+
             const foreignNote = await notes.create(foreignOwner, {
                 operationId: randomUUID(),
                 content: KnowledgeNoteContentSchema.parse({
@@ -733,6 +828,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 foreignInput,
                 new AbortController().signal,
             );
+
             await store.submit(
                 foreignOwner,
                 {
@@ -741,6 +837,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 new AbortController().signal,
             );
+
             const foreignLease = await store.claim(workerId);
             expect(foreignLease?.operationId).toBe(foreignInput.operationId);
             const foreignBytes = await store.audio(foreignLease!);
@@ -753,12 +850,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 durationMs: 1000,
                 signal: new AbortController().signal,
             });
+
             await store.finish(foreignLease!, {
                 receiptId: foreignPermit.receiptId,
                 text: 'Another author private transcript',
                 languages: ['en'],
                 usage: { type: 'duration', seconds: 1 },
             });
+
             expect(
                 (
                     await store.read(
@@ -768,6 +867,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                 ).state,
             ).toBe('completed');
+
             const { input } = await enqueue();
             const role = `transcription_worker_${randomUUID().replaceAll('-', '')}`;
             await client.unsafe(`create role ${role} nologin`);
@@ -780,6 +880,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                     'utf8',
                 );
+
                 await client.unsafe(
                     script
                         .split('\n')
@@ -787,46 +888,59 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"dictionary_worker_role"', role),
                 );
+
                 const url = new URL(getTestDatabaseUrl());
                 url.searchParams.set('options', `-c role=${role}`);
                 restricted = createPostgresClient({
                     databaseUrl: url.toString(),
                     maxConnections: 2,
                 });
+
                 const restrictedDb = createDrizzleDatabase(
                     restricted,
                     databaseSchema,
                 );
+
                 expect(
                     (await restricted`select current_user as role`)[0]!.role,
                 ).toBe(role);
+
                 await expect(
                     restricted`select processing_credential_fingerprint from knowledge_transcription_config_revisions`,
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     restricted`select processing_credential_fingerprint from knowledge_transcription_jobs`,
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     restricted`select result from knowledge_transcription_jobs where id=${foreignInput.operationId}::uuid`,
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     restricted`select * from knowledge_transcription_jobs`,
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     restricted`select bytes from knowledge_media_blobs`,
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     restricted`select * from knowledge_learner_attempts`,
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     restricted`update knowledge_transcription_jobs set owner_id=${randomUUID()}::uuid where id=${input.operationId}::uuid`,
                 ).rejects.toThrow();
+
                 await expect(
                     restricted`insert into ai_credit_native_call_dispatches(id,attempt_id,ordinal,input_limit,output_limit,dispatched_at) values(${randomUUID()}::uuid,${randomUUID()}::uuid,1,0,1,clock_timestamp())`,
                 ).rejects.toThrow('permission denied');
+
                 expect(
                     await restricted`select * from languon_read_transcription_audio_fenced(${input.operationId}::uuid,${workerId},0,${randomUUID()}::uuid)`,
                 ).toHaveLength(0);
+
                 const transport = http(async () => {
                     const otherWorker = `${workerId}-other`;
                     await db
@@ -846,11 +960,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             ],
                         })
                         .onConflictDoNothing();
+
                     const second = await enqueue();
                     const otherLease = await store.claim(otherWorker);
                     expect(otherLease?.operationId).toBe(
                         second.input.operationId,
                     );
+
                     const otherAudio = await store.audio(otherLease!);
                     const restrictedStore =
                         new DrizzleKnowledgeTranscriptionStore({
@@ -858,9 +974,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             executionReady: true,
                             credentialFingerprint,
                         });
+
                     await client.unsafe(
                         `create or replace function languon_approved_transcription_processing_revision() returns text language sql immutable as $$ select NULL::text $$`,
                     );
+
                     try {
                         await expect(
                             restrictedStore.authorizeDispatch(otherLease!, {
@@ -873,14 +991,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 signal: new AbortController().signal,
                             }),
                         ).rejects.toThrow();
+
                         const [notDispatched] =
                             await client`select attempt_id from knowledge_transcription_jobs where id=${second.input.operationId}::uuid`;
+
                         expect(notDispatched!.attempt_id).toBeNull();
                     } finally {
                         await client.unsafe(
                             `create or replace function languon_approved_transcription_processing_revision() returns text language sql immutable as $$ select '${KNOWLEDGE_TRANSCRIPTION_PROCESSING_REVISION}'::text $$`,
                         );
                     }
+
                     const wrongCredentialStore =
                         new DrizzleKnowledgeTranscriptionStore({
                             database: restrictedDb,
@@ -890,6 +1011,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                     'different-organization-key',
                                 ),
                         });
+
                     await expect(
                         wrongCredentialStore.authorizeDispatch(otherLease!, {
                             ...second.input,
@@ -901,14 +1023,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             signal: new AbortController().signal,
                         }),
                     ).rejects.toThrow('dispatch authorization was rejected');
+
                     await expect(
                         restricted!`select languon_authorize_transcription_dispatch_fenced(${second.input.operationId}::uuid,${otherWorker},${otherLease!.fencingToken},${otherLease!.leaseToken}::uuid,${createHash('sha256').update(otherAudio.bytes).digest('hex')},${otherAudio.bytes.length},${otherAudio.durationMs},${transcriptionCredentialFingerprint('different-organization-key')})`,
                     ).rejects.toThrow('credentials differ');
+
                     await expect(
                         restricted!`select languon_authorize_transcription_dispatch_fenced(${second.input.operationId}::uuid,${otherWorker},${otherLease!.fencingToken},${otherLease!.leaseToken}::uuid,${createHash('sha256').update(otherAudio.bytes).digest('hex')},${otherAudio.bytes.length},${otherAudio.durationMs})`,
                     ).rejects.toThrow('permission denied');
+
                     const [unissuedAfterWrongKey] =
                         await client`select attempt_id from knowledge_transcription_jobs where id=${second.input.operationId}::uuid`;
+
                     expect(unissuedAfterWrongKey!.attempt_id).toBeNull();
                     const otherPermit = await store.authorizeDispatch(
                         otherLease!,
@@ -930,36 +1056,45 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         languages: ['en'],
                         usage: { type: 'duration', seconds: 1 },
                     };
+
                     await expect(
                         restricted!`select * from knowledge_transcription_lease_capabilities`,
                     ).rejects.toThrow('permission denied');
+
                     expect(
                         (
                             await restricted!`select languon_finish_transcription(${input.operationId}::uuid,${workerId},${issued!.fencing_token},${otherLease!.leaseToken}::uuid,${JSON.stringify(forged)}::jsonb,NULL) as finished`
                         )[0]!.finished,
                     ).toBe(false);
+
                     await expect(
                         restricted!`update knowledge_transcription_jobs set state='completed',result=${JSON.stringify(forged)}::jsonb where id=${input.operationId}::uuid`,
                     ).rejects.toThrow('permission denied');
+
                     await expect(
                         restricted!`select languon_observe_transcription_call(${input.operationId}::uuid,${issued!.receipt_id}::uuid,1000)`,
                     ).rejects.toThrow('permission denied');
+
                     expect(
                         (
                             await restricted!`select languon_finish_transcription(${input.operationId}::uuid,${otherWorker},${otherLease!.fencingToken},${otherLease!.leaseToken}::uuid,${JSON.stringify(forged)}::jsonb,NULL) as finished`
                         )[0]!.finished,
                     ).toBe(false);
+
                     await expect(
                         restricted!`select languon_finish_transcription(${input.operationId}::uuid,${workerId},${issued!.fencing_token},${issued!.token}::uuid,${JSON.stringify({ ...forged, receiptId: otherPermit.receiptId })}::jsonb,NULL)`,
                     ).rejects.toThrow('fenced issued receipt');
+
                     const [unobserved] =
                         await client`select observed_at from ai_credit_native_call_dispatches where id=${otherPermit.receiptId}::uuid`;
+
                     expect(unobserved!.observed_at).toBeNull();
                     await expect(
                         client`update knowledge_transcription_jobs set state='completed',result=${JSON.stringify(forged)}::jsonb where id=${input.operationId}::uuid`,
                     ).rejects.toThrow(
                         'Active action requires its live owned feature work',
                     );
+
                     expect(
                         await store.finish(otherLease!, {
                             receiptId: otherPermit.receiptId,
@@ -968,6 +1103,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             usage: { type: 'duration', seconds: 1 },
                         }),
                     ).toBe(true);
+
                     return Response.json({
                         text: 'Restricted worker transcript',
                         languages: [{ code: 'en' }],
@@ -980,28 +1116,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workerId,
                     fetch: transport,
                 });
+
                 expect(
                     await worker.processNext(new AbortController().signal),
                 ).toBe(true);
+
                 expect(
                     await store.read(owner, noteId, input.operationId),
                 ).toMatchObject({
                     state: 'completed',
                     result: { text: 'Restricted worker transcript' },
                 });
+
                 expect(transport).toHaveBeenCalledTimes(1);
                 expect(
                     await restricted`select * from languon_read_transcription_audio_fenced(${input.operationId}::uuid,${workerId},1,${randomUUID()}::uuid)`,
                 ).toHaveLength(0);
+
                 const [action] = await db
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, input.operationId));
+
                 expect(action).toMatchObject({
                     state: 'settled',
                     chargedMilli: 17n,
                     outcome: 'success',
                 });
+
                 const [expense] = await db
                     .select()
                     .from(aiProviderExpenseRecordsTable)
@@ -1011,6 +1153,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             input.operationId,
                         ),
                     );
+
                 expect(expense).toMatchObject({
                     sourceKind: 'transcription-attempt',
                     measurement: 'measured',
@@ -1022,6 +1165,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client.unsafe(`drop role ${role}`);
             }
         });
+
         it('serializes confirmed admission against permanent source deletion without deadlock or stranded holds', async () => {
             const input = request();
             const quote = await store.submit(
@@ -1040,20 +1184,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedVersion: 1,
                 }),
             ]);
+
             expect(outcomes[1]!.status).toBe('fulfilled');
-            if (outcomes[0]!.status === 'rejected')
+            if (outcomes[0]!.status === 'rejected') {
                 expect(outcomes[0]!.reason).toMatchObject({
                     code: 'knowledge_not_found',
                 });
+            }
+
             const [action] = await db
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, input.operationId));
-            if (action)
+
+            if (action) {
                 expect(action).toMatchObject({
                     state: 'settled',
                     chargedMilli: 0n,
                 });
+            }
+
             expect(
                 await db
                     .select()
@@ -1061,12 +1211,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(knowledgeNotesTable.id, noteId)),
             ).toHaveLength(0);
         }, 10_000);
+
         it('keeps TS and SQL duration arithmetic equivalent while rejecting token receipt reinterpretation', async () => {
             const at = new Date().toISOString();
             const facts = {
                 endpointId: '/v1/audio/transcriptions',
                 dispatchedAt: at,
             };
+
             for (const milliseconds of [0, 1, 1001, 60_000, 120_000]) {
                 const usage = {
                     audioInputMilliseconds: milliseconds,
@@ -1079,14 +1231,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 );
                 const [row] =
                     await client`select languon_evaluate_provider_price(${JSON.stringify({ nativeRules })}::jsonb,${JSON.stringify(facts)}::jsonb,${JSON.stringify(usage)}::jsonb,'actual') as value`;
+
                 expect(row!.value.status).toBe(ts.status);
-                if (ts.status === 'calculated')
+                if (ts.status === 'calculated') {
                     expect(row!.value.amountUsdMicros).toBe(
                         ts.micros.toString(),
                     );
+                }
             }
+
             const [compatible] =
                 await client`select languon_native_meter_compatible(${JSON.stringify({ nativeRules })}::jsonb,'text-tokens') as value`;
+
             expect(compatible!.value).toBe(false);
         });
     },

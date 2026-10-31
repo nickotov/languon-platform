@@ -12,6 +12,7 @@ describe('local MCP admin capability', () => {
         vi.stubEnv('PROD', false);
         const { adminMcpEnabled } =
             await import('../src/shared/config/admin-capabilities');
+
         expect(adminMcpEnabled).toBe(true);
     });
 
@@ -23,10 +24,12 @@ describe('local MCP admin capability', () => {
             await import('../src/shared/config/admin-capabilities');
         const { adminAccessProvider } =
             await import('../src/shared/access/admin-access-provider');
+
         expect(adminMcpEnabled).toBe(false);
         await expect(
             adminAccessProvider.can({ resource: 'admin-mcp', action: 'list' }),
         ).resolves.toMatchObject({ can: false });
+
         await expect(
             adminAccessProvider.can({ resource: 'users', action: 'list' }),
         ).resolves.toMatchObject({ can: true });

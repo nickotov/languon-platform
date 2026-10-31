@@ -6,6 +6,7 @@ const access = {
     locator: 'a'.repeat(32),
     key: 'b'.repeat(43),
 };
+
 afterEach(() => vi.unstubAllGlobals());
 describe('private learner API authorization', () => {
     it('uses the workbook aggregate endpoint with header-only capability and authenticated identity', async () => {
@@ -21,16 +22,19 @@ describe('private learner API authorization', () => {
                 { status: 200 },
             ),
         );
+
         vi.stubGlobal('fetch', fetch);
         await learningApi.workbookProgress('session', noteId, access);
         const [url, options] = fetch.mock.calls[0]!;
         expect(url).toMatch(
             new RegExp(`/knowledge/workbooks/${noteId}/progress$`),
         );
+
         expect(url).not.toContain(access.key);
         expect(options.headers['X-Languon-Share-Key']).toBe(access.key);
         expect(options.headers.Authorization).toBe('Bearer session');
     });
+
     it('sends shared source grant in headers and rejects client evaluation fields', async () => {
         const fetch = vi.fn().mockResolvedValue(
             new Response(
@@ -47,6 +51,7 @@ describe('private learner API authorization', () => {
                 { status: 200 },
             ),
         );
+
         vi.stubGlobal('fetch', fetch);
         await learningApi.state('actor-session', noteId, access);
         const [url, options] = fetch.mock.calls[0]!;
@@ -57,6 +62,7 @@ describe('private learner API authorization', () => {
             'X-Languon-Share-Locator': access.locator,
             'X-Languon-Share-Key': access.key,
         });
+
         expect(() =>
             learningApi.attempt(
                 'actor-session',
@@ -72,6 +78,7 @@ describe('private learner API authorization', () => {
                 access,
             ),
         ).toThrow();
+
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 });

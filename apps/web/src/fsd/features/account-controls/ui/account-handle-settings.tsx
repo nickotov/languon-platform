@@ -42,7 +42,9 @@ export function AccountHandleSettings({
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (state === 'saving') return;
+        if (state === 'saving') {
+            return;
+        }
 
         const parsed = UpdateHandleRequestSchema.safeParse({ handle: draft });
 

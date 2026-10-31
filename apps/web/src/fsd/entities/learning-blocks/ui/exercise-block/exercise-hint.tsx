@@ -29,40 +29,57 @@ export function ExerciseHint(
     );
     const video = parsed.success ? parsed.data : undefined;
     function handlePlaybackStart(pause: () => void) {
-        if (props.playback?.onMediaStart)
+        if (props.playback?.onMediaStart) {
             props.playback.onMediaStart({
                 id: `${props.scope ?? 'exercise'}:hint`,
                 pause,
             });
-        else props.playback?.onStop?.();
+        } else {
+            props.playback?.onStop?.();
+        }
     }
+
     function pauseAudio() {
         player.current?.pause();
     }
+
     function handleAudioPlay() {
         handlePlaybackStart(pauseAudio);
     }
+
     function handleFailure() {
         setFailed(true);
     }
+
     function handlePlayer(element: HTMLMediaElement | null) {
         player.current = element;
     }
+
     function handleReplay(seconds: number) {
-        if (!Number.isFinite(seconds) || seconds < 0) return;
+        if (!Number.isFinite(seconds) || seconds < 0) {
+            return;
+        }
+
         if (video?.kind === 'youtube') {
             setSeek((prior) => ({
                 seconds,
                 revision: (prior?.revision ?? 0) + 1,
             }));
+
             return;
         }
-        if (!player.current) return;
+
+        if (!player.current) {
+            return;
+        }
+
         player.current.currentTime = seconds;
         void player.current.play().catch(handleFailure);
     }
+
     const onReplay = audioUrl || video ? handleReplay : undefined;
     const title = `${props.labels.hint}: ${props.labels.kinds.video}`;
+
     return (
         <div className={styles.hint}>
             <p className={styles.feedbackTitle}>{props.labels.hint}</p>

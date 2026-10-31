@@ -52,6 +52,7 @@ describe('AI credits panel', () => {
             occurredAt: '2026-01-01T00:00:00.000Z',
             expiresAt: null,
         };
+
         render(
             <AiCreditHistory
                 entries={[
@@ -68,10 +69,12 @@ describe('AI credits panel', () => {
                 total={2}
             />,
         );
+
         expect(screen.getByText('Pronunciation generated')).toBeInTheDocument();
         expect(
             screen.getByText('Pronunciation not charged'),
         ).toBeInTheDocument();
+
         expect(
             screen.queryByText('aiCredits.measurement.speech_success'),
         ).not.toBeInTheDocument();
@@ -96,9 +99,11 @@ describe('AI credits panel', () => {
         expect(
             screen.getByText(/Credit enforcement is inactive/),
         ).toBeInTheDocument();
+
         expect(
             screen.getByText(/has no available credits/),
         ).toBeInTheDocument();
+
         expect(screen.getByText('2,500')).toBeInTheDocument();
         expect(screen.getByText('No credit activity yet.')).toBeInTheDocument();
     });
@@ -110,6 +115,7 @@ describe('AI credits panel', () => {
                 .fn()
                 .mockResolvedValueOnce(jsonResponse(creditsResponse()))
                 .mockResolvedValueOnce(jsonResponse(creditsResponse()));
+
             vi.stubGlobal('fetch', fetchMock);
             const user = userEvent.setup();
 
@@ -118,9 +124,11 @@ describe('AI credits panel', () => {
             await user.click(
                 screen.getByRole('button', { name: 'Adjust credits' }),
             );
+
             await user.click(
                 screen.getByRole('radio', { name: 'Remove credits' }),
             );
+
             const amount = screen.getByRole('spinbutton', { name: 'Credits' });
             await user.clear(amount);
             await user.type(amount, String(amountCredits));
@@ -128,6 +136,7 @@ describe('AI credits panel', () => {
                 screen.getByRole('textbox', { name: 'Reason' }),
                 'Correct duplicate support grant',
             );
+
             await user.click(
                 screen.getByRole('button', { name: 'Apply adjustment' }),
             );
@@ -156,9 +165,11 @@ describe('AI credits panel', () => {
         expect(
             screen.getByText(/Credit changes are unavailable/),
         ).toBeInTheDocument();
+
         expect(
             screen.getByRole('button', { name: 'Change policy' }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Adjust credits' }),
         ).toBeDisabled();
@@ -174,6 +185,7 @@ describe('AI credits panel', () => {
             .fn()
             .mockResolvedValueOnce(jsonResponse(creditsResponse()))
             .mockReturnValueOnce(secondResponse);
+
         vi.stubGlobal('fetch', fetchMock);
         const view = render(<AiCreditsPanel mutable userId={userId} />);
         expect(await screen.findByText('2,500')).toBeInTheDocument();
@@ -182,6 +194,7 @@ describe('AI credits panel', () => {
         await waitFor(() =>
             expect(screen.queryByText('2,500')).not.toBeInTheDocument(),
         );
+
         expect(
             screen.queryByRole('button', { name: 'Adjust credits' }),
         ).not.toBeInTheDocument();
@@ -195,6 +208,7 @@ describe('AI credits panel', () => {
                 }),
             ),
         );
+
         expect(await screen.findByText('900')).toBeInTheDocument();
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });

@@ -40,6 +40,7 @@ function authenticatedResponse() {
 
 function createOperations(): AuthenticationHttpOperations {
     const authenticated = authenticatedResponse();
+
     return {
         capabilities: vi.fn(async () => ({
             email: { passwordRecovery: true, signUp: true, verification: true },
@@ -159,6 +160,7 @@ describe('password auth HTTP routes', () => {
         expect(response.headers.get('Set-Cookie')).toContain(
             '__Host-languon_refresh=opaque-login',
         );
+
         expect(response.headers.get('Set-Cookie')).toContain('HttpOnly');
         expect(operations.loginWithPassword).toHaveBeenCalledWith(
             {
@@ -167,6 +169,7 @@ describe('password auth HTTP routes', () => {
             },
             expect.objectContaining({ clientAddress: '127.0.0.1' }),
         );
+
         expect(JSON.stringify(await response.json())).not.toContain(
             'opaque-login',
         );
@@ -209,6 +212,7 @@ describe('password auth HTTP routes', () => {
             'old-refresh',
             expect.objectContaining({ clientAddress: '127.0.0.1' }),
         );
+
         expect(response.headers.get('Set-Cookie')).toContain('rotated-refresh');
         expect(JSON.stringify(await response.json())).not.toContain(
             'rotated-refresh',
@@ -231,6 +235,7 @@ describe('password auth HTTP routes', () => {
             null,
             expect.objectContaining({ clientAddress: '127.0.0.1' }),
         );
+
         expect(response.headers.get('Set-Cookie')).toContain('Max-Age=0');
     });
 
@@ -239,6 +244,7 @@ describe('password auth HTTP routes', () => {
         vi.mocked(operations.refresh).mockRejectedValue(
             new AuthenticationRequiredError(),
         );
+
         const { app } = createRoutes(operations);
         const response = await app.request('/auth/refresh', {
             body: '{}',
@@ -344,9 +350,11 @@ describe('password auth HTTP routes', () => {
                 '/users/me',
             ]),
         );
+
         expect(document.components?.securitySchemes).toMatchObject({
             bearerAuth: { bearerFormat: 'JWT', scheme: 'bearer', type: 'http' },
         });
+
         for (const [path, method] of [
             ['/auth/logout-all', 'post'],
             ['/auth/password/change', 'post'],
@@ -356,6 +364,7 @@ describe('password auth HTTP routes', () => {
                 security: [{ bearerAuth: [] }],
             });
         }
+
         expect(paths['/auth/login/password']?.post).not.toHaveProperty(
             'security',
         );

@@ -16,6 +16,7 @@ function plainText(max: number, nonblank = false, trim = false) {
             (nonblank && !value.trim()) ||
             Array.from(value).some((character) => {
                 const point = character.codePointAt(0)!;
+
                 return (
                     point <= 8 ||
                     point === 11 ||
@@ -34,6 +35,7 @@ function plainText(max: number, nonblank = false, trim = false) {
         }
     });
 }
+
 export const TextIdSchema = z.uuid();
 export const TextLanguageSchema = z.enum(SUPPORTED_LANGUAGE_TAGS);
 export const TextSourceSchema = plainText(textLimits.sourceCodePoints, true);
@@ -78,33 +80,39 @@ export const TextAlignmentSchema = z
             ) ||
             new Set(value.editedPairIds).size !== value.editedPairIds.length ||
             value.editedPairIds.some((id) => !ids.has(id))
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Sentence pairs must be unique, ordered, and complete',
             });
+        }
+
         let offset = 0;
         for (const segment of value.source) {
             if (
                 segment.startOffset !== offset ||
                 segment.endOffset !== offset + segment.text.length
-            )
+            ) {
                 ctx.addIssue({
                     code: 'custom',
                     message: 'Source offsets must reconstruct the exact text',
                 });
+            }
+
             offset += segment.text.length;
         }
+
         if (
             Array.from(value.source.map((s) => s.text).join('')).length >
                 textLimits.sourceCodePoints ||
             Array.from(value.translation.map((s) => s.text).join('')).length >
                 textLimits.translationCodePoints
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Aligned content exceeds the text limit',
             });
+        }
     });
 const FolderFields = {
     id: TextIdSchema,
@@ -115,6 +123,7 @@ const FolderFields = {
     createdAt: Timestamp,
     updatedAt: Timestamp,
 };
+
 export const TextFolderSchema = z
     .object({
         ...FolderFields,
@@ -143,27 +152,33 @@ export const TextSchema = z
     })
     .strict()
     .superRefine((value, ctx) => {
-        if (value.sourceLanguage === value.targetLanguage)
+        if (value.sourceLanguage === value.targetLanguage) {
             ctx.addIssue({ code: 'custom', message: 'Languages must differ' });
+        }
+
         if (
             value.alignment &&
             value.alignment.source.map((s) => s.text).join('') !==
                 value.sourceText
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Alignment must preserve source text',
             });
+        }
+
         const status = !value.alignment
             ? 'draft'
             : value.alignment.editedPairIds.length
               ? 'edited'
               : 'translated';
-        if (status !== value.status)
+
+        if (status !== value.status) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Status must match saved provenance',
             });
+        }
     });
 export const CreateTextFolderRequestSchema = z
     .object({
@@ -194,6 +209,7 @@ const differentLanguages = (v: {
     sourceLanguage: string;
     targetLanguage: string;
 }) => v.sourceLanguage !== v.targetLanguage;
+
 export const SharedTextFolderConfirmationSchema = z
     .object({
         shareId: TextIdSchema,
@@ -236,12 +252,13 @@ export const TextPairEditsSchema = z
                 textLimits.sourceCodePoints ||
             Array.from(pairs.map((pair) => pair.translation).join('')).length >
                 textLimits.translationCodePoints
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message:
                     'Edited pairs must be unique and within the total text limits',
             });
+        }
     });
 export const SaveTextRequestSchema = z.discriminatedUnion('kind', [
     z
@@ -356,11 +373,12 @@ export const TextTranslationProposalSchema = z
             v.alignment.source.map((s) => s.text).join('') !== v.sourceText ||
             v.alignment.editedPairIds.length ||
             (v.textId === null) !== (v.expectedTextVersion === null)
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Invalid translation proposal provenance',
             });
+        }
     });
 export const TextAiJobSchema = z
     .object({
@@ -390,6 +408,7 @@ export const TextAiJobSchema = z
             job.kind === 'text-detection'
                 ? TextDetectionResultSchema.safeParse(job.result).success
                 : TextTranslationProposalSchema.safeParse(job.result).success;
+
         if (
             terminal !== (job.completedAt !== null) ||
             (job.state === 'completed' ? !validResult : job.result !== null) ||
@@ -398,11 +417,12 @@ export const TextAiJobSchema = z
                 job.result &&
                 'id' in job.result &&
                 job.result.id !== job.id)
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Job state and result are inconsistent',
             });
+        }
     });
 export const TextAiJobResponseSchema = z
     .object({ job: TextAiJobSchema })

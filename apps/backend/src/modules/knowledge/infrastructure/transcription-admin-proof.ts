@@ -15,6 +15,7 @@ export class TranscriptionAdminProof implements TranscriptionAdminPreviewSigner 
             .update('languon-knowledge-transcription-admin-v1')
             .digest();
     }
+
     sign(
         actor: TranscriptionAdminActor,
         request: KnowledgeTranscriptionAdminPreviewRequest,
@@ -33,6 +34,7 @@ export class TranscriptionAdminProof implements TranscriptionAdminPreviewSigner 
             )
             .digest('base64url');
     }
+
     verify(
         actor: TranscriptionAdminActor,
         request: KnowledgeTranscriptionAdminPreviewRequest,
@@ -41,6 +43,7 @@ export class TranscriptionAdminProof implements TranscriptionAdminPreviewSigner 
     ) {
         const expected = Buffer.from(this.sign(actor, request, expiresAt));
         const supplied = Buffer.from(signature);
+
         return (
             expected.length === supplied.length &&
             timingSafeEqual(expected, supplied)

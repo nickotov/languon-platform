@@ -32,6 +32,7 @@ export function LearningBlockView(props: LearningBlockViewProps) {
         props.audioUrl,
         props.hintVideoSource,
     ]);
+
     if (block.type === 'exercise') {
         contentKey = JSON.stringify([
             exercisePracticeIdentity(block, exerciseRevision),
@@ -39,6 +40,7 @@ export function LearningBlockView(props: LearningBlockViewProps) {
             hintTranscript,
         ]);
     }
+
     const count = learningBlockCount(block);
     const metadata =
         props.headingMetadata ??
@@ -57,13 +59,19 @@ export function LearningBlockView(props: LearningBlockViewProps) {
         .filter(Boolean)
         .join(' ');
     let content;
-    if (block.type === 'vocabulary')
+    if (block.type === 'vocabulary') {
         content = <VocabularyBlock {...props} block={block} />;
-    if (block.type === 'bilingual-text')
+    }
+
+    if (block.type === 'bilingual-text') {
         content = <BilingualBlock {...props} block={block} />;
-    if (block.type === 'grammar')
+    }
+
+    if (block.type === 'grammar') {
         content = <GrammarBlock {...props} block={block} />;
-    if (block.type === 'video' || block.type === 'audio')
+    }
+
+    if (block.type === 'video' || block.type === 'audio') {
         content = (
             <MediaBlock
                 {...props}
@@ -71,7 +79,9 @@ export function LearningBlockView(props: LearningBlockViewProps) {
                 hintTranscript={hintTranscript}
             />
         );
-    if (block.type === 'exercise')
+    }
+
+    if (block.type === 'exercise') {
         content = (
             <ExerciseBlock
                 {...props}
@@ -79,6 +89,8 @@ export function LearningBlockView(props: LearningBlockViewProps) {
                 hintTranscript={hintTranscript}
             />
         );
+    }
+
     return (
         <section
             className={className}

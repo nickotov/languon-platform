@@ -17,12 +17,14 @@ const props: KnowledgePrivateTranslationProps = {
     requestWithSession: (callback) => callback('synthetic-token'),
     access: { kind: 'note', locator: 'a'.repeat(32), key: 'b'.repeat(43) },
 };
+
 afterEach(() => vi.unstubAllGlobals());
 describe('private translation browser transport', () => {
     it('keeps raw share credentials in headers and makes no cacheable source request', async () => {
         const fetch = vi
             .fn()
             .mockResolvedValue(Response.json({ translations: [] }));
+
         vi.stubGlobal('fetch', fetch);
         await privateTranslationApi(props).list(new AbortController().signal);
         const [url, options] = fetch.mock.calls[0]!;
@@ -30,9 +32,11 @@ describe('private translation browser transport', () => {
         expect(url).toContain(
             `/knowledge/${props.noteId}/blocks/${props.block.id}/private-translations`,
         );
+
         expect(options.headers['X-Languon-Share-Key']).toBe(props.access!.key);
         expect(options.cache).toBe('no-store');
     });
+
     it('preserves structured allowance offers for the shared explicit consent dialog', async () => {
         const detail = {
             code: 'action_confirmation_required',
@@ -47,6 +51,7 @@ describe('private translation browser transport', () => {
                 },
             },
         };
+
         vi.stubGlobal(
             'fetch',
             vi
@@ -55,6 +60,7 @@ describe('private translation browser transport', () => {
                     Response.json({ error: detail }, { status: 409 }),
                 ),
         );
+
         await expect(
             privateTranslationApi(props).request(
                 { operationId: props.actorId, targetLanguage: 'fr' },
@@ -62,6 +68,7 @@ describe('private translation browser transport', () => {
             ),
         ).rejects.toMatchObject({ status: 409, detail });
     });
+
     it('refuses injected source text and unsupported target language before sending', async () => {
         const fetch = vi.fn();
         vi.stubGlobal('fetch', fetch);
@@ -74,6 +81,7 @@ describe('private translation browser transport', () => {
                 new AbortController().signal,
             ),
         ).rejects.toThrow();
+
         expect(fetch).not.toHaveBeenCalled();
     });
 });

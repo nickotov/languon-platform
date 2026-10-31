@@ -55,7 +55,10 @@ export function useConversationAdmission({
             retryOf,
             confirmedQuoteId,
         }: Submission) => {
-            if (!id) throw new Error('Conversation is unavailable.');
+            if (!id) {
+                throw new Error('Conversation is unavailable.');
+            }
+
             const candidate = {
                 content,
                 attachments: copiedAttachments ?? attachments,
@@ -75,17 +78,20 @@ export function useConversationAdmission({
                     requestId: undefined,
                     confirmedQuoteId: undefined,
                 }) !== signature
-            )
+            ) {
                 pendingRequest.current = {
                     ...candidate,
                     requestId: crypto.randomUUID(),
                 };
+            }
+
             const input = {
                 ...pendingRequest.current!,
                 ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
             };
             const response = await submitTurn(input);
             pendingRequest.current = null;
+
             return { ...response, sentAttachments: candidate.attachments };
         },
         onSettled: () => {
@@ -95,10 +101,12 @@ export function useConversationAdmission({
             setQuestion((current) =>
                 current === variables.content ? '' : current,
             );
+
             const sentIds = new Set(sentAttachments.map((item) => item.id));
             setAttachments((current) =>
                 current.filter((item) => !sentIds.has(item.id)),
             );
+
             variables.onAccepted?.(turn);
             await refresh(turn.conversationId);
         },
@@ -119,13 +127,19 @@ export function useConversationAdmission({
             const parsed = ConversationActionQuoteSchema.safeParse(
                 detail.details.quote,
             );
-            if (parsed.success) quote = parsed.data;
+
+            if (parsed.success) {
+                quote = parsed.data;
+            }
         }
     }
+
     function confirmQuote() {
         const input = pendingRequest.current;
-        if (!quote || !input || submit.isPending || confirmationLock.current)
+        if (!quote || !input || submit.isPending || confirmationLock.current) {
             return;
+        }
+
         confirmationLock.current = true;
         submit.mutate({
             content: input.content,
@@ -138,10 +152,15 @@ export function useConversationAdmission({
             onAccepted: submit.variables?.onAccepted,
         });
     }
+
     function cancelQuote() {
-        if (submit.isPending) return;
+        if (submit.isPending) {
+            return;
+        }
+
         pendingRequest.current = null;
         submit.reset();
     }
+
     return { submit, quote, confirmQuote, cancelQuote };
 }

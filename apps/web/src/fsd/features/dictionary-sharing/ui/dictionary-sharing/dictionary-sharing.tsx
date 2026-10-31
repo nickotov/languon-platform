@@ -41,7 +41,9 @@ export function DictionarySharing({
     }
 
     async function copy() {
-        if (!capability) return;
+        if (!capability) {
+            return;
+        }
 
         const url = `${window.location.origin}/shared/dictionaries/${capability.shareId}#${capability.shareKey}`;
 

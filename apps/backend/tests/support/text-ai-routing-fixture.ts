@@ -37,7 +37,10 @@ export async function seedTextAiRoutingFixture(
         () => true,
     );
     const current = await store.current();
-    if (current && !options.replace && !options.refreshProbes) return current;
+    if (current && !options.replace && !options.refreshProbes) {
+        return current;
+    }
+
     const at = options.at ?? new Date();
     const actorId = randomUUID();
     await database.insert(usersTable).values({
@@ -46,6 +49,7 @@ export async function seedTextAiRoutingFixture(
         createdAt: at,
         updatedAt: at,
     });
+
     await database.insert(adminMembershipsTable).values({
         id: randomUUID(),
         userId: actorId,
@@ -55,6 +59,7 @@ export async function seedTextAiRoutingFixture(
         grantedAt: at,
         updatedAt: at,
     });
+
     const routeId =
         options.routeId ??
         (!options.replace
@@ -95,6 +100,7 @@ export async function seedTextAiRoutingFixture(
                   actorId,
                   at,
               );
+
     await database.transaction(async (tx) => {
         for (const flowId of TextAiFlowIdSchema.options) {
             const identity = textAiProbeIdentity(
@@ -107,10 +113,13 @@ export async function seedTextAiRoutingFixture(
                 meter: 'text-tokens',
                 at,
             });
-            if (!price)
+
+            if (!price) {
                 throw new Error(
                     'Seed synthetic accounting/provider prices before text AI routing fixtures.',
                 );
+            }
+
             await tx.insert(textAiProbesTable).values({
                 id: randomUUID(),
                 actorId,
@@ -135,6 +144,7 @@ export async function seedTextAiRoutingFixture(
             });
         }
     });
+
     return revision;
 }
 

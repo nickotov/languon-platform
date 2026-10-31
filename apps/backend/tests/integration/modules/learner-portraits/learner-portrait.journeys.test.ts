@@ -131,6 +131,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             'DICTIONARY_AI_MANAGED_ROUTING_ENABLED',
             priorEnvironment.routing,
         );
+
         restoreEnvironment(
             'DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED',
             priorEnvironment.deepseek,
@@ -156,6 +157,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                     'portrait-interview',
                 ),
             );
+
         await database.insert(capabilityPolicyRevisionsTable).values({
             id: randomUUID(),
             capability: 'portrait-interview',
@@ -164,6 +166,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             createdAt: new Date(),
             reason: 'Deterministic interview journey policy',
         });
+
         const module = createLearnerPortraitModule({
             database: authentication.productDependencies.database,
         });
@@ -181,6 +184,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 policy: authentication.options.policy,
             }),
         });
+
         return { app, module };
     }
 
@@ -212,6 +216,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 password: 'A safe learner portrait journey password 47!',
             },
         });
+
         expect(response.status).toBe(202);
         const flowId = SignUpResponseSchema.parse(await response.json())
             .verification.flowId;
@@ -219,10 +224,12 @@ run('real learner portrait HTTP and accounting journey', () => {
             method: 'POST',
             body: { code: '0000', flowId },
         });
+
         expect(verified.status).toBe(200);
         const result = AuthenticationSuccessResponseSchema.parse(
             await verified.json(),
         );
+
         return { token: result.accessToken, userId: result.user.id };
     }
 
@@ -250,9 +257,11 @@ run('real learner portrait HTTP and accounting journey', () => {
                 supportedFormats: [...model.supportedFormats],
             },
         });
+
         await database
             .insert(dictionaryAiConfigurationTable)
             .values({ id: 'global', activeRevisionId: revision, version: 1 });
+
         await database.insert(dictionaryAiWorkerObservationsTable).values({
             id: portraitInterviewExecutionObservationId(
                 workerId,
@@ -286,7 +295,11 @@ run('real learner portrait HTTP and accounting journey', () => {
             createdAt: now,
             updatedAt: now,
         });
-        if (amount === 0n) return;
+
+        if (amount === 0n) {
+            return;
+        }
+
         await database.insert(aiCreditGrantsTable).values({
             id: randomUUID(),
             ownerId: userId,
@@ -295,6 +308,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             sourceReference: `learner-portrait-${randomUUID()}`,
             createdAt: now,
         });
+
         await database.insert(aiCreditHistoryTable).values({
             id: randomUUID(),
             ownerId: userId,
@@ -318,6 +332,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             token,
             body: { expectedVersion: initial.version, locale: 'en' },
         });
+
         expect(started.status).toBe(200);
         const interview = (await started.json()) as { interviewId: string };
         const requestBody = {
@@ -337,6 +352,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 body: requestBody,
             },
         );
+
         if (submitted.status === 409) {
             const failure = (await submitted.clone().json()) as {
                 error: {
@@ -346,10 +362,12 @@ run('real learner portrait HTTP and accounting journey', () => {
                     };
                 };
             };
+
             expect(failure.error.code).toBe('action_confirmation_required');
             expect(
                 failure.error.details?.quote.approximateOutputTokens,
             ).toBeGreaterThan(0);
+
             submitted = await request(
                 app,
                 '/learner-portrait/interview/responses',
@@ -363,7 +381,9 @@ run('real learner portrait HTTP and accounting journey', () => {
                 },
             );
         }
+
         expect(submitted.status, await submitted.clone().text()).toBe(202);
+
         return PortraitInterviewOperationResponseSchema.parse(
             await submitted.json(),
         );
@@ -389,6 +409,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             leaseToken: claim!.leaseToken,
             execution: claim!.execution as never,
         });
+
         await accounting.admit(call);
         await accounting.settle(call, { inputTokens: 1, outputTokens: 1 });
         await module.store.complete(
@@ -402,6 +423,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             },
             new Date(),
         );
+
         return claim!;
     }
 
@@ -425,7 +447,9 @@ run('real learner portrait HTTP and accounting journey', () => {
             leaseToken: claim!.leaseToken,
             execution: claim!.execution as never,
         });
+
         await accounting.admit(call);
+
         return { call, claim: claim! };
     }
 
@@ -453,6 +477,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 },
             },
         );
+
         expect(unavailableStart.status).toBe(200);
         const unavailableInterview = (await unavailableStart.json()) as {
             interviewId: string;
@@ -477,6 +502,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 },
             },
         );
+
         expect(unavailableSubmission.status).toBe(503);
         expect(
             await authentication.productDependencies.database
@@ -484,6 +510,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 .from(aiCreditReservationsTable)
                 .where(eq(aiCreditReservationsTable.ownerId, owner.userId)),
         ).toEqual([]);
+
         await configure(owner.userId);
         await grantCredits(owner.userId);
 
@@ -503,6 +530,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 },
             },
         });
+
         expect(draft.status).toBe(200);
         const savedDraft = PortraitStateSchema.parse(await draft.json());
         expect(savedDraft.useEnabled).toBe(false);
@@ -514,6 +542,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 expectedApprovedVersion: savedDraft.approvedVersion,
             },
         });
+
         expect(approved.status).toBe(200);
         const approvedState = PortraitStateSchema.parse(await approved.json());
         expect(approvedState.approved?.items.goals).toEqual(['Travel']);
@@ -522,6 +551,7 @@ run('real learner portrait HTTP and accounting journey', () => {
         const strangerRead = await request(paid.app, '/learner-portrait', {
             token: stranger.token,
         });
+
         expect(strangerRead.status).toBe(200);
         expect(
             PortraitStateSchema.parse(await strangerRead.json()).approved,
@@ -533,6 +563,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             `/learner-portrait/interview/responses/${operation.id}`,
             { token: stranger.token },
         );
+
         expect(forbiddenRead.status).toBe(404);
         await dispatchAndSettle(paid.module, owner.userId);
 
@@ -541,6 +572,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             .select()
             .from(aiCreditActionsTable)
             .where(eq(aiCreditActionsTable.id, operation.id));
+
         expect(paidReservation?.capability).toBe('portrait-interview');
         expect(paidReservation?.heldMilli).toBeGreaterThan(0n);
         expect(paidReservation?.chargedMilli).toBeGreaterThan(0n);
@@ -553,6 +585,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             freeLearner.token,
             false,
         );
+
         await dispatchAndSettle(bypass.module, freeLearner.userId);
         const [freeReservation] = await database
             .select()
@@ -562,17 +595,20 @@ run('real learner portrait HTTP and accounting journey', () => {
             .select()
             .from(aiCreditActionAttemptsTable)
             .where(eq(aiCreditActionAttemptsTable.actionId, freeOperation.id));
+
         expect(freeReservation).toBeUndefined();
         const [freeAction] = await database
             .select()
             .from(aiCreditActionsTable)
             .where(eq(aiCreditActionsTable.id, freeOperation.id));
+
         expect(freeAction).toMatchObject({
             funding: 'operator',
             state: 'settled',
             heldMilli: 0n,
             chargedMilli: 0n,
         });
+
         expect(providerCall?.state).toBe('settled');
         expect(providerCall?.inputTokens).toBe(1);
         expect(providerCall?.outputTokens).toBe(1);
@@ -605,6 +641,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 ),
             ),
         };
+
         await accounting.admit(call);
         await expect(accounting.admit(call)).rejects.toThrow('replayed');
         await accounting.settle(call, { inputTokens: 50, outputTokens: 12 });
@@ -612,6 +649,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             .select()
             .from(aiCreditActionsTable)
             .where(eq(aiCreditActionsTable.id, operation.id));
+
         expect(active?.state).toBe('active');
         expect(active?.heldMilli).toBe(20_000n);
         expect(active?.chargedMilli).toBeNull();
@@ -622,6 +660,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             .select()
             .from(aiCreditActionAttemptsTable)
             .where(eq(aiCreditActionAttemptsTable.id, unknown.callId));
+
         expect(unknownAttempt?.inputTokens).toBeNull();
         expect(unknownAttempt?.outputTokens).toBeNull();
         await paid.module.store.complete(
@@ -634,10 +673,12 @@ run('real learner portrait HTTP and accounting journey', () => {
             },
             new Date(),
         );
+
         const [settled] = await database
             .select()
             .from(aiCreditActionsTable)
             .where(eq(aiCreditActionsTable.id, operation.id));
+
         expect(settled?.state).toBe('settled');
         expect(settled?.outcome).toBe('success');
         expect(settled?.measurement).toBe('unknown');
@@ -646,6 +687,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             .select()
             .from(aiCreditActionAllocationsTable)
             .where(eq(aiCreditActionAllocationsTable.actionId, operation.id));
+
         expect(
             allocations.reduce(
                 (sum, row) => sum + (row.settledMilli ?? 0n),
@@ -666,6 +708,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 paid.app,
                 `portrait-structured-${kind}`,
             );
+
             await grantCredits(learner.userId, 20_000n);
             if (kind === 'affordable') {
                 for (const charge of [1562, 1262, 1568]) {
@@ -693,11 +736,13 @@ run('real learner portrait HTTP and accounting journey', () => {
                             claim.execution as unknown as InterviewExecution,
                         ),
                     };
+
                     await accounting.admit(call);
                     await accounting.settle(call, {
                         inputTokens: charge - 900,
                         outputTokens: 300,
                     });
+
                     await paid.module.store.complete(
                         claim,
                         {
@@ -710,6 +755,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                     );
                 }
             }
+
             const before =
                 await authentication.productDependencies.database.transaction(
                     (tx) =>
@@ -717,6 +763,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                             tx,
                         ).accountSummary(learner.userId, new Date()),
                 );
+
             expect(before.availableCredits).toBe(balance);
             expect(before.reservedCredits).toBe(0n);
             const operation = await startAndSubmit(
@@ -746,6 +793,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 store: paid.module.store,
                 createRunner(claim) {
                     expect(claim.ownerId).toBe(learner.userId);
+
                     return createLearnerInterviewerRunner({
                         model: provider.model,
                         accounting: createInterviewAccounting({
@@ -767,40 +815,50 @@ run('real learner portrait HTTP and accounting journey', () => {
                     });
                 },
             });
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 true,
             );
+
             const finished = await paid.module.store.read(
                 learner.userId,
                 operation.id,
             );
+
             expect(finished?.state).toBe(
                 kind !== 'invalid' ? 'succeeded' : 'failed',
             );
+
             expect(finished?.errorCode).toBe(
                 kind !== 'invalid' ? null : 'invalid_model_output',
             );
+
             expect(provider.requests).toHaveLength(1);
             const [reservation] =
                 await authentication.productDependencies.database
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, operation.id));
+
             expect(reservation?.state).toBe('settled');
             expect(reservation?.heldMilli).toBeLessThanOrEqual(balance);
             expect(reservation?.chargedMilli).toBe(
                 kind === 'invalid' ? 0n : 86n,
             );
+
             expect(reservation?.chargedMilli).toBeLessThan(
                 reservation!.heldMilli,
             );
+
             const calls = await authentication.productDependencies.database
                 .select()
                 .from(aiCreditActionAttemptsTable)
                 .where(eq(aiCreditActionAttemptsTable.actionId, operation.id));
+
             expect(calls).toHaveLength(1);
             const snapshot = finished!
                 .execution as unknown as InterviewExecution;
+
             expect(
                 BigInt(
                     maximumTextPrice(
@@ -814,7 +872,8 @@ run('real learner portrait HTTP and accounting journey', () => {
                     ),
                 ),
             ).toBeLessThanOrEqual(before.availableCredits);
-            if (readInterviewOutputTokenLimit(snapshot) < 4096)
+
+            if (readInterviewOutputTokenLimit(snapshot) < 4096) {
                 expect(
                     BigInt(
                         maximumTextPrice(
@@ -828,19 +887,27 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     ),
                 ).toBeGreaterThan(before.availableCredits);
+            }
+
             expect(calls[0]?.inputTokens).toBe(50);
             expect(calls[0]?.outputTokens).toBe(12);
-            if (kind === 'invalid') expect(finished?.result).toBeNull();
+            if (kind === 'invalid') {
+                expect(finished?.result).toBeNull();
+            }
+
             if (kind === 'affordable') {
                 expect(
                     provider.requests[0]?.maxOutputTokens,
                 ).toBeGreaterThanOrEqual(1024);
+
                 expect(provider.requests[0]?.maxOutputTokens).toBeLessThan(
                     4096,
                 );
+
                 expect(calls[0]?.outputLimit).toBe(
                     provider.requests[0]?.maxOutputTokens,
                 );
+
                 const state = PortraitStateSchema.parse(
                     await (
                         await request(paid.app, '/learner-portrait', {
@@ -868,9 +935,11 @@ run('real learner portrait HTTP and accounting journey', () => {
                         },
                     },
                 );
+
                 expect(submitted.status, await submitted.clone().text()).toBe(
                     202,
                 );
+
                 const next = PortraitInterviewOperationResponseSchema.parse(
                     await submitted.json(),
                 );
@@ -882,10 +951,12 @@ run('real learner portrait HTTP and accounting journey', () => {
                         multiSelect: true,
                     }),
                 ]);
+
                 await new InterviewWorkerService({
                     store: paid.module.store,
                     createRunner(claim) {
                         expect(claim.id).toBe(next.id);
+
                         return createLearnerInterviewerRunner({
                             model: nextProvider.model,
                             accounting: createInterviewAccounting({
@@ -910,14 +981,17 @@ run('real learner portrait HTTP and accounting journey', () => {
                         });
                     },
                 }).processNext(new AbortController().signal);
+
                 expect(
                     (await paid.module.store.read(learner.userId, next.id))
                         ?.state,
                 ).toBe('succeeded');
+
                 expect(nextProvider.requests).toHaveLength(1);
                 expect(nextProvider.requests[0]?.maxOutputTokens).toBeLessThan(
                     provider.requests[0]!.maxOutputTokens!,
                 );
+
                 const uncertain = await startAndSubmit(
                     paid.app,
                     learner.token,
@@ -942,6 +1016,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         uncertainClaim.execution as unknown as InterviewExecution,
                     ),
                 };
+
                 await uncertainAccounting.admit(uncertainCall);
                 await uncertainAccounting.fail(uncertainCall, 'missing-usage');
                 const [unknown] =
@@ -949,6 +1024,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         .select()
                         .from(aiCreditActionsTable)
                         .where(eq(aiCreditActionsTable.id, uncertain.id));
+
                 expect(unknown!.state).toBe('active');
                 expect(unknown!.chargedMilli).toBeNull();
                 expect(uncertainCall.maxOutputTokens).toBeLessThan(4096);
@@ -970,6 +1046,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             learner.userId,
             operation.id,
         );
+
         await expect(
             authentication.productDependencies.database.transaction(
                 async (tx) => {
@@ -980,6 +1057,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         learner.userId,
                         new Date(),
                     );
+
                     expect(account.reservedCredits).toBe(15_608n);
                     expect(account.availableCredits).toBe(0n);
                     await credits.adjustByAdmin({
@@ -994,6 +1072,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 },
             ),
         ).rejects.toThrow();
+
         const claim = await dispatchAndSettle(paid.module, learner.userId);
         expect(claim.id).toBe(operation.id);
         expect(claim.execution).toEqual(admitted!.execution);
@@ -1001,6 +1080,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             .select()
             .from(aiCreditActionsTable)
             .where(eq(aiCreditActionsTable.id, operation.id));
+
         expect(action?.heldMilli).toBe(15_608n);
         expect(action?.chargedMilli).toBe(4n);
     });
@@ -1049,8 +1129,15 @@ run('real learner portrait HTTP and accounting journey', () => {
             const configured = await authentication.productDependencies.database
                 .select()
                 .from(dictionaryAiConfigurationTable);
-            if (configured.length === 0) await configure(learner.userId);
-            if (amount !== null) await grantCredits(learner.userId, amount);
+
+            if (configured.length === 0) {
+                await configure(learner.userId);
+            }
+
+            if (amount !== null) {
+                await grantCredits(learner.userId, amount);
+            }
+
             const state = PortraitStateSchema.parse(
                 await (
                     await request(paid.app, '/learner-portrait', {
@@ -1088,16 +1175,19 @@ run('real learner portrait HTTP and accounting journey', () => {
                     },
                 },
             );
+
             expect(submitted.status).toBe(400);
             expect(await submitted.json()).toMatchObject({
                 error: { code: 'credits_exhausted' },
             });
+
             expect(
                 await authentication.productDependencies.database
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.ownerId, learner.userId)),
             ).toHaveLength(0);
+
             expect(
                 await authentication.productDependencies.database
                     .select()
@@ -1109,6 +1199,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     ),
             ).toHaveLength(0);
+
             expect(
                 await authentication.productDependencies.database
                     .select()
@@ -1145,13 +1236,18 @@ run('real learner portrait HTTP and accounting journey', () => {
             const callTemplate = legacyCallTemplate(template!);
             const execution = { ...template!.execution };
             delete execution.actionAccountingVersion;
-            if (pin === undefined) delete execution.interviewInputTokenLimit;
-            else execution.interviewInputTokenLimit = pin;
+            if (pin === undefined) {
+                delete execution.interviewInputTokenLimit;
+            } else {
+                execution.interviewInputTokenLimit = pin;
+            }
+
             const rollback = new Error('rollback synthetic pin probe');
             const probe = database.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
                 const id = randomUUID(),
                     reservationId = randomUUID();
+
                 await tx
                     .insert(learnerPortraitInterviewOperationsTable)
                     .values({
@@ -1162,6 +1258,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         execution,
                         result: null,
                     });
+
                 await tx.insert(portraitInterviewProviderCallsTable).values({
                     ...callTemplate!,
                     id: randomUUID(),
@@ -1173,14 +1270,19 @@ run('real learner portrait HTTP and accounting journey', () => {
                     reservedInputTokens: reserved,
                     reservedOutputTokens: 4096,
                 });
+
                 const result = await tx.execute(
                     sql`select languon_portrait_credit_maximum(${id}::uuid, ${template!.ownerId}::uuid, ${reservationId}::uuid, 1) as maximum`,
                 );
+
                 expect(Number(result[0]!.maximum)).toBeGreaterThan(0);
+
                 throw rollback;
             });
-            if (valid) await expect(probe).rejects.toBe(rollback);
-            else
+
+            if (valid) {
+                await expect(probe).rejects.toBe(rollback);
+            } else {
                 await expect(probe).rejects.toMatchObject({
                     cause: {
                         message: expect.stringMatching(
@@ -1188,6 +1290,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     },
                 });
+            }
         },
     );
 
@@ -1219,18 +1322,25 @@ run('real learner portrait HTTP and accounting journey', () => {
             const callTemplate = legacyCallTemplate(template!);
             const execution = { ...template!.execution };
             delete execution.actionAccountingVersion;
-            if ('modelLimit' in model)
+            if ('modelLimit' in model) {
                 execution.snapshot = {
                     ...(execution.snapshot as Record<string, unknown>),
                     perCallMaxOutputTokens: model.modelLimit,
                 };
-            if (pin === undefined) delete execution.interviewOutputTokenLimit;
-            else execution.interviewOutputTokenLimit = pin;
+            }
+
+            if (pin === undefined) {
+                delete execution.interviewOutputTokenLimit;
+            } else {
+                execution.interviewOutputTokenLimit = pin;
+            }
+
             const rollback = new Error('rollback output budget probe');
             const probe = database.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
                 const id = randomUUID(),
                     reservationId = randomUUID();
+
                 await tx
                     .insert(learnerPortraitInterviewOperationsTable)
                     .values({
@@ -1241,6 +1351,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         execution,
                         result: null,
                     });
+
                 await tx.insert(portraitInterviewProviderCallsTable).values({
                     ...callTemplate!,
                     id: randomUUID(),
@@ -1251,14 +1362,19 @@ run('real learner portrait HTTP and accounting journey', () => {
                     settledAt: null,
                     reservedOutputTokens: reserved,
                 });
+
                 const result = await tx.execute(
                     sql`select languon_portrait_credit_maximum(${id}::uuid,${template!.ownerId}::uuid,${reservationId}::uuid,1) as maximum`,
                 );
+
                 expect(Number(result[0]!.maximum)).toBeGreaterThan(0);
+
                 throw rollback;
             });
-            if (valid) await expect(probe).rejects.toBe(rollback);
-            else
+
+            if (valid) {
+                await expect(probe).rejects.toBe(rollback);
+            } else {
                 await expect(probe).rejects.toMatchObject({
                     cause: {
                         message: expect.stringMatching(
@@ -1266,6 +1382,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     },
                 });
+            }
         },
     );
 
@@ -1282,6 +1399,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             .where(
                 eq(learnerPortraitInterviewOperationsTable.id, operation.id),
             );
+
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
@@ -1304,6 +1422,7 @@ run('real learner portrait HTTP and accounting journey', () => {
             databaseUrl: getTestDatabaseUrl(),
             maxConnections: 1,
         });
+
         try {
             await administrator.unsafe(`create role ${role}`);
             await administrator.unsafe(
@@ -1313,6 +1432,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                     .join('\n')
                     .replaceAll(':"account_purge_role"', role),
             );
+
             await restricted.unsafe(`set role ${role}`);
             for (const statement of [
                 'select input, context, result, fingerprint from learner_portrait_interview_operations',
@@ -1327,17 +1447,20 @@ run('real learner portrait HTTP and accounting journey', () => {
                 restricted,
                 databaseSchema,
             );
+
             await restrictedDatabase.transaction(async (tx) => {
                 await requestPortraitCancellation(tx, learner.userId, {
                     workerId: 'portrait-purge-scope',
                     fencingToken: 1,
                 });
+
                 expect(
                     await portraitDeletionBusy(tx, learner.userId, new Date(), {
                         workerId: 'portrait-purge-scope',
                         fencingToken: 1,
                     }),
                 ).toBe(false);
+
                 await eraseOwnerLearnerPortrait(
                     tx,
                     learner.userId,
@@ -1356,6 +1479,7 @@ run('real learner portrait HTTP and accounting journey', () => {
                 .where(
                     eq(aiCreditActionAllocationsTable.actionId, operation.id),
                 );
+
             expect(action?.state).toBe('settled');
             expect(action?.measurement).toBe('unknown');
             expect(action?.outcome).toBe('failure');
@@ -1372,12 +1496,14 @@ run('real learner portrait HTTP and accounting journey', () => {
                         ),
                     ),
             ).toHaveLength(0);
+
             const [attempt] = await database
                 .select()
                 .from(aiCreditActionAttemptsTable)
                 .where(
                     eq(aiCreditActionAttemptsTable.id, dispatched.call.callId),
                 );
+
             expect(attempt?.state).toBe('settled');
             expect(attempt?.inputTokens).toBeNull();
             expect(attempt?.outputTokens).toBeNull();
@@ -1392,8 +1518,11 @@ run('real learner portrait HTTP and accounting journey', () => {
 });
 
 function restoreEnvironment(name: string, value: string | undefined): void {
-    if (value === undefined) delete process.env[name];
-    else process.env[name] = value;
+    if (value === undefined) {
+        delete process.env[name];
+    } else {
+        process.env[name] = value;
+    }
 }
 
 /** Legacy guards remain exercised with an explicit pre-action-accounting call shape. */
@@ -1401,6 +1530,7 @@ function legacyCallTemplate(
     operation: typeof learnerPortraitInterviewOperationsTable.$inferSelect,
 ): typeof portraitInterviewProviderCallsTable.$inferInsert {
     const budget = operation.execution.budget as InterviewExecution['budget'];
+
     return {
         id: randomUUID(),
         operationId: operation.id,

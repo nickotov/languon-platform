@@ -46,24 +46,34 @@ export function CopyDestinationPicker({
                 }
             })
             .catch(() => {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             });
+
         return () => controller.abort();
     }, [request]);
+
     useEffect(() => {
         const controller = new AbortController();
         setBranches([]);
         setBranchId('');
         onSelect(null);
         setBusy(false);
-        if (!noteId) return;
+        if (!noteId) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         void request((token) =>
             knowledgeApi.workspace(token, noteId, controller.signal),
         )
             .then((workspace) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setBranches(workspace.branches);
                 const preferred =
                     workspace.branches.find(
@@ -73,29 +83,41 @@ export function CopyDestinationPicker({
                         (branch) => branch.id === workspace.preferredBranchId,
                     ) ??
                     workspace.branches[0];
+
                 if (preferred) {
                     setBranchId(preferred.id);
                     onSelect({ noteId, branchId: preferred.id });
                 }
             })
             .catch(() => {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             })
             .finally(() => {
-                if (!controller.signal.aborted) setBusy(false);
+                if (!controller.signal.aborted) {
+                    setBusy(false);
+                }
             });
+
         return () => controller.abort();
     }, [noteId, request, onSelect, initialDestination?.branchId]);
+
     function chooseNote(event: ChangeEvent<HTMLSelectElement>) {
         setNoteId(event.target.value);
     }
+
     function chooseBranch(event: ChangeEvent<HTMLSelectElement>) {
         const id = event.target.value;
         setBranchId(id);
         onSelect(id ? { noteId, branchId: id } : null);
     }
+
     async function more() {
-        if (busy) return;
+        if (busy) {
+            return;
+        }
+
         setBusy(true);
         try {
             const result = await request((token) =>
@@ -104,6 +126,7 @@ export function CopyDestinationPicker({
                     offset: notes.length,
                 }),
             );
+
             setNotes((current) => [...current, ...result.workspaces]);
             setTotal(result.total);
         } catch {
@@ -112,12 +135,14 @@ export function CopyDestinationPicker({
             setBusy(false);
         }
     }
+
     const hasMore = notes.length < total;
     const showCurrentNote =
         Boolean(noteId) &&
         !notes.some((note) => note.id === noteId) &&
         branches.length > 0;
     const currentNoteTitle = branches[0]?.content.title || labels.draft;
+
     return (
         <div className={styles.form} aria-busy={busy}>
             <label>

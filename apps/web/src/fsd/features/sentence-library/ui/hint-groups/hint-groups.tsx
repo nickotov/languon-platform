@@ -13,6 +13,7 @@ import type { LibraryHint, SavedSentence } from '../../types';
 /** Dictionary words and other useful help, as two equal-weight groups. Phrases stay whole. */
 export function HintGroups({ sentence }: { sentence: SavedSentence }) {
     const { L } = useInterfaceText();
+
     return (
         <div className={componentStyles.root}>
             <section
@@ -82,6 +83,7 @@ function HintList({
     sentence: SavedSentence;
 }) {
     const { L } = useInterfaceText();
+
     return (
         <ul className={componentStyles.hints}>
             {hints.map((hint) => (

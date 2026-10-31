@@ -21,6 +21,7 @@ function fixture() {
         signal: new AbortController().signal,
         workerId: 'worker-1',
     };
+
     return { input, service, storage, store };
 }
 
@@ -40,6 +41,7 @@ describe('AccountPurgeService', () => {
             activeJobs: 0,
             objects: [{ cleanupState: 'pending', objectKey: 'object-1' }],
         });
+
         await expect(service.processNext(input)).resolves.toBe(true);
         expect(storage.removeAllVersions).not.toHaveBeenCalled();
         expect(store.finish).not.toHaveBeenCalled();
@@ -54,6 +56,7 @@ describe('AccountPurgeService', () => {
                 { cleanupState: 'complete', objectKey: 'object-2' },
             ],
         });
+
         await expect(service.processNext(input)).resolves.toBe(true);
         expect(storage.removeAllVersions).toHaveBeenCalledTimes(2);
         expect(store.renew).toHaveBeenCalledTimes(2);
@@ -66,12 +69,15 @@ describe('AccountPurgeService', () => {
             activeJobs: 0,
             objects: [{ cleanupState: 'complete', objectKey: 'object-1' }],
         });
+
         storage.removeAllVersions.mockRejectedValue(
             new Error('storage unavailable'),
         );
+
         await expect(service.processNext(input)).rejects.toThrow(
             'storage unavailable',
         );
+
         expect(store.finish).not.toHaveBeenCalled();
         expect(store.retry).toHaveBeenCalledOnce();
     });

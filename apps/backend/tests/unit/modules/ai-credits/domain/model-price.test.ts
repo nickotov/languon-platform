@@ -41,6 +41,7 @@ describe('immutable model tariff arithmetic', () => {
             ).toBe(expected);
         },
     );
+
     it('prices the entire Unicode character count with ceiling and minimum', () => {
         expect(calculateSpeechPrice(101, 100, 1)).toBe(10100n);
         expect(calculateSpeechPrice(1000, 100, 1)).toBe(100000n);
@@ -48,14 +49,17 @@ describe('immutable model tariff arithmetic', () => {
         expect(calculateSpeechPrice(1, 1, 1)).toBe(1000n);
         expect(calculateSpeechPrice(1, 0.001, 0.001)).toBe(1n);
     });
+
     it('rejects invalid and unsafe credit arithmetic', () => {
         expect(() => calculateSpeechPrice(-1, 100, 1)).toThrow(
             AiCreditInvalidAmountError,
         );
+
         expect(() =>
             calculateSpeechPrice(Number.MAX_SAFE_INTEGER, 1000000000, 1),
         ).toThrow(AiCreditInvalidAmountError);
     });
+
     it('rejects unsafe text inputs before arithmetic', () => {
         expect(() =>
             maximumTextPrice(
@@ -70,6 +74,7 @@ describe('immutable model tariff arithmetic', () => {
             ),
         ).toThrow(AiCreditInvalidAmountError);
     });
+
     it('derives a safe text reservation from both independent meters', () => {
         expect(
             maximumTextPrice(
@@ -83,6 +88,7 @@ describe('immutable model tariff arithmetic', () => {
                 },
             ),
         ).toBe(385024000);
+
         expect(
             maximumTextPrice(
                 { maxInputTokensPerAttempt: 1, maxOutputTokensPerAttempt: 1 },

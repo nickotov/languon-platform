@@ -133,6 +133,7 @@ function store(overrides: Partial<DictionaryGenerationStore> = {}) {
         releaseWorkerLeases: vi.fn(async () => undefined),
         ...overrides,
     } as unknown as DictionaryGenerationStore;
+
     return implementation;
 }
 
@@ -224,6 +225,7 @@ describe('DictionaryGenerationWorkerService', () => {
             },
             signal: expect.any(AbortSignal),
         });
+
         expect(generationStore.complete).toHaveBeenCalledWith(
             expect.objectContaining({
                 proposal: {
@@ -309,11 +311,13 @@ describe('DictionaryGenerationWorkerService', () => {
                 providerTimeoutMs: 50,
             },
         );
+
         await providerFailure.processNext({
             signal: new AbortController().signal,
             supportedFormats: [dictionaryCardAuthoringGenerationFormat],
             workerId: 'worker-a',
         });
+
         expect(providerFailureStore.fail).toHaveBeenCalledWith(
             expect.objectContaining({
                 failureCategory: 'provider_rate_limited',
@@ -551,11 +555,13 @@ describe('DictionaryGenerationWorkerService', () => {
                 }),
             }),
         );
+
         expect(generationStore.heartbeat).toHaveBeenCalledWith(
             expect.objectContaining({
                 progress: { percent: 90, stage: 'validating' },
             }),
         );
+
         expect(generationStore.complete).toHaveBeenCalledWith(
             expect.objectContaining({
                 providerUsage: { inputTokens: 120, outputTokens: 48 },
@@ -622,6 +628,7 @@ describe('DictionaryGenerationWorkerService', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'worker-a',
         });
+
         controller.abort(new Error('shutdown'));
 
         await expect(processing).resolves.toBe(true);
@@ -653,6 +660,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 workerId: 'worker-a',
             }),
         ).resolves.toBe(true);
+
         expect(generate).not.toHaveBeenCalled();
         expect(generationStore.complete).not.toHaveBeenCalled();
         expect(generationStore.fail).not.toHaveBeenCalled();
@@ -679,6 +687,7 @@ describe('DictionaryGenerationWorkerService', () => {
         await expect(
             service.readiness(signal, { includeProvider: true }),
         ).resolves.toBeUndefined();
+
         expect(generationStore.readiness).toHaveBeenCalledWith(signal);
         expect(readiness).toHaveBeenCalledOnce();
         expect(generate).not.toHaveBeenCalled();
@@ -695,9 +704,11 @@ describe('DictionaryGenerationWorkerService', () => {
                 providerTimeoutMs: 50,
             },
         );
+
         await expect(
             missingProbe.readiness(signal, { includeProvider: true }),
         ).rejects.toMatchObject({ category: 'provider_unavailable' });
+
         await expect(missingProbe.readiness(signal)).resolves.toBeUndefined();
         expect(generate).not.toHaveBeenCalled();
     });
@@ -725,6 +736,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 workerId: 'worker-a',
             }),
         ).resolves.toBe(false);
+
         expect(generate).not.toHaveBeenCalled();
     });
 
@@ -751,11 +763,13 @@ describe('DictionaryGenerationWorkerService', () => {
                 providerTimeoutMs: 50,
             },
         );
+
         await providerFailure.processNext({
             signal: new AbortController().signal,
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'worker-a',
         });
+
         expect(providerFailureStore.fail).toHaveBeenCalledWith(
             expect.objectContaining({
                 failureCategory: 'provider_rate_limited',
@@ -783,11 +797,13 @@ describe('DictionaryGenerationWorkerService', () => {
                 providerTimeoutMs: 50,
             },
         );
+
         await invalid.processNext({
             signal: new AbortController().signal,
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'worker-a',
         });
+
         expect(invalidStore.fail).toHaveBeenCalledWith(
             expect.objectContaining({
                 failureCategory: 'invalid_model_output',
@@ -829,6 +845,7 @@ describe('DictionaryGenerationWorkerService', () => {
         const generate = vi.fn(
             async (request: PastedTermsProposalGeneratorRequest) => {
                 await new Promise((resolve) => setTimeout(resolve, 30));
+
                 return {
                     proposal: {
                         candidates: request.input.rows
@@ -885,9 +902,11 @@ describe('DictionaryGenerationWorkerService', () => {
             '00000000-0000-4000-8000-000000000004/generate/chunk/2-of-3',
             '00000000-0000-4000-8000-000000000004/generate/chunk/3-of-3',
         ]);
+
         expect(
             generate.mock.calls.map(([request]) => request.input.rows.length),
         ).toEqual([20, 20, 1]);
+
         expect(
             generate.mock.calls.map(
                 ([request]) => request.input.translationContext,
@@ -897,6 +916,7 @@ describe('DictionaryGenerationWorkerService', () => {
             'Botanical ecology terminology',
             'Botanical ecology terminology',
         ]);
+
         expect(generationStore.complete).toHaveBeenCalledWith(
             expect.objectContaining({
                 proposal: expect.objectContaining({
@@ -986,6 +1006,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 providerTimeoutMs: 50,
             },
         );
+
         await expect(
             service.processNext({
                 signal: new AbortController().signal,
@@ -993,6 +1014,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 workerId: 'worker-a',
             }),
         ).resolves.toBe(true);
+
         expect(generate).toHaveBeenCalledTimes(2);
         expect(
             generate.mock.calls.map(([call]) => call.idempotencyKey),
@@ -1000,6 +1022,7 @@ describe('DictionaryGenerationWorkerService', () => {
             '00000000-0000-4000-8000-000000000004/generate/import-chunk/1-of-2',
             '00000000-0000-4000-8000-000000000004/generate/import-chunk/2-of-2',
         ]);
+
         expect(generationStore.complete).toHaveBeenCalledWith(
             expect.objectContaining({
                 proposal: expect.objectContaining({
@@ -1066,6 +1089,7 @@ describe('DictionaryGenerationWorkerService', () => {
             supportedFormats: [dictionaryPastedTermsGenerationFormat],
             workerId: 'worker-a',
         });
+
         await vi.waitFor(() => expect(generate).toHaveBeenCalledOnce());
         controller.abort(new Error('shutdown'));
 
@@ -1176,6 +1200,7 @@ describe('DictionaryGenerationWorkerService', () => {
                 validUnitCount: 2,
             }),
         );
+
         expect(generationStore.complete).not.toHaveBeenCalled();
     });
 
@@ -1262,6 +1287,7 @@ describe('DictionaryGenerationWorkerService', () => {
             scanAttestation,
             workerId: 'worker-a',
         });
+
         expect(generationStore.fail).not.toHaveBeenCalled();
     });
 });

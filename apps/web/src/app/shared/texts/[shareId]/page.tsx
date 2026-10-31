@@ -10,5 +10,6 @@ export default async function Page({
     params: Promise<{ shareId: string }>;
 }) {
     const { shareId } = await params;
+
     return <SharedTextsPage kind='text' shareId={shareId} />;
 }

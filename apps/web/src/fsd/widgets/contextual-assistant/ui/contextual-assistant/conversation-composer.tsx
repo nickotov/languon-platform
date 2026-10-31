@@ -87,10 +87,13 @@ export function ConversationComposer({
                 attachment.kind !== 'text-reference' &&
                 attachment.kind !== 'dictionary-card',
         );
-    if (workspace)
+
+    if (workspace) {
         placeholder = hasPassage
             ? workspaceText.selection
             : workspaceText.placeholder;
+    }
+
     const documentCount = `${workspaceText.document} ${(editorCharacters ?? 0).toLocaleString(locale)} / ${editorLimit.toLocaleString(locale)}`;
     const overLimit = workspace && (editorCharacters ?? 0) > editorLimit;
     const canSend =
@@ -110,6 +113,7 @@ export function ConversationComposer({
             onContext,
             onSend,
         });
+
     return (
         <form
             className={styles.composer}

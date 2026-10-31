@@ -11,7 +11,10 @@ type ScriptedResponse =
     string | ScriptedToolCall | { toolCalls: ScriptedToolCall[] };
 
 function scriptedToolCalls(response: ScriptedResponse): ScriptedToolCall[] {
-    if (typeof response === 'string') return [];
+    if (typeof response === 'string') {
+        return [];
+    }
+
     return 'toolCalls' in response ? response.toolCalls : [response];
 }
 
@@ -22,10 +25,12 @@ export function scriptedTutorModel(responses: ScriptedResponse[]) {
     const next = (input: Parameters<TutorProviderModel['doStream']>[0]) => {
         requests.push(input);
         const text = responses[index++];
-        if (text === undefined)
+        if (text === undefined) {
             throw new Error(
                 'Unexpected model dispatch in deterministic fixture.',
             );
+        }
+
         return text;
     };
     const model: TutorProviderModel = {
@@ -36,6 +41,7 @@ export function scriptedTutorModel(responses: ScriptedResponse[]) {
         doGenerate: async (input) => {
             const response = next(input);
             const toolCalls = scriptedToolCalls(response);
+
             return {
                 content:
                     typeof response === 'string'
@@ -60,6 +66,7 @@ export function scriptedTutorModel(responses: ScriptedResponse[]) {
         doStream: async (input) => {
             const text = next(input);
             const toolCalls = scriptedToolCalls(text);
+
             return {
                 stream: new ReadableStream({
                     start(controller) {
@@ -67,22 +74,28 @@ export function scriptedTutorModel(responses: ScriptedResponse[]) {
                             type: 'stream-start',
                             warnings: [],
                         });
+
                         if (typeof text === 'string') {
                             controller.enqueue({
                                 type: 'text-start',
                                 id: 'text-1',
                             });
+
                             controller.enqueue({
                                 type: 'text-delta',
                                 id: 'text-1',
                                 delta: text,
                             });
+
                             controller.enqueue({
                                 type: 'text-end',
                                 id: 'text-1',
                             });
-                        } else
-                            for (const [callIndex, call] of toolCalls.entries())
+                        } else {
+                            for (const [
+                                callIndex,
+                                call,
+                            ] of toolCalls.entries()) {
                                 controller.enqueue({
                                     type: 'tool-call',
                                     toolCallId:
@@ -92,6 +105,9 @@ export function scriptedTutorModel(responses: ScriptedResponse[]) {
                                     toolName: call.toolName,
                                     input: JSON.stringify(call.input),
                                 });
+                            }
+                        }
+
                         controller.enqueue({
                             type: 'finish',
                             finishReason:
@@ -104,12 +120,14 @@ export function scriptedTutorModel(responses: ScriptedResponse[]) {
                                 totalTokens: 62,
                             },
                         });
+
                         controller.close();
                     },
                 }),
             };
         },
     };
+
     return { model, requests };
 }
 
@@ -138,12 +156,14 @@ export function tutorMemoryFixture(seed: TutorMemoryMessage[] = []) {
                     (!query.after || message.createdAt >= query.after) &&
                     (!query.before || message.createdAt <= query.before),
             );
+
             filtered.sort(
                 (a, b) =>
                     (query.order === 'asc' ? 1 : -1) *
                     (a.createdAt.localeCompare(b.createdAt) ||
                         a.id.localeCompare(b.id)),
             );
+
             return {
                 messages: structuredClone(
                     filtered.slice(query.offset, query.offset + query.limit),
@@ -170,9 +190,11 @@ export function tutorMemoryFixture(seed: TutorMemoryMessage[] = []) {
             return structuredClone(state.get(key) ?? null);
         },
         async writeState(entries) {
-            for (const [key, value] of Object.entries(entries))
+            for (const [key, value] of Object.entries(entries)) {
                 state.set(key, structuredClone(value));
+            }
         },
     };
+
     return { port, messages, state };
 }

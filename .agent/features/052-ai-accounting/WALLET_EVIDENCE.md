@@ -35,7 +35,6 @@ Independent invariant reviewer identified action-attempt capacity rows being lab
 
 Command routing note: the earlier `pnpm --filter @languon/backend test -- <path>` forwarded a literal `--` and selected the broad suite rather than the intended file. That run reported an unrelated contextual-tutor case failure and was not used as evidence. All scoped passing commands above use `pnpm --filter @languon/backend exec vitest run <path>` explicitly.
 
-
 ## Final focused integration checks (2026-10-22)
 
 W4: Same private disposable environment and W2 command, with integrated migrations through0094, passed31/31 wallet integration cases in98.85s at19:26 UTC. Includes before/after-dispatch technical failure, consumed/removal-only dirty reports, projection invariants and action-aware purge.

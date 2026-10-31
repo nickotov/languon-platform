@@ -6,7 +6,9 @@ export function useIsCompact() {
         const update = () => setCompact(media.matches);
         update();
         media.addEventListener('change', update);
+
         return () => media.removeEventListener('change', update);
     }, []);
+
     return compact;
 }

@@ -30,6 +30,7 @@ const lease: SelectionLease = {
         null,
     ),
 };
+
 function fixture() {
     const store: TextSelectionStore = {
         enqueue: vi.fn(),
@@ -43,12 +44,14 @@ function fixture() {
         releaseWorkerLeases: vi.fn().mockResolvedValue(undefined),
     };
     const generate = vi.fn().mockResolvedValue({ suggestions: [] });
+
     return {
         store,
         generate,
         worker: new TextSelectionWorker(store, { generate }, 'worker', 10, 50),
     };
 }
+
 describe('text selection worker cancellation and bounded provider execution', () => {
     afterEach(() => vi.useRealTimers());
     it.each(['rejected', 'ambiguous'])(
@@ -60,6 +63,7 @@ describe('text selection worker cancellation and bounded provider execution', ()
                     executionOutcome,
                 }),
             );
+
             await f.worker.processNext(new AbortController().signal);
             expect(f.store.fail).toHaveBeenCalledWith(
                 lease,
@@ -71,28 +75,34 @@ describe('text selection worker cancellation and bounded provider execution', ()
             );
         },
     );
+
     it('does not dispatch when shutdown races the claim result', async () => {
         const { store, generate, worker } = fixture();
         const abort = new AbortController();
         vi.mocked(store.claim).mockImplementation(async () => {
             abort.abort();
+
             return lease;
         });
+
         expect(await worker.processNext(abort.signal)).toBe(true);
         expect(store.dispatch).not.toHaveBeenCalled();
         expect(generate).not.toHaveBeenCalled();
         expect(store.fail).toHaveBeenCalledOnce();
     });
+
     it('bounds a provider that ignores abort and does not later persist its result', async () => {
         vi.useFakeTimers();
         const { store, generate, worker } = fixture();
         let finish: (value: { suggestions: [] }) => void = () => {};
+
         generate.mockImplementation(
             () =>
                 new Promise((resolve) => {
                     finish = resolve;
                 }),
         );
+
         const work = worker.processNext(new AbortController().signal);
         await vi.advanceTimersByTimeAsync(51);
         expect(await work).toBe(true);
@@ -102,10 +112,12 @@ describe('text selection worker cancellation and bounded provider execution', ()
             undefined,
             undefined,
         );
+
         finish({ suggestions: [] });
         await Promise.resolve();
         expect(store.complete).not.toHaveBeenCalled();
     });
+
     it('aborts a pending provider when heartbeat loses lease authority', async () => {
         vi.useFakeTimers();
         const { store, generate, worker } = fixture();

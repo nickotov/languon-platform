@@ -32,6 +32,7 @@ export function useAuthoringAutoSave(
         },
         [],
     );
+
     useEffect(() => {
         session.current++;
         seen.current.clear();
@@ -39,10 +40,14 @@ export function useAuthoringAutoSave(
         setStatus('idle');
         setFreezeDraft(false);
     }, [props.card?.id]);
+
     async function persist() {
         const result = attempt.current;
         const { props: currentProps } = latest.current;
-        if (!result?.version.generation || !currentProps.onAutoSave) return;
+        if (!result?.version.generation || !currentProps.onAutoSave) {
+            return;
+        }
+
         const guard = session.current;
         setStatus('saving');
         setFreezeDraft(true);
@@ -56,13 +61,20 @@ export function useAuthoringAutoSave(
                 authoringSelections(result.version, effective),
                 result.version.generation,
             );
-            if (session.current !== guard) return;
+
+            if (session.current !== guard) {
+                return;
+            }
+
             latest.current.state.markSaved(response.card);
             setStatus(response.unchanged ? 'unchanged' : 'saved');
             setFreezeDraft(false);
             attempt.current = null;
         } catch (error) {
-            if (session.current !== guard) return;
+            if (session.current !== guard) {
+                return;
+            }
+
             setStatus(
                 error &&
                     typeof error === 'object' &&
@@ -76,6 +88,7 @@ export function useAuthoringAutoSave(
                       ? 'refreshFailed'
                       : 'failed',
             );
+
             setFreezeDraft(
                 Boolean(
                     error &&
@@ -86,17 +99,22 @@ export function useAuthoringAutoSave(
             );
         }
     }
+
     useEffect(() => {
         const result = state.appliedResult;
         if (
             !result ||
             result.session !== (props.card?.id ?? 'new') ||
             seen.current.has(result.key)
-        )
+        ) {
             return;
+        }
+
         seen.current.add(result.key);
-        if (!props.card || !props.onAutoSave || !result.version.generation)
+        if (!props.card || !props.onAutoSave || !result.version.generation) {
             return;
+        }
+
         const draft = result.version.draft;
         if (
             !DictionaryCardValuesSchema.safeParse(draft.values).success ||
@@ -105,22 +123,32 @@ export function useAuthoringAutoSave(
                     [...draft.translationContext].length > 1000))
         ) {
             setStatus('invalid');
+
             return;
         }
+
         attempt.current = result;
         void persist();
     }, [state.appliedResult, props.card, props.onAutoSave]);
+
     useEffect(() => {
-        if (status !== 'failed' || freezeDraft || !attempt.current) return;
+        if (status !== 'failed' || freezeDraft || !attempt.current) {
+            return;
+        }
+
         if (state.draft !== attempt.current.version.draft) {
             // A definitive failure permits edits; never replay a stale candidate over them.
             attempt.current = null;
             setStatus('idle');
         }
     }, [state.draft, status, freezeDraft]);
+
     function retryAutoSave() {
-        if (status === 'failed' || status === 'refreshFailed') void persist();
+        if (status === 'failed' || status === 'refreshFailed') {
+            void persist();
+        }
     }
+
     return {
         autoSaveStatus:
             (status === 'saved' || status === 'unchanged') && state.dirty

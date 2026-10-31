@@ -50,6 +50,7 @@ function fixture() {
         appEnvironment: 'test',
         refreshTokenTtlSeconds: 3600,
     });
+
     return {
         actor,
         store,
@@ -57,11 +58,13 @@ function fixture() {
         app: createVocabularyPracticeRoutes({ service, policy }),
     };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     'Content-Type': 'application/json',
     Origin: 'http://localhost:3000',
 };
+
 describe('direct vocabulary HTTP authority', () => {
     it('requires account and derives actor server-side', async () => {
         const { app, path, store, actor } = fixture();
@@ -69,10 +72,12 @@ describe('direct vocabulary HTTP authority', () => {
         expect(
             (await app.request(path + '/progress', { headers })).status,
         ).toBe(200);
+
         expect(store.progress).toHaveBeenCalledWith(
             expect.objectContaining({ actorId: actor }),
         );
     });
+
     it('validates complete share proof and does not accept actor supplied with attempts', async () => {
         const { app, path, store } = fixture();
         expect(
@@ -82,6 +87,7 @@ describe('direct vocabulary HTTP authority', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(store.progress).not.toHaveBeenCalled();
         const body = {
             operationId: randomUUID(),
@@ -93,6 +99,7 @@ describe('direct vocabulary HTTP authority', () => {
             configuration: { front: ['source'], back: ['translation'] },
             actorId: randomUUID(),
         };
+
         expect(
             (
                 await app.request(path + '/attempts', {
@@ -102,19 +109,23 @@ describe('direct vocabulary HTTP authority', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(store.rate).not.toHaveBeenCalled();
     });
+
     it('signals live source loss through the existing training access-loss contract', async () => {
         const { app, path, store } = fixture();
         store.progress.mockRejectedValue(
             new KnowledgeDomainError('knowledge_not_found', 'Unavailable'),
         );
+
         const response = await app.request(path + '/progress', { headers });
         expect(response.status).toBe(404);
         expect(await response.json()).toMatchObject({
             error: { code: 'source_not_found' },
         });
     });
+
     it('allows authenticated preference PUT and header-only shared authority in scoped CORS', async () => {
         const { app, path } = fixture();
         const response = await app.request(path + '/preferences', {
@@ -126,10 +137,12 @@ describe('direct vocabulary HTTP authority', () => {
                     'authorization,x-languon-share-kind,x-languon-share-locator',
             },
         });
+
         expect(response.status).toBe(204);
         expect(response.headers.get('Access-Control-Allow-Methods')).toContain(
             'PUT',
         );
+
         expect(response.headers.get('Access-Control-Allow-Headers')).toContain(
             'X-Languon-Share-Locator',
         );

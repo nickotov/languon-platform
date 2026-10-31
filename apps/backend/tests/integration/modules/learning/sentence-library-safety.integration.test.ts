@@ -75,6 +75,7 @@ suite('sentence library safety boundaries', () => {
             expiresAt: new Date('2027-01-01T00:00:00.000Z'),
         },
     });
+
     async function dictionary() {
         const id = randomUUID();
         await db.insert(dictionariesTable).values({
@@ -85,9 +86,12 @@ suite('sentence library safety boundaries', () => {
             targetLanguageTag: 'es',
             createdAt: now,
         });
+
         await db.insert(dictionarySettingsTable).values({ dictionaryId: id });
+
         return id;
     }
+
     function exercise(id = exerciseId) {
         return SentenceExerciseSchema.parse({
             id,
@@ -114,10 +118,12 @@ suite('sentence library safety boundaries', () => {
             createdAt: now.toISOString(),
         });
     }
+
     beforeAll(async () => {
         client = createTestPostgresClient();
         db = createDrizzleDatabase(client, databaseSchema);
     });
+
     beforeEach(async () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
@@ -135,6 +141,7 @@ suite('sentence library safety boundaries', () => {
             authorship: 'human',
             sortKey: 1024n,
         });
+
         await db.insert(sentenceExercisesTable).values({
             id: exerciseId,
             creatorId: owner,
@@ -146,16 +153,16 @@ suite('sentence library safety boundaries', () => {
             generationPolicyVersion: 1,
             createdAt: now,
         });
-        await db
-            .insert(sentenceExerciseEntriesTable)
-            .values({
-                exerciseId,
-                dictionaryId,
-                entryId,
-                learningVersion: 1,
-                sourceText: 'hello',
-                targetText: 'hola',
-            });
+
+        await db.insert(sentenceExerciseEntriesTable).values({
+            exerciseId,
+            dictionaryId,
+            entryId,
+            learningVersion: 1,
+            sourceText: 'hello',
+            targetText: 'hola',
+        });
+
         library = new DrizzleSentenceLibraryStore(db, {
             authorizeAdmin: async (tx, scope) => {
                 await tx
@@ -167,6 +174,7 @@ suite('sentence library safety boundaries', () => {
             onAdminMutation: async () => {},
         });
     });
+
     afterAll(async () => {
         await client?.end({ timeout: 5 });
     });
@@ -184,12 +192,15 @@ suite('sentence library safety boundaries', () => {
             },
             context(),
         );
+
         await db
             .update(dictionaryCardsTable)
             .set({ learningVersion: 2, translation: 'buenas' })
             .where(eq(dictionaryCardsTable.id, entryId));
+
         const changed = (await library.list(access(), query(), context()))
             .items[0]!;
+
         expect(changed.version).not.toBe(item.version);
         expect(changed.contentState).toBe('outdated');
         for (const selection of [
@@ -214,22 +225,27 @@ suite('sentence library safety boundaries', () => {
                 ),
             ).rejects.toBeInstanceOf(SentenceConflictError);
         }
+
         expect(
             (await library.list(access(), query(), context())).items[0]!
                 .personalArchivedAt,
         ).toBeNull();
     });
+
     it('pins live dictionary languages in selected confirmation versions', async () => {
         const before = (await library.list(access(), query(), context()))
             .items[0]!;
+
         await db
             .update(dictionariesTable)
             .set({ targetLanguageTag: 'fr' })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         expect(
             (await library.list(access(), query(), context())).items[0]!
                 .contentState,
         ).toBe('outdated');
+
         await expect(
             library.mutate(
                 access(),
@@ -247,9 +263,11 @@ suite('sentence library safety boundaries', () => {
             ),
         ).rejects.toBeInstanceOf(SentenceConflictError);
     });
+
     it('locks capacity before target rows during permanent deletion', async () => {
         const item = (await library.list(access(), query(), context()))
             .items[0]!;
+
         await library.mutate(
             access(),
             {
@@ -262,6 +280,7 @@ suite('sentence library safety boundaries', () => {
             },
             context(),
         );
+
         const archived = (
             await library.adminList(
                 adminScope(),
@@ -290,6 +309,7 @@ suite('sentence library safety boundaries', () => {
                 .where(eq(usersTable.id, owner))
                 .for('update');
         });
+
         await capacityHeld;
         const deletion = library.adminMutate(
             adminScope(),
@@ -305,16 +325,19 @@ suite('sentence library safety boundaries', () => {
             },
             context(),
         );
+
         try {
             await vi.waitFor(
                 async () => {
                     const rows = await db.execute(
                         sql`select count(*)::int as count from pg_stat_activity where datname=current_database() and wait_event='advisory' and query like '%pg_advisory_xact_lock%'`,
                     );
+
                     expect(Number(rows[0]?.count)).toBeGreaterThan(0);
                 },
                 { timeout: 5000, interval: 20 },
             );
+
             proceed();
             await admission;
             expect((await deletion).affectedCount).toBe(1);
@@ -323,6 +346,7 @@ suite('sentence library safety boundaries', () => {
             await Promise.allSettled([admission, deletion]);
         }
     });
+
     it('caps confirmations per dictionary and actor, including concurrent creation', async () => {
         await Promise.all(
             Array.from({ length: 8 }, () =>
@@ -336,14 +360,16 @@ suite('sentence library safety boundaries', () => {
                 ),
             ),
         );
+
         let rows = await db
             .select({ id: sentenceLibrarySnapshotsTable.id })
             .from(sentenceLibrarySnapshotsTable)
             .where(eq(sentenceLibrarySnapshotsTable.actorId, owner));
+
         expect(rows).toHaveLength(5);
         for (let i = 0; i < 5; i++) {
             const id = await dictionary();
-            for (let j = 0; j < 5; j++)
+            for (let j = 0; j < 5; j++) {
                 await library.snapshot(
                     { kind: 'owner', learnerId: owner, dictionaryId: id },
                     {
@@ -352,13 +378,17 @@ suite('sentence library safety boundaries', () => {
                     },
                     context(),
                 );
+            }
         }
+
         rows = await db
             .select({ id: sentenceLibrarySnapshotsTable.id })
             .from(sentenceLibrarySnapshotsTable)
             .where(eq(sentenceLibrarySnapshotsTable.actorId, owner));
+
         expect(rows).toHaveLength(25);
     });
+
     it('prunes at most 100 expired confirmations globally without content reads', async () => {
         const other = randomUUID();
         await db.insert(usersTable).values({ id: other, status: 'active' });
@@ -374,6 +404,7 @@ suite('sentence library safety boundaries', () => {
                 expiresAt: new Date(now.getTime() - 1),
             })),
         );
+
         await library.snapshot(
             access(),
             {
@@ -382,17 +413,21 @@ suite('sentence library safety boundaries', () => {
             },
             context(),
         );
+
         const remaining = await db
             .select({ id: sentenceLibrarySnapshotsTable.id })
             .from(sentenceLibrarySnapshotsTable)
             .where(eq(sentenceLibrarySnapshotsTable.actorId, other));
+
         expect(remaining).toHaveLength(10);
     });
+
     it('rejects oversized matching sets before creating a confirmation', async () => {
         for (let offset = 0; offset < 10000; offset += 500) {
             await db.insert(sentenceExercisesTable).values(
                 Array.from({ length: 500 }, () => {
                     const id = randomUUID();
+
                     return {
                         id,
                         creatorId: owner,
@@ -407,6 +442,7 @@ suite('sentence library safety boundaries', () => {
                 }),
             );
         }
+
         await expect(
             library.snapshot(
                 access(),
@@ -417,6 +453,7 @@ suite('sentence library safety boundaries', () => {
                 context(),
             ),
         ).rejects.toBeInstanceOf(SentenceCapacityUnavailableError);
+
         expect(
             await db
                 .select({ id: sentenceLibrarySnapshotsTable.id })

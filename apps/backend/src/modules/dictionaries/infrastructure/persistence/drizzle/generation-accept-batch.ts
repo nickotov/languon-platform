@@ -78,16 +78,23 @@ export async function acceptBatch(
                 job.kind !== 'pasted-terms' &&
                 job.kind !== 'document-terms' &&
                 job.kind !== 'import-pairs'
-            )
+            ) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             const proposal = await lockProposal(tx, job.id);
-            if (!proposal) throw new DictionaryGenerationNotReviewableError();
+            if (!proposal) {
+                throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.reviewState === 'accepted') {
                 if (
                     proposal.acceptedCandidateFingerprint !==
                     input.acceptanceFingerprint
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
+
                 const acceptedJob = await readView(tx, job, input.context.now);
                 if (
                     ![
@@ -97,8 +104,9 @@ export async function acceptBatch(
                     ].includes(acceptedJob.kind) ||
                     !acceptedJob.outcome ||
                     !('cards' in acceptedJob.outcome)
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
 
                 return {
                     expired: false as const,
@@ -109,12 +117,18 @@ export async function acceptBatch(
                 };
             }
 
-            if (proposal.reviewState === 'expired')
+            if (proposal.reviewState === 'expired') {
                 return { expired: true as const };
-            if (proposal.reviewState !== 'reviewable' || !proposal.payload)
+            }
+
+            if (proposal.reviewState !== 'reviewable' || !proposal.payload) {
                 throw new DictionaryGenerationNotReviewableError();
-            if (proposal.documentStagedAt && !proposal.documentPublishedAt)
+            }
+
+            if (proposal.documentStagedAt && !proposal.documentPublishedAt) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.expiresAt <= input.context.now) {
                 await expireProposal(tx, job.id, input.context.now);
 
@@ -135,8 +149,10 @@ export async function acceptBatch(
             );
             const acceptedCandidates = selected.map((selection) => {
                 const stored = storedCandidates.get(selection.rowIndex);
-                if (!stored)
+                if (!stored) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
+
                 const candidate = parseDictionaryGenerationProposal({
                     candidate: selection.candidate,
                     fieldFeedback: stored.fieldFeedback,
@@ -187,7 +203,10 @@ export async function acceptBatch(
                 )
                 .for('update');
 
-            if (!current) throw new DictionaryGenerationJobNotFoundError();
+            if (!current) {
+                throw new DictionaryGenerationJobNotFoundError();
+            }
+
             if (
                 current.dictionary.lifecycle !== 'active' ||
                 current.dictionary.version !== job.expectedDictionaryVersion ||
@@ -195,8 +214,10 @@ export async function acceptBatch(
                 current.dictionary.sourceLanguageTag !==
                     job.sourceLanguageTag ||
                 current.dictionary.targetLanguageTag !== job.targetLanguageTag
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             for (const candidate of acceptedCandidates) {
                 assertCardSettingsOverrideTransition({
                     dictionary: domainSettings(current.settings),
@@ -320,14 +341,18 @@ export async function acceptBatch(
                 .values(cardInserts)
                 .returning();
 
-            if (insertedCards.length !== acceptedCandidates.length)
+            if (insertedCards.length !== acceptedCandidates.length) {
                 throw new DictionaryVersionConflictError();
+            }
+
             const cardsById = new Map(
                 insertedCards.map((card) => [card.id, card]),
             );
             const orderedCards = cardInserts.map((insert) => {
                 const card = cardsById.get(insert.id);
-                if (!card) throw new DictionaryVersionConflictError();
+                if (!card) {
+                    throw new DictionaryVersionConflictError();
+                }
 
                 return card;
             });
@@ -371,7 +396,10 @@ export async function acceptBatch(
                 )
                 .returning({ version: dictionariesTable.version });
 
-            if (!updatedDictionary) throw new DictionaryVersionConflictError();
+            if (!updatedDictionary) {
+                throw new DictionaryVersionConflictError();
+            }
+
             const outcome =
                 job.kind === 'import-pairs'
                     ? DictionaryImportPairsGenerationAcceptedOutcomeSchema.parse(
@@ -422,8 +450,9 @@ export async function acceptBatch(
                 ) ||
                 !acceptedJob.outcome ||
                 !('cards' in acceptedJob.outcome)
-            )
+            ) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
 
             return {
                 expired: false as const,
@@ -432,7 +461,9 @@ export async function acceptBatch(
         },
     );
 
-    if (result.expired) throw new DictionaryGenerationProposalExpiredError();
+    if (result.expired) {
+        throw new DictionaryGenerationProposalExpiredError();
+    }
 
     return result.value;
 }

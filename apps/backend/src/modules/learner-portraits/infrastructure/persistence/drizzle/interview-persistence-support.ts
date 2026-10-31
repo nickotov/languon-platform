@@ -163,15 +163,17 @@ export async function assertLiveInterviewOperation(
             ),
         );
 
-    if (!row || row.state !== 'running' || (await isInvalid(tx, row, now)))
+    if (!row || row.state !== 'running' || (await isInvalid(tx, row, now))) {
         throw new PortraitDraftUnavailableError();
+    }
 }
 
 export function validateContext(context: InterviewContext): void {
-    if (Buffer.byteLength(JSON.stringify(context), 'utf8') > 135000)
+    if (Buffer.byteLength(JSON.stringify(context), 'utf8') > 135000) {
         throw new PortraitInterviewResourceLimitError(
             'Interview context limit reached; review the portrait or begin a new interview.',
         );
+    }
 }
 
 /** Resume the question; confirmed items come exclusively from the current state,

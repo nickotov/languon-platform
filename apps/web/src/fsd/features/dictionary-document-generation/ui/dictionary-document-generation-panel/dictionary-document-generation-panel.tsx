@@ -105,7 +105,9 @@ export function DictionaryDocumentGenerationPanel({
     const initializedReviewJobId = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!job?.proposal || initializedReviewJobId.current === job.id) return;
+        if (!job?.proposal || initializedReviewJobId.current === job.id) {
+            return;
+        }
 
         initializedReviewJobId.current = job.id;
 
@@ -152,7 +154,9 @@ export function DictionaryDocumentGenerationPanel({
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         void run(() =>
             onStart({
@@ -674,7 +678,9 @@ function fieldLanguage(
     dictionary: OwnedDictionary,
     candidate: DictionaryGenerationCandidate,
 ) {
-    if (field === 'translation') return dictionary.targetLanguage;
+    if (field === 'translation') {
+        return dictionary.targetLanguage;
+    }
 
     if (field === 'definition') {
         return languageForRole(
@@ -721,17 +727,23 @@ function fieldEnabled(
 
     const overrides = candidate.overrides;
 
-    if (field === 'source' || field === 'translation') return true;
+    if (field === 'source' || field === 'translation') {
+        return true;
+    }
 
-    if (field === 'transcription')
+    if (field === 'transcription') {
         return overrides.transcriptionEnabled ?? settings.transcriptionEnabled;
+    }
 
-    if (field === 'definition')
+    if (field === 'definition') {
         return overrides.definitionEnabled ?? settings.definitionEnabled;
+    }
 
     const exampleEnabled = overrides.exampleEnabled ?? settings.exampleEnabled;
 
-    if (field === 'example') return exampleEnabled;
+    if (field === 'example') {
+        return exampleEnabled;
+    }
 
     return (
         exampleEnabled &&
@@ -775,8 +787,11 @@ function toggledSet(
 ) {
     const next = new Set(current);
 
-    if (included) next.add(value);
-    else next.delete(value);
+    if (included) {
+        next.add(value);
+    } else {
+        next.delete(value);
+    }
 
     return next;
 }

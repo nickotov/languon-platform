@@ -65,6 +65,7 @@ describe('passkey auth HTTP routes', () => {
                 correlationId: 'passkey-test',
             }),
         );
+
         expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
             'https://app.languon.example',
         );
@@ -93,6 +94,7 @@ describe('passkey auth HTTP routes', () => {
         vi.mocked(passkeys.authenticationOptions).mockRejectedValue(
             new RateLimitExceededError(19),
         );
+
         const { app } = routes(passkeys);
         const response = await app.request(
             '/auth/passkeys/authentication/options',
@@ -145,6 +147,7 @@ describe('passkey auth HTTP routes', () => {
             },
             status: 'passkey_registered',
         });
+
         const response = await app.request(
             '/auth/passkeys/registration/verify',
             {
@@ -185,6 +188,7 @@ describe('passkey auth HTTP routes', () => {
         expect(document.components?.securitySchemes).toMatchObject({
             bearerAuth: { bearerFormat: 'JWT', scheme: 'bearer', type: 'http' },
         });
+
         for (const [path, method] of [
             ['/auth/passkeys/registration/options', 'post'],
             ['/auth/passkeys/registration/verify', 'post'],
@@ -196,9 +200,11 @@ describe('passkey auth HTTP routes', () => {
                 security: [{ bearerAuth: [] }],
             });
         }
+
         expect(
             document.paths['/auth/passkeys/authentication/options']?.post,
         ).not.toHaveProperty('security');
+
         expect(
             document.paths['/auth/passkeys/authentication/verify']?.post,
         ).not.toHaveProperty('security');

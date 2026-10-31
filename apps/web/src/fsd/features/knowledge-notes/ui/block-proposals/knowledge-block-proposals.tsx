@@ -50,7 +50,10 @@ export function KnowledgeBlockProposalsForTurn({
     turnId: string | null | undefined;
 }) {
     const value = useContext(ProposalList);
-    if (!value || !turnId) return null;
+    if (!value || !turnId) {
+        return null;
+    }
+
     return (
         <ProposalCards
             value={value}
@@ -58,6 +61,7 @@ export function KnowledgeBlockProposalsForTurn({
         />
     );
 }
+
 function ProposalCards({
     value,
     proposals,
@@ -79,6 +83,7 @@ function ProposalCards({
         </>
     );
 }
+
 export function KnowledgeBlockProposals({
     context,
     refreshKey,
@@ -101,12 +106,19 @@ export function KnowledgeBlockProposals({
     useEffect(() => {
         setProposals([]);
     }, [conversationId]);
+
     useEffect(() => {
-        if (!requestWithSession || !conversationId) return;
+        if (!requestWithSession || !conversationId) {
+            return;
+        }
+
         const controller = new AbortController();
         let loading = false;
         async function load() {
-            if (loading) return;
+            if (loading) {
+                return;
+            }
+
             loading = true;
             try {
                 const result = await blockProposalsApi.list(
@@ -114,33 +126,46 @@ export function KnowledgeBlockProposals({
                     conversationId!,
                     controller.signal,
                 );
+
                 if (!controller.signal.aborted) {
                     setProposals(result.proposals);
                     setError(false);
                 }
             } catch {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             } finally {
                 loading = false;
             }
         }
+
         void load();
         const timer = active
             ? window.setInterval(() => void load(), 2_000)
             : undefined;
+
         return () => {
             controller.abort();
-            if (timer !== undefined) window.clearInterval(timer);
+            if (timer !== undefined) {
+                window.clearInterval(timer);
+            }
         };
     }, [requestWithSession, conversationId, refreshKey, active, revision]);
+
     function changeApplying(value: boolean) {
         setApplying(value);
         context?.onApplyingChange?.(value);
     }
+
     function refresh() {
         setRevision((value) => value + 1);
     }
-    if (!context) return children;
+
+    if (!context) {
+        return children;
+    }
+
     const value = {
         proposals,
         context: { ...context, onApplyingChange: changeApplying },
@@ -151,6 +176,7 @@ export function KnowledgeBlockProposals({
     const fallback = standalone
         ? proposals
         : proposals.filter((proposal) => !proposal.turnId);
+
     return (
         <ProposalList.Provider value={value}>
             {children}

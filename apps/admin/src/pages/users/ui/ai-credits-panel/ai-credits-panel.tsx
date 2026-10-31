@@ -244,8 +244,14 @@ function formatMode(
     unlimitedUntil: string | null,
     translate: ReturnType<typeof useTranslate>,
 ) {
-    if (mode === 'limited') return translate('aiCredits.limited');
-    if (!unlimitedUntil) return translate('aiCredits.unlimitedPermanent');
+    if (mode === 'limited') {
+        return translate('aiCredits.limited');
+    }
+
+    if (!unlimitedUntil) {
+        return translate('aiCredits.unlimitedPermanent');
+    }
+
     return translate('aiCredits.unlimitedUntilValue', {
         time: new Date(unlimitedUntil).toLocaleString(),
     });

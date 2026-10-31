@@ -26,6 +26,7 @@ export function transcriptionApi(
     ) {
         z.uuid().parse(noteId);
         z.uuid().parse(operationId);
+
         return request(async (token) => {
             const response = await fetch(
                 `${resolveApiUrl(process.env.NODE_ENV, process.env.NEXT_PUBLIC_API_URL)}/knowledge/${noteId}/transcriptions${suffix}`,
@@ -51,20 +52,28 @@ export function transcriptionApi(
                         : {}),
                 },
             );
-            if (!response.ok) throw new TranscriptionApiError(response.status);
+
+            if (!response.ok) {
+                throw new TranscriptionApiError(response.status);
+            }
+
             const { job } = KnowledgeTranscriptionJobResponseSchema.parse(
                 await response.json(),
             );
+
             if (
                 job.id !== operationId ||
                 job.noteId !== noteId ||
                 job.assetId !== expectedAssetId ||
                 (job.state === 'completed' && job.result === null)
-            )
+            ) {
                 throw new TranscriptionApiError(400);
+            }
+
             return job;
         });
     }
+
     return {
         submit: (
             input: SubmitKnowledgeTranscriptionRequest,

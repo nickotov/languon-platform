@@ -39,21 +39,27 @@ export class AdminMcpCheckBudget {
             (tx) => new DrizzleCapabilityPolicyParticipant(tx).settings(),
             { accessMode: 'read only' },
         );
-        if (!tokenMaximum || !settings.maxProviderCostUsdPerAction)
+
+        if (!tokenMaximum || !settings.maxProviderCostUsdPerAction) {
             throw new AdminMcpError(
                 'quota_exceeded',
                 'Explicit token and application operator limits must be configured before model checks.',
             );
+        }
+
         const maximum = [
             configuredMicros,
             amountUnits(tokenMaximum),
             amountUnits(settings.maxProviderCostUsdPerAction),
         ].reduce((minimum, value) => (value < minimum ? value : minimum));
-        if (maximum <= 0n)
+
+        if (maximum <= 0n) {
             throw new AdminMcpError(
                 'quota_exceeded',
                 'No operator spending allowance is available for this model check.',
             );
+        }
+
         return maximum;
     }
 
@@ -74,7 +80,11 @@ export class AdminMcpCheckBudget {
                 maximumUsd,
                 at,
             );
-            if (reservation.replay) return reservation;
+
+            if (reservation.replay) {
+                return reservation;
+            }
+
             const operator = new DrizzleOperatorBudgetParticipant(tx);
             const settings = await new DrizzleCapabilityPolicyParticipant(
                 tx,
@@ -87,17 +97,21 @@ export class AdminMcpCheckBudget {
                 settings,
                 at,
             });
-            if (authorization.reservedMicros !== maximum)
+
+            if (authorization.reservedMicros !== maximum) {
                 throw new AdminMcpError(
                     'quota_exceeded',
                     'The model check exceeds the application operator action limit.',
                 );
+            }
+
             await operator.reserveAttempt({
                 actionId: reservation.id,
                 attemptId: reservation.id,
                 maximumMicros: maximum,
                 at,
             });
+
             return reservation;
         });
     }
@@ -119,16 +133,19 @@ export class AdminMcpCheckBudget {
                     ),
                 )
                 .for('update');
+
             if (
                 !reservation ||
                 reservation.kind !== 'model-check' ||
                 reservation.state !== 'reserved' ||
                 reservation.dispatchAuthorizedAt !== null
-            )
+            ) {
                 throw new AdminMcpError(
                     'idempotency_conflict',
                     'The check cannot be dispatched again.',
                 );
+            }
+
             await tx
                 .update(adminMcpReservationsTable)
                 .set({ dispatchAuthorizedAt: at })
@@ -138,6 +155,7 @@ export class AdminMcpCheckBudget {
                         isNull(adminMcpReservationsTable.dispatchAuthorizedAt),
                     ),
                 );
+
             await audit(
                 tx,
                 actor,
@@ -164,6 +182,7 @@ export class AdminMcpCheckBudget {
                 .from(adminMcpTokensTable)
                 .where(eq(adminMcpTokensTable.id, actor.tokenId))
                 .for('update');
+
             const [reservation] = await tx
                 .select()
                 .from(adminMcpReservationsTable)
@@ -174,22 +193,28 @@ export class AdminMcpCheckBudget {
                     ),
                 )
                 .for('update');
-            if (reservation && reservation.kind !== 'model-check')
+
+            if (reservation && reservation.kind !== 'model-check') {
                 throw new AdminMcpError(
                     'not_found',
                     'Check reservation not found.',
                 );
+            }
+
             const [authorization] = await tx
                 .select()
                 .from(aiOperatorActionBudgetsTable)
                 .where(
                     eq(aiOperatorActionBudgetsTable.actionId, reservationId),
                 );
-            if (!authorization)
+
+            if (!authorization) {
                 throw new AdminMcpError(
                     'not_found',
                     'Operator authorization is missing.',
                 );
+            }
+
             // Purge may remove private credentials and their reservations while
             // retained operator facts still need settlement. Never recreate them.
             if (
@@ -198,11 +223,13 @@ export class AdminMcpCheckBudget {
                     authorization.ownerId === null &&
                     authorization.state === 'settled'
                 )
-            )
+            ) {
                 throw new AdminMcpError(
                     'not_found',
                     'Operator authorization does not belong to this admitted check.',
                 );
+            }
+
             if (authorization.state === 'active') {
                 const operator = new DrizzleOperatorBudgetParticipant(tx);
                 await operator.recordAttempt({
@@ -212,8 +239,10 @@ export class AdminMcpCheckBudget {
                         actualUsd === null ? null : amountUnits(actualUsd),
                     at,
                 });
+
                 await operator.settleAction({ actionId: reservationId, at });
             }
+
             if (reservation) {
                 await this.quotas.settleInTransaction(
                     tx,

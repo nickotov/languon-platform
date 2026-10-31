@@ -72,11 +72,12 @@ export async function ownedTranscriptionAudio(
         .innerJoin(blobs, eq(assets.blobId, blobs.id))
         .where(and(eq(assets.id, assetId), eq(assets.noteId, noteId)));
 
-    if (!source)
+    if (!source) {
         throw new KnowledgeDomainError(
             'knowledge_not_found',
             'The audio source is unavailable.',
         );
+    }
 
     return source;
 }
@@ -104,10 +105,12 @@ export async function transcriptionConfiguration(
         )
         .limit(1);
 
-    if (!executor)
+    if (!executor) {
         throw transcriptionUnavailable(
             'A compatible transcription executor is required.',
         );
+    }
+
     const [current] = await tx
         .select({ configuration: configs, price: prices })
         .from(state)
@@ -116,7 +119,10 @@ export async function transcriptionConfiguration(
         .where(eq(state.id, 'global'))
         .for('share', { of: state });
 
-    if (!current) throw transcriptionUnavailable();
+    if (!current) {
+        throw transcriptionUnavailable();
+    }
+
     const c = current.configuration;
     const p = current.price;
     if (
@@ -141,8 +147,10 @@ export async function transcriptionConfiguration(
         p.modelId !== 'gpt-transcribe' ||
         p.meter !== 'audio-duration' ||
         p.effectiveAt > at
-    )
+    ) {
         throw transcriptionUnavailable();
+    }
+
     const price = ProviderPriceSchema.parse({
         ...p.data,
         id: p.id,
@@ -155,8 +163,10 @@ export async function transcriptionConfiguration(
     if (
         !price.nativeRules ||
         !nativeProviderPricingMatchesMeter('audio-duration', price.nativeRules)
-    )
+    ) {
         throw transcriptionUnavailable();
+    }
+
     const cost = evaluateNativeProviderCost(
         price.nativeRules,
         {
@@ -171,10 +181,11 @@ export async function transcriptionConfiguration(
     if (
         cost.status !== 'calculated' ||
         cost.micros > BigInt(c.maximumProviderCostMicros)
-    )
+    ) {
         throw transcriptionUnavailable(
             'A reviewed finite transcription spending bound is required.',
         );
+    }
 
     return { configuration: c, price, providerMaximumMicros: cost.micros };
 }
@@ -198,11 +209,12 @@ export async function ownedTranscriptionJob(
         )
         .for('update');
 
-    if (!row)
+    if (!row) {
         throw new KnowledgeDomainError(
             'knowledge_not_found',
             'The transcription is unavailable.',
         );
+    }
 
     return row;
 }

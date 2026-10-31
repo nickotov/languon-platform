@@ -5,10 +5,16 @@ export function rejectCopiedLearningBlockDrop(
     slice: Slice,
     moved: boolean,
 ): boolean {
-    if (moved) return false;
+    if (moved) {
+        return false;
+    }
+
     let containsLearningBlock = false;
     slice.content.descendants((node) => {
-        if (node.type.name === 'learningBlock') containsLearningBlock = true;
+        if (node.type.name === 'learningBlock') {
+            containsLearningBlock = true;
+        }
     });
+
     return containsLearningBlock;
 }

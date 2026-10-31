@@ -10,6 +10,7 @@ describe('Texts rollout admissions', () => {
             }),
         ).toBe(true);
     });
+
     it.each(['staging', 'production'])(
         'requires every API and worker format in %s',
         (APP_ENV) => {
@@ -21,27 +22,32 @@ describe('Texts rollout admissions', () => {
                 DICTIONARY_JOB_API_ENQUEUED_FORMATS: formats,
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: formats,
             };
+
             expect(textsAiAdmissionsEnabled(environment)).toBe(true);
             const legacyFormats =
                 'text-detection:v1,text-translation:v1,text-selection-card:v1';
+
             expect(
                 textsAiAdmissionsEnabled({
                     ...environment,
                     DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: legacyFormats,
                 }),
             ).toBe(false);
+
             expect(
                 textsAiAdmissionsEnabled({
                     ...environment,
                     DICTIONARY_JOB_API_ENQUEUED_FORMATS: legacyFormats,
                 }),
             ).toBe(false);
+
             expect(
                 textsAiAdmissionsEnabled({
                     ...environment,
                     TEXTS_AI_ENABLED: 'false',
                 }),
             ).toBe(false);
+
             expect(
                 textsAiAdmissionsEnabled({
                     ...environment,
@@ -49,6 +55,7 @@ describe('Texts rollout admissions', () => {
                         'text-translation:v1',
                 }),
             ).toBe(false);
+
             expect(
                 textsAiAdmissionsEnabled({
                     ...environment,

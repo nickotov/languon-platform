@@ -80,14 +80,19 @@ export function createConversationWorkerComposition(input: {
         createRunner(turn) {
             const execution =
                 turn.execution as unknown as TextAiAdmissionExecution;
-            if (!execution.snapshot)
+
+            if (!execution.snapshot) {
                 throw new Error(
                     'Conversation execution snapshot is unavailable.',
                 );
+            }
+
             const snapshot = execution.snapshot;
+
             return {
                 run: async (runInput) => {
                     let published = false;
+
                     return runPinnedFallback({
                         snapshot,
                         signal: runInput.signal,
@@ -146,6 +151,7 @@ export function createConversationWorkerComposition(input: {
                                           )
                                         : snapshot.perCallMaxInputTokens,
                             });
+
                             return runner.run({
                                 ...runInput,
                                 onDelta: async (delta) => {
@@ -158,6 +164,7 @@ export function createConversationWorkerComposition(input: {
                                 },
                                 onDraft: async (content) => {
                                     published = true;
+
                                     return runInput.onDraft(content);
                                 },
                             });
@@ -167,6 +174,7 @@ export function createConversationWorkerComposition(input: {
             };
         },
     });
+
     return {
         processNext: (signal: AbortSignal) => worker.processNext(signal),
         maintainAccounting: () => store.maintainAccounting(),

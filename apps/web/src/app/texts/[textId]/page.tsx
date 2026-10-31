@@ -5,5 +5,6 @@ export default async function Page({
     params: Promise<{ textId: string }>;
 }) {
     const { textId } = await params;
+
     return <TextWorkspacePage textId={textId} />;
 }

@@ -43,18 +43,25 @@ function pathId(value: string): string {
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
             value,
         )
-    )
+    ) {
         throw new ApiError(400, {
             code: 'invalid_request',
             correlationId: 'client-invalid-id',
             message: 'Invalid identifier.',
         });
+    }
+
     return encodeURIComponent(value);
 }
+
 function queryString(query: object): string {
     const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(query))
-        if (value !== undefined) params.set(key, String(value));
+    for (const [key, value] of Object.entries(query)) {
+        if (value !== undefined) {
+            params.set(key, String(value));
+        }
+    }
+
     return params.toString();
 }
 
@@ -111,9 +118,11 @@ export function createKnowledgeSentenceApi(options: Options): SentenceApi {
                 const payload: unknown = await response
                     .json()
                     .catch(() => undefined);
+
                 if (!response.ok) {
                     const result =
                         SentenceErrorResponseSchema.safeParse(payload);
+
                     throw new ApiError(
                         response.status,
                         result.success
@@ -126,6 +135,7 @@ export function createKnowledgeSentenceApi(options: Options): SentenceApi {
                               },
                     );
                 }
+
                 try {
                     return schema.parse(payload);
                 } catch {
@@ -136,7 +146,10 @@ export function createKnowledgeSentenceApi(options: Options): SentenceApi {
                     });
                 }
             } catch (error) {
-                if (error instanceof ApiError) throw error;
+                if (error instanceof ApiError) {
+                    throw error;
+                }
+
                 throw new ApiError(0, {
                     code: 'service_unavailable',
                     correlationId: 'client-network',
@@ -147,8 +160,10 @@ export function createKnowledgeSentenceApi(options: Options): SentenceApi {
                 clearTimeout(timeout);
             }
         };
+
         return requestWithSession(execute);
     }
+
     return {
         capabilities: () =>
             request(

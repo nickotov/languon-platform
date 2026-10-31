@@ -83,10 +83,13 @@ const values = {
         'Audios importés copiés indépendamment',
     ],
 };
+
 export function blockCopyLabels(locale: Locale) {
     const index = { en: 0, ru: 1, es: 2, fr: 3 }[locale];
+
     return Object.fromEntries(
         Object.entries(values).map(([key, labels]) => [key, labels[index]]),
     ) as Record<keyof typeof values, string>;
 }
+
 export type BlockCopyLabels = ReturnType<typeof blockCopyLabels>;

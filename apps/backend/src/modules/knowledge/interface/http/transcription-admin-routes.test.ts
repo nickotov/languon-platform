@@ -51,13 +51,16 @@ function fixture() {
             new TranscriptionAdminProof('synthetic-secret'),
         ),
     });
+
     return { app, store, authorizeOperation, authorizeSensitiveOperation };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     Origin: 'http://localhost:4444',
     'Content-Type': 'application/json',
 };
+
 function input() {
     return {
         revisionId: randomUUID(),
@@ -78,6 +81,7 @@ function input() {
         },
     };
 }
+
 describe('Transcription owner administration boundary', () => {
     it('requires authentication and active owner authorization before reading configuration', async () => {
         const { app, store, authorizeOperation } = fixture();
@@ -86,14 +90,17 @@ describe('Transcription owner administration boundary', () => {
         expect(
             (await app.request('/admin/ai/transcription', { headers })).status,
         ).toBe(403);
+
         expect(store.read).not.toHaveBeenCalled();
     });
+
     it('requires an allowed explicit origin and recent authentication for preview', async () => {
         const { app, store, authorizeSensitiveOperation } = fixture();
         const missingOrigin = {
             Authorization: headers.Authorization,
             'Content-Type': 'application/json',
         };
+
         expect(
             (
                 await app.request('/admin/ai/transcription/preview', {
@@ -103,17 +110,20 @@ describe('Transcription owner administration boundary', () => {
                 })
             ).status,
         ).toBe(403);
+
         expect(store.preview).not.toHaveBeenCalled();
         const response = await app.request('/admin/ai/transcription/preview', {
             method: 'POST',
             headers,
             body: JSON.stringify(input()),
         });
+
         expect(response.status).toBe(200);
         expect(authorizeSensitiveOperation).toHaveBeenCalledTimes(1);
         expect(store.apply).not.toHaveBeenCalled();
         expect(response.headers.get('cache-control')).toBe('private, no-store');
     });
+
     it('reports a code-owned processing approval gap despite a supplied billing attestation', async () => {
         const { app, store } = fixture();
         store.preview.mockImplementationOnce(async (candidate) =>
@@ -122,6 +132,7 @@ describe('Transcription owner administration boundary', () => {
                 executionReady: true,
             }),
         );
+
         const request = input();
         const response = await app.request('/admin/ai/transcription/preview', {
             method: 'POST',
@@ -139,6 +150,7 @@ describe('Transcription owner administration boundary', () => {
                 },
             }),
         });
+
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({
             readiness: {
@@ -148,8 +160,10 @@ describe('Transcription owner administration boundary', () => {
                 ]),
             },
         });
+
         expect(store.apply).not.toHaveBeenCalled();
     });
+
     it('rejects a caller-supplied credential fingerprint rather than treating it as account evidence', async () => {
         const { app, store } = fixture();
         const request = input();
@@ -164,9 +178,11 @@ describe('Transcription owner administration boundary', () => {
                 },
             }),
         });
+
         expect(response.status).toBe(400);
         expect(store.preview).not.toHaveBeenCalled();
     });
+
     it('rejects credentials and provider overrides in untrusted configuration input', async () => {
         const { app, store } = fixture();
         const request = input();
@@ -182,6 +198,7 @@ describe('Transcription owner administration boundary', () => {
                 },
             }),
         });
+
         expect(response.status).toBe(400);
         expect(store.preview).not.toHaveBeenCalled();
     });

@@ -14,6 +14,7 @@ describe('training launcher capability-gated cards', () => {
                 headers: { 'Content-Type': 'application/json' },
             }),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const requestWithSession = vi.fn();
         render(
@@ -41,6 +42,7 @@ describe('training launcher capability-gated cards', () => {
                 />
             </I18nProvider>,
         );
+
         const trigger = screen.getByRole('button', { name: 'Train' });
         expect(trigger).toBeEnabled();
         fireEvent.click(trigger);
@@ -51,21 +53,26 @@ describe('training launcher capability-gated cards', () => {
                 }),
             ).not.toBeInTheDocument(),
         );
+
         expect(screen.getByRole('button', { name: 'Train' })).toBeEnabled();
         expect(
             screen.getByRole('menuitem', { name: 'Sentences Coming soon' }),
         ).toBeDisabled();
+
         expect(screen.getAllByRole('menuitem')).toHaveLength(1);
         expect(
             screen.queryByRole('menuitem', { name: 'Cards' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('dialog', { name: 'Train with cards' }),
         ).not.toBeInTheDocument();
+
         expect(fetchMock).toHaveBeenCalledOnce();
         expect(String(fetchMock.mock.calls[0]?.[0])).toMatch(
             /\/learning\/capabilities$/,
         );
+
         expect(requestWithSession).not.toHaveBeenCalled();
     });
 });

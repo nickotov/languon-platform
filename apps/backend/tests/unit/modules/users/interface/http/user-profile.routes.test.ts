@@ -53,6 +53,7 @@ function harness() {
             },
             method: 'PATCH',
         });
+
     return {
         app,
         request,
@@ -71,13 +72,16 @@ describe('user profile handle HTTP route', () => {
         await expect(response.json()).resolves.toEqual({
             handle: 'learner_123',
         });
+
         expect(updateHandle).toHaveBeenCalledWith(
             expect.objectContaining({ handle: 'learner_123', userId }),
         );
+
         expect(requireActiveSession).toHaveBeenCalledWith({
             sessionId,
             userId,
         });
+
         expect(response.headers.get('Cache-Control')).toBe('no-store');
     });
 
@@ -87,6 +91,7 @@ describe('user profile handle HTTP route', () => {
         expect(
             (await request('valid_handle', 'https://hostile.example')).status,
         ).toBe(403);
+
         expect(updateHandle).not.toHaveBeenCalled();
     });
 
@@ -98,6 +103,7 @@ describe('user profile handle HTTP route', () => {
         await expect(conflict.json()).resolves.toMatchObject({
             error: { code: 'conflict' },
         });
+
         updateHandle.mockRejectedValueOnce(new UserProfileConflictError());
         expect((await request('different')).status).toBe(409);
     });
@@ -112,6 +118,7 @@ describe('user profile handle HTTP route', () => {
             },
             method: 'PATCH',
         });
+
         expect(response.status).toBe(401);
         expect(updateHandle).not.toHaveBeenCalled();
     });
@@ -141,6 +148,7 @@ describe('account removal HTTP route', () => {
             status: 'deletion_scheduled',
             purgeAt: '2026-10-15T10:00:00.000Z',
         });
+
         expect(response.headers.get('Set-Cookie')).toMatch(/Max-Age=0/);
         expect(schedule).toHaveBeenCalledWith({ sessionId, userId });
     });
@@ -150,9 +158,11 @@ describe('account removal HTTP route', () => {
         expect(
             (await requestRemoval(app, { unexpected: 'DELETE' })).status,
         ).toBe(400);
+
         expect(
             (await requestRemoval(app, {}, 'https://hostile.example')).status,
         ).toBe(403);
+
         expect(schedule).not.toHaveBeenCalled();
     });
 
@@ -161,6 +171,7 @@ describe('account removal HTTP route', () => {
         schedule.mockRejectedValueOnce(
             new AccountDeletionOwnerTransferRequiredError(),
         );
+
         const response = await requestRemoval(app);
         expect(response.status).toBe(409);
         expect(response.headers.get('Set-Cookie')).toBeNull();

@@ -45,8 +45,9 @@ export class DrizzleKnowledgePrivateTranslationStore implements KnowledgePrivate
                 source.access,
             );
 
-            if (pinned.block.type !== 'bilingual-text')
+            if (pinned.block.type !== 'bilingual-text') {
                 throw knowledgeUnavailable();
+            }
 
             return { ...pinned, block: pinned.block };
         });
@@ -63,8 +64,10 @@ export class DrizzleKnowledgePrivateTranslationStore implements KnowledgePrivate
                 source.access,
             );
 
-            if (pinned.block.type !== 'bilingual-text')
+            if (pinned.block.type !== 'bilingual-text') {
                 throw knowledgeUnavailable();
+            }
+
             const rows = await tx
                 .select()
                 .from(overlays)
@@ -103,50 +106,60 @@ export class DrizzleKnowledgePrivateTranslationStore implements KnowledgePrivate
         beforeAdmission?: () => Promise<void>,
     ) {
         signal.throwIfAborted();
-        if (!this.dependencies.enabled)
+        if (!this.dependencies.enabled) {
             throw new KnowledgeDomainError(
                 'service_unavailable',
                 'Translation is unavailable.',
             );
+        }
+
         const input = RequestKnowledgeTranslationSchema.parse(candidate);
         const pinned = await this.source(source);
         if (
             pinned.block.language.toLowerCase() ===
             input.targetLanguage.toLowerCase()
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'The original is already in the selected language.',
             );
+        }
+
         if (
             pinned.block.translations.some(
                 (translation) =>
                     translation.language.toLowerCase() ===
                     input.targetLanguage.toLowerCase(),
             )
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'This language already has a prepared translation. Use the shared bilingual view.',
             );
+        }
+
         const sourceLanguage = TextLanguageSchema.safeParse(
             pinned.block.language,
         );
 
-        if (!sourceLanguage.success)
+        if (!sourceLanguage.success) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'This text language is not supported for translation.',
             );
+        }
+
         const sourceText = pinned.block.segments
             .map((segment) => segment.text)
             .join('\n\n');
 
-        if (!TextSourceSchema.safeParse(sourceText).success)
+        if (!TextSourceSchema.safeParse(sourceText).success) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'This text is too long for one translation. Split it into smaller blocks.',
             );
+        }
+
         let offset = 0;
         const segments: TextSourceSegment[] = pinned.block.segments.map(
             (segment, index) => {
@@ -200,7 +213,9 @@ export class DrizzleKnowledgePrivateTranslationStore implements KnowledgePrivate
                 ),
             );
 
-        if (!job) throw knowledgeUnavailable();
+        if (!job) {
+            throw knowledgeUnavailable();
+        }
     }
 
     async job(

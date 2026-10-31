@@ -77,6 +77,7 @@ export class AdminMcpOperations {
                   ? 'financial-reports.read'
                   : 'providers.read',
         );
+
         switch (name) {
             case 'users.lookup': {
                 const { email } = adminMcpReadSchemas[name].parse(raw);
@@ -98,10 +99,13 @@ export class AdminMcpOperations {
                         ),
                     )
                     .limit(1);
+
                 return { user: user ?? null };
             }
+
             case 'users.credits': {
                 const input = adminMcpReadSchemas[name].parse(raw);
+
                 return this.database.transaction(
                     async (tx) => {
                         await requireTarget(tx, input.userId);
@@ -116,6 +120,7 @@ export class AdminMcpOperations {
                             page: input.page,
                             pageSize: input.pageSize,
                         });
+
                         return {
                             account: serializeSummary(summary),
                             actionBudget: await readUserActionBudget(
@@ -140,12 +145,14 @@ export class AdminMcpOperations {
                     { accessMode: 'read only' },
                 );
             }
+
             case 'financial-reports.global': {
                 const range = reportRange(adminMcpReadSchemas[name].parse(raw));
                 const report = await this.dependencies.accounting.report(
                     range.from,
                     range.to,
                 );
+
                 return {
                     ...report,
                     periodNote:
@@ -154,6 +161,7 @@ export class AdminMcpOperations {
                             : null,
                 };
             }
+
             case 'financial-reports.user': {
                 const input = adminMcpReadSchemas[name].parse(raw);
                 const report = await userFinancialReport(this.database, input);
@@ -164,8 +172,10 @@ export class AdminMcpOperations {
                         ).accountSummary(input.userId, new Date()),
                     ),
                 );
+
                 return { ...report, currentAccount: balance };
             }
+
             case 'providers.inspect': {
                 adminMcpReadSchemas[name].parse(raw);
                 const [
@@ -185,6 +195,7 @@ export class AdminMcpOperations {
                         new DrizzleModelPriceParticipant(tx).listPublished(),
                     ),
                 ]);
+
                 return {
                     catalog,
                     routing,
@@ -213,32 +224,39 @@ export class AdminMcpOperations {
                     version: 0,
                     published: false,
                 };
+
                 target = 'text-ai-routing';
                 break;
             case 'customer-tariffs.write': {
                 const input = adminMcpWriteSchemas[name].parse(raw);
                 if ('flowId' in input) {
                     const routing = await currentTextAiRouting(tx);
-                    if (!routing)
+                    if (!routing) {
                         throw new AdminMcpError(
                             'not_found',
                             'Publish routing before modifying a flow tariff.',
                         );
+                    }
+
                     current = {
                         version: routing.version,
                         tariff:
                             routing.configuration.flowTariffs[input.flowId] ??
                             null,
                     };
+
                     target = `flow-tariff:${input.flowId}`;
                     break;
                 }
+
                 current = (await new DrizzleModelPriceParticipant(
                     tx,
                 ).currentPublished(input)) ?? { version: 0, published: false };
+
                 target = `customer-tariff:${input.providerId}/${input.modelId}`;
                 break;
             }
+
             case 'provider-prices.write':
             case 'provider-prices.native-write': {
                 const input = adminMcpWriteSchemas[name].parse(raw);
@@ -250,9 +268,11 @@ export class AdminMcpOperations {
                         price.modelId === input.modelId &&
                         price.meter === input.meter,
                 ) ?? { version: 0, published: false };
+
                 target = `provider-price:${input.providerId}/${input.modelId}/${input.meter}`;
                 break;
             }
+
             case 'spending-limits.write': {
                 const input = adminMcpWriteSchemas[name].parse(raw);
                 if ('targetUserId' in input) {
@@ -262,16 +282,20 @@ export class AdminMcpOperations {
                         tx,
                         input.targetUserId,
                     );
+
                     target = `user-action-budget:${input.targetUserId}`;
                     break;
                 }
+
                 assertSpendingBounds(actor, input);
                 current = await new DrizzleCapabilityPolicyParticipant(
                     tx,
                 ).settings();
+
                 target = 'ai-accounting-settings';
                 break;
             }
+
             case 'credits.grant':
             case 'credits.revoke': {
                 const input = adminMcpWriteSchemas[name].parse(raw);
@@ -281,11 +305,13 @@ export class AdminMcpOperations {
                         tx,
                     ).accountSummary(input.targetUserId, new Date()),
                 );
+
                 target = input.targetUserId;
                 assertCreditBounds(actor, name, input.amountCredits);
                 break;
             }
         }
+
         const version =
             current && typeof current === 'object'
                 ? 'managementVersion' in current
@@ -294,11 +320,14 @@ export class AdminMcpOperations {
                       ? current.version
                       : 0
                 : 0;
-        if (version !== proposed.expectedVersion)
+
+        if (version !== proposed.expectedVersion) {
             throw new AdminMcpError(
                 'stale_preview',
                 'The target version changed. Read the current state and preview again.',
             );
+        }
+
         return {
             operation: name,
             target,
@@ -326,11 +355,13 @@ export class AdminMcpOperations {
         actor: AdminMcpActor,
         preview: AdminMcpPreview,
     ): Promise<unknown> {
-        if (!(preview.operation in adminMcpWriteSchemas))
+        if (!(preview.operation in adminMcpWriteSchemas)) {
             throw new AdminMcpError(
                 'permission_denied',
                 'Unsupported mutation.',
             );
+        }
+
         const name = preview.operation as AdminMcpWriteOperation;
         requireAction(actor, name);
         requirePermission(actor, permissionForWrite(name));
@@ -349,13 +380,16 @@ export class AdminMcpOperations {
                 const input = adminMcpWriteSchemas[name].parse(
                     preview.proposed,
                 );
+
                 if ('flowId' in input) {
                     const routing = await currentTextAiRouting(tx);
-                    if (!routing || routing.version !== input.expectedVersion)
+                    if (!routing || routing.version !== input.expectedVersion) {
                         throw new AdminMcpError(
                             'stale_preview',
                             'Routing changed. Preview the tariff against its latest revision.',
                         );
+                    }
+
                     return this.dependencies.routing.publishInTransaction(
                         tx,
                         {
@@ -374,6 +408,7 @@ export class AdminMcpOperations {
                         correlationId,
                     );
                 }
+
                 return new DrizzleModelPriceParticipant(tx).publish(
                     input,
                     actor.userId,
@@ -382,6 +417,7 @@ export class AdminMcpOperations {
                     { initializeMissing: false },
                 );
             }
+
             case 'provider-prices.write':
             case 'provider-prices.native-write':
                 return this.dependencies.providerPrices.publishInTransaction(
@@ -394,6 +430,7 @@ export class AdminMcpOperations {
                 const input = adminMcpWriteSchemas[name].parse(
                     preview.proposed,
                 );
+
                 if ('targetUserId' in input) {
                     assertUserBudgetBounds(actor, input.maxCreditsPerAction);
                     await requireTarget(tx, input.targetUserId, true);
@@ -406,6 +443,7 @@ export class AdminMcpOperations {
                         },
                         at,
                     );
+
                     await audit(
                         tx,
                         actor,
@@ -419,18 +457,23 @@ export class AdminMcpOperations {
                             maxCreditsPerAction: result.maxCreditsPerAction,
                         },
                     );
+
                     return result;
                 }
+
                 assertSpendingBounds(actor, input);
+
                 return new DrizzleCapabilityPolicyParticipant(
                     tx,
                 ).publishSettings(input, actor.userId, at, correlationId);
             }
+
             case 'credits.grant':
             case 'credits.revoke': {
                 const input = adminMcpWriteSchemas[name].parse(
                     preview.proposed,
                 );
+
                 assertCreditBounds(actor, name, input.amountCredits);
                 await requireTarget(tx, input.targetUserId, true);
                 const quota = await this.quotas.reserveInTransaction(
@@ -456,12 +499,14 @@ export class AdminMcpOperations {
                     reason: input.reason,
                     sourceReference: `admin-mcp:${actor.tokenId}:${preview.id}`,
                 });
+
                 await this.quotas.settleInTransaction(
                     tx,
                     quota.id,
                     input.amountCredits,
                     at,
                 );
+
                 await audit(
                     tx,
                     actor,
@@ -474,6 +519,7 @@ export class AdminMcpOperations {
                         amountCredits: input.amountCredits,
                     },
                 );
+
                 return serializeSummary(
                     await credits.accountSummary(input.targetUserId, at),
                 );
@@ -493,12 +539,14 @@ async function requireTarget(
         .where(eq(usersTable.id, userId))
         .limit(1);
     const [user] = lock ? await query.for('share') : await query;
-    if (!user || !['active', 'pending', 'disabled'].includes(user.status))
+    if (!user || !['active', 'pending', 'disabled'].includes(user.status)) {
         throw new AdminMcpError(
             'not_found',
             'Credit account target is unavailable.',
         );
+    }
 }
+
 function serializeSummary(
     summary: Awaited<
         ReturnType<DrizzleAiCreditTransactionParticipant['accountSummary']>

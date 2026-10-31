@@ -18,6 +18,7 @@ it('renders complete formatted proposals and previews without accepting or touch
         'A long explanation. '.repeat(20),
         'Last section of a long proposal.',
     ].join('\n\n');
+
     render(
         <div onKeyDown={parentEscape}>
             <WorkspaceProposal
@@ -34,10 +35,12 @@ it('renders complete formatted proposals and previews without accepting or touch
             />
         </div>,
     );
+
     const card = screen.getByRole('region', { name: 'Proposed' });
     expect(
         within(card).getByRole('heading', { name: 'Grammar' }),
     ).toBeVisible();
+
     expect(card.querySelector('strong')).toHaveTextContent('être');
     expect(within(card).getAllByRole('listitem')).toHaveLength(2);
     expect(card).not.toHaveTextContent('**');
@@ -48,14 +51,17 @@ it('renders complete formatted proposals and previews without accepting or touch
     expect(
         within(document).getByText('Last section of a long proposal.'),
     ).toBeVisible();
+
     expect(document.querySelector('strong')).toHaveTextContent('être');
     expect(
         document.querySelector('[contenteditable], input, textarea'),
     ).toBeNull();
+
     expect(within(dialog).queryByRole('button', { name: 'Append' })).toBeNull();
     await user.click(
         within(dialog).getByRole('button', { name: 'Close', exact: true }),
     );
+
     await waitFor(() => expect(eye).toHaveFocus());
     expect(screen.queryByRole('dialog')).toBeNull();
     await user.click(eye);
@@ -65,6 +71,7 @@ it('renders complete formatted proposals and previews without accepting or touch
         screen.getByRole('dialog'),
         new Event('cancel', { cancelable: true }),
     );
+
     await waitFor(() => expect(eye).toHaveFocus());
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(accept).not.toHaveBeenCalled();
@@ -80,6 +87,7 @@ it('keeps hostile unsupported proposal source inert in the card and modal', asyn
     const accept = vi.fn();
     const content =
         '<img src=x onerror=alert(1)>\n\n[unsafe](javascript:alert(1))';
+
     render(<WorkspaceProposal content={content} onAccept={accept} />);
     const card = screen.getByRole('region', { name: 'Proposed' });
     expect(card.querySelector('img, script, iframe, a')).toBeNull();
@@ -90,6 +98,7 @@ it('keeps hostile unsupported proposal source inert in the card and modal', asyn
     await user.click(
         within(card).getByRole('button', { name: 'Preview content' }),
     );
+
     const dialog = screen.getByRole('dialog', { name: 'Preview content' });
     const document = within(dialog).getByRole('document', { name: 'Proposed' });
     expect(document.querySelector('img, script, iframe, a, svg')).toBeNull();

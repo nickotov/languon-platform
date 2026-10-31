@@ -18,6 +18,7 @@ export function BilingualPreview({
         : block.translations;
     const hasTranslations = block.translations.length > 0;
     const more = block.segments.length - rows.length;
+
     return (
         <div className={styles.root}>
             {hasTranslations ? (

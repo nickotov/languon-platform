@@ -58,8 +58,10 @@ function fixture() {
         authority: { authorizeDispatch },
         fetch,
     });
+
     return { input, permit, authorizeDispatch, fetch, provider };
 }
+
 describe('OpenAI transcription adapter prerequisite', () => {
     it('uses fixed official multipart protocol after canonical receipt approval', async () => {
         const { input, permit, provider, fetch, authorizeDispatch } = fixture();
@@ -72,6 +74,7 @@ describe('OpenAI transcription adapter prerequisite', () => {
                 checksum: permit.checksum,
             }),
         );
+
         const [url, options] = fetch.mock.calls[0]!;
         expect(url).toBe('https://api.openai.com/v1/audio/transcriptions');
         expect(options?.redirect).toBe('error');
@@ -88,14 +91,17 @@ describe('OpenAI transcription adapter prerequisite', () => {
             languages: ['fr'],
             usage: { type: 'duration', seconds: 1.125 },
         });
+
         expect(result).not.toHaveProperty('segments');
     });
+
     it('rejects an unapproved processing pin despite valid accounting authority', async () => {
         const { provider, input, permit, fetch } = fixture();
         permit.processingControlsRevision = 'unreviewed';
         await expect(provider.transcribe(input)).rejects.toThrow('receipt');
         expect(fetch).not.toHaveBeenCalled();
     });
+
     it('rejects credential rotation immediately before provider HTTP', async () => {
         const { input, fetch, authorizeDispatch } = fixture();
         const provider = new OpenAiKnowledgeTranscriptionProvider({
@@ -103,50 +109,68 @@ describe('OpenAI transcription adapter prerequisite', () => {
             authority: { authorizeDispatch },
             fetch,
         });
+
         await expect(provider.transcribe(input)).rejects.toThrow('receipt');
         expect(fetch).not.toHaveBeenCalled();
     });
+
     it('keeps missing provider usage unknown rather than fabricating local billed duration', async () => {
         const { provider, input, fetch } = fixture();
         fetch.mockResolvedValueOnce(
             Response.json({ text: 'Speech', languages: [] }),
         );
+
         expect(await provider.transcribe(input)).toMatchObject({
             languages: [],
             usage: null,
         });
     });
+
     it('does not dispatch without approved accounting/source authority', async () => {
         const { provider, input, fetch, authorizeDispatch } = fixture();
         authorizeDispatch.mockRejectedValueOnce(
             new Error('Native duration accounting is not ready.'),
         );
+
         await expect(provider.transcribe(input)).rejects.toThrow('not ready');
         expect(fetch).not.toHaveBeenCalled();
     });
+
     it.each(['checksum', 'expiry', 'bound'])(
         'rejects mismatched %s receipt before HTTP',
         async (variant) => {
             const { provider, input, permit, fetch, authorizeDispatch } =
                 fixture();
-            if (variant === 'checksum') permit.checksum = '0'.repeat(64);
-            if (variant === 'expiry')
+
+            if (variant === 'checksum') {
+                permit.checksum = '0'.repeat(64);
+            }
+
+            if (variant === 'expiry') {
                 permit.expiresAt = new Date(Date.now() - 1000).toISOString();
-            if (variant === 'bound') permit.maximumDurationMs = 999;
+            }
+
+            if (variant === 'bound') {
+                permit.maximumDurationMs = 999;
+            }
+
             authorizeDispatch.mockResolvedValueOnce(permit);
             await expect(provider.transcribe(input)).rejects.toThrow('receipt');
             expect(fetch).not.toHaveBeenCalled();
         },
     );
+
     it('rejects caller-forged audio metadata before authority or HTTP', async () => {
         const { provider, input, fetch, authorizeDispatch } = fixture();
         input.audio.durationMs = 42;
         await expect(provider.transcribe(input)).rejects.toThrow(
             'immutable audio',
         );
+
         expect(fetch).not.toHaveBeenCalled();
         expect(authorizeDispatch).not.toHaveBeenCalled();
     });
+
     it('cancels before dispatch and never retries ambiguous provider errors', async () => {
         const { provider, input, fetch } = fixture();
         const aborted = new AbortController();
@@ -154,15 +178,19 @@ describe('OpenAI transcription adapter prerequisite', () => {
         await expect(
             provider.transcribe({ ...input, signal: aborted.signal }),
         ).rejects.toThrow();
+
         expect(fetch).not.toHaveBeenCalled();
         fetch.mockResolvedValueOnce(
             new Response('private upstream details', { status: 503 }),
         );
+
         await expect(provider.transcribe(input)).rejects.toThrow(
             'temporarily unavailable',
         );
+
         expect(fetch).toHaveBeenCalledTimes(1);
     });
+
     it('rejects malformed, oversized and unusable provider output', async () => {
         const { provider, input, fetch } = fixture();
         fetch.mockResolvedValueOnce(Response.json({ text: '', languages: [] }));
@@ -174,6 +202,7 @@ describe('OpenAI transcription adapter prerequisite', () => {
                 usage: { type: 'duration', seconds: -1 },
             }),
         );
+
         await expect(provider.transcribe(input)).rejects.toThrow('invalid');
         fetch.mockResolvedValueOnce(new Response('x'.repeat(512_001)));
         await expect(provider.transcribe(input)).rejects.toThrow('exceeds');

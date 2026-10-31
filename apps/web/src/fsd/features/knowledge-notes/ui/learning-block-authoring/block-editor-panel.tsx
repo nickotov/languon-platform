@@ -66,9 +66,11 @@ export function BlockEditorPanel({
     const resolvedSubtitle =
         subtitle ??
         `${labels.field(editLabels[kind])} · ${labels.field('Uses author credits')}`;
+
     function toggleExpanded() {
         setExpanded((value) => !value);
     }
+
     return (
         <Dialog
             open

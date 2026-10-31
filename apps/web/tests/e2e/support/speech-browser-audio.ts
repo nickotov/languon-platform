@@ -14,6 +14,7 @@ export async function installSpeechAudioProbe(context: BrowserContext) {
             speechAudioEvidence?: AudioEvidence[];
             speechAudioPlayed?: number;
         };
+
         state.speechAudioEvidence = [];
         const originalPlay = HTMLMediaElement.prototype.play;
         HTMLMediaElement.prototype.play = function () {
@@ -25,8 +26,10 @@ export async function installSpeechAudioProbe(context: BrowserContext) {
                 },
                 { once: true },
             );
+
             return originalPlay.call(this);
         };
+
         const originalFetch = window.fetch.bind(window);
         window.fetch = async (...input: Parameters<typeof fetch>) => {
             const response = await originalFetch(...input);
@@ -47,6 +50,7 @@ export async function installSpeechAudioProbe(context: BrowserContext) {
                             new Uint8Array(digest),
                             (point) => point.toString(16).padStart(2, '0'),
                         ).join('');
+
                         state.speechAudioEvidence?.push({
                             url: response.url,
                             byteLength: bytes.byteLength,
@@ -57,6 +61,7 @@ export async function installSpeechAudioProbe(context: BrowserContext) {
                         /* An intentionally cancelled selection has no complete bytes. */
                     });
             }
+
             return response;
         };
     });
@@ -69,6 +74,7 @@ export async function browserAudioEvidence(page: Page, url: string) {
                 speechAudioEvidence?: AudioEvidence[];
                 speechAudioPlayed?: number;
             };
+
             return (
                 state.speechAudioEvidence?.findLast(
                     (item) => item.url === selected,
@@ -76,15 +82,19 @@ export async function browserAudioEvidence(page: Page, url: string) {
             );
         }, url);
     }
+
     await expect.poll(read).not.toBeNull();
     const result = await read();
-    if (!result)
+    if (!result) {
         throw new Error(
             'The real browser did not receive pronunciation bytes.',
         );
+    }
+
     expect(result.byteLength).toBeGreaterThan(44);
     expect(new URL(result.url).origin).toBe(new URL(page.url()).origin);
     expect(new URL(result.url).pathname).toMatch(/^\/api\/speech\/playbacks\//);
+
     return result;
 }
 
@@ -110,6 +120,7 @@ export async function playSpeechControl(
             value.url().endsWith('/content') &&
             value.status() === 200,
     );
+
     await control.click();
     const admitted = await preparation;
     expect(admitted.request().postDataJSON().source.kind).toBe(kind);
@@ -123,8 +134,10 @@ export async function playSpeechControl(
                 await page
                     .getByText('Audio is ready. Press Play.', { exact: true })
                     .isVisible()
-            )
+            ) {
                 await control.click();
+            }
+
             return page.evaluate(
                 () =>
                     (window as Window & { speechAudioPlayed?: number })

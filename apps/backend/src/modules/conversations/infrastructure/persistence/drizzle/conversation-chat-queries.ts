@@ -77,8 +77,9 @@ export async function conversationList(
                 row.source.shareKind === source.shareKind &&
                 row.source.view === source.view,
         )
-    )
+    ) {
         return rows.map(chatView);
+    }
 
     return conversationTransaction(persistence, async (tx) => {
         await persistence.dependencies.sources.resolve(
@@ -149,13 +150,15 @@ export async function conversationCreate(
             input.preferences ?? saved?.preferences ?? {},
         );
 
-        if (!manual.portrait)
+        if (!manual.portrait) {
             manual.portrait = {
                 enabled: true,
                 inheritedFields: input.preferences
                     ? []
                     : [...portraitPreferenceFields],
             };
+        }
+
         const now = persistence.now();
         const [chat] = await tx
             .insert(chats)
@@ -251,7 +254,7 @@ export async function conversationUpdate(
 
         if (changes.preferences && !changes.preferences.portrait) {
             const prior = ChatPreferencesSchema.parse(original.preferences);
-            if (prior.portrait)
+            if (prior.portrait) {
                 changes = {
                     ...changes,
                     preferences: {
@@ -267,6 +270,7 @@ export async function conversationUpdate(
                         },
                     },
                 };
+            }
         }
 
         const [chat] = await tx
@@ -307,22 +311,26 @@ export async function conversationDelete(
                 ),
             );
 
-        if (active)
+        if (active) {
             throw new ConversationError(
                 'deletion_busy',
                 'Stop the active response before deleting this conversation.',
             );
+        }
+
         if (
             await conversationDeletionBusy(
                 tx,
                 { conversationIds: [id] },
                 persistence.now(),
             )
-        )
+        ) {
             throw new ConversationError(
                 'deletion_busy',
                 'Response usage is still settling. Try again shortly.',
             );
+        }
+
         await eraseConversationContent(
             tx,
             { conversationIds: [id] },

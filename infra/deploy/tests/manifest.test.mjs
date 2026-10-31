@@ -56,6 +56,7 @@ test('rejects mutable or incomplete image sets', () => {
             }),
         /sha256 digest/,
     );
+
     const { admin: _, ...images } = valid.images;
     assert.throws(
         () => validateReleaseManifest({ ...valid, images }),
@@ -81,10 +82,12 @@ test('permits local digest registry only with an explicit rehearsal option', () 
             `localhost:5500/languon/${name}@sha256:${digest}`,
         ]),
     );
+
     assert.throws(
         () => validateReleaseManifest({ ...valid, images }),
         /permitted/,
     );
+
     assert.equal(
         validateReleaseManifest(
             { ...valid, images },
@@ -113,6 +116,7 @@ test('requires a complete self-covering generation budget in schema v2', () => {
             }),
         /generationBudget compatibility metadata is required/,
     );
+
     assert.throws(
         () =>
             validateReleaseManifest({
@@ -127,6 +131,7 @@ test('requires a complete self-covering generation budget in schema v2', () => {
             }),
         /maxInputTokensPerAttempt/,
     );
+
     assert.throws(
         () =>
             validateReleaseManifest({
@@ -141,6 +146,7 @@ test('requires a complete self-covering generation budget in schema v2', () => {
             }),
         /maxInputTokensPerAttempt/,
     );
+
     assert.equal(
         validateReleaseManifest({
             ...valid,
@@ -157,6 +163,7 @@ test('requires a complete self-covering generation budget in schema v2', () => {
         }).dictionaryJobs.generationBudget.maxInputTokensPerAttempt,
         32_768,
     );
+
     assert.throws(
         () =>
             validateReleaseManifest({
@@ -182,6 +189,7 @@ test('requires explicit complete self-compatible capabilities in schema v2', () 
             }),
         /compatibility metadata is required/,
     );
+
     assert.throws(
         () =>
             validateReleaseManifest({
@@ -208,6 +216,7 @@ test('preflight enforces full lifecycle compatibility in both rollback direction
             apiEnqueued: ['single-card:v1'],
         },
     });
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(activate, expand),
         [],
@@ -220,10 +229,12 @@ test('preflight enforces full lifecycle compatibility in both rollback direction
             generationBudget,
         },
     });
+
     assert.throws(
         () => assertDictionaryJobRollbackCompatibility(activate, historical),
         /Rollback-floor release workerProcessable/,
     );
+
     assert.throws(
         () =>
             assertDictionaryJobRollbackCompatibility(
@@ -274,12 +285,14 @@ test('card-authoring v2 follows expand-before-activate while v1 remains lifecycl
         assertDictionaryJobRollbackCompatibility(activate, expand),
         [],
     );
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(activate, expand, {
             direction: 'rollback',
         }),
         [],
     );
+
     assert.throws(
         () =>
             assertDictionaryJobRollbackCompatibility(
@@ -306,6 +319,7 @@ test('expand cannot add enqueue formats and activate must add one', () => {
             apiEnqueued: ['single-card:v1'],
         },
     });
+
     assert.throws(
         () => assertDictionaryJobRollbackCompatibility(enqueuingExpand, expand),
         /expand phase cannot add API-enqueued formats/,
@@ -319,14 +333,17 @@ test('expand cannot add enqueue formats and activate must add one', () => {
             phase: 'activate',
         },
     });
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(activate, expand),
         [],
     );
+
     assert.throws(
         () => assertDictionaryJobRollbackCompatibility(activate, activate),
         /activate phase must add at least one API-enqueued format/,
     );
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(activate, activate, {
             direction: 'rollback',
@@ -361,6 +378,7 @@ test('lifecycle support removal requires an exact retirement declaration', () =>
             ),
         /retireFormats must exactly declare.*single-card:v1/,
     );
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(
             {
@@ -374,6 +392,7 @@ test('lifecycle support removal requires an exact retirement declaration', () =>
         ),
         ['single-card:v1'],
     );
+
     const historical = validateReleaseManifest({
         ...valid,
         dictionaryJobs: {
@@ -381,6 +400,7 @@ test('lifecycle support removal requires an exact retirement declaration', () =>
             generationBudget,
         },
     });
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(historical, rollbackFloor, {
             direction: 'rollback',
@@ -405,6 +425,7 @@ test('activation and steady releases preserve claimable budget envelopes across 
             },
         },
     });
+
     assert.throws(
         () =>
             assertDictionaryJobRollbackCompatibility(
@@ -423,6 +444,7 @@ test('activation and steady releases preserve claimable budget envelopes across 
             apiEnqueued: ['single-card:v1'],
         },
     });
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(activation, floor),
         [],
@@ -440,6 +462,7 @@ test('activation and steady releases preserve claimable budget envelopes across 
             },
         },
     });
+
     assert.throws(
         () =>
             assertDictionaryJobRollbackCompatibility(
@@ -457,6 +480,7 @@ test('activation and steady releases preserve claimable budget envelopes across 
             apiEnqueued: [],
         },
     });
+
     assert.throws(
         () =>
             assertDictionaryJobRollbackCompatibility(
@@ -474,10 +498,12 @@ test('activation and steady releases preserve claimable budget envelopes across 
             phase: 'expand',
         },
     });
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(steady, activation),
         [],
     );
+
     assert.deepEqual(
         assertDictionaryJobRollbackCompatibility(activation, steady, {
             direction: 'rollback',

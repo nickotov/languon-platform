@@ -29,8 +29,10 @@ export const accessTokenStore = {
         if (
             state.accessTokenExpiresAt !== null &&
             state.accessTokenExpiresAt <= Date.now() + 30_000
-        )
+        ) {
             return null;
+        }
+
         return state.accessToken;
     },
     set: (token: string, expiresAt?: string) =>

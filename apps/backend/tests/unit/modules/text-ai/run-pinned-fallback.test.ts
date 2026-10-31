@@ -35,6 +35,7 @@ function snapshot(): TextAiExecutionSnapshot {
         sourceUrl: null,
         reason: 'Synthetic test price',
     };
+
     return {
         ...base,
         routingAuthority: {
@@ -63,8 +64,10 @@ function snapshot(): TextAiExecutionSnapshot {
         },
     };
 }
+
 const rejected = () =>
     new ProviderExecutionError({ statusCode: 429 }, 'openrouter');
+
 describe('pinned fallback dispatch', () => {
     it('uses only the pinned candidate, with one fresh execution after a conclusive rejection', async () => {
         const current = snapshot();
@@ -72,6 +75,7 @@ describe('pinned fallback dispatch', () => {
             .fn()
             .mockRejectedValueOnce(rejected())
             .mockResolvedValueOnce('usable result');
+
         await expect(
             runPinnedFallback({
                 snapshot: current,
@@ -80,14 +84,17 @@ describe('pinned fallback dispatch', () => {
                 execute,
             }),
         ).resolves.toBe('usable result');
+
         expect(execute).toHaveBeenCalledTimes(2);
         expect(execute.mock.calls[1]![0]).toMatchObject({
             providerId: 'openrouter',
             modelId: 'fallback',
             routingAuthority: current.routingAuthority,
         });
+
         expect(execute.mock.calls[1]![1]).toBe(2);
     });
+
     it.each([403, 500, 503, undefined])(
         'does not retry ambiguous or policy failure %s',
         async (statusCode) => {
@@ -104,24 +111,32 @@ describe('pinned fallback dispatch', () => {
                     execute,
                 }),
             ).rejects.toBe(error);
+
             expect(execute).toHaveBeenCalledTimes(1);
         },
     );
+
     it.each(['published', 'aborted', 'no-candidate', 'untyped'] as const)(
         'does not retry %s',
         async (kind) => {
             const current = snapshot();
             const controller = new AbortController();
-            if (kind === 'no-candidate')
+            if (kind === 'no-candidate') {
                 current.routingAuthority!.candidates.splice(1);
+            }
+
             const error =
                 kind === 'untyped'
                     ? new Error('Invalid structured result')
                     : rejected();
             const execute = vi.fn().mockImplementation(async () => {
-                if (kind === 'aborted') controller.abort();
+                if (kind === 'aborted') {
+                    controller.abort();
+                }
+
                 throw error;
             });
+
             await expect(
                 runPinnedFallback({
                     snapshot: current,
@@ -130,9 +145,11 @@ describe('pinned fallback dispatch', () => {
                     execute,
                 }),
             ).rejects.toBe(error);
+
             expect(execute).toHaveBeenCalledTimes(1);
         },
     );
+
     it('does not trust provider-controlled completed outcome properties', async () => {
         const error = Object.assign(new Error('Untrusted invalid result'), {
             executionOutcome: 'completed',
@@ -146,8 +163,10 @@ describe('pinned fallback dispatch', () => {
                 execute,
             }),
         ).rejects.toBe(error);
+
         expect(execute).toHaveBeenCalledTimes(1);
     });
+
     it('never retries the fallback or reduces confirmed output allowances', async () => {
         const execute = vi.fn().mockRejectedValue(rejected());
         await expect(
@@ -158,6 +177,7 @@ describe('pinned fallback dispatch', () => {
                 execute,
             }),
         ).rejects.toBeInstanceOf(ProviderExecutionError);
+
         expect(execute).toHaveBeenCalledTimes(2);
         const current = snapshot();
         current.routingAuthority!.candidates[1]!.snapshot.perCallMaxOutputTokens = 1;
@@ -170,6 +190,7 @@ describe('pinned fallback dispatch', () => {
                 execute,
             }),
         ).rejects.toThrow('confirmed execution allowance');
+
         expect(execute).toHaveBeenCalledTimes(1);
     });
 });

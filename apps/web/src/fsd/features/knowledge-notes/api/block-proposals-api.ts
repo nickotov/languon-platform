@@ -17,6 +17,7 @@ async function request<T>(
         c.KnowledgeBlockProposalSchema.shape.conversationId.parse(
             conversationId,
         );
+
     return session(async (token) => {
         const response = await fetch(
             `${resolveApiUrl(process.env.NODE_ENV, process.env.NEXT_PUBLIC_API_URL)}/conversations/${encodeURIComponent(id)}/block-proposals${suffix}`,
@@ -39,6 +40,7 @@ async function request<T>(
         if (!response.ok) {
             const failure =
                 c.ConversationErrorResponseSchema.safeParse(payload);
+
             throw new ConversationApiError(response.status, {
                 ...(failure.success
                     ? failure.data.error
@@ -52,9 +54,11 @@ async function request<T>(
                     : 'block-proposal-client',
             });
         }
+
         return schema.parse(payload);
     });
 }
+
 export const blockProposalsApi = {
     list: (
         session: ConversationSessionRequest,
@@ -78,6 +82,7 @@ export const blockProposalsApi = {
         insertionPosition?: number,
     ) => {
         const id = c.KnowledgeBlockProposalSchema.shape.id.parse(proposalId);
+
         return request(
             session,
             conversationId,

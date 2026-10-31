@@ -44,32 +44,44 @@ function operatorBudgetHierarchy(
         value.maxProviderCostUsdPerAccountDay,
         value.maxProviderCostUsdPerDay,
     ];
-    if (values.every((entry) => entry === null)) return;
+
+    if (values.every((entry) => entry === null)) {
+        return;
+    }
+
     if (values.some((entry) => entry === null)) {
         context.addIssue({
             code: 'custom',
             message:
                 'Set all three operator budgets together, or leave all unset.',
         });
+
         return;
     }
+
     if (
         values.some(
             (entry) => !OperatorUsdBudgetSchema.safeParse(entry).success,
         )
-    )
+    ) {
         return;
+    }
+
     const micros = values.map((entry) => {
         const [whole = '0', fraction = ''] = entry!.split('.');
+
         return BigInt(whole) * 1000000n + BigInt(fraction.padEnd(6, '0'));
     });
-    if (micros[0]! > micros[1]! || micros[1]! > micros[2]!)
+
+    if (micros[0]! > micros[1]! || micros[1]! > micros[2]!) {
         context.addIssue({
             code: 'custom',
             message:
                 'Operator budgets must satisfy action <= account per day <= global per day.',
         });
+    }
 }
+
 export const AiAccountingSettingsSchema = z
     .object({
         version: z.number().int().nonnegative(),

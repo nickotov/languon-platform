@@ -65,10 +65,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         });
+
         afterAll(async () => {
             await client.end();
         });
@@ -97,6 +99,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 );
             });
+
             const events = await database.select().from(adminAuditEventsTable);
             expect(events).toHaveLength(1);
             expect(events[0]).toMatchObject({
@@ -111,8 +114,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     affectedCount: 1,
                 },
             });
+
             expect(events[0]?.metadata).not.toHaveProperty('sourceText');
         });
+
         it('rolls back sentence audit if the enclosing mutation fails', async () => {
             const { database } = await seed();
             const hooks = createSentenceLibraryAdministrationHooks();
@@ -140,13 +145,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         { operationId: scope.audit.id, affectedCount: 1 },
                         new Date(),
                     );
+
                     throw new Error('mutation failed');
                 }),
             ).rejects.toThrow('mutation failed');
+
             expect(await database.select().from(adminAuditEventsTable)).toEqual(
                 [],
             );
         });
+
         it('rejects revoked sentence administrator membership inside the transaction', async () => {
             const { database } = await seed();
             await database
@@ -157,6 +165,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     revokeReason: 'Owner access revoked for test',
                 })
                 .where(eq(adminMembershipsTable.userId, ownerId));
+
             await expect(
                 database.transaction((transaction) =>
                     createSentenceLibraryAdministrationHooks().authorizeAdmin(
@@ -168,6 +177,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toBeInstanceOf(AdminAccessDeniedError);
         });
+
         it('uses database time rather than an old request clock for recent sentence authentication', async () => {
             const { database } = await seed();
             await database
@@ -176,6 +186,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     authenticatedAt: sql`clock_timestamp() - interval '6 minutes'`,
                 })
                 .where(eq(authSessionsTable.userId, ownerId));
+
             await expect(
                 database.transaction((transaction) =>
                     createSentenceLibraryAdministrationHooks().authorizeAdmin(
@@ -200,14 +211,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 version: 2,
                 activeSessionCount: 0,
             });
+
             const sessions = await database
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.userId, targetId));
+
             expect(sessions[0]).toMatchObject({
                 revocationReason: 'disabled_user',
                 revokedAt: expect.any(Date),
             });
+
             const events = await database.select().from(adminAuditEventsTable);
             expect(events).toHaveLength(1);
             expect(events[0]).toMatchObject({
@@ -218,6 +232,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 outcome: 'success',
                 targetUserId: targetId,
             });
+
             expect(events[0]?.occurredAt).toEqual(sessions[0]?.revokedAt);
         });
 
@@ -249,11 +264,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     enabledModels: ['deepseek-flash'],
                     version: 1,
                 });
+
                 expect(
                     await database
                         .select()
                         .from(dictionaryAiConfigurationTable),
                 ).toHaveLength(1);
+
                 expect(
                     await database
                         .select()
@@ -264,6 +281,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         version: 1,
                     }),
                 ]);
+
                 expect(
                     await database
                         .select()
@@ -302,6 +320,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         revisionId: '0198c305-7b38-74a3-b07d-7307aa917df2',
                     }),
                 ).rejects.toBeInstanceOf(AdminAiSettingsConflictError);
+
                 expect(
                     await database
                         .select()
@@ -322,6 +341,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .fn()
                     .mockResolvedValueOnce({ status: 200 } as Response)
                     .mockResolvedValueOnce({ status: 405 } as Response);
+
                 await publishTextAiWorkerObservations({
                     supportedFormats: ['single-card:v1'],
                     credentials: {
@@ -352,9 +372,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         }),
                     ]),
                 );
+
                 expect(JSON.stringify(response)).not.toContain(
                     'secret-never-returned',
                 );
+
                 expect(
                     await database
                         .select()
@@ -399,16 +421,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     store.updateAiSettings(mutation('a')),
                     store.updateAiSettings(mutation('b')),
                 ]);
+
                 expect(
                     results.filter((result) => result.status === 'fulfilled'),
                 ).toHaveLength(1);
+
                 const rejected = results.find(
                     (result) => result.status === 'rejected',
                 );
+
                 expect(rejected).toMatchObject({
                     reason: expect.any(AdminAiSettingsConflictError),
                     status: 'rejected',
                 });
+
                 expect(
                     await database
                         .select()
@@ -447,6 +473,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 version: 3,
                 activeSessionCount: 0,
             });
+
             expect(
                 await database.select().from(accountDeletionRequestsTable),
             ).toEqual([
@@ -456,6 +483,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     leaseWorkerId: null,
                 }),
             ]);
+
             expect(await database.select().from(adminAuditEventsTable)).toEqual(
                 [
                     expect.objectContaining({
@@ -468,6 +496,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ],
             );
+
             expect(journal.recordCancellation).toHaveBeenCalledWith({
                 cancelledAt: expect.any(Date),
                 userId: targetId,
@@ -491,13 +520,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ),
             ).rejects.toBeInstanceOf(AdminCancellationJournalUnavailableError);
+
             expect(await store.findUser(targetId)).toMatchObject({
                 status: 'deletion_pending',
                 version: 2,
             });
+
             expect(
                 await database.select().from(accountDeletionRequestsTable),
             ).toEqual([expect.objectContaining({ state: 'pending' })]);
+
             expect(
                 await database.select().from(adminAuditEventsTable),
             ).toHaveLength(0);
@@ -524,21 +556,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 })
                 .where(eq(accountDeletionRequestsTable.userId, targetId));
+
             expect(
                 await new DrizzleAccountPurgeStore(database).claimDue({
                     now: claimNow,
                     workerId: 'test-worker',
                 }),
             ).toMatchObject({ userId: targetId, fencingToken: 1 });
+
             await expect(
                 store.cancelUserDeletion(
                     mutation(targetId, 2, 'Attempt after purge worker claim'),
                 ),
             ).rejects.toBeInstanceOf(AdminDeletionCancellationUnavailableError);
+
             expect(await store.findUser(targetId)).toMatchObject({
                 status: 'deletion_pending',
                 version: 2,
             });
+
             expect(
                 await database.select().from(adminAuditEventsTable),
             ).toHaveLength(0);
@@ -577,6 +613,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reason: 'Reviewed fixture audit reference',
                 targetUserId: targetId,
             });
+
             await database
                 .delete(userEmailsTable)
                 .where(eq(userEmailsTable.userId, targetId));
@@ -585,6 +622,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 page: 1,
                 pageSize: 10,
             });
+
             expect(result.data).toEqual([
                 expect.objectContaining({
                     actorEmail: null,
@@ -619,9 +657,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 attempts.filter((attempt) => attempt.status === 'fulfilled'),
             ).toHaveLength(1);
+
             const rejected = attempts.find(
                 (attempt) => attempt.status === 'rejected',
             );
+
             expect(rejected).toMatchObject({
                 reason: expect.any(AdminUserStateConflictError),
             });
@@ -631,13 +671,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const { database, store } = await seed();
             let waitingMutation: ReturnType<typeof store.disableUser> | null =
                 null;
+
             await database.transaction(async (transaction) => {
                 await transaction.execute(
                     sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
                 );
+
                 waitingMutation = store.disableUser(
                     mutation(targetId, 1, 'Reviewed concurrent restriction'),
                 );
+
                 await new Promise((resolve) => setTimeout(resolve, 10));
                 await transaction
                     .update(adminMembershipsTable)
@@ -653,6 +696,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(waitingMutation!).rejects.toBeInstanceOf(
                 AdminAccessDeniedError,
             );
+
             await expect(store.findUser(targetId)).resolves.toMatchObject({
                 status: 'active',
                 version: 1,
@@ -675,19 +719,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             let waitingMutation: ReturnType<typeof store.disableUser> | null =
                 null;
+
             await database.transaction(async (transaction) => {
                 await transaction.execute(
                     sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
                 );
+
                 waitingMutation = store.disableUser(
                     mutation(targetId, 1, 'Reviewed expiry-boundary request'),
                 );
+
                 await new Promise((resolve) => setTimeout(resolve, 750));
             });
 
             await expect(waitingMutation!).rejects.toBeInstanceOf(
                 RecentAuthenticationRequiredError,
             );
+
             await expect(store.findUser(targetId)).resolves.toMatchObject({
                 status: 'active',
                 version: 1,
@@ -700,6 +748,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await store.disableUser(
                 mutation(targetId, 1, 'First traced status operation'),
             );
+
             await store.restoreUser({
                 ...mutation(targetId, 2, 'Second traced status operation'),
                 audit: {
@@ -713,6 +762,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(adminAuditEventsTable)
                 .where(eq(adminAuditEventsTable.correlationId, correlationId));
+
             expect(events).toHaveLength(2);
         });
 
@@ -734,11 +784,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 attempts.filter((attempt) => attempt.status === 'fulfilled'),
             ).toHaveLength(1);
+
             expect(
                 attempts.find((attempt) => attempt.status === 'rejected'),
             ).toMatchObject({
                 reason: expect.any(AdminOperatorActorRequiredError),
             });
+
             expect(await operator.list()).toHaveLength(1);
         });
 
@@ -753,6 +805,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reason: 'Review duplicate owner grant',
                 }),
             ).rejects.toBeInstanceOf(AdminMembershipConflictError);
+
             await expect(
                 operator.revoke({
                     actorEmail: 'owner@example.com',
@@ -766,6 +819,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(adminAuditEventsTable)
                 .where(eq(adminAuditEventsTable.outcome, 'rejected'));
+
             expect(rejected).toHaveLength(2);
             expect(rejected).toEqual(
                 expect.arrayContaining([
@@ -804,6 +858,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 mode: 'unlimited',
                 unlimitedUntil: null,
             });
+
             expect(policy).toMatchObject({
                 ok: true,
                 response: {
@@ -824,6 +879,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 amountCredits: 500,
                 expiresAt: null,
             });
+
             expect(adjustment).toMatchObject({
                 ok: true,
                 response: {
@@ -833,9 +889,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             expect(
                 await database.select().from(aiCreditGrantsTable),
             ).toHaveLength(1);
+
             expect(
                 await database
                     .select()
@@ -879,13 +937,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ok: false,
                 rejection: 'account_conflict',
             });
+
             expect(
                 await database.select().from(aiCreditGrantsTable),
             ).toHaveLength(1);
+
             const events = await database
                 .select()
                 .from(adminAuditEventsTable)
                 .where(eq(adminAuditEventsTable.action, 'ai_credits_adjusted'));
+
             expect(events).toHaveLength(2);
             expect(events).toContainEqual(
                 expect.objectContaining({
@@ -903,12 +964,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 now,
                 reason: 'Add a second operations owner',
             });
+
             await operator.revoke({
                 actorEmail: 'third@example.com',
                 email: 'owner@example.com',
                 now,
                 reason: 'Rotate primary operations owner',
             });
+
             await expect(
                 operator.revoke({
                     actorEmail: 'third@example.com',
@@ -917,6 +980,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reason: 'Attempt to remove final owner',
                 }),
             ).rejects.toBeInstanceOf(AdminLastOwnerForbiddenError);
+
             await expect(
                 database
                     .select()
@@ -946,11 +1010,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reason: 'Expired fixture audit event',
                 targetUserId: thirdId,
             });
+
             const result = await operator.prune({
                 actorEmail: 'third@example.com',
                 now,
                 reason: 'Apply the one-year audit retention policy',
             });
+
             expect(result.removed).toBe(1);
             expect(
                 await database
@@ -973,6 +1039,7 @@ async function seed(
     await database
         .insert(usersTable)
         .values([user(ownerId), user(targetId), user(thirdId)]);
+
     await database
         .insert(userEmailsTable)
         .values([
@@ -995,6 +1062,7 @@ async function seed(
                 now,
             ),
         ]);
+
     if (options.ownerMembership !== false) {
         await database.insert(adminMembershipsTable).values({
             grantReason: 'Initial administration owner bootstrap',
@@ -1006,6 +1074,7 @@ async function seed(
             userId: ownerId,
         });
     }
+
     await database.insert(authSessionsTable).values([
         {
             absoluteExpiresAt: sessionAbsoluteExpiry,
@@ -1030,9 +1099,11 @@ async function seed(
             userId: targetId,
         },
     ]);
+
     const journal = {
         recordCancellation: vi.fn().mockResolvedValue(undefined),
     };
+
     return {
         database,
         journal,
@@ -1053,6 +1124,7 @@ async function pendingDeletion(
             version: 2,
         })
         .where(eq(usersTable.id, targetId));
+
     await database
         .update(authSessionsTable)
         .set({
@@ -1060,6 +1132,7 @@ async function pendingDeletion(
             revocationReason: 'account_deletion',
         })
         .where(eq(authSessionsTable.userId, targetId));
+
     await database.insert(accountDeletionRequestsTable).values({
         nextAttemptAt: purgeAt,
         purgeAt,
@@ -1139,6 +1212,7 @@ function creditMutation(
 
 function sentenceScope() {
     const base = mutation(targetId, 1, 'Support approved sentence visibility');
+
     return {
         actorId: ownerId,
         actorSessionId: base.actorSessionId,

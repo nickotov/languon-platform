@@ -38,40 +38,52 @@ export function AppShell({ children }: { children: ReactNode }) {
         ...shell,
         accountOpen: shell.accountOpen && !shell.drawerOpen,
     };
+
     function openDrawer() {
         shell.setDrawerOpen(true);
     }
+
     function openSearch() {
         if (authenticated) {
             shell.setDrawerOpen(false);
             shell.setPaletteOpen(true);
         }
     }
+
     function closeSearch() {
         shell.setPaletteOpen(false);
     }
+
     const context = {
         requestWithSession,
         openSearch,
         create: creation.create,
         creating: creation.creating,
     };
+
     useEffect(() => {
         function shortcut(event: KeyboardEvent) {
-            if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+            if (!(event.metaKey || event.ctrlKey) || event.altKey) {
+                return;
+            }
+
             if (event.key.toLowerCase() === 'k' && authenticated) {
                 event.preventDefault();
                 shell.setDrawerOpen(false);
                 shell.setPaletteOpen((current) => !current);
             }
+
             if (event.key === '\\') {
                 event.preventDefault();
                 shell.toggleRail();
             }
         }
+
         window.addEventListener('keydown', shortcut);
+
         return () => window.removeEventListener('keydown', shortcut);
     }, [authenticated, shell]);
+
     return (
         <ShellNavigationContext.Provider value={context}>
             <div className={shellClassName}>

@@ -16,6 +16,7 @@ export class KnowledgeLibraryCopyService {
             rateLimiter: RateLimiter;
         },
     ) {}
+
     private async actor(token: string, context: KnowledgeRequestContext) {
         context.signal.throwIfAborted();
         for (const [scope, subject] of [
@@ -28,12 +29,15 @@ export class KnowledgeLibraryCopyService {
                 windowMs: 60_000,
                 signal: context.signal,
             });
-            if (!limit.allowed)
+
+            if (!limit.allowed) {
                 throw new KnowledgeDomainError(
                     'rate_limited',
                     'Too many requests. Please try again shortly.',
                 );
+            }
         }
+
         const principal = await this.dependencies.authenticate(token);
         const limit = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-library-owner',
@@ -42,19 +46,25 @@ export class KnowledgeLibraryCopyService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!limit.allowed)
+
+        if (!limit.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',
             );
+        }
+
         context.signal.throwIfAborted();
+
         return principal.userId;
     }
+
     private access(value: unknown) {
         return value === undefined
             ? undefined
             : WorkbookLearningShareAccessSchema.parse(value);
     }
+
     async vocabulary(
         token: string,
         context: KnowledgeRequestContext,
@@ -65,6 +75,7 @@ export class KnowledgeLibraryCopyService {
         const actor = await this.actor(token, context);
         const request = CopyKnowledgeVocabularyRequestSchema.parse(input);
         const proof = this.access(access);
+
         return preview
             ? this.dependencies.store.previewVocabulary(
                   actor,
@@ -79,6 +90,7 @@ export class KnowledgeLibraryCopyService {
                   proof,
               );
     }
+
     async text(
         token: string,
         context: KnowledgeRequestContext,
@@ -89,6 +101,7 @@ export class KnowledgeLibraryCopyService {
         const actor = await this.actor(token, context);
         const request = CopyKnowledgeTextRequestSchema.parse(input);
         const proof = this.access(access);
+
         return preview
             ? this.dependencies.store.previewText(
                   actor,

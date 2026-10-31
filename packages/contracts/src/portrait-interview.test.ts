@@ -13,6 +13,7 @@ describe('portrait interview submission contracts', () => {
                 text: family.repeat(200),
             }).success,
         ).toBe(true);
+
         expect(
             PortraitInterviewSubmissionSchema.safeParse({
                 kind: 'answer',
@@ -21,6 +22,7 @@ describe('portrait interview submission contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('allows clarification messages to 1000 characters independently of 200-character answer fields', () => {
         expect(
             PortraitInterviewSubmissionSchema.safeParse({
@@ -29,6 +31,7 @@ describe('portrait interview submission contracts', () => {
                 text: 'x'.repeat(1000),
             }).success,
         ).toBe(true);
+
         expect(
             PortraitInterviewSubmissionSchema.safeParse({
                 kind: 'chat',
@@ -37,6 +40,7 @@ describe('portrait interview submission contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('requires an explicit meaningful answer while skip remains a separate action', () => {
         expect(
             PortraitInterviewSubmissionSchema.safeParse({
@@ -45,6 +49,7 @@ describe('portrait interview submission contracts', () => {
                 text: '   ',
             }).success,
         ).toBe(false);
+
         expect(
             PortraitInterviewSubmissionSchema.safeParse({
                 kind: 'answer',
@@ -52,6 +57,7 @@ describe('portrait interview submission contracts', () => {
                 selected: [],
             }).success,
         ).toBe(false);
+
         expect(
             PortraitInterviewSubmissionSchema.safeParse({
                 kind: 'skip',
@@ -59,6 +65,7 @@ describe('portrait interview submission contracts', () => {
             }).success,
         ).toBe(true);
     });
+
     it('does not accept caller identity, provider settings, or portrait publication fields', () => {
         const base = {
             interviewId: '1e5b12a8-9dd1-4b17-a518-a5754283da1b',
@@ -67,17 +74,20 @@ describe('portrait interview submission contracts', () => {
             idempotencyKey: '7ce48c11-c2ea-4dfd-a9ae-4a208b1f2b75',
             input: { kind: 'skip', topic: 'age' },
         };
+
         expect(SubmitPortraitInterviewSchema.safeParse(base).success).toBe(
             true,
         );
+
         for (const extra of [
             { ownerId: 'other' },
             { model: 'arbitrary' },
             { useEnabled: true },
-        ])
+        ]) {
             expect(
                 SubmitPortraitInterviewSchema.safeParse({ ...base, ...extra })
                     .success,
             ).toBe(false);
+        }
     });
 });

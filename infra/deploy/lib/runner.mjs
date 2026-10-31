@@ -20,9 +20,13 @@ export async function runCommand(command, args, options = {}) {
         if (options.capture && options.input !== undefined) {
             child.stdin?.end(options.input);
         }
+
         child.on('error', reject);
         child.on('close', (code) => {
-            if (code === 0) return resolve({ stdout, stderr });
+            if (code === 0) {
+                return resolve({ stdout, stderr });
+            }
+
             reject(
                 new Error(`${command} exited with ${code}.`, {
                     cause: options.capture

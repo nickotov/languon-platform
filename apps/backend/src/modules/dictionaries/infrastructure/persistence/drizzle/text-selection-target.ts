@@ -46,11 +46,13 @@ export async function selectionTarget(
     phrase: string,
     confirmDuplicate: boolean,
 ) {
-    if (target.kind === 'new')
+    if (target.kind === 'new') {
         return {
             settings: { ...defaultDictionarySettings },
             translationContext: null,
         };
+    }
+
     const [dictionary] = await tx
         .select()
         .from(dictionaries)
@@ -62,8 +64,10 @@ export async function selectionTarget(
         )
         .for('update');
 
-    if (!dictionary || dictionary.lifecycle !== 'active')
+    if (!dictionary || dictionary.lifecycle !== 'active') {
         throw new TextSelectionError('not_found');
+    }
+
     const [values] = await tx
         .select()
         .from(settings)
@@ -74,13 +78,17 @@ export async function selectionTarget(
         !values ||
         dictionary.version !== target.expectedDictionaryVersion ||
         values.version !== target.expectedSettingsVersion
-    )
+    ) {
         throw new TextSelectionError('stale_content');
+    }
+
     if (
         dictionary.sourceLanguageTag !== sourceLanguage ||
         dictionary.targetLanguageTag !== targetLanguage
-    )
+    ) {
         throw new TextSelectionError('language_pair_mismatch');
+    }
+
     if (!confirmDuplicate) {
         const [duplicate] = await tx
             .select({ id: cards.id })
@@ -97,8 +105,9 @@ export async function selectionTarget(
             )
             .limit(1);
 
-        if (duplicate)
+        if (duplicate) {
             throw new TextSelectionError('duplicate_confirmation_required');
+        }
     }
 
     const resolved: DictionarySettings = {
@@ -235,7 +244,7 @@ export async function saveSelectionCard(
         createdAt: input.now,
     });
 
-    if (input.target.kind === 'existing')
+    if (input.target.kind === 'existing') {
         await tx
             .update(dictionaries)
             .set({
@@ -243,6 +252,7 @@ export async function saveSelectionCard(
                 updatedAt: input.now,
             })
             .where(eq(dictionaries.id, dictionaryId));
+    }
 
     return { dictionaryId, cardId };
 }

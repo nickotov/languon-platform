@@ -55,6 +55,7 @@ describe('shared dictionary capability return', () => {
             '',
             `/login?returnTo=${encodeURIComponent(destination)}#${key}`,
         );
+
         vi.spyOn(authApi, 'refresh').mockRejectedValue(new Error('no cookie'));
         vi.spyOn(authApi, 'capabilities').mockResolvedValue({
             email: { passwordRecovery: true, signUp: true, verification: true },
@@ -86,6 +87,7 @@ describe('shared dictionary capability return', () => {
                 'returnTo',
             ),
         ).toBe(destination);
+
         expect(fragment).toBe(key);
     });
 
@@ -97,12 +99,14 @@ describe('shared dictionary capability return', () => {
                 <LoginForm returnTo={destination} />
             </AuthProvider>,
         );
+
         await screen.findByRole('link', { name: 'Forgot password?' });
         await user.type(screen.getByLabelText('Email'), 'reader@example.com');
         await user.type(
             screen.getByLabelText('Password'),
             'a very secure password',
         );
+
         await user.click(screen.getByRole('button', { name: 'Sign in' }));
         await waitFor(() =>
             expect(replace).toHaveBeenCalledWith(`${destination}#${key}`),
@@ -122,6 +126,7 @@ describe('Texts capability authentication continuation', () => {
         expect(preserveCapabilityReturnFragment(target, path, `#${key}`)).toBe(
             `${target}#${key}`,
         );
+
         expect(capabilityReturnFragment(`${path}?key=${key}`, `#${key}`)).toBe(
             '',
         );
@@ -136,11 +141,13 @@ describe('Knowledge share authentication continuation', () => {
             '',
             `/login?returnTo=${encodeURIComponent(destination)}`,
         );
+
         render(
             <AuthProvider>
                 <AuthLinks mode='login' returnTo={destination} />
             </AuthProvider>,
         );
+
         expect(
             screen.getByRole('link', { name: 'Create an account' }),
         ).toHaveAttribute(

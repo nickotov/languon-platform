@@ -30,9 +30,13 @@ function captureBrowserErrors(
             errors.push(message.text());
         }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
@@ -42,8 +46,12 @@ function captureBrowserErrors(
             (path.startsWith('/shared/dictionaries/') &&
                 response.status() === 404) ||
             expectedResponse(path, response.status());
-        if (!expected) errors.push(`${response.status()} ${path}`);
+
+        if (!expected) {
+            errors.push(`${response.status()} ${path}`);
+        }
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -81,6 +89,7 @@ async function signUpAndVerifyOrSignInAfterRateLimit(
             if (new URL(page.url()).pathname === '/verify-email') {
                 outcome = 'verify';
             }
+
             if (
                 outcome === 'pending' &&
                 (await page
@@ -89,6 +98,7 @@ async function signUpAndVerifyOrSignInAfterRateLimit(
             ) {
                 outcome = 'rate-limited';
             }
+
             return outcome;
         })
         .not.toBe('pending');
@@ -100,9 +110,11 @@ async function signUpAndVerifyOrSignInAfterRateLimit(
         await page
             .getByRole('button', { name: 'Sign in', exact: true })
             .click();
+
         await expect(page).toHaveURL(
             new RegExp(`${returnTo.replaceAll('/', '\\/')}$`),
         );
+
         return;
     }
 
@@ -118,10 +130,12 @@ async function createDictionary(page: Page, name: string): Promise<void> {
         .getByRole('main')
         .getByRole('button', { name: 'New dictionary', exact: true })
         .click();
+
     await page.getByLabel('Name').fill(name);
     await page
         .getByLabel('Description')
         .fill('Vocabulary used in an art studio.');
+
     await page.getByLabel('Translate from').selectOption('en');
     await page.getByLabel('Translate to').selectOption('es');
     await page.getByRole('button', { name: 'Create dictionary' }).click();
@@ -145,9 +159,11 @@ async function addPopulatedCard(
             .getByLabel('Dictionary context')
             .fill(translationContext);
     }
+
     if (verifyResponsiveLayout) {
         await settings.getByLabel('Transcription').check();
     }
+
     await settings.getByLabel('Definition').check();
     await settings.getByLabel('Context example').check();
     await settings.getByLabel('Example translation').check();
@@ -171,26 +187,32 @@ async function addPopulatedCard(
         await expectEditorWordPair(editor, 'stacked');
         await page.setViewportSize({ width: 1280, height: 900 });
     }
+
     await page.getByLabel(/^Source word or phrase/).fill('work of art');
     await page.getByLabel(/^Translation/).fill('obra de arte');
     await page
         .getByLabel(/^Definition \(/)
         .fill('An object made for artistic expression.');
+
     await page
         .getByLabel(/^Context example \(/)
         .fill('The gallery acquired the work of art.');
+
     await page
         .getByLabel(/^Example translation \(/)
         .fill('La galería adquirió la obra de arte.');
+
     if (verifyResponsiveLayout) {
         await page.getByLabel(/^Transcription \(/).fill('wɜːk əv ɑːt');
     }
+
     await page.getByRole('button', { name: 'Create card' }).click();
     await expect(page.getByText('work of art', { exact: true })).toBeVisible();
     const lockedSettings = await openDictionarySettings(page);
     await expect(
         lockedSettings.getByText('Locked', { exact: true }),
     ).toBeVisible();
+
     await expect(lockedSettings.getByLabel('Translate from')).toHaveCount(0);
     await lockedSettings
         .getByRole('button', { name: 'Cancel', exact: true })
@@ -203,7 +225,9 @@ async function openDictionarySettings(page: Page) {
     const settings = page.getByRole('dialog', {
         name: 'Dictionary settings',
     });
+
     await expect(settings).toBeVisible();
+
     return settings;
 }
 
@@ -226,6 +250,7 @@ async function chooseDictionaryLibraryAction(
     await dictionary
         .getByRole('button', { name: `Actions for ${name}`, exact: true })
         .click();
+
     await dictionary
         .getByRole('menuitem', { name: action, exact: true })
         .click();
@@ -254,8 +279,13 @@ async function expectWordPairGeometry(
                 source.boundingBox(),
                 translation.boundingBox(),
             ]);
-            if (!first || !second) return false;
+
+            if (!first || !second) {
+                return false;
+            }
+
             const equalWidth = Math.abs(first.width - second.width) <= 1;
+
             return layout === 'columns'
                 ? equalWidth &&
                       Math.abs(first.y - second.y) <= 1 &&
@@ -276,6 +306,7 @@ async function expectCompactAuthoringRow(input: Locator) {
         label.boundingBox(),
         action.boundingBox(),
     ]);
+
     expect(textBounds).not.toBeNull();
     expect(actionBounds).not.toBeNull();
     expect(actionBounds!.width).toBeGreaterThanOrEqual(32);
@@ -287,9 +318,11 @@ async function expectCompactAuthoringRow(input: Locator) {
                 actionBounds!.height / 2,
         ),
     ).toBeLessThanOrEqual(2);
+
     expect(actionBounds!.x).toBeGreaterThanOrEqual(
         textBounds!.x + textBounds!.width,
     );
+
     expect(
         await label.evaluate((element) => ({
             whiteSpace: getComputedStyle(element).whiteSpace,
@@ -319,6 +352,7 @@ async function expectEditorWordPair(
     const translationField = translation.locator(
         'xpath=ancestor::div[div/label][1]',
     );
+
     await expectWordPairGeometry(sourceField, translationField, layout);
     await expect(source).toHaveAttribute('lang', 'en');
     await expect(translation).toHaveAttribute('lang', 'es');
@@ -331,23 +365,28 @@ async function expectEditorWordPair(
         translation.boundingBox(),
         definition.boundingBox(),
     ]);
+
     expect(definitionBounds!.y).toBeGreaterThanOrEqual(
         translationBounds!.y + translationBounds!.height,
     );
+
     expect(definitionBounds!.width).toBeGreaterThanOrEqual(
         translationBounds!.width,
     );
+
     const example = editor.getByRole('textbox', {
         name: /^Context example \(/,
     });
     const exampleTranslation = editor.getByRole('textbox', {
         name: /^Example translation \(/,
     });
+
     await expectWordPairGeometry(
         example.locator('xpath=ancestor::div[div/label][1]'),
         exampleTranslation.locator('xpath=ancestor::div[div/label][1]'),
         layout,
     );
+
     await expect(example).toHaveAttribute('lang', 'en');
     await expect(exampleTranslation).toHaveAttribute('lang', 'es');
     await expect(example).toHaveAttribute('dir', 'ltr');
@@ -371,8 +410,10 @@ async function expectOwnerWordPair(
             sourceWord.locator('span').first().boundingBox(),
             translatedWord.locator('span').first().boundingBox(),
         ]);
+
         expect(Math.abs(sourceText!.y - translatedText!.y)).toBeLessThan(2);
     }
+
     await expect(sourceWord).toHaveAttribute('dir', 'ltr');
     await expect(translatedWord).toHaveAttribute('dir', 'ltr');
     const transcription = card.getByText('(wɜːk əv ɑːt)', { exact: true });
@@ -382,9 +423,11 @@ async function expectOwnerWordPair(
         sourceWord.boundingBox(),
         transcription.boundingBox(),
     ]);
+
     expect(transcriptionBounds!.y).toBeGreaterThanOrEqual(
         sourceTextBounds!.y + sourceTextBounds!.height,
     );
+
     const fontSizes = await Promise.all([
         sourceWord.evaluate((element) =>
             parseFloat(getComputedStyle(element).fontSize),
@@ -393,6 +436,7 @@ async function expectOwnerWordPair(
             parseFloat(getComputedStyle(element).fontSize),
         ),
     ]);
+
     expect(fontSizes[1]).toBeLessThan(fontSizes[0]!);
     const actions = card.getByRole('button', { name: /Card actions, card/ });
     await expect(actions).toBeVisible();
@@ -406,22 +450,26 @@ async function expectOwnerWordPair(
                 })
                 .boundingBox(),
         ]);
+
     expect(definitionBounds!.y).toBeGreaterThanOrEqual(
         Math.max(
             sourceBounds!.y + sourceBounds!.height,
             translationBounds!.y + translationBounds!.height,
         ),
     );
+
     const example = card.locator('dl > div[data-field="example"]');
     const exampleTranslation = card.locator(
         'dl > div[data-field="exampleTranslation"]',
     );
+
     if (singleExample) {
         await expect(exampleTranslation).toHaveCount(0);
         const [exampleBounds, definitionRowBounds] = await Promise.all([
             example.boundingBox(),
             card.locator('dl > div[data-field="definition"]').boundingBox(),
         ]);
+
         expect(
             Math.abs(exampleBounds!.width - definitionRowBounds!.width),
         ).toBeLessThanOrEqual(1);
@@ -431,10 +479,12 @@ async function expectOwnerWordPair(
             exampleTranslation.locator('dd > span:first-child'),
         ).toHaveAttribute('lang', 'es');
     }
+
     await expect(example.locator('dd > span:first-child')).toHaveAttribute(
         'lang',
         'en',
     );
+
     for (const row of singleExample
         ? [example]
         : [example, exampleTranslation]) {
@@ -443,6 +493,7 @@ async function expectOwnerWordPair(
             await expect(audioButtons).toHaveCount(0);
             continue;
         }
+
         await expect(audioButtons.first()).toBeVisible();
         await expect
             .poll(async () => {
@@ -452,8 +503,11 @@ async function expectOwnerWordPair(
                         button.boundingBox(),
                     ),
                 );
-                if (!rowBounds || buttonBounds.some((bounds) => !bounds))
+
+                if (!rowBounds || buttonBounds.some((bounds) => !bounds)) {
                     return false;
+                }
+
                 return buttonBounds.every(
                     (bounds) =>
                         bounds!.x >= rowBounds.x - 1 &&
@@ -479,47 +533,58 @@ test.describe('dictionary platform journeys', () => {
         const sidebar = page.getByRole('complementary', {
             name: 'Application sidebar',
         });
+
         await sidebar
             .getByRole('button', { name: 'Dictionaries', exact: true })
             .click();
+
         await sidebar
             .getByRole('link', { name: 'All dictionaries', exact: true })
             .click();
+
         await expect(
             page.getByRole('heading', { name: 'My dictionaries' }),
         ).toBeVisible();
+
         await expect(
             page.getByRole('complementary', { name: 'Application sidebar' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Collapse sidebar' }).click();
         await expect(
             page.getByRole('button', { name: 'Expand sidebar' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Expand sidebar' }).click();
         await page.setViewportSize({ width: 320, height: 900 });
         const menuButton = page.getByRole('button', {
             name: 'Open navigation',
         });
+
         await menuButton.click();
         await expect(
             page.getByRole('dialog', { name: 'Main navigation' }),
         ).toBeVisible();
+
         await page.keyboard.press('Escape');
         await expect(menuButton).toBeFocused();
         await page.setViewportSize({ width: 1280, height: 900 });
         await createDictionary(page, name);
         const translationContext =
             'Visual arts, galleries, and professional studio practice.';
+
         await addPopulatedCard(page, translationContext, true);
         await expectOwnerWordPair(page, 'obra de arte', 'columns');
         const desktopScreenshot = testInfo.outputPath(
             'transcription-desktop.png',
         );
+
         await page.screenshot({ path: desktopScreenshot });
         await testInfo.attach('transcription-desktop', {
             path: desktopScreenshot,
             contentType: 'image/png',
         });
+
         await page.setViewportSize({ width: 768, height: 900 });
         await expectOwnerWordPair(page, 'obra de arte', 'columns');
         await page.setViewportSize({ width: 320, height: 900 });
@@ -527,14 +592,17 @@ test.describe('dictionary platform journeys', () => {
         const narrowScreenshot = testInfo.outputPath(
             'transcription-narrow.png',
         );
+
         await page.screenshot({ path: narrowScreenshot });
         await testInfo.attach('transcription-narrow', {
             path: narrowScreenshot,
             contentType: 'image/png',
         });
+
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         const addCard = page.getByRole('button', { name: 'Add card' });
         await expectOwnerWordPair(page, 'obra de arte', 'stacked');
         await addCard.focus();
@@ -546,6 +614,7 @@ test.describe('dictionary platform journeys', () => {
                 (element) => getComputedStyle(element).outlineStyle,
             ),
         ).not.toBe('none');
+
         expect(
             await page.evaluate(
                 () =>
@@ -553,6 +622,7 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         await addCard.click();
         const compactEditor = page.getByRole('dialog', { name: 'Add card' });
         await expect(compactEditor).toBeVisible();
@@ -564,6 +634,7 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         const draftSource = compactEditor.getByLabel(/^Source word or phrase/);
         const draftTranslation = compactEditor.getByLabel(/^Translation/);
         await draftSource.fill('s'.repeat(200));
@@ -588,13 +659,16 @@ test.describe('dictionary platform journeys', () => {
                         display: css.display,
                     });
                 }
+
                 return ancestors;
             });
+
             expect(
                 inputBounds!.x + inputBounds!.width,
                 JSON.stringify(sizing),
             ).toBeLessThanOrEqual(320);
         }
+
         await draftSource.focus();
         await page.keyboard.press('Tab');
         await expect(
@@ -603,6 +677,7 @@ test.describe('dictionary platform journeys', () => {
                 exact: true,
             }),
         ).toBeFocused();
+
         await page.keyboard.press('Tab');
         await expect(draftTranslation).toBeFocused();
         await draftTranslation.fill('');
@@ -611,10 +686,12 @@ test.describe('dictionary platform journeys', () => {
         const discardDraft = page.getByRole('dialog', {
             name: 'Discard this draft?',
         });
+
         await expect(discardDraft).toBeVisible();
         await discardDraft
             .getByRole('button', { name: 'Keep writing' })
             .click();
+
         await expect(compactEditor).toBeVisible();
         await expect(draftSource).toHaveValue('temporary draft');
 
@@ -622,20 +699,24 @@ test.describe('dictionary platform journeys', () => {
             .getByRole('button', { name: 'Cancel' })
             .first()
             .click();
+
         await expect(discardDraft).toBeVisible();
         await discardDraft
             .getByRole('button', { name: 'Keep writing' })
             .click();
+
         await expect(draftSource).toHaveValue('temporary draft');
 
         await compactEditor
             .getByRole('button', { name: 'Discard draft' })
             .last()
             .click();
+
         await expect(discardDraft).toBeVisible();
         await discardDraft
             .getByRole('button', { name: 'Discard draft' })
             .click();
+
         await expect(compactEditor).not.toBeVisible();
 
         await addCard.click();
@@ -644,11 +725,13 @@ test.describe('dictionary platform journeys', () => {
             .getByRole('button', { name: 'Discard draft' })
             .last()
             .click();
+
         await expect(discardDraft).not.toBeVisible();
         await expect(compactEditor).not.toBeVisible();
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
 
         // One enabled example field fills the row; dormant values stay intact.
@@ -657,15 +740,18 @@ test.describe('dictionary platform journeys', () => {
         await singleExampleSettings
             .getByRole('button', { name: 'Save settings' })
             .click();
+
         await expect(
             singleExampleSettings.getByText('Dictionary settings saved.', {
                 exact: true,
             }),
         ).toBeVisible();
+
         await singleExampleSettings
             .getByRole('button', { name: 'Cancel', exact: true })
             .first()
             .click();
+
         await expect(singleExampleSettings).not.toBeVisible();
         await addCard.click();
         const singleExampleEditor = page.getByRole('dialog', {
@@ -677,36 +763,43 @@ test.describe('dictionary platform journeys', () => {
         const singleDefinitionField = singleExampleEditor
             .getByRole('textbox', { name: /^Definition \(/ })
             .locator('xpath=ancestor::div[div/label][1]');
+
         await expect(
             singleExampleEditor.getByRole('textbox', {
                 name: /^Example translation \(/,
             }),
         ).toHaveCount(0);
+
         const [singleExampleBounds, singleDefinitionBounds] = await Promise.all(
             [
                 singleExampleField.boundingBox(),
                 singleDefinitionField.boundingBox(),
             ],
         );
+
         expect(
             Math.abs(
                 singleExampleBounds!.width - singleDefinitionBounds!.width,
             ),
         ).toBeLessThanOrEqual(1);
+
         await singleExampleEditor
             .getByRole('button', { name: 'Discard draft' })
             .last()
             .click();
+
         const pairedExampleSettings = await openDictionarySettings(page);
         await pairedExampleSettings.getByLabel('Example translation').check();
         await pairedExampleSettings
             .getByRole('button', { name: 'Save settings' })
             .click();
+
         await expect(
             pairedExampleSettings.getByText('Dictionary settings saved.', {
                 exact: true,
             }),
         ).toBeVisible();
+
         await pairedExampleSettings
             .getByRole('button', { name: 'Cancel', exact: true })
             .first()
@@ -722,18 +815,22 @@ test.describe('dictionary platform journeys', () => {
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         await expectEditorWordPair(cardEditor, 'stacked');
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
         await expect(
             cardEditor.getByText(translationContext, { exact: true }),
         ).toBeVisible();
+
         await cardEditor.getByLabel('Update context').check();
         await cardEditor
             .getByRole('textbox', { name: /Card context/ })
             .fill('Insurance appraisal of valuable artworks.');
+
         await cardEditor.getByLabel(/^Translation/).fill('pieza de arte');
         await cardEditor.getByLabel(/^Example translation \(/).fill('');
         let releaseCardSave: (() => void) | undefined;
@@ -742,9 +839,13 @@ test.describe('dictionary platform journeys', () => {
         });
         const cardRoute = '**/dictionaries/*/cards/*';
         await page.route(cardRoute, async (route) => {
-            if (route.request().method() === 'PATCH') await cardSaveGate;
+            if (route.request().method() === 'PATCH') {
+                await cardSaveGate;
+            }
+
             await route.continue();
         });
+
         await page.getByRole('button', { name: 'Save card' }).click();
         const pendingEditor = cardEditor;
         await expect(
@@ -752,16 +853,19 @@ test.describe('dictionary platform journeys', () => {
                 .getByRole('button', { name: 'Close', exact: true })
                 .first(),
         ).toBeDisabled();
+
         await expect(
             pendingEditor
                 .getByRole('button', { name: 'Close', exact: true })
                 .last(),
         ).toBeDisabled();
+
         await expect(addCard).toBeDisabled();
         releaseCardSave?.();
         await expect(
             page.getByText('pieza de arte', { exact: true }),
         ).toBeVisible();
+
         await page.unroute(cardRoute);
         await expectOwnerWordPair(page, 'pieza de arte', 'columns', true);
 
@@ -770,16 +874,20 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             cardEditor.getByRole('textbox', { name: /Card context/ }),
         ).toHaveValue('Insurance appraisal of valuable artworks.');
+
         await cardEditor.getByLabel('Update context').uncheck();
         await expect(
             cardEditor.getByRole('textbox', { name: /Card context/ }),
         ).toHaveCount(0);
+
         await expect(
             cardEditor.getByText(translationContext, { exact: true }),
         ).toBeVisible();
+
         await cardEditor
             .getByLabel(/^Example translation \(/)
             .fill('La galería adquirió la obra de arte.');
+
         await cardEditor.getByRole('button', { name: 'Save card' }).click();
 
         await chooseCardAction(page, 'work of art', 'Edit');
@@ -787,9 +895,11 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             cardEditor.getByRole('textbox', { name: /Card context/ }),
         ).toHaveCount(0);
+
         await expect(
             cardEditor.getByText(translationContext, { exact: true }),
         ).toBeVisible();
+
         await cardEditor
             .getByRole('button', { name: 'Close', exact: true })
             .first()
@@ -801,6 +911,7 @@ test.describe('dictionary platform journeys', () => {
             .getByRole('group', { name: 'Card status' })
             .getByRole('button', { name: 'Archived', exact: true })
             .click();
+
         await expectOwnerWordPair(
             page,
             'pieza de arte',
@@ -808,6 +919,7 @@ test.describe('dictionary platform journeys', () => {
             false,
             false,
         );
+
         await page.setViewportSize({ width: 320, height: 900 });
         await expectOwnerWordPair(
             page,
@@ -816,6 +928,7 @@ test.describe('dictionary platform journeys', () => {
             false,
             false,
         );
+
         await page.setViewportSize({ width: 1280, height: 720 });
         await chooseCardAction(page, 'work of art', 'Restore');
         await expect(page.getByText('Card restored.')).toBeVisible();
@@ -826,25 +939,30 @@ test.describe('dictionary platform journeys', () => {
         const librarySettings = page.getByRole('dialog', {
             name: 'Dictionary settings',
         });
+
         await expect(librarySettings).toBeVisible();
         await librarySettings
             .getByRole('button', { name: 'Cancel' })
             .last()
             .click();
+
         await chooseDictionaryLibraryAction(page, name, 'Archive');
         await expect(page.getByText(/Dictionary archived/)).toBeVisible();
         await page
             .getByRole('group', { name: 'Dictionary status' })
             .getByRole('button', { name: 'Archived', exact: true })
             .click();
+
         await chooseDictionaryLibraryAction(page, name, 'Restore');
         await expect(
             page.getByText('Dictionary restored as private.'),
         ).toBeVisible();
+
         await page
             .getByRole('group', { name: 'Dictionary status' })
             .getByRole('button', { name: 'Active', exact: true })
             .click();
+
         await expect(page.getByRole('heading', { name })).toBeVisible();
         assertNoBrowserErrors();
     });
@@ -870,6 +988,7 @@ test.describe('dictionary platform journeys', () => {
                 response.url().endsWith('/share-key/rotate') &&
                 response.status() === 200,
         );
+
         await chooseDictionarySecondaryAction(page, 'Sharing');
         await page.getByRole('button', { name: 'Create sharing link' }).click();
         const rotated = (await (await rotateResponse).json()) as {
@@ -886,12 +1005,14 @@ test.describe('dictionary platform journeys', () => {
 
         const sharedResponse = page.waitForResponse((response) => {
             const url = new URL(response.url());
+
             return (
                 url.origin === new URL(page.url()).origin &&
                 url.pathname === `/api/shared/dictionaries/${shareId}` &&
                 response.status() === 200
             );
         });
+
         await page.goto(`/shared/dictionaries/${shareId}#${shareKey}`);
         const publicResponse = await sharedResponse;
         const publicRequest = publicResponse.request();
@@ -899,14 +1020,17 @@ test.describe('dictionary platform journeys', () => {
         expect(publicResponse.headers()['cache-control']).toBe(
             'private, no-store',
         );
+
         expect(publicResponse.headers()['referrer-policy']).toBe('no-referrer');
         await expect(page.getByRole('heading', { name })).toBeVisible();
         await expect(
             page.getByText('work of art', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('Unlisted · no index', { exact: true }),
         ).toBeVisible();
+
         await expect(page.getByText(publisherEmail)).toHaveCount(0);
         await expect(page.getByText(privateTranslationContext)).toHaveCount(0);
         await page.getByRole('link', { name: 'Sign in to fork' }).click();
@@ -915,24 +1039,29 @@ test.describe('dictionary platform journeys', () => {
                 `/shared/dictionaries/${shareId}`,
             )}#${shareKey}`,
         );
+
         const createAccount = page.getByRole('link', {
             name: 'Create an account',
         });
+
         await expect(createAccount).toBeVisible();
         const signupHref = new URL(
             (await createAccount.getAttribute('href'))!,
             page.url(),
         );
+
         expect(signupHref.hash).toBe(`#${shareKey}`);
         expect(signupHref.searchParams.get('returnTo')).toBe(
             `/shared/dictionaries/${shareId}`,
         );
+
         await createAccount.click();
         await expect(page).toHaveURL(
             `/signup?returnTo=${encodeURIComponent(
                 `/shared/dictionaries/${shareId}`,
             )}#${shareKey}`,
         );
+
         expect(page.url()).toContain(`#${shareKey}`);
         await page.getByLabel('Email').fill(syntheticEmail(testInfo, 'reader'));
         await page.getByLabel('Password', { exact: true }).fill(password);
@@ -942,6 +1071,7 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             page.getByRole('button', { name: 'Fork privately' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Fork privately' }).click();
         await expect(page).toHaveURL(/\/dictionaries\/[0-9a-f-]+$/);
         await expect(page.getByRole('heading', { name })).toBeVisible();
@@ -950,16 +1080,20 @@ test.describe('dictionary platform journeys', () => {
         await expect(forkSettings.getByLabel('Dictionary context')).toHaveValue(
             '',
         );
+
         await forkSettings
             .getByRole('button', { name: 'Cancel', exact: true })
             .first()
             .click();
+
         expect(requestedUrls.every((url) => !url.includes(shareKey))).toBe(
             true,
         );
+
         expect(await page.evaluate(() => Object.keys(localStorage))).toEqual(
             [],
         );
+
         expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual(
             [],
         );
@@ -971,6 +1105,7 @@ test.describe('dictionary platform journeys', () => {
         await page
             .getByRole('button', { name: 'Sign in', exact: true })
             .click();
+
         await expect(page).toHaveURL('/');
         await page.goto(sourceEditorUrl);
         const rerotateResponse = page.waitForResponse(
@@ -978,15 +1113,18 @@ test.describe('dictionary platform journeys', () => {
                 response.url().endsWith('/share-key/rotate') &&
                 response.status() === 200,
         );
+
         await chooseDictionarySecondaryAction(page, 'Sharing');
         await page.getByRole('button', { name: 'Rotate sharing link' }).click();
         const rerotated = (await (await rerotateResponse).json()) as {
             capability: { shareId: string; shareKey: string };
         };
+
         await page.goto(`/shared/dictionaries/${shareId}#${shareKey}`);
         await expect(
             page.getByRole('heading', { name: 'Dictionary unavailable' }),
         ).toBeVisible();
+
         await page.goto(sourceEditorUrl);
         await page.getByRole('link', { name: /Back to dictionaries/ }).click();
         await chooseDictionaryLibraryAction(page, name, 'Archive');
@@ -995,12 +1133,15 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             page.getByText('Restore it to edit settings, cards, and sharing.'),
         ).toBeVisible();
+
         await page.goto(
             `/shared/dictionaries/${rerotated.capability.shareId}#${rerotated.capability.shareKey}`,
         );
+
         await expect(
             page.getByRole('heading', { name: 'Dictionary unavailable' }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1023,6 +1164,7 @@ test.describe('dictionary platform journeys', () => {
             syntheticEmail(testInfo, 'generation-owner'),
             '/dictionaries',
         );
+
         await createDictionary(page, name);
         await addPopulatedCard(page);
 
@@ -1031,25 +1173,31 @@ test.describe('dictionary platform journeys', () => {
         await staleEditor
             .getByLabel(/^Translation/)
             .fill('edición local obsoleta');
+
         const manualConcurrentPage = await context.newPage();
         const assertNoManualConcurrentBrowserErrors =
             captureBrowserErrors(manualConcurrentPage);
+
         await manualConcurrentPage.goto(page.url());
         await expect(
             manualConcurrentPage.getByRole('heading', { name }),
         ).toBeVisible();
+
         await chooseCardAction(manualConcurrentPage, 'work of art', 'Edit');
         await manualConcurrentPage
             .getByLabel(/^Translation/)
             .fill('obra de arte actualizada');
+
         await manualConcurrentPage
             .getByRole('button', { name: 'Save card' })
             .click();
+
         await expect(
             manualConcurrentPage.getByText('obra de arte actualizada', {
                 exact: true,
             }),
         ).toBeVisible();
+
         assertNoManualConcurrentBrowserErrors();
         await manualConcurrentPage.close();
 
@@ -1059,9 +1207,11 @@ test.describe('dictionary platform journeys', () => {
                 name: 'Reload current version',
             }),
         ).toBeVisible();
+
         await staleEditor
             .getByRole('button', { name: 'Reload current version' })
             .click();
+
         await expect(staleEditor).not.toBeVisible();
         await expect(
             page.getByText('obra de arte actualizada', { exact: true }),
@@ -1072,16 +1222,20 @@ test.describe('dictionary platform journeys', () => {
             'work of art',
             'Rewrite full card with AI',
         );
+
         let review = page.getByRole('dialog', {
             name: 'Regenerate card with AI',
         });
+
         await review
             .getByLabel('Instruction for this review (optional)')
             .fill('Keep the vocabulary suitable for an art studio.');
+
         await review.getByRole('button', { name: 'Generate proposal' }).click();
         await expect(
             review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(page).toHaveURL(/generationCard=.*generationJob=/);
 
         await page.reload();
@@ -1089,19 +1243,23 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(
             review
                 .getByRole('region', { name: /^Translation/ })
                 .getByRole('paragraph')
                 .filter({ hasText: /^obra de arte actualizada$/ }),
         ).toBeVisible();
+
         await page.setViewportSize({ width: 320, height: 900 });
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         const acceptProposal = review.getByRole('button', {
             name: 'Accept and update card',
         });
+
         await acceptProposal.focus();
         await page.keyboard.press('Tab');
         await page.keyboard.press('Shift+Tab');
@@ -1113,9 +1271,11 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
 
         const concurrentPage = await context.newPage();
@@ -1127,77 +1287,95 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             concurrentPage.getByRole('heading', { name }),
         ).toBeVisible();
+
         await chooseCardAction(concurrentPage, 'work of art', 'Edit');
         await concurrentPage
             .getByLabel(/^Translation/)
             .fill('obra artística concurrente');
+
         await concurrentPage.getByRole('button', { name: 'Save card' }).click();
         await expect(
             concurrentPage.getByText('obra artística concurrente', {
                 exact: true,
             }),
         ).toBeVisible();
+
         assertNoConcurrentBrowserErrors();
         await concurrentPage.close();
 
         const proposedTranslation = review
             .getByRole('region', { name: /^Translation/ })
             .getByLabel('Proposed replacement');
+
         await proposedTranslation.fill('obra de arte revisada');
         await review
             .getByRole('button', { name: 'Accept and update card' })
             .click();
+
         await expect(
             review.getByText('Card changed since generation'),
         ).toBeVisible();
+
         await review
             .getByRole('button', { name: 'Reload and compare' })
             .click();
+
         await expect(
             review.getByRole('heading', {
                 name: 'Current card after reload',
             }),
         ).toBeVisible();
+
         await expect(
             review.getByText('obra artística concurrente', { exact: true }),
         ).toBeVisible();
+
         await expect(proposedTranslation).toHaveValue('obra de arte revisada');
 
         await review
             .getByLabel('Instruction for this review (optional)')
             .fill('Use the current card and keep the art context.');
+
         const previousGenerationUrl = page.url();
         const regenerateResponse = page.waitForResponse(
             (response) =>
                 response.url().endsWith('/regenerate') &&
                 response.status() === 202,
         );
+
         await review
             .getByRole('button', { name: 'Regenerate', exact: true })
             .click();
+
         await regenerateResponse;
         await expect(page).not.toHaveURL(previousGenerationUrl);
         await expect(
             review.getByRole('button', { name: 'Accept and update card' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await review
             .getByRole('region', { name: /^Translation/ })
             .getByLabel('Proposed replacement')
             .fill('obra de arte final');
+
         await review
             .getByRole('button', { name: 'Accept and update card' })
             .click();
+
         await expect(
             review.getByText('The reviewed proposal was accepted.', {
                 exact: true,
             }),
         ).toBeVisible();
+
         await expect(
             page.getByText('obra de arte final', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('Human + AI', { exact: true }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1212,23 +1390,28 @@ test.describe('dictionary platform journeys', () => {
             syntheticEmail(testInfo, 'accounted-batch-desktop'),
             '/dictionaries',
         );
+
         await createDictionary(page, `Accounted batch ${runId}`);
         await chooseDictionarySecondaryAction(
             page,
             'Generate cards from pasted terms',
         );
+
         let batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await batch.getByLabel('Terms or phrases').fill('canvas\nbank');
         const admitted = page.waitForResponse(
             (response) =>
                 response.request().method() === 'POST' &&
                 response.url().endsWith('/batch-generations'),
         );
+
         await batch
             .getByRole('button', { name: 'Generate cards', exact: true })
             .click();
+
         const admission = await admitted;
         const body: unknown = await admission.json();
         const { DictionaryErrorResponseSchema } =
@@ -1240,10 +1423,12 @@ test.describe('dictionary platform journeys', () => {
                   message: failure.data.error.message,
               }
             : null;
+
         expect(admission.status(), JSON.stringify(safeError)).toBe(202);
         await expect(
             batch.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(page).toHaveURL(/batchGenerationJob=[0-9a-f-]+/);
         const reviewUrl = page.url();
         await page.reload();
@@ -1251,39 +1436,48 @@ test.describe('dictionary platform journeys', () => {
         batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await expect(
             batch.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await batch
             .getByLabel('Translation')
             .first()
             .fill('accounted desktop translation');
+
         await batch
             .getByRole('button', { name: 'Add 2 cards', exact: true })
             .click();
+
         await expect(
             batch.getByText('The selected cards were added together.'),
         ).toBeVisible();
+
         await batch
             .getByRole('button', {
                 name: 'Close batch generation',
                 exact: true,
             })
             .click();
+
         await expect(batch).not.toBeVisible();
         await expect(
             page.getByText('accounted desktop translation', { exact: true }),
         ).toBeVisible();
+
         await expect(page.getByText('canvas', { exact: true })).toBeVisible();
         await expect(
             page
                 .getByRole('listitem')
                 .filter({ has: page.getByText('bank', { exact: true }) }),
         ).toHaveCount(1);
+
         await page.reload();
         await expect(
             page.getByText('accounted desktop translation', { exact: true }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1300,17 +1494,20 @@ test.describe('dictionary platform journeys', () => {
                 path.startsWith('/dictionary-generation-jobs/') &&
                 path.endsWith('/accept'),
         );
+
         await signUpAndVerify(
             page,
             syntheticEmail(testInfo, 'batch-owner'),
             '/dictionaries',
         );
+
         await createDictionary(page, `Batch studio ${runId}`);
 
         await chooseDictionarySecondaryAction(
             page,
             'Generate cards from pasted terms',
         );
+
         let batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
@@ -1318,11 +1515,13 @@ test.describe('dictionary platform journeys', () => {
         await batch
             .getByLabel('Terms or phrases')
             .fill(`canvas\nbank\nbank\n${retryableLongTerm}`);
+
         await batch.getByLabel(/^Context/).fill('Art and finance vocabulary');
         await batch.getByRole('button', { name: 'Generate cards' }).click();
         await expect(
             batch.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(page).toHaveURL(/batchGenerationJob=[0-9a-f-]+/);
         const originalReviewUrl = page.url();
 
@@ -1330,12 +1529,15 @@ test.describe('dictionary platform journeys', () => {
         batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await expect(
             batch.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(
             batch.getByText('A matching source appears earlier in this batch.'),
         ).toBeVisible();
+
         await expect(
             batch.getByRole('checkbox', { name: 'Retry row 4' }),
         ).toBeChecked();
@@ -1344,9 +1546,11 @@ test.describe('dictionary platform journeys', () => {
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         const includeFirst = batch.getByRole('checkbox', {
             name: 'Include row 1',
         });
+
         await includeFirst.focus();
         await page.keyboard.press('Tab');
         await page.keyboard.press('Shift+Tab');
@@ -1367,13 +1571,16 @@ test.describe('dictionary platform journeys', () => {
                     right: element.getBoundingClientRect().right,
                 })),
         }));
+
         expect(
             narrowLayout.scrollWidth,
             JSON.stringify(narrowLayout),
         ).toBeLessThanOrEqual(narrowLayout.width + 1);
+
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
 
         const retryResponse = page.waitForResponse(
@@ -1381,41 +1588,51 @@ test.describe('dictionary platform journeys', () => {
                 response.url().endsWith('/retry-pasted-terms') &&
                 response.status() === 202,
         );
+
         await batch
             .getByRole('button', { name: 'Retry selected failures' })
             .click();
+
         await retryResponse;
         await expect(page).not.toHaveURL(originalReviewUrl);
         await expect(
             batch.getByText('No generated cards remain in this review.'),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(batch.getByText(retryableLongTerm)).toBeVisible();
 
         await page.goto(originalReviewUrl);
         batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await expect(
             batch.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await batch.getByLabel('Translation').first().fill('toile révisée');
         await batch.getByRole('button', { name: 'Remove row' }).nth(2).click();
         await batch.getByRole('button', { name: 'Add 2 cards' }).click();
         await expect(
             batch.getByText('The selected cards were added together.'),
         ).toBeVisible();
+
         await expect(
             batch.getByText('The dictionary changed'),
         ).not.toBeVisible();
+
         await expect(
             page.getByText('toile révisée', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('Human + AI', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('AI-generated', { exact: true }),
         ).toBeVisible();
+
         await batch
             .getByRole('button', { name: 'Close batch generation' })
             .click();
@@ -1427,9 +1644,11 @@ test.describe('dictionary platform journeys', () => {
             page,
             'Generate cards from pasted terms',
         );
+
         batch = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await batch.getByLabel('Terms or phrases').fill('empty pair term');
         await batch.getByRole('button', { name: 'Generate cards' }).click();
         await expect(
@@ -1445,16 +1664,20 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             concurrentPage.getByRole('heading', { name: conflictName }),
         ).toBeVisible();
+
         const concurrentSettings = await openDictionarySettings(concurrentPage);
         await concurrentSettings
             .getByLabel('Translate from')
             .selectOption('de');
+
         await concurrentSettings
             .getByRole('button', { name: 'Save settings' })
             .click();
+
         await expect(
             concurrentPage.getByText('Dictionary settings saved.'),
         ).toBeVisible();
+
         assertNoConcurrentBrowserErrors();
         await concurrentPage.close();
 
@@ -1463,16 +1686,20 @@ test.describe('dictionary platform journeys', () => {
         await batch
             .getByRole('button', { name: 'Reload current versions' })
             .click();
+
         await expect(batch.getByText('The dictionary changed')).toBeVisible();
         await expect(
             batch.getByRole('button', { name: 'Add 1 cards' }),
         ).toBeDisabled();
+
         await batch
             .getByRole('button', { name: 'Close batch generation' })
             .click();
+
         await expect(
             page.getByRole('listitem').filter({ hasText: 'empty pair term' }),
         ).toHaveCount(0);
+
         assertNoBrowserErrors();
     });
 
@@ -1484,23 +1711,27 @@ test.describe('dictionary platform journeys', () => {
             process.env.AUTH_E2E_DOCUMENT_SERVICES !== 'true',
             'Requires the guarded disposable MinIO document service.',
         );
+
         test.setTimeout(90_000);
         const assertNoBrowserErrors = captureBrowserErrors(
             page,
             (path, status) => path === '/auth/sign-up' && status === 429,
         );
+
         await signUpAndVerifyOrSignInAfterRateLimit(
             page,
             syntheticEmail(testInfo, 'document-owner'),
             '/dictionaries',
             syntheticEmail(testInfo, 'owner'),
         );
+
         await createDictionary(page, `Document studio ${runId}`);
 
         await chooseDictionarySecondaryAction(
             page,
             'Generate cards from a document',
         );
+
         let review = page.getByRole('dialog', {
             name: 'Generate cards from a document',
         });
@@ -1510,25 +1741,31 @@ test.describe('dictionary platform journeys', () => {
             mimeType: 'text/plain',
             name: 'terms.txt',
         });
+
         await review
             .getByLabel(/^Generation instruction/)
             .fill('Use concise studio vocabulary.');
+
         await review
             .getByRole('button', { name: 'Upload and generate cards' })
             .click();
+
         await expect(page).toHaveURL(/documentGenerationJob=[0-9a-f-]+/);
         await expect(
             review.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 30_000 });
+
         const originalDocumentReviewUrl = page.url();
 
         await page.reload();
         review = page.getByRole('dialog', {
             name: 'Generate cards from a document',
         });
+
         await expect(
             review.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 30_000 });
+
         await expect(review.getByText('Extracted term: canvas')).toBeVisible();
         await expect(review.getByText('Extracted term: bank')).toBeVisible();
         await expect(
@@ -1542,23 +1779,28 @@ test.describe('dictionary platform journeys', () => {
                 response.url().endsWith('/retry-document-terms') &&
                 response.status() === 202,
         );
+
         await review
             .getByRole('button', { name: 'Retry selected failures' })
             .click();
+
         await retryResponse;
         await expect(page).toHaveURL(/batchGenerationJob=[0-9a-f-]+/);
         const successor = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await expect(
             successor.getByText('No generated cards remain in this review.'),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(successor.getByText(retryableLongTerm)).toBeVisible();
 
         await page.goto(originalDocumentReviewUrl);
         review = page.getByRole('dialog', {
             name: 'Generate cards from a document',
         });
+
         await expect(
             review.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
@@ -1573,9 +1815,11 @@ test.describe('dictionary platform journeys', () => {
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         const includeFirst = review.getByRole('checkbox', {
             name: 'Include extracted term 1',
         });
+
         await includeFirst.focus();
         await page.keyboard.press('Tab');
         await page.keyboard.press('Shift+Tab');
@@ -1587,21 +1831,26 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
 
         await review.getByRole('button', { name: 'Add 1 cards' }).click();
         await expect(
             review.getByText('Selected document cards were added.'),
         ).toBeVisible();
+
         await expect(
             page.getByText('lienzo revisado', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('Human + AI', { exact: true }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1615,10 +1864,12 @@ test.describe('dictionary platform journeys', () => {
                 value: undefined,
             });
         });
+
         const assertNoBrowserErrors = captureBrowserErrors(
             page,
             (path, status) => path === '/auth/sign-up' && status === 429,
         );
+
         await signUpAndVerifyOrSignInAfterRateLimit(
             page,
             syntheticEmail(testInfo, 'interchange-owner'),
@@ -1632,12 +1883,14 @@ test.describe('dictionary platform journeys', () => {
         const importer = page.getByRole('dialog', {
             name: 'Preview and import cards',
         });
+
         await importer.getByLabel('Column separator').selectOption('comma');
         await importer
             .getByRole('checkbox', {
                 name: 'The first row contains column names',
             })
             .check();
+
         await importer
             .getByLabel('Import text')
             .fill(
@@ -1650,18 +1903,22 @@ test.describe('dictionary platform journeys', () => {
                     `"${longUnbrokenSource}","long source"`,
                 ].join('\n'),
             );
+
         await importer.getByRole('button', { name: 'Preview import' }).click();
         await expect(
             importer.getByText('4 ready, 1 need attention, 5 total'),
         ).toBeVisible();
+
         await expect(
             importer.getByText(
                 '1 duplicate source rows will be imported with warnings.',
             ),
         ).toBeVisible();
+
         const enrichmentSwitch = importer.getByRole('switch', {
             name: 'Enrich selected pairs with AI',
         });
+
         await enrichmentSwitch.focus();
         await page.keyboard.press('Space');
         await expect(enrichmentSwitch).toBeChecked();
@@ -1670,14 +1927,17 @@ test.describe('dictionary platform journeys', () => {
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         await importer
             .getByRole('button', { name: 'Generate 4 card reviews' })
             .focus();
+
         await expect(
             importer.getByRole('button', {
                 name: 'Generate 4 card reviews',
             }),
         ).toBeFocused();
+
         expect(
             await page.evaluate(
                 () =>
@@ -1685,37 +1945,47 @@ test.describe('dictionary platform journeys', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
         await importer
             .getByRole('button', { name: 'Generate 4 card reviews' })
             .click();
+
         let review = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await expect(
             review.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(page).toHaveURL(
             /\/dictionaries\/[0-9a-f-]+\?batchGenerationJob=[0-9a-f-]+/u,
         );
+
         await page.reload();
         review = page.getByRole('dialog', {
             name: 'Generate cards from pasted terms',
         });
+
         await expect(
             review.getByRole('heading', { name: 'Review generated cards' }),
         ).toBeVisible({ timeout: 20_000 });
+
         await review.getByRole('button', { name: 'Add 4 cards' }).click();
         await expect(
             review.getByText('The selected cards were added together.'),
         ).toBeVisible();
+
         await expect(page.getByText('fórmula', { exact: true })).toBeVisible();
         await expect(
             page.getByText('Human + AI', { exact: true }).first(),
         ).toBeVisible();
+
         await review.getByRole('button', { name: 'Cancel' }).click();
 
         await chooseDictionarySecondaryAction(page, 'Export');
@@ -1726,6 +1996,7 @@ test.describe('dictionary platform journeys', () => {
         await exporter
             .getByRole('button', { name: 'Download Quizlet CSV' })
             .click();
+
         const download = await downloadPromise;
         const downloadPath = await download.path();
         expect(downloadPath).not.toBeNull();
@@ -1748,12 +2019,14 @@ test.describe('dictionary platform journeys', () => {
             page,
             (path, status) => path === '/auth/sign-up' && status === 429,
         );
+
         await signUpAndVerifyOrSignInAfterRateLimit(
             page,
             syntheticEmail(testInfo, 'inline-authoring'),
             '/dictionaries',
             syntheticEmail(testInfo, 'owner'),
         );
+
         await createDictionary(page, `Inline AI Spanish ${runId}`);
         const settings = await openDictionarySettings(page);
         const inheritedContext = 'Fine-art studio terminology';
@@ -1765,6 +2038,7 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             page.getByText('Dictionary settings saved.'),
         ).toBeVisible();
+
         await settings
             .getByRole('button', { name: 'Cancel', exact: true })
             .first()
@@ -1775,6 +2049,7 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             editor.getByText(inheritedContext, { exact: true }),
         ).toBeVisible();
+
         const source = editor.getByRole('textbox', {
             name: /^Source word or phrase/,
         });
@@ -1784,6 +2059,7 @@ test.describe('dictionary platform journeys', () => {
         const definition = editor.getByRole('textbox', {
             name: /^Definition \(/,
         });
+
         await source.fill('teh atelier');
         await expectCompactAuthoringRow(source);
         await expectCompactAuthoringRow(translation);
@@ -1791,10 +2067,12 @@ test.describe('dictionary platform journeys', () => {
             name: 'Generate Translation with AI',
             exact: true,
         });
+
         await translationAction.hover();
         await expect(page.getByRole('tooltip')).toHaveText(
             'Generate Translation with AI',
         );
+
         await page.mouse.move(0, 0);
         await page.screenshot({
             path: testInfo.outputPath('compact-authoring-wide.png'),
@@ -1803,15 +2081,18 @@ test.describe('dictionary platform journeys', () => {
         await editor
             .getByRole('button', { name: 'Regenerate Source', exact: true })
             .click();
+
         await expect(source).toHaveValue('the atelier', { timeout: 20_000 });
         await expect(
             editor.getByRole('navigation', { name: 'Card form versions' }),
         ).toHaveCount(0);
+
         await expect(translation).toHaveValue('');
         await expect(editor.getByTestId('ai-review-source')).toHaveCount(0);
         await expect(
             editor.getByRole('button', { name: /^(Accept|Reject)/ }),
         ).toHaveCount(0);
+
         await expect(
             page.getByRole('listitem').filter({ hasText: 'the atelier' }),
         ).toHaveCount(0);
@@ -1822,16 +2103,20 @@ test.describe('dictionary platform journeys', () => {
                 exact: true,
             })
             .click();
+
         await expect(translation).toHaveValue('the atelier (es)', {
             timeout: 20_000,
         });
+
         await expect(definition).not.toHaveValue('');
         await expect(
             editor.getByRole('textbox', { name: /^Context example \(/ }),
         ).not.toHaveValue('');
+
         await expect(
             editor.getByRole('textbox', { name: /^Example translation \(/ }),
         ).not.toHaveValue('');
+
         await expect(editor.getByText('Version 2 of 2')).toBeVisible();
         const displayedTranslation = await translation.inputValue();
         await editor
@@ -1840,13 +2125,16 @@ test.describe('dictionary platform journeys', () => {
                 exact: true,
             })
             .click();
+
         await expect(editor.getByText('Version 3 of 3')).toBeVisible({
             timeout: 20_000,
         });
+
         await expect(translation).not.toHaveValue(displayedTranslation);
         await editor
             .getByRole('button', { name: 'Previous form version' })
             .click();
+
         await expect(editor.getByText('Version 2 of 3')).toBeVisible();
         await expect(translation).toHaveValue(displayedTranslation);
         await expect(
@@ -1855,11 +2143,13 @@ test.describe('dictionary platform journeys', () => {
                 exact: true,
             }),
         ).toBeDisabled();
+
         await definition.fill('A manually refined place where artists work.');
         await page.setViewportSize({ width: 320, height: 900 });
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '200%';
         });
+
         await expectCompactAuthoringRow(source);
         await expectCompactAuthoringRow(translation);
         await page.screenshot({
@@ -1870,6 +2160,7 @@ test.describe('dictionary platform journeys', () => {
             Array.from(document.querySelectorAll('body *'))
                 .filter((element) => {
                     const bounds = element.getBoundingClientRect();
+
                     return (
                         bounds.width > 0 &&
                         bounds.right > document.documentElement.clientWidth + 1
@@ -1883,6 +2174,7 @@ test.describe('dictionary platform journeys', () => {
                     width: element.getBoundingClientRect().width,
                 })),
         );
+
         expect(
             await page.evaluate(
                 () =>
@@ -1891,25 +2183,31 @@ test.describe('dictionary platform journeys', () => {
             ),
             JSON.stringify(overflowNodes),
         ).toBe(true);
+
         await page.evaluate(() => {
             document.documentElement.style.fontSize = '';
         });
+
         await page.setViewportSize({ width: 1280, height: 720 });
         await editor
             .getByRole('button', { name: 'Create card', exact: true })
             .click();
+
         await expect(editor).not.toBeVisible();
         await expect(
             page.getByText(displayedTranslation, { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('A manually refined place where artists work.', {
                 exact: true,
             }),
         ).toBeVisible();
+
         await expect(
             page.getByText('Human + AI', { exact: true }).first(),
         ).toBeVisible();
+
         await page.reload();
         await expect(
             page.getByText(displayedTranslation, { exact: true }),
@@ -1924,30 +2222,37 @@ test.describe('dictionary platform journeys', () => {
         const secondTranslation = editor.getByRole('textbox', {
             name: /^Translation/,
         });
+
         await secondSource.fill('teh studio');
         await secondTranslation.fill('manual studio');
         await editor
             .getByRole('button', { name: 'Regenerate Source', exact: true })
             .click();
+
         await expect(secondSource).toHaveValue('the studio', {
             timeout: 20_000,
         });
+
         await expect(editor.getByText('Version 2 of 2')).toBeVisible();
         await editor
             .getByRole('button', { name: 'Previous form version' })
             .click();
+
         await expect(secondSource).toHaveValue('teh studio');
         await expect(secondTranslation).toHaveValue('manual studio');
         await editor
             .getByRole('button', { name: 'Create card', exact: true })
             .click();
+
         await expect(editor).not.toBeVisible();
         await expect(
             page.getByText('teh studio', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText('manual studio', { exact: true }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -1960,12 +2265,14 @@ test.describe('dictionary platform journeys', () => {
             page,
             (path, status) => path === '/auth/sign-up' && status === 429,
         );
+
         await signUpAndVerifyOrSignInAfterRateLimit(
             page,
             syntheticEmail(testInfo, 'saved-inline-authoring'),
             '/dictionaries',
             syntheticEmail(testInfo, 'owner'),
         );
+
         await createDictionary(page, `Saved inline AI Spanish ${runId}`);
         await addPopulatedCard(page);
         await chooseCardAction(page, 'work of art', 'Edit');
@@ -1980,21 +2287,26 @@ test.describe('dictionary platform journeys', () => {
             'Manual refinement included in the automatic save.';
         const overrideContext =
             'A gallery discussing the meaning of an artwork.';
+
         await definition.fill(manualDefinition);
         await editor.getByLabel('Set context').check();
         await editor
             .getByRole('textbox', { name: /Card context/ })
             .fill(overrideContext);
+
         // A Source-only success saves unrelated manual values as part of the complete form.
         await editor
             .getByRole('textbox', { name: /^Source word or phrase/ })
             .fill('teh work of art');
+
         await editor
             .getByRole('button', { name: 'Regenerate Source', exact: true })
             .click();
+
         await expect(
             editor.getByText('Generated content saved.', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(editor).toBeVisible();
         await expect(editor.getByText('Version 2 of 2')).toBeVisible();
         await expect(definition).toHaveValue(manualDefinition);
@@ -2004,6 +2316,7 @@ test.describe('dictionary platform journeys', () => {
         const card = page
             .getByRole('listitem')
             .filter({ hasText: normalizedSource });
+
         await expect(
             card.getByText(manualDefinition, { exact: true }),
         ).toBeVisible();
@@ -2011,23 +2324,29 @@ test.describe('dictionary platform journeys', () => {
         await editor
             .getByRole('button', { name: 'Regenerate all fields', exact: true })
             .click();
+
         await expect(translation).toHaveValue(`${normalizedSource} (es)`, {
             timeout: 20_000,
         });
+
         await expect(
             editor.getByText('Generated content saved.', { exact: true }),
         ).toBeVisible({ timeout: 20_000 });
+
         await expect(editor.getByText('Version 3 of 3')).toBeVisible();
         await expect(
             editor.getByRole('textbox', { name: /Card context/ }),
         ).toHaveValue(overrideContext);
+
         const savedTranslation = await translation.inputValue();
         await expect(
             card.getByText(savedTranslation, { exact: true }),
         ).toBeVisible();
+
         await editor
             .getByRole('button', { name: 'Previous form version' })
             .click();
+
         await expect(editor.getByText('Version 2 of 3')).toBeVisible();
         await expect(translation).toHaveValue('obra de arte');
         await expect(
@@ -2036,29 +2355,36 @@ test.describe('dictionary platform journeys', () => {
                 exact: true,
             }),
         ).toBeDisabled();
+
         // Navigation is a local preview; the dictionary still shows the saved latest result.
         await expect(
             card.getByText(savedTranslation, { exact: true }),
         ).toBeVisible();
+
         await editor
             .getByRole('button', { name: 'Save card', exact: true })
             .click();
+
         await expect(editor).not.toBeVisible();
         await page.reload();
         await expect(
             page.getByText('obra de arte', { exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByText(manualDefinition, { exact: true }),
         ).toBeVisible();
+
         await chooseCardAction(page, normalizedSource, 'Edit');
         const reopened = page.getByRole('dialog', { name: 'Edit card' });
         await expect(
             reopened.getByRole('navigation', { name: 'Card form versions' }),
         ).toHaveCount(0);
+
         await expect(
             reopened.getByRole('textbox', { name: /Card context/ }),
         ).toHaveValue(overrideContext);
+
         await reopened
             .getByRole('button', { name: 'Close', exact: true })
             .last()
@@ -2069,18 +2395,22 @@ test.describe('dictionary platform journeys', () => {
             normalizedSource,
             'Rewrite full card with AI',
         );
+
         const advanced = page.getByRole('dialog', {
             name: 'Regenerate card with AI',
         });
+
         await expect(
             advanced.getByRole('button', {
                 name: 'Generate proposal',
                 exact: true,
             }),
         ).toBeVisible();
+
         await expect(
             advanced.getByLabel('Instruction for this review (optional)'),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 });

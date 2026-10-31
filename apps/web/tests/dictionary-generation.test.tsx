@@ -179,6 +179,7 @@ describe('dictionary generation review', () => {
         HTMLDialogElement.prototype.showModal = function showModalForTest() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function closeForTest() {
             this.removeAttribute('open');
         };
@@ -196,6 +197,7 @@ describe('dictionary generation review', () => {
                 dictionaryVersion: dictionary.version,
             }),
         ).toBe(true);
+
         expect(
             isGenerationJobStale(reviewJob, {
                 card,
@@ -209,23 +211,29 @@ describe('dictionary generation review', () => {
         expect(
             screen.getByText('<script>alert(1)</script>'),
         ).toBeInTheDocument();
+
         expect(
             screen.getByText(/<svg onload=alert\(1\)>Fixed expression/),
         ).toBeInTheDocument();
+
         expect(
             screen.getByText('<iframe src=javascript:alert(1)>Review register'),
         ).toBeInTheDocument();
+
         expect(
             container.querySelector('script, img, svg[onload], iframe'),
         ).toBeNull();
+
         expect(screen.getAllByDisplayValue('تمييز')[0]).toHaveAttribute(
             'lang',
             'ar',
         );
+
         expect(screen.getAllByDisplayValue('تمييز')[0]).toHaveAttribute(
             'dir',
             'rtl',
         );
+
         expect(
             screen.getAllByText('يميّز القيّم بين الفترتين.')[0],
         ).toHaveAttribute('lang', 'ar');
@@ -252,6 +260,7 @@ describe('dictionary generation review', () => {
                 transcription: 'A stored disabled transcription',
             },
         };
+
         panel({
             onAccept,
             job: {
@@ -264,12 +273,15 @@ describe('dictionary generation review', () => {
         const alternative = screen
             .getByText('<b>distinguish</b>')
             .closest('li')!;
+
         await user.click(
             within(alternative).getByRole('button', { name: 'Use this' }),
         );
+
         const translation = within(
             screen.getByRole('region', { name: /^Translation/ }),
         ).getByRole('textbox');
+
         await user.clear(translation);
         await user.type(translation, 'تمييز جديد');
         await user.click(
@@ -284,6 +296,7 @@ describe('dictionary generation review', () => {
                 translation: 'تمييز جديد',
             },
         });
+
         expect(onAccept.mock.calls[0]?.[0]).not.toHaveProperty('authorship');
     });
 
@@ -339,10 +352,12 @@ describe('dictionary generation review', () => {
                 },
             },
         });
+
         expect(screen.getByDisplayValue(source)).toBeInTheDocument();
         const accept = screen.getByRole('button', {
             name: 'Accept and update card',
         });
+
         expect(accept).toBeDisabled();
         await user.click(accept);
         expect(onAccept).not.toHaveBeenCalled();
@@ -355,9 +370,11 @@ describe('dictionary generation review', () => {
         expect(
             screen.getByRole('button', { name: 'Accept and update card' }),
         ).toBeDisabled();
+
         await user.click(
             screen.getByRole('button', { name: 'Reload and compare' }),
         );
+
         await waitFor(() => expect(onReloadCompare).toHaveBeenCalledOnce());
     });
 
@@ -368,6 +385,7 @@ describe('dictionary generation review', () => {
         expect(
             screen.getByRole('button', { name: 'Regenerate' }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Accept and update card' }),
         ).toBeEnabled();

@@ -39,23 +39,33 @@ export function SentenceDetail({
     useEffect(() => {
         setDetail(null);
         setError(null);
-        if (!exerciseId) return;
+        if (!exerciseId) {
+            return;
+        }
+
         const controller = new AbortController();
         setLoading(true);
         void adminApi
             .sentence(userId, dictionaryId, exerciseId, controller.signal)
             .then((response) => {
-                if (!controller.signal.aborted) setDetail(response);
+                if (!controller.signal.aborted) {
+                    setDetail(response);
+                }
             })
             .catch((caught: unknown) => {
-                if (!controller.signal.aborted)
+                if (!controller.signal.aborted) {
                     setError(normalizeSentenceError(caught));
+                }
             })
             .finally(() => {
-                if (!controller.signal.aborted) setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             });
+
         return () => controller.abort();
     }, [dictionaryId, exerciseId, revision, userId]);
+
     const retry = () => setRevision((value) => value + 1);
     const descriptions = detail
         ? [
@@ -89,6 +99,7 @@ export function SentenceDetail({
               },
           ]
         : [];
+
     return (
         <Drawer
             className={styles.drawer}
@@ -157,6 +168,7 @@ export function SentenceDetail({
                                         hint.kind === 'contextual'
                                             ? 'contextual'
                                             : 'dictionaryHint';
+
                                     return (
                                         <div
                                             className={styles.hint}

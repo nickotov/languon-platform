@@ -9,6 +9,7 @@ const repositoryRoot = resolve(
     dirname(fileURLToPath(import.meta.url)),
     '../..',
 );
+
 export const defaultHistoryPath = resolve(
     repositoryRoot,
     'docs/operations/resource-profile/history.jsonl',
@@ -39,6 +40,7 @@ const jsonForHtml = (value) =>
 
 export function renderDashboard(observations) {
     const data = jsonForHtml(observations);
+
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -92,11 +94,15 @@ export async function generateDashboard({
     try {
         text = await readFile(historyPath, 'utf8');
     } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
     }
+
     const observations = parseHistory(text);
     await mkdir(dirname(outputPath), { recursive: true });
     await writeFile(outputPath, renderDashboard(observations), 'utf8');
+
     return { observations: observations.length, outputPath };
 }
 
@@ -113,6 +119,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                 ? resolve(process.argv[outputIndex + 1])
                 : undefined,
     });
+
     console.log(
         `Resource dashboard: ${result.outputPath} (${result.observations} observations)`,
     );

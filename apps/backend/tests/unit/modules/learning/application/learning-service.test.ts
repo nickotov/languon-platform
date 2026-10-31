@@ -38,11 +38,13 @@ describe('learning service admission and identity', () => {
             { configuration, scope: { type: 'all' } },
             context(),
         );
+
         await f.service.prepare(
             owner,
             { configuration, scope: { type: 'all' } },
             context(),
         );
+
         await f.service.listEntries(shared, { limit: 25 }, context());
         await f.service.listEntries(owner, { limit: 25 }, context());
         await f.service.savePreferences(
@@ -50,6 +52,7 @@ describe('learning service admission and identity', () => {
             { configuration, shuffle: true, expectedVersion: 0 },
             context(),
         );
+
         const redis = createAuthenticationRedisClient({
             url: 'redis://127.0.0.1:1',
         });
@@ -62,6 +65,7 @@ describe('learning service admission and identity', () => {
             'No network needed for scope validation',
             'AbortError',
         );
+
         controller.abort(cancelled);
         try {
             // The production validator runs before cancellation/transport. Invalid scopes
@@ -72,11 +76,13 @@ describe('learning service admission and identity', () => {
                     limiter.consume({ ...request, signal: controller.signal }),
                 ).rejects.toBe(cancelled);
             }
+
             expect(redis.status).toBe('wait');
         } finally {
             redis.disconnect();
         }
     });
+
     it('exposes disabled capabilities and does not touch auth or storage when disabled', async () => {
         const f = fixture(false);
         expect(f.service.capabilities()).toEqual({ flashcardsEnabled: false });
@@ -87,11 +93,14 @@ describe('learning service admission and identity', () => {
                 context(),
             ),
         ).rejects.toBeInstanceOf(DictionaryServiceUnavailableError);
+
         expect(
             f.dependencies.authentication.authenticate,
         ).not.toHaveBeenCalled();
+
         expect(f.store.prepare).not.toHaveBeenCalled();
     });
+
     it('permits anonymous shared content, forwarding only verified digest', async () => {
         const f = fixture();
         f.store.items.mockResolvedValue({ items: [], unavailableEntryIds: [] });
@@ -108,15 +117,18 @@ describe('learning service admission and identity', () => {
             input,
             c,
         );
+
         expect(
             f.dependencies.authentication.authenticate,
         ).not.toHaveBeenCalled();
     });
+
     it('never degrades a supplied invalid bearer to anonymous', async () => {
         const f = fixture();
         f.dependencies.authentication.authenticate.mockRejectedValue(
             new InvalidAccessTokenError(),
         );
+
         await expect(
             f.service.listEntries(
                 { ...shared, accessToken: 'invalid' },
@@ -124,16 +136,20 @@ describe('learning service admission and identity', () => {
                 context(),
             ),
         ).rejects.toBeInstanceOf(InvalidAccessTokenError);
+
         expect(
             f.dependencies.dictionaries.findSharedCandidate,
         ).not.toHaveBeenCalled();
+
         expect(f.store.listEntries).not.toHaveBeenCalled();
     });
+
     it('requires identity for private and personal operations', async () => {
         const f = fixture();
         await expect(
             f.service.progress(shared, context()),
         ).rejects.toBeInstanceOf(LearningAuthenticationRequiredError);
+
         await expect(
             f.service.listEntries(
                 { kind: 'owner', dictionaryId: 'dictionary' },
@@ -141,8 +157,10 @@ describe('learning service admission and identity', () => {
                 context(),
             ),
         ).rejects.toBeInstanceOf(LearningAuthenticationRequiredError);
+
         expect(f.store.progress).not.toHaveBeenCalled();
     });
+
     it('does not authorize a revoked capability', async () => {
         const f = fixture();
         f.dependencies.cryptography.verifyShare.mockReturnValue(false);
@@ -153,8 +171,10 @@ describe('learning service admission and identity', () => {
                 context(),
             ),
         ).rejects.toBeInstanceOf(SharedDictionaryNotFoundError);
+
         expect(f.store.prepare).not.toHaveBeenCalled();
     });
+
     it('uses signed-in learner identity and distinct write admission, not shared read quota', async () => {
         const f = fixture();
         const input = {
@@ -166,42 +186,51 @@ describe('learning service admission and identity', () => {
             rating: 'known' as const,
             round: 1,
         };
+
         await f.service.recordAttempt(
             { ...shared, accessToken: 'token' },
             input,
             context(),
         );
+
         expect(f.store.recordAttempt.mock.calls[0]?.[0]).toEqual({
             kind: 'shared',
             shareId: 'share',
             keyDigest: 'digest',
             learnerId: 'learner',
         });
+
         expect(
             f.dependencies.rateLimiter.consume.mock.calls.map(
                 ([call]) => call.scope,
             ),
         ).toEqual(['learning.public', 'learning.write.learner']);
     });
+
     it('fails closed when rate limiting is unavailable or denied', async () => {
         const f = fixture();
         f.dependencies.rateLimiter.consume.mockRejectedValueOnce(
             new RateLimitUnavailableError(),
         );
+
         await expect(
             f.service.getPreferences(owner, context()),
         ).rejects.toBeInstanceOf(DictionaryServiceUnavailableError);
+
         f.dependencies.rateLimiter.consume.mockResolvedValueOnce({
             allowed: false,
             limit: 180,
             remaining: 0,
             retryAfterSeconds: 10,
         });
+
         await expect(
             f.service.getPreferences(owner, context()),
         ).rejects.toBeInstanceOf(DictionaryRateLimitError);
+
         expect(f.store.getPreferences).not.toHaveBeenCalled();
     });
+
     it('honors cancellation before admission or database work', async () => {
         const f = fixture();
         const controller = new AbortController();
@@ -212,6 +241,7 @@ describe('learning service admission and identity', () => {
                 signal: controller.signal,
             }),
         ).rejects.toThrow();
+
         expect(f.dependencies.rateLimiter.consume).not.toHaveBeenCalled();
     });
 });

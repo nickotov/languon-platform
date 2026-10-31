@@ -85,6 +85,7 @@ function DictionaryLauncher(props: TrainingLauncherProps) {
             }),
         [signedIn, requestWithSession],
     );
+
     return <FlashcardPracticeLauncher {...props} api={api} />;
 }
 

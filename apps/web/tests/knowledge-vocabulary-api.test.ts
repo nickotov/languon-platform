@@ -15,6 +15,7 @@ const make = () =>
         access,
         requestWithSession: (request) => request('private-token'),
     });
+
 afterEach(() => vi.unstubAllGlobals());
 describe('direct note flashcard transport', () => {
     it('reuses private progress without saving a dictionary and keeps share authority in headers', async () => {
@@ -28,6 +29,7 @@ describe('direct note flashcard transport', () => {
                 }),
             ),
         );
+
         vi.stubGlobal('fetch', fetch);
         expect(await make().getProgress()).toEqual({
             total: 2,
@@ -35,10 +37,12 @@ describe('direct note flashcard transport', () => {
             again: 0,
             unstudied: 1,
         });
+
         const [url, options] = fetch.mock.calls[0]!;
         expect(url).toContain(
             `/knowledge/${noteId}/vocabulary/${blockId}/learning/progress`,
         );
+
         expect(url).not.toContain(access.key);
         expect(url).not.toContain('dictionary');
         expect(options.headers).toMatchObject({
@@ -47,8 +51,10 @@ describe('direct note flashcard transport', () => {
             'X-Languon-Share-Locator': access.locator,
             'X-Languon-Share-Kind': 'workbook',
         });
+
         expect(options.cache).toBe('no-store');
     });
+
     it('uses canonical access-loss errors so existing session clears material after revocation', async () => {
         vi.stubGlobal(
             'fetch',
@@ -65,12 +71,15 @@ describe('direct note flashcard transport', () => {
                 ),
             ),
         );
+
         const error = await make()
             .getProgress()
             .catch((error) => error);
+
         expect(error).toBeInstanceOf(FlashcardApiError);
         expect(error.code).toBe('source_not_found');
     });
+
     it('retries the same attempt operation unchanged instead of silently generating another identity', async () => {
         const operationId = '00000000-0000-4000-8000-000000000003';
         const fetch = vi
@@ -86,6 +95,7 @@ describe('direct note flashcard transport', () => {
                     }),
                 ),
             );
+
         vi.stubGlobal('fetch', fetch);
         const api = make();
         const input = {
@@ -100,6 +110,7 @@ describe('direct note flashcard transport', () => {
                 back: ['translation' as const],
             },
         };
+
         await expect(api.rate(input)).rejects.toBeInstanceOf(FlashcardApiError);
         await api.rate(input);
         expect(fetch.mock.calls[0]![1].body).toBe(fetch.mock.calls[1]![1].body);

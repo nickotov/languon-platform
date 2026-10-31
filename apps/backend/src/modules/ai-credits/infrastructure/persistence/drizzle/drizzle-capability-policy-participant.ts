@@ -24,7 +24,10 @@ export class DrizzleCapabilityPolicyParticipant {
         capability: CapabilityPolicy['capability'],
     ): Promise<CapabilityPolicy> {
         const cached = admissionPolicyReads(this.tx);
-        if (!cached) return this.readCurrent(capability);
+        if (!cached) {
+            return this.readCurrent(capability);
+        }
+
         let policy = cached.policies.get(capability);
         if (!policy) {
             policy = this.readCurrent(capability);
@@ -71,8 +74,9 @@ export class DrizzleCapabilityPolicyParticipant {
             if (
                 existing.ownerId !== input.ownerId ||
                 existing.jobKind !== input.jobKind
-            )
+            ) {
                 throw new CapabilityPolicyConflictError();
+            }
 
             return existing.policy;
         }
@@ -81,8 +85,10 @@ export class DrizzleCapabilityPolicyParticipant {
             input.policy ??
             (await this.current(capabilityForJob(input.jobKind)));
 
-        if (policy.capability !== capabilityForJob(input.jobKind))
+        if (policy.capability !== capabilityForJob(input.jobKind)) {
             throw new CapabilityPolicyConflictError();
+        }
+
         await this.tx
             .insert(actionChargingPoliciesTable)
             .values({
@@ -103,15 +109,19 @@ export class DrizzleCapabilityPolicyParticipant {
             !pinned ||
             pinned.ownerId !== input.ownerId ||
             pinned.jobKind !== input.jobKind
-        )
+        ) {
             throw new CapabilityPolicyConflictError();
+        }
 
         return pinned.policy;
     }
 
     async settings(): Promise<z.infer<typeof AiAccountingSettingsSchema>> {
         const cached = admissionPolicyReads(this.tx);
-        if (!cached) return this.readSettings();
+        if (!cached) {
+            return this.readSettings();
+        }
+
         cached.settings ??= this.readSettings();
 
         return cached.settings;
@@ -165,14 +175,19 @@ export class DrizzleCapabilityPolicyParticipant {
             )
             .for('share');
 
-        if (membership?.role !== 'owner') throw new AdminAccessDeniedError();
+        if (membership?.role !== 'owner') {
+            throw new AdminAccessDeniedError();
+        }
+
         await this.tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended('ai-accounting-settings', 1920424383))`,
         );
 
         const before = await this.settings();
-        if (before.version !== input.expectedVersion)
+        if (before.version !== input.expectedVersion) {
             throw new CapabilityPolicyConflictError();
+        }
+
         await this.tx.insert(aiAccountingSettingsRevisionsTable).values({
             id: randomUUID(),
             version: before.version + 1,
@@ -187,7 +202,10 @@ export class DrizzleCapabilityPolicyParticipant {
         });
 
         const cached = admissionPolicyReads(this.tx);
-        if (cached) delete cached.settings;
+        if (cached) {
+            delete cached.settings;
+        }
+
         const result = await this.settings();
         await this.tx.insert(adminAuditEventsTable).values({
             id: randomUUID(),
@@ -243,14 +261,19 @@ export class DrizzleCapabilityPolicyParticipant {
             )
             .for('share');
 
-        if (membership?.role !== 'owner') throw new AdminAccessDeniedError();
+        if (membership?.role !== 'owner') {
+            throw new AdminAccessDeniedError();
+        }
+
         await this.tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${input.capability}, 1920424383))`,
         );
 
         const before = await this.current(input.capability);
-        if (before.version !== input.expectedVersion)
+        if (before.version !== input.expectedVersion) {
             throw new CapabilityPolicyConflictError();
+        }
+
         await this.tx.insert(policies).values({
             id: randomUUID(),
             capability: input.capability,

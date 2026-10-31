@@ -13,6 +13,7 @@ export function InterviewMessage({
     locale: InterviewLocale;
 }) {
     const name = interviewText(locale, 'interviewer');
+
     return (
         <article className={styles.interviewerMessage} aria-label={name}>
             <span className={styles.interviewerAvatar} aria-hidden>

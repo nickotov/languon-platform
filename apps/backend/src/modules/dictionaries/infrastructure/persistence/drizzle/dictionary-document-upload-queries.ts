@@ -50,8 +50,10 @@ export async function expireUploadAuthorizations(
                 .where(eq(dictionaryGenerationJobsTable.id, upload.jobId))
                 .for('update');
 
-            if (job && usesLegacyAction(job.selectedExecutionSnapshot))
+            if (job && usesLegacyAction(job.selectedExecutionSnapshot)) {
                 await settleAiCreditAttempt(tx, job, input.context.now);
+            }
+
             if (job?.aiCreditReservationId) {
                 await new DrizzleAiCreditTransactionParticipant(
                     tx,
@@ -115,15 +117,19 @@ export async function readUploadAuthorization(
         )
         .limit(1);
 
-    if (!upload) throw new DictionaryDocumentUploadNotFoundError();
+    if (!upload) {
+        throw new DictionaryDocumentUploadNotFoundError();
+    }
+
     const job = await context.generationStore.read({
         context: input.context,
         jobId: upload.jobId,
         ownerId: input.ownerId,
     });
 
-    if (job.kind !== 'document-terms')
+    if (job.kind !== 'document-terms') {
         throw new DictionaryDocumentUploadNotFoundError();
+    }
 
     return {
         capabilityExpiresAt: upload.capabilityExpiresAt,
@@ -171,8 +177,9 @@ export async function loadDocumentUploadForWorker(
         )
         .limit(1);
 
-    if (!row?.upload.verifiedStorageVersionId || !row.upload.detectedFormat)
+    if (!row?.upload.verifiedStorageVersionId || !row.upload.detectedFormat) {
         return null;
+    }
 
     return {
         checksumSha256: row.upload.verifiedChecksumSha256!,
@@ -195,7 +202,10 @@ export async function persistObservedVersions(
     >[0]['versions'],
     preserveCurrent: boolean,
 ) {
-    if (versions.length === 0) return;
+    if (versions.length === 0) {
+        return;
+    }
+
     await tx.insert(dictionaryDocumentObjectVersionsTable).values(
         versions.map((version) => ({
             checksumSha256: version.checksumSha256,

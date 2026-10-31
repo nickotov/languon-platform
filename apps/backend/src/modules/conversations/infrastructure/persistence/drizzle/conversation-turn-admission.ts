@@ -112,11 +112,12 @@ export async function conversationSubmit(
                 );
 
             if (existing) {
-                if (existing.requestFingerprint !== fingerprint)
+                if (existing.requestFingerprint !== fingerprint) {
                     throw new ConversationError(
                         'idempotency_conflict',
                         'This request identifier has already been used.',
                     );
+                }
 
                 return turnView(existing);
             }
@@ -138,10 +139,11 @@ export async function conversationSubmit(
                     prepared.snapshot.title !== currentSnapshot.title ||
                     prepared.snapshot.studiedLanguage !==
                         currentSnapshot.studiedLanguage
-                )
+                ) {
                     throw conflict(
                         'The conversation or its source changed while preparing your message. Review it and send again.',
                     );
+                }
             }
 
             const snapshot = prepared?.snapshot ?? currentSnapshot;
@@ -155,11 +157,13 @@ export async function conversationSubmit(
                     ),
                 );
 
-            if (active)
+            if (active) {
                 throw new ConversationError(
                     'response_active',
                     'A response is already active.',
                 );
+            }
+
             const sharedKnowledge = assertConversationEditorAuthority(
                 chat.source,
                 input,
@@ -169,17 +173,19 @@ export async function conversationSubmit(
                 !sharedKnowledge &&
                 !input.retryOf;
 
-            if (workspace)
+            if (workspace) {
                 assertWorkspaceTurnContext(
                     input,
                     persistence.dependencies.workspaceContextLimits ??
                         defaultWorkspaceContextLimits,
                 );
-            else if (input.editorContext && chat.sourceKind !== 'knowledge')
+            } else if (input.editorContext && chat.sourceKind !== 'knowledge') {
                 throw new ConversationError(
                     'invalid_editor_context',
                     'Editor context is only available in a Knowledge workspace.',
                 );
+            }
+
             if (workspace && input.editorContext?.workingBranch) {
                 const selectedBranch = input.editorContext.workingBranch;
                 snapshot.blockTarget = await captureConversationBlockTarget(
@@ -208,10 +214,12 @@ export async function conversationSubmit(
                 if (
                     !previous ||
                     !['failed', 'cancelled'].includes(previous.status)
-                )
+                ) {
                     throw conflict(
                         'Only an incomplete response can be retried.',
                     );
+                }
+
                 const [original] = await tx
                     .select()
                     .from(messages)
@@ -222,7 +230,10 @@ export async function conversationSubmit(
                         ),
                     );
 
-                if (!original) throw conversationUnavailable();
+                if (!original) {
+                    throw conversationUnavailable();
+                }
+
                 learnerContent = original.content;
                 learnerAttachments = original.attachments;
                 retryModelContent = original.modelContent?.[0]?.modelContent;
@@ -233,13 +244,14 @@ export async function conversationSubmit(
                 );
 
                 Object.assign(snapshot, previous.sourceSnapshot);
-                if (snapshot.scope !== 'workspace')
+                if (snapshot.scope !== 'workspace') {
                     assertTutorCurrentMessageFits(
                         projectTutorUserMessage({
                             content: learnerContent,
                             attachments: learnerAttachments,
                         }),
                     );
+                }
             }
 
             if (input.editorContext && !input.retryOf) {
@@ -394,10 +406,12 @@ export async function conversationSubmit(
                     : {}),
             });
 
-            if (execution.confirmationRequired)
+            if (execution.confirmationRequired) {
                 return {
                     quote: ConversationActionQuoteSchema.parse(execution.quote),
                 };
+            }
+
             const now = persistence.now();
             const [turn] = await tx
                 .insert(turns)
@@ -485,8 +499,10 @@ export async function conversationSubmit(
                 .returning();
             const user = inserted.find((row) => row.id === userId);
             const assistant = inserted.find((row) => row.id === assistantId);
-            if (!user || !assistant)
+            if (!user || !assistant) {
                 throw new Error('Conversation messages were not persisted.');
+            }
+
             await tx
                 .update(chats)
                 .set({ updatedAt: now })
@@ -519,8 +535,9 @@ export async function conversationSubmit(
         (tx) => persistence.dependencies.admitTurn.prepare?.(tx),
     );
 
-    if ('quote' in result)
+    if ('quote' in result) {
         throw new ConversationActionConfirmationRequired(result.quote);
+    }
 
     return result;
 }

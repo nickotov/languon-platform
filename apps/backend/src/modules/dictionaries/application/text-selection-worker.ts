@@ -16,14 +16,22 @@ export class TextSelectionWorker {
         private readonly heartbeatMs: number,
         private readonly providerTimeoutMs = 120_000,
     ) {}
+
     async processNext(signal: AbortSignal): Promise<boolean> {
         signal.throwIfAborted();
         const lease = await this.store.claim(this.workerId);
-        if (!lease) return false;
+        if (!lease) {
+            return false;
+        }
+
         const controller = new AbortController(),
             abort = () => controller.abort(signal.reason);
+
         signal.addEventListener('abort', abort, { once: true });
-        if (signal.aborted) abort();
+        if (signal.aborted) {
+            abort();
+        }
+
         let timedOut = false;
         const deadline = setTimeout(() => {
             timedOut = true;
@@ -37,29 +45,40 @@ export class TextSelectionWorker {
                 reject(
                     controller.signal.reason ?? new Error('Worker interrupted'),
                 );
+
             controller.signal.addEventListener('abort', rejectAborted, {
                 once: true,
             });
         });
+
         // Attach a rejection handler even when cancellation wins before dispatch.
         void aborted.catch(() => {});
         let heartbeat: Promise<void> | null = null;
         const timer = setInterval(() => {
-            if (heartbeat) return;
+            if (heartbeat) {
+                return;
+            }
+
             heartbeat = this.store
                 .heartbeat(lease)
                 .then((owned) => {
-                    if (!owned) controller.abort();
+                    if (!owned) {
+                        controller.abort();
+                    }
                 })
                 .catch(() => controller.abort())
                 .finally(() => {
                     heartbeat = null;
                 });
         }, this.heartbeatMs);
+
         timer.unref?.();
         try {
             controller.signal.throwIfAborted();
-            if (!(await this.store.dispatch(lease))) return true;
+            if (!(await this.store.dispatch(lease))) {
+                return true;
+            }
+
             controller.signal.throwIfAborted();
             const result = await Promise.race([
                 this.generator.generate({
@@ -79,6 +98,7 @@ export class TextSelectionWorker {
                 }),
                 aborted,
             ]);
+
             controller.signal.throwIfAborted();
             await this.store.complete(
                 lease,
@@ -102,8 +122,10 @@ export class TextSelectionWorker {
             await heartbeat;
             signal.removeEventListener('abort', abort);
         }
+
         return true;
     }
+
     private fail(lease: SelectionLease, error: unknown, allowRetry = false) {
         const code =
             error instanceof TextSelectionError
@@ -111,6 +133,7 @@ export class TextSelectionWorker {
                 : error instanceof CardAuthoringProposalGeneratorError
                   ? error.category
                   : 'provider_failure';
+
         return this.store.fail(
             lease,
             code,
@@ -122,6 +145,7 @@ export class TextSelectionWorker {
                 : undefined,
         );
     }
+
     async releaseWorkerLeases() {
         await this.store.releaseWorkerLeases(this.workerId);
     }

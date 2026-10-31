@@ -42,6 +42,7 @@ export function KnowledgeBilingualStudy(props: KnowledgeBilingualStudyProps) {
             return language;
         }
     }
+
     const languageNames = Object.fromEntries(
         [
             ...props.block.translations.map((item) => item.language),
@@ -51,23 +52,40 @@ export function KnowledgeBilingualStudy(props: KnowledgeBilingualStudyProps) {
     const overlay = model.translations.find(
         (item) => item.targetLanguage === privateLanguage,
     );
+
     function selectLanguage(language: string) {
         model.setLanguage(TextLanguageSchema.parse(language));
     }
+
     function generate() {
         void model.generate();
     }
+
     function retry() {
         void model.retry();
     }
+
     function cancel() {
         void model.cancel();
     }
+
     let state: LearningPrivateStudy['state'] = 'idle';
-    if (model.loading) state = 'loading';
-    if (model.busy) state = 'generating';
-    if (model.failed) state = 'failed';
-    if (model.unavailable) state = 'unavailable';
+    if (model.loading) {
+        state = 'loading';
+    }
+
+    if (model.busy) {
+        state = 'generating';
+    }
+
+    if (model.failed) {
+        state = 'failed';
+    }
+
+    if (model.unavailable) {
+        state = 'unavailable';
+    }
+
     const study: LearningPrivateStudy = {
         targets: model.targets.map((language) => ({
             language,
@@ -109,7 +127,7 @@ export function KnowledgeBilingualStudy(props: KnowledgeBilingualStudyProps) {
         />
     );
     let library = props.library;
-    if (overlay && library && library.noteVersion !== undefined)
+    if (overlay && library && library.noteVersion !== undefined) {
         library = {
             ...library,
             translationLanguage: overlay.targetLanguage,
@@ -118,6 +136,8 @@ export function KnowledgeBilingualStudy(props: KnowledgeBilingualStudyProps) {
                 updatedAt: overlay.updatedAt,
             },
         };
+    }
+
     return (
         <>
             {props.children({ content, library })}

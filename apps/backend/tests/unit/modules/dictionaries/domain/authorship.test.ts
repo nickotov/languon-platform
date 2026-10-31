@@ -74,6 +74,7 @@ describe('dictionary card authorship', () => {
                 semanticChange: true,
             }).authorship,
         ).toBe('mixed');
+
         expect(
             resolveCardMutationAuthorship({
                 mutationKind: 'ai_proposal_accept',

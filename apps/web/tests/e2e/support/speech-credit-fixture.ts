@@ -32,6 +32,7 @@ export async function speechCreditFixture(
             maxBuffer: 128 * 1024,
         },
     );
+
     return JSON.parse(stdout) as {
         availableCredits: string;
         consumedCredits: string;

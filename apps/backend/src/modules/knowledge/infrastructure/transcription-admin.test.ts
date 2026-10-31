@@ -34,6 +34,7 @@ const actor = () => ({
     sessionId: randomUUID(),
     correlationId: randomUUID(),
 });
+
 function fixture() {
     const input = request();
     const principal = actor();
@@ -54,6 +55,7 @@ function fixture() {
         preview: vi.fn(async () => readiness),
         apply: vi.fn(async () => state),
     } satisfies TranscriptionAdminStore;
+
     return {
         input,
         principal,
@@ -64,6 +66,7 @@ function fixture() {
         ),
     };
 }
+
 describe('Transcription configuration preview authority', () => {
     it('prepares an explicitly disabled configuration without inventing a tariff or writing', async () => {
         const { input, principal, store, service } = fixture();
@@ -73,6 +76,7 @@ describe('Transcription configuration preview authority', () => {
         expect(preview.readiness.ready).toBe(false);
         expect(store.apply).not.toHaveBeenCalled();
     });
+
     it('binds reviewed values to the exact owner session and rejects tampering', async () => {
         const { input, principal, store, service } = fixture();
         const preview = await service.preview(principal, input);
@@ -82,23 +86,27 @@ describe('Transcription configuration preview authority', () => {
                 { request: input, proof: preview.proof },
             ),
         ).rejects.toThrow('changed');
+
         await expect(
             service.apply(principal, {
                 request: { ...input, reason: 'Unreviewed replacement' },
                 proof: preview.proof,
             }),
         ).rejects.toThrow('changed');
+
         expect(store.apply).not.toHaveBeenCalled();
         await service.apply(principal, {
             request: input,
             proof: preview.proof,
         });
+
         expect(store.apply).toHaveBeenCalledWith(
             principal,
             input,
             new Date(preview.proof.expiresAt),
         );
     });
+
     it('invalidates a signed preview after the configured credential rotates without exposing its fingerprint', () => {
         let fingerprint = 'a'.repeat(64);
         const signer = new TranscriptionAdminProof(
@@ -112,12 +120,14 @@ describe('Transcription configuration preview authority', () => {
         expect(signer.verify(principal, input, expiresAt, signature)).toBe(
             true,
         );
+
         expect(JSON.stringify(input)).not.toContain(fingerprint);
         fingerprint = 'b'.repeat(64);
         expect(signer.verify(principal, input, expiresAt, signature)).toBe(
             false,
         );
     });
+
     it('requires separate actual-account evidence, renewed credentials and a nonexpired attestation', () => {
         const config = {
             ...request().config,
@@ -133,6 +143,7 @@ describe('Transcription configuration preview authority', () => {
             attestedCredentialFingerprint: 'a'.repeat(64),
             dataSharingAttestedAt: new Date(),
         };
+
         expect(
             transcriptionAdminReadiness(
                 { ...config, dataSharingDisabled: false },
@@ -140,12 +151,14 @@ describe('Transcription configuration preview authority', () => {
                 options,
             ).reasons,
         ).toContain('data_sharing_unverified');
+
         expect(
             transcriptionAdminReadiness(config, [], {
                 ...options,
                 credentialFingerprint: 'b'.repeat(64),
             }).reasons,
         ).toContain('processing_credentials_changed');
+
         expect(
             transcriptionAdminReadiness(config, [], {
                 ...options,
@@ -155,6 +168,7 @@ describe('Transcription configuration preview authority', () => {
             }).reasons,
         ).toContain('data_sharing_attestation_expired');
     });
+
     it('cannot enable without explicit billing evidence and tariff', async () => {
         const { input, principal, service } = fixture();
         await expect(
@@ -164,11 +178,13 @@ describe('Transcription configuration preview authority', () => {
             }),
         ).rejects.toThrow();
     });
+
     it('fails readiness closed when credentials or execution are missing', () => {
         const result = transcriptionAdminReadiness(null, [], {
             credentialsConfigured: false,
             executionReady: false,
         });
+
         expect(result.ready).toBe(false);
         expect(result.reasons).toEqual(
             expect.arrayContaining([
@@ -179,8 +195,10 @@ describe('Transcription configuration preview authority', () => {
                 'billing_unverified',
             ]),
         );
+
         expect(result.boundedProviderCostMicros).toBeNull();
     });
+
     it('uses a pinned native duration rule to enforce the provider expense bound', () => {
         const price: ProviderPrice = {
             id: randomUUID(),
@@ -233,6 +251,7 @@ describe('Transcription configuration preview authority', () => {
             dataSharingDisabled: true,
             dataSharingEvidence: 'Synthetic actual organization opt-in review',
         };
+
         expect(
             transcriptionAdminReadiness(config, [price], {
                 credentialsConfigured: true,
@@ -246,6 +265,7 @@ describe('Transcription configuration preview authority', () => {
             boundedProviderCostMicros: '4500',
             reasons: [],
         });
+
         expect(
             transcriptionAdminReadiness(
                 {
@@ -256,6 +276,7 @@ describe('Transcription configuration preview authority', () => {
                 { credentialsConfigured: true, executionReady: true },
             ).reasons,
         ).toContain('processing_controls_unapproved');
+
         expect(
             transcriptionAdminReadiness(
                 { ...config, maximumProviderCostMicros: 4499 },

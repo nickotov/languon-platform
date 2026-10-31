@@ -33,11 +33,14 @@ export function ListSection({
     function handleToggle(value: string) {
         onChange({ ...items, [field]: toggleItem(selected, value) });
     }
+
     function handleCustomChange(values: string[]) {
         const kept = selected.filter((value) => suggested.includes(value));
         onChange({ ...items, [field]: [...kept, ...values] });
     }
+
     const remainingMax = max - (selected.length - custom.length);
+
     return (
         <>
             <div role='group' aria-label={text.legend}>
@@ -51,6 +54,7 @@ export function ListSection({
                         const isSelected = existing !== undefined;
                         const isDisabled =
                             disabled || (!isSelected && selected.length >= max);
+
                         return (
                             <ChoiceChip
                                 key={option.value}

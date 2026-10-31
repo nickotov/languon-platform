@@ -9,7 +9,10 @@ import { workspaceProposalLabels } from './workspace-proposal-copy';
 import styles from './workspace-proposal.module.css';
 
 function clip(text: string, maximum: number, fromEnd = false) {
-    if (text.length <= maximum) return text;
+    if (text.length <= maximum) {
+        return text;
+    }
+
     return fromEnd ? `…${text.slice(-maximum)}` : `${text.slice(0, maximum)}…`;
 }
 
@@ -50,7 +53,9 @@ export function WorkspaceProposalPreviewContent({
             </div>
         );
     }
+
     const removed = preview?.original || original;
+
     return (
         <div className={styles.preview} dir='auto'>
             {action === 'append' && preview && (

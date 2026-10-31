@@ -83,6 +83,7 @@ describe('deterministic import-pairs provider', () => {
             await new DeterministicImportPairsProposalGenerator().generate(
                 request,
             );
+
         expect(result.proposal.candidates[0]).toMatchObject({
             rowIndex: 72,
             source: 'bank',
@@ -95,6 +96,7 @@ describe('deterministic import-pairs provider', () => {
                 },
             },
         });
+
         expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0 });
     });
 
@@ -112,10 +114,12 @@ describe('deterministic import-pairs provider', () => {
             agent: { generate },
             structuredOutputMode: 'prompt-injection',
         });
+
         await expect(provider.generate(request)).resolves.toMatchObject({
             proposal: valid,
             usage: { inputTokens: 10, outputTokens: 20 },
         });
+
         expect(generate).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({
@@ -128,6 +132,7 @@ describe('deterministic import-pairs provider', () => {
                 tracingOptions: { hideInput: true, hideOutput: true },
             }),
         );
+
         const providerMessage = generate.mock.calls[0]?.[0];
         expect(JSON.parse(providerMessage)).toEqual({
             effectiveSettings: request.input.effectiveSettings,
@@ -136,6 +141,7 @@ describe('deterministic import-pairs provider', () => {
             sourceLanguage: 'en',
             targetLanguage: 'es',
         });
+
         expect(providerMessage).not.toContain('dictionaryId');
         expect(providerMessage).not.toContain('importFingerprint');
         expect(providerMessage).not.toContain('lineage');
@@ -143,6 +149,7 @@ describe('deterministic import-pairs provider', () => {
         expect(providerMessage).not.toContain(
             'hmac-sha256:v1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         );
+
         expect(providerMessage).not.toContain(
             '33333333-3333-4333-8333-333333333333',
         );
@@ -155,6 +162,7 @@ describe('deterministic import-pairs provider', () => {
                 translationContext: 'Retail banking terminology',
             },
         };
+
         await provider.generate(contextRequest);
         expect(JSON.parse(generate.mock.calls[1]?.[0])).toMatchObject({
             instruction: null,
@@ -167,6 +175,7 @@ describe('deterministic import-pairs provider', () => {
             object: changed,
             usage: { inputTokens: 10, outputTokens: 20 },
         });
+
         await expect(provider.generate(request)).rejects.toThrow();
     });
 
@@ -206,6 +215,7 @@ describe('deterministic import-pairs provider', () => {
                     warnings: [],
                 }) as never,
         );
+
         await expect(generator.generate(request)).rejects.toThrow();
     });
 

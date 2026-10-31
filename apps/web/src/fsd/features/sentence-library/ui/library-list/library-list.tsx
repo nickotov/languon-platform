@@ -25,20 +25,23 @@ export function LibraryList({
     function removeAll() {
         void c.openConfirmation('archive', true);
     }
+
     function archiveSelected() {
         void c.openConfirmation('archive');
     }
+
     function restoreSelected() {
         void c.openConfirmation('restore');
     }
+
     const selectedArchive = c.selectedItems.some((item) => !item.archivedByMe);
     const selectedRestore = c.selectedItems.some((item) => item.archivedByMe);
     let body;
-    if (c.query.isPending || (!c.items.length && c.presence.isPending))
+    if (c.query.isPending || (!c.items.length && c.presence.isPending)) {
         body = <LibrarySkeleton />;
-    else if (c.query.isError || (!c.items.length && c.presence.isError))
+    } else if (c.query.isError || (!c.items.length && c.presence.isError)) {
         body = <LibraryLoadError onRetry={c.retry} />;
-    else if (!c.items.length)
+    } else if (!c.items.length) {
         body = (
             <LibraryEmpty
                 kind={
@@ -52,7 +55,7 @@ export function LibraryList({
                 onPractice={practice}
             />
         );
-    else
+    } else {
         body = (
             <section aria-label={L('title')} className={componentStyles.root}>
                 <div className={componentStyles.toolbar}>
@@ -231,5 +234,7 @@ export function LibraryList({
                 </div>
             </section>
         );
+    }
+
     return body;
 }

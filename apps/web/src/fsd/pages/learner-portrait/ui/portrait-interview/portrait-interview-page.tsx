@@ -37,22 +37,28 @@ export function PortraitInterviewPage() {
         engine.busy,
         engine.error,
     );
+
     function pause() {
         router.push(href('/portrait'));
     }
+
     function review() {
         router.push(href('/portrait/review'));
     }
+
     function togglePreview() {
         setPreview((value) => !value);
     }
+
     function dismissAttempt() {
         setDismissedAttempt(session?.lastAttempt?.id ?? null);
     }
+
     function closePreview() {
         setPreview(false);
     }
-    if (engine.missing)
+
+    if (engine.missing) {
         return (
             <main className={styles.empty}>
                 <h1>{interviewText(interfaceLocale, 'noInterview')}</h1>
@@ -65,7 +71,9 @@ export function PortraitInterviewPage() {
                 </ButtonLink>
             </main>
         );
-    if (!session)
+    }
+
+    if (!session) {
         return (
             <main className={styles.empty}>
                 {engine.error ? (
@@ -96,6 +104,8 @@ export function PortraitInterviewPage() {
                 )}
             </main>
         );
+    }
+
     const locale = session.context.locale;
     const question = questions.question!;
     const items =
@@ -108,6 +118,7 @@ export function PortraitInterviewPage() {
             ? session.lastAttempt
             : null;
     const latestRedirect = session.latestCompletedOperation?.result.redirect;
+
     return (
         <div className={styles.root}>
             <InterviewHeader

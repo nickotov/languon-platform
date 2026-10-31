@@ -43,6 +43,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -51,6 +52,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId,
@@ -61,6 +63,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             await db.insert(settings).values({
                 id: randomUUID(),
                 version: 1,
@@ -71,6 +74,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic disposable worker limits',
             });
+
             await new DrizzleProviderPriceStore(db).publish(
                 {
                     expectedVersion: 0,
@@ -91,9 +95,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 new Date(),
             );
         }, 120000);
+
         afterAll(async () => {
             await client?.end();
         });
+
         it.each(['free-success', 'paid-failure'] as const)(
             'executes %s and bounded quota cleanup with exact deployed grants',
             async (outcome) => {
@@ -134,17 +140,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         operationId: randomUUID(),
                         now: new Date(),
                     });
-                if (prepared.quote)
+
+                if (prepared.quote) {
                     await admission.confirm({
                         actorId: ownerId,
                         quoteId: prepared.quote.id,
                         operationId: randomUUID(),
                         now: new Date(),
                     });
+                }
+
                 const [admitted] = await db
                     .select()
                     .from(jobs)
                     .where(eq(jobs.payerId, ownerId));
+
                 expect(admitted).toBeDefined();
                 expect(admitted!.credits > 0n).toBe(outcome === 'paid-failure');
                 await db.insert(quotas).values({
@@ -153,6 +163,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     freeCount: 1,
                     estimatedUnits: 1n,
                 });
+
                 const role = `speech_worker_${randomUUID().replaceAll('-', '')}`;
                 await client.unsafe(`create role ${role} nologin`);
                 const script = await readFile(
@@ -171,16 +182,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             .join('\n')
                             .replaceAll(':"dictionary_worker_role"', role),
                     );
+
                     const databaseUrl = new URL(getTestDatabaseUrl());
                     databaseUrl.searchParams.set('options', `-c role=${role}`);
                     restrictedClient = createPostgresClient({
                         databaseUrl: databaseUrl.toString(),
                         maxConnections: 2,
                     });
+
                     const restrictedDb = createDrizzleDatabase(
                         restrictedClient,
                         databaseSchema,
                     );
+
                     expect(
                         (
                             await restrictedDb.execute(
@@ -188,16 +202,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             )
                         )[0]?.role_name,
                     ).toBe(role);
+
                     await expect(
                         restrictedClient`update speech_jobs set provider_dispatched_at='2000-01-01'::timestamptz where id=${admitted!.id}::uuid`,
                     ).rejects.toThrow('permission denied');
+
                     await expect(
                         restrictedClient`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid)`,
                     ).rejects.toThrow('permission denied');
-                    for (const token of [null, randomUUID()])
+
+                    for (const token of [null, randomUUID()]) {
                         await expect(
                             restrictedClient`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${token}::uuid)`,
                         ).rejects.toThrow();
+                    }
+
                     await expect(
                         restrictedClient.begin(async (tx) => {
                             await tx`select set_config('languon.speech_worker_version','1',true)`;
@@ -209,6 +228,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                         sp`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${randomUUID()}::uuid)`,
                                 ),
                             ).rejects.toThrow();
+
                             await tx`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${lease}::uuid)`;
                             for (const money of [
                                 { providerCreditsConsumed: '0' },
@@ -222,6 +242,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                     ),
                                 ).rejects.toThrow('pinned provider contract');
                             }
+
                             await tx`update speech_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where id=${admitted!.id}::uuid`;
                             await expect(
                                 tx.savepoint(
@@ -229,14 +250,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                         sp`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${lease}::uuid)`,
                                 ),
                             ).rejects.toThrow();
+
                             throw new Error(
                                 'Rollback synthetic lease witnesses',
                             );
                         }),
                     ).rejects.toThrow('Rollback synthetic lease witnesses');
+
                     await expect(
                         restrictedClient`select languon_cancel_speech_for_scheduled_deletion(${ownerId}::uuid)`,
                     ).rejects.toThrow('permission denied');
+
                     // A provider reference cannot preempt the authoritative speech observation.
                     for (const reference of [
                         `speech:${admitted!.id}`,
@@ -246,11 +270,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             restrictedClient`insert into ai_provider_expense_records(id,source_kind,attempt_reference,action_id,provider_id,model_id,measurement,cost_source,amount_usd_micros,occurred_at) values(${randomUUID()}::uuid,'speech-attempt',${reference},${admitted!.id}::uuid,'forged','forged','estimated','calculated',0,clock_timestamp())`,
                         ).rejects.toThrow('permission denied');
                     }
+
                     await expect(
                         restrictedClient`select languon_record_speech_provider_expense(${admitted!.id}::uuid,'ready')`,
                     ).rejects.toThrow();
+
                     const workerStore = makeStore(restrictedDb),
                         storage = new PostgresAudioObjectStorage(restrictedDb);
+
                     await workerStore.releaseDeadlines(new Date());
                     expect(
                         await db
@@ -263,6 +290,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 ),
                             ),
                     ).toHaveLength(0);
+
                     const synthesis =
                         outcome === 'free-success'
                             ? provider
@@ -273,6 +301,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                       );
                                   },
                               });
+
                     await new SpeechWorker({
                         store: workerStore,
                         storage,
@@ -280,6 +309,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             [provider.configurationId, synthesis],
                         ]),
                     }).runOnce();
+
                     expect(
                         (
                             await db
@@ -294,17 +324,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 ? 'free'
                                 : 'released_no_charge',
                     });
+
                     const [dispatched] = await db
                         .select({ at: jobs.providerDispatchedAt })
                         .from(jobs)
                         .where(eq(jobs.id, admitted!.id));
+
                     expect(dispatched?.at?.getTime()).toBeGreaterThanOrEqual(
                         admitted!.createdAt.getTime(),
                     );
+
                     const [fact] = await db
                         .select()
                         .from(expenses)
                         .where(eq(expenses.actionId, admitted!.id));
+
                     expect(fact).toMatchObject(
                         outcome === 'free-success'
                             ? {
@@ -318,17 +352,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                   amountUsdMicros: null,
                               },
                     );
+
                     await expect(
                         restrictedClient`select languon_admit_speech_provider_attempt(${admitted!.id}::uuid,${admitted!.leaseToken}::uuid)`,
                     ).rejects.toThrow();
+
                     const canonicalOutcome =
                         outcome === 'free-success' ? 'ready' : 'unknown';
+
                     await expect(
                         restrictedClient`select languon_record_speech_provider_expense(${admitted!.id}::uuid,${canonicalOutcome})`,
                     ).resolves.toBeDefined();
+
                     await expect(
                         restrictedClient`select languon_record_speech_provider_expense(${admitted!.id}::uuid,${canonicalOutcome === 'ready' ? 'unknown' : 'ready'})`,
                     ).rejects.toThrow();
+
                     expect(
                         (
                             await db
@@ -337,11 +376,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 .where(eq(budgets.actionId, admitted!.id))
                         )[0]?.state,
                     ).toBe('settled');
+
                     const wallet = await db.transaction((tx) =>
                         new DrizzleAiCreditTransactionParticipant(
                             tx,
                         ).accountSummary(ownerId, new Date()),
                     );
+
                     expect(wallet.consumedCredits).toBe(0n);
                     expect(wallet.reservedCredits).toBe(0n);
                 } finally {

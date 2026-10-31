@@ -30,9 +30,12 @@ export async function authorizeSpeechAccounting(
         input.profile.nativeBilling ??
         findSpeechModel(input.profile.provider, input.profile.model)
             ?.nativeBilling;
+
     // A model serving limit is useful evidence, but not a broker's task cost cap.
-    if (nativeBilling && !nativeBilling.providerTaskBoundVerified)
+    if (nativeBilling && !nativeBilling.providerTaskBoundVerified) {
         throw new SpeechError('speech_provider_unavailable', 503);
+    }
+
     const price = await pinProviderPrice(tx, {
         providerId: input.profile.provider,
         modelId: input.profile.model,
@@ -61,17 +64,23 @@ export async function authorizeSpeechAccounting(
             ? nativeMaximum.micros
             : null
         : providerSpeechExpenseMicros(price, input.characters);
-    if (!price || maximum === null)
+
+    if (!price || maximum === null) {
         throw new SpeechError('speech_provider_unavailable', 503);
+    }
+
     const settings = await new DrizzleCapabilityPolicyParticipant(
         tx,
     ).settings();
+
     if (
         !settings.maxProviderCostUsdPerAction ||
         !settings.maxProviderCostUsdPerAccountDay ||
         !settings.maxProviderCostUsdPerDay
-    )
+    ) {
         throw new SpeechError('speech_provider_unavailable', 503);
+    }
+
     const authorization = await new DrizzleOperatorBudgetParticipant(tx)
         .reserveAction({
             actionId: input.jobId,
@@ -81,13 +90,18 @@ export async function authorizeSpeechAccounting(
             at: input.at,
         })
         .catch((error: unknown) => {
-            if (error instanceof OperatorBudgetUnavailableError)
+            if (error instanceof OperatorBudgetUnavailableError) {
                 throw new SpeechError('speech_provider_budget', 429);
+            }
+
             throw error;
         });
+
     // Speech is an indivisible provider operation: a partially authorized clip must never dispatch.
-    if (authorization.reservedMicros < maximum)
+    if (authorization.reservedMicros < maximum) {
         throw new SpeechError('speech_provider_budget', 429);
+    }
+
     // Numerical execution provenance needs no administrator identity, free-text reason or source URL.
     return {
         id: price.id,
@@ -109,7 +123,10 @@ export async function reserveSpeechProviderAttempt(
     job: Job,
     _at: Date,
 ) {
-    if (job.accountingVersion !== 1 || job.providerDispatchedAt) return;
+    if (job.accountingVersion !== 1 || job.providerDispatchedAt) {
+        return;
+    }
+
     await tx.execute(
         sql`select languon_admit_speech_provider_attempt(${job.id}::uuid,${job.leaseToken}::uuid)`,
     );
@@ -122,7 +139,10 @@ export async function settleSpeechProviderExpense(
     outcome: 'ready' | 'unknown' | 'not_submitted',
     _at: Date,
 ) {
-    if (job.accountingVersion !== 1) return;
+    if (job.accountingVersion !== 1) {
+        return;
+    }
+
     await tx.execute(
         sql`select languon_record_speech_provider_expense(${job.id}::uuid, ${job.providerOutcome ?? outcome})`,
     );
@@ -156,11 +176,15 @@ export async function reserveSpeechAdmissionQuota(
                     ? input.globalUnitLimit
                     : input.ownerUnitLimit,
             )
-        )
+        ) {
             throw new SpeechError('speech_provider_budget', 429);
+        }
+
         const freeCount = current!.freeCount + (input.free ? 1 : 0);
-        if (scope !== 'global' && freeCount > input.freeLimit)
+        if (scope !== 'global' && freeCount > input.freeLimit) {
             throw new SpeechError('speech_free_daily_limit', 429);
+        }
+
         await tx
             .update(counters)
             .set({ freeCount, estimatedUnits: units })
@@ -173,8 +197,9 @@ export async function lockSpeechWalletOwner(
     tx: AiCreditTransaction,
     ownerId: string | null,
 ) {
-    if (ownerId)
+    if (ownerId) {
         await tx.execute(
             sql`select pg_advisory_xact_lock(hashtextextended(${ownerId},1920424381))`,
         );
+    }
 }

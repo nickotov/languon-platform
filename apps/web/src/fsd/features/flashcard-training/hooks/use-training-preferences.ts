@@ -37,30 +37,43 @@ export function useTrainingPreferences(
         setConflictBusy(false);
         version.current = 0;
         setDraft({ configuration: DEFAULT_CONFIGURATION, shuffle: true });
-        if (!open) return;
-        if (!signedIn) {
-            setPrefsStatus('ready');
+        if (!open) {
             return;
         }
+
+        if (!signedIn) {
+            setPrefsStatus('ready');
+
+            return;
+        }
+
         setPrefsStatus('loading');
         void api
             .getPreferences()
             .then((preferences) => {
-                if (generation.current !== current) return;
+                if (generation.current !== current) {
+                    return;
+                }
+
                 setDraft({
                     configuration: preferences.configuration,
                     shuffle: preferences.shuffle,
                 });
+
                 version.current = preferences.version;
                 setPrefsStatus('ready');
             })
             .catch((cause) => {
-                if (generation.current !== current) return;
+                if (generation.current !== current) {
+                    return;
+                }
+
                 const error = toApiError(cause);
                 retryAt.current = error.retryAt;
                 setPrefsError(error);
                 setPrefsStatus('error');
             });
+
         return () => {
             generation.current += 1;
         };
@@ -72,10 +85,18 @@ export function useTrainingPreferences(
                 !open ||
                 busy.current ||
                 (retryAt.current && retryAt.current > Date.now())
-            )
+            ) {
                 return false;
-            if (!signedIn) return true;
-            if (prefsStatus !== 'ready' && !overwrite) return false;
+            }
+
+            if (!signedIn) {
+                return true;
+            }
+
+            if (prefsStatus !== 'ready' && !overwrite) {
+                return false;
+            }
+
             const current = generation.current;
             busy.current = true;
             setStartError(null);
@@ -88,19 +109,29 @@ export function useTrainingPreferences(
                             ? conflict.version
                             : version.current,
                 });
-                if (generation.current !== current) return false;
+
+                if (generation.current !== current) {
+                    return false;
+                }
+
                 version.current = saved.version;
                 setConflict(null);
                 setOverwriteDone(overwrite);
+
                 return true;
             } catch (cause) {
                 const error = toApiError(cause);
-                if (generation.current !== current) return false;
+                if (generation.current !== current) {
+                    return false;
+                }
+
                 retryAt.current = error.retryAt;
                 if (error.code === 'version_conflict') {
                     try {
                         const saved = await api.getPreferences();
-                        if (generation.current === current) setConflict(saved);
+                        if (generation.current === current) {
+                            setConflict(saved);
+                        }
                     } catch (fetchError) {
                         if (generation.current === current) {
                             const error = toApiError(fetchError);
@@ -108,7 +139,10 @@ export function useTrainingPreferences(
                             setStartError(error);
                         }
                     }
-                } else setStartError(error);
+                } else {
+                    setStartError(error);
+                }
+
                 return false;
             } finally {
                 if (generation.current === current) {
@@ -121,21 +155,28 @@ export function useTrainingPreferences(
     );
 
     function reloadSaved() {
-        if (!conflict || busy.current) return;
+        if (!conflict || busy.current) {
+            return;
+        }
+
         setDraft({
             configuration: conflict.configuration,
             shuffle: conflict.shuffle,
         });
+
         version.current = conflict.version;
         setConflict(null);
         setStartError(null);
     }
+
     function setConfiguration(configuration: Configuration) {
         setDraft((previous) => ({ ...previous, configuration }));
     }
+
     function setShuffle(shuffle: boolean) {
         setDraft((previous) => ({ ...previous, shuffle }));
     }
+
     return {
         draft,
         setConfiguration,
@@ -151,8 +192,9 @@ export function useTrainingPreferences(
         reloadSaved,
         overwrite: () => save(true),
         retryPrefs: () => {
-            if (!retryAt.current || retryAt.current <= Date.now())
+            if (!retryAt.current || retryAt.current <= Date.now()) {
                 setAttempt((value) => value + 1);
+            }
         },
         canRequest: () => !retryAt.current || retryAt.current <= Date.now(),
     };

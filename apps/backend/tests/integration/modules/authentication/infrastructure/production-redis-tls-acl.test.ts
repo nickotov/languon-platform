@@ -15,6 +15,7 @@ describeIfEnabled('production Redis TLS and ACL contract', () => {
         if (!url || new URL(url).protocol !== 'rediss:') {
             throw new Error('A disposable rediss:// test URL is required.');
         }
+
         redis = createAuthenticationRedisClient({ url });
         await redis.connect();
     });
@@ -40,10 +41,12 @@ describeIfEnabled('production Redis TLS and ACL contract', () => {
             allowed: true,
             remaining: 0,
         });
+
         await expect(limiter.consume(request)).resolves.toMatchObject({
             allowed: false,
             remaining: 0,
         });
+
         const leaseRequest = {
             scope: 'conversation-stream-test',
             subject: 'synthetic-actor',

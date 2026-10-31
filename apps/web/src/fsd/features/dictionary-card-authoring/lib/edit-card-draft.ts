@@ -10,9 +10,13 @@ export function editCardDraftValue<K extends keyof DictionaryCardValues>(
 ): DraftVersion {
     const selectedSuggestions = { ...current.selectedSuggestions };
     if (key === 'source') {
-        for (const field of Object.keys(selectedSuggestions))
+        for (const field of Object.keys(selectedSuggestions)) {
             delete selectedSuggestions[field as DictionaryCardAuthoringField];
-    } else delete selectedSuggestions[key];
+        }
+    } else {
+        delete selectedSuggestions[key];
+    }
+
     return {
         ...current,
         draft: {

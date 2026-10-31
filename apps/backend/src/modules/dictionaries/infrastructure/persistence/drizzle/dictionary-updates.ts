@@ -63,8 +63,10 @@ export async function updateDictionary(
         if (
             current.dictionary.version !==
             input.request.expectedDictionaryVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
+
         const activeCount = await cardCount(tx, input.dictionaryId);
         const source =
             input.request.sourceLanguage ??
@@ -77,9 +79,14 @@ export async function updateDictionary(
             activeCount > 0 &&
             (source !== current.dictionary.sourceLanguageTag ||
                 target !== current.dictionary.targetLanguageTag)
-        )
+        ) {
             throw new DictionaryLanguagePairLockedError();
-        if (source === target) throw new InvalidDictionaryRequestError();
+        }
+
+        if (source === target) {
+            throw new InvalidDictionaryRequestError();
+        }
+
         const details = normalizeDictionaryDetails({
             description:
                 input.request.description === undefined
@@ -97,8 +104,10 @@ export async function updateDictionary(
             if (
                 current.settings.version !==
                 input.request.expectedSettingsVersion
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             const patch = input.request.settings;
             const next: DictionarySettings = {
                 ...settingsFromRow(current.settings),
@@ -163,7 +172,10 @@ export async function updateDictionary(
                     .orderBy(asc(dictionaryCardsTable.id))
                     .limit(500);
 
-                if (cards.length === 0) break;
+                if (cards.length === 0) {
+                    break;
+                }
+
                 const affectedIds = cards
                     .filter((card) =>
                         hasLearningContentChanged({
@@ -289,8 +301,10 @@ export async function updateCard(
 
         const row = await lockCard(tx, input.dictionaryId, input.cardId);
         abort(input.context);
-        if (row.version !== input.request.expectedCardVersion)
+        if (row.version !== input.request.expectedCardVersion) {
             throw new DictionaryVersionConflictError();
+        }
+
         const values = normalizeCardValues(
             mergeCardValues(cardValues(row), input.request.values),
         );
@@ -321,12 +335,14 @@ export async function updateCard(
                 JSON.stringify(overridesFromRow(row)) ||
             translationContext !== row.translationContext;
 
-        if (!changed)
+        if (!changed) {
             return {
                 card: mapCard(row, current.settings),
                 dictionaryVersion: current.dictionary.version,
                 duplicateSource,
             };
+        }
+
         await assertOwnerCapacityLocked(context, tx, input.ownerId, 0, 0, 1);
         const authorship = resolveCardMutationAuthorship({
             mutationKind: 'manual_edit',
@@ -375,7 +391,10 @@ export async function updateCard(
             )
             .returning();
 
-        if (!updated) throw new DictionaryVersionConflictError();
+        if (!updated) {
+            throw new DictionaryVersionConflictError();
+        }
+
         await insertRevision(
             context,
             tx,

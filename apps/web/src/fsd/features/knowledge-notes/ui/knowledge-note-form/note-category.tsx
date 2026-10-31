@@ -22,15 +22,19 @@ export function NoteCategory({
         const next = event.target.checked
             ? [...categories, category]
             : categories.filter((item) => item !== category);
+
         onChange(next);
     }
+
     function toggle() {
         const next = categories.includes(category)
             ? categories.filter((item) => item !== category)
             : [...categories, category];
+
         onChange(next);
     }
-    if (compact)
+
+    if (compact) {
         return (
             <button
                 type='button'
@@ -45,6 +49,8 @@ export function NoteCategory({
                 {t(knowledgeCategoryKeys[category])}
             </button>
         );
+    }
+
     return (
         <Checkbox
             label={t(knowledgeCategoryKeys[category])}

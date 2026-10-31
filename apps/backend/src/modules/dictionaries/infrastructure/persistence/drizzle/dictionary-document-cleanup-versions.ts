@@ -21,7 +21,10 @@ export async function recordCleanupTombstone(
             .where(cleanupCas(input))
             .for('update');
 
-        if (!upload) return false;
+        if (!upload) {
+            return false;
+        }
+
         await tx
             .update(dictionaryDocumentObjectVersionsTable)
             .set({ isCurrent: false })
@@ -75,7 +78,10 @@ export async function recordDataVersionsDeleted(
             .where(cleanupCas(input))
             .for('update');
 
-        if (!upload?.tombstoneCreatedAt) return false;
+        if (!upload?.tombstoneCreatedAt) {
+            return false;
+        }
+
         const deletedDataVersions = input.deletedVersions.filter(
             (version) => version.kind === 'data',
         );
@@ -92,7 +98,7 @@ export async function recordDataVersionsDeleted(
             (version) => !existingVersionIds.has(version.versionId),
         );
 
-        if (newlyObserved.length)
+        if (newlyObserved.length) {
             await tx.insert(dictionaryDocumentObjectVersionsTable).values(
                 newlyObserved.map((version) => ({
                     checksumSha256: version.checksumSha256,
@@ -106,6 +112,8 @@ export async function recordDataVersionsDeleted(
                     uploadId: upload.id,
                 })),
             );
+        }
+
         // The cleanup coordinator reaches this fence only after a complete
         // provider listing and successful deletion of every data version.
         // Mark all tracked data absent so a crash after physical deletion
@@ -137,7 +145,10 @@ export async function recordDataVersionsDeleted(
                 ),
             );
 
-        if (Number(remaining?.value ?? 0) > 0) return false;
+        if (Number(remaining?.value ?? 0) > 0) {
+            return false;
+        }
+
         const observedPhysicalBytes = [
             ...existingVersions.filter((version) => version.kind === 'data'),
             ...newlyObserved,
@@ -164,12 +175,13 @@ export async function recordDataVersionsDeleted(
             .where(cleanupCas(input))
             .returning({ id: dictionaryDocumentUploadsTable.id });
 
-        if (updated)
+        if (updated) {
             await publishStagedDocumentProposal(
                 tx,
                 upload.jobId,
                 input.context.now,
             );
+        }
 
         return Boolean(updated);
     });

@@ -45,6 +45,7 @@ async function withPendingMigrationFixture(
     const migrationsFolder = mkdtempSync(
         join(tmpdir(), 'languon-enum-integrity-'),
     );
+
     try {
         mkdirSync(join(migrationsFolder, 'meta'));
         const entries = [
@@ -79,6 +80,7 @@ async function withPendingMigrationFixture(
                 migrationsFolder,
                 purpose: grantDisposableMigrationPurpose(),
             });
+
         writeJournal(1);
         writeFileSync(join(migrationsFolder, '0000_baseline.sql'), baselineSql);
         await migrate();
@@ -113,6 +115,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 join(getMigrationsFolder(), '0074_retire_dictionary_audio.sql'),
                 'utf8',
             );
+
             await withPendingMigrationFixture(
                 audioRetirementBaseline,
                 upgradeSql,
@@ -121,9 +124,11 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                     await expect(migrate()).rejects.toThrow(
                         'Obsolete dictionary audio inventory must be reconciled',
                     );
+
                     expect(
                         await client.unsafe(`select id from ${table}`),
                     ).toEqual([{ id: 1 }]);
+
                     expect(
                         (
                             await client.unsafe(
@@ -131,6 +136,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                             )
                         )[0]?.bytes,
                     ).toEqual(Buffer.from([1, 2, 3]));
+
                     await client.unsafe(`delete from ${table}`);
                     await migrate();
                     expect(
@@ -138,6 +144,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                             "select to_regclass('dictionary_audio_assets') as assets, to_regclass('dictionary_audio_bindings') as bindings, to_regclass('dictionary_audio_jobs') as jobs",
                         ),
                     ).toEqual([{ assets: null, bindings: null, jobs: null }]);
+
                     expect(
                         (
                             await client.unsafe(
@@ -145,6 +152,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                             )
                         )[0]?.bytes,
                     ).toEqual(Buffer.from([1, 2, 3]));
+
                     expect(
                         await client.unsafe('select id from speech_recordings'),
                     ).toEqual([{ id: 1 }]);
@@ -156,6 +164,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
     beforeAll(() => {
         client = createTestPostgresClient();
     });
+
     beforeEach(async () => {
         await resetTestDatabase(client);
     });
@@ -280,6 +289,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             'user_text_ai_preferences',
             'users',
         ]);
+
         expect(rowCounts[0]?.count).toBe('0');
     });
 
@@ -432,6 +442,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 is_nullable: 'YES',
             },
         ]);
+
         expect(jobColumns).toEqual([
             {
                 column_name: 'awaiting_upload_at',
@@ -439,6 +450,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 is_nullable: 'YES',
             },
         ]);
+
         expect(contextColumns).toEqual([
             {
                 column_name: 'translation_context',
@@ -451,6 +463,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 table_name: 'dictionary_cards',
             },
         ]);
+
         expect(documentProposalColumns).toEqual([
             {
                 column_name: 'document_published_at',
@@ -478,6 +491,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 is_nullable: 'YES',
             },
         ]);
+
         expect(idempotencyResultColumns).toEqual([
             {
                 column_name: 'result_payload',
@@ -485,6 +499,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 is_nullable: 'YES',
             },
         ]);
+
         expect(
             constraints.map(({ constraint_name }) => constraint_name),
         ).toEqual(
@@ -531,29 +546,37 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 'dictionary_settings_custom_label_required',
             ]),
         );
+
         expect(
             constraints.map(({ constraint_name }) => constraint_name),
         ).not.toContain('dictionary_generation_provider_circuit_singleton');
+
         expect(providerPolicy).toHaveLength(1);
         expect(providerPolicy[0]?.definition).toContain(
             'provider_max_output_tokens_per_attempt >= 128',
         );
+
         expect(providerPolicy[0]?.definition).toContain(
             'provider_max_output_tokens_per_attempt <= 40960',
         );
+
         expect(providerPolicy[0]?.definition).not.toContain(
             'provider_max_output_tokens_per_attempt <= 1024',
         );
+
         expect(idempotencyStateResult).toHaveLength(1);
         expect(idempotencyStateResult[0]?.definition).toContain(
             "operation = 'bulk_commit'::dictionary_idempotency_operation",
         );
+
         expect(idempotencyStateResult[0]?.definition).toContain(
             "jsonb_typeof(result_payload) = 'object'::text",
         );
+
         expect(idempotencyStateResult[0]?.definition).toContain(
             'octet_length((result_payload)::text) <= 4194304',
         );
+
         expect(indexes.map(({ indexname }) => indexname)).toEqual(
             expect.arrayContaining([
                 'user_emails_canonical_email_unique',
@@ -617,10 +640,12 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             cpSync(getMigrationsFolder(), copiedMigrations, {
                 recursive: true,
             });
+
             const journalPath = join(copiedMigrations, 'meta', '_journal.json');
             const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
                 entries: { idx: number }[];
             };
+
             journal.entries = journal.entries.filter((entry) => entry.idx < 37);
             // Only the temporary fixture journal is reduced; checked-in generated
             // migrations remain immutable and are then applied unchanged.
@@ -630,6 +655,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 migrationsFolder: copiedMigrations,
                 purpose: grantDisposableMigrationPurpose(),
             });
+
             const ownerId = '11111111-1111-4111-8111-111111111111';
             const dictionaryId = '22222222-2222-4222-8222-222222222222';
             const entryId = '33333333-3333-4333-8333-333333333333';
@@ -647,14 +673,17 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 }[]
             >`
                 select source,translation,learning_version,version from dictionary_cards where id=${entryId}`;
+
             expect(entry).toEqual({
                 source: 'hello',
                 translation: 'hola',
                 learning_version: 1,
                 version: 1,
             });
+
             const [state] = await client<{ count: number }[]>`
                 select ((select count(*) from flashcard_attempts)+(select count(*) from flashcard_entry_progress)+(select count(*) from flashcard_preferences))::int as count`;
+
             expect(state?.count).toBe(0);
             await expect(
                 client`update dictionary_cards set learning_version=0 where id=${entryId}`,
@@ -673,19 +702,23 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
             cpSync(getMigrationsFolder(), copiedMigrations, {
                 recursive: true,
             });
+
             const journalPath = join(copiedMigrations, 'meta', '_journal.json');
             const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
                 entries: { idx: number }[];
             };
+
             journal.entries = journal.entries.filter(
                 (entry) => entry.idx <= 56,
             );
+
             writeFileSync(journalPath, JSON.stringify(journal));
             await runPostgresMigrations({
                 client,
                 migrationsFolder: copiedMigrations,
                 purpose: grantDisposableMigrationPurpose(),
             });
+
             const ownerId = '11111111-1111-4111-8111-111111111111';
             const dictionaryId = '22222222-2222-4222-8222-222222222222';
             await client`insert into users (id,status) values (${ownerId},'active')`;
@@ -695,6 +728,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 const credits = new DrizzleAiCreditTransactionParticipant(
                     transaction,
                 );
+
                 await credits.issueGrant({
                     amount: 250n,
                     createdAt: new Date('2026-10-01T00:00:00Z'),
@@ -704,6 +738,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                     sourceReference: 'speech-upgrade-fixture',
                 });
             });
+
             const snapshot = async () => {
                 const [row] = await client<{ state: unknown }[]>`
                     select jsonb_build_object(
@@ -714,6 +749,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                         'history', (select jsonb_agg(to_jsonb(h)) from ai_credit_history h)
                     ) as state
                 `;
+
                 return row?.state;
             };
             const before = await snapshot();
@@ -725,22 +761,27 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 where t.typname='ai_credit_measurement'
                 order by e.enumsortorder
             `;
+
             expect(labels.map(({ enumlabel }) => enumlabel)).toEqual(
                 expect.arrayContaining(['speech_success', 'speech_no_charge']),
             );
+
             const tables = await client<{ name: string | null }[]>`
                 select to_regclass('public.speech_recordings')::text as name
                 union all select to_regclass('public.speech_jobs')::text
             `;
+
             expect(tables.map(({ name }) => name)).toEqual([
                 'speech_recordings',
                 'speech_jobs',
             ]);
+
             const history = await client<
                 { hash: string; created_at: string }[]
             >`
                 select hash, created_at::text from languon_migrations.history order by created_at
             `;
+
             expect(history).toEqual(
                 readMigrationFiles({
                     migrationsFolder: getMigrationsFolder(),
@@ -749,6 +790,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                     created_at: String(migration.folderMillis),
                 })),
             );
+
             await migrateTestDatabase(client);
             expect(await snapshot()).toEqual(before);
             expect(
@@ -763,6 +805,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
         const temporaryDirectory = mkdtempSync(
             join(tmpdir(), 'languon-enum-retry-'),
         );
+
         try {
             mkdirSync(join(temporaryDirectory, 'meta'));
             const entries = [
@@ -786,6 +829,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                 'meta',
                 '_journal.json',
             );
+
             writeFileSync(
                 journalPath,
                 JSON.stringify({
@@ -794,16 +838,19 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                     entries: entries.slice(0, 1),
                 }),
             );
+
             writeFileSync(
                 join(temporaryDirectory, '0000_baseline.sql'),
                 `CREATE TYPE "public"."enum_retry_operation" AS ENUM ('existing');`,
             );
+
             const migrate = () =>
                 runPostgresMigrations({
                     client,
                     migrationsFolder: temporaryDirectory,
                     purpose: grantDisposableMigrationPurpose(),
                 });
+
             await migrate();
             writeFileSync(
                 journalPath,
@@ -813,6 +860,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('database migrations', () => {
                     entries,
                 }),
             );
+
             const upgradeSql = `ALTER TYPE "public"."enum_retry_operation" ADD VALUE 'success' BEFORE 'existing';
 --> statement-breakpoint
 ALTER TYPE "public"."enum_retry_operation" ADD VALUE 'reused' AFTER 'success';
@@ -823,21 +871,26 @@ CREATE TABLE "enum_retry_results" ("operation" "public"."enum_retry_operation" N
                 upgradePath,
                 `${upgradeSql}\n--> statement-breakpoint\nSELECT 1 / 0;`,
             );
+
             await expect(migrate()).rejects.toMatchObject({
                 cause: { code: '22012' },
             });
+
             const labels = await client<{ enumlabel: string }[]>`
                 select e.enumlabel from pg_enum e join pg_type t on t.oid=e.enumtypid
                 where t.typname='enum_retry_operation' order by e.enumsortorder
             `;
+
             expect(labels.map(({ enumlabel }) => enumlabel)).toEqual([
                 'success',
                 'reused',
                 'existing',
             ]);
+
             const [table] = await client<
                 { name: string | null }[]
             >`select to_regclass('public.enum_retry_results')::text as name`;
+
             expect(table?.name).toBeNull();
             expect(
                 await client`select hash from languon_migrations.history`,
@@ -848,16 +901,19 @@ CREATE TABLE "enum_retry_results" ("operation" "public"."enum_retry_operation" N
                     })[0]?.hash,
                 },
             ]);
+
             writeFileSync(upgradePath, upgradeSql);
             await migrate();
             await client`insert into enum_retry_results (operation) values ('success'), ('reused')`;
             const history =
                 await client`select hash from languon_migrations.history order by created_at`;
+
             expect(history).toEqual(
                 readMigrationFiles({
                     migrationsFolder: temporaryDirectory,
                 }).map(({ hash }) => ({ hash })),
             );
+
             await migrate();
             expect(
                 await client`select hash from languon_migrations.history order by created_at`,
@@ -879,29 +935,36 @@ SELECT 1 / 0;`,
             async ({ upgradePath, migrate }) => {
                 const baselineHistory =
                     await client`select hash from languon_migrations.history`;
+
                 await expect(migrate()).rejects.toMatchObject({
                     cause: { code: '22012' },
                 });
+
                 writeFileSync(
                     upgradePath,
                     `ALTER TYPE "public"."enum_integrity_operation" ADD VALUE 'x' AFTER 'anchor';
 --> statement-breakpoint
 ${ddl}`,
                 );
+
                 await expect(migrate()).rejects.toThrow(
                     /enum.*order|order.*enum/i,
                 );
+
                 expect(
                     await client`select hash from languon_migrations.history`,
                 ).toEqual(baselineHistory);
+
                 const [table] = await client<
                     { name: string | null }[]
                 >`select to_regclass('public.enum_integrity_result')::text as name`;
+
                 expect(table?.name).toBeNull();
                 const labels = await client<{ enumlabel: string }[]>`
                     select e.enumlabel from pg_enum e join pg_type t on t.oid=e.enumtypid
                     where t.typname='enum_integrity_operation' order by e.enumsortorder
                 `;
+
                 expect(labels.map(({ enumlabel }) => enumlabel)).toEqual([
                     'x',
                     'anchor',
@@ -919,12 +982,15 @@ ALTER TYPE "public"."enum_integrity_operation" ADD VALUE 'x';`,
             async ({ migrate }) => {
                 const baselineHistory =
                     await client`select hash from languon_migrations.history`;
+
                 await expect(migrate()).rejects.toMatchObject({
                     cause: { code: '42710' },
                 });
+
                 const [type] = await client<
                     { name: string | null }[]
                 >`select to_regtype('public.enum_integrity_operation')::text as name`;
+
                 expect(type?.name).toBeNull();
                 expect(
                     await client`select hash from languon_migrations.history`,
@@ -942,16 +1008,20 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
             async ({ migrate }) => {
                 const baselineHistory =
                     await client`select hash from languon_migrations.history`;
+
                 await client`ALTER TYPE "public"."enum_integrity_operation" ADD VALUE 'x' BEFORE 'anchor'`;
                 await expect(migrate()).rejects.toThrow(
                     /enum.*order|order.*enum/i,
                 );
+
                 expect(
                     await client`select hash from languon_migrations.history`,
                 ).toEqual(baselineHistory);
+
                 const [table] = await client<
                     { name: string | null }[]
                 >`select to_regclass('public.enum_integrity_result')::text as name`;
+
                 expect(table?.name).toBeNull();
             },
         );
@@ -963,21 +1033,26 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
 ALTER TYPE "public"."enum_integrity_operation" ADD VALUE 'y';
 --> statement-breakpoint
 CREATE TABLE "enum_integrity_result" ("operation" "public"."enum_integrity_operation" CHECK ("operation" IN ('x', 'y')));`;
+
         await withPendingMigrationFixture(
             `CREATE TYPE "public"."enum_integrity_operation" AS ENUM ('anchor');`,
             `${upgradeSql}\n--> statement-breakpoint\nSELECT 1 / 0;`,
             async ({ upgradePath, migrate }) => {
                 const baselineHistory =
                     await client`select hash from languon_migrations.history`;
+
                 await expect(migrate()).rejects.toMatchObject({
                     cause: { code: '22012' },
                 });
+
                 expect(
                     await client`select hash from languon_migrations.history`,
                 ).toEqual(baselineHistory);
+
                 const [table] = await client<
                     { name: string | null }[]
                 >`select to_regclass('public.enum_integrity_result')::text as name`;
+
                 expect(table?.name).toBeNull();
                 writeFileSync(upgradePath, upgradeSql);
                 await migrate();
@@ -986,13 +1061,16 @@ CREATE TABLE "enum_integrity_result" ("operation" "public"."enum_integrity_opera
                     select e.enumlabel from pg_enum e join pg_type t on t.oid=e.enumtypid
                     where t.typname='enum_integrity_operation' order by e.enumsortorder
                 `;
+
                 expect(labels.map(({ enumlabel }) => enumlabel)).toEqual([
                     'anchor',
                     'x',
                     'y',
                 ]);
+
                 const history =
                     await client`select hash from languon_migrations.history order by created_at`;
+
                 expect(history).toHaveLength(2);
                 await migrate();
                 expect(
@@ -1013,20 +1091,25 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
             async ({ migrate }) => {
                 const baselineHistory =
                     await client`select hash from languon_migrations.history`;
+
                 await expect(migrate()).rejects.toThrow(
                     /duplicate enum label addition/i,
                 );
+
                 expect(
                     await client`select hash from languon_migrations.history`,
                 ).toEqual(baselineHistory);
+
                 const [table] = await client<
                     { name: string | null }[]
                 >`select to_regclass('public.enum_integrity_result')::text as name`;
+
                 expect(table?.name).toBeNull();
                 const labels = await client<{ enumlabel: string }[]>`
                     select e.enumlabel from pg_enum e join pg_type t on t.oid=e.enumtypid
                     where t.typname='enum_integrity_operation' order by e.enumsortorder
                 `;
+
                 expect(labels.map(({ enumlabel }) => enumlabel)).toEqual([
                     'anchor',
                 ]);
@@ -1052,22 +1135,28 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
                 async ({ upgradePath, migrate }) => {
                     const baselineHistory =
                         await client`select hash from languon_migrations.history`;
+
                     await expect(migrate()).rejects.toMatchObject({
                         cause: { code: '22012' },
                     });
+
                     writeFileSync(
                         upgradePath,
                         `${additions(['y', 'x'])}\n--> statement-breakpoint\n${ordinaryDdl}`,
                     );
+
                     await expect(migrate()).rejects.toThrow(
                         /enum.*order|order.*enum/i,
                     );
+
                     expect(
                         await client`select hash from languon_migrations.history`,
                     ).toEqual(baselineHistory);
+
                     const [table] = await client<
                         { name: string | null }[]
                     >`select to_regclass('public.enum_integrity_result')::text as name`;
+
                     expect(table?.name).toBeNull();
                     writeFileSync(upgradePath, originalSql);
                     await migrate();
@@ -1076,13 +1165,16 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
                         select e.enumlabel from pg_enum e join pg_type t on t.oid=e.enumtypid
                         where t.typname='enum_integrity_operation' order by e.enumsortorder
                     `;
+
                     expect(labels.map(({ enumlabel }) => enumlabel)).toEqual(
                         direction === 'BEFORE'
                             ? ['x', 'y', 'anchor']
                             : ['anchor', 'y', 'x'],
                     );
+
                     const history =
                         await client`select hash from languon_migrations.history order by created_at`;
+
                     expect(history).toHaveLength(2);
                     await migrate();
                     expect(
@@ -1104,21 +1196,26 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
             async ({ migrate }) => {
                 const baselineHistory =
                     await client`select hash from languon_migrations.history`;
+
                 await client`ALTER TYPE "public"."enum_integrity_operation" ADD VALUE 'x' BEFORE 'anchor'`;
                 await expect(migrate()).rejects.toThrow(
                     /enum.*order|order.*enum/i,
                 );
+
                 expect(
                     await client`select hash from languon_migrations.history`,
                 ).toEqual(baselineHistory);
+
                 const [table] = await client<
                     { name: string | null }[]
                 >`select to_regclass('public.enum_integrity_result')::text as name`;
+
                 expect(table?.name).toBeNull();
                 const labels = await client<{ enumlabel: string }[]>`
                     select e.enumlabel from pg_enum e join pg_type t on t.oid=e.enumtypid
                     where t.typname='enum_integrity_operation' order by e.enumsortorder
                 `;
+
                 expect(labels.map(({ enumlabel }) => enumlabel)).toEqual([
                     'x',
                     'y',
@@ -1169,6 +1266,7 @@ CREATE TABLE "enum_integrity_result" (id integer);`,
             cpSync(getMigrationsFolder(), copiedMigrations, {
                 recursive: true,
             });
+
             appendFileSync(
                 join(copiedMigrations, '0000_foamy_angel.sql'),
                 '\n-- tampered after application\n',

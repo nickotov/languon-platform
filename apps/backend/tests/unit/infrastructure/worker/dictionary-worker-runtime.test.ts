@@ -96,6 +96,7 @@ describe('DictionaryWorkerRuntime', () => {
             readiness: vi.fn(async () => undefined),
             processNext: vi.fn(async () => {
                 entered?.();
+
                 return false;
             }),
             releaseWorkerLeases: vi.fn(async () => undefined),
@@ -116,6 +117,7 @@ describe('DictionaryWorkerRuntime', () => {
         await expect(runtime.shutdown('SIGINT')).resolves.toEqual({
             forced: false,
         });
+
         await running;
 
         expect(service.releaseWorkerLeases).toHaveBeenCalledOnce();
@@ -132,12 +134,16 @@ describe('DictionaryWorkerRuntime', () => {
             readiness: vi.fn(async () => undefined),
             processNext: vi.fn(async ({ signal }: { signal: AbortSignal }) => {
                 entered.push(signal);
-                if (entered.length === 2) resolveEntered?.();
+                if (entered.length === 2) {
+                    resolveEntered?.();
+                }
+
                 await new Promise<void>((resolve) =>
                     signal.addEventListener('abort', () => resolve(), {
                         once: true,
                     }),
                 );
+
                 return false;
             }),
             releaseWorkerLeases: vi.fn(async () => undefined),
@@ -176,6 +182,7 @@ describe('DictionaryWorkerRuntime', () => {
             processNext: vi.fn(async () => {
                 entered?.();
                 await new Promise(() => undefined);
+
                 return false;
             }),
             releaseWorkerLeases: vi.fn(async () => undefined),
@@ -196,6 +203,7 @@ describe('DictionaryWorkerRuntime', () => {
         await expect(runtime.shutdown('SIGINT')).resolves.toEqual({
             forced: true,
         });
+
         await running;
         expect(service.releaseWorkerLeases).toHaveBeenCalledOnce();
     });
@@ -254,12 +262,14 @@ describe('DictionaryWorkerRuntime', () => {
                 _signal: AbortSignal,
                 options?: { includeProvider?: boolean },
             ) => {
-                if (options?.includeProvider)
+                if (options?.includeProvider) {
                     throw new Error('provider unavailable');
+                }
             },
         );
         const processNext = vi.fn(async () => {
             processed?.();
+
             return false;
         });
         const runtime = new DictionaryWorkerRuntime({
@@ -281,6 +291,7 @@ describe('DictionaryWorkerRuntime', () => {
         await expect(runtime.readiness()).rejects.toThrow(
             'provider unavailable',
         );
+
         const running = runtime.run();
         await firstPoll;
         await runtime.shutdown('test');
@@ -310,11 +321,13 @@ describe('DictionaryWorkerRuntime', () => {
                             'private card text and provider payload',
                         );
                     }
+
                     await new Promise<void>((resolve) =>
                         signal.addEventListener('abort', () => resolve(), {
                             once: true,
                         }),
                     );
+
                     return false;
                 },
                 releaseWorkerLeases: async () => undefined,
@@ -327,12 +340,14 @@ describe('DictionaryWorkerRuntime', () => {
         while (calls < 2) {
             await new Promise((resolve) => setTimeout(resolve, 10));
         }
+
         await runtime.shutdown('test');
         await running;
 
         expect(JSON.stringify(logger.error.mock.calls)).not.toContain(
             'private card text',
         );
+
         expect(logger.error).toHaveBeenCalledWith(
             'Dictionary worker loop 0 failed; polling will retry.',
         );
@@ -346,8 +361,9 @@ describe('DictionaryWorkerRuntime', () => {
         const logger = {
             error: vi.fn(),
             info: vi.fn((message: string) => {
-                if (message === 'Dictionary worker operational measurement.')
+                if (message === 'Dictionary worker operational measurement.') {
                     resolveMeasured();
+                }
             }),
         };
         const runtime = new DictionaryWorkerRuntime({
@@ -370,6 +386,7 @@ describe('DictionaryWorkerRuntime', () => {
                             once: true,
                         }),
                     );
+
                     return false;
                 },
                 releaseWorkerLeases: async () => undefined,
@@ -387,9 +404,11 @@ describe('DictionaryWorkerRuntime', () => {
             'Dictionary worker operational measurement.',
             operationalMeasurement,
         );
+
         expect(JSON.stringify(logger.info.mock.calls)).not.toContain(
             'private card text',
         );
+
         expect(JSON.stringify(logger.info.mock.calls)).not.toContain(
             'object key',
         );
@@ -398,15 +417,21 @@ describe('DictionaryWorkerRuntime', () => {
 
 function pendingUntilAbort(signal: AbortSignal) {
     return new Promise<void>((resolve) => {
-        if (signal.aborted) resolve();
-        else signal.addEventListener('abort', () => resolve(), { once: true });
+        if (signal.aborted) {
+            resolve();
+        } else {
+            signal.addEventListener('abort', () => resolve(), { once: true });
+        }
     });
 }
+
 function deferred() {
     let resolve!: () => void;
     const promise = new Promise<void>((r) => (resolve = r));
+
     return { promise, resolve };
 }
+
 function combinedRuntime(
     service: ConstructorParameters<
         typeof DictionaryWorkerRuntime
@@ -430,6 +455,7 @@ function combinedRuntime(
         logger: { info: vi.fn(), error: vi.fn() },
     });
 }
+
 describe('shared dictionary and sentence slot pool', () => {
     afterEach(() => vi.useRealTimers());
     it('admits preparation and executes its child in the existing slot', async () => {
@@ -445,6 +471,7 @@ describe('shared dictionary and sentence slot pool', () => {
                 async ({ signal }: { now: Date; signal: AbortSignal }) => {
                     expect(signal.aborted).toBe(false);
                     calls.push('admit');
+
                     return true;
                 },
             ),
@@ -454,6 +481,7 @@ describe('shared dictionary and sentence slot pool', () => {
                 calls.push('execute');
                 entered.resolve();
                 await pendingUntilAbort(signal);
+
                 return true;
             }),
             releaseWorkerLeases: vi.fn(async () => {}),
@@ -476,10 +504,12 @@ describe('shared dictionary and sentence slot pool', () => {
         await expect(runtime.shutdown('SIGTERM')).resolves.toEqual({
             forced: false,
         });
+
         await running;
         expect(sentencePreparation.tick).toHaveBeenCalledOnce();
         expect(sentenceService.releaseWorkerLeases).toHaveBeenCalledOnce();
     });
+
     it('alternates both nonempty queues in one bounded slot', async () => {
         const calls: string[] = [];
         const entered = deferred();
@@ -489,6 +519,7 @@ describe('shared dictionary and sentence slot pool', () => {
                 entered.resolve();
                 await pendingUntilAbort(signal);
             }
+
             return true;
         };
         const service = {
@@ -513,13 +544,16 @@ describe('shared dictionary and sentence slot pool', () => {
             'dictionary',
             'sentence',
         ]);
+
         await expect(runtime.shutdown('SIGTERM')).resolves.toEqual({
             forced: false,
         });
+
         await running;
         expect(service.releaseWorkerLeases).toHaveBeenCalledOnce();
         expect(sentences.releaseWorkerLeases).toHaveBeenCalledOnce();
     });
+
     it('falls back sequentially when the preferred queue is empty', async () => {
         const calls: string[] = [];
         const entered = deferred();
@@ -533,7 +567,9 @@ describe('shared dictionary and sentence slot pool', () => {
                 entered.resolve();
                 await pendingUntilAbort(signal);
             }
+
             active--;
+
             return calls.length % 2 === 0;
         };
         const service = {
@@ -558,10 +594,12 @@ describe('shared dictionary and sentence slot pool', () => {
             'sentence',
             'dictionary',
         ]);
+
         expect(maxActive).toBe(1);
         await runtime.shutdown('SIGTERM');
         await running;
     });
+
     it('uses two existing slots across both queues and drains before releasing both lease types', async () => {
         const entered = deferred();
         let active = 0,
@@ -572,9 +610,13 @@ describe('shared dictionary and sentence slot pool', () => {
             active++;
             maxActive = Math.max(active, maxActive);
             kinds.push(kind);
-            if (active === 2) entered.resolve();
+            if (active === 2) {
+                entered.resolve();
+            }
+
             await pendingUntilAbort(signal);
             active--;
+
             return false;
         };
         const service = {
@@ -606,6 +648,7 @@ describe('shared dictionary and sentence slot pool', () => {
         expect(kinds).toHaveLength(2);
         expect(releaseSignal?.aborted).toBe(false);
     });
+
     it('releases both lease types even when sentence release rejects', async () => {
         const entered = deferred();
         const service = {
@@ -613,6 +656,7 @@ describe('shared dictionary and sentence slot pool', () => {
             processNext: vi.fn(async ({ signal }: { signal: AbortSignal }) => {
                 entered.resolve();
                 await pendingUntilAbort(signal);
+
                 return false;
             }),
             releaseWorkerLeases: vi.fn(async () => {}),
@@ -629,10 +673,12 @@ describe('shared dictionary and sentence slot pool', () => {
         await expect(runtime.shutdown('SIGTERM')).resolves.toEqual({
             forced: true,
         });
+
         await running;
         expect(service.releaseWorkerLeases).toHaveBeenCalledOnce();
         expect(sentences.releaseWorkerLeases).toHaveBeenCalledOnce();
     });
+
     it('bounds stuck sentence lease release with a fresh cancellation signal', async () => {
         vi.useFakeTimers();
         const entered = deferred();
@@ -641,6 +687,7 @@ describe('shared dictionary and sentence slot pool', () => {
             readiness: vi.fn(async () => {}),
             processNext: vi.fn(async () => {
                 entered.resolve();
+
                 return false;
             }),
             releaseWorkerLeases: vi.fn(async () => {}),
@@ -649,6 +696,7 @@ describe('shared dictionary and sentence slot pool', () => {
             processNext: vi.fn(async () => false),
             releaseWorkerLeases: vi.fn(async (signal: AbortSignal) => {
                 releaseSignal = signal;
+
                 return new Promise<void>(() => {});
             }),
         };
@@ -668,7 +716,10 @@ it('shares one polling slot fairly among dictionary, conversation, sentence, tex
     const order: string[] = [];
     const run = (kind: string) => async () => {
         order.push(kind);
-        if (order.length === 10) void runtime.shutdown('SIGTERM');
+        if (order.length === 10) {
+            void runtime.shutdown('SIGTERM');
+        }
+
         return true;
     };
     const release = vi.fn(async () => undefined);
@@ -708,6 +759,7 @@ it('shares one polling slot fairly among dictionary, conversation, sentence, tex
             releaseWorkerLeases: release,
         },
     });
+
     await runtime.run();
     expect(order).toEqual([
         'dictionary',
@@ -721,6 +773,7 @@ it('shares one polling slot fairly among dictionary, conversation, sentence, tex
         'texts',
         'selection',
     ]);
+
     await runtime.shutdown('SIGTERM');
     expect(release).toHaveBeenCalledTimes(5);
 });
@@ -730,7 +783,10 @@ it('shares a bounded slot with portrait interviews and releases their worker on 
     const release = vi.fn(async () => undefined);
     const run = (kind: string) => async () => {
         order.push(kind);
-        if (order.length === 4) void runtime.shutdown('SIGTERM');
+        if (order.length === 4) {
+            void runtime.shutdown('SIGTERM');
+        }
+
         return true;
     };
     const runtime = new DictionaryWorkerRuntime({
@@ -751,6 +807,7 @@ it('shares a bounded slot with portrait interviews and releases their worker on 
             releaseWorkerLeases: release,
         },
     });
+
     await runtime.run();
     expect(order).toEqual(['dictionary', 'portrait', 'dictionary', 'portrait']);
     await runtime.shutdown('SIGTERM');
@@ -762,7 +819,10 @@ it('runs transcription in the existing slot rotation and releases its lease reco
     const release = vi.fn(async () => undefined);
     const run = (kind: string) => async () => {
         order.push(kind);
-        if (order.length === 4) void runtime.shutdown('SIGTERM');
+        if (order.length === 4) {
+            void runtime.shutdown('SIGTERM');
+        }
+
         return true;
     };
     const runtime = new DictionaryWorkerRuntime({
@@ -783,6 +843,7 @@ it('runs transcription in the existing slot rotation and releases its lease reco
             releaseWorkerLeases: release,
         },
     });
+
     await runtime.run();
     expect(order).toEqual([
         'dictionary',
@@ -790,6 +851,7 @@ it('runs transcription in the existing slot rotation and releases its lease reco
         'dictionary',
         'transcription',
     ]);
+
     await runtime.shutdown('SIGTERM');
     expect(release).toHaveBeenCalledTimes(2);
 });

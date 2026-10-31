@@ -7,6 +7,7 @@ import { ProviderPriceDialog } from './provider-price-dialog';
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 beforeEach(() => {
     vi.stubGlobal(
         'matchMedia',
@@ -17,10 +18,12 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
 });
+
 const price: ProviderPrice = {
     id: '00000000-0000-4000-8000-000000000001',
     providerId: 'fixture',
@@ -62,6 +65,7 @@ const price: ProviderPrice = {
         ],
     },
 };
+
 it('routes native speech tokens away from the flat editor and retains exact amounts and native currency', () => {
     render(
         <ProviderPriceDialog
@@ -73,11 +77,13 @@ it('routes native speech tokens away from the flat editor and retains exact amou
             onReload={vi.fn()}
         />,
     );
+
     expect(
         screen.getByText(
             '0.123456789012345678901234 UC per 1000 audio output tokens',
         ),
     ).toBeInTheDocument();
+
     expect(screen.getByText('1 USD per 680000 UC')).toBeInTheDocument();
     expect(screen.getByText('No declared expiry')).toBeInTheDocument();
     expect(screen.getByText('Component minimum: 100 UC')).toBeInTheDocument();
@@ -86,6 +92,7 @@ it('routes native speech tokens away from the flat editor and retains exact amou
             'Charged on every matching request, including zero usage',
         ),
     ).toBeInTheDocument();
+
     expect(screen.getByText('Round up to 1 UC')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(
@@ -93,6 +100,7 @@ it('routes native speech tokens away from the flat editor and retains exact amou
             name: 'Publish provider cost revision',
         }),
     ).not.toBeInTheDocument();
+
     expect(
         screen.queryByText('Unknown', { exact: true }),
     ).not.toBeInTheDocument();

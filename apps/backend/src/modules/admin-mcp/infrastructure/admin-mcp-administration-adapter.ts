@@ -20,6 +20,7 @@ export class AdminMcpAdministrationAdapter implements AdminMcpAdministrationPort
         this.previews = new AdminMcpPreviewStore(database);
         this.audit = new AdminMcpRejectionAudit(database);
     }
+
     read(
         actor: AdminMcpActor,
         operation: AdminMcpReadOperation,
@@ -27,6 +28,7 @@ export class AdminMcpAdministrationAdapter implements AdminMcpAdministrationPort
     ) {
         return this.operations.read(actor, operation, input);
     }
+
     async preview(
         actor: AdminMcpActor,
         operation: AdminMcpWriteOperation,
@@ -35,8 +37,10 @@ export class AdminMcpAdministrationAdapter implements AdminMcpAdministrationPort
         const disclosed = await this.database.transaction((tx) =>
             this.operations.preview(tx, actor, operation, input),
         );
+
         return this.previews.create(actor, disclosed);
     }
+
     apply(actor: AdminMcpActor, previewId: string, operationKey: string) {
         return this.previews.executePreview(
             actor,
@@ -45,6 +49,7 @@ export class AdminMcpAdministrationAdapter implements AdminMcpAdministrationPort
             (tx, preview) => this.operations.apply(tx, actor, preview),
         );
     }
+
     recordRead(
         actor: AdminMcpActor,
         operation: string,
@@ -54,6 +59,7 @@ export class AdminMcpAdministrationAdapter implements AdminMcpAdministrationPort
     ) {
         return this.audit.recordRead(actor, operation, input, value, reason);
     }
+
     recordRejected(
         actor: AdminMcpActor,
         operation: string,

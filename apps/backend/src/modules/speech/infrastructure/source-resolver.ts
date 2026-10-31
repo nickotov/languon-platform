@@ -56,11 +56,15 @@ export class DrizzleSpeechSourceResolver {
         exerciseId?: string;
         attemptId?: string;
     }> {
-        if (source.kind === 'knowledge-audio-draft')
+        if (source.kind === 'knowledge-audio-draft') {
             return resolveKnowledgeAudioDraftSource(tx, actorId, source);
+        }
+
         if (source.kind === 'knowledge-snippet') {
-            if (!this.knowledgeCrypto)
+            if (!this.knowledgeCrypto) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             return resolveKnowledgeSnippetSource(
                 tx,
                 actorId,
@@ -68,8 +72,11 @@ export class DrizzleSpeechSourceResolver {
                 this.knowledgeCrypto,
             );
         }
-        if (source.kind === 'knowledge-block')
+
+        if (source.kind === 'knowledge-block') {
             return resolveKnowledgeSpeechSource(tx, actorId, source);
+        }
+
         const access: LearningAccess =
             source.access.kind === 'owner'
                 ? {
@@ -112,6 +119,7 @@ export class DrizzleSpeechSourceResolver {
         ) {
             throw new SpeechError('speech_source_changed', 409);
         }
+
         if (
             source.kind === 'dictionary-field' ||
             source.kind === 'flashcard-field'
@@ -126,6 +134,7 @@ export class DrizzleSpeechSourceResolver {
                     ),
                 )
                 .for('share');
+
             if (
                 !card ||
                 card.lifecycle !== 'active' ||
@@ -135,8 +144,10 @@ export class DrizzleSpeechSourceResolver {
                 (source.kind === 'flashcard-field' &&
                     source.expectedLearningVersion !== undefined &&
                     source.expectedLearningVersion !== card.learningVersion)
-            )
+            ) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const settings = learningCardSettings(owned.settings, card);
             const field =
                 source.kind === 'flashcard-field' &&
@@ -152,16 +163,23 @@ export class DrizzleSpeechSourceResolver {
                           | 'translation'
                           | 'example'
                           | 'exampleTranslation');
-            if (field === 'example' && !settings.exampleEnabled)
+
+            if (field === 'example' && !settings.exampleEnabled) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             if (
                 field === 'exampleTranslation' &&
                 !settings.exampleTranslationEnabled
-            )
+            ) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const text = card[field];
-            if (!text?.trim())
+            if (!text?.trim()) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const role =
                 field === 'source'
                     ? 'source'
@@ -170,6 +188,7 @@ export class DrizzleSpeechSourceResolver {
                       : field === 'example'
                         ? settings.exampleLanguageRole
                         : settings.exampleTranslationLanguageRole;
+
             return {
                 authority,
                 text,
@@ -195,8 +214,11 @@ export class DrizzleSpeechSourceResolver {
                     ),
                 )
                 .for('share');
-            if (!attempt)
+
+            if (!attempt) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const exercise = await readableExercise(
                 tx,
                 attempt.exerciseId,
@@ -204,6 +226,7 @@ export class DrizzleSpeechSourceResolver {
                 actorId,
                 false,
             );
+
             return {
                 authority,
                 text: attempt.answer,
@@ -222,8 +245,11 @@ export class DrizzleSpeechSourceResolver {
             actorId,
             source.kind === 'sentence-practice',
         );
-        if (source.kind === 'sentence-practice')
+
+        if (source.kind === 'sentence-practice') {
             await assertSentencePracticeVisible(tx, exercise.id, actorId);
+        }
+
         if (
             source.kind === 'sentence-practice' &&
             source.field === 'reference'
@@ -251,9 +277,12 @@ export class DrizzleSpeechSourceResolver {
                     ),
                 )
                 .limit(1);
-            if (!review && !attempt)
+
+            if (!review && !attempt) {
                 throw new SpeechError('speech_reference_hidden', 403);
+            }
         }
+
         return {
             authority,
             text:

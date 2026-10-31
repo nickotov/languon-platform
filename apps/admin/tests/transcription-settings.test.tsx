@@ -19,9 +19,11 @@ vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
     useLogout: () => ({ mutate: vi.fn() }),
 }));
+
 vi.mock('../src/pages/ai-settings/hooks/use-transcription-settings', () => ({
     useTranscriptionSettings: vi.fn(),
 }));
+
 beforeAll(() =>
     vi.stubGlobal(
         'matchMedia',
@@ -34,6 +36,7 @@ beforeAll(() =>
         }),
     ),
 );
+
 afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
 function fixture(enabled = false) {
@@ -88,9 +91,12 @@ function fixture(enabled = false) {
         review: vi.fn(async () => {}),
         apply: vi.fn(async () => {}),
     };
+
     vi.mocked(useTranscriptionSettings).mockReturnValue(settings);
+
     return settings;
 }
+
 describe('Transcription settings review controls', () => {
     it('leaves a new customer tariff blank and makes no automatic publication', () => {
         const settings = fixture();
@@ -100,11 +106,13 @@ describe('Transcription settings review controls', () => {
                 'Customer credits per minute of source audio',
             ),
         ).toHaveValue('');
+
         expect(settings.apply).not.toHaveBeenCalled();
         expect(
             screen.getAllByText('Provider credentials are not configured'),
         ).toHaveLength(2);
     });
+
     it('shows the distinct processor review gate without an administrator approval checkbox', () => {
         const settings = fixture(true);
         const readiness = {
@@ -112,6 +120,7 @@ describe('Transcription settings review controls', () => {
             credentialsConfigured: true,
             reasons: ['processing_controls_unapproved' as const],
         };
+
         settings.state.readiness = readiness;
         settings.preview.readiness = readiness;
         render(<TranscriptionSettingsPanel />);
@@ -120,15 +129,18 @@ describe('Transcription settings review controls', () => {
                 /Select the current engineering-reviewed transcription route revision/,
             ),
         ).toHaveLength(2);
+
         expect(
             screen.getByRole('button', {
                 name: 'Publish reviewed configuration',
             }),
         ).toBeDisabled();
+
         expect(
             screen.queryByRole('checkbox', { name: /processor approval/i }),
         ).toBeNull();
     });
+
     it('requires a fresh operator check rather than silently renewing a previous account attestation', () => {
         const settings = fixture(true);
         settings.state.current = {
@@ -142,18 +154,21 @@ describe('Transcription settings review controls', () => {
             dataSharingDisabled: true,
             dataSharingEvidence: 'Previous actual account review evidence',
         };
+
         render(<TranscriptionSettingsPanel />);
         expect(
             screen.getByRole('checkbox', {
                 name: /I verified data sharing for training is disabled/,
             }),
         ).not.toBeChecked();
+
         expect(
             screen.getByLabelText(
                 'Organization/project data-sharing review evidence',
             ),
         ).toHaveValue('');
     });
+
     it('blocks enabled publication when server readiness is missing', () => {
         const settings = fixture(true);
         render(<TranscriptionSettingsPanel />);
@@ -162,18 +177,22 @@ describe('Transcription settings review controls', () => {
                 name: 'Publish reviewed configuration',
             }),
         ).toBeDisabled();
+
         expect(settings.apply).not.toHaveBeenCalled();
     });
+
     it('allows explicit reviewed disabled preparation without claiming provider readiness', () => {
         const settings = fixture(false);
         render(<TranscriptionSettingsPanel />);
         const publish = screen.getByRole('button', {
             name: 'Publish reviewed configuration',
         });
+
         expect(publish).toBeEnabled();
         fireEvent.click(publish);
         expect(settings.apply).toHaveBeenCalledTimes(1);
     });
+
     it('invalidates an old preview when the operator edits configuration fields', () => {
         const settings = fixture();
         render(<TranscriptionSettingsPanel />);
@@ -183,6 +202,7 @@ describe('Transcription settings review controls', () => {
             ),
             { target: { value: '3.125' } },
         );
+
         expect(settings.clearPreview).toHaveBeenCalled();
     });
 });

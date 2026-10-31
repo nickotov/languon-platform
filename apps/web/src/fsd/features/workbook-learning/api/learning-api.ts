@@ -12,6 +12,7 @@ const learningErrorSchema = z.object({
             .optional(),
     }),
 });
+
 type ErrorDetail = z.infer<typeof learningErrorSchema>['error'];
 export class LearningApiError extends BrowserApiError<ErrorDetail> {}
 async function request<T>(
@@ -63,23 +64,30 @@ async function request<T>(
             },
         );
     } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw error;
+        }
+
         throw new LearningApiError(0, fallback);
     }
+
     const payload: unknown = await response.json().catch(() => undefined);
     if (!response.ok) {
         const parsed = learningErrorSchema.safeParse(payload);
+
         throw new LearningApiError(
             response.status,
             parsed.success ? parsed.data.error : fallback,
         );
     }
+
     try {
         return schema.parse(payload);
     } catch {
         throw new LearningApiError(502, fallback);
     }
 }
+
 export const learningApi = {
     workbookProgress: (
         token: string,

@@ -70,6 +70,7 @@ export function LearningNarrative({
     className?: string | undefined;
 }) {
     const classes = [styles.root, className].filter(Boolean).join(' ');
+
     return (
         <Streamdown
             className={classes}
@@ -101,6 +102,7 @@ function SafeAnchor({
 }: ComponentProps<'a'> | Record<string, unknown>) {
     const safeHref = typeof href === 'string' ? safeLink(href) : undefined;
     const label = children as ReactNode;
+
     return safeHref ? (
         <a href={safeHref} target='_blank' rel='noopener noreferrer'>
             {label}
@@ -115,7 +117,10 @@ function literalHtml() {
     return function transform(node: MarkdownNode) {
         // Preserve older plain-text blocks containing literal tags. They never
         // become HTML nodes, attributes, media requests, or executable content.
-        if (node.type === 'html') node.type = 'text';
+        if (node.type === 'html') {
+            node.type = 'text';
+        }
+
         node.children?.forEach(transform);
     };
 }

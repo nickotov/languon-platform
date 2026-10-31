@@ -64,8 +64,10 @@ function setup(timeoutMs = 2000) {
         maxAttempts: 3,
         retryDelayMs: 1000,
     });
+
     return { store, provider, service, job, onInvalidModelOutput };
 }
+
 describe('sentence worker fencing and failure publication', () => {
     it.each(['rejected', 'ambiguous'])(
         'forwards only conclusive provider retry evidence (%s)',
@@ -77,15 +79,18 @@ describe('sentence worker fencing and failure publication', () => {
                     executionOutcome,
                 }),
             );
+
             await f.service.processNext(new AbortController().signal);
             expect(
                 JSON.stringify(
                     f.provider.generate.mock.calls[0]?.[0].providerAttempt,
                 ),
             ).not.toContain('synthetic-private-sentence-lease-secret');
+
             expect(f.store.fail.mock.calls[0]?.[0].capability).toBe(
                 'synthetic-private-sentence-lease-secret',
             );
+
             const failure = f.store.fail.mock.calls[0]![1];
             expect(failure.retryDisposition).toBe(
                 executionOutcome === 'rejected'
@@ -94,6 +99,7 @@ describe('sentence worker fencing and failure publication', () => {
             );
         },
     );
+
     it('releases a slot when a provider ignores the abort signal', async () => {
         const f = setup(20);
         f.provider.generate.mockImplementation(() => new Promise(() => {}));
@@ -106,6 +112,7 @@ describe('sentence worker fencing and failure publication', () => {
             },
             { now, signal: expect.any(AbortSignal) },
         );
+
         expect(f.store.completeGeneration).not.toHaveBeenCalled();
     });
 
@@ -115,6 +122,7 @@ describe('sentence worker fencing and failure publication', () => {
         expect(await f.service.processNext(new AbortController().signal)).toBe(
             false,
         );
+
         expect(f.provider.generate).not.toHaveBeenCalled();
         expect(f.store.claimNext.mock.calls[0]?.[0].supportedFormats).toEqual([
             'sentence-generation:v1',
@@ -124,6 +132,7 @@ describe('sentence worker fencing and failure publication', () => {
             'sentence-check:v1',
         ]);
     });
+
     it('rejects preparation format/policy mismatches before paid dispatch', async () => {
         const f = setup();
         f.store.claimNext.mockResolvedValue({
@@ -135,6 +144,7 @@ describe('sentence worker fencing and failure publication', () => {
                 generationPolicyVersion: 1,
             },
         } as ClaimedSentenceJob);
+
         await f.service.processNext(new AbortController().signal);
         expect(f.store.markDispatched).not.toHaveBeenCalled();
         expect(f.provider.generate).not.toHaveBeenCalled();
@@ -144,6 +154,7 @@ describe('sentence worker fencing and failure publication', () => {
             expect.any(Object),
         );
     });
+
     it.each(['sentence-generation:v1', 'sentence-preparation:v1'] as const)(
         'completes %s through the same validated executor',
         async (format) => {
@@ -174,6 +185,7 @@ describe('sentence worker fencing and failure publication', () => {
                     ],
                 },
             });
+
             f.provider.generate.mockResolvedValue({
                 draft: {
                     sourceText: 'We go today.',
@@ -193,6 +205,7 @@ describe('sentence worker fencing and failure publication', () => {
                 },
                 usage: { inputTokens: 10, outputTokens: 20 },
             });
+
             await f.service.processNext(new AbortController().signal);
             expect(f.store.fail).not.toHaveBeenCalled();
             expect(f.store.completeGeneration).toHaveBeenCalledOnce();
@@ -200,6 +213,7 @@ describe('sentence worker fencing and failure publication', () => {
             expect(call[1].content.hints).toEqual([
                 { id: 'hint-1', text: 'gehen' },
             ]);
+
             expect(
                 call[1].content.segments.every(
                     (segment) => !segment.contextualHintId,
@@ -207,6 +221,7 @@ describe('sentence worker fencing and failure publication', () => {
             ).toBe(true);
         },
     );
+
     it('honors the processable release allowlist, including an empty disabled list', async () => {
         const f = setup();
         f.service = new SentenceWorkerService({
@@ -223,13 +238,16 @@ describe('sentence worker fencing and failure publication', () => {
             retryDelayMs: 1000,
             supportedFormats: [],
         });
+
         f.store.claimNext.mockResolvedValue(null);
         await f.service.processNext(new AbortController().signal);
         expect(f.store.claimNext.mock.calls[0]?.[0].supportedFormats).toEqual(
             [],
         );
+
         expect(f.provider.generate).not.toHaveBeenCalled();
     });
+
     it('rejects a persisted format/policy mismatch before dispatch or provider billing', async () => {
         const f = setup();
         f.store.claimNext.mockResolvedValue({
@@ -241,6 +259,7 @@ describe('sentence worker fencing and failure publication', () => {
                 generationPolicyVersion: 1,
             },
         } as ClaimedSentenceJob);
+
         await f.service.processNext(new AbortController().signal);
         expect(f.store.markDispatched).not.toHaveBeenCalled();
         expect(f.provider.generate).not.toHaveBeenCalled();
@@ -250,15 +269,18 @@ describe('sentence worker fencing and failure publication', () => {
             { now, signal: expect.any(AbortSignal) },
         );
     });
+
     it('does not call provider after cancellation or lost dispatch fence', async () => {
         const f = setup();
         f.store.markDispatched.mockResolvedValue('terminalized');
         expect(await f.service.processNext(new AbortController().signal)).toBe(
             true,
         );
+
         expect(f.provider.generate).not.toHaveBeenCalled();
         expect(f.store.completeGeneration).not.toHaveBeenCalled();
     });
+
     it('retries invalid generation within the attempt cap without publishing an exercise', async () => {
         const f = setup();
         f.provider.generate.mockResolvedValue({
@@ -270,6 +292,7 @@ describe('sentence worker fencing and failure publication', () => {
             },
             usage: { inputTokens: 10, outputTokens: 20 },
         });
+
         await f.service.processNext(new AbortController().signal);
         expect(f.store.completeGeneration).not.toHaveBeenCalled();
         expect(f.store.fail).toHaveBeenCalledWith(
@@ -281,16 +304,19 @@ describe('sentence worker fencing and failure publication', () => {
             },
             { now, signal: expect.any(AbortSignal) },
         );
+
         expect(f.provider.generate.mock.calls[0]?.[0].idempotencyKey).toBe(
             'sentence-generation:job:1',
         );
     });
+
     it('terminalizes invalid generation on the last allowed attempt and preserves measured usage', async () => {
         const f = setup();
         f.store.claimNext.mockResolvedValue({
             ...f.job,
             lease: { ...f.job.lease, attempt: 3 },
         });
+
         f.provider.generate.mockResolvedValue({
             draft: {
                 sourceText: 'Go.',
@@ -300,6 +326,7 @@ describe('sentence worker fencing and failure publication', () => {
             },
             usage: { inputTokens: 10, outputTokens: 20 },
         });
+
         await f.service.processNext(new AbortController().signal);
         expect(f.store.completeGeneration).not.toHaveBeenCalled();
         expect(f.store.fail).toHaveBeenCalledWith(
@@ -311,13 +338,16 @@ describe('sentence worker fencing and failure publication', () => {
             },
             { now, signal: expect.any(AbortSignal) },
         );
+
         expect(f.provider.generate).toHaveBeenCalledTimes(1);
     });
+
     it('bounds provider failures with one retry and pinned job identity', async () => {
         const f = setup();
         f.provider.generate.mockRejectedValue(
             new Error('provider detail must not persist'),
         );
+
         await f.service.processNext(new AbortController().signal);
         expect(f.store.fail).toHaveBeenCalledWith(
             f.job.lease,
@@ -328,6 +358,7 @@ describe('sentence worker fencing and failure publication', () => {
             { now, signal: expect.any(AbortSignal) },
         );
     });
+
     it.each([false, true])(
         'publishes only a safe check rejection reason and settles despite observer failure %j',
         async (observerThrows) => {
@@ -357,11 +388,14 @@ describe('sentence worker fencing and failure publication', () => {
                     revealedHintIds: [],
                 },
             };
+
             f.store.claimNext.mockResolvedValue(job);
-            if (observerThrows)
+            if (observerThrows) {
                 f.onInvalidModelOutput.mockImplementation(() => {
                     throw new Error('observer failed');
                 });
+            }
+
             f.provider.check.mockResolvedValue({
                 draft: {
                     proposedPercentage: 100,
@@ -374,9 +408,11 @@ describe('sentence worker fencing and failure publication', () => {
                 },
                 usage: { inputTokens: 10, outputTokens: 20 },
             });
+
             await expect(
                 f.service.processNext(new AbortController().signal),
             ).resolves.toBe(true);
+
             expect(f.onInvalidModelOutput.mock.calls).toEqual([
                 [
                     {
@@ -385,6 +421,7 @@ describe('sentence worker fencing and failure publication', () => {
                     },
                 ],
             ]);
+
             expect(f.store.fail).toHaveBeenCalledWith(
                 job.lease,
                 {
@@ -394,10 +431,12 @@ describe('sentence worker fencing and failure publication', () => {
                 },
                 { now, signal: expect.any(AbortSignal) },
             );
+
             expect(f.store.completeCheck).not.toHaveBeenCalled();
             expect(f.provider.check).toHaveBeenCalledOnce();
         },
     );
+
     it('preserves a provider rejection reason without exposing its private message or retrying a check', async () => {
         const f = setup();
         const job = {
@@ -406,6 +445,7 @@ describe('sentence worker fencing and failure publication', () => {
             format: 'sentence-check:v1',
             input: {},
         } as ClaimedSentenceJob;
+
         f.store.claimNext.mockResolvedValue(job);
         f.provider.check.mockRejectedValue(
             new SentenceInvalidModelOutputError(
@@ -413,16 +453,19 @@ describe('sentence worker fencing and failure publication', () => {
                 'schema_invalid',
             ),
         );
+
         await f.service.processNext(new AbortController().signal);
         expect(f.onInvalidModelOutput.mock.calls).toEqual([
             [{ kind: 'sentence-check', reason: 'schema_invalid' }],
         ]);
+
         expect(f.store.fail).toHaveBeenCalledWith(
             job.lease,
             { code: 'invalid_model_output', retryAt: null },
             { now, signal: expect.any(AbortSignal) },
         );
     });
+
     it('isolates an asynchronous observer rejection from job settlement', async () => {
         const f = setup();
         const job = {
@@ -431,22 +474,27 @@ describe('sentence worker fencing and failure publication', () => {
             format: 'sentence-check:v1',
             input: {},
         } as ClaimedSentenceJob;
+
         f.store.claimNext.mockResolvedValue(job);
         f.onInvalidModelOutput.mockRejectedValue(
             new Error('observer rejected asynchronously'),
         );
+
         f.provider.check.mockRejectedValue(
             new SentenceInvalidModelOutputError(undefined, 'schema_invalid'),
         );
+
         await expect(
             f.service.processNext(new AbortController().signal),
         ).resolves.toBe(true);
+
         await new Promise<void>((resolve) => setImmediate(resolve));
         expect(f.store.fail).toHaveBeenCalledWith(
             job.lease,
             { code: 'invalid_model_output', retryAt: null },
             { now, signal: expect.any(AbortSignal) },
         );
+
         expect(f.onInvalidModelOutput.mock.calls).toEqual([
             [{ kind: 'sentence-check', reason: 'schema_invalid' }],
         ]);

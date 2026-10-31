@@ -83,8 +83,9 @@ export async function enqueueCardAuthoring(
             .for('share');
 
         if (replay) {
-            if (replay.requestFingerprint !== input.fingerprint)
+            if (replay.requestFingerprint !== input.fingerprint) {
                 throw new DictionaryIdempotencyConflictError();
+            }
 
             return readView(tx, replay, input.context.now);
         }
@@ -107,13 +108,17 @@ export async function enqueueCardAuthoring(
             )
             .for('update');
 
-        if (!current) throw new DictionaryNotFoundError();
+        if (!current) {
+            throw new DictionaryNotFoundError();
+        }
+
         if (
             current.dictionary.lifecycle !== 'active' ||
             current.dictionary.version !== input.expectedDictionaryVersion ||
             current.settings.version !== input.expectedSettingsVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
 
         if (target.kind === 'update') {
             const [card] = await tx
@@ -132,9 +137,13 @@ export async function enqueueCardAuthoring(
                 .limit(1)
                 .for('update');
 
-            if (!card) throw new DictionaryCardNotFoundError();
-            if (card.version !== target.expectedCardVersion)
+            if (!card) {
+                throw new DictionaryCardNotFoundError();
+            }
+
+            if (card.version !== target.expectedCardVersion) {
                 throw new DictionaryVersionConflictError();
+            }
         }
 
         const overrides = domainOverrides(input.draft.overrides);
@@ -182,17 +191,23 @@ export async function enqueueCardAuthoring(
                     current.dictionary.sourceLanguageTag ||
                 predecessor.targetLanguageTag !==
                     current.dictionary.targetLanguageTag
-            )
+            ) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             const predecessorProposal = await lockProposal(tx, predecessor.id);
             if (
                 !predecessorProposal ||
                 predecessorProposal.reviewState !== 'reviewable' ||
                 !predecessorProposal.payload
-            )
+            ) {
                 throw new DictionaryGenerationNotReviewableError();
-            if (predecessorProposal.expiresAt <= input.context.now)
+            }
+
+            if (predecessorProposal.expiresAt <= input.context.now) {
                 throw new DictionaryGenerationProposalExpiredError();
+            }
+
             const stored = DictionaryCardAuthoringProposalPayloadSchema.parse(
                 predecessorProposal.payload,
             );
@@ -232,8 +247,10 @@ export async function enqueueCardAuthoring(
                         }) ||
                         predecessorInput.draft.translationContext !==
                             input.draft.translationContext))
-            )
+            ) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
+
             const availableIds = new Set(
                 [
                     ...stored.suggestions,
@@ -249,8 +266,10 @@ export async function enqueueCardAuthoring(
                     (id) =>
                         !availableIds.has(id) && !alreadyDiscardedIds.has(id),
                 )
-            )
+            ) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
+
             const discarded = new Set(input.predecessor.discardedSuggestionIds);
             const historyFields = [
                 ...new Set([
@@ -283,8 +302,10 @@ export async function enqueueCardAuthoring(
                     requestedFields.includes(field) &&
                     remaining.length >=
                         dictionaryCardAuthoringSuggestionLimitPerField
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
+
                 const values = [
                     ...new Set([
                         ...(predecessorInput.excludedValues.find(
@@ -299,9 +320,13 @@ export async function enqueueCardAuthoring(
                 if (
                     values.length >
                     dictionaryCardAuthoringExcludedValueLimitPerField
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
-                if (values.length > 0) excludedValues.push({ field, values });
+                }
+
+                if (values.length > 0) {
+                    excludedValues.push({ field, values });
+                }
             }
         }
 

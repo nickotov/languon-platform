@@ -21,6 +21,7 @@ export function resolveTextAiExecutionSnapshot(
     const limits = model
         ? textAiExecutionLimits(model, snapshot.supportedFormats)
         : null;
+
     if (
         !model ||
         model.retired === true ||
@@ -49,14 +50,17 @@ export function resolveTextAiExecutionSnapshot(
                           ]),
                 ].every((value) => validCustomerRate(value)))) ||
         !sameBudget(snapshot.aggregateBudget, budget)
-    )
+    ) {
         throw new Error('Text AI provider execution snapshot is unsupported.');
+    }
+
     return model;
 }
 
 function validCustomerRate(value: number): boolean {
     try {
         parseCreditMilli(String(value));
+
         return true;
     } catch {
         return false;
@@ -86,6 +90,7 @@ function isStringSubset(
     // revisions remain valid, but rollback workers still reject revisions that
     // require a format absent from their catalog.
     const supportedValues = new Set(supported);
+
     return required.every((value) => supportedValues.has(value));
 }
 
@@ -106,12 +111,16 @@ export function resolveTextAiProviderOptions(
         `${curated.providerId}/${curated.id}`,
     );
     const credential = input.credentials[input.snapshot.credentialReference];
-    if (!model || !credential)
+    if (!model || !credential) {
         throw new Error('Text AI provider credential is unavailable.');
+    }
+
     const candidate = validateTextAiRouteRuntimeIdentity(input.snapshot, input);
     const providerPrice = candidate?.providerPrice;
-    if (curated.providerId === 'openrouter' && !providerPrice)
+    if (curated.providerId === 'openrouter' && !providerPrice) {
         throw new Error('Pinned gateway pricing is required before dispatch.');
+    }
+
     return createTextAiMastraGeneratorOptions({
         apiKey: credential,
         model: {
@@ -152,7 +161,10 @@ export function validateTextAiRouteRuntimeIdentity(
     options: TextAiProviderRuntimeOptions,
 ) {
     const authority = snapshot.routingAuthority;
-    if (!authority) return undefined;
+    if (!authority) {
+        return undefined;
+    }
+
     const candidate = authority.candidates.find(
         (candidate) =>
             candidate.snapshot.providerId === snapshot.providerId &&
@@ -165,13 +177,16 @@ export function validateTextAiRouteRuntimeIdentity(
         current && candidate?.providerPrice.nativeRules
             ? nativeTextPolicyFingerprint(current)
             : current;
+
     if (
         !candidate ||
         !options.currentFingerprint ||
         expected !== candidate.fingerprint
-    )
+    ) {
         throw new Error(
             'Approved provider route identity has changed. A matching check is required.',
         );
+    }
+
     return candidate;
 }

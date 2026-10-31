@@ -12,6 +12,7 @@ export const ExerciseGroupDrag = Extension.create({
     name: 'exerciseGroupDrag',
     addProseMirrorPlugins() {
         const editor = this.editor;
+
         return [
             new Plugin({
                 props: {
@@ -19,7 +20,11 @@ export const ExerciseGroupDrag = Extension.create({
                         const raw = event.dataTransfer?.getData(
                             exerciseGroupDragType,
                         );
-                        if (!raw) return false;
+
+                        if (!raw) {
+                            return false;
+                        }
+
                         event.preventDefault();
                         if (
                             !view.editable ||
@@ -27,22 +32,27 @@ export const ExerciseGroupDrag = Extension.create({
                             event.metaKey ||
                             event.altKey ||
                             raw.length > 2_000
-                        )
+                        ) {
                             return true;
+                        }
+
                         try {
                             const ids = groupIds.parse(JSON.parse(raw));
                             const group = authoringBlockGroup(
                                 blocks(editor),
                                 ids[0]!,
                             );
+
                             if (
                                 group.length !== ids.length ||
                                 group.some(
                                     (item, index) =>
                                         item.block.id !== ids[index],
                                 )
-                            )
+                            ) {
                                 return true;
+                            }
+
                             const members = group.map((item) => ({
                                 at: item.position,
                                 end: item.position + item.size,
@@ -51,7 +61,11 @@ export const ExerciseGroupDrag = Extension.create({
                                 left: event.clientX,
                                 top: event.clientY,
                             });
-                            if (!target) return true;
+
+                            if (!target) {
+                                return true;
+                            }
+
                             const resolved = view.state.doc.resolve(target.pos);
                             const destination =
                                 resolved.depth > 0
@@ -64,8 +78,10 @@ export const ExerciseGroupDrag = Extension.create({
                                     : target.pos;
                             const first = members[0]!.at;
                             const end = members[members.length - 1]!.end;
-                            if (destination >= first && destination <= end)
+                            if (destination >= first && destination <= end) {
                                 return true;
+                            }
+
                             const content = view.state.doc.slice(
                                 first,
                                 end,
@@ -74,16 +90,19 @@ export const ExerciseGroupDrag = Extension.create({
                                 first,
                                 end,
                             );
+
                             transaction.insert(
                                 transaction.mapping.map(destination),
                                 content,
                             );
+
                             normalizeEditorDocument(transaction.doc.toJSON());
                             view.dispatch(transaction);
                             view.dragging = null;
                         } catch {
                             /* Invalid or stale drag payload leaves the document unchanged. */
                         }
+
                         return true;
                     },
                 },

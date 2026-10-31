@@ -85,5 +85,6 @@ function AuditDetails({ event }: { event: AdminMcpAuditEvent }) {
             children: <pre className={styles.metadata ?? ''}>{metadata}</pre>,
         },
     ];
+
     return <Descriptions column={1} size='small' items={items} />;
 }

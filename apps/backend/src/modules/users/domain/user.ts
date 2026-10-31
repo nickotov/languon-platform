@@ -1,4 +1,5 @@
-export type UserStatus = 'active' | 'disabled' | 'pending' | 'deletion_pending' | 'purged';
+export type UserStatus =
+    'active' | 'disabled' | 'pending' | 'deletion_pending' | 'purged';
 
 export interface UserProperties {
     createdAt: Date;
@@ -58,6 +59,7 @@ export class User implements UserProperties {
         if (this.status !== 'active' || !/^[a-z0-9_]{3,30}$/.test(handle)) {
             throw new InvalidUserTransitionError(this.status, 'active');
         }
+
         return new User({
             createdAt: this.createdAt,
             handle,
@@ -122,8 +124,12 @@ export class User implements UserProperties {
 
     public scheduleDeletion(now: Date): User {
         if (this.status !== 'active') {
-            throw new InvalidUserTransitionError(this.status, 'deletion_pending');
+            throw new InvalidUserTransitionError(
+                this.status,
+                'deletion_pending',
+            );
         }
+
         return new User({
             createdAt: this.createdAt,
             handle: this.handle,
@@ -138,6 +144,7 @@ export class User implements UserProperties {
         if (this.status !== 'deletion_pending') {
             throw new InvalidUserTransitionError(this.status, 'active');
         }
+
         return new User({
             createdAt: this.createdAt,
             handle: this.handle,
@@ -152,6 +159,7 @@ export class User implements UserProperties {
         if (this.status !== 'deletion_pending') {
             throw new InvalidUserTransitionError(this.status, 'purged');
         }
+
         return new User({
             createdAt: this.createdAt,
             handle: null,

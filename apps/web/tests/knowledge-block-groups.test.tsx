@@ -75,6 +75,7 @@ it('counts inline author practice without changing the authored document', async
     fireEvent.click(
         screen.getAllByRole('button', { name: 'Check', exact: true })[0]!,
     );
+
     expect(screen.getByText('1 / 2 attempted')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
     fireEvent.click(screen.getByRole('button', { name: 'Expand all' }));
@@ -93,20 +94,25 @@ describe('exercise set authoring', () => {
         expect(
             screen.getAllByRole('button', { name: /^Block settings:/ }),
         ).toHaveLength(2);
+
         fireEvent.click(
             await screen.findByRole('button', {
                 name: 'Block settings: Practice set',
             }),
         );
+
         fireEvent.click(
             await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
         );
+
         fireEvent.change(screen.getByLabelText('Title'), {
             target: { value: 'Updated set' },
         });
+
         fireEvent.change(screen.getAllByLabelText('Question')[0]!, {
             target: { value: 'Updated first question?' },
         });
+
         expect(change).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         await waitFor(() => expect(change).toHaveBeenCalledOnce());
@@ -116,17 +122,21 @@ describe('exercise set authoring', () => {
             question: 'Updated first question?',
             group: { id: groupId, title: 'Updated set' },
         });
+
         expect(content[1].attrs.block).toMatchObject({
             id: question2.id,
             group: { id: groupId, title: 'Updated set' },
         });
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Undo', exact: true }),
         );
+
         expect(editor.current?.getSnapshot().content).toContain(
             'First question?',
         );
     });
+
     it('moves and duplicates the complete question set rather than its first item', async () => {
         const change = vi.fn();
         const editor = createRef<KnowledgeEditorHandle>();
@@ -137,41 +147,50 @@ describe('exercise set authoring', () => {
                 name: 'Block settings: Practice set',
             }),
         );
+
         fireEvent.click(
             await screen.findByRole('menuitem', {
                 name: 'Move down',
                 exact: true,
             }),
         );
+
         let nodes = change.mock.lastCall![0].document.content.filter(
             (node: { type: string }) => node.type === 'learningBlock',
         );
+
         expect(
             nodes.map(
                 (node: { attrs: { block: { id: string } } }) =>
                     node.attrs.block.id,
             ),
         ).toEqual([grammar.id, question1.id, question2.id]);
+
         fireEvent.click(
             await screen.findByRole('button', {
                 name: 'Block settings: Practice set',
             }),
         );
+
         fireEvent.click(
             await screen.findByRole('menuitem', {
                 name: 'Duplicate',
                 exact: true,
             }),
         );
+
         nodes = change.mock.lastCall![0].document.content.filter(
             (node: { type: string }) => node.type === 'learningBlock',
         );
+
         expect(nodes).toHaveLength(5);
         expect(nodes[3].attrs.block.group.id).toBe(
             nodes[4].attrs.block.group.id,
         );
+
         expect(nodes[3].attrs.block.group.id).not.toBe(groupId);
     });
+
     it('offers writable prose between sets without mutating content just by rendering or selecting', async () => {
         const change = vi.fn();
         const editor = createRef<KnowledgeEditorHandle>();
@@ -221,18 +240,23 @@ it('edits audio and its ungrounded associated questions in one explicit draft tr
     expect(
         screen.getAllByRole('button', { name: /^Block settings:/ }),
     ).toHaveLength(1);
+
     fireEvent.click(
         screen.getByRole('button', { name: 'Block settings: Listening' }),
     );
+
     fireEvent.click(
         await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
     );
+
     fireEvent.change(screen.getByLabelText('Speech source text'), {
         target: { value: 'Updated dialogue.' },
     });
+
     fireEvent.change(screen.getByLabelText('Question'), {
         target: { value: 'Updated audio question?' },
     });
+
     expect(change).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     await waitFor(() => expect(change).toHaveBeenCalledOnce());
@@ -241,11 +265,13 @@ it('edits audio and its ungrounded associated questions in one explicit draft tr
         id: audioId,
         sourceText: 'Updated dialogue.',
     });
+
     expect(content[1].attrs.block).toMatchObject({
         id: question1.id,
         question: 'Updated audio question?',
         group: { id: groupId, parentBlockId: audioId },
     });
+
     expect(content[1].attrs.block.source).toBeUndefined();
     fireEvent.click(screen.getByRole('button', { name: 'Undo', exact: true }));
     expect(editor.current?.getSnapshot().content).toContain(
@@ -270,13 +296,16 @@ it('joins only empty paragraph gaps and provides one writable line after a logic
     render(
         <KnowledgeEditor ref={editor} value={groupedBody} onChange={change} />,
     );
+
     await waitFor(() => expect(editor.current).not.toBeNull());
     expect(
         screen.getAllByRole('button', { name: 'Block settings: Practice set' }),
     ).toHaveLength(1);
+
     expect(screen.getAllByRole('button', { name: 'Write here…' })).toHaveLength(
         2,
     );
+
     expect(change).not.toHaveBeenCalled();
 });
 
@@ -318,9 +347,11 @@ it('does not show writable gaps inside legacy source-linked audio questions', as
     expect(
         screen.getAllByRole('button', { name: /^Block settings:/ }),
     ).toHaveLength(1);
+
     expect(screen.getAllByRole('button', { name: 'Write here…' })).toHaveLength(
         2,
     );
+
     expect(change).not.toHaveBeenCalled();
 });
 
@@ -335,6 +366,7 @@ it.each(['paragraph', 'table', 'hard-break', 'added-question'] as const)(
         const { container } = render(
             <KnowledgeEditor ref={ref} value={body} onChange={change} />,
         );
+
         await waitFor(() => expect(ref.current).not.toBeNull());
         const host = container.querySelector(
             '[role="textbox"]',
@@ -344,9 +376,12 @@ it.each(['paragraph', 'table', 'hard-break', 'added-question'] as const)(
             type: 'paragraph',
             content: [{ type: 'text', text: 'Keep my intervening prose.' }],
         };
-        if (kind === 'hard-break')
+
+        if (kind === 'hard-break') {
             node = { type: 'paragraph', content: [{ type: 'hardBreak' }] };
-        if (kind === 'table')
+        }
+
+        if (kind === 'table') {
             node = {
                 type: 'table',
                 content: [
@@ -371,7 +406,9 @@ it.each(['paragraph', 'table', 'hard-break', 'added-question'] as const)(
                     },
                 ],
             };
-        if (kind === 'added-question')
+        }
+
+        if (kind === 'added-question') {
             node = {
                 type: 'learningBlock',
                 attrs: {
@@ -382,12 +419,15 @@ it.each(['paragraph', 'table', 'hard-break', 'added-question'] as const)(
                     },
                 },
             };
+        }
+
         act(() => {
             editor.commands.insertContentAt(
                 kind === 'added-question' ? 2 : 1,
                 node,
             );
         });
+
         const before = editor.getJSON();
         const calls = change.mock.calls.length;
         act(() => {
@@ -408,6 +448,7 @@ it.each(['paragraph', 'table', 'hard-break', 'added-question'] as const)(
                 ),
             ).toBe(false);
         });
+
         expect(editor.getJSON()).toEqual(before);
         expect(change).toHaveBeenCalledTimes(calls);
         expect(ref.current?.getSnapshot().content).not.toContain(
@@ -434,22 +475,27 @@ it('restores a writable leading line after deleting prose before the first custo
     act(() => {
         editor.commands.insertContent('Prose before the exercise set.');
     });
+
     expect(editor.state.doc.firstChild?.textContent).toBe(
         'Prose before the exercise set.',
     );
+
     const firstSize = editor.state.doc.firstChild!.nodeSize;
     act(() => {
         editor.commands.deleteRange({ from: 0, to: firstSize });
     });
+
     expect(editor.state.doc.firstChild?.type.name).toBe('learningBlock');
     expect(
         editor
             .getJSON()
             .content?.filter((node) => node.type === 'learningBlock'),
     ).toEqual(initial.content?.filter((node) => node.type === 'learningBlock'));
+
     expect(screen.getAllByRole('button', { name: 'Write here…' })).toHaveLength(
         2,
     );
+
     fireEvent.click(screen.getAllByRole('button', { name: 'Write here…' })[0]!);
     expect(editor.state.selection.from).toBe(1);
     expect(editor.state.doc.child(1).attrs.block.id).toBe(question1.id);

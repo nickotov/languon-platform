@@ -61,7 +61,10 @@ export async function authorizeDictionaryImportTarget(
     input: Parameters<DictionaryStore['authorizeDictionaryImportTarget']>[0],
 ): Promise<void> {
     abort(input.context);
-    if (input.target.kind === 'new') return;
+    if (input.target.kind === 'new') {
+        return;
+    }
+
     const current = await readOwnedStateForExport(
         context.database,
         input.ownerId,
@@ -74,8 +77,9 @@ export async function authorizeDictionaryImportTarget(
             current.dictionary.version !==
                 input.target.expectedDictionaryVersion ||
             current.settings.version !== input.target.expectedSettingsVersion)
-    )
+    ) {
         throw new DictionaryVersionConflictError();
+    }
 }
 
 export async function previewDictionaryImport(
@@ -104,8 +108,10 @@ export async function previewDictionaryImport(
                 current.dictionary.version !==
                     target.expectedDictionaryVersion ||
                 current.settings.version !== target.expectedSettingsVersion
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             dictionaryRemaining = Math.max(
                 0,
                 dictionaryLimits.cardCapacity -
@@ -142,7 +148,10 @@ export async function previewDictionaryImport(
             .where(eq(usersTable.id, input.ownerId))
             .limit(1);
 
-        if (!ownerCounts) throw new DictionaryNotFoundError();
+        if (!ownerCounts) {
+            throw new DictionaryNotFoundError();
+        }
+
         const dictionarySlotAvailable =
             target.kind === 'existing' ||
             Number(ownerCounts.dictionaries) <
@@ -188,20 +197,26 @@ export async function importDictionary(
     input: Parameters<DictionaryStore['importDictionary']>[0],
     prepare?: PrepareDictionaryImport,
 ): Promise<DictionaryDeterministicImportResponse> {
-    if (!prepare && input.rows.length === 0)
+    if (!prepare && input.rows.length === 0) {
         throw new InvalidDictionaryRequestError();
+    }
 
     return context.database.transaction(async (tx) => {
         abort(input.context);
         await acquireGlobalPermit(tx, 5, 4);
         await lockOwnerCapacity(tx, input.ownerId);
         const replay = await reserveBulkIdempotency(context, tx, input);
-        if (replay) return replay;
+        if (replay) {
+            return replay;
+        }
+
         const prepared = await prepare?.(tx);
         const rows: readonly PreparedDictionaryImportRow[] =
             prepared?.rows ?? input.rows;
 
-        if (!rows.length) throw new InvalidDictionaryRequestError();
+        if (!rows.length) {
+            throw new InvalidDictionaryRequestError();
+        }
 
         await assertOwnerCapacityLocked(
             context,
@@ -256,8 +271,10 @@ export async function importDictionary(
                 })
                 .returning();
 
-            if (!createdDictionary || !createdSettings)
+            if (!createdDictionary || !createdSettings) {
                 throw new DictionaryVersionConflictError();
+            }
+
             dictionary = createdDictionary;
             settings = createdSettings;
         } else {
@@ -273,8 +290,10 @@ export async function importDictionary(
                     input.target.expectedDictionaryVersion ||
                 current.settings.version !==
                     input.target.expectedSettingsVersion
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             assertDictionaryCardCapacity(
                 (await activeCardCount(tx, current.dictionary.id)) +
                     rows.length,
@@ -293,8 +312,10 @@ export async function importDictionary(
             prepared &&
             (dictionary.sourceLanguageTag !== prepared.sourceLanguage ||
                 dictionary.targetLanguageTag !== prepared.targetLanguage)
-        )
+        ) {
             throw new InvalidDictionaryRequestError();
+        }
+
         const initialSortKey = await nextActiveSortKey(tx, dictionary.id);
         const pending = rows.map((sourceRow, index) => {
             const preparedValues = prepared ? sourceRow.prepared : undefined;
@@ -348,8 +369,10 @@ export async function importDictionary(
                 )
                 .returning();
 
-            if (inserted.length !== chunk.length)
+            if (inserted.length !== chunk.length) {
                 throw new DictionaryVersionConflictError();
+            }
+
             insertedCards.push(...inserted);
         }
 
@@ -358,7 +381,9 @@ export async function importDictionary(
         );
         const orderedCards = pending.map((card) => {
             const inserted = insertedById.get(card.id);
-            if (!inserted) throw new DictionaryVersionConflictError();
+            if (!inserted) {
+                throw new DictionaryVersionConflictError();
+            }
 
             return inserted;
         });

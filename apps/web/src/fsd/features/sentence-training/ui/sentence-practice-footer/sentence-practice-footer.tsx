@@ -42,12 +42,18 @@ export function SentencePracticeFooter({
 }: SentencePracticeFooterProps) {
     const { t } = useSentenceCopy();
     let checkLabel = t(completed ? 'Check new answer' : 'Check with AI');
-    if (checkLoading) checkLabel = t('Checking…');
+    if (checkLoading) {
+        checkLabel = t('Checking…');
+    }
 
     let comparisonLabel = t(
         hasDraft ? 'Compare with reference — free' : 'Show reference — free',
     );
-    if (referenceLoading) comparisonLabel = t('Revealing…');
+
+    if (referenceLoading) {
+        comparisonLabel = t('Revealing…');
+    }
+
     const compareDisabled = hasDraft ? comparisonDisabled : referenceDisabled;
     const compareAction = hasDraft ? onCompare : onRevealReference;
     const showComparison = hasExercise && !referenceShown;

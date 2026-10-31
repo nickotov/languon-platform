@@ -64,13 +64,16 @@ function fixture() {
     const app = createApp({
         workbooks: createWorkbookRoutes({ service, policy }),
     });
+
     return { app, store, owner, id };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     'Content-Type': 'application/json',
     Origin: 'http://localhost:3000',
 };
+
 describe('Workbook routes and service boundaries', () => {
     it('allows the validated workbook learner capability headers only from an approved browser origin', async () => {
         const { app, id } = fixture();
@@ -86,19 +89,24 @@ describe('Workbook routes and service boundaries', () => {
                 },
             },
         );
+
         expect(response.status).toBe(204);
         const allowed = response.headers
             .get('access-control-allow-headers')!
             .toLowerCase();
+
         for (const header of [
             'x-languon-share-kind',
             'x-languon-share-locator',
             'x-languon-share-key',
-        ])
+        ]) {
             expect(allowed).toContain(header);
+        }
+
         expect(response.headers.get('access-control-allow-origin')).toBe(
             'http://localhost:3000',
         );
+
         expect(
             (
                 await app.request(`/knowledge/workbooks/${id}/progress`, {
@@ -108,6 +116,7 @@ describe('Workbook routes and service boundaries', () => {
             ).status,
         ).toBe(403);
     });
+
     it('requires authentication for owner content and forwards authenticated identity', async () => {
         const { app, store, owner } = fixture();
         expect((await app.request('/knowledge/workbooks')).status).toBe(401);
@@ -116,6 +125,7 @@ describe('Workbook routes and service boundaries', () => {
         expect(store.list).toHaveBeenCalledWith(owner);
         expect(response.headers.get('cache-control')).toBe('private, no-store');
     });
+
     it('rejects unsafe origin, malformed identities and duplicate membership without persistence', async () => {
         const { app, store, id } = fixture();
         const noteId = randomUUID();
@@ -127,12 +137,14 @@ describe('Workbook routes and service boundaries', () => {
                 noteIds: [noteId, noteId],
             }),
         });
+
         expect(invalid.status).toBe(400);
         expect(store.setNotes).not.toHaveBeenCalled();
         expect(
             (await app.request('/knowledge/workbooks/not-a-uuid', { headers }))
                 .status,
         ).toBe(400);
+
         expect(
             (
                 await app.request('/knowledge/workbooks', {
@@ -141,6 +153,7 @@ describe('Workbook routes and service boundaries', () => {
             ).status,
         ).toBe(403);
     });
+
     it('permits public saved reads with capability in header and never substitutes body authority', async () => {
         const { app, store } = fixture();
         const locator = 'a'.repeat(32);
@@ -152,27 +165,32 @@ describe('Workbook routes and service boundaries', () => {
                 })
             ).status,
         ).toBe(200);
+
         expect(store.readShared).toHaveBeenCalledWith(locator, key);
         expect(
             (await app.request(`/knowledge/workbooks/shared/${locator}`))
                 .status,
         ).toBe(400);
     });
+
     it('preserves version conflict responses for clients to resolve', async () => {
         const { app, store, id } = fixture();
         store.update.mockRejectedValueOnce(
             new KnowledgeDomainError('version_conflict', 'Reload.'),
         );
+
         const response = await app.request(`/knowledge/workbooks/${id}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({ expectedVersion: 1, title: 'Changed' }),
         });
+
         expect(response.status).toBe(409);
         expect(await response.json()).toMatchObject({
             error: { code: 'version_conflict' },
         });
     });
+
     it('copies an owned workbook with explicit source version and destination identity', async () => {
         const { app, store, id, owner } = fixture();
         const input = {
@@ -185,6 +203,7 @@ describe('Workbook routes and service boundaries', () => {
             headers,
             body: JSON.stringify(input),
         });
+
         expect(response.status).toBe(201);
         expect(store.copy).toHaveBeenCalledWith(owner, id, input);
     });

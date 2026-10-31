@@ -37,7 +37,9 @@ export async function read(
             .limit(1)
             .for('share');
 
-        if (!job) throw new DictionaryGenerationJobNotFoundError();
+        if (!job) {
+            throw new DictionaryGenerationJobNotFoundError();
+        }
 
         return readView(tx, job, input.context.now);
     });
@@ -107,7 +109,9 @@ export async function lockOwnedJob(
         )
         .for('update');
 
-    if (!job) throw new DictionaryGenerationJobNotFoundError();
+    if (!job) {
+        throw new DictionaryGenerationJobNotFoundError();
+    }
 
     return job;
 }
@@ -149,7 +153,9 @@ export async function lockCardSnapshot(tx: Transaction, job: JobRow) {
         )
         .for('update');
 
-    if (!current) throw new DictionaryGenerationJobNotFoundError();
+    if (!current) {
+        throw new DictionaryGenerationJobNotFoundError();
+    }
 
     return current;
 }

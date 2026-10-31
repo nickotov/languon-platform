@@ -26,11 +26,17 @@ const normalizeSize = (
     size: InputSize | undefined,
     controlSize: ControlSize | undefined,
 ): InputSize => {
-    if (size) return size;
+    if (size) {
+        return size;
+    }
 
-    if (controlSize === 'compact' || controlSize === 'small') return 'sm';
+    if (controlSize === 'compact' || controlSize === 'small') {
+        return 'sm';
+    }
 
-    if (controlSize === 'large') return 'lg';
+    if (controlSize === 'large') {
+        return 'lg';
+    }
 
     return 'md';
 };

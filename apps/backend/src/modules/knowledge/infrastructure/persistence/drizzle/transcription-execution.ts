@@ -58,11 +58,12 @@ export async function lockTranscriptionLease(
         row.fencingToken !== lease.fencingToken ||
         row.leaseDeadline === null ||
         row.leaseDeadline <= new Date()
-    )
+    ) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The transcription lease is no longer active.',
         );
+    }
 
     return row;
 }
@@ -71,8 +72,9 @@ export async function claimTranscription(
     context: TranscriptionContext,
     workerId: string,
 ) {
-    if (!workerId.trim() || workerId.length > 200)
+    if (!workerId.trim() || workerId.length > 200) {
         throw new Error('Invalid transcription worker identity.');
+    }
 
     return context.database.transaction(async (tx) => {
         const at = context.clock.now();
@@ -83,7 +85,10 @@ export async function claimTranscription(
             .orderBy(jobs.createdAt)
             .limit(1);
 
-        if (!candidate) return null;
+        if (!candidate) {
+            return null;
+        }
+
         await lockTextAiCapacity(tx);
         await new DrizzleActionAccountingParticipant(tx).lockForSettlement(
             candidate.ownerId,
@@ -95,12 +100,18 @@ export async function claimTranscription(
             .from(jobs)
             .where(and(eq(jobs.id, candidate.id), eq(jobs.state, 'queued')));
 
-        if (!job || job.deadlineAt <= at) return null;
+        if (!job || job.deadlineAt <= at) {
+            return null;
+        }
+
         const claimedResult = await tx.execute(
             sql`select languon_claim_transcription(${job.id}::uuid,${workerId}::text) as claimed`,
         );
 
-        if (!claimedResult[0]?.claimed) return null;
+        if (!claimedResult[0]?.claimed) {
+            return null;
+        }
+
         const [claimed] = await tx
             .select(workerProjection)
             .from(jobs)
@@ -130,8 +141,10 @@ export async function heartbeatTranscription(
         try {
             const job = await lockTranscriptionLease(tx, lease);
             const now = context.clock.now();
-            if (job.deadlineAt <= now || job.cancellationRequestedAt)
+            if (job.deadlineAt <= now || job.cancellationRequestedAt) {
                 return false;
+            }
+
             await readTranscriptionWorkerAudio(tx, job, lease.leaseToken);
 
             const renewed = await tx.execute(
@@ -140,7 +153,9 @@ export async function heartbeatTranscription(
 
             return renewed[0]?.renewed === true;
         } catch (error) {
-            if (error instanceof KnowledgeDomainError) return false;
+            if (error instanceof KnowledgeDomainError) {
+                return false;
+            }
 
             throw error;
         }
@@ -156,11 +171,12 @@ export async function transcriptionAudio(
         if (
             job.cancellationRequestedAt ||
             job.deadlineAt <= context.clock.now()
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'Transcription was cancelled or expired.',
             );
+        }
 
         return readTranscriptionWorkerAudio(tx, job, lease.leaseToken);
     });
@@ -177,11 +193,12 @@ export async function authorizeTranscription(
         input.noteId !== lease.noteId ||
         input.assetId !== lease.assetId ||
         JSON.stringify(input.languages) !== JSON.stringify(lease.languages)
-    )
+    ) {
         throw new KnowledgeDomainError(
             'invalid_request',
             'Dispatch input differs from its admitted operation.',
         );
+    }
 
     return context.database.transaction(async (tx) => {
         let result;

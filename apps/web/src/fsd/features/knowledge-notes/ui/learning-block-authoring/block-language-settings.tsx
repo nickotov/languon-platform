@@ -30,17 +30,20 @@ export function BlockLanguageSettings({
             input instanceof HTMLInputElement
                 ? input.value
                 : (field.value ?? '');
+
         try {
             return names.of(value) || value;
         } catch {
             return value;
         }
     }
+
     const pair = fields.map(display).filter(Boolean).join(' → ');
     const label = `${labels.field('Languages')}: ${pair}`;
     function toggle(event: SyntheticEvent<HTMLDetailsElement>) {
         setOpen(event.currentTarget.open);
     }
+
     return (
         <details
             className={styles.languageSettings}

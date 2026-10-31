@@ -25,10 +25,12 @@ export function parseCreditMilli(value: string): bigint {
             'Credits require a nonnegative decimal with at most three fractional digits.',
         );
     }
+
     const [whole = '0', fraction = ''] = value.split('.');
     const milli = BigInt(whole) * 1000n + BigInt(fraction.padEnd(3, '0'));
     if (milli > 9_007_199_254_740_991n) {
         throw new RangeError('Credit amount exceeds the supported bound.');
     }
+
     return milli;
 }

@@ -21,26 +21,37 @@ export function useWorkspacePassage(
         if (
             lastConversation.current &&
             lastConversation.current !== conversationId
-        )
+        ) {
             setPassage(null);
+        }
+
         lastConversation.current = conversationId;
     }, [conversationId]);
+
     useEffect(() => {
-        if (!request || lastRequest.current === request.id) return;
+        if (!request || lastRequest.current === request.id) {
+            return;
+        }
+
         lastRequest.current = request.id;
-        if (request.passage)
+        if (request.passage) {
             setPassage({
                 id: request.id,
                 content: request.passage,
                 targetId: request.targetId,
             });
-        else setPassage(null);
+        } else {
+            setPassage(null);
+        }
     }, [request]);
+
     function remove() {
         setPassage(null);
     }
+
     function sent(id?: string) {
         setPassage((current) => (current?.id === id ? null : current));
     }
+
     return { passage, remove, sent };
 }

@@ -14,6 +14,7 @@ export function modelPriceCatalog(
 ): PriceCatalogEntry[] {
     const entries: PriceCatalogEntry[] = textAiModelCatalog.map((model) => {
         const configured = Boolean(credentials[model.credentialReference]);
+
         return {
             target: {
                 providerId: model.providerId,
@@ -37,13 +38,18 @@ export function modelPriceCatalog(
             ],
         };
     });
+
     for (const model of SPEECH_MODEL_CATALOG) {
-        if (model.providerId === 'fixture') continue;
+        if (model.providerId === 'fixture') {
+            continue;
+        }
+
         const configured = Boolean(
             credentials[
                 `${model.providerId.toUpperCase()}_API_KEY` as keyof TextAiProviderCredentials
             ],
         );
+
         entries.push({
             target: {
                 providerId: model.providerId,
@@ -65,9 +71,11 @@ export function modelPriceCatalog(
             ],
         });
     }
+
     const transcriptionConfigured = Boolean(
         transcriptionCredentials.OPENAI_API_KEY,
     );
+
     entries.push({
         target: {
             providerId: KNOWLEDGE_TRANSCRIPTION_MODEL.providerId,
@@ -84,8 +92,10 @@ export function modelPriceCatalog(
             'Transcription requires an enabled versioned configuration, explicit customer tariff and a live compatible executor.',
         ],
     });
+
     return entries;
 }
+
 /** Compatibility helper for consumers interested only in configured active entries. */
 export function configuredPriceTargets(
     credentials: TextAiProviderCredentials,

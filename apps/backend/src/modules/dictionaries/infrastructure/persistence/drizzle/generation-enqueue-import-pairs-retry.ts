@@ -47,7 +47,10 @@ export async function enqueueImportPairsRetry(
             .limit(1)
             .for('update');
 
-        if (!owner) throw new DictionaryNotFoundError();
+        if (!owner) {
+            throw new DictionaryNotFoundError();
+        }
+
         const [replay] = await tx
             .select()
             .from(dictionaryGenerationJobsTable)
@@ -65,8 +68,9 @@ export async function enqueueImportPairsRetry(
             .for('share');
 
         if (replay) {
-            if (replay.requestFingerprint !== input.fingerprint)
+            if (replay.requestFingerprint !== input.fingerprint) {
                 throw new DictionaryIdempotencyConflictError();
+            }
 
             return readView(tx, replay, input.context.now);
         }
@@ -77,8 +81,10 @@ export async function enqueueImportPairsRetry(
             input.predecessorJobId,
         );
 
-        if (predecessor.kind !== 'import-pairs' || !predecessor.inputPayload)
+        if (predecessor.kind !== 'import-pairs' || !predecessor.inputPayload) {
             throw new DictionaryGenerationNotReviewableError();
+        }
+
         const predecessorInput = parseDictionaryGenerationInput(
             predecessor.inputPayload,
         );
@@ -87,10 +93,14 @@ export async function enqueueImportPairsRetry(
             predecessorInput.format !== dictionaryImportPairsGenerationFormat ||
             !predecessorProposal?.payload ||
             predecessorProposal.reviewState !== 'reviewable'
-        )
+        ) {
             throw new DictionaryGenerationNotReviewableError();
-        if (predecessorProposal.expiresAt <= input.context.now)
+        }
+
+        if (predecessorProposal.expiresAt <= input.context.now) {
             throw new DictionaryGenerationProposalExpiredError();
+        }
+
         const retryableFailures = new Set(
             parseDictionaryImportPairsGenerationProposal(
                 predecessorProposal.payload,
@@ -106,8 +116,9 @@ export async function enqueueImportPairsRetry(
         );
         const rows = rowIndexes.map((rowIndex) => {
             const row = persistedRows.get(rowIndex);
-            if (!row || !retryableFailures.has(rowIndex))
+            if (!row || !retryableFailures.has(rowIndex)) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
 
             return row;
         });
@@ -131,7 +142,10 @@ export async function enqueueImportPairsRetry(
             .limit(1)
             .for('update', { of: dictionariesTable });
 
-        if (!current) throw new DictionaryNotFoundError();
+        if (!current) {
+            throw new DictionaryNotFoundError();
+        }
+
         await tx
             .select({ dictionaryId: dictionarySettingsTable.dictionaryId })
             .from(dictionarySettingsTable)
@@ -149,8 +163,10 @@ export async function enqueueImportPairsRetry(
                 predecessor.sourceLanguageTag ||
             current.dictionary.targetLanguageTag !==
                 predecessor.targetLanguageTag
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
+
         const providerExecution = await assertGenerationAdmission(
             context,
             tx,
@@ -224,7 +240,10 @@ export async function enqueueImportPairsRetry(
             })
             .returning();
 
-        if (!job) throw new DictionaryVersionConflictError();
+        if (!job) {
+            throw new DictionaryVersionConflictError();
+        }
+
         await reserveInitialAiCreditAttempt(
             context,
             tx,

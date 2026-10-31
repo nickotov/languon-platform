@@ -103,14 +103,18 @@ export const PopoverAnchor = forwardRef<HTMLElement, PopoverAnchorProps>(
         const { setVirtualReference } = context;
         useLayoutEffect(() => {
             setVirtualReference(virtualRef);
+
             return () => setVirtualReference(undefined);
         }, [setVirtualReference, virtualRef]);
 
         const setRef = (node: HTMLElement | null) => {
             context.triggerRef.current = node;
 
-            if (typeof forwardedRef === 'function') forwardedRef(node);
-            else if (forwardedRef) forwardedRef.current = node;
+            if (typeof forwardedRef === 'function') {
+                forwardedRef(node);
+            } else if (forwardedRef) {
+                forwardedRef.current = node;
+            }
         };
 
         if (asChild && isValidElement(children)) {

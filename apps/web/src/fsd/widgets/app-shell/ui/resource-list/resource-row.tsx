@@ -40,6 +40,7 @@ export function ResourceRow({
         setPinError(false);
         pin.mutate(resource, { onError: () => setPinError(true) });
     }
+
     const menu = [
         {
             label: pinLabel,
@@ -48,6 +49,7 @@ export function ResourceRow({
             onSelect: togglePin,
         },
     ];
+
     return (
         <li>
             <div className={className}>

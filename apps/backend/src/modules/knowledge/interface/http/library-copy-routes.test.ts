@@ -47,6 +47,7 @@ function fixture() {
             targetLanguage: 'ru',
         },
     };
+
     return {
         actor,
         store,
@@ -54,6 +55,7 @@ function fixture() {
         app: createKnowledgeLibraryCopyRoutes({ service, policy }),
     };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     'Content-Type': 'application/json',
@@ -72,11 +74,13 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(401);
+
         const response = await app.request(path, {
             method: 'POST',
             headers,
             body: JSON.stringify(input),
         });
+
         expect(response.status).toBe(200);
         expect(response.headers.get('cache-control')).toBe('private, no-store');
         expect(store.previewVocabulary).toHaveBeenCalledWith(
@@ -86,6 +90,7 @@ describe('knowledge library copy HTTP boundary', () => {
             undefined,
         );
     });
+
     it('rejects caller-supplied content and incomplete capability credentials', async () => {
         const { store, input, app } = fixture();
         expect(
@@ -100,6 +105,7 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(
             (
                 await app.request(path, {
@@ -112,8 +118,10 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(store.previewVocabulary).not.toHaveBeenCalled();
     });
+
     it('forwards a complete share proof separately from copied content', async () => {
         const { actor, store, input, app } = fixture();
         const proof = {
@@ -121,6 +129,7 @@ describe('knowledge library copy HTTP boundary', () => {
             locator: 'a'.repeat(32),
             key: 'b'.repeat(43),
         };
+
         expect(
             (
                 await app.request(path, {
@@ -135,6 +144,7 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(200);
+
         expect(store.previewVocabulary).toHaveBeenCalledWith(
             actor,
             expect.any(Object),
@@ -142,6 +152,7 @@ describe('knowledge library copy HTTP boundary', () => {
             proof,
         );
     });
+
     it('maps revoked source and stale source versions without private detail', async () => {
         const { store, input, app } = fixture();
         store.previewVocabulary.mockRejectedValueOnce(
@@ -150,6 +161,7 @@ describe('knowledge library copy HTTP boundary', () => {
                 'The note is unavailable.',
             ),
         );
+
         expect(
             (
                 await app.request(path, {
@@ -159,9 +171,11 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(404);
+
         store.previewVocabulary.mockRejectedValueOnce(
             new KnowledgeDomainError('version_conflict', 'Preview again.'),
         );
+
         expect(
             (
                 await app.request(path, {
@@ -172,6 +186,7 @@ describe('knowledge library copy HTTP boundary', () => {
             ).status,
         ).toBe(409);
     });
+
     it('rejects unsafe origins and oversized requests', async () => {
         const { store, input, app } = fixture();
         expect(
@@ -183,6 +198,7 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(403);
+
         expect(
             (
                 await app.request(path, {
@@ -192,6 +208,7 @@ describe('knowledge library copy HTTP boundary', () => {
                 })
             ).status,
         ).toBe(413);
+
         expect(store.previewVocabulary).not.toHaveBeenCalled();
     });
 });

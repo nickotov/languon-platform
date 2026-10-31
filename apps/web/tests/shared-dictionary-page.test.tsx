@@ -16,10 +16,12 @@ vi.mock('next/navigation', () => ({
     usePathname: () => '/shared/example',
     useSearchParams: () => new URLSearchParams(),
 }));
+
 vi.mock('@/fsd/entities/session', () => ({
     useSessionStore: (selector: (state: { status: string }) => unknown) =>
         selector(session),
 }));
+
 vi.mock('@/fsd/features/speech-playback/hooks/use-speech-control', () => ({
     useSpeechControl: () => ({
         available: true,
@@ -29,6 +31,7 @@ vi.mock('@/fsd/features/speech-playback/hooks/use-speech-control', () => ({
         stop: vi.fn(),
     }),
 }));
+
 vi.mock('@/fsd/features/auth', () => ({
     useAuth: () => ({
         requestWithSession: (operation: (token: string) => unknown) =>
@@ -122,6 +125,7 @@ function renderPage() {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     return render(
         <QueryClientProvider client={client}>
             <SharedDictionaryPage shareId='share-locator-1234' />
@@ -138,6 +142,7 @@ describe('shared dictionary page', () => {
             '',
             '/shared/dictionaries/share-locator-1234',
         );
+
         vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue(languages);
     });
 
@@ -156,19 +161,24 @@ describe('shared dictionary page', () => {
             dictionary,
             nextCursor: null,
         });
+
         renderPage();
         expect(
             await screen.findByRole('button', { name: 'Play Source phrase' }),
         ).toHaveTextContent('');
+
         expect(
             screen.getByRole('button', { name: 'Play Translation' }),
         ).toHaveTextContent('');
+
         expect(
             screen.queryByRole('button', { name: 'Play Context example' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('button', { name: 'Play Example translation' }),
         ).not.toBeInTheDocument();
+
         expect(screen.getByText('Saved context example')).toBeInTheDocument();
         expect(
             screen.getByText('Saved translated example'),
@@ -183,6 +193,7 @@ describe('shared dictionary page', () => {
                 name: 'Dictionary unavailable',
             }),
         ).toBeInTheDocument();
+
         expect(read).not.toHaveBeenCalled();
     });
 
@@ -203,6 +214,7 @@ describe('shared dictionary page', () => {
                     message: 'Unavailable',
                 }),
             );
+
         renderPage();
         expect(await screen.findByText('שלום')).toHaveAttribute('dir', 'rtl');
         window.history.replaceState({}, '', '#wrong-key');
@@ -212,6 +224,7 @@ describe('shared dictionary page', () => {
                 name: 'Dictionary unavailable',
             }),
         ).toBeInTheDocument();
+
         expect(read).toHaveBeenCalledTimes(2);
     });
 
@@ -231,17 +244,20 @@ describe('shared dictionary page', () => {
                     message: 'Unavailable',
                 }),
             );
+
         const user = userEvent.setup();
         renderPage();
         expect(await screen.findByText('שלום')).toBeInTheDocument();
         await user.click(
             screen.getByRole('button', { name: 'Load more cards' }),
         );
+
         await waitFor(() =>
             expect(
                 screen.getByText(/More cards could not be loaded/),
             ).toBeInTheDocument(),
         );
+
         expect(screen.getByText('שלום')).toBeInTheDocument();
         expect(
             screen.getByRole('button', { name: 'Load more cards' }),
@@ -272,17 +288,20 @@ describe('shared dictionary page', () => {
                 ),
                 nextCursor: null,
             });
+
         const user = userEvent.setup();
         renderPage();
         expect(await screen.findByText('old page')).toBeInTheDocument();
         await user.click(
             screen.getByRole('button', { name: 'Load more cards' }),
         );
+
         await user.click(
             await screen.findByRole('button', {
                 name: 'Reload current version',
             }),
         );
+
         expect(await screen.findByText('new page')).toBeInTheDocument();
         expect(screen.queryByText('old page')).not.toBeInTheDocument();
     });

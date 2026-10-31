@@ -60,6 +60,7 @@ const content = KnowledgeNoteContentSchema.parse({
         },
     },
 });
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'Knowledge PostgreSQL ownership, revisions and publication',
     () => {
@@ -80,6 +81,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 new KnowledgeShareCrypto(testShareSecret),
             );
         }, 120_000);
+
         beforeEach(async () => {
             beforeNoteDeletion.mockReset();
             await db.delete(knowledgeNotesTable);
@@ -94,6 +96,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 })),
             );
         });
+
         afterAll(async () => client?.end(), 120_000);
         it.each([1, 2])(
             'round trips H1/H2/H3 and horizontal rules through saved/shared/copied version %i documents',
@@ -142,6 +145,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(recovered.branches[0]?.content.body).toEqual(
                     formatted.body,
                 );
+
                 expect(recovered.published).toBeNull();
                 const note = await store.saveWorkspace(owner, draft.noteId, {
                     operationId: randomUUID(),
@@ -149,9 +153,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedVersion: working.branch.version,
                     expectedPublishedVersion: 0,
                 });
+
                 expect((await store.get(owner, note.id)).body).toEqual(
                     formatted.body,
                 );
+
                 const saved = await store.update(owner, note.id, {
                     operationId: randomUUID(),
                     expectedVersion: note.version,
@@ -161,6 +167,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(
                     (await store.readShared(share.locator, share.key)).body,
                 ).toEqual(formatted.body);
+
                 const copy = await store.copyShared(
                     other,
                     share.locator,
@@ -170,16 +177,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         expectedVersion: saved.version,
                     },
                 );
+
                 expect((await store.get(other, copy.id)).body).toEqual(
                     formatted.body,
                 );
+
                 const revisions = await db
                     .select()
                     .from(knowledgeNoteRevisionsTable)
                     .where(eq(knowledgeNoteRevisionsTable.noteId, note.id));
+
                 expect(revisions.length).toBeGreaterThan(0);
-                for (const revision of revisions)
+                for (const revision of revisions) {
                     expect(revision.content.body).toEqual(formatted.body);
+                }
+
                 expect(
                     (
                         await store.list(
@@ -188,10 +200,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )
                     ).notes.map((item) => item.id),
                 ).toContain(note.id);
+
                 await store.revokeShare(owner, note.id);
                 expect((await store.get(other, copy.id)).body).toEqual(
                     formatted.body,
                 );
+
                 await expect(
                     store.create(owner, {
                         operationId: randomUUID(),
@@ -209,6 +223,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).rejects.toBeInstanceOf(KnowledgeDomainError);
             },
         );
+
         it('round-trips interactive content through publication and revisions', async () => {
             const interactive = KnowledgeNoteContentSchema.parse({
                 ...content,
@@ -236,19 +251,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 content: interactive,
             });
+
             expect((await store.get(owner, note.id)).body).toEqual(
                 interactive.body,
             );
+
             const saved = await store.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: note.version,
                 content: { ...interactive, title: 'Updated grammar' },
             });
+
             expect(saved.body).toEqual(interactive.body);
             const [revision] = await db
                 .select()
                 .from(knowledgeNoteRevisionsTable)
                 .where(eq(knowledgeNoteRevisionsTable.noteId, note.id));
+
             expect(revision?.content.body).toEqual(interactive.body);
             expect(
                 (
@@ -259,14 +278,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).notes,
             ).toHaveLength(1);
         });
+
         it('isolates reads and mutations and searches derived content with literal wildcard escaping', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
                 content,
             });
+
             await expect(store.get(other, note.id)).rejects.toMatchObject({
                 code: 'knowledge_not_found',
             });
+
             await expect(
                 store.update(other, note.id, {
                     operationId: randomUUID(),
@@ -274,6 +296,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content,
                 }),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             expect(
                 (
                     await store.list(owner, {
@@ -283,17 +306,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).notes.map((n) => n.id),
             ).toEqual([note.id]);
+
             expect(
                 (await store.list(other, { offset: 0, limit: 20 })).notes,
             ).toEqual([]);
+
             expect(
                 (await store.listWorkspaces(owner, { offset: 0, limit: 20 }))
                     .workspaces[0]?.hasUnsavedChanges,
             ).toBe(false);
+
             expect(
                 (await store.list(owner, { q: '%', offset: 0, limit: 20 }))
                     .notes,
             ).toEqual([]);
+
             expect(
                 (
                     await store.list(owner, {
@@ -304,6 +331,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).notes,
             ).toEqual([]);
         });
+
         it('accepts only one concurrent update and restores content as a fresh immutable revision', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
@@ -318,12 +346,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             );
+
             expect(
                 updates.filter((result) => result.status === 'fulfilled'),
             ).toHaveLength(1);
+
             expect(
                 updates.filter((result) => result.status === 'rejected'),
             ).toHaveLength(1);
+
             const current = await store.get(owner, note.id);
             expect(current.version).toBe(2);
             const restored = await store.restore(owner, note.id, {
@@ -331,26 +362,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: 2,
                 revisionVersion: 1,
             });
+
             expect(restored).toMatchObject({
                 title: content.title,
                 version: 3,
             });
+
             expect(
                 (await store.revisions(owner, note.id)).map(
                     (revision) => revision.version,
                 ),
             ).toEqual([3, 2, 1]);
         });
+
         it('preserves an unsaved working draft across revision restore and allows explicit resolution before Save', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
                 content,
             });
+
             await store.update(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
                 content: { ...content, title: 'Published v2' },
             });
+
             const initial = await store.getWorkspace(owner, note.id);
             const branch = initial.branches[0]!;
             const working = await store.updateWorking(owner, note.id, {
@@ -364,6 +400,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: 2,
                 revisionVersion: 1,
             });
+
             expect(restored.version).toBe(3);
             const conflicted = await store.getWorkspace(owner, note.id);
             expect(conflicted.preferredBranchId).toBe(working.branch.id);
@@ -372,9 +409,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .map((branch) => branch.content.title)
                     .sort(),
             ).toEqual(['Subjunctive', 'Unsaved essay']);
+
             const publishedBranch = conflicted.branches.find(
                 (branch) => branch.id !== working.branch.id,
             )!;
+
             expect(publishedBranch.basePublishedVersion).toBe(3);
             await expect(
                 store.saveWorkspace(owner, note.id, {
@@ -384,6 +423,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedPublishedVersion: 3,
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             const resolved = await store.resolveWorking(owner, note.id, {
                 operationId: randomUUID(),
                 keepBranchId: working.branch.id,
@@ -395,18 +435,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             });
+
             expect(resolved.branches).toHaveLength(1);
             expect(resolved.branches[0]).toMatchObject({
                 id: working.branch.id,
                 version: working.branch.version + 1,
                 basePublishedVersion: 3,
             });
+
             const saved = await store.saveWorkspace(owner, note.id, {
                 operationId: randomUUID(),
                 branchId: working.branch.id,
                 expectedVersion: resolved.branches[0]!.version,
                 expectedPublishedVersion: 3,
             });
+
             expect(saved).toMatchObject({ version: 4, title: 'Unsaved essay' });
             expect(
                 (await store.revisions(owner, note.id)).map(
@@ -414,22 +457,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toEqual([4, 3, 2, 1]);
         });
+
         it('replays successful requests without duplicate notes or revisions and rejects changed reuse', async () => {
             const input = { operationId: randomUUID(), content };
             const [left, right] = await Promise.all([
                 store.create(owner, input),
                 store.create(owner, input),
             ]);
+
             expect(left).toEqual(right);
             expect(
                 (await store.list(owner, { offset: 0, limit: 20 })).total,
             ).toBe(1);
+
             await expect(
                 store.create(owner, {
                     ...input,
                     content: { ...content, title: 'Changed' },
                 }),
             ).rejects.toMatchObject({ code: 'idempotency_conflict' });
+
             const patch = {
                 operationId: randomUUID(),
                 expectedVersion: 1,
@@ -441,8 +488,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: 2,
                 content: { ...content, title: 'Newer revision' },
             });
+
             expect(await store.update(owner, left.id, patch)).toEqual(updated);
         });
+
         it('deletes revisions and prevents old creates or pending update drafts from resurrecting notes', async () => {
             const input = { operationId: randomUUID(), content };
             const note = await store.create(owner, input);
@@ -456,9 +505,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(knowledgeNoteRevisionsTable)
                     .where(eq(knowledgeNoteRevisionsTable.noteId, note.id)),
             ).toEqual([]);
+
             await expect(store.create(owner, input)).rejects.toMatchObject({
                 code: 'knowledge_not_found',
             });
+
             await expect(
                 db.transaction((tx) =>
                     new DrizzleKnowledgeTransactionParticipant(tx).publish(
@@ -473,67 +524,81 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
         });
+
         it('rolls back explicit publication together with a failed conversation draft transaction', async () => {
             await expect(
                 db.transaction(async (tx) => {
                     await new DrizzleKnowledgeTransactionParticipant(
                         tx,
                     ).publish(owner, { operationId: randomUUID(), content });
+
                     throw new Error('draft version fence failed');
                 }),
             ).rejects.toThrow('draft version fence failed');
+
             expect(
                 (await store.list(owner, { offset: 0, limit: 20 })).notes,
             ).toEqual([]);
+
             expect(
                 await db.select().from(knowledgeOperationReceiptsTable),
             ).toEqual([]);
         });
+
         it('preserves the note and receipt when source-dependent work blocks deletion', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
                 content,
             });
+
             beforeNoteDeletion.mockRejectedValueOnce(
                 new KnowledgeDomainError(
                     'deletion_busy',
                     'Stop the active turn first.',
                 ),
             );
+
             await expect(
                 store.delete(owner, note.id, {
                     operationId: randomUUID(),
                     expectedVersion: 1,
                 }),
             ).rejects.toMatchObject({ code: 'deletion_busy' });
+
             expect((await store.get(owner, note.id)).version).toBe(1);
             expect(
                 await db.select().from(knowledgeOperationReceiptsTable),
             ).toHaveLength(1);
         });
+
         it('account purge erases owned notes, revisions and receipts without deleting other learners notes', async () => {
             await store.create(owner, { operationId: randomUUID(), content });
             const otherNote = await store.create(other, {
                 operationId: randomUUID(),
                 content,
             });
+
             await db.transaction((tx) => eraseOwnerKnowledge(tx, owner));
             expect(
                 await db.transaction((tx) => hasOwnerKnowledge(tx, owner)),
             ).toBe(false);
+
             expect(await store.get(other, otherNote.id)).toMatchObject({
                 id: otherNote.id,
             });
         });
+
         it('recovers a private draft, preserves a competing branch, and publishes only an explicit Save', async () => {
             const workspace = await store.createDraft(owner, {
                 operationId: randomUUID(),
             });
+
             expect(workspace.status).toBe('draft');
             expect(workspace.published).toBeNull();
             await expect(
                 store.get(owner, workspace.noteId),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             const original = workspace.branches[0]!;
             const firstAutosave = {
                 operationId: randomUUID(),
@@ -546,6 +611,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 workspace.noteId,
                 firstAutosave,
             );
+
             expect(first.conflict).toBe(false);
             expect(
                 await store.updateWorking(
@@ -554,6 +620,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     firstAutosave,
                 ),
             ).toEqual(first);
+
             const competing = await store.updateWorking(
                 owner,
                 workspace.noteId,
@@ -564,6 +631,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content: { ...content, title: 'Competing text' },
                 },
             );
+
             expect(competing.conflict).toBe(true);
             expect(competing.branches).toHaveLength(2);
             await expect(
@@ -579,9 +647,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             expect(
                 (await store.getWorkspace(owner, workspace.noteId)).branches,
             ).toHaveLength(2);
+
             const resolved = await store.resolveWorking(
                 owner,
                 workspace.noteId,
@@ -597,6 +667,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 },
             );
+
             expect(resolved.branches).toHaveLength(1);
             const draft = await store.getWorkspace(owner, workspace.noteId);
             expect(draft.published).toBeNull();
@@ -606,12 +677,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: competing.branch.version,
                 expectedPublishedVersion: 0,
             });
+
             expect(saved.id).toBe(workspace.noteId);
             expect(saved.title).toBe('Competing text');
             expect(
                 (await store.getWorkspace(owner, saved.id)).branches,
             ).toHaveLength(1);
         });
+
         it('shares only the saved version, revokes old capabilities and keeps recipient copies independent', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
@@ -622,32 +695,39 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await store.readShared(share.locator, share.key)).title,
             ).toBe(content.title);
+
             await expect(
                 store.readShared(share.locator, 'x'.repeat(43)),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             const copy = await store.copyShared(
                 other,
                 share.locator,
                 share.key,
                 { operationId: randomUUID(), expectedVersion: 1 },
             );
+
             expect(copy.id).not.toBe(note.id);
             await store.revokeShare(owner, note.id);
             await expect(
                 store.readShared(share.locator, share.key),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             const renewed = await store.issueShare(owner, note.id);
             expect(renewed.locator).not.toBe(share.locator);
             expect((await store.get(other, copy.id)).title).toBe(content.title);
         });
+
         it('rejects a shared read that observed the key before revocation committed', async () => {
             let observed!: () => void;
             const observedFirstCheck = new Promise<void>((resolve) => {
                 observed = resolve;
             });
+
             class ObservedCrypto extends KnowledgeShareCrypto {
                 override verify(key: string, digest: string | null) {
                     observed();
+
                     return super.verify(key, digest);
                 }
             }
@@ -675,22 +755,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(knowledgeNotesTable)
                     .where(eq(knowledgeNotesTable.id, note.id))
                     .for('update');
+
                 noteLocked();
                 await releaseRevocation;
                 await tx
                     .delete(knowledgeSharesTable)
                     .where(eq(knowledgeSharesTable.noteId, note.id));
             });
+
             await locked;
             const read = observedStore.readShared(share.locator, share.key);
             const rejectedRead = expect(read).rejects.toMatchObject({
                 code: 'knowledge_not_found',
             });
+
             await observedFirstCheck;
             release();
             await revoke;
             await rejectedRead;
         });
+
         it('recovers an empty working title and rejects publication until title and body are present', async () => {
             const workspace = await store.createDraft(owner, {
                 operationId: randomUUID(),
@@ -702,10 +786,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: branch.version,
                 content: { ...branch.content, title: '' },
             });
+
             expect(
                 (await store.getWorkspace(owner, workspace.noteId)).branches[0]
                     ?.content.title,
             ).toBe('');
+
             await expect(
                 store.saveWorkspace(owner, workspace.noteId, {
                     operationId: randomUUID(),
@@ -714,12 +800,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedPublishedVersion: 0,
                 }),
             ).rejects.toMatchObject({ code: 'invalid_request' });
+
             const valid = await store.updateWorking(owner, workspace.noteId, {
                 operationId: randomUUID(),
                 branchId: blank.branch.id,
                 expectedVersion: blank.branch.version,
                 content,
             });
+
             expect(
                 (
                     await store.saveWorkspace(owner, workspace.noteId, {
@@ -731,10 +819,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).title,
             ).toBe(content.title);
         });
+
         it('names an untouched draft once from the first message and preserves manual names', async () => {
             const first = await store.createDraft(owner, {
                 operationId: randomUUID(),
             });
+
             await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(
                     tx,
@@ -744,6 +834,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'How do articles',
                 ),
             );
+
             await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(
                     tx,
@@ -753,10 +844,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'Later message title',
                 ),
             );
+
             expect(
                 (await store.getWorkspace(owner, first.noteId)).branches[0]
                     ?.content.title,
             ).toBe('How do articles');
+
             const second = await store.createDraft(owner, {
                 operationId: randomUUID(),
             });
@@ -767,6 +860,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: 1,
                 content: { ...branch.content, title: 'My essay' },
             });
+
             await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(
                     tx,
@@ -776,6 +870,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'Ignored title',
                 ),
             );
+
             expect(
                 (await store.getWorkspace(owner, second.noteId)).branches[0]
                     ?.content.title,

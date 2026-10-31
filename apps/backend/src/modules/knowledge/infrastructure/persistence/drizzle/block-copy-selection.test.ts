@@ -30,19 +30,27 @@ describe('media-associated independent block selection', () => {
         const copied = copyWorkbookBody(selected).document.content!;
         const copiedMedia = copied[0]!.attrs!.block!;
         const copiedQuestion = copied[1]!.attrs!.block!;
-        if (copiedQuestion.type !== 'exercise') throw new Error('fixture');
+        if (copiedQuestion.type !== 'exercise') {
+            throw new Error('fixture');
+        }
+
         expect(copiedQuestion.group?.parentBlockId).toBe(copiedMedia.id);
         expect(copiedMedia.id).not.toBe(mediaId);
         expect(copiedQuestion.group?.id).not.toBe(groupId);
     });
+
     it('detaches only presentation parent when copying an ungrounded question alone', () => {
         const selected = selectKnowledgeBlocksForCopy(body(), [questionId]);
         expect(selected.document.content).toHaveLength(1);
         const copied = selected.document.content![0]!.attrs!.block!;
-        if (copied.type !== 'exercise') throw new Error('fixture');
+        if (copied.type !== 'exercise') {
+            throw new Error('fixture');
+        }
+
         expect(copied.group).toEqual({ id: groupId, title: 'Questions' });
         expect(copied.source).toBeUndefined();
     });
+
     it('rejects missing, self-referential and nonmedia presentation parents', () => {
         for (const parentBlockId of [questionId, groupId]) {
             expect(
@@ -61,6 +69,7 @@ describe('media-associated independent block selection', () => {
                 }).success,
             ).toBe(false);
         }
+
         expect(
             KnowledgeBodySchema.safeParse({
                 schemaVersion: 2,

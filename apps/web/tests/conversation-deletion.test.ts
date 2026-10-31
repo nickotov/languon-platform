@@ -15,6 +15,7 @@ it('locks repeated confirmation, cancel, and target changes until deletion finis
     const { result } = renderHook(() =>
         useConversationDeletion({ remove, onDeleted, onError }),
     );
+
     act(() => result.current.requestDelete('first'));
     let deletion!: Promise<void>;
     act(() => {
@@ -23,6 +24,7 @@ it('locks repeated confirmation, cancel, and target changes until deletion finis
         result.current.cancelDelete();
         result.current.requestDelete('second');
     });
+
     expect(remove).toHaveBeenCalledTimes(1);
     expect(remove).toHaveBeenCalledWith('first');
     expect(result.current.deletingPending).toBe(true);
@@ -31,11 +33,13 @@ it('locks repeated confirmation, cancel, and target changes until deletion finis
         resolve();
         await deletion;
     });
+
     expect(result.current.deleting).toBeNull();
     expect(result.current.deletingPending).toBe(false);
     expect(onDeleted).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
 });
+
 it('retains the target on failure and allows explicit retry', async () => {
     const error = new Error('offline');
     const remove = vi
@@ -47,16 +51,19 @@ it('retains the target on failure and allows explicit retry', async () => {
     const { result } = renderHook(() =>
         useConversationDeletion({ remove, onDeleted, onError }),
     );
+
     act(() => result.current.requestDelete('first'));
     await act(async () => {
         await result.current.confirmDelete();
     });
+
     expect(result.current.deleting).toBe('first');
     expect(result.current.deletingPending).toBe(false);
     expect(onError).toHaveBeenCalledWith(error);
     await act(async () => {
         await result.current.confirmDelete();
     });
+
     expect(remove).toHaveBeenCalledTimes(2);
     expect(result.current.deleting).toBeNull();
     expect(onDeleted).toHaveBeenCalledTimes(1);

@@ -40,6 +40,7 @@ const envelope = (
     code: z.infer<typeof NavigationErrorResponseSchema>['error']['code'],
     message: string,
 ) => ({ error: { code, message, correlationId: randomUUID() } });
+
 export function createNavigationRoutes({
     service,
     policy,
@@ -49,18 +50,21 @@ export function createNavigationRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     envelope('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     for (const path of ['/navigation', '/navigation/*']) {
         app.use(path, async (c, next) => {
             c.header('Cache-Control', 'private, no-store');
@@ -74,8 +78,10 @@ export function createNavigationRoutes({
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -90,6 +96,7 @@ export function createNavigationRoutes({
                     ),
             }),
         );
+
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -100,17 +107,22 @@ export function createNavigationRoutes({
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID',
             );
+
             c.header('Vary', 'Origin');
+
             return c.body(null, 204);
         });
     }
+
     app.onError((error, c) => {
-        if (error instanceof NavigationError)
+        if (error instanceof NavigationError) {
             return c.json(
                 envelope(error.code, error.message),
                 error.code === 'resource_not_found' ? 404 : 429,
             );
-        if (error instanceof InvalidRequestOriginError)
+        }
+
+        if (error instanceof InvalidRequestOriginError) {
             return c.json(
                 envelope(
                     'invalid_origin',
@@ -118,17 +130,23 @@ export function createNavigationRoutes({
                 ),
                 403,
             );
-        if (error instanceof z.ZodError)
+        }
+
+        if (error instanceof z.ZodError) {
             return c.json(
                 envelope('invalid_request', 'The request is invalid.'),
                 400,
             );
-        if (error instanceof HTTPException && error.status === 400)
+        }
+
+        if (error instanceof HTTPException && error.status === 400) {
             return c.json(
                 envelope('invalid_request', 'The request is invalid.'),
                 400,
             );
-        if (error instanceof RateLimitUnavailableError)
+        }
+
+        if (error instanceof RateLimitUnavailableError) {
             return c.json(
                 envelope(
                     'service_unavailable',
@@ -136,13 +154,17 @@ export function createNavigationRoutes({
                 ),
                 503,
             );
+        }
+
         const mapped = mapDictionaryHttpError(error);
-        if (mapped.status === 401)
+        if (mapped.status === 401) {
             return c.json(
                 envelope('authentication_required', 'Sign in to continue.'),
                 401,
             );
-        if (mapped.status === 503)
+        }
+
+        if (mapped.status === 503) {
             return c.json(
                 envelope(
                     'service_unavailable',
@@ -150,13 +172,17 @@ export function createNavigationRoutes({
                 ),
                 503,
             );
+        }
+
         return c.json(
             envelope('internal_error', 'The request could not be completed.'),
             500,
         );
     });
+
     const auth = (c: Parameters<typeof authenticationRequestMetadata>[0]) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return [
             policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -164,6 +190,7 @@ export function createNavigationRoutes({
             { signal: metadata.signal, clientAddress: metadata.clientAddress },
         ] as const;
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -178,6 +205,7 @@ export function createNavigationRoutes({
         async (c) =>
             c.json(await service.list(...auth(c), c.req.valid('query')), 200),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -195,6 +223,7 @@ export function createNavigationRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -208,12 +237,14 @@ export function createNavigationRoutes({
         }),
         async (c) => {
             const { kind, id } = c.req.valid('param');
+
             return c.json(
                 await service.mutate(...auth(c), kind, id, { opened: true }),
                 200,
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'put',
@@ -237,11 +268,13 @@ export function createNavigationRoutes({
         }),
         async (c) => {
             const { kind, id } = c.req.valid('param');
+
             return c.json(
                 await service.mutate(...auth(c), kind, id, c.req.valid('json')),
                 200,
             );
         },
     );
+
     return app;
 }

@@ -45,9 +45,11 @@ function LibraryContent() {
     function newText() {
         setCreatingText(true);
     }
+
     function closeText() {
         setCreatingText(false);
     }
+
     const [view, setView] = useState<'active' | 'archived'>('active');
     const [dialog, setDialog] = useState<Dialog>(null);
     const folders = library.folders.filter(

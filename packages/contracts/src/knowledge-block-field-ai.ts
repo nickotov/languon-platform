@@ -47,31 +47,36 @@ export const RequestKnowledgeBlockFieldActionSchema = z
     })
     .strict()
     .superRefine((value, context) => {
-        if (value.action === 'check' && !value.field.currentValue.trim())
+        if (value.action === 'check' && !value.field.currentValue.trim()) {
             context.addIssue({
                 code: 'custom',
                 path: ['field', 'currentValue'],
                 message: 'Checking requires a current value.',
             });
+        }
+
         if (
             value.field.sourceLanguage.toLowerCase() ===
             value.field.targetLanguage.toLowerCase()
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['field', 'targetLanguage'],
                 message: 'Choose a different translation language.',
             });
+        }
+
         if (
             value.field.kind === 'vocabulary' &&
             (value.field.sourceText.length > 2_000 ||
                 value.field.currentValue.length > 2_000)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['field'],
                 message: 'Vocabulary fields exceed their limit.',
             });
+        }
     });
 
 export const KnowledgeBlockFieldResultSchema = z.discriminatedUnion('status', [
@@ -112,15 +117,17 @@ export const KnowledgeBlockFieldActionJobSchema = z
         const terminal = ['completed', 'failed', 'cancelled'].includes(
             value.status,
         );
+
         if (
             terminal !== (value.completedAt !== null) ||
             (value.status === 'completed') !== (value.result !== null) ||
             (value.status === 'failed') !== (value.failureCode !== null)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message: 'Field action state and result are inconsistent.',
             });
+        }
     });
 export const KnowledgeBlockFieldActionResponseSchema = z
     .object({ job: KnowledgeBlockFieldActionJobSchema })

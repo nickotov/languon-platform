@@ -19,10 +19,12 @@ describe('private sentence worker database failures', () => {
             const failure = await privateSentenceQuery(tx, sql`select 1`).catch(
                 (error: unknown) => error,
             );
+
             expect(failure).toBeInstanceOf(Error);
             expect((failure as Error).message).toBe(
                 'Private sentence worker authority failed.',
             );
+
             expect((failure as Error).cause).toBeUndefined();
             expect(String(failure)).not.toContain(
                 'synthetic-private-lease-secret',

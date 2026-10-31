@@ -23,7 +23,10 @@ export function AudioBlockUpload({
     async function choose(event: ChangeEvent<HTMLInputElement>) {
         const input = event.currentTarget;
         const file = input.files?.[0];
-        if (!file || disabled || busy) return;
+        if (!file || disabled || busy) {
+            return;
+        }
+
         input.value = '';
 
         if (
@@ -32,8 +35,10 @@ export function AudioBlockUpload({
             file.size === 0
         ) {
             setError(true);
+
             return;
         }
+
         setBusy(true);
         setError(false);
         try {
@@ -49,6 +54,7 @@ export function AudioBlockUpload({
             setBusy(false);
         }
     }
+
     return (
         <div aria-busy={busy}>
             <Input

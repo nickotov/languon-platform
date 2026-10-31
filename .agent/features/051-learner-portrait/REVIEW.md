@@ -59,7 +59,6 @@ Independent initial review covered the full backend checkpoint over main5efaafe 
 
 Location: infra/deploy/sql/account-purge-worker-role.sql / portrait-deletion-participant.ts. Added least-privilege portrait lifecycle/numerical and allocation-settlement grants, with no private payload SELECT. Narrowed recovery query to opaque identities/lifecycle/pricing fields; real restricted-role recovery+purge proof passes and private payload reads fail. Final persistence suite21/21 passes. Focused security delta review passed. The actual deployment-role test also settles a paid provider call, limited reservation and allocation before erasure while denying private fields and lease-token reads; the two-test composed journey passes.
 
-
 ### Functional F1 — Requested locale persistence, withdrawn
 
 Full transaction inspection confirmed enqueue already persists requestedLocale. Completion preserves a later explicit locale choice. No implementation defect; focused regression evidence is being added.
@@ -86,7 +85,6 @@ Accepted evidence: E1 full1079 unit/src baseline plus final53 focused tests, E2 
 
 This is not full-feature approval. Returned design, UI, browser/fidelity/localization/client-state evidence and final feature completion review remain required.
 
-
 ## UI/additive-backend independent security review — 2026-10-21
 
 Boundary: current tracked and untracked UI/additive backend changes from backend checkpoint `dc02e53`. Independent security reviewer inspected owner-scoped API/cache/session retry, interview status/resume, bounded contracts, scoped credit bypass, React rendering, diagnostic safeguards, prompt/tool boundaries and logging. Unchanged backend billing/tenant-isolation evidence above was reused; broad suites were not rerun by the reviewer. Final UI source manifest will identify the completed tree.
@@ -95,7 +93,6 @@ Boundary: current tracked and untracked UI/additive backend changes from backend
 - **UI-S2 Medium — resolved.** Privacy/deletion copy implied stronger confidentiality/erasure than application code establishes. All four locales now scope privacy to the account in Languon, disclose sending current interview and approved context to the selected model provider before Start, and distinguish active application deletion from provider/backup copies. Eight rendered copy regressions pass, with lint/typecheck.
 
 Security verdict: no unresolved material security findings in the reviewed UI/backend delta. Natural-language diagnosis recognition is deliberately non-exhaustive; explicit review/server safeguards remain necessary. Provider/backup erasure is an operational policy boundary, not application-code proof. Independent functional/fidelity completion review remains required.
-
 
 ## Initial full-feature completion review — 2026-10-21
 
@@ -108,7 +105,6 @@ Locations: use-portrait-management.ts29–66; portrait-entry-card.tsx37,65–90.
 Verdict: Changes requested until UI-C1 is fixed and independently re-reviewed. No critical/high/material security findings. Reviewer reused historical backend proof and confirmed representative runtime/fidelity coverage; live-provider/external-erasure and corrupt-source-PNG limitations remain as documented.
 
 UI-C1 remediation implemented: management and entry-enable hooks derive mutation status only for the current owner epoch and unique request. Synchronous request refs prevent duplicate starts; all receipt/catch/finally/cache work rechecks both identities, including A→B→A. The entry behavior is extracted into its owned hook to preserve component boundaries/size. Four deferred-promise regressions plus existing owner/entry/management checks pass22tests; full web typecheck, scoped lint and whitespace checks pass. Focused independent remediation review requested; finding remains pending that verdict.
-
 
 ## Final full-feature completion verdict — Pass
 

@@ -11,18 +11,26 @@ export function useInterviewQuestionScroll(
     useEffect(() => {
         if (first.current) {
             first.current = false;
+
             return;
         }
-        if (busy || error) return;
+
+        if (busy || error) {
+            return;
+        }
+
         const question = document.querySelector<HTMLElement>(
             '[aria-label="Current question"]',
         );
+
         if (
             !question ||
             question.closest('[hidden]') ||
             typeof question.scrollIntoView !== 'function'
-        )
+        ) {
             return;
+        }
+
         const frame = requestAnimationFrame(() => {
             question.scrollIntoView({ block: 'nearest' });
             const actions = question.querySelector<HTMLElement>(
@@ -31,14 +39,17 @@ export function useInterviewQuestionScroll(
             const composer = document.querySelector<HTMLElement>(
                 '[aria-label="Message the interviewer"]',
             );
+
             if (
                 actions &&
                 composer &&
                 actions.getBoundingClientRect().bottom >
                     composer.getBoundingClientRect().top
-            )
+            ) {
                 actions.scrollIntoView({ block: 'end' });
+            }
         });
+
         return () => cancelAnimationFrame(frame);
     }, [busy, error, messageCount]);
 }

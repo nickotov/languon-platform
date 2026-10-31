@@ -38,6 +38,7 @@ export function useLibraryImport(requestWithSession: RequestWithSession) {
                 importAttempt.current,
                 fingerprint,
             );
+
             return requestWithSession((token) =>
                 dictionaryApi.importDictionary(
                     token,
@@ -55,6 +56,7 @@ export function useLibraryImport(requestWithSession: RequestWithSession) {
                 response.mode === 'ai'
                     ? `?batchGenerationJob=${encodeURIComponent(response.job.id)}`
                     : '';
+
             router.push(
                 href(`/dictionaries/${response.dictionary.id}${suffix}`),
             );
@@ -65,16 +67,20 @@ export function useLibraryImport(requestWithSession: RequestWithSession) {
         setImportOpen(true);
         setImportPreview(null);
     }
+
     function closeImport() {
         setImportOpen(false);
         setImportPreview(null);
     }
+
     function changeName(event: ChangeEvent<HTMLInputElement>) {
         setImportName(event.currentTarget.value);
     }
+
     async function commit(request: ImportDictionaryRequest) {
         await importMutation.mutateAsync(request);
     }
+
     async function preview(request: PreviewDictionaryImportRequest) {
         await importPreviewMutation.mutateAsync(request);
     }
@@ -92,4 +98,5 @@ export function useLibraryImport(requestWithSession: RequestWithSession) {
         preview,
     };
 }
+
 export type LibraryImportState = ReturnType<typeof useLibraryImport>;

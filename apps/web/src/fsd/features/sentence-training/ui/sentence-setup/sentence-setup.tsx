@@ -61,8 +61,11 @@ export function SentenceSetup({
     const [prepareAll, setPrepareAll] = useState(initialPreparationEnabled);
     const loadEligibleCount = preparation?.loadEligibleCount;
     useEffect(() => {
-        if (prepareAll) void loadEligibleCount?.();
+        if (prepareAll) {
+            void loadEligibleCount?.();
+        }
     }, [prepareAll, loadEligibleCount]);
+
     const activePreparation =
         preparation?.preparation &&
         !['completed', 'failed'].includes(preparation.preparation.state) &&
@@ -72,11 +75,16 @@ export function SentenceSetup({
     function viewPreparation() {
         onViewPreparation?.();
     }
+
     function startPreparation() {
-        if (!preparation) return;
+        if (!preparation) {
+            return;
+        }
+
         onViewPreparation?.();
         void preparation.start(c.configuration);
     }
+
     const prepared = c.prepared;
     const selectionFull =
         c.selectedEntryIds.length >= SENTENCE_LIMITS.selectedEntries;
@@ -93,9 +101,11 @@ export function SentenceSetup({
     const batchDescription = t(
         'Each round uses up to {limit} words. A dictionary batch uses the first eligible words. Choose entries to practise other words.',
     ).replace('{limit}', String(SENTENCE_LIMITS.selectedEntries));
+
     function selectShown() {
         c.setSelectedEntryIds(shownSelection);
     }
+
     const invalid =
         c.loading ||
         !!c.error ||
@@ -103,10 +113,12 @@ export function SentenceSetup({
         prepared.eligibleCount === 0 ||
         (c.configuration.scope.type === 'manual' &&
             c.selectedEntryIds.length === 0);
+
     function start(fullscreen: boolean) {
         const request = fullscreen ? requestSentenceFullscreen() : undefined;
         onStart(c.configuration, request);
     }
+
     return (
         <Dialog
             variant={compact ? 'sheet' : 'dialog'}

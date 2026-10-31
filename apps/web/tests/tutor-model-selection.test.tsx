@@ -29,10 +29,12 @@ const initial = {
 };
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test-token');
+
 function mount() {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     function wrapper({ children }: { children: ReactNode }) {
         return (
             <QueryClientProvider client={client}>
@@ -40,8 +42,10 @@ function mount() {
             </QueryClientProvider>
         );
     }
+
     return renderHook(() => useModelPreference(request), { wrapper });
 }
+
 beforeEach(() => {
     useSessionStore.setState({
         status: 'authenticated',
@@ -54,17 +58,20 @@ beforeEach(() => {
             status: 'active',
         },
     });
+
     vi.spyOn(preferencesApi, 'read').mockResolvedValue(initial);
     vi.spyOn(preferencesApi, 'catalog').mockResolvedValue({
         defaultModelId: flash.id,
         models: [flash],
     });
 });
+
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
     useSessionStore.getState().signOut();
 });
+
 it('saves only the exact budget and server-managed mode without requesting a model catalog', async () => {
     const save = vi.spyOn(preferencesApi, 'save').mockResolvedValue({
         ...initial,
@@ -77,13 +84,16 @@ it('saves only the exact budget and server-managed mode without requesting a mod
     await act(async () => {
         await result.current.save();
     });
+
     expect(save).toHaveBeenCalledWith('test-token', {
         mode: 'auto',
         expectedVersion: 3,
         maxCreditsPerAction: '2.145',
     });
+
     expect(preferencesApi.catalog).not.toHaveBeenCalled();
 });
+
 it('keeps a conflicting budget draft and prevents an implicit overwrite', async () => {
     const save = vi
         .spyOn(preferencesApi, 'save')
@@ -94,13 +104,16 @@ it('keeps a conflicting budget draft and prevents an implicit overwrite', async 
     await act(async () => {
         await result.current.save();
     });
+
     expect(result.current.saveState).toBe('conflict');
     expect(result.current.budgetDraft).toBe('2.145');
     await act(async () => {
         await result.current.save();
     });
+
     expect(save).toHaveBeenCalledTimes(1);
 });
+
 it('does not submit an invalid budget', async () => {
     const save = vi.spyOn(preferencesApi, 'save');
     const { result } = mount();
@@ -109,5 +122,6 @@ it('does not submit an invalid budget', async () => {
     await act(async () => {
         await result.current.save();
     });
+
     expect(save).not.toHaveBeenCalled();
 });

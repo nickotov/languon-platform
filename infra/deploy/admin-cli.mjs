@@ -20,8 +20,10 @@ function parseArguments(values) {
         if (!key?.startsWith('--') || value === undefined) {
             throw new Error(`Invalid argument ${key ?? 'at end of command'}.`);
         }
+
         options[key.slice(2)] = value;
     }
+
     return options;
 }
 
@@ -34,8 +36,11 @@ export async function main(values = process.argv.slice(2)) {
         'request',
         'state-directory',
     ]) {
-        if (!options[required]) throw new Error(`--${required} is required.`);
+        if (!options[required]) {
+            throw new Error(`--${required} is required.`);
+        }
     }
+
     const requestPath = path.resolve(options.request);
     let request;
     try {
@@ -45,6 +50,7 @@ export async function main(values = process.argv.slice(2)) {
     } finally {
         await unlink(requestPath).catch(() => {});
     }
+
     const repositoryRoot = path.resolve(
         path.dirname(fileURLToPath(import.meta.url)),
         '../..',
@@ -58,6 +64,7 @@ export async function main(values = process.argv.slice(2)) {
         runner: shellRunner({ cwd: repositoryRoot }),
         stateDirectory: path.resolve(options['state-directory']),
     });
+
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 

@@ -49,7 +49,9 @@ export function LoginForm({
     async function submitPassword(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
         setError(null);
 
@@ -107,7 +109,9 @@ export function LoginForm({
     }
 
     async function submitPasskey() {
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
         setError(null);
 

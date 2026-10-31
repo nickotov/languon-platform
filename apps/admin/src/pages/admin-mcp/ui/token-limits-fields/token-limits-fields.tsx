@@ -13,7 +13,7 @@ export function TokenLimitsFields({
     const hasRevocations = permissions.includes('credits.revoke');
     const hasSpending = permissions.includes('spending-limits.write');
     const fields: { name: string[]; label: string }[] = [];
-    if (hasChecks)
+    if (hasChecks) {
         fields.push(
             {
                 name: ['limits', 'modelChecks', 'perCheckUsd'],
@@ -24,7 +24,9 @@ export function TokenLimitsFields({
                 label: 'mcp.dailyUsd',
             },
         );
-    if (hasGrants)
+    }
+
+    if (hasGrants) {
         fields.push(
             {
                 name: ['limits', 'creditGrants', 'perOperation'],
@@ -35,7 +37,9 @@ export function TokenLimitsFields({
                 label: 'mcp.grantDay',
             },
         );
-    if (hasRevocations)
+    }
+
+    if (hasRevocations) {
         fields.push(
             {
                 name: ['limits', 'creditRevocations', 'perOperation'],
@@ -46,7 +50,9 @@ export function TokenLimitsFields({
                 label: 'mcp.revokeDay',
             },
         );
-    if (hasSpending)
+    }
+
+    if (hasSpending) {
         fields.push(
             {
                 name: ['limits', 'spendingLimits', 'maximumCreditsPerAction'],
@@ -77,6 +83,8 @@ export function TokenLimitsFields({
                 label: 'mcp.globalUsd',
             },
         );
+    }
+
     return (
         <>
             {fields.map((field) => (

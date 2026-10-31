@@ -30,6 +30,7 @@ const body = KnowledgeBodySchema.parse({
         content: [{ type: 'learningBlock', attrs: { block } }],
     },
 });
+
 afterEach(() => vi.unstubAllGlobals());
 
 it('opens library saving from the one block menu and previews the flushed private working source', async () => {
@@ -38,9 +39,11 @@ it('opens library saving from the one block menu and previews the flushed privat
         'fetch',
         vi.fn(async (_url: string, init: RequestInit) => {
             requests.push(JSON.parse(String(init.body)));
+
             return Response.json({ entries: [entry], remainingRows: 100 });
         }),
     );
+
     const flush = vi
         .fn()
         .mockResolvedValue({ branchId: noteId, expectedVersion: 8 });
@@ -50,6 +53,7 @@ it('opens library saving from the one block menu and previews the flushed privat
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     render(
         <QueryClientProvider client={client}>
             <KnowledgeEditor
@@ -74,19 +78,24 @@ it('opens library saving from the one block menu and previews the flushed privat
             />
         </QueryClientProvider>,
     );
+
     await waitFor(() => expect(ref.current).not.toBeNull());
     expect(
         screen.getAllByRole('button', { name: 'Block settings: Words' }),
     ).toHaveLength(1);
+
     fireEvent.click(
         screen.getByRole('button', { name: 'Block settings: Words' }),
     );
+
     fireEvent.click(
         await screen.findByRole('menuitem', { name: 'Save to dictionary' }),
     );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Preview', exact: true }),
     );
+
     await screen.findByRole('button', { name: 'Save independent copy' });
     expect(flush).toHaveBeenCalledOnce();
     expect(requests).toHaveLength(1);
@@ -96,6 +105,7 @@ it('opens library saving from the one block menu and previews the flushed privat
         blockId: block.id,
         entryIds: [entry.id],
     });
+
     expect(requests[0]).not.toHaveProperty('noteVersion');
     expect(change).not.toHaveBeenCalled();
     expect(menu).toHaveBeenCalledWith(

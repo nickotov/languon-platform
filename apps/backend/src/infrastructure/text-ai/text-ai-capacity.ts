@@ -36,12 +36,15 @@ export async function lockTextAiCapacity(tx: Transaction): Promise<void> {
                     from capacity_fence`,
             );
         })();
+
         acquiredFences.set(tx, acquired);
     }
+
     try {
         await acquired;
     } catch (error) {
         acquiredFences.delete(tx);
+
         throw error;
     }
 }
@@ -86,6 +89,7 @@ async function hasCapacityOverlap(
             sql`, `,
         )}]::text[],
         ${now.toISOString()}::timestamptz) as overlap`);
+
     return rows[0]?.overlap === true;
 }
 
@@ -147,6 +151,7 @@ export async function readTextAiCapacity(
         coalesce(sum(output_tokens) filter(where not active and scope=${actorId}),0) as owner_settled_output from amounts`);
     const c = counts[0];
     const u = usage[0];
+
     return {
         globalQueued: Number(c?.global_queued ?? 0),
         actorQueued: Number(c?.actor_queued ?? 0),
@@ -182,6 +187,7 @@ export async function cleanupTextAiCapacity(
     const rows = await tx.execute(
         sql`select languon_text_ai_cleanup_capacity(${now.toISOString()}::timestamptz, ${batchLimit}) as removed`,
     );
+
     return Number(rows[0]?.removed ?? 0);
 }
 
@@ -195,7 +201,10 @@ export async function archiveSentenceProviderUsage(
         now: Date;
     },
 ): Promise<void> {
-    if (!input.dictionaryIds?.length && !input.jobIds?.length) return;
+    if (!input.dictionaryIds?.length && !input.jobIds?.length) {
+        return;
+    }
+
     const predicates = [
         input.dictionaryIds?.length
             ? sql`dictionary_id in (${sql.join(
@@ -210,6 +219,7 @@ export async function archiveSentenceProviderUsage(
               )})`
             : sql`false`,
     ];
+
     await tx.execute(sql`insert into dictionary_generation_provider_usage_archive (
         id, job_kind, owner_id, actual_cost_micros, actual_input_tokens, actual_output_tokens,
         input_cost_micros_per_million_tokens, output_cost_micros_per_million_tokens,
@@ -228,6 +238,7 @@ const providerOperationalBudget = {
     dailyGlobalAttempts: 20,
     dailyOwnerAttempts: 3,
 } as const;
+
 export function textAiProviderBudgetAllows(
     usage: TextAiProviderBudgetUsage,
     includeNewReservation: boolean,
@@ -240,6 +251,7 @@ export function textAiProviderBudgetAllows(
               outputTokens: policy.maxOutputTokensPerAttempt,
           }
         : { costMicros: 0, inputTokens: 0, outputTokens: 0 };
+
     return (
         usage.globalActiveCostMicros + reservation.costMicros <=
             policy.maxCostMicrosPerAttempt *

@@ -20,6 +20,7 @@ export function initialInterviewQuestion(
             ? '¿Qué te gustaría actualizar?'
             : '¿Qué idiomas conoces y cuáles estás aprendiendo?',
     };
+
     return {
         message: messages[context.locale],
         topic: returning ? 'update' : 'languages',

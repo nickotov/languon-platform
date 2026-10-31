@@ -7,6 +7,7 @@ import type { PreparedLibraryCopy } from '../types';
 
 export function useLibraryPublication() {
     const client = useQueryClient();
+
     return async function publish(
         context: KnowledgeLibraryContext,
         preview: PreparedLibraryCopy,
@@ -16,6 +17,7 @@ export function useLibraryPublication() {
                 context,
                 preview.request,
             );
+
             await Promise.all([
                 client.invalidateQueries({
                     queryKey: ['dictionary-cards', result.dictionary.id],
@@ -34,6 +36,7 @@ export function useLibraryPublication() {
                 context,
                 preview.request,
             );
+
             await Promise.all([
                 client.invalidateQueries({
                     queryKey: ['text'],

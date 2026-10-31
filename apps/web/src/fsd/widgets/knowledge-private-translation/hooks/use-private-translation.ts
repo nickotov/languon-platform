@@ -22,10 +22,14 @@ function wait(signal: AbortSignal) {
             signal.removeEventListener('abort', abort);
             reject(signal.reason);
         };
+
         signal.addEventListener('abort', abort, { once: true });
-        if (signal.aborted) abort();
+        if (signal.aborted) {
+            abort();
+        }
     });
 }
+
 export function usePrivateTranslation(props: KnowledgePrivateTranslationProps) {
     const consent = useActionConsent();
     const api = privateTranslationApi(props);
@@ -56,13 +60,18 @@ export function usePrivateTranslation(props: KnowledgePrivateTranslationProps) {
         gcTime: 0,
         refetchOnWindowFocus: true,
     });
+
     useEffect(() => () => control.current?.abort(), []);
     async function generate() {
-        if (busy || !language) return;
+        if (busy || !language) {
+            return;
+        }
+
         const current =
             operation.current?.language === language
                 ? operation.current
                 : { id: crypto.randomUUID(), language };
+
         operation.current = current;
         const request = new AbortController();
         control.current = request;
@@ -80,27 +89,47 @@ export function usePrivateTranslation(props: KnowledgePrivateTranslationProps) {
                     request.signal,
                 ),
             );
-            if (request.signal.aborted) return;
+
+            if (request.signal.aborted) {
+                return;
+            }
+
             setJobId(response.job.id);
             const until = Date.now() + 120_000;
             while (
                 response.job.state === 'queued' ||
                 response.job.state === 'running'
             ) {
-                if (Date.now() >= until) throw new Error('Polling deadline');
+                if (Date.now() >= until) {
+                    throw new Error('Polling deadline');
+                }
+
                 await wait(request.signal);
                 response = await api.job(response.job.id, request.signal);
-                if (request.signal.aborted) return;
+                if (request.signal.aborted) {
+                    return;
+                }
             }
+
             operation.current = null;
-            if (response.job.state === 'completed') await query.refetch();
-            else if (response.job.state !== 'cancelled') setFailed(true);
+            if (response.job.state === 'completed') {
+                await query.refetch();
+            } else if (response.job.state !== 'cancelled') {
+                setFailed(true);
+            }
         } catch (error) {
-            if (request.signal.aborted) return;
+            if (request.signal.aborted) {
+                return;
+            }
+
             const lost =
                 error instanceof PrivateTranslationApiError &&
                 [401, 403, 404, 409].includes(error.status);
-            if (lost) setUnavailable(true);
+
+            if (lost) {
+                setUnavailable(true);
+            }
+
             setFailed(true);
         } finally {
             if (!request.signal.aborted) {
@@ -109,11 +138,16 @@ export function usePrivateTranslation(props: KnowledgePrivateTranslationProps) {
             }
         }
     }
+
     async function cancel() {
         if (!jobId) {
-            if (consent.quote) consent.cancel();
+            if (consent.quote) {
+                consent.cancel();
+            }
+
             return;
         }
+
         try {
             await api.cancel(jobId, AbortSignal.timeout(15_000));
             control.current?.abort();
@@ -124,6 +158,7 @@ export function usePrivateTranslation(props: KnowledgePrivateTranslationProps) {
             setFailed(true);
         }
     }
+
     return {
         consent,
         language,

@@ -16,24 +16,30 @@ export function useSpeechPlayer(requestWithSession: RequestWithSession) {
         speechPlayer.snapshot,
         speechPlayer.serverSnapshot,
     );
+
     useEffect(
         () => () => {
             const selection = speechPlayer.snapshot().selection;
-            if (selection?.startsWith(prefix)) speechPlayer.reset();
+            if (selection?.startsWith(prefix)) {
+                speechPlayer.reset();
+            }
         },
         [prefix],
     );
+
     useEffect(
         () =>
             useSessionStore.subscribe((next, previous) => {
                 if (
                     next.status !== 'authenticated' ||
                     next.user?.id !== previous.user?.id
-                )
+                ) {
                     speechPlayer.reset();
+                }
             }),
         [],
     );
+
     function play(source: SpeechSource, targetId: string) {
         return speechPlayer.play(
             source,
@@ -41,10 +47,13 @@ export function useSpeechPlayer(requestWithSession: RequestWithSession) {
             `${prefix}${targetId}`,
         );
     }
+
     function confirm() {
         void speechPlayer.confirm();
     }
+
     const selected = state.selection?.startsWith(prefix) ?? false;
+
     return {
         state,
         selected,

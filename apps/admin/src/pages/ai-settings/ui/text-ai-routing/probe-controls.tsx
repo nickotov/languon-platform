@@ -75,13 +75,20 @@ export function ProbeControls({
         setApprovedSelection(approved ? null : approvalSelection);
     const handleValuesChange = () => setApprovedSelection(null);
     const handleFinish = async (values: TextAiProbeRequest) => {
-        if (!approved) return;
+        if (!approved) {
+            return;
+        }
+
         const request: TextAiProbeRequest = {
             routeId: values.routeId,
             kind: values.kind,
             approvedMaximumCostUsd: limits.maximumCostUsd,
         };
-        if (values.kind === 'flow') request.flowId = values.flowId;
+
+        if (values.kind === 'flow') {
+            request.flowId = values.flowId;
+        }
+
         await onRun(request);
         setApprovedSelection(null);
     };

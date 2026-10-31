@@ -79,10 +79,12 @@ export function CompanionLayout({
     useEffect(() => {
         publishLayout(companionId, tutorVisible);
     }, [companionId, tutorVisible, publishLayout]);
+
     useEffect(
         () => () => removeLayout(companionId),
         [companionId, removeLayout],
     );
+
     const { halfWidth, setHalfWidth } = resize;
     const contentId = `${companionId}-document`;
     const placement = {
@@ -103,6 +105,7 @@ export function CompanionLayout({
     const className = [styles.layout, fill && styles.fill]
         .filter(Boolean)
         .join(' ');
+
     return (
         <CompanionContext.Provider value={placement}>
             <div

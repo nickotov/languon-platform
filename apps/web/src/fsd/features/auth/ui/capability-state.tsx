@@ -14,7 +14,9 @@ export function CapabilityState() {
         return <LoadingState>{t('auth.capabilitiesChecking')}</LoadingState>;
     }
 
-    if (!capabilitiesError) return null;
+    if (!capabilitiesError) {
+        return null;
+    }
 
     return (
         <FormMessage>

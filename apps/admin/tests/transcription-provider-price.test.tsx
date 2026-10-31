@@ -12,6 +12,7 @@ import { ProviderPriceDialog } from '../src/pages/accounting/ui/provider-prices/
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 beforeAll(() =>
     vi.stubGlobal(
         'matchMedia',
@@ -24,6 +25,7 @@ beforeAll(() =>
         }),
     ),
 );
+
 afterEach(cleanup);
 const rules = {
     version: 1,
@@ -44,10 +46,12 @@ const rules = {
         },
     ],
 };
+
 async function durationForm() {
     const submit = vi.fn<(input: ProviderPricePublishRequest) => Promise<void>>(
         async () => {},
     );
+
     render(
         <ProviderPriceDialog
             price={null}
@@ -58,53 +62,66 @@ async function durationForm() {
             onReload={vi.fn()}
         />,
     );
+
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Meter' }));
     fireEvent.click(
         await screen.findByText('Audio duration (native rules only)', {
             exact: true,
         }),
     );
+
     return submit;
 }
+
 describe('manual native duration price publication', () => {
     it('requires reviewed native rules without prefilling rates or legacy fields', async () => {
         const submit = await durationForm();
         expect(
             screen.getByLabelText('Reviewed native pricing rules (JSON)'),
         ).toHaveValue('');
+
         expect(
             screen.queryByLabelText('USD per million input tokens'),
         ).not.toBeInTheDocument();
+
         expect(submit).not.toHaveBeenCalled();
     });
+
     it('publishes only operator-entered native rules with null legacy dimensions', async () => {
         const submit = await durationForm();
         fireEvent.change(screen.getByLabelText('Provider', { exact: true }), {
             target: { value: 'openai' },
         });
+
         fireEvent.change(screen.getByLabelText('Model', { exact: true }), {
             target: { value: 'gpt-transcribe' },
         });
+
         fireEvent.change(
             screen.getByLabelText('Reviewed native pricing rules (JSON)'),
             { target: { value: JSON.stringify(rules) } },
         );
+
         fireEvent.change(screen.getByLabelText('Price source reference'), {
             target: { value: 'Synthetic reviewed duration contract' },
         });
+
         fireEvent.change(screen.getByLabelText('Price source URL (HTTPS)'), {
             target: {
                 value: 'https://developers.openai.com/api/docs/models/gpt-transcribe',
             },
         });
+
         fireEvent.change(screen.getByLabelText('Reason for change'), {
             target: { value: 'Synthetic explicit duration publication' },
         });
+
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Publish provider cost revision',
             }),
         );
+
         await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
         expect(submit.mock.calls[0]![0]).toMatchObject({
             meter: 'audio-duration',
@@ -114,6 +131,7 @@ describe('manual native duration price publication', () => {
             usdPer1000Characters: null,
             minimumUsdPerRequest: null,
         });
+
         expect(submit.mock.calls[0]![0]).not.toHaveProperty('nativeRulesJson');
     });
 });

@@ -16,11 +16,16 @@ export function useProposalAudio(
     const actorId = useSessionStore((state) => state.user?.id);
     useEffect(() => {
         const element = ref.current;
-        if (!element) return;
-        if (typeof IntersectionObserver === 'undefined') {
-            setSeen(true);
+        if (!element) {
             return;
         }
+
+        if (typeof IntersectionObserver === 'undefined') {
+            setSeen(true);
+
+            return;
+        }
+
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries.some((entry) => entry.isIntersecting)) {
@@ -30,9 +35,12 @@ export function useProposalAudio(
             },
             { rootMargin: '200px' },
         );
+
         observer.observe(element);
+
         return () => observer.disconnect();
     }, []);
+
     const assetIds = [
         ...proposal.blocks,
         ...(proposal.dependencies ?? []),
@@ -47,5 +55,6 @@ export function useProposalAudio(
         requestWithSession,
         unavailable: !seen && !review,
     });
+
     return { ref, urls };
 }

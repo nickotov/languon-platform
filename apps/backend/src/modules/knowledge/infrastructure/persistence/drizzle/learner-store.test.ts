@@ -50,6 +50,7 @@ const content = (exercise: ExerciseLearningBlock) =>
             },
         },
     });
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'Workbook private learner PostgreSQL authority and history',
     () => {
@@ -72,14 +73,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const crypto = new KnowledgeShareCrypto(
                 'synthetic-workbook-learner-secret',
             );
+
             notes = new DrizzleKnowledgeStore(
                 db,
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+
             store = new DrizzleLearnerStore(db, crypto);
             workbooks = new DrizzleWorkbookStore(db, crypto);
         }, 120_000);
+
         beforeEach(async () => {
             await db.delete(knowledgeWorkbooksTable);
             await db.delete(knowledgeNotesTable);
@@ -92,6 +96,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     status: 'active' as const,
                 })),
             );
+
             const choice = randomUUID();
             exercise = {
                 id: randomUUID(),
@@ -106,14 +111,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 referenceAnswer: 'Past',
                 explanation: 'A completed event.',
             };
+
             const note = await notes.create(author, {
                 operationId: randomUUID(),
                 content: content(exercise),
             });
+
             noteId = note.id;
             initialRevision = (await store.read(author, noteId))
                 .exerciseRevisions[0]!.revision;
         });
+
         afterAll(async () => client?.end(), 120_000);
         function request(): SubmitWorkbookAttemptRequest {
             return {
@@ -130,28 +138,35 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             };
         }
+
         async function share() {
             const proof = await notes.issueShare(author, noteId);
+
             return { kind: 'note' as const, ...proof };
         }
+
         it('requires live source access and isolates each authenticated learner', async () => {
             await expect(store.read(reader, noteId)).rejects.toMatchObject({
                 code: 'knowledge_not_found',
             });
+
             const access = await share();
             await store.attempt(reader, noteId, request(), access);
             expect(
                 (await store.read(reader, noteId, access)).attempts,
             ).toHaveLength(1);
+
             expect(
                 (await store.read(other, noteId, access)).attempts,
             ).toHaveLength(0);
+
             expect((await store.read(author, noteId)).attempts).toHaveLength(0);
             await notes.revokeShare(author, noteId);
             await expect(
                 store.read(reader, noteId, access),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
         });
+
         it('pins only the authenticated learner private answer and verified share digest for AI evaluation', async () => {
             const access = await share();
             const answer = request();
@@ -173,6 +188,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     access,
                 ),
             );
+
             expect(pinned.answer).toEqual(answer.answer);
             expect(pinned.exercise.referenceAnswer).toBe('Past');
             expect(pinned.grant?.digest).toBe(crypto.digest(access.key));
@@ -189,6 +205,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ),
             ).rejects.toMatchObject({ code: 'access_revoked' });
+
             await expect(
                 db.transaction((tx) =>
                     authorizeKnowledgeExerciseJobSource(tx, {
@@ -197,6 +214,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             ).resolves.toBeUndefined();
+
             await notes.revokeShare(author, noteId);
             await expect(
                 db.transaction((tx) =>
@@ -207,6 +225,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toBeDefined();
         });
+
         it('allows explanation-only source updates but refuses AI evaluation after the exercise material changes', async () => {
             const answer = request();
             await store.attempt(author, noteId, answer);
@@ -221,6 +240,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { operationId: randomUUID(), attemptId: answer.id },
                 ),
             );
+
             await notes.update(author, noteId, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
@@ -229,6 +249,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     explanation: 'A clearer reason.',
                 }),
             });
+
             await expect(
                 db.transaction((tx) =>
                     authorizeKnowledgeExerciseJobSource(tx, {
@@ -237,11 +258,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             ).resolves.toBeUndefined();
+
             await notes.update(author, noteId, {
                 operationId: randomUUID(),
                 expectedVersion: 2,
                 content: content({ ...exercise, question: 'Changed question' }),
             });
+
             await expect(
                 db.transaction((tx) =>
                     authorizeKnowledgeExerciseJobSource(tx, {
@@ -251,6 +274,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toBeDefined();
         });
+
         it('derives correctness and preserves immutable exercise snapshot with idempotent concurrent retry', async () => {
             const access = await share();
             const input = request();
@@ -258,15 +282,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 store.attempt(reader, noteId, input, access),
                 store.attempt(reader, noteId, input, access),
             ]);
+
             expect(first).toEqual(retry);
             expect(first.evaluation).toEqual({
                 status: 'correct',
                 method: 'deterministic',
             });
+
             const rows = await db
                 .select()
                 .from(knowledgeLearnerAttemptsTable)
                 .where(eq(knowledgeLearnerAttemptsTable.noteId, noteId));
+
             expect(rows).toHaveLength(1);
             expect(rows[0]!.snapshot).toEqual([exercise]);
             await expect(
@@ -284,6 +311,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toMatchObject({ code: 'idempotency_conflict' });
         });
+
         it('rejects stale revisions but retains old attempts after material edits', async () => {
             const input = request();
             await store.attempt(author, noteId, input);
@@ -291,11 +319,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ...exercise,
                 question: 'Which tense is used now?',
             };
+
             await notes.update(author, noteId, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
                 content: content(revised),
             });
+
             await expect(
                 store.attempt(author, noteId, {
                     ...input,
@@ -303,6 +333,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     noteVersion: 2,
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             const fresh = await store.attempt(author, noteId, {
                 ...input,
                 id: randomUUID(),
@@ -314,6 +345,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(state.attempts).toHaveLength(2);
             expect(fresh.exerciseRevision).not.toBe(input.exerciseRevision);
         });
+
         it('retains semantic identity across explanation-only edits and explicitly completed updates', async () => {
             const input = request();
             await store.attempt(author, noteId, input);
@@ -322,22 +354,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteVersion: 1,
                 completed: true,
             });
+
             const revised = {
                 ...exercise,
                 explanation: 'An improved explanation.',
             };
+
             await notes.update(author, noteId, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
                 content: content(revised),
             });
+
             const state = await store.read(author, noteId);
             expect(state.exerciseRevisions[0]!.revision).toBe(
                 input.exerciseRevision,
             );
+
             expect(state.completion!.completedNoteVersion).toBe(1);
             expect(state.updatedSinceCompletion).toBe(true);
         });
+
         it('records reveals separately from attempts/correctness and handles completion replay', async () => {
             const input = request();
             await store.event(author, noteId, {
@@ -347,6 +384,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 exerciseRevision: input.exerciseRevision,
                 kind: 'answer-revealed',
             });
+
             const completion = {
                 id: randomUUID(),
                 noteVersion: 1,
@@ -358,24 +396,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteVersion: 1,
                 completed: false,
             });
+
             expect(await store.complete(author, noteId, completion)).toEqual(
                 first,
             );
+
             const state = await store.read(author, noteId);
             expect(state.events).toHaveLength(1);
             expect(state.attempts).toHaveLength(0);
             expect(state.completion).toBeNull();
         });
+
         it('authorizes workbook-derived access and denies removed membership', async () => {
             const workbook = await workbooks.create(author, {
                 id: randomUUID(),
                 title: 'Workbook',
             });
+
             await workbooks.setNotes(author, workbook.id, {
                 expectedVersion: 1,
                 noteIds: [noteId],
                 acknowledgeSharedAddition: false,
             });
+
             const proof = await workbooks.issueShare(
                 author,
                 workbook.id,
@@ -389,20 +432,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 noteIds: [],
                 acknowledgeSharedAddition: false,
             });
+
             await expect(
                 store.read(reader, noteId, access),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
         });
+
         it('counts only the current learner and current saved workbook members, retaining updated completion', async () => {
             const workbook = await workbooks.create(author, {
                 id: randomUUID(),
                 title: 'Private progress',
             });
+
             await workbooks.setNotes(author, workbook.id, {
                 expectedVersion: 1,
                 noteIds: [noteId],
                 acknowledgeSharedAddition: false,
             });
+
             const proof = await workbooks.issueShare(author, workbook.id, 2);
             const access = { kind: 'workbook' as const, ...proof };
             await store.complete(
@@ -411,6 +458,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: randomUUID(), noteVersion: 1, completed: true },
                 access,
             );
+
             expect(
                 await store.workbookProgress(reader, workbook.id, access),
             ).toMatchObject({
@@ -418,6 +466,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 completedNotes: 1,
                 updatedSinceCompletion: 0,
             });
+
             expect(
                 await store.workbookProgress(author, workbook.id),
             ).toMatchObject({
@@ -425,9 +474,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 completedNotes: 0,
                 updatedSinceCompletion: 0,
             });
+
             await expect(
                 store.workbookProgress(other, workbook.id),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             await notes.update(author, noteId, {
                 operationId: randomUUID(),
                 expectedVersion: 1,
@@ -436,14 +487,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     explanation: 'Updated explanation',
                 }),
             });
+
             expect(
                 await store.workbookProgress(reader, workbook.id, access),
             ).toMatchObject({ completedNotes: 1, updatedSinceCompletion: 1 });
+
             await workbooks.setNotes(author, workbook.id, {
                 expectedVersion: 2,
                 noteIds: [],
                 acknowledgeSharedAddition: false,
             });
+
             expect(
                 await store.workbookProgress(reader, workbook.id, access),
             ).toMatchObject({
@@ -452,16 +506,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 updatedSinceCompletion: 0,
             });
         });
+
         it('requires live workbook access for aggregate progress even after completion', async () => {
             const workbook = await workbooks.create(author, {
                 id: randomUUID(),
                 title: 'Revocable progress',
             });
+
             await workbooks.setNotes(author, workbook.id, {
                 expectedVersion: 1,
                 noteIds: [noteId],
                 acknowledgeSharedAddition: false,
             });
+
             const proof = await workbooks.issueShare(author, workbook.id, 2);
             const access = { kind: 'workbook' as const, ...proof };
             await store.complete(
@@ -470,20 +527,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: randomUUID(), noteVersion: 1, completed: true },
                 access,
             );
+
             await expect(
                 store.workbookProgress(reader, workbook.id, {
                     ...access,
                     kind: 'note',
                 }),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             await workbooks.revokeShare(author, workbook.id, 2);
             await expect(
                 store.workbookProgress(reader, workbook.id, access),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             expect(
                 await store.workbookProgress(author, workbook.id),
             ).toMatchObject({ totalNotes: 1, completedNotes: 0 });
         });
+
         it('permanent source deletion removes all source-bound private state', async () => {
             await store.attempt(author, noteId, request());
             await store.event(author, noteId, {
@@ -493,26 +554,30 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 exerciseRevision: initialRevision,
                 kind: 'answer-revealed',
             });
+
             await store.complete(author, noteId, {
                 id: randomUUID(),
                 noteVersion: 1,
                 completed: true,
             });
+
             await db
                 .delete(knowledgeNotesTable)
                 .where(eq(knowledgeNotesTable.id, noteId));
+
             for (const table of [
                 knowledgeLearnerAttemptsTable,
                 knowledgeLearnerEventsTable,
                 knowledgeLearnerCompletionTable,
                 knowledgeLearnerCompletionReceiptsTable,
-            ])
+            ]) {
                 expect(
                     await db
                         .select()
                         .from(table)
                         .where(eq(table.noteId, noteId)),
                 ).toHaveLength(0);
+            }
         });
     },
 );

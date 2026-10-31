@@ -29,6 +29,7 @@ export function LearningNote({
 }) {
     const actorId = useSessionStore((state) => state.user?.id);
     const identity = `${actorId}:${note.id}:${note.version}:${access?.kind}:${access?.locator}:${access?.key}`;
+
     return (
         <LearningNoteContent
             key={identity}
@@ -38,6 +39,7 @@ export function LearningNote({
         />
     );
 }
+
 function LearningNoteContent({
     note,
     access,
@@ -100,6 +102,7 @@ function LearningNoteContent({
               access,
           }
         : undefined;
+
     function blockOptions(block: LearningBlock) {
         return {
             ...model.options(block),
@@ -107,10 +110,14 @@ function LearningNoteContent({
             playback: blockPlayback,
         };
     }
+
     const wrapBlock: NonNullable<
         ComponentProps<typeof KnowledgeDocumentView>['wrapBlock']
     > = (block, render) => {
-        if (!actorId || block.type !== 'bilingual-text') return render();
+        if (!actorId || block.type !== 'bilingual-text') {
+            return render();
+        }
+
         return (
             <KnowledgeBilingualStudy
                 actorId={actorId}
@@ -126,8 +133,12 @@ function LearningNoteContent({
             </KnowledgeBilingualStudy>
         );
     };
+
     function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
-        if (!actorId || block.type !== 'vocabulary') return null;
+        if (!actorId || block.type !== 'vocabulary') {
+            return null;
+        }
+
         return (
             <KnowledgeVocabularyPractice
                 noteId={note.id}
@@ -140,6 +151,7 @@ function LearningNoteContent({
             />
         );
     }
+
     return (
         <>
             {playback.confirmation}

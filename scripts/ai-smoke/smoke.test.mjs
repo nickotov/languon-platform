@@ -23,8 +23,10 @@ const day = '2026-10-31';
 async function fixture(t) {
     const root = await mkdtemp(join(tmpdir(), 'languon-ai-smoke-'));
     t.after(() => rm(root, { recursive: true, force: true }));
+
     return root;
 }
+
 async function initialize(root) {
     await withJournal(root, userId, (journal) => journal.initialize(0));
 }
@@ -36,6 +38,7 @@ test('paid actions require explicit run and stable task, with no target/prompt o
     assert.throws(() =>
         parseOptions(['--run', '--initialize', '--task', 'safe']),
     );
+
     assert.throws(() => parseOptions(['--url', 'https://example.com']));
     assert.throws(() => parseOptions(['--prompt', 'anything']));
     assert.equal(
@@ -50,30 +53,37 @@ test('unknown outcomes consume both lifetime task slots and day quota', async (t
     await assert.rejects(
         withJournal(root, userId, async (journal) => {
             await journal.reserve('same-task', day, 0);
+
             throw new Error('ambiguous transport failure');
         }),
     );
+
     await withJournal(root, userId, (journal) =>
         journal.reserve('same-task', day, 0),
     );
+
     await assert.rejects(
         withJournal(root, userId, (journal) =>
             journal.reserve('same-task', '2026-11-01', 0),
         ),
         /task-call-limit/,
     );
+
     await assert.rejects(
         withJournal(root, userId, (journal) =>
             journal.reserve('other-task', day, 200001),
         ),
         /daily-call-limit/,
     );
+
     await withJournal(root, userId, (journal) =>
         journal.reserve('other-task', day, 200000),
     );
+
     const state = JSON.parse(
         await readFile(join(root, '.env.ai-smoke.state.json'), 'utf8'),
     );
+
     assert.equal(state.entries.length, 3);
     assert.ok(
         state.entries.every(
@@ -89,6 +99,7 @@ test('journal refuses concurrent ownership, historical reset, corrupt or missing
         withJournal(root, userId, (journal) => journal.initialize(1)),
         /used-account/,
     );
+
     await initialize(root);
     await withJournal(root, userId, async () => {
         await assert.rejects(
@@ -96,19 +107,23 @@ test('journal refuses concurrent ownership, historical reset, corrupt or missing
             { code: 'EEXIST' },
         );
     });
+
     await assert.rejects(
         withJournal(root, userId, (journal) => journal.initialize(0)),
         /already-initialized/,
     );
+
     const state = join(root, '.env.ai-smoke.state.json');
     await writeFile(state, '{broken', { mode: 0o600 });
     await assert.rejects(
         withJournal(root, userId, (journal) => journal.reserve('task', day, 0)),
     );
+
     await unlink(state);
     await assert.rejects(
         withJournal(root, userId, (journal) => journal.read()),
     );
+
     await assert.rejects(
         withJournal(root, userId, (journal) => journal.initialize(0)),
         /already-initialized/,
@@ -147,6 +162,7 @@ function safeSnapshot() {
         policies: [],
     };
 }
+
 const account = {
     id: userId,
     email: EMAIL,
@@ -154,10 +170,13 @@ const account = {
     verified: true,
     admin: false,
 };
+
 test('production preflight fails closed on route fallback, limits, user identity and unlimited wallet', () => {
     assert.equal(micros('0.1'), 100000);
-    for (const amount of ['1e-1', '-1', '0.0000001', 0.1])
+    for (const amount of ['1e-1', '-1', '0.0000001', 0.1]) {
         assert.throws(() => micros(amount));
+    }
+
     assertSnapshot(safeSnapshot(), account, userId);
     const mutations = [
         (s) => {
@@ -189,14 +208,17 @@ test('production preflight fails closed on route fallback, limits, user identity
             s.policies = [{ capability: 'conversation', funding: 'unlimited' }];
         },
     ];
+
     for (const mutate of mutations) {
         const snapshot = safeSnapshot();
         mutate(snapshot);
         assert.throws(() => assertSnapshot(snapshot, account, userId));
     }
+
     assert.throws(() =>
         assertSnapshot(safeSnapshot(), { ...account, admin: true }, userId),
     );
+
     assert.throws(() => assertSnapshot(safeSnapshot(), account, randomUUID()));
 });
 
@@ -258,7 +280,7 @@ function journeyFixture() {
         request: async (path, schema, body) => {
             calls.push({ path, body });
             let result;
-            if (path === '/users/me/ai-model-preference')
+            if (path === '/users/me/ai-model-preference') {
                 result = {
                     mode: 'auto',
                     modelId: null,
@@ -266,9 +288,9 @@ function journeyFixture() {
                     selectedModel: null,
                     maxCreditsPerAction: '50',
                 };
-            else if (path === '/users/me/ai-credits')
+            } else if (path === '/users/me/ai-credits') {
                 result = { mode: 'limited', availableCredits: '200' };
-            else if (path === '/knowledge') {
+            } else if (path === '/knowledge') {
                 c.CreateKnowledgeNoteRequestSchema.parse(body);
                 result = {
                     note: {
@@ -290,10 +312,12 @@ function journeyFixture() {
                     body.editorContext?.content,
                     'Hello means a greeting in English.',
                 );
+
                 assert.match(
                     body.editorContext.editorTarget.documentHash,
                     /^[a-f0-9]{64}$/,
                 );
+
                 result = {
                     turn: {
                         ...turn,
@@ -306,7 +330,10 @@ function journeyFixture() {
                         },
                     },
                 };
-            } else result = detail;
+            } else {
+                result = detail;
+            }
+
             return schema.parse(result);
         },
     };
@@ -318,6 +345,7 @@ function journeyFixture() {
         funding: 'customer',
     };
     const evidence = [];
+
     return {
         api,
         contracts: c,
@@ -341,6 +369,7 @@ test('synthetic journey validates real contracts, persists output and charged te
         fixture.calls.filter((call) => call.path.endsWith('/turns')).length,
         1,
     );
+
     assert.ok(!JSON.stringify(result).includes('Hello, friend.'));
     assert.equal(fixture.evidence.at(-1)[1].status, 'succeeded');
 });
@@ -351,11 +380,13 @@ test('changed readiness prevents dispatch, free billing or empty output cannot p
         ...changed.initial,
         routingRevision: randomUUID(),
     });
+
     await assert.rejects(runJourney(changed), /preflight-changed/);
     assert.equal(
         changed.calls.filter((call) => call.path.endsWith('/turns')).length,
         0,
     );
+
     for (const mutate of [
         (detail) => {
             detail.turns[0].billing.state = 'free';
@@ -374,6 +405,7 @@ test('changed readiness prevents dispatch, free billing or empty output cannot p
             fixture.calls.filter((call) => call.path.endsWith('/turns')).length,
             1,
         );
+
         assert.ok(
             !fixture.evidence.some((entry) => entry[1].status === 'succeeded'),
         );
@@ -390,8 +422,10 @@ test('existing operator funding requires free learner billing and settled provid
         assert.equal(turnId, fixture.detail.turns[0].id);
         assert.equal(funding, 'operator');
         verified = true;
+
         return 1500;
     };
+
     const result = await runJourney(fixture);
     assert.equal(result.billing, 'free');
     assert.equal(result.providerExpenseMicros, 1500);
@@ -399,27 +433,34 @@ test('existing operator funding requires free learner billing and settled provid
     fixture.verifyExpense = async () => {
         throw new Error('missing expense');
     };
+
     await assert.rejects(runJourney(fixture), /missing expense/);
 });
 
 test('queued or held turns time out with one dispatch and retained reservation', async () => {
     for (const state of ['queued', 'held']) {
         const fixture = journeyFixture();
-        if (state === 'queued') fixture.detail.turns[0].status = 'queued';
+        if (state === 'queued') {
+            fixture.detail.turns[0].status = 'queued';
+        }
+
         fixture.detail.turns[0].billing.state = 'held';
         let clock = 0;
         fixture.now = () => clock;
         fixture.sleep = async () => {
             clock += 60000;
         };
+
         await assert.rejects(
             runJourney(fixture),
             /poll-timeout-no-retry-reservation-retained/,
         );
+
         assert.equal(
             fixture.calls.filter((call) => call.path.endsWith('/turns')).length,
             1,
         );
+
         assert.ok(
             !fixture.evidence.some((entry) => entry[1].status === 'succeeded'),
         );
@@ -433,11 +474,14 @@ test('HTTP transport pins local origin, disallows redirects and never retries am
         assert.equal(url, 'http://127.0.0.1:4000/users/me/ai-credits');
         assert.equal(options.headers.Origin, 'http://localhost:3333');
         assert.equal(options.redirect, 'error');
+
         throw new Error('secret-upstream-error');
     });
+
     await assert.rejects(
         api.request('/users/me/ai-credits', c.LearnerAiCreditBalanceSchema),
         /http-outcome-unknown-no-retry/,
     );
+
     assert.equal(calls, 1);
 });

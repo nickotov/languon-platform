@@ -29,6 +29,7 @@ const responseSchema = z.object({
         })
         .optional(),
 });
+
 export class KnowledgeTranscriptionError extends Error {
     constructor(
         readonly code:
@@ -47,31 +48,39 @@ async function boundedJson(
     signal: AbortSignal,
 ): Promise<unknown> {
     const reader = response.body?.getReader();
-    if (!reader)
+    if (!reader) {
         throw new KnowledgeTranscriptionError(
             'invalid_response',
             'The transcription response is unavailable.',
         );
+    }
+
     const chunks: Uint8Array[] = [];
     let bytes = 0;
     try {
         for (;;) {
             signal.throwIfAborted();
             const part = await reader.read();
-            if (part.done) break;
+            if (part.done) {
+                break;
+            }
+
             bytes += part.value.length;
             if (bytes > 512_000) {
                 await reader.cancel();
+
                 throw new KnowledgeTranscriptionError(
                     'invalid_response',
                     'The transcription response exceeds its limit.',
                 );
             }
+
             chunks.push(part.value);
         }
     } finally {
         reader.releaseLock();
     }
+
     try {
         return JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch {
@@ -98,22 +107,26 @@ export class OpenAiKnowledgeTranscriptionProvider implements KnowledgeTranscript
             !options.apiKey ||
             options.apiKey.length > 4096 ||
             /\s/u.test(options.apiKey)
-        )
+        ) {
             throw new KnowledgeTranscriptionError(
                 'not_ready',
                 'Transcription credentials are unavailable.',
             );
+        }
+
         if (
             options.timeoutMs !== undefined &&
             (!Number.isInteger(options.timeoutMs) ||
                 options.timeoutMs < 1 ||
                 options.timeoutMs > 120_000)
-        )
+        ) {
             throw new KnowledgeTranscriptionError(
                 'not_ready',
                 'The transcription timeout is invalid.',
             );
+        }
     }
+
     async transcribe(
         input: KnowledgeTranscriptionRequest & {
             audio: VerifiedKnowledgeAudio;
@@ -131,14 +144,17 @@ export class OpenAiKnowledgeTranscriptionProvider implements KnowledgeTranscript
             input.audio.bytes,
             input.audio.mimeType,
         );
+
         if (
             audio.durationMs !== input.audio.durationMs ||
             !Buffer.from(audio.bytes).equals(Buffer.from(input.audio.bytes))
-        )
+        ) {
             throw new KnowledgeTranscriptionError(
                 'invalid_audio',
                 'The immutable audio content does not match its verified metadata.',
             );
+        }
+
         const checksum = createHash('sha256').update(audio.bytes).digest('hex');
         const permit = KnowledgeTranscriptionDispatchPermitSchema.parse(
             await this.options.authority.authorizeDispatch({
@@ -149,6 +165,7 @@ export class OpenAiKnowledgeTranscriptionProvider implements KnowledgeTranscript
                 signal: input.signal,
             }),
         );
+
         if (
             !isApprovedTranscriptionProcessingRevision(
                 permit.processingControlsRevision,
@@ -162,16 +179,19 @@ export class OpenAiKnowledgeTranscriptionProvider implements KnowledgeTranscript
             permit.maximumBytes < audio.bytes.length ||
             permit.maximumDurationMs < audio.durationMs ||
             Date.parse(permit.expiresAt) <= Date.now()
-        )
+        ) {
             throw new KnowledgeTranscriptionError(
                 'not_ready',
                 'The transcription dispatch receipt is unavailable or stale.',
             );
+        }
+
         input.signal.throwIfAborted();
         const form = new FormData();
         form.set('model', KNOWLEDGE_TRANSCRIPTION_MODEL.modelId);
         const filename =
             audio.mimeType === 'audio/wav' ? 'audio.wav' : 'audio.mp3';
+
         form.set(
             'file',
             new Blob([new Uint8Array(audio.bytes).buffer], {
@@ -179,8 +199,11 @@ export class OpenAiKnowledgeTranscriptionProvider implements KnowledgeTranscript
             }),
             filename,
         );
-        for (const language of request.languages)
+
+        for (const language of request.languages) {
             form.append('languages[]', language);
+        }
+
         const signal = AbortSignal.any([
             input.signal,
             AbortSignal.timeout(this.options.timeoutMs ?? 30_000),
@@ -195,28 +218,38 @@ export class OpenAiKnowledgeTranscriptionProvider implements KnowledgeTranscript
                 redirect: 'error',
             });
         } catch {
-            if (signal.aborted) throw signal.reason;
+            if (signal.aborted) {
+                throw signal.reason;
+            }
+
             throw new KnowledgeTranscriptionError(
                 'provider_unavailable',
                 'Transcription is temporarily unavailable.',
             );
         }
+
         if (!response.ok) {
             await response.body?.cancel();
+
             throw new KnowledgeTranscriptionError(
                 'provider_unavailable',
                 'Transcription is temporarily unavailable.',
             );
         }
+
         const decoded = responseSchema.safeParse(
             await boundedJson(response, signal),
         );
-        if (!decoded.success)
+
+        if (!decoded.success) {
             throw new KnowledgeTranscriptionError(
                 'invalid_response',
                 'The transcription response is invalid.',
             );
+        }
+
         signal.throwIfAborted();
+
         return KnowledgeTranscriptionResultSchema.parse({
             receiptId: permit.receiptId,
             text: decoded.data.text,

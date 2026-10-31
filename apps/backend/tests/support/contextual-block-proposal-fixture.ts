@@ -27,16 +27,21 @@ export function mentionedBlockIds(prompt: unknown) {
     const match = JSON.stringify(prompt).match(
         /Mentioned learning block IDs[^[]*(\[[^\]]+\])/u,
     );
-    if (!match)
+
+    if (!match) {
         throw new Error('Mention fixture requires frozen reference IDs.');
+    }
+
     const ids = JSON.parse(match[1]!.replaceAll('\\"', '"')) as unknown;
     if (
         !Array.isArray(ids) ||
         ids.length !== 2 ||
         ids.some((id) => typeof id !== 'string')
-    )
+    ) {
         throw new Error(
             'Mention fixture requires exactly two referenced blocks.',
         );
+    }
+
     return ids;
 }

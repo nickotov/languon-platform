@@ -38,6 +38,7 @@ const meta = {
     title: 'Learning/Reusable blocks',
     args: { labels },
 } satisfies Meta<typeof LearningBlockView>;
+
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Grammar: Story = {
@@ -121,6 +122,7 @@ const vocabulary = {
         },
     ],
 };
+
 export const VocabularyCompact: Story = {
     args: { block: vocabulary, variant: 'compact', hideHeading: true },
 };

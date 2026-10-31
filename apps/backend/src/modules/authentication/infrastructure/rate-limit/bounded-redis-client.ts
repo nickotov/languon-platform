@@ -71,6 +71,7 @@ export function createAuthenticationRedisClient(
         0,
         3,
     );
+
     assertBoundedInteger(maxRetriesPerRequest, 'Redis request retries', 0, 3);
 
     const redis = new Redis(options.url, {
@@ -106,6 +107,7 @@ async function waitUntilReady(redis: Redis): Promise<void> {
     if (redis.status === 'ready') {
         return;
     }
+
     if (redis.status === 'close' || redis.status === 'end') {
         throw new Error('Redis is not available.');
     }
@@ -113,6 +115,7 @@ async function waitUntilReady(redis: Redis): Promise<void> {
     const inFlight = connectionPromises.get(redis);
     if (inFlight !== undefined) {
         await inFlight;
+
         return;
     }
 
@@ -156,6 +159,7 @@ export async function runBoundedRedisOperation<T>(
 ): Promise<T> {
     const requestTimeoutMs =
         options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+
     assertBoundedInteger(requestTimeoutMs, 'Redis request timeout', 1, 30_000);
     options.signal?.throwIfAborted();
 
@@ -175,6 +179,7 @@ export async function runBoundedRedisOperation<T>(
                 options.signal?.reason ??
                     new DOMException('Aborted', 'AbortError'),
             );
+
         options.signal?.addEventListener('abort', abort, { once: true });
     });
 
@@ -184,6 +189,7 @@ export async function runBoundedRedisOperation<T>(
                 if (stopped) {
                     throw new RedisOperationTimeoutError();
                 }
+
                 return operation();
             }),
             timeoutPromise,
@@ -194,6 +200,7 @@ export async function runBoundedRedisOperation<T>(
         if (timeout !== undefined) {
             clearTimeout(timeout);
         }
+
         if (abort !== undefined) {
             options.signal?.removeEventListener('abort', abort);
         }
@@ -211,12 +218,15 @@ export function deriveOpaqueRedisKey(
             `Redis key HMAC secret must contain at least ${MIN_HMAC_SECRET_BYTES} bytes.`,
         );
     }
+
     if (!/^[a-z][a-z0-9-]{0,63}$/.test(category)) {
         throw new RangeError('Redis key category is invalid.');
     }
+
     if (!/^[a-z][a-z0-9:-]{0,127}$/.test(namespace)) {
         throw new RangeError('Redis key namespace is invalid.');
     }
+
     if (binding.length === 0 || binding.length > 4_096) {
         throw new RangeError(
             'Redis key binding must contain 1 to 4096 characters.',

@@ -32,10 +32,14 @@ export function ConflictPanel({
     function choose(field: PortraitField, choice: PortraitConflictChoice) {
         setChoices((current) => ({ ...current, [field]: choice }));
     }
+
     function apply() {
         const result = reconcilePortraitItems(latest, draft, choices);
-        if (result) onReconcile(result);
+        if (result) {
+            onReconcile(result);
+        }
     }
+
     return (
         <section className={styles.panel} aria-labelledby={headingId}>
             <div className={styles.heading}>
@@ -86,10 +90,14 @@ function ConflictField({
 }) {
     const { locale } = useI18n();
     function change(value: string) {
-        if (value === 'saved' || value === 'draft') onChoose(field, value);
+        if (value === 'saved' || value === 'draft') {
+            onChoose(field, value);
+        }
     }
+
     const latestValue = conflictFieldValue(latest, field, locale);
     const draftValue = conflictFieldValue(draft, field, locale);
+
     return (
         <div className={styles.field}>
             <RadioGroup

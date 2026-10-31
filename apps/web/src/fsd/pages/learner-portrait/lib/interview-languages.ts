@@ -69,8 +69,13 @@ export function interviewLanguageOptions(
                     option.label.toLocaleLowerCase(locale) ===
                         label.toLocaleLowerCase(locale)),
         );
-        if (supplied) remaining.delete(supplied);
+
+        if (supplied) {
+            remaining.delete(supplied);
+        }
+
         return supplied ?? { id: tag, label };
     });
+
     return [...options, ...remaining];
 }

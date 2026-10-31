@@ -7,6 +7,7 @@ class DeterministicEntropy {
 
     public randomBytes(length: number): Uint8Array {
         this.value += 1;
+
         return new Uint8Array(length).fill(this.value);
     }
 }
@@ -34,9 +35,11 @@ describe('HmacDictionaryCryptography', () => {
             entropy: new DeterministicEntropy(),
             secret: 'dictionary-test-secret-that-is-longer-than-thirty-two-bytes',
         });
+
         expect(cryptography.fingerprint({ a: 1, b: 2 })).toBe(
             cryptography.fingerprint({ b: 2, a: 1 }),
         );
+
         expect(cryptography.fingerprint({ a: 1 })).not.toBe(
             cryptography.shareDigest('{"a":1}', 1),
         );

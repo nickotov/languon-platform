@@ -7,6 +7,7 @@ it('keeps a late publication in its conversation and leaves another draft editor
     const { result, rerender } = renderHook(
         ({ conversationId }: { conversationId: string }) => {
             const [editing, setEditing] = useState<string | null>('draft-a');
+
             return {
                 ...usePublishedKnowledge(conversationId, setEditing),
                 editing,
@@ -29,11 +30,13 @@ it('keeps a late publication in its conversation and leaves another draft editor
 it('closes only the editor for the draft that was successfully published', () => {
     const { result } = renderHook(() => {
         const [editing, setEditing] = useState<string | null>('draft-a');
+
         return {
             ...usePublishedKnowledge('conversation-a', setEditing),
             editing,
         };
     });
+
     act(() =>
         result.current.publishedNote(
             'note-a',
@@ -42,6 +45,7 @@ it('closes only the editor for the draft that was successfully published', () =>
             'draft-a',
         ),
     );
+
     expect(result.current.editing).toBeNull();
     expect(result.current.published).toEqual({ id: 'note-a', title: 'Note A' });
 });

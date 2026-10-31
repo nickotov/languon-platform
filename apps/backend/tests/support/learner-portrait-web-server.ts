@@ -20,14 +20,17 @@ const server = serve({
             const authenticated = AuthenticationSuccessResponseSchema.parse(
                 await response.clone().json(),
             );
+
             await fixture.credit(
                 authenticated.accessToken,
                 authenticated.user.primaryEmail,
             );
         }
+
         return response;
     },
 });
+
 console.log('Learner portrait web test fixture ready at http://127.0.0.1:4007');
 try {
     while (!controller.signal.aborted) {

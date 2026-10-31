@@ -157,10 +157,13 @@ function CardField({
 
     let textClass = styles.example;
 
-    if (isWord) textClass = styles.word;
-    else if (presentation.field === 'transcription')
+    if (isWord) {
+        textClass = styles.word;
+    } else if (presentation.field === 'transcription') {
         textClass = styles.transcription;
-    else if (presentation.text.length > 160) textClass = styles.longExample;
+    } else if (presentation.text.length > 160) {
+        textClass = styles.longExample;
+    }
 
     const textClasses = `${styles.text} ${textClass}`;
 

@@ -25,6 +25,7 @@ function issue(
         c.TextVersionRequestSchema.parse(body),
     );
 }
+
 function revoke(
     accessToken: string,
     kind: 'text' | 'folder',
@@ -40,6 +41,7 @@ function revoke(
         c.TextVersionRequestSchema.parse(body),
     );
 }
+
 function read(
     kind: 'text' | 'folder',
     shareId: string,
@@ -48,12 +50,14 @@ function read(
     signal?: AbortSignal,
 ) {
     const capability = share(shareId, key, kind);
+
     return request(
         `${capability.path}${query(values)}`,
         c.SharedTextResponseSchema,
         { headers: capability.headers, signal },
     );
 }
+
 export const sharingApi = {
     createTextShare: (
         token: string,
@@ -111,6 +115,7 @@ export const sharingApi = {
         signal?: AbortSignal,
     ) => {
         const capability = share(shareId, key, 'text');
+
         return request(
             `${capability.path}/copy`,
             copyResponseSchema,
@@ -127,6 +132,7 @@ export const sharingApi = {
         signal?: AbortSignal,
     ) => {
         const capability = share(shareId, key, 'folder');
+
         return request(
             `${capability.path}/copy`,
             copyResponseSchema,
@@ -144,6 +150,7 @@ export const sharingApi = {
         signal?: AbortSignal,
     ) => {
         const capability = share(shareId, key, 'folder');
+
         return request(
             `${capability.path}/texts/${id(textId)}/copy`,
             copyResponseSchema,

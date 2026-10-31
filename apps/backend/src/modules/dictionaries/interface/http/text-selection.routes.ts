@@ -36,6 +36,7 @@ const body = (schema: z.ZodType) => ({
 const errorSchema = z.object({
     error: z.object({ code: z.string(), message: z.string() }),
 });
+
 export function createTextSelectionRoutes(dependencies: {
     service: TextSelectionService;
     policy: AuthHttpPolicy;
@@ -55,11 +56,13 @@ export function createTextSelectionRoutes(dependencies: {
                   )
                 : undefined,
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'JWT', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     const ownedPaths = [
         '/dictionaries/text-selections',
         '/dictionaries/text-selections/*',
@@ -71,9 +74,11 @@ export function createTextSelectionRoutes(dependencies: {
                     ? context.req.path.startsWith(path.slice(0, -1))
                     : context.req.path === path,
             );
+
             return owned ? middleware(context, next) : next();
         });
     };
+
     useOwned(async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('Referrer-Policy', 'no-referrer');
@@ -85,9 +90,11 @@ export function createTextSelectionRoutes(dependencies: {
             c.header('Access-Control-Allow-Origin', origin);
             c.header('Vary', 'Origin');
         }
+
         await next();
     });
-    for (const path of ownedPaths)
+
+    for (const path of ownedPaths) {
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             dependencies.policy.assertCookieRequestOrigin(origin ?? null);
@@ -97,9 +104,13 @@ export function createTextSelectionRoutes(dependencies: {
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
             );
+
             c.header('Vary', 'Origin');
+
             return c.body(null, 204);
         });
+    }
+
     useOwned(
         bodyLimit({
             maxSize: 16_384,
@@ -116,6 +127,7 @@ export function createTextSelectionRoutes(dependencies: {
                 ),
         }),
     );
+
     useOwned(async (c, next) => {
         const metadata = authenticationRequestMetadata(c, dependencies.policy);
         const result = await dependencies.rateLimiter.consume({
@@ -123,9 +135,12 @@ export function createTextSelectionRoutes(dependencies: {
             scope: c.req.method === 'POST' ? 'generation-enqueue' : 'owner',
             signal: c.req.raw.signal,
         });
+
         if (!result.allowed) {
-            if (result.retryAfterSeconds)
+            if (result.retryAfterSeconds) {
                 c.header('Retry-After', String(result.retryAfterSeconds));
+            }
+
             return c.json(
                 {
                     error: {
@@ -137,13 +152,18 @@ export function createTextSelectionRoutes(dependencies: {
                 429,
             );
         }
+
         await next();
     });
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
         const allowanceError = actionAllowanceErrorResponse(error, context);
-        if (allowanceError) return allowanceError;
-        if (error instanceof InvalidBearerAuthorizationError)
+        if (allowanceError) {
+            return allowanceError;
+        }
+
+        if (error instanceof InvalidBearerAuthorizationError) {
             return context.json(
                 {
                     error: {
@@ -154,7 +174,9 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 401,
             );
-        if (error instanceof InvalidRequestOriginError)
+        }
+
+        if (error instanceof InvalidRequestOriginError) {
             return context.json(
                 {
                     error: {
@@ -165,8 +187,9 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 403,
             );
+        }
 
-        if (error instanceof TextsAiError)
+        if (error instanceof TextsAiError) {
             return context.json(
                 {
                     error: {
@@ -176,7 +199,9 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 error.code === 'generation_job_not_found' ? 404 : 409,
             );
-        if (error instanceof TextAiSelectionUnavailableError)
+        }
+
+        if (error instanceof TextAiSelectionUnavailableError) {
             return context.json(
                 {
                     error: {
@@ -186,7 +211,9 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 503,
             );
-        if (error instanceof AiCreditInsufficientBalanceError)
+        }
+
+        if (error instanceof AiCreditInsufficientBalanceError) {
             return context.json(
                 {
                     error: {
@@ -196,7 +223,9 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 402,
             );
-        if (error instanceof TextContentError)
+        }
+
+        if (error instanceof TextContentError) {
             return context.json(
                 {
                     error: {
@@ -206,7 +235,9 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 error.code === 'version_conflict' ? 409 : 404,
             );
-        if (error instanceof DictionaryOwnerCapacityError)
+        }
+
+        if (error instanceof DictionaryOwnerCapacityError) {
             return context.json(
                 {
                     error: {
@@ -216,6 +247,8 @@ export function createTextSelectionRoutes(dependencies: {
                 },
                 409,
             );
+        }
+
         if (error instanceof TextSelectionError) {
             const status =
                 error.code === 'not_found' || error.code === 'access_revoked'
@@ -227,14 +260,18 @@ export function createTextSelectionRoutes(dependencies: {
                         : error.code === 'capacity_exceeded'
                           ? 429
                           : 409;
+
             return context.json(
                 { error: { code: error.code, message: error.message } },
                 status,
             );
         }
+
         const mapped = mapDictionaryHttpError(error);
+
         return context.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const responses = {
         400: response(errorSchema, 'Invalid request'),
         401: response(errorSchema, 'Authentication required'),
@@ -244,6 +281,7 @@ export function createTextSelectionRoutes(dependencies: {
         429: response(errorSchema, 'Capacity exceeded'),
         503: response(errorSchema, 'Unavailable'),
     };
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -282,6 +320,7 @@ export function createTextSelectionRoutes(dependencies: {
                 202,
             ),
     );
+
     for (const action of ['read', 'cancel'] as const) {
         app.openapi(
             createRoute({
@@ -303,6 +342,7 @@ export function createTextSelectionRoutes(dependencies: {
             }),
             async (c) => {
                 c.header('Cache-Control', 'private, no-store');
+
                 return c.json(
                     {
                         job: await dependencies.service[action](
@@ -317,5 +357,6 @@ export function createTextSelectionRoutes(dependencies: {
             },
         );
     }
+
     return app;
 }

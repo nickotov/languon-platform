@@ -43,6 +43,7 @@ function fixture() {
         appEnvironment: 'test',
         refreshTokenTtlSeconds: 3600,
     });
+
     return {
         actor,
         noteId,
@@ -50,24 +51,29 @@ function fixture() {
         app: createLearnerRoutes({ service, policy }),
     };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     'Content-Type': 'application/json',
     Origin: 'http://localhost:3000',
 };
+
 describe('Private workbook learner HTTP boundary', () => {
     it('requires sign in and resolves the private actor from authentication', async () => {
         const { actor, noteId, store, app } = fixture();
         expect(
             (await app.request(`/knowledge/${noteId}/learning`)).status,
         ).toBe(401);
+
         const response = await app.request(`/knowledge/${noteId}/learning`, {
             headers,
         });
+
         expect(response.status).toBe(200);
         expect(response.headers.get('cache-control')).toBe('private, no-store');
         expect(store.read).toHaveBeenCalledWith(actor, noteId, undefined);
     });
+
     it('serves aggregate progress only for the authenticated actor with private no-store responses', async () => {
         const { actor, noteId: workbookId, store, app } = fixture();
         store.workbookProgress.mockResolvedValue({
@@ -77,14 +83,17 @@ describe('Private workbook learner HTTP boundary', () => {
             completedNotes: 1,
             updatedSinceCompletion: 0,
         });
+
         expect(
             (await app.request(`/knowledge/workbooks/${workbookId}/progress`))
                 .status,
         ).toBe(401);
+
         const response = await app.request(
             `/knowledge/workbooks/${workbookId}/progress`,
             { headers },
         );
+
         expect(response.status).toBe(200);
         expect(response.headers.get('cache-control')).toBe('private, no-store');
         expect(store.workbookProgress).toHaveBeenCalledWith(
@@ -92,13 +101,16 @@ describe('Private workbook learner HTTP boundary', () => {
             workbookId,
             undefined,
         );
+
         expect(await response.json()).toMatchObject({ completedNotes: 1 });
     });
+
     it('validates all capability fields together and never forwards incomplete access', async () => {
         const { noteId, store, app } = fixture();
         const bad = await app.request(`/knowledge/${noteId}/learning`, {
             headers: { ...headers, 'X-Languon-Share-Key': 'a'.repeat(43) },
         });
+
         expect(bad.status).toBe(400);
         expect(store.read).not.toHaveBeenCalled();
         const access = {
@@ -114,6 +126,7 @@ describe('Private workbook learner HTTP boundary', () => {
                 'X-Languon-Share-Key': access.key,
             },
         });
+
         expect(response.status).toBe(200);
         expect(store.read).toHaveBeenCalledWith(
             expect.any(String),
@@ -121,6 +134,7 @@ describe('Private workbook learner HTTP boundary', () => {
             access,
         );
     });
+
     it('rejects client-selected identity and correctness fields before persistence', async () => {
         const { noteId, store, app } = fixture();
         const input = {
@@ -136,9 +150,11 @@ describe('Private workbook learner HTTP boundary', () => {
             `/knowledge/${noteId}/learning/attempts`,
             { method: 'POST', headers, body: JSON.stringify(input) },
         );
+
         expect(response.status).toBe(400);
         expect(store.attempt).not.toHaveBeenCalled();
     });
+
     it('maps source revocation to unavailable without exposing another learner', async () => {
         const { noteId, store, app } = fixture();
         store.read.mockRejectedValueOnce(
@@ -147,16 +163,20 @@ describe('Private workbook learner HTTP boundary', () => {
                 'The knowledge note is unavailable.',
             ),
         );
+
         const response = await app.request(`/knowledge/${noteId}/learning`, {
             headers,
         });
+
         expect(response.status).toBe(404);
     });
+
     it('rejects disallowed origins and oversized attempts on scoped routes', async () => {
         const { app, noteId, store } = fixture();
         const forbidden = await app.request(`/knowledge/${noteId}/learning`, {
             headers: { ...headers, Origin: 'https://untrusted.example' },
         });
+
         expect(forbidden.status).toBe(403);
         const oversized = await app.request(
             `/knowledge/${noteId}/learning/attempts`,
@@ -166,6 +186,7 @@ describe('Private workbook learner HTTP boundary', () => {
                 body: JSON.stringify({ text: 'x'.repeat(70_000) }),
             },
         );
+
         expect(oversized.status).toBe(413);
         expect(store.attempt).not.toHaveBeenCalled();
     });

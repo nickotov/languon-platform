@@ -17,8 +17,9 @@ export function knowledgeAudioAssetIds(body: KnowledgeBody): string[] {
             node.type === 'learningBlock' &&
             block?.type === 'audio' &&
             block.assetId
-        )
+        ) {
             ids.add(block.assetId);
+        }
     }
 
     return [...ids];
@@ -30,18 +31,22 @@ export async function assertKnowledgeMediaGrants(
     body: KnowledgeBody,
 ) {
     const ids = knowledgeAudioAssetIds(body);
-    if (!ids.length) return;
+    if (!ids.length) {
+        return;
+    }
+
     const rows = await tx
         .select({ id: assets.id })
         .from(assets)
         .where(and(eq(assets.noteId, noteId), inArray(assets.id, ids)))
         .for('share');
 
-    if (rows.length !== ids.length)
+    if (rows.length !== ids.length) {
         throw new KnowledgeDomainError(
             'invalid_request',
             'Audio content must belong to this note. Copy the audio block through the application before saving.',
         );
+    }
 }
 
 export async function prepareMediaCopy(
@@ -71,12 +76,14 @@ export async function prepareMediaCopy(
                 .where(eq(knowledgeNotesTable.id, destinationNoteId))
                 .for('share');
 
-            if (!destination)
+            if (!destination) {
                 throw new KnowledgeDomainError(
                     'knowledge_not_found',
                     'The destination note is unavailable.',
                 );
-            if (rows.length)
+            }
+
+            if (rows.length) {
                 await tx.insert(assets).values(
                     rows.map((row) => ({
                         id: assetIds.get(row.id)!,
@@ -85,6 +92,7 @@ export async function prepareMediaCopy(
                         createdAt: new Date(),
                     })),
                 );
+            }
         },
     };
 }

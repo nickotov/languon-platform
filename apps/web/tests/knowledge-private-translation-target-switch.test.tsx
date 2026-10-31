@@ -17,6 +17,7 @@ const transport = vi.hoisted(() => ({
     job: vi.fn(),
     cancel: vi.fn(),
 }));
+
 vi.mock(
     '@/fsd/widgets/knowledge-private-translation/api/private-translation-api',
     () => ({
@@ -28,9 +29,11 @@ vi.mock(
         },
     }),
 );
+
 vi.mock('@/fsd/shared/i18n', () => ({
     useI18n: () => ({ locale: 'en', href: (path: string) => path }),
 }));
+
 it('switches an existing private bilingual view from French to German without retaining the previous target state', async () => {
     const props: KnowledgePrivateTranslationProps = {
         actorId: '11111111-1111-4111-8111-111111111111',
@@ -53,6 +56,7 @@ it('switches an existing private bilingual view from French to German without re
         sourceFingerprint: 'a'.repeat(64),
         updatedAt: '2026-10-29T00:00:00Z',
     };
+
     transport.list.mockResolvedValue({
         translations: [
             {
@@ -77,27 +81,34 @@ it('switches an existing private bilingual view from French to German without re
             },
         ],
     });
+
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     render(
         <QueryClientProvider client={client}>
             <KnowledgePrivateTranslation {...props} />
         </QueryClientProvider>,
     );
+
     fireEvent.click(
         screen.getByText('Private translation', { selector: 'summary' }),
     );
+
     const region = await screen.findByRole('region', {
         name: 'Your private bilingual view',
     });
+
     fireEvent.click(
         within(region).getByRole('button', { name: 'Bilingual', exact: true }),
     );
+
     expect(screen.getByText('Bonjour.')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Target language'), {
         target: { value: 'de' },
     });
+
     await waitFor(() =>
         expect(
             within(region).getByRole('button', {
@@ -106,9 +117,11 @@ it('switches an existing private bilingual view from French to German without re
             }),
         ).toHaveAttribute('aria-pressed', 'true'),
     );
+
     fireEvent.click(
         within(region).getByRole('button', { name: 'Bilingual', exact: true }),
     );
+
     expect(screen.getByText('Guten Tag.')).toBeInTheDocument();
     expect(screen.queryByText('Bonjour.')).not.toBeInTheDocument();
     expect(transport.request).not.toHaveBeenCalled();

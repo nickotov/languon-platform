@@ -11,6 +11,7 @@ describe('text AI public contracts', () => {
                 expectedVersion: 0,
             }),
         ).toEqual({ mode: 'auto', expectedVersion: 0 });
+
         expect(
             UpdateTextAiPreferenceRequestSchema.safeParse({
                 mode: 'explicit',
@@ -18,6 +19,7 @@ describe('text AI public contracts', () => {
                 expectedVersion: 2,
             }).success,
         ).toBe(true);
+
         expect(
             UpdateTextAiPreferenceRequestSchema.safeParse({
                 mode: 'auto',
@@ -25,6 +27,7 @@ describe('text AI public contracts', () => {
                 userId: 'other',
             }).success,
         ).toBe(false);
+
         expect(
             UpdateTextAiPreferenceRequestSchema.safeParse({
                 mode: 'auto',
@@ -33,6 +36,7 @@ describe('text AI public contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects internal catalog fields in the public response', () => {
         expect(
             TextAiModelsResponseSchema.safeParse({

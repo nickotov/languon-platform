@@ -16,6 +16,7 @@ it('preserves every Markdown heading depth with block-sized heading semantics', 
             ).join('\n\n')}
         />,
     );
+
     for (let level = 1; level <= 6; level++) {
         expect(
             screen.getByRole('heading', {
@@ -57,21 +58,25 @@ it.each(['compact', 'review', 'author', 'learner'] as const)(
                 }}
             />,
         );
+
         expect(container.querySelector('strong')?.textContent).toBe(
             'Use cases',
         );
+
         expect(container.querySelector('ul')?.textContent).toContain('Wishes');
         expect(container.querySelector('ol')).not.toBeNull();
         expect(container.querySelector('code')?.textContent).toBe(
             'ils parlent',
         );
+
         expect(container.querySelector('table')).not.toBeNull();
         expect(screen.getByText('Literal **source**')).toBeInTheDocument();
         expect(screen.getByText('Literal _translation_')).toBeInTheDocument();
-        if (variant !== 'compact')
+        if (variant !== 'compact') {
             expect(
                 screen.getByText('subjonctif', { selector: 'strong' }),
             ).toBeInTheDocument();
+        }
     },
 );
 
@@ -82,18 +87,21 @@ it('treats HTML as literal text and rejects executable URLs and media', () => {
             content={`${hostile}\n\n[unsafe](javascript:alert%281%29) [data](data:text/html,bad) [safe](https://example.test/lesson) ![tracking](https://example.test/pixel)`}
         />,
     );
+
     expect(container.textContent).toContain(hostile);
     expect(
         container.querySelector(
             'script,img,iframe,svg,object,embed,style,video,audio',
         ),
     ).toBeNull();
+
     expect(container.querySelector('[onerror], [onclick]')).toBeNull();
     expect(screen.getAllByRole('link')).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'safe' })).toHaveAttribute(
         'rel',
         'noopener noreferrer',
     );
+
     expect(screen.queryByRole('link', { name: 'unsafe' })).toBeNull();
 });
 
@@ -112,6 +120,7 @@ it('formats a prepared exercise explanation after reveal without altering its an
             }}
         />,
     );
+
     fireEvent.click(screen.getByRole('button', { name: labels.showAnswer }));
     expect(screen.getByText('Literal **answer**')).toBeInTheDocument();
     expect(container.querySelector('strong')?.textContent).toBe('Reason');

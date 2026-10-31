@@ -461,11 +461,13 @@ const words: Record<string, [string, string, string]> = {
         'Autres réponses acceptées (une par ligne)',
     ],
 };
+
 export function localizedBlockLabels(locale: Locale): BlockAuthoringLabels {
     const index = { en: -1, ru: 0, es: 1, fr: 2 }[locale];
     function translate(label: string) {
         return index < 0 ? label : (words[label]?.[index] ?? label);
     }
+
     const view = Object.fromEntries(
         Object.entries(defaultAuthoringLabels.view)
             .filter(([key]) => key !== 'kinds' && key !== 'exerciseKinds')
@@ -481,6 +483,7 @@ export function localizedBlockLabels(locale: Locale): BlockAuthoringLabels {
             .filter(([key]) => !['view', 'field'].includes(key))
             .map(([key, value]) => [key, translate(value as string)]),
     );
+
     return {
         ...actions,
         field: translate,

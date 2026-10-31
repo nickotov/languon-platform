@@ -44,13 +44,19 @@ export function SentencePreparationNotice({
             {P('toLibrary')}
         </ButtonLink>
     );
+
     function refresh() {
         void controller.refresh();
     }
+
     function resume() {
-        if (run?.requiresNewBudget) void controller.continueWithBudget?.();
-        else void controller.resume();
+        if (run?.requiresNewBudget) {
+            void controller.continueWithBudget?.();
+        } else {
+            void controller.resume();
+        }
     }
+
     const retry = (
         <Button size='compact' onClick={refresh} disabled={retryBlocked}>
             {P('checkStatus')}
@@ -66,7 +72,8 @@ export function SentencePreparationNotice({
             {P('startAgain')}
         </Button>
     );
-    if (controller.uncertain && !run)
+
+    if (controller.uncertain && !run) {
         return (
             <InlineAlert
                 tone='warning'
@@ -76,9 +83,11 @@ export function SentencePreparationNotice({
                 {P('uncertainBody')}
             </InlineAlert>
         );
+    }
+
     if (controller.error) {
         const code = controller.error.code;
-        if (code === 'authentication_required')
+        if (code === 'authentication_required') {
             return (
                 <InlineAlert
                     tone='error'
@@ -92,11 +101,13 @@ export function SentencePreparationNotice({
                     {P('sessionBody')}
                 </InlineAlert>
             );
+        }
+
         if (
             code === 'dictionary_not_found' ||
             code === 'shared_dictionary_not_found' ||
             code === 'feature_disabled'
-        )
+        ) {
             return (
                 <InlineAlert
                     tone='error'
@@ -114,7 +125,9 @@ export function SentencePreparationNotice({
                     )}
                 </InlineAlert>
             );
-        if (code === 'stale_content' || code === 'job_not_found')
+        }
+
+        if (code === 'stale_content' || code === 'job_not_found') {
             return (
                 <InlineAlert
                     tone='info'
@@ -124,6 +137,8 @@ export function SentencePreparationNotice({
                     {P(code === 'job_not_found' ? 'expiredBody' : 'staleBody')}
                 </InlineAlert>
             );
+        }
+
         const keys = {
             ai_credits_exhausted: ['credits', 'creditsBody', 'warning'],
             daily_limit_exceeded: ['credits', 'creditsBody', 'warning'],
@@ -136,6 +151,7 @@ export function SentencePreparationNotice({
             'networkBody',
             'warning',
         ];
+
         return (
             <InlineAlert
                 tone={tone}
@@ -146,8 +162,12 @@ export function SentencePreparationNotice({
             </InlineAlert>
         );
     }
-    if (!run) return null;
-    if (run.pauseReason === 'stale' || run.pauseReason === 'access')
+
+    if (!run) {
+        return null;
+    }
+
+    if (run.pauseReason === 'stale' || run.pauseReason === 'access') {
         return (
             <InlineAlert
                 tone={run.pauseReason === 'access' ? 'error' : 'info'}
@@ -159,6 +179,8 @@ export function SentencePreparationNotice({
                     : P('staleBody')}
             </InlineAlert>
         );
+    }
+
     if (run.state === 'paused' || run.state === 'failed') {
         const keys = {
             budget: ['budget', 'budgetBody'],
@@ -171,6 +193,7 @@ export function SentencePreparationNotice({
         const [title, body] = run.requiresNewBudget
             ? keys.budget
             : (keys[run.pauseReason as keyof typeof keys] ?? keys.provider);
+
         return (
             <InlineAlert
                 tone={
@@ -188,6 +211,7 @@ export function SentencePreparationNotice({
             </InlineAlert>
         );
     }
+
     if (run.state === 'completed') {
         const uncovered = run.eligibleCount - run.preparedCount;
         const body =
@@ -196,6 +220,7 @@ export function SentencePreparationNotice({
                 : run.generatedExerciseCount === 0
                   ? `${P('completedReuseOnly')} ${P('notPractice')}`
                   : P('notPractice');
+
         return (
             <InlineAlert
                 tone='success'
@@ -205,5 +230,6 @@ export function SentencePreparationNotice({
             </InlineAlert>
         );
     }
+
     return null;
 }

@@ -41,13 +41,15 @@ export function FolderHeader({
     function closeCreate() {
         setCreating(false);
     }
+
     const archived = folder.lifecycle === 'archived';
     const canShare = (folder.translatedCount ?? 0) > 0;
     let shareLabel = t('texts.library.shareDisabled');
-    if (canShare)
+    if (canShare) {
         shareLabel = folder.isShared
             ? t('texts.folder.manageShare')
             : t('texts.library.share');
+    }
 
     function edit() {
         onAction('edit-folder');

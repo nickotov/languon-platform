@@ -64,6 +64,7 @@ describe('SimpleWebAuthnAdapter', () => {
                 name: 'user@example.com',
             },
         });
+
         expect(options.challenge).toMatch(/^[A-Za-z0-9_-]+$/);
         expect(options.pubKeyCredParams.length).toBeGreaterThan(0);
         expect(options).not.toHaveProperty('extensions');
@@ -78,6 +79,7 @@ describe('SimpleWebAuthnAdapter', () => {
             timeout: 300_000,
             userVerification: 'required',
         });
+
         expect(options).not.toHaveProperty('allowCredentials');
     });
 
@@ -110,6 +112,7 @@ describe('SimpleWebAuthnAdapter', () => {
             deviceType: 'multi_device',
             transports: ['internal', 'hybrid'],
         });
+
         expect(webAuthnMocks.verifyRegistrationResponse).toHaveBeenCalledWith(
             expect.objectContaining({
                 expectedChallenge: 'expected-challenge',
@@ -152,6 +155,7 @@ describe('SimpleWebAuthnAdapter', () => {
             deviceType: 'multi_device',
             userHandle,
         });
+
         expect(webAuthnMocks.verifyAuthenticationResponse).toHaveBeenCalledWith(
             expect.objectContaining({
                 credential: {
@@ -184,6 +188,7 @@ describe('SimpleWebAuthnAdapter', () => {
                 storedCredential: storedCredential(),
             }),
         ).rejects.toThrow(PasskeyVerificationError);
+
         expect(
             webAuthnMocks.verifyAuthenticationResponse,
         ).not.toHaveBeenCalled();
@@ -202,6 +207,7 @@ describe('SimpleWebAuthnAdapter', () => {
                 storedCredential: storedCredential(),
             }),
         ).rejects.toThrow(PasskeyVerificationError);
+
         expect(
             webAuthnMocks.verifyAuthenticationResponse,
         ).not.toHaveBeenCalled();
@@ -296,6 +302,7 @@ describe('SimpleWebAuthnAdapter', () => {
                     rpName: 'Languon',
                 }),
         ).toThrow(RangeError);
+
         expect(
             () =>
                 new SimpleWebAuthnAdapter({

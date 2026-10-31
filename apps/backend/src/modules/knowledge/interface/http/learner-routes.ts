@@ -70,18 +70,21 @@ export function createLearnerRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     envelope('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     for (const path of [
         '/knowledge/workbooks/:workbookId/progress',
         '/knowledge/:noteId/learning',
@@ -92,9 +95,13 @@ export function createLearnerRoutes({
             c.header('Referrer-Policy', 'no-referrer');
             c.header('X-Content-Type-Options', 'nosniff');
             const origin = c.req.header('Origin');
-            if (origin) policy.assertCookieRequestOrigin(origin);
+            if (origin) {
+                policy.assertCookieRequestOrigin(origin);
+            }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -110,6 +117,7 @@ export function createLearnerRoutes({
             }),
         );
     }
+
     app.onError((error, c) => {
         let code: KnowledgeErrorCode = 'internal_error';
         let message = 'The request could not be completed.';
@@ -117,14 +125,18 @@ export function createLearnerRoutes({
         if (error instanceof KnowledgeDomainError) {
             code = error.code;
             message = error.message;
-            if (code === 'knowledge_not_found') status = 404;
-            else if (
+            if (code === 'knowledge_not_found') {
+                status = 404;
+            } else if (
                 code === 'version_conflict' ||
                 code === 'idempotency_conflict'
-            )
+            ) {
                 status = 409;
-            else if (code === 'rate_limited') status = 429;
-            else status = 400;
+            } else if (code === 'rate_limited') {
+                status = 429;
+            } else {
+                status = 400;
+            }
         } else if (error instanceof InvalidBearerAuthorizationError) {
             code = 'authentication_required';
             message = 'Sign in to continue.';
@@ -149,10 +161,13 @@ export function createLearnerRoutes({
                 status = 503;
             }
         }
+
         return c.json(envelope(code, message), status);
     });
+
     const auth = (c: Parameters<typeof authenticationRequestMetadata>[0]) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return [
             policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -165,14 +180,17 @@ export function createLearnerRoutes({
             !input['x-languon-share-kind'] &&
             !input['x-languon-share-locator'] &&
             !input['x-languon-share-key']
-        )
+        ) {
             return undefined;
+        }
+
         return {
             kind: input['x-languon-share-kind'],
             locator: input['x-languon-share-locator'],
             key: input['x-languon-share-key'],
         };
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -191,6 +209,7 @@ export function createLearnerRoutes({
                 200,
             ),
     );
+
     const request = { params: KnowledgeNoteIdParamsSchema, headers };
     app.openapi(
         createRoute({
@@ -210,6 +229,7 @@ export function createLearnerRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -234,6 +254,7 @@ export function createLearnerRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -261,6 +282,7 @@ export function createLearnerRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -288,5 +310,6 @@ export function createLearnerRoutes({
                 200,
             ),
     );
+
     return app;
 }

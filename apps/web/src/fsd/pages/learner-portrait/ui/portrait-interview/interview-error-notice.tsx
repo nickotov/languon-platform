@@ -27,12 +27,15 @@ export function InterviewErrorNotice({
             alert?.focus({ preventScroll: true });
             alert?.scrollIntoView?.({ block: 'center' });
         });
+
         return () => cancelAnimationFrame(frame);
     }, [error]);
+
     const { href } = useI18n();
     const creditsUnavailable = error === 'credits_exhausted';
     const creditsLabel = `${interviewText(locale, 'credits')} (${interviewText(locale, 'opensNewTab')})`;
     const limitReached = error === 'resource_limit';
+
     return (
         <InlineAlert
             ref={alertRef}

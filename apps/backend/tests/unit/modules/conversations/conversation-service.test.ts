@@ -24,6 +24,7 @@ function fixture() {
         { consume } as unknown as RateLimiter,
         { acquireLease } as ConcurrentRequestLimiter,
     );
+
     return { service, consume, acquireLease, ownerRelease, globalRelease };
 }
 
@@ -35,6 +36,7 @@ describe('conversation submission admission', () => {
             { ownerId: 'user-1' },
             new AbortController().signal,
         );
+
         expect(consume).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: 'contextual-assistant-turn-submission',
@@ -42,6 +44,7 @@ describe('conversation submission admission', () => {
                 limit: 30,
             }),
         );
+
         expect(acquireLease).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
@@ -51,6 +54,7 @@ describe('conversation submission admission', () => {
                 ttlMs: 300_000,
             }),
         );
+
         expect(acquireLease).toHaveBeenNthCalledWith(
             2,
             expect.objectContaining({
@@ -59,6 +63,7 @@ describe('conversation submission admission', () => {
                 limit: 10,
             }),
         );
+
         await Promise.all([lease.release(), lease.release()]);
         expect(ownerRelease).toHaveBeenCalledTimes(1);
         expect(globalRelease).toHaveBeenCalledTimes(1);
@@ -70,12 +75,14 @@ describe('conversation submission admission', () => {
         acquireLease
             .mockResolvedValueOnce({ release: ownerRelease })
             .mockResolvedValueOnce(null);
+
         await expect(
             service.admitSubmission(
                 { ownerId: 'user-1' },
                 new AbortController().signal,
             ),
         ).rejects.toMatchObject({ code: 'capacity_unavailable' });
+
         expect(ownerRelease).toHaveBeenCalledOnce();
     });
 
@@ -87,12 +94,14 @@ describe('conversation submission admission', () => {
             remaining: 0,
             retryAfterSeconds: 60,
         });
+
         await expect(
             service.admitSubmission(
                 { ownerId: 'user-1' },
                 new AbortController().signal,
             ),
         ).rejects.toMatchObject({ code: 'rate_limited' });
+
         expect(acquireLease).not.toHaveBeenCalled();
     });
 });

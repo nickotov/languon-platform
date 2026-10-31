@@ -13,11 +13,13 @@ export function selectKnowledgeBlocksForCopy(
     const selected = new Set(selectedIds);
     for (const id of selectedIds) {
         const target = byId.get(id)?.attrs?.block;
-        if (!target)
+        if (!target) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The selected source changed. Refresh before copying.',
             );
+        }
+
         if (target.type === 'audio' || target.type === 'video') {
             for (const node of all) {
                 const block = node.attrs?.block;
@@ -25,21 +27,25 @@ export function selectKnowledgeBlocksForCopy(
                     block?.type === 'exercise' &&
                     (block.group?.parentBlockId === id ||
                         block.source?.blockId === id)
-                )
+                ) {
                     selected.add(block.id);
+                }
             }
         }
     }
 
     for (const id of selected) {
         const block = byId.get(id)?.attrs?.block;
-        if (block?.type === 'exercise' && block.source)
+        if (block?.type === 'exercise' && block.source) {
             selected.add(block.source.blockId);
-        if (selected.size > 50)
+        }
+
+        if (selected.size > 50) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Select fewer blocks so their source material can be copied together.',
             );
+        }
     }
 
     return KnowledgeBodySchema.parse({
@@ -54,8 +60,10 @@ export function selectKnowledgeBlocksForCopy(
                         block.type !== 'exercise' ||
                         !block.group?.parentBlockId ||
                         selected.has(block.group.parentBlockId)
-                    )
+                    ) {
                         return node;
+                    }
+
                     const { parentBlockId: _parentBlockId, ...group } =
                         block.group;
 

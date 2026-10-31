@@ -62,8 +62,9 @@ export async function sentenceWorkerClaimNext(
         input.learningExecutionRevision !== 1 ||
         input.textAiSelectionRevision !== 1 ||
         input.creditSettlementRevision !== 1
-    )
+    ) {
         return null;
+    }
 
     return modelPricingTransaction(persistence.database, async (tx) => {
         await lockTextAiCapacity(tx);
@@ -117,12 +118,17 @@ export async function sentenceWorkerClaimNext(
                     ),
                 );
 
-            if (!job) continue;
+            if (!job) {
+                continue;
+            }
+
             if (
                 job.sourceKind === 'knowledge-vocabulary' &&
                 !(await authorizePrivateSentenceRecovery(tx, job))
-            )
+            ) {
                 continue;
+            }
+
             if (invalid || job.cancellationRequestedAt) {
                 await sentenceWorkerTerminal(tx, job, context.now, invalid);
 
@@ -153,15 +159,17 @@ export async function sentenceWorkerClaimNext(
                 false,
             );
 
-            if (job.aiCreditProviderDispatchedAt)
+            if (job.aiCreditProviderDispatchedAt) {
                 await recordTextAiCircuitFailure(tx, {
                     ...circuitScope(job, context.now),
                     category: 'provider_timeout',
                 });
+            }
+
             if (
                 job.cancellationRequestedAt ||
                 job.attemptCount >= job.maxAttempts
-            )
+            ) {
                 await tx
                     .update(jobs)
                     .set({
@@ -176,7 +184,7 @@ export async function sentenceWorkerClaimNext(
                         updatedAt: context.now,
                     })
                     .where(eq(jobs.id, job.id));
-            else
+            } else {
                 await tx
                     .update(jobs)
                     .set({
@@ -188,6 +196,7 @@ export async function sentenceWorkerClaimNext(
                         aiCreditProviderDispatchedAt: null,
                     })
                     .where(eq(jobs.id, job.id));
+            }
         }
 
         const candidates = await tx
@@ -218,7 +227,10 @@ export async function sentenceWorkerClaimNext(
                     ),
                 );
 
-            if (!job) continue;
+            if (!job) {
+                continue;
+            }
+
             if (
                 (job.sourceKind === 'dictionary' && !job.inputPayload) ||
                 job.cancellationRequestedAt ||
@@ -227,8 +239,10 @@ export async function sentenceWorkerClaimNext(
                 if (
                     job.sourceKind === 'knowledge-vocabulary' &&
                     !(await authorizePrivateSentenceRecovery(tx, job))
-                )
+                ) {
                     continue;
+                }
+
                 await sentenceWorkerTerminal(
                     tx,
                     job,
@@ -240,8 +254,10 @@ export async function sentenceWorkerClaimNext(
                 continue;
             }
 
-            if (await isTextAiCircuitOpen(tx, circuitScope(job, context.now)))
+            if (await isTextAiCircuitOpen(tx, circuitScope(job, context.now))) {
                 continue;
+            }
+
             const budget = sentenceBudget(job);
             const capacity = await readTextAiCapacity(tx, {
                 actorId: job.learnerId,
@@ -257,8 +273,10 @@ export async function sentenceWorkerClaimNext(
                     job.providerReservationState !== 'active',
                     budget,
                 )
-            )
+            ) {
                 continue;
+            }
+
             let capability: string | undefined;
             if (job.sourceKind === 'knowledge-vocabulary') {
                 const claimed = await claimPrivateSentenceInput(
@@ -268,13 +286,18 @@ export async function sentenceWorkerClaimNext(
                     input.leaseMs,
                 );
 
-                if (!claimed) continue;
+                if (!claimed) {
+                    continue;
+                }
+
                 job = claimed;
                 capability = claimed.capability;
             }
 
-            if (!job.inputPayload)
+            if (!job.inputPayload) {
                 throw new Error('Claimed sentence job requires provider input');
+            }
+
             if (job.attemptCount > 0) {
                 try {
                     await reserveSentenceAttempt(
@@ -298,7 +321,7 @@ export async function sentenceWorkerClaimNext(
                     throw error;
                 }
 
-                if (job.sourceKind === 'dictionary')
+                if (job.sourceKind === 'dictionary') {
                     await tx
                         .update(jobs)
                         .set({
@@ -317,18 +340,21 @@ export async function sentenceWorkerClaimNext(
                             providerReservationSettledAt: null,
                         })
                         .where(eq(jobs.id, job.id));
+                }
             }
 
             const fencingToken = Number(job.fencingToken + 1n);
-            if (!Number.isSafeInteger(fencingToken))
+            if (!Number.isSafeInteger(fencingToken)) {
                 throw new Error(
                     'Sentence fencing token exceeds supported range',
                 );
+            }
+
             const leaseDeadline = new Date(
                 context.now.getTime() + input.leaseMs,
             );
 
-            if (job.sourceKind === 'dictionary')
+            if (job.sourceKind === 'dictionary') {
                 await tx
                     .update(jobs)
                     .set({
@@ -341,6 +367,7 @@ export async function sentenceWorkerClaimNext(
                         updatedAt: context.now,
                     })
                     .where(eq(jobs.id, job.id));
+            }
 
             let routeUnavailable = false;
             const actionBudget = usesLegacyAction(job.selectedExecutionSnapshot)

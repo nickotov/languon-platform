@@ -25,6 +25,7 @@ const rules: ProviderNativePricingRules = {
         },
     ],
 };
+
 describe('native duration exact financial arithmetic', () => {
     it('prices customer source duration independently and rounds once to milli-credits', () => {
         expect(audioActionChargeMilli(1000, '1')).toBe(17n);
@@ -37,6 +38,7 @@ describe('native duration exact financial arithmetic', () => {
             audioActionChargeMilli(Number.MAX_SAFE_INTEGER, '99999'),
         ).toThrow();
     });
+
     it('calculates per-minute rates using exact integer milliseconds', () => {
         expect(
             evaluateNativeProviderCost(rules, facts, {
@@ -44,12 +46,14 @@ describe('native duration exact financial arithmetic', () => {
                 requests: 1,
             }),
         ).toMatchObject({ status: 'calculated', micros: 4500n });
+
         expect(
             evaluateNativeProviderCost(rules, facts, {
                 audioInputMilliseconds: 1001,
                 requests: 1,
             }),
         ).toMatchObject({ status: 'calculated', micros: 76n });
+
         expect(
             evaluateNativeProviderCost(rules, facts, {
                 audioInputMilliseconds: 1,
@@ -57,6 +61,7 @@ describe('native duration exact financial arithmetic', () => {
             }),
         ).toMatchObject({ status: 'calculated', micros: 1n });
     });
+
     it('does not derive actual duration from tokens, characters, or absent observations', () => {
         expect(
             evaluateNativeProviderCost(rules, facts, {
@@ -65,9 +70,11 @@ describe('native duration exact financial arithmetic', () => {
                 requests: 1,
             }).status,
         ).toBe('unknown');
+
         expect(
             evaluateNativeProviderCost(rules, facts, { requests: 1 }).status,
         ).toBe('unknown');
+
         expect(
             evaluateNativeProviderCost(rules, facts, {
                 audioInputMilliseconds: 1,
@@ -75,6 +82,7 @@ describe('native duration exact financial arithmetic', () => {
             }).status,
         ).toBe('unknown');
     });
+
     it('rounds monetary micros after adding calls rather than charging a per-call micro minimum', () => {
         expect(
             evaluateNativeProviderCalls(rules, [
@@ -91,6 +99,7 @@ describe('native duration exact financial arithmetic', () => {
             ]),
         ).toMatchObject({ status: 'calculated', micros: 1n });
     });
+
     it('honors explicitly reviewed provider minimum/rounding rules without fabricating one', () => {
         const minimum = structuredClone(rules);
         minimum.variants[0]!.minimumPerRequest = '0.001';
@@ -100,6 +109,7 @@ describe('native duration exact financial arithmetic', () => {
                 requests: 1,
             }),
         ).toMatchObject({ status: 'calculated', micros: 1000n });
+
         expect(
             evaluateNativeProviderCost(
                 rules,

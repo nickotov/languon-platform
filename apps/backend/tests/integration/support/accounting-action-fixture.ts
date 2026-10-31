@@ -43,7 +43,7 @@ export async function seedConversationActionAuthorityFixture(
         !settings.maxProviderCostUsdPerAction ||
         !settings.maxProviderCostUsdPerAccountDay ||
         !settings.maxProviderCostUsdPerDay
-    )
+    ) {
         await tx.insert(aiAccountingSettingsRevisionsTable).values({
             id: randomUUID(),
             version: settings.version + 1,
@@ -54,8 +54,11 @@ export async function seedConversationActionAuthorityFixture(
             createdAt: at,
             reason: 'Synthetic disposable accounting fixture',
         });
+    }
+
     const providerId = input.providerId ?? 'synthetic',
         modelId = input.modelId ?? 'synthetic';
+
     if (
         !(await pinProviderPrice(tx, {
             providerId,
@@ -88,6 +91,7 @@ export async function seedConversationActionAuthorityFixture(
             },
         });
     }
+
     const providerPrice = await pinProviderPrice(tx, {
         providerId,
         modelId,
@@ -116,7 +120,7 @@ export async function seedConversationActionAuthorityFixture(
     const funding = input.funding ?? 'customer';
     const current = await capability.current('conversation');
     const policyFunding = funding === 'unlimited' ? 'customer' : funding;
-    if (current.funding !== policyFunding)
+    if (current.funding !== policyFunding) {
         await tx.insert(capabilityPolicyRevisionsTable).values({
             id: randomUUID(),
             capability: 'conversation',
@@ -125,6 +129,8 @@ export async function seedConversationActionAuthorityFixture(
             createdAt: at,
             reason: 'Synthetic disposable accounting fixture',
         });
+    }
+
     const policy = await capability.pinAction({
         jobId: actionId,
         jobKind: 'conversation-turn',
@@ -139,6 +145,7 @@ export async function seedConversationActionAuthorityFixture(
         tone: 'neutral' as const,
         explanationLevel: 'auto' as const,
     };
+
     await tx.insert(conversationsTable).values({
         id: chatId,
         ownerId: input.ownerId,
@@ -149,6 +156,7 @@ export async function seedConversationActionAuthorityFixture(
         createdAt: at,
         updatedAt: at,
     });
+
     await tx.insert(conversationTurnsTable).values({
         id: actionId,
         ownerId: input.ownerId,
@@ -185,6 +193,7 @@ export async function seedConversationActionAuthorityFixture(
         createdAt: at,
         updatedAt: at,
     });
+
     return {
         actionId,
         leaseToken: actionId,
@@ -204,6 +213,7 @@ export async function reserveConversationActionFixture(
 ) {
     const { actionId, at, policy, funding, tariff } =
         await seedConversationActionAuthorityFixture(tx, input);
+
     return new DrizzleActionAccountingParticipant(tx).reserve({
         id: actionId,
         ownerId: input.ownerId,
@@ -233,8 +243,12 @@ export async function settleConversationActionFixture(
         .select()
         .from(conversationTurnsTable)
         .where(eq(conversationTurnsTable.id, input.actionId));
-    if (!existing) throw new Error('Synthetic feature proof is missing.');
-    if (['queued', 'running'].includes(existing.status))
+
+    if (!existing) {
+        throw new Error('Synthetic feature proof is missing.');
+    }
+
+    if (['queued', 'running'].includes(existing.status)) {
         await tx
             .update(conversationTurnsTable)
             .set({
@@ -255,13 +269,15 @@ export async function settleConversationActionFixture(
                           : null,
             })
             .where(eq(conversationTurnsTable.id, input.actionId));
+    }
+
     const rows = await tx
         .select()
         .from(attempts)
         .where(eq(attempts.actionId, input.actionId));
     const participant = new DrizzleActionAccountingParticipant(tx);
     for (const attempt of rows) {
-        if (attempt.state === 'dispatched')
+        if (attempt.state === 'dispatched') {
             await participant.recordAttempt({
                 actionId: input.actionId,
                 ownerId: input.ownerId,
@@ -270,6 +286,8 @@ export async function settleConversationActionFixture(
                 operatorCostMicros: null,
                 at: new Date(),
             });
+        }
+
         const [expense] = await tx
             .select()
             .from(expenses)
@@ -279,11 +297,14 @@ export async function settleConversationActionFixture(
                     eq(expenses.actionId, input.actionId),
                 ),
             );
-        if (!expense)
+
+        if (!expense) {
             throw new Error(
                 'Checked usage settlement did not record its provider expense.',
             );
+        }
     }
+
     return participant.settle({
         actionId: input.actionId,
         ownerId: input.ownerId,
@@ -312,12 +333,15 @@ export async function recordConversationAttemptFixture(
         operatorCostMicros: null,
         at: new Date(),
     });
+
     const [expense] = await tx
         .select()
         .from(expenses)
         .where(eq(expenses.attemptId, input.callId));
-    if (!expense)
+
+    if (!expense) {
         throw new Error(
             'Checked usage settlement did not record its provider expense.',
         );
+    }
 }

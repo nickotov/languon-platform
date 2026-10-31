@@ -15,7 +15,10 @@ const localEnvironmentFile = new URL(
     '../../../../../../../.env.local',
     import.meta.url,
 );
-if (existsSync(localEnvironmentFile)) loadEnvFile(localEnvironmentFile);
+
+if (existsSync(localEnvironmentFile)) {
+    loadEnvFile(localEnvironmentFile);
+}
 
 const command = process.argv[2];
 if (command !== 'initialize' && command !== 'run') {
@@ -44,14 +47,18 @@ try {
             client,
             ...config,
         }).initialize();
+
         console.log('Deletion journal sentinel initialized.');
     } else {
-        if (!process.env.DATABASE_URL)
+        if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL is required for the recovery gate.');
+        }
+
         const postgres = createPostgresClient({
             databaseUrl: process.env.DATABASE_URL,
             maxConnections: 1,
         });
+
         try {
             const result = await runAccountDeletionRecoveryGate({
                 reader: new S3AccountDeletionRecoveryReader({
@@ -62,6 +69,7 @@ try {
                     createDrizzleDatabase(postgres, databaseSchema),
                 ),
             });
+
             console.log(
                 `Deletion recovery gate passed: ${result.inspected} accounts inspected, ${result.blocked} blocked.`,
             );

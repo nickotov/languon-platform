@@ -30,7 +30,10 @@ export function useDictionaryMutations({
                 : never,
         ) => {
             const current = dictionary.data?.dictionary;
-            if (!current) throw new Error('Dictionary unavailable');
+            if (!current) {
+                throw new Error('Dictionary unavailable');
+            }
+
             const response = await requestWithSession((token) =>
                 dictionaryApi.updateDictionary(token, dictionaryId, {
                     ...values,
@@ -38,6 +41,7 @@ export function useDictionaryMutations({
                     expectedSettingsVersion: current.settings.version,
                 }),
             );
+
             queryClient.setQueryData(['dictionary', dictionaryId], response);
             await Promise.all([
                 queryClient.invalidateQueries({
@@ -51,7 +55,10 @@ export function useDictionaryMutations({
     const lifecycle = useMutation({
         mutationFn: async (next: DictionaryLifecycle) => {
             const current = dictionary.data?.dictionary;
-            if (!current) throw new Error('Dictionary unavailable');
+            if (!current) {
+                throw new Error('Dictionary unavailable');
+            }
+
             return requestWithSession((token) =>
                 dictionaryApi.setDictionaryLifecycle(
                     token,
@@ -77,7 +84,10 @@ export function useDictionaryMutations({
     const share = useMutation({
         mutationFn: async (operation: 'revoke' | 'rotate') => {
             const current = dictionary.data?.dictionary;
-            if (!current) throw new Error('Dictionary unavailable');
+            if (!current) {
+                throw new Error('Dictionary unavailable');
+            }
+
             if (operation === 'rotate') {
                 return requestWithSession((token) =>
                     dictionaryApi.rotateShareKey(token, dictionaryId, {
@@ -85,12 +95,14 @@ export function useDictionaryMutations({
                     }),
                 );
             }
+
             const response = await requestWithSession((token) =>
                 dictionaryApi.updateDictionary(token, dictionaryId, {
                     expectedDictionaryVersion: current.version,
                     visibility: 'private',
                 }),
             );
+
             return { capability: null, dictionary: response.dictionary };
         },
         onSuccess: (response) => {
@@ -98,6 +110,7 @@ export function useDictionaryMutations({
                 ['dictionary', dictionaryId],
                 { dictionary: response.dictionary },
             );
+
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
         },
     });

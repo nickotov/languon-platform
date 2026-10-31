@@ -20,7 +20,7 @@ export function ExerciseAnswerFields({
     ) => void;
     onGap: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
-    if (block.format === 'multiple-choice')
+    if (block.format === 'multiple-choice') {
         return (
             <fieldset className={styles.choices}>
                 <legend className={styles.srOnly}>{labels.answer}</legend>
@@ -43,7 +43,9 @@ export function ExerciseAnswerFields({
                 ))}
             </fieldset>
         );
-    if (block.format === 'free-text')
+    }
+
+    if (block.format === 'free-text') {
         return (
             <label className={styles.answer}>
                 <span className={styles.srOnly}>{labels.answer}</span>
@@ -57,17 +59,22 @@ export function ExerciseAnswerFields({
                 />
             </label>
         );
+    }
+
     return (
         <div className={styles.gaps}>
             {block.parts.map((part, index) => {
-                if (part.kind === 'text')
+                if (part.kind === 'text') {
                     return (
                         <span dir='auto' key={index}>
                             {part.text}
                         </span>
                     );
+                }
+
                 const label = `${labels.answer} ${index + 1}`;
                 const value = gaps[part.id] ?? '';
+
                 return (
                     <label key={part.id}>
                         <span className={styles.srOnly}>{label}</span>

@@ -53,7 +53,9 @@ export async function enqueueImportPairs(
             .limit(1)
             .for('update');
 
-        if (!owner) throw new DictionaryNotFoundError();
+        if (!owner) {
+            throw new DictionaryNotFoundError();
+        }
 
         await tx
             .delete(dictionaryIdempotencyKeysTable)
@@ -135,13 +137,17 @@ export async function enqueueImportPairs(
                 existing.requestFingerprint !== input.fingerprint ||
                 existing.state !== 'completed' ||
                 !existing.resultPayload
-            )
+            ) {
                 throw new DictionaryIdempotencyConflictError();
+            }
+
             const replay = DictionaryAiImportResponseSchema.safeParse(
                 existing.resultPayload,
             );
 
-            if (!replay.success) throw new DictionaryIdempotencyConflictError();
+            if (!replay.success) {
+                throw new DictionaryIdempotencyConflictError();
+            }
 
             return replay.data;
         }
@@ -225,8 +231,10 @@ export async function enqueueImportPairs(
                 })
                 .returning();
 
-            if (!dictionary || !settings)
+            if (!dictionary || !settings) {
                 throw new DictionaryVersionConflictError();
+            }
+
             current = { dictionary, settings };
         } else {
             const [existing] = await tx
@@ -251,7 +259,10 @@ export async function enqueueImportPairs(
                 .limit(1)
                 .for('update', { of: dictionariesTable });
 
-            if (!existing) throw new DictionaryNotFoundError();
+            if (!existing) {
+                throw new DictionaryNotFoundError();
+            }
+
             await tx
                 .select({
                     dictionaryId: dictionarySettingsTable.dictionaryId,
@@ -272,8 +283,10 @@ export async function enqueueImportPairs(
                     input.target.expectedDictionaryVersion ||
                 existing.settings.version !==
                     input.target.expectedSettingsVersion
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             current = existing;
         }
 
@@ -283,8 +296,9 @@ export async function enqueueImportPairs(
             !effectiveSettings.definitionEnabled &&
             !effectiveSettings.exampleEnabled &&
             !effectiveSettings.exampleTranslationEnabled
-        )
+        ) {
             throw new DictionaryGenerationNotAvailableError();
+        }
 
         const providerExecution = await assertGenerationAdmission(
             context,
@@ -363,7 +377,10 @@ export async function enqueueImportPairs(
             })
             .returning();
 
-        if (!job) throw new DictionaryVersionConflictError();
+        if (!job) {
+            throw new DictionaryVersionConflictError();
+        }
+
         await reserveInitialAiCreditAttempt(
             context,
             tx,
@@ -412,8 +429,9 @@ export async function enqueueImportPairs(
             )
             .returning({ id: dictionaryIdempotencyKeysTable.id });
 
-        if (completed.length !== 1)
+        if (completed.length !== 1) {
             throw new DictionaryIdempotencyConflictError();
+        }
 
         return response;
     });

@@ -12,14 +12,26 @@ export function prepareProposalDocument(
 ): Transaction | null {
     let touchesBlock = false;
     editor.state.doc.nodesBetween(range.from, range.to, (node) => {
-        if (node.type.name === 'learningBlock') touchesBlock = true;
+        if (node.type.name === 'learningBlock') {
+            touchesBlock = true;
+        }
     });
-    if (touchesBlock) return null;
+
+    if (touchesBlock) {
+        return null;
+    }
+
     const nodes = (document.content ?? []).map((node) =>
         editor.schema.nodeFromJSON(node),
     );
-    if (!nodes.length) return null;
-    for (const node of nodes) node.check();
+
+    if (!nodes.length) {
+        return null;
+    }
+
+    for (const node of nodes) {
+        node.check();
+    }
 
     const transaction = editor.state.tr;
     const start = transaction.doc.resolve(range.from);
@@ -37,10 +49,15 @@ export function prepareProposalDocument(
     transaction.setSelection(
         Selection.near(transaction.doc.resolve(cursor), -1),
     );
+
     // Include plugin-added nodes (for example StarterKit's trailing paragraph).
     // Applying to an immutable state does not dispatch or notify draft recovery.
     const candidate = editor.state.applyTransaction(transaction);
-    if (!candidate.transactions.length) return null;
+    if (!candidate.transactions.length) {
+        return null;
+    }
+
     normalizeEditorDocument(candidate.state.doc.toJSON());
+
     return transaction;
 }

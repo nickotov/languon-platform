@@ -205,6 +205,7 @@ const textAiRouting = createAdminTextAiRoutingComposition({
         ? { ...textAiProbeEnvironment.limits, cooldownSeconds: 0 }
         : textAiProbeEnvironment.limits,
 });
+
 administration.textAiProbes = textAiRouting.probes;
 const dictionaryDocumentS3Client =
     environment.DICTIONARY_DOCUMENT_LIFECYCLE_ENABLED &&
@@ -236,6 +237,7 @@ if (
         'Shared speech requires release-compatible admission and pricing revisions.',
     );
 }
+
 const audioAdapters = createDictionaryAudioAdapters({
     role: 'api',
     environment: audioEnvironment,
@@ -290,12 +292,14 @@ const learning = createLearningComposition({
 const authenticateTextActor = async (token: string) => {
     const claims =
         await authentication.productDependencies.accessTokens.verify(token);
+
     await authentication.productDependencies.authentication.requireActiveSession(
         {
             userId: claims.userId,
             sessionId: claims.sessionId,
         },
     );
+
     return { userId: claims.userId, sessionId: claims.sessionId };
 };
 const textsEnabled = textsAiAdmissionsEnabled(process.env);
@@ -354,11 +358,13 @@ const knowledge = createKnowledgeService({
                     { sourceKind: 'knowledge', sourceIds: [noteId] },
                     now,
                 )
-            )
+            ) {
                 throw new KnowledgeDomainError(
                     'deletion_busy',
                     'Stop the active conversation before deleting this note.',
                 );
+            }
+
             await eraseConversationSource(tx, 'knowledge', noteId, now);
             await eraseKnowledgeTranslationJobs(tx, noteId, now);
             await eraseKnowledgeSentenceJobs(tx, noteId, now);
@@ -598,9 +604,11 @@ const app = createApp({
                 await authentication.productDependencies.accessTokens.verify(
                     accessToken,
                 );
+
             await authentication.productDependencies.authentication.requireActiveSession(
                 { sessionId: claims.sessionId, userId: claims.userId },
             );
+
             return claims.userId;
         },
     }).route(

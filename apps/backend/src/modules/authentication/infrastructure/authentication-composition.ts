@@ -211,6 +211,7 @@ export async function createAuthenticationComposition(
         };
     } catch (error) {
         await closeAuthenticationResources(sql, redis);
+
         throw error;
     }
 }
@@ -224,5 +225,6 @@ async function closeAuthenticationResources(
     } else {
         await redis.quit().catch(() => redis.disconnect());
     }
+
     await sql.end();
 }

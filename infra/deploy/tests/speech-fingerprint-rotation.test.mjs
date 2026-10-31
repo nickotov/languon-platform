@@ -25,6 +25,7 @@ test('retained speech keys validate bounded JSON without including values in err
         ),
         [oldKey, nextKey],
     );
+
     for (const value of [
         '{"secret":"DO_NOT_ECHO"}',
         '["DO_NOT_ECHO_SHORT"]',
@@ -41,14 +42,17 @@ test('retained speech keys validate bounded JSON without including values in err
                 'Invalid retained speech fingerprint configuration.',
         );
     }
+
     const config = parseEnvironmentFile(
         await readFile('infra/deploy/stage.env.example', 'utf8'),
     );
+
     assert.equal(
         assertDeployConfig('stage', config)
             .DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS,
         '[]',
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -87,6 +91,7 @@ test('protected env parsing and deployment preserve escaped JSON without shell e
         JSON.parse(environment.DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS),
         [oldKey, nextKey],
     );
+
     assert.ok(
         !environment.DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS.includes(
             '\n',
@@ -106,11 +111,13 @@ test('resolved production Compose injects retained keys into API and speech work
         ...process.env,
         ...Object.fromEntries(required.map((key) => [key, 'fixture'])),
     };
+
     env.EDGE_SUBNET = '172.30.20.0/24';
     env.DICTIONARY_AUDIO_RETAINED_FINGERPRINT_SECRETS = JSON.stringify([
         oldKey,
         nextKey,
     ]);
+
     const { stdout } = await execute(
         'docker',
         [
@@ -138,6 +145,7 @@ test('resolved production Compose injects retained keys into API and speech work
             [oldKey, nextKey],
         );
     }
+
     for (const name of ['web', 'admin', 'account-purge-worker']) {
         assert.equal(
             services[name].environment

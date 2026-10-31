@@ -14,6 +14,7 @@ export function SentenceLibraryRoute({
     children: ReactNode;
 }) {
     const params = useParams<{ exampleId?: string }>();
+
     return (
         <>
             <SentenceLibraryPage

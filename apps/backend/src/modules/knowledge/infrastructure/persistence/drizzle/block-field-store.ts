@@ -102,8 +102,9 @@ export class DrizzleKnowledgeBlockFieldStore {
         return transaction(this.persistence, async (tx) => {
             await this.authorize(tx, ownerId, noteId, jobId);
             const job = await find(this.persistence, tx, ownerId, jobId);
-            if (job.expiresAt <= context.now)
+            if (job.expiresAt <= context.now) {
                 throw new TextsAiError('generation_proposal_expired');
+            }
 
             return view(tx, job);
         });
@@ -152,7 +153,10 @@ export class DrizzleKnowledgeBlockFieldStore {
                 ),
             );
 
-        if (!source) throw new TextsAiError('generation_job_not_found');
+        if (!source) {
+            throw new TextsAiError('generation_job_not_found');
+        }
+
         await authorizeKnowledgeFieldDraft(tx, ownerId, source);
     }
 }

@@ -67,10 +67,15 @@ export function createTextAiRouteHealthRecorder(
             (parsed.failure.httpStatus === 403 ||
                 parsed.failure.providerCode === 403) &&
             parsed.failure.providerCode !== 401
-        )
+        ) {
             return;
+        }
+
         const route = findTextAiModel(parsed.routeId);
-        if (!route) throw new Error('Unreviewed route health observation.');
+        if (!route) {
+            throw new Error('Unreviewed route health observation.');
+        }
+
         const reason =
             (parsed.failure.httpStatus === 400 ||
                 parsed.failure.providerCode === 400) &&
@@ -82,10 +87,12 @@ export function createTextAiRouteHealthRecorder(
                       ? 'invalid_output'
                       : parsed.failure.reason));
         const witness = currentTextAiProviderAttemptWitness();
-        if (!witness)
+        if (!witness) {
             throw new Error(
                 'Provider health requires a current admitted attempt witness.',
             );
+        }
+
         await database.execute(
             sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${witness.attemptId}::uuid,${witness.jobId}::uuid,${witness.leaseToken ?? null}::text,${witness.workerId ?? null}::text,${witness.fencingToken ?? null}::bigint,${reason})`,
         );

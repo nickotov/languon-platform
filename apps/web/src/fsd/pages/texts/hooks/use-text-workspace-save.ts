@@ -72,15 +72,20 @@ export function useTextWorkspaceSave(options: Options) {
     }
 
     async function save(keepMine = false): Promise<boolean> {
-        if (saveLock.current) return false;
+        if (saveLock.current) {
+            return false;
+        }
+
         if (
             mode === 'compose' &&
             !proposal &&
             (input.sourceLanguage === 'auto' || !workspaceValid(input))
         ) {
             setShowErrors(true);
+
             return false;
         }
+
         if (
             mode === 'edit' &&
             pairs.some(
@@ -88,20 +93,27 @@ export function useTextWorkspaceSave(options: Options) {
             )
         ) {
             setShowErrors(true);
+
             return false;
         }
-        if (proposal && previewExpired) return false;
+
+        if (proposal && previewExpired) {
+            return false;
+        }
+
         setShowErrors(false);
         saveLock.current = true;
         setSaving(true);
         clearSaveError();
         try {
             const fingerprint = JSON.stringify({ folderId, ...input });
-            if (creationOperation.current?.fingerprint !== fingerprint)
+            if (creationOperation.current?.fingerprint !== fingerprint) {
                 creationOperation.current = {
                     fingerprint,
                     id: crypto.randomUUID(),
                 };
+            }
+
             const next = await persistWorkspace({
                 operationId: creationOperation.current.id,
                 request,
@@ -120,17 +132,24 @@ export function useTextWorkspaceSave(options: Options) {
                 reviewedVersion: keepMine && conflict ? conflict.version : null,
                 onCreated: setDocument,
             });
-            if (isCurrent && !isCurrent()) return false;
+
+            if (isCurrent && !isCurrent()) {
+                return false;
+            }
+
             adopt(next);
             clearProposal();
+
             return true;
         } catch (error) {
             setFailure({ fingerprint, error });
             if (
                 error instanceof TextsApiError &&
                 error.detail.code === 'generation_proposal_expired'
-            )
+            ) {
                 setExpired(true);
+            }
+
             if (
                 error instanceof TextsApiError &&
                 error.detail.code === 'version_conflict' &&
@@ -148,11 +167,13 @@ export function useTextWorkspaceSave(options: Options) {
                     /* Preserve edits and original error. */
                 }
             }
+
             return false;
         } finally {
             saveLock.current = false;
             setSaving(false);
         }
     }
+
     return { saving, saveError, save, clearSaveError };
 }

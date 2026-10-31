@@ -17,11 +17,13 @@ export function learningBlockSourceMaterial(
             label: itemLabel,
             content: JSON.stringify(content),
         });
+
         if (
             (block.type === 'audio' || block.type === 'video') &&
             block.transcript
         ) {
             const { transcript, ...metadata } = block;
+
             return [
                 item(block.id, label, {
                     ...metadata,
@@ -39,8 +41,10 @@ export function learningBlockSourceMaterial(
                 ),
             ];
         }
+
         if (block.type === 'bilingual-text') {
             const { segments, translations, ...metadata } = block;
+
             return [
                 item(block.id, label, {
                     ...metadata,
@@ -68,6 +72,7 @@ export function learningBlockSourceMaterial(
                 ),
             ];
         }
+
         return [item(block.id, label, block)];
     });
 }

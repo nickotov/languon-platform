@@ -688,7 +688,10 @@ function interpolate(
     template: string,
     options: Record<string, unknown> | undefined,
 ) {
-    if (!options) return template;
+    if (!options) {
+        return template;
+    }
+
     return template.replaceAll(/\{([^}]+)\}/g, (match, key: string) =>
         key in options ? String(options[key]) : match,
     );
@@ -696,7 +699,9 @@ function interpolate(
 
 export const adminI18nProvider: I18nProvider = {
     changeLocale: async (locale) => {
-        if (locale !== 'en') throw new Error('Only English is available.');
+        if (locale !== 'en') {
+            throw new Error('Only English is available.');
+        }
     },
     getLocale: () => 'en',
     translate: (key, options, defaultMessage) =>

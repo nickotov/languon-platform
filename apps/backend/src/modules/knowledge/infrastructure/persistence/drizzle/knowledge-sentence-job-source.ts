@@ -21,8 +21,10 @@ export async function attachKnowledgeSentenceJobSource(
     if (
         input.actorId !== input.binding.actorId ||
         input.binding.sourceSnapshot.type !== 'vocabulary'
-    )
+    ) {
         throw new SentenceUnavailableError();
+    }
+
     await readPinnedKnowledgeLearningSource(tx, input.binding);
     await tx.insert(sources).values({
         jobId: input.jobId,
@@ -55,7 +57,10 @@ export async function readKnowledgeSentenceJobSource(
         )
         .for('share');
 
-    if (!source) throw new SentenceUnavailableError();
+    if (!source) {
+        throw new SentenceUnavailableError();
+    }
+
     await readPinnedKnowledgeLearningSource(tx, source.binding);
 
     return source;

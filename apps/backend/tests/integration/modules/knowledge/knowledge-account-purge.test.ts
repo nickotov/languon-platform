@@ -115,24 +115,33 @@ async function seedPrivatePractice(
         entry = randomUUID(),
         attempt = randomUUID(),
         exercise = randomUUID();
+
     await client`insert into knowledge_vocabulary_preferences(actor_id,note_id,block_id,configuration,shuffle,version)
         values(${actor},${note},${block},'{}',false,1)`;
+
     await client`insert into knowledge_vocabulary_attempts(id,actor_id,note_id,block_id,entry_id,operation_id,session_id,round,learning_version,rating,configuration)
         values(${attempt},${actor},${note},${block},${entry},${randomUUID()},${randomUUID()},1,1,'known','{}')`;
+
     await client`insert into knowledge_vocabulary_progress(actor_id,note_id,block_id,entry_id,learning_version,rating,latest_attempt_id)
         values(${actor},${note},${block},${entry},1,'known',${attempt})`;
+
     const content = JSON.stringify({
         knowledgeSource: { noteId: note, blockId: block },
         sourceSentence: 'Private generated example.',
     });
+
     await client`insert into knowledge_sentence_exercises(id,actor_id,note_id,block_id,operation_id,public_content,reference_translation,provenance)
         values(${exercise},${actor},${note},${block},${randomUUID()},${content}::jsonb,'Private reference.','[]')`;
+
     await client`insert into knowledge_sentence_attempts(id,actor_id,note_id,block_id,exercise_id,operation_id,session_id,answer,explanation_language,revealed_hint_ids,reference_revealed,feedback)
         values(${randomUUID()},${actor},${note},${block},${exercise},${randomUUID()},${randomUUID()},'Private answer.','en','[]',false,'{}')`;
+
     await client`insert into knowledge_sentence_reviews(id,actor_id,note_id,block_id,exercise_id,operation_id,session_id,request_fingerprint)
         values(${randomUUID()},${actor},${note},${block},${exercise},${randomUUID()},${randomUUID()},'synthetic')`;
+
     await client`insert into knowledge_sentence_exposures(actor_id,note_id,block_id,exercise_id)
         values(${actor},${note},${block},${exercise})`;
+
     await client`insert into knowledge_sentence_next_receipts(actor_id,operation_id,note_id,block_id,request_fingerprint,result,created_at)
         values(${actor},${randomUUID()},${note},${block},'synthetic','{"private":"prepared source"}',now())`;
 }
@@ -144,6 +153,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         afterAll(async () => client?.end());
         it('erases owner content and foreign-source learner state under a due lease while preserving independent copies', async () => {
             await resetTestDatabase(client);
@@ -152,10 +162,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 now = new Date(),
                 owner = randomUUID(),
                 reader = randomUUID();
+
             await db.insert(usersTable).values([
                 { id: owner, status: 'active' },
                 { id: reader, status: 'active' },
             ]);
+
             const crypto = new KnowledgeShareCrypto(
                 'knowledge-account-purge-synthetic-secret',
             );
@@ -243,8 +255,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     node.attrs?.block ? [node.attrs.block] : [],
                 )
                 .find((block) => block.type === 'audio');
-            if (copiedAudio?.type !== 'audio')
+
+            if (copiedAudio?.type !== 'audio') {
                 throw new Error('Missing audio copy');
+            }
+
             const foreign = await notes.create(reader, {
                 operationId: randomUUID(),
                 content,
@@ -258,6 +273,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ...foreignShare,
                 })
             ).exerciseRevisions[0]!.revision;
+
             await learner.attempt(
                 owner,
                 foreign.id,
@@ -270,6 +286,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { kind: 'note', ...foreignShare },
             );
+
             await learner.event(
                 owner,
                 foreign.id,
@@ -282,6 +299,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { kind: 'note', ...foreignShare },
             );
+
             await learner.complete(
                 owner,
                 foreign.id,
@@ -292,11 +310,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { kind: 'note', ...foreignShare },
             );
+
             await learner.complete(reader, foreign.id, {
                 id: randomUUID(),
                 noteVersion: foreign.version,
                 completed: true,
             });
+
             const workbook = randomUUID();
             await db.insert(knowledgeWorkbooksTable).values({
                 id: workbook,
@@ -306,20 +326,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             await db
                 .insert(knowledgeWorkbookNotesTable)
                 .values({ noteId: note.id, workbookId: workbook, position: 0 });
+
             await db.insert(knowledgeWorkbookSharesTable).values({
                 workbookId: workbook,
                 locator: crypto.locator(),
                 keyDigest: crypto.digest('synthetic-key'),
                 createdAt: now,
             });
+
             const branch = (await notes.getWorkspace(owner, note.id))
                     .branches[0]!,
                 chat = randomUUID(),
                 turn = randomUUID(),
                 preferences = ChatPreferencesSchema.parse({});
+
             await db.insert(conversationsTable).values({
                 id: chat,
                 ownerId: owner,
@@ -330,6 +354,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             await db.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
                 await tx.insert(conversationTurnsTable).values({
@@ -360,6 +385,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: now,
                 });
             });
+
             await db.insert(conversationBlockProposalsTable).values({
                 id: randomUUID(),
                 conversationId: chat,
@@ -370,6 +396,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 blocks: [exercise],
                 createdAt: now,
             });
+
             const recording = randomUUID();
             await db.insert(speechRecordingsTable).values({
                 id: recording,
@@ -395,11 +422,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 lastAccessedAt: now,
             });
+
             await db
                 .insert(knowledgeSpeechRecordingsTable)
                 .values({ recordingId: recording, noteId: note.id });
+
             const priceId = randomUUID(),
                 configId = randomUUID();
+
             await db.insert(aiProviderPriceRevisionsTable).values({
                 id: priceId,
                 providerId: 'openai',
@@ -425,6 +455,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reason: 'Immutable billing evidence',
                 },
             });
+
             await db.insert(configs).values({
                 id: configId,
                 version: 1,
@@ -449,9 +480,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Immutable operational rationale',
             });
+
             await db
                 .insert(configState)
                 .values({ id: 'global', activeRevisionId: configId });
+
             await db.insert(aiAccountingSettingsRevisionsTable).values({
                 id: randomUUID(),
                 version: 1,
@@ -462,6 +495,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Synthetic account deletion allowance',
             });
+
             await db.insert(dictionaryAiWorkerObservationsTable).values({
                 id: 'knowledge-purge-transcription-worker',
                 workerId: 'knowledge-purge-transcription-worker',
@@ -474,6 +508,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 message: 'Synthetic compatible executor',
                 textAiSupportedFormats: ['knowledge-transcription:v1'],
             });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: owner,
@@ -484,6 +519,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     createdAt: now,
                 }),
             );
+
             const transcription = new DrizzleKnowledgeTranscriptionStore({
                 database: db,
                 executionReady: true,
@@ -502,11 +538,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 request,
                 new AbortController().signal,
             );
+
             await transcription.submit(
                 owner,
                 { ...request, confirmedMaximumCredits: quote.maximumCredits },
                 new AbortController().signal,
             );
+
             await transcription.submit(
                 reader,
                 {
@@ -517,6 +555,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 new AbortController().signal,
             );
+
             const at = new Date();
             const ownedTokens = [randomUUID(), randomUUID()],
                 foreignToken = randomUUID(),
@@ -526,6 +565,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ownPreview = randomUUID(),
                 targetedPreview = randomUUID(),
                 retainedPreview = randomUUID();
+
             await db.insert(adminMcpTokensTable).values(
                 [...ownedTokens, foreignToken].map((id, index) => ({
                     id,
@@ -539,6 +579,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: new Date(at.getTime() + 3600000),
                 })),
             );
+
             await db.insert(adminMcpPreviewsTable).values(
                 [
                     {
@@ -567,6 +608,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: new Date(at.getTime() + 60000),
                 })),
             );
+
             await db.insert(adminMcpReceiptsTable).values({
                 id: randomUUID(),
                 tokenId: ownedTokens[0]!,
@@ -576,6 +618,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 result: { private: 'result' },
                 createdAt: at,
             });
+
             await db.insert(adminMcpReservationsTable).values({
                 id: randomUUID(),
                 tokenId: ownedTokens[0]!,
@@ -587,6 +630,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reservedUnits: 1n,
                 createdAt: at,
             });
+
             await db.insert(adminMcpAuditTable).values(
                 [
                     {
@@ -620,10 +664,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: new Date(at.getTime() + 3600000),
                 })),
             );
+
             await db
                 .update(usersTable)
                 .set({ status: 'deletion_pending' })
                 .where(eq(usersTable.id, owner));
+
             await db.insert(accountDeletionRequestsTable).values({
                 userId: owner,
                 state: 'pending',
@@ -632,11 +678,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 nextAttemptAt: new Date(at.getTime() - 60000),
                 updatedAt: at,
             });
+
             const role = `knowledge_owner_purge_${randomUUID().replaceAll('-', '')}`,
                 connection = createPostgresClient({
                     databaseUrl: getTestDatabaseUrl(),
                     maxConnections: 1,
                 });
+
             await client.unsafe(`create role ${role}`);
             try {
                 const script = await readFile(
@@ -646,6 +694,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                     'utf8',
                 );
+
                 await client.unsafe(
                     script
                         .split('\n')
@@ -653,6 +702,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"account_purge_role"', role),
                 );
+
                 await connection.unsafe(`set role ${role}`);
                 for (const query of [
                     'select body from knowledge_notes',
@@ -668,10 +718,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ...privatePracticeTables.map(
                         (table) => `select * from ${table}`,
                     ),
-                ])
+                ]) {
                     await expect(
                         connection.unsafe(query),
                     ).rejects.toBeDefined();
+                }
+
                 const worker = new DrizzleAccountPurgeStore(
                         createDrizzleDatabase(connection, databaseSchema),
                     ),
@@ -679,16 +731,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now: at,
                         workerId: 'knowledge-owner-purge-test',
                     });
+
                 expect(claim?.userId).toBe(owner);
                 await expect(
                     connection`select languon_purge_knowledge_owner(${reader}::uuid,'knowledge-owner-purge-test',${claim!.fencingToken})`,
                 ).rejects.toBeDefined();
+
                 await expect(
                     connection`select languon_purge_admin_mcp_owner(${reader}::uuid,'knowledge-owner-purge-test',${claim!.fencingToken},${at.toISOString()}::timestamptz)`,
                 ).rejects.toBeDefined();
+
                 await expect(
                     connection`select languon_purge_admin_mcp_owner(${owner}::uuid,'knowledge-owner-purge-test',${claim!.fencingToken + 1},${at.toISOString()}::timestamptz)`,
                 ).rejects.toBeDefined();
+
                 expect(
                     await worker.finish({
                         ...claim!,
@@ -696,16 +752,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now: new Date(),
                     }),
                 ).toBe(true);
+
                 for (const table of privatePracticeTables) {
                     const rows = await client.unsafe(
                         `select actor_id from ${table}`,
                     );
+
                     expect(rows.map((row) => row.actor_id)).toEqual([reader]);
                 }
+
                 const tokens = await db.select().from(adminMcpTokensTable);
                 expect(
                     tokens.filter((token) => token.ownerUserId === owner),
                 ).toHaveLength(2);
+
                 for (const token of tokens.filter(
                     (token) => token.ownerUserId === owner,
                 )) {
@@ -716,23 +776,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         limits: {},
                         lastUsedAt: null,
                     });
+
                     expect(token.revokedAt).not.toBeNull();
                 }
+
                 expect(
                     tokens.find((token) => token.id === foreignToken)
                         ?.revokedAt,
                 ).toBeNull();
+
                 expect(
                     (await db.select().from(adminMcpPreviewsTable)).map(
                         (row) => row.id,
                     ),
                 ).toEqual([retainedPreview]);
+
                 expect(
                     await db.select().from(adminMcpReceiptsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await db.select().from(adminMcpReservationsTable),
                 ).toHaveLength(0);
+
                 const audits = await db.select().from(adminMcpAuditTable);
                 expect(
                     audits.find((event) => event.id === ownedAudit),
@@ -744,57 +810,73 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         providerExpenseIds: [expenseReference],
                     },
                 });
+
                 expect(
                     audits.find((event) => event.id === foreignAudit)?.metadata,
                 ).toEqual({ private: 'preserve' });
+
                 for (const table of [
                     knowledgeLearnerAttemptsTable,
                     knowledgeLearnerEventsTable,
-                ])
+                ]) {
                     expect(await db.select().from(table)).toHaveLength(0);
+                }
+
                 expect(
                     await db
                         .select()
                         .from(knowledgeLearnerCompletionReceiptsTable),
                 ).toMatchObject([{ actorId: reader, noteId: foreign.id }]);
+
                 expect(
                     await db.select().from(knowledgeLearnerCompletionTable),
                 ).toMatchObject([{ actorId: reader, noteId: foreign.id }]);
+
                 expect(
                     await db.select().from(knowledgeWorkbooksTable),
                 ).toHaveLength(0);
+
                 expect(
                     await db.select().from(conversationBlockProposalsTable),
                 ).toHaveLength(0);
+
                 expect(
                     (await db.select().from(jobs)).map((job) => job.ownerId),
                 ).toEqual([reader]);
+
                 expect(
                     (await db.select().from(transcriptionReceipts)).map(
                         (receipt) => receipt.ownerId,
                     ),
                 ).toEqual([reader]);
+
                 expect((await db.select().from(configs))[0]).toMatchObject({
                     createdBy: null,
                     reason: 'Immutable operational rationale',
                 });
+
                 expect(
                     (await db.select().from(speechRecordingsTable))[0],
                 ).toMatchObject({ text: '', state: 'deleting' });
+
                 expect(
                     await db.select().from(knowledgeSpeechRecordingsTable),
                 ).toHaveLength(0);
+
                 expect(
                     (await db.select().from(knowledgeNotesTable)).map(
                         (row) => row.ownerId,
                     ),
                 ).toEqual([reader, reader]);
+
                 expect(
                     await db.select().from(knowledgeMediaAssetsTable),
                 ).toHaveLength(1);
+
                 expect(
                     await db.select().from(knowledgeMediaBlobsTable),
                 ).toHaveLength(1);
+
                 expect(
                     (
                         await media.read(copy.id, copiedAudio.assetId!, {
@@ -802,6 +884,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         })
                     ).bytes.length,
                 ).toBeGreaterThan(0);
+
                 expect(
                     await worker.finish({
                         ...claim!,
@@ -809,9 +892,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now: new Date(),
                     }),
                 ).toBe(false);
+
                 await expect(
                     connection`select languon_purge_knowledge_owner(${owner}::uuid,'knowledge-owner-purge-test',${claim!.fencingToken})`,
                 ).rejects.toBeDefined();
+
                 await expect(
                     connection`select languon_purge_admin_mcp_owner(${owner}::uuid,'knowledge-owner-purge-test',${claim!.fencingToken},${at.toISOString()}::timestamptz)`,
                 ).rejects.toBeDefined();

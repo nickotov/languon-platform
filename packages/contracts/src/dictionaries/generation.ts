@@ -195,12 +195,13 @@ export const DictionaryGenerationSafeFailureSchema = z
     })
     .strict()
     .superRefine((failure, context) => {
-        if (failure.code === 'generation_conflict' && failure.retryable)
+        if (failure.code === 'generation_conflict' && failure.retryable) {
             context.addIssue({
                 code: 'custom',
                 path: ['retryable'],
                 message: 'Generation conflicts are not retryable',
             });
+        }
     });
 
 export const DictionaryGenerationAcceptedOutcomeSchema = z
@@ -252,6 +253,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                     'Active generation jobs require their original snapshot',
             });
         }
+
         if (terminalState && job.originalSnapshot !== null) {
             context.addIssue({
                 code: 'custom',
@@ -260,6 +262,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                     'Terminal generation jobs must redact original content',
             });
         }
+
         if ((job.state === 'review') !== (job.proposal !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -267,6 +270,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Only review jobs expose a proposal',
             });
         }
+
         if ((job.state === 'failed') !== (job.failure !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -274,6 +278,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Only failed jobs expose a sanitized failure',
             });
         }
+
         if ((job.state === 'accepted') !== (job.outcome !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -281,6 +286,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Only accepted jobs expose an accepted outcome',
             });
         }
+
         if (job.state === 'queued' && job.progress.stage !== 'queued') {
             context.addIssue({
                 code: 'custom',
@@ -288,6 +294,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Queued jobs must report the queued stage',
             });
         }
+
         if (
             job.state === 'running' &&
             !['generating', 'validating'].includes(job.progress.stage)
@@ -298,6 +305,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Running jobs must report a running stage',
             });
         }
+
         if (job.state === 'review' && job.progress.stage !== 'review_ready') {
             context.addIssue({
                 code: 'custom',
@@ -305,6 +313,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Review jobs must report the review-ready stage',
             });
         }
+
         if (terminalState && job.progress.stage !== 'terminal') {
             context.addIssue({
                 code: 'custom',
@@ -312,6 +321,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Terminal jobs must report the terminal stage',
             });
         }
+
         if ((job.state === 'review') !== (job.expiresAt !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -319,6 +329,7 @@ export const DictionarySingleCardGenerationJobSchema = z
                 message: 'Only review jobs expose proposal expiry',
             });
         }
+
         if (terminalState !== (job.completedAt !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -393,6 +404,7 @@ export const DictionaryPastedTermsGenerationProposalSchema = z
                 message: 'A pasted-term proposal must contain at least one row',
             });
         }
+
         if (
             resolvedIndexes.length > 100 ||
             new Set(resolvedIndexes).size !== resolvedIndexes.length
@@ -408,6 +420,7 @@ export const DictionaryPastedTermsGenerationProposalSchema = z
         const warningKeys = proposal.warnings.map(
             (warning) => `${warning.rowIndex}:${warning.code}`,
         );
+
         if (new Set(warningKeys).size !== warningKeys.length) {
             context.addIssue({
                 code: 'custom',
@@ -415,6 +428,7 @@ export const DictionaryPastedTermsGenerationProposalSchema = z
                 message: 'Row warning codes must be unique per row',
             });
         }
+
         proposal.warnings.forEach((warning, index) => {
             if (!resolvedIndexSet.has(warning.rowIndex)) {
                 context.addIssue({
@@ -445,40 +459,46 @@ export const DictionaryImportPairsGenerationCandidateSchema = z
             .max(6)
             .superRefine((feedback, context) => {
                 const fields = feedback.map((entry) => entry.field);
-                if (new Set(fields).size !== fields.length)
+                if (new Set(fields).size !== fields.length) {
                     context.addIssue({
                         code: 'custom',
                         message:
                             'Candidate field feedback must be unique by field',
                     });
+                }
             }),
     })
     .strict()
     .superRefine((row, context) => {
-        if (row.candidate.values.source !== row.source)
+        if (row.candidate.values.source !== row.source) {
             context.addIssue({
                 code: 'custom',
                 path: ['candidate', 'values', 'source'],
                 message: 'AI output must preserve the imported source',
             });
-        if (row.candidate.values.translation !== row.translation)
+        }
+
+        if (row.candidate.values.translation !== row.translation) {
             context.addIssue({
                 code: 'custom',
                 path: ['candidate', 'values', 'translation'],
                 message: 'AI output must preserve the imported translation',
             });
+        }
+
         if (
             row.fieldFeedback.some(
                 (feedback) =>
                     feedback.field === 'source' ||
                     feedback.field === 'translation',
             )
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['fieldFeedback'],
                 message: 'AI may only provide feedback for optional fields',
             });
+        }
     });
 
 export const DictionaryImportPairsGenerationRowFailureSchema = z
@@ -516,42 +536,52 @@ export const DictionaryImportPairsGenerationProposalSchema = z
             ...proposal.candidates.map((row) => row.rowIndex),
             ...proposal.failures.map((row) => row.rowIndex),
         ];
+
         proposal.failures.forEach((failure, index) => {
-            if (failure.input !== failure.source)
+            if (failure.input !== failure.source) {
                 context.addIssue({
                     code: 'custom',
                     path: ['failures', index, 'input'],
                     message: 'Failure input must preserve the imported source',
                 });
+            }
         });
-        if (resolvedIndexes.length === 0)
+
+        if (resolvedIndexes.length === 0) {
             context.addIssue({
                 code: 'custom',
                 message:
                     'An import-pairs proposal must contain at least one row',
             });
-        if (new Set(resolvedIndexes).size !== resolvedIndexes.length)
+        }
+
+        if (new Set(resolvedIndexes).size !== resolvedIndexes.length) {
             context.addIssue({
                 code: 'custom',
                 message: 'Candidate and failure row indexes must be unique',
             });
+        }
+
         const resolved = new Set(resolvedIndexes);
         const warningKeys = new Set<string>();
         proposal.warnings.forEach((warning, index) => {
             const key = `${warning.rowIndex}:${warning.code}`;
-            if (warningKeys.has(key))
+            if (warningKeys.has(key)) {
                 context.addIssue({
                     code: 'custom',
                     path: ['warnings', index],
                     message: 'Row warning codes must be unique per row',
                 });
+            }
+
             warningKeys.add(key);
-            if (!resolved.has(warning.rowIndex))
+            if (!resolved.has(warning.rowIndex)) {
                 context.addIssue({
                     code: 'custom',
                     path: ['warnings', index, 'rowIndex'],
                     message: 'Warnings must reference a proposal row',
                 });
+            }
         });
     });
 
@@ -571,19 +601,22 @@ export const DictionaryImportPairsGenerationAcceptedOutcomeSchema = z
                 if (
                     new Set(cards.map((card) => card.rowIndex)).size !==
                     cards.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Accepted card row indexes must be unique',
                     });
+                }
+
                 if (
                     new Set(cards.map((card) => card.cardId)).size !==
                     cards.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Accepted card IDs must be unique',
                     });
+                }
             }),
         dictionaryVersion: DictionaryVersionSchema,
         warnings: z
@@ -609,6 +642,7 @@ export const DictionaryPastedTermsGenerationAcceptedOutcomeSchema = z
                         message: 'Accepted card row indexes must be unique',
                     });
                 }
+
                 if (
                     new Set(cards.map((card) => card.cardId)).size !==
                     cards.length
@@ -662,6 +696,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Only review jobs expose a proposal',
             });
         }
+
         if ((job.state === 'failed') !== (job.failure !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -669,6 +704,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Only failed jobs expose a sanitized failure',
             });
         }
+
         if ((job.state === 'accepted') !== (job.outcome !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -676,6 +712,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Only accepted jobs expose an accepted outcome',
             });
         }
+
         if (job.state === 'queued' && job.progress.stage !== 'queued') {
             context.addIssue({
                 code: 'custom',
@@ -683,6 +720,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Queued jobs must report the queued stage',
             });
         }
+
         if (
             job.state === 'running' &&
             !['generating', 'validating'].includes(job.progress.stage)
@@ -693,6 +731,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Running jobs must report a running stage',
             });
         }
+
         if (job.state === 'review' && job.progress.stage !== 'review_ready') {
             context.addIssue({
                 code: 'custom',
@@ -700,6 +739,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Review jobs must report the review-ready stage',
             });
         }
+
         if (terminalState && job.progress.stage !== 'terminal') {
             context.addIssue({
                 code: 'custom',
@@ -707,6 +747,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Terminal jobs must report the terminal stage',
             });
         }
+
         if ((job.state === 'review') !== (job.expiresAt !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -714,6 +755,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
                 message: 'Only review jobs expose proposal expiry',
             });
         }
+
         if (terminalState !== (job.completedAt !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -735,63 +777,80 @@ export const DictionaryImportPairsGenerationJobSchema = z
     .strict()
     .superRefine((job, context) => {
         const terminal = !['queued', 'running', 'review'].includes(job.state);
-        if ((job.state === 'review') !== (job.proposal !== null))
+        if ((job.state === 'review') !== (job.proposal !== null)) {
             context.addIssue({
                 code: 'custom',
                 path: ['proposal'],
                 message: 'Only review jobs expose a proposal',
             });
-        if ((job.state === 'failed') !== (job.failure !== null))
+        }
+
+        if ((job.state === 'failed') !== (job.failure !== null)) {
             context.addIssue({
                 code: 'custom',
                 path: ['failure'],
                 message: 'Only failed jobs expose a sanitized failure',
             });
-        if ((job.state === 'accepted') !== (job.outcome !== null))
+        }
+
+        if ((job.state === 'accepted') !== (job.outcome !== null)) {
             context.addIssue({
                 code: 'custom',
                 path: ['outcome'],
                 message: 'Only accepted jobs expose an accepted outcome',
             });
-        if (job.state === 'queued' && job.progress.stage !== 'queued')
+        }
+
+        if (job.state === 'queued' && job.progress.stage !== 'queued') {
             context.addIssue({
                 code: 'custom',
                 path: ['progress', 'stage'],
                 message: 'Queued jobs must report the queued stage',
             });
+        }
+
         if (
             job.state === 'running' &&
             !['generating', 'validating'].includes(job.progress.stage)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['progress', 'stage'],
                 message: 'Running jobs must report a running stage',
             });
-        if (job.state === 'review' && job.progress.stage !== 'review_ready')
+        }
+
+        if (job.state === 'review' && job.progress.stage !== 'review_ready') {
             context.addIssue({
                 code: 'custom',
                 path: ['progress', 'stage'],
                 message: 'Review jobs must report the review-ready stage',
             });
-        if (terminal && job.progress.stage !== 'terminal')
+        }
+
+        if (terminal && job.progress.stage !== 'terminal') {
             context.addIssue({
                 code: 'custom',
                 path: ['progress', 'stage'],
                 message: 'Terminal jobs must report the terminal stage',
             });
-        if ((job.state === 'review') !== (job.expiresAt !== null))
+        }
+
+        if ((job.state === 'review') !== (job.expiresAt !== null)) {
             context.addIssue({
                 code: 'custom',
                 path: ['expiresAt'],
                 message: 'Only review jobs expose proposal expiry',
             });
-        if (terminal !== (job.completedAt !== null))
+        }
+
+        if (terminal !== (job.completedAt !== null)) {
             context.addIssue({
                 code: 'custom',
                 path: ['completedAt'],
                 message: 'Terminal jobs require a completion timestamp',
             });
+        }
     });
 
 export const DictionaryDocumentTermsGenerationJobSchema = z
@@ -834,6 +893,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Only review jobs expose a proposal',
             });
         }
+
         if ((job.state === 'failed') !== (job.failure !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -841,6 +901,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Only failed jobs expose a sanitized failure',
             });
         }
+
         if ((job.state === 'accepted') !== (job.outcome !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -848,6 +909,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Only accepted jobs expose an accepted outcome',
             });
         }
+
         if (
             job.state === 'awaiting-upload' &&
             job.progress.stage !== 'awaiting_upload'
@@ -858,6 +920,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Awaiting-upload jobs must report awaiting upload',
             });
         }
+
         if (job.state === 'queued' && job.progress.stage !== 'queued') {
             context.addIssue({
                 code: 'custom',
@@ -865,6 +928,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Queued jobs must report the queued stage',
             });
         }
+
         if (
             job.state === 'running' &&
             ![
@@ -882,6 +946,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Running document jobs must report a running stage',
             });
         }
+
         if (job.state === 'review' && job.progress.stage !== 'review_ready') {
             context.addIssue({
                 code: 'custom',
@@ -889,6 +954,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Review jobs must report the review-ready stage',
             });
         }
+
         if (terminalState && job.progress.stage !== 'terminal') {
             context.addIssue({
                 code: 'custom',
@@ -896,6 +962,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Terminal jobs must report the terminal stage',
             });
         }
+
         if ((job.state === 'review') !== (job.expiresAt !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -903,6 +970,7 @@ export const DictionaryDocumentTermsGenerationJobSchema = z
                 message: 'Only review jobs expose proposal expiry',
             });
         }
+
         if (terminalState !== (job.completedAt !== null)) {
             context.addIssue({
                 code: 'custom',
@@ -938,6 +1006,7 @@ export const AcceptDictionarySingleCardGenerationJobResponseSchema = z
                 message: 'An accepted response requires an accepted job',
             });
         }
+
         if (
             response.job.outcome?.cardId !== response.outcome.cardId ||
             response.job.outcome.cardVersion !== response.outcome.cardVersion ||
@@ -966,6 +1035,7 @@ export const AcceptDictionaryPastedTermsGenerationJobResponseSchema = z
                 message: 'An accepted response requires an accepted job',
             });
         }
+
         if (
             JSON.stringify(response.job.outcome) !==
             JSON.stringify(response.outcome)
@@ -992,6 +1062,7 @@ export const AcceptDictionaryDocumentTermsGenerationJobResponseSchema = z
                 message: 'An accepted response requires an accepted job',
             });
         }
+
         if (
             JSON.stringify(response.job.outcome) !==
             JSON.stringify(response.outcome)
@@ -1011,21 +1082,24 @@ export const AcceptDictionaryImportPairsGenerationJobResponseSchema = z
     })
     .strict()
     .superRefine((response, context) => {
-        if (response.job.state !== 'accepted')
+        if (response.job.state !== 'accepted') {
             context.addIssue({
                 code: 'custom',
                 path: ['job', 'state'],
                 message: 'An accepted response requires an accepted job',
             });
+        }
+
         if (
             JSON.stringify(response.job.outcome) !==
             JSON.stringify(response.outcome)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['job', 'outcome'],
                 message: 'Accepted job and response outcomes must match',
             });
+        }
     });
 
 export const AcceptDictionaryGenerationJobResponseSchema = z.union([

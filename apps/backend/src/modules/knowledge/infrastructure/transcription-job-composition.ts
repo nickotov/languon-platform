@@ -25,6 +25,7 @@ export function createKnowledgeTranscriptionService(input: {
         rateLimiter: input.rateLimiter,
     });
 }
+
 /** Provider factories receive only a claimed lease and its fenced one-shot dispatch authority. */
 export function createKnowledgeTranscriptionWorker(input: {
     database: KnowledgeDatabase;
@@ -37,12 +38,15 @@ export function createKnowledgeTranscriptionWorker(input: {
         credentialFingerprint: transcriptionCredentialFingerprint(input.apiKey),
         executionReady: !!input.apiKey,
     });
+
     return new KnowledgeTranscriptionWorker({
         store,
         workerId: input.workerId,
         createProvider: (lease) => {
-            if (!input.apiKey)
+            if (!input.apiKey) {
                 throw new Error('Transcription credentials are unavailable.');
+            }
+
             return new OpenAiKnowledgeTranscriptionProvider({
                 apiKey: input.apiKey,
                 authority: {

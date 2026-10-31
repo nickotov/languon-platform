@@ -61,15 +61,20 @@ export async function assertGenerationAdmission(
         now,
     );
 
-    if (context.aiCreditEnforcementEnabled && !providerExecution.snapshot)
+    if (context.aiCreditEnforcementEnabled && !providerExecution.snapshot) {
         throw new DictionaryGenerationNotAvailableError();
+    }
+
     if (context.aiCreditEnforcementEnabled && providerExecution.snapshot) {
         const model = findTextAiModel(
             providerExecution.snapshot.providerId,
             providerExecution.snapshot.modelId,
         );
 
-        if (!model) throw new DictionaryGenerationNotAvailableError();
+        if (!model) {
+            throw new DictionaryGenerationNotAvailableError();
+        }
+
         providerExecution.snapshot = {
             ...providerExecution.snapshot,
             ...textAiExecutionLimits(model, [format]),
@@ -88,8 +93,9 @@ export async function assertGenerationAdmission(
             if (
                 error instanceof OperatorBudgetUnavailableError ||
                 error instanceof ProviderCostAdmissionUnavailableError
-            )
+            ) {
                 throw new DictionaryGenerationNotAvailableError();
+            }
 
             throw error;
         }
@@ -111,8 +117,9 @@ export async function assertGenerationAdmission(
         )
         .limit(1);
 
-    if (providerCircuit?.openUntil && providerCircuit.openUntil > now)
+    if (providerCircuit?.openUntil && providerCircuit.openUntil > now) {
         throw new DictionaryGenerationNotAvailableError();
+    }
 
     const capacity = await readTextAiCapacity(tx, {
         actorId: ownerId,
@@ -132,8 +139,10 @@ export async function assertGenerationAdmission(
             counts?.oldestRunnableQueuedAt !== undefined &&
             new Date(counts.oldestRunnableQueuedAt).getTime() <=
                 now.getTime() - generationLimits.maxRunnableQueueAgeMs)
-    )
+    ) {
         throw new DictionaryGenerationNotAvailableError();
+    }
+
     const providerAdmission = await providerBudgetUsage(
         tx,
         ownerId,
@@ -155,8 +164,9 @@ export async function assertGenerationAdmission(
             true,
             providerExecution.budget,
         )
-    )
+    ) {
         throw new DictionaryGenerationNotAvailableError();
+    }
 
     return providerExecution;
 }
@@ -176,8 +186,9 @@ export async function activeProviderExecution(
             legacyBudget: context.providerBudget,
         });
     } catch (error) {
-        if (error instanceof TextAiSelectionUnavailableError)
+        if (error instanceof TextAiSelectionUnavailableError) {
             throw new DictionaryGenerationNotAvailableError();
+        }
 
         throw error;
     }

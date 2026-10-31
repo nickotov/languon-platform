@@ -8,6 +8,7 @@ export function selectableCommands(commands) {
     const activeIds = new Set(
         commands.filter(active).map((command) => command.id),
     );
+
     return commands.filter(
         (command) =>
             command.available &&
@@ -21,10 +22,14 @@ export function compatibleCommandIds(commands) {
     const selected = [];
     const selectedIds = new Set();
     for (const command of selectableCommands(commands)) {
-        if (command.conflictsWith.some((id) => selectedIds.has(id))) continue;
+        if (command.conflictsWith.some((id) => selectedIds.has(id))) {
+            continue;
+        }
+
         selected.push(command.id);
         selectedIds.add(command.id);
     }
+
     return selected;
 }
 
@@ -51,6 +56,7 @@ export function sectionStartSelections(commands, commandIds) {
             commandsById.get(id).available !== false &&
             commandsById.get(id).batchEligible === false,
     );
+
     return {
         missingIds,
         nonBatchIds,
@@ -67,6 +73,7 @@ export function sectionStartSelections(commands, commandIds) {
 
 export function sectionActiveRuns(commands, commandIds) {
     const commandIdsSet = new Set(commandIds);
+
     return commands
         .filter((command) => commandIdsSet.has(command.id) && active(command))
         .map((command) => ({

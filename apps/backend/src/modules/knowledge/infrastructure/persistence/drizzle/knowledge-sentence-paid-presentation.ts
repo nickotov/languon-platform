@@ -24,11 +24,12 @@ export async function presentKnowledgeSentenceJob(
                 .from(exercises)
                 .where(eq(exercises.id, row.resultKnowledgeExerciseId));
 
-            if (exercise && exercise.actorId === row.learnerId)
+            if (exercise && exercise.actorId === row.learnerId) {
                 result = {
                     kind: 'exercise' as const,
                     exercise: exercise.publicContent,
                 };
+            }
         } else if (row.resultKnowledgeAttemptId) {
             const [attempt] = await tx
                 .select()
@@ -41,7 +42,7 @@ export async function presentKnowledgeSentenceJob(
                       .where(eq(exercises.id, attempt.exerciseId))
                 : [];
 
-            if (attempt && exercise && attempt.actorId === row.learnerId)
+            if (attempt && exercise && attempt.actorId === row.learnerId) {
                 result = {
                     kind: 'attempt' as const,
                     attempt: SentenceAttemptSchema.parse({
@@ -60,9 +61,12 @@ export async function presentKnowledgeSentenceJob(
                         createdAt: attempt.createdAt.toISOString(),
                     }),
                 };
+            }
         }
 
-        if (!result) throw new SentenceUnavailableError();
+        if (!result) {
+            throw new SentenceUnavailableError();
+        }
     }
 
     const billing = await readActionBilling(tx, row.id, row.learnerId);

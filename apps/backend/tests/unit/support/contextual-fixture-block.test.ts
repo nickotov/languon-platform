@@ -33,6 +33,7 @@ const toolPrompt = (material: unknown) => [
 ];
 const acceptsPrepared = (block: LearningBlock) =>
     block.type === 'audio' && !!block.assetId;
+
 it('selects a prepared audio after an unprepared shell and reconstructs complete authorized split transcript rows', () => {
     const material = learningBlockSourceMaterial(blocks);
     const prompt = [
@@ -50,25 +51,31 @@ it('selects a prepared audio after an unprepared shell and reconstructs complete
             ],
         },
     ];
+
     expect(contextualFixtureBlock(prompt, 'audio', acceptsPrepared)).toEqual(
         blocks[1],
     );
+
     expect(contextualFixtureBlock(prompt, 'audio')).toEqual(blocks[0]);
 });
+
 it('refuses to fabricate a passage missing from the bounded authorized result', () => {
     const material = learningBlockSourceMaterial(blocks).filter(
         (item) => item.id !== segment,
     );
+
     expect(
         contextualFixtureBlock(toolPrompt(material), 'audio', acceptsPrepared),
     ).toBeUndefined();
 });
+
 it('retains prepared selection for canonical audio without a transcript', () => {
     const audio = {
         id: ready,
         type: 'audio',
         assetId: asset,
     } satisfies LearningBlock;
+
     expect(
         contextualFixtureBlock(
             toolPrompt(learningBlockSourceMaterial([blocks[0]!, audio])),

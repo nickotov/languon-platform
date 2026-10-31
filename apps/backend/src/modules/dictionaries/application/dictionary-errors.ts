@@ -12,7 +12,10 @@ const retryableDictionaryGenerationFailureCodes = new Set<
 export function isDictionaryGenerationFailureRetryable(
     code: DictionaryGenerationSafeFailure['code'] | 'generation_conflict',
 ): boolean {
-    if (code === 'generation_conflict') return false;
+    if (code === 'generation_conflict') {
+        return false;
+    }
+
     return retryableDictionaryGenerationFailureCodes.has(code);
 }
 
@@ -150,6 +153,7 @@ export class DictionaryDocumentUploadConflictError extends Error {
         super(
             'The dictionary document upload does not match its authorization.',
         );
+
         this.name = 'DictionaryDocumentUploadConflictError';
     }
 }

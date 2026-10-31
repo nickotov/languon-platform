@@ -41,6 +41,7 @@ export function SharedTextsPage({
     useEffect(() => {
         setCopy(null);
     }, [actor]);
+
     const [match, setMatch] = useState(false);
     const [tab, setTab] = useState<'source' | 'translation'>('source');
     const basePath = `/shared/${kind === 'text' ? 'texts' : 'text-folders'}/${shareId}`;
@@ -55,8 +56,9 @@ export function SharedTextsPage({
             waitingForText &&
             !shared.isFetchingNextPage &&
             !shared.isFetchNextPageError
-        )
+        ) {
             void shared.fetchNextPage();
+        }
     }, [
         waitingForText,
         shared.isFetchingNextPage,
@@ -79,8 +81,10 @@ export function SharedTextsPage({
     function openCopyText(item: TextDocument) {
         if (!signedIn) {
             openSignIn();
+
             return;
         }
+
         setCopy({
             mode: 'text',
             textId: item.id,
@@ -91,20 +95,25 @@ export function SharedTextsPage({
     }
 
     function copyCurrent() {
-        if (text) openCopyText(text);
+        if (text) {
+            openCopyText(text);
+        }
     }
 
     function openCopyFolder() {
         if (!signedIn) {
             openSignIn();
+
             return;
         }
-        if (shared.folder)
+
+        if (shared.folder) {
             setCopy({
                 mode: 'folder',
                 total: shared.folder.translatedCount ?? shared.texts.length,
                 defaultName: shared.folder.name,
             });
+        }
     }
 
     function loadMore() {
@@ -124,6 +133,7 @@ export function SharedTextsPage({
                     : t('texts.library.title')}
             </ButtonLink>
         );
+
         showToast({
             tone: 'success',
             content: t('texts.public.copied'),
@@ -150,14 +160,15 @@ export function SharedTextsPage({
             (kind === 'text' && !text) ||
             (Boolean(textId) && !text && !waitingForText));
     let content;
-    if (loading)
+    if (loading) {
         content = (
             <main className={styles.folder}>
                 <LoadingState>{t('texts.public.loading')}</LoadingState>
             </main>
         );
-    else if (unavailable) content = <PublicUnavailable />;
-    else if (text)
+    } else if (unavailable) {
+        content = <PublicUnavailable />;
+    } else if (text) {
         content = (
             <>
                 <PublicReaderHeader
@@ -204,7 +215,7 @@ export function SharedTextsPage({
                 </div>
             </>
         );
-    else if (shared.folder)
+    } else if (shared.folder) {
         content = (
             <>
                 <PublicFolder
@@ -227,8 +238,11 @@ export function SharedTextsPage({
                 )}
             </>
         );
-    else content = <PublicUnavailable />;
-    if (waitingForText)
+    } else {
+        content = <PublicUnavailable />;
+    }
+
+    if (waitingForText) {
         content = (
             <main className={styles.folder}>
                 <Button onClick={loadMore} loading={shared.isFetchingNextPage}>
@@ -236,6 +250,7 @@ export function SharedTextsPage({
                 </Button>
             </main>
         );
+    }
 
     return (
         <div className={styles.page}>

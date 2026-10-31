@@ -23,6 +23,7 @@ export function workspaceReadingDocument(ws: TextWorkspace) {
             alignment: proposal.alignment,
             status: 'translated',
         };
+
         readingSource = { kind: 'translation-proposal', jobId: proposal.id };
     } else if (ws.document) {
         readingSource = {
@@ -31,5 +32,6 @@ export function workspaceReadingDocument(ws: TextWorkspace) {
             expectedTextVersion: ws.document.version,
         };
     }
+
     return { readingDocument, readingSource };
 }

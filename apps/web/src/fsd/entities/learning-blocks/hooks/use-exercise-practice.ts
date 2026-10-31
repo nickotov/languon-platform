@@ -18,7 +18,10 @@ export function useExercisePractice(
     const [attempted, setAttempted] = useState(saved?.attempted ?? false);
 
     useEffect(() => {
-        if (edited.current || !saved) return;
+        if (edited.current || !saved) {
+            return;
+        }
+
         setAnswer(typeof saved.answer === 'string' ? saved.answer : '');
         setGaps(typeof saved.answer === 'object' ? saved.answer : {});
         setRevealed(saved.revealed);
@@ -33,19 +36,23 @@ export function useExercisePractice(
         setAnswer(event.target.value);
         setPreparedResult(undefined);
     }
+
     function handleGap(event: ChangeEvent<HTMLInputElement>) {
         edited.current = true;
         setGaps({ ...gaps, [event.target.name]: event.target.value });
         setPreparedResult(undefined);
     }
+
     function reveal() {
         edited.current = true;
         setRevealed(true);
     }
+
     function toggleHint() {
         edited.current = true;
         setHintVisible(!hintVisible);
     }
+
     function retry() {
         edited.current = true;
         setAnswer('');
@@ -57,10 +64,12 @@ export function useExercisePractice(
             (previous) => saved !== undefined && (previous || saved.attempted),
         );
     }
+
     function markAttempted() {
         edited.current = true;
         setAttempted(true);
     }
+
     return {
         answer,
         gaps,

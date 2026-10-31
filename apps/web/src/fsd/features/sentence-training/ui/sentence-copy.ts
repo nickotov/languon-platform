@@ -959,9 +959,11 @@ const translations: Record<string, [string, string, string]> = {
         'Tu respuesta supera el límite de 4000 caracteres.',
     ],
 };
+
 export function useSentenceCopy() {
     const { locale } = useI18n();
     const index = { ru: 0, fr: 1, es: 2, en: -1 }[locale];
+
     return {
         t(text: string) {
             return index < 0 ? text : (translations[text]?.[index] ?? text);

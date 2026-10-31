@@ -103,6 +103,7 @@ describe('dictionary library', () => {
         await user.click(
             screen.getByRole('button', { name: 'Load more dictionaries' }),
         );
+
         expect(await screen.findByText('Second')).toBeInTheDocument();
         expect(screen.getByText('First')).toBeInTheDocument();
         await waitFor(() =>
@@ -118,10 +119,12 @@ describe('dictionary library', () => {
             '10000000-0000-4000-8000-000000000008',
             'Stay in library',
         );
+
         vi.spyOn(dictionaryApi, 'listDictionaries').mockResolvedValue({
             data: [dictionary],
             nextCursor: null,
         });
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
@@ -140,6 +143,7 @@ describe('dictionary library', () => {
                 name: 'Actions for Stay in library',
             }),
         );
+
         await user.click(
             screen.getByRole('menuitem', { name: 'Dictionary settings' }),
         );
@@ -198,25 +202,31 @@ describe('dictionary library', () => {
                 />
             </QueryClientProvider>,
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Archived', exact: true }),
         );
+
         expect(
             await screen.findByText('Archived vocabulary'),
         ).toBeInTheDocument();
+
         expect(list).toHaveBeenCalledWith(
             'token',
             expect.objectContaining({ lifecycle: 'archived' }),
             expect.anything(),
         );
+
         await user.click(
             screen.getByRole('button', {
                 name: 'Actions for Archived vocabulary',
             }),
         );
+
         expect(
             screen.getByRole('menuitem', { name: 'Dictionary settings' }),
         ).toBeDisabled();
+
         await user.click(screen.getByRole('menuitem', { name: 'Restore' }));
         await waitFor(() =>
             expect(restore).toHaveBeenCalledWith(
@@ -237,12 +247,14 @@ describe('dictionary library', () => {
             lifecycle: 'archived' as const,
             version: 4,
         };
+
         vi.spyOn(dictionaryApi, 'listDictionaries').mockImplementation(
             async (_token, query) => ({
                 data: query.lifecycle === 'archived' ? [dictionary] : [],
                 nextCursor: null,
             }),
         );
+
         const remove = vi
             .spyOn(dictionaryApi, 'deleteDictionaries')
             .mockResolvedValue({
@@ -256,9 +268,11 @@ describe('dictionary library', () => {
         HTMLDialogElement.prototype.showModal = function show() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function closeDialog() {
             this.removeAttribute('open');
         };
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
@@ -266,16 +280,20 @@ describe('dictionary library', () => {
         client.setQueryData(['dictionary', dictionary.id], {
             dictionary: { id: dictionary.id, name: dictionary.name },
         });
+
         client.setQueryData(['dictionary-cards', dictionary.id, 'active'], {
             data: [{ dictionaryId: dictionary.id, values: { source: 'old' } }],
         });
+
         client.setQueryData(
             ['dictionary-card-authoring-job', 'cached-deletion-job'],
             { dictionaryId: dictionary.id, source: 'old' },
         );
+
         client.setQueryData(['dictionary', unrelatedDictionaryId], {
             dictionary: { id: unrelatedDictionaryId, name: 'Keep me' },
         });
+
         const user = userEvent.setup();
 
         render(
@@ -290,22 +308,27 @@ describe('dictionary library', () => {
         await user.click(
             screen.getByRole('button', { name: 'Archived', exact: true }),
         );
+
         await user.click(
             await screen.findByRole('checkbox', {
                 name: 'Select Old vocabulary',
             }),
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Delete selected' }),
         );
+
         const confirm = screen.getByRole('button', {
             name: 'Delete permanently',
         });
+
         expect(confirm).toBeDisabled();
         await user.type(
             screen.getByLabelText('Type “Old vocabulary” to confirm'),
             'Old vocabulary',
         );
+
         await user.click(confirm);
 
         await waitFor(() =>
@@ -325,24 +348,30 @@ describe('dictionary library', () => {
                 expect.any(String),
             ),
         );
+
         expect(
             await screen.findByText('Dictionaries permanently deleted: 1.'),
         ).toBeInTheDocument();
+
         expect(
             client.getQueryData(['dictionary', dictionary.id]),
         ).toBeUndefined();
+
         expect(
             client.getQueryData(['dictionary-cards', dictionary.id, 'active']),
         ).toBeUndefined();
+
         expect(
             client.getQueryData([
                 'dictionary-card-authoring-job',
                 'cached-deletion-job',
             ]),
         ).toBeUndefined();
+
         expect(
             client.getQueryData(['dictionary', unrelatedDictionaryId]),
         ).toBeDefined();
+
         HTMLDialogElement.prototype.showModal = showModal;
         HTMLDialogElement.prototype.close = close;
     });
@@ -352,6 +381,7 @@ describe('dictionary library', () => {
             data: [],
             nextCursor: null,
         });
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
@@ -368,12 +398,15 @@ describe('dictionary library', () => {
         await user.click(
             screen.getByRole('button', { name: 'Archived', exact: true }),
         );
+
         expect(
             await screen.findByText('No archived dictionaries'),
         ).toBeInTheDocument();
+
         expect(
             screen.queryByRole('checkbox', { name: 'Select loaded items' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('button', { name: 'Delete all archived' }),
         ).not.toBeInTheDocument();
@@ -385,14 +418,17 @@ describe('dictionary library', () => {
         HTMLDialogElement.prototype.showModal = function showModalForTest() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function closeForTest() {
             this.removeAttribute('open');
             this.dispatchEvent(new Event('close'));
         };
+
         vi.spyOn(dictionaryApi, 'listDictionaries').mockResolvedValue({
             data: [],
             nextCursor: null,
         });
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
@@ -412,6 +448,7 @@ describe('dictionary library', () => {
                     name: 'New dictionary',
                 }),
             );
+
             expect(screen.getByLabelText('Translate from')).toHaveValue('en');
             expect(screen.getByLabelText('Translate to')).toHaveValue('es');
         } finally {

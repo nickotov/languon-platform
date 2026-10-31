@@ -70,7 +70,11 @@ export function LibraryItemPicker({
                                         controller.signal,
                                     ),
                           );
-                if (controller.signal.aborted) return;
+
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setItems(
                     result.data.map((item) => ({
                         id: item.id,
@@ -81,18 +85,29 @@ export function LibraryItemPicker({
                             : {}),
                     })),
                 );
+
                 setCursor(result.nextCursor);
             } catch {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             } finally {
-                if (!controller.signal.aborted) setBusy(false);
+                if (!controller.signal.aborted) {
+                    setBusy(false);
+                }
             }
         }
+
         void load();
+
         return () => controller.abort();
     }, [folder, kind, request, onSelect]);
+
     useEffect(() => {
-        if (kind !== 'text') return;
+        if (kind !== 'text') {
+            return;
+        }
+
         const controller = new AbortController();
         void request((token) =>
             textsApi.listFolders(token, { limit: 100 }, controller.signal),
@@ -104,20 +119,29 @@ export function LibraryItemPicker({
                 }
             })
             .catch(() => {
-                if (!controller.signal.aborted) setError(true);
+                if (!controller.signal.aborted) {
+                    setError(true);
+                }
             });
+
         return () => controller.abort();
     }, [kind, request]);
+
     function choose(event: ChangeEvent<HTMLSelectElement>) {
         const id = event.target.value;
         setSelected(id);
         onSelect(items.find((item) => item.id === id) ?? null);
     }
+
     function chooseFolder(event: ChangeEvent<HTMLSelectElement>) {
         setFolder(event.target.value);
     }
+
     async function more() {
-        if (!cursor || busy) return;
+        if (!cursor || busy) {
+            return;
+        }
+
         setBusy(true);
         setError(false);
         const epoch = generation.current;
@@ -141,7 +165,11 @@ export function LibraryItemPicker({
                                     cursor,
                                 }),
                       );
-            if (epoch !== generation.current) return;
+
+            if (epoch !== generation.current) {
+                return;
+            }
+
             setItems((current) => [
                 ...current,
                 ...result.data.map((item) => ({
@@ -153,15 +181,22 @@ export function LibraryItemPicker({
                         : {}),
                 })),
             ]);
+
             setCursor(result.nextCursor);
         } catch {
             setError(true);
         } finally {
-            if (epoch === generation.current) setBusy(false);
+            if (epoch === generation.current) {
+                setBusy(false);
+            }
         }
     }
+
     async function moreFolders() {
-        if (!folderCursor) return;
+        if (!folderCursor) {
+            return;
+        }
+
         try {
             const result = await request((token) =>
                 textsApi.listFolders(token, {
@@ -169,14 +204,17 @@ export function LibraryItemPicker({
                     cursor: folderCursor,
                 }),
             );
+
             setFolders((current) => [...current, ...result.data]);
             setFolderCursor(result.nextCursor);
         } catch {
             setError(true);
         }
     }
+
     const hasMore = cursor !== null;
     const hasMoreFolders = folderCursor !== null;
+
     return (
         <div className={styles.form} aria-busy={busy}>
             {kind === 'text' && (

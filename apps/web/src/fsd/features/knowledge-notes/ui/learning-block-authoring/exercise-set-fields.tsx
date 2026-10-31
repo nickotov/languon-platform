@@ -43,9 +43,13 @@ export const ExerciseSetFields = forwardRef<
     );
     const readers = useRef(new Map<string, ReadItem>());
     const register = useCallback((key: string, read: ReadItem | null) => {
-        if (read) readers.current.set(key, read);
-        else readers.current.delete(key);
+        if (read) {
+            readers.current.set(key, read);
+        } else {
+            readers.current.delete(key);
+        }
     }, []);
+
     useImperativeHandle(
         ref,
         () => ({
@@ -58,21 +62,26 @@ export const ExerciseSetFields = forwardRef<
                         valid = false;
                         continue;
                     }
+
                     next.push(block);
                 }
+
                 return valid ? next : null;
             },
         }),
         [items, allowEmpty],
     );
+
     function add() {
         setItems((current) => [...current, { key: crypto.randomUUID() }]);
         onDirty();
     }
+
     function remove(key: string) {
         setItems((current) => current.filter((item) => item.key !== key));
         onDirty();
     }
+
     return (
         <div className={styles.form}>
             {items.map((item, index) => (
@@ -122,9 +131,12 @@ function ExerciseItemEditor({
 }) {
     function applySingle() {
         onSubmit();
+
         return true;
     }
+
     function closeSingle() {}
+
     const draft = useBlockFormDraft({
         kind: 'exercise',
         block: item.block,
@@ -132,17 +144,25 @@ function ExerciseItemEditor({
         onClose: closeSingle,
         onApply: applySingle,
     });
+
     useEffect(() => {
         register(item.key, draft.parse);
+
         return () => register(item.key, null);
     }, [item.key, register, draft.parse]);
+
     useEffect(() => {
-        if (draft.dirty) markDirty();
+        if (draft.dirty) {
+            markDirty();
+        }
     }, [draft.dirty, markDirty]);
+
     function remove() {
         onRemove(item.key);
     }
+
     const removeLabel = `${labels.remove}: ${labels.field('Question')} ${index + 1}`;
+
     return (
         <section className={styles.row}>
             <div className={styles.rowHeading}>

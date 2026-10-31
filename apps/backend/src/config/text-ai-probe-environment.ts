@@ -35,6 +35,7 @@ export function loadTextAiProbeEnvironment(
     diagnostics: EnvironmentDiagnostics = console,
 ): { limits: TextAiProbeLimits; timeoutMs: number } {
     const parsed = parseEnvironmentSchema(schema, values, diagnostics);
+
     return {
         limits: {
             maximumCostMicros: BigInt(parsed.AI_ADMIN_PROBE_MAX_COST_MICROS),

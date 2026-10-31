@@ -22,6 +22,7 @@ export function createLearningBlockProposalTool(
         string,
         { content: string; result: Promise<{ id: string }> }
     >();
+
     return createTool({
         id: 'propose_learning_blocks',
         description: learningBlockToolDescription,
@@ -37,16 +38,19 @@ export function createLearningBlockProposalTool(
                 name: 'propose_learning_blocks',
                 state: 'running',
             });
+
             try {
                 input.signal.throwIfAborted();
                 if (
                     input.readOnlySource ||
                     !input.canProposeBlocks ||
                     !input.onBlockProposal
-                )
+                ) {
                     throw new Error(
                         'This source does not authorize block proposals.',
                     );
+                }
+
                 const parsed =
                     LearningBlockProposalInputSchema.parse(candidate);
                 const key = parsed.targetBlockId ?? 'append';
@@ -60,21 +64,27 @@ export function createLearningBlockProposalTool(
                         name: 'propose_learning_blocks',
                         state: 'succeeded',
                     });
+
                     return {
                         id: result.id,
                         requiresLearnerApply: true as const,
                     };
                 }
-                if (previous || proposed.size >= 8)
+
+                if (previous || proposed.size >= 8) {
                     throw new Error(
                         'At most eight distinct block proposals may be generated per turn, with one proposal per target.',
                     );
+                }
+
                 const creation = input
                     .onBlockProposal(parsed)
                     .catch((error: unknown) => {
                         proposed.delete(key);
+
                         throw error;
                     });
+
                 proposed.set(key, { content, result: creation });
                 const result = await creation;
                 input.signal.throwIfAborted();
@@ -83,6 +93,7 @@ export function createLearningBlockProposalTool(
                     name: 'propose_learning_blocks',
                     state: 'succeeded',
                 });
+
                 return { id: result.id, requiresLearnerApply: true as const };
             } catch (error) {
                 await input.onTool?.({
@@ -90,6 +101,7 @@ export function createLearningBlockProposalTool(
                     name: 'propose_learning_blocks',
                     state: 'failed',
                 });
+
                 throw error;
             }
         },

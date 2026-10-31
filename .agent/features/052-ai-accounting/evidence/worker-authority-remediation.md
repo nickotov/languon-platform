@@ -122,13 +122,13 @@ separate checked owner-removal seam.
 
 Final scoped ESLint, Prettier and diff checks passed. Tested source SHA-256:
 
-| Path | SHA-256 |
-| --- | --- |
-| `worker-financial-authority.sql` | `dca391f00cd4a0509a7db6c27c35099ddd411bc53a789eabff3fcf25212acf17` |
-| `drizzle-action-accounting-participant.ts` | `b6afc1a67a36fad95e3b518ac084356ad7cfcad2cf5b404b3136f40fbf1c9bd9` |
+| Path                                          | SHA-256                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------ |
+| `worker-financial-authority.sql`              | `dca391f00cd4a0509a7db6c27c35099ddd411bc53a789eabff3fcf25212acf17` |
+| `drizzle-action-accounting-participant.ts`    | `b6afc1a67a36fad95e3b518ac084356ad7cfcad2cf5b404b3136f40fbf1c9bd9` |
 | `infra/deploy/sql/dictionary-worker-role.sql` | `33d4092741f4efe22383a6d91355ce849e52b1995eb87207634d0ed5c8a16315` |
-| `dictionary-worker-accounting-role.test.ts` | `d75dcca80cba03595f24753dfe79dd7cc14462675f222199f2b6f66cee1bb5bc` |
-| `speech-quota-worker-authority.test.ts` | `d9cdf865ee32c2b77c4adf0318af9b39171cb0005bc6fc43cfead1f8aa2ed6db` |
+| `dictionary-worker-accounting-role.test.ts`   | `d75dcca80cba03595f24753dfe79dd7cc14462675f222199f2b6f66cee1bb5bc` |
+| `speech-quota-worker-authority.test.ts`       | `d9cdf865ee32c2b77c4adf0318af9b39171cb0005bc6fc43cfead1f8aa2ed6db` |
 
 Speech synthesis/lease positive and adversarial execution remain assigned to the
 records worker's actual-role suite. This evidence does not replace that suite,

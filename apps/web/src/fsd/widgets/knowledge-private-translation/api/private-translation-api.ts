@@ -14,6 +14,7 @@ const detailSchema = z.object({
     correlationId: z.string(),
     details: z.unknown().optional(),
 });
+
 export class PrivateTranslationApiError extends BrowserApiError<
     z.infer<typeof detailSchema>
 > {}
@@ -65,6 +66,7 @@ export function privateTranslationApi(props: KnowledgePrivateTranslationProps) {
                 const parsed = detailSchema.safeParse(
                     (payload as { error?: unknown })?.error,
                 );
+
                 throw new PrivateTranslationApiError(
                     response.status,
                     parsed.success
@@ -76,9 +78,11 @@ export function privateTranslationApi(props: KnowledgePrivateTranslationProps) {
                           },
                 );
             }
+
             return schema.parse(payload);
         });
     }
+
     return {
         list: (signal: AbortSignal) =>
             call('', KnowledgePrivateTranslationsResponseSchema, signal),

@@ -484,26 +484,40 @@ export const flows = [
 ];
 
 export function selectFlows(args, registry = flows) {
-    if (args[0] === '--') args = args.slice(1);
+    if (args[0] === '--') {
+        args = args.slice(1);
+    }
+
     validateRegistry(registry);
-    if (args.includes('--list') && args.includes('--plan'))
+    if (args.includes('--list') && args.includes('--plan')) {
         throw new Error('Choose --list or --plan, not both');
+    }
+
     const ids = [];
     for (let i = 0; i < args.length; i++) {
-        if (['--list', '--plan'].includes(args[i])) continue;
+        if (['--list', '--plan'].includes(args[i])) {
+            continue;
+        }
+
         if (
             args[i] !== '--flow' ||
             !args[i + 1] ||
             args[i + 1].startsWith('--')
-        )
+        ) {
             throw new Error(
                 'Usage: [--list | --plan] [--flow <id> (repeatable)]',
             );
+        }
+
         ids.push(args[++i]);
     }
-    for (const id of ids)
-        if (!registry.some((flow) => flow.id === id))
+
+    for (const id of ids) {
+        if (!registry.some((flow) => flow.id === id)) {
             throw new Error(`Unknown critical flow: ${id}`);
+        }
+    }
+
     // Default remains the comprehensive gate. The aggregate covers seam dependencies
     // once; selecting a narrow flow must never pull in the aggregate implicitly.
     const catalog = !ids.length && args.includes('--list');
@@ -523,23 +537,36 @@ export function selectFlows(args, registry = flows) {
     const add = (flow) => {
         if (aggregate && flow.app === 'backend' && flow !== aggregate) {
             add(aggregate);
+
             return;
         }
-        if (selected.has(flow.id)) return;
-        for (const dependency of flow.dependsOn ?? [])
+
+        if (selected.has(flow.id)) {
+            return;
+        }
+
+        for (const dependency of flow.dependsOn ?? []) {
             add(registry.find((entry) => entry.id === dependency));
+        }
+
         selected.add(flow.id);
         ordered.push(flow);
     };
-    for (const flow of requested) add(flow);
+
+    for (const flow of requested) {
+        add(flow);
+    }
+
     return ordered;
 }
 
 export function validateRegistry(registry = flows) {
     const ids = new Set();
     for (const flow of registry) {
-        if (!/^[a-z][a-z0-9-]+$/.test(flow.id) || ids.has(flow.id))
+        if (!/^[a-z][a-z0-9-]+$/.test(flow.id) || ids.has(flow.id)) {
             throw new Error('Invalid or duplicate critical flow id');
+        }
+
         ids.add(flow.id);
         if (
             !(flow.app === 'backend'
@@ -562,30 +589,49 @@ export function validateRegistry(registry = flows) {
             !flow.prerequisite ||
             !Number.isSafeInteger(flow.minimumTests) ||
             flow.minimumTests < 1
-        )
+        ) {
             throw new Error(`Incomplete critical flow: ${flow.id}`);
-        if (flow.grep) new RegExp(flow.grep);
+        }
+
+        if (flow.grep) {
+            new RegExp(flow.grep);
+        }
+
         validateFeatureFlags(flow.env);
-        if (flow.dependsOn !== undefined && !Array.isArray(flow.dependsOn))
+        if (flow.dependsOn !== undefined && !Array.isArray(flow.dependsOn)) {
             throw new Error(`Invalid dependencies: ${flow.id}`);
+        }
     }
-    if (!ids.size) throw new Error('Critical flow registry cannot be empty');
+
+    if (!ids.size) {
+        throw new Error('Critical flow registry cannot be empty');
+    }
+
     const complete = new Set();
     const visiting = new Set();
     const visit = (flow) => {
-        if (visiting.has(flow.id))
+        if (visiting.has(flow.id)) {
             throw new Error(`Cyclic critical flow dependency: ${flow.id}`);
-        if (complete.has(flow.id)) return;
+        }
+
+        if (complete.has(flow.id)) {
+            return;
+        }
+
         visiting.add(flow.id);
         for (const id of flow.dependsOn ?? []) {
             const dependency = registry.find((entry) => entry.id === id);
-            if (!dependency)
+            if (!dependency) {
                 throw new Error(`Unknown critical flow dependency: ${id}`);
+            }
+
             visit(dependency);
         }
+
         visiting.delete(flow.id);
         complete.add(flow.id);
     };
+
     registry.forEach(visit);
 }
 
@@ -593,10 +639,19 @@ export function validateRegistry(registry = flows) {
 export function assertPassingReport(report, flow = { minimumTests: 1 }) {
     const tests = [];
     const visit = (suite) => {
-        for (const spec of suite.specs ?? []) tests.push(...spec.tests);
-        for (const child of suite.suites ?? []) visit(child);
+        for (const spec of suite.specs ?? []) {
+            tests.push(...spec.tests);
+        }
+
+        for (const child of suite.suites ?? []) {
+            visit(child);
+        }
     };
-    for (const suite of report.suites ?? []) visit(suite);
+
+    for (const suite of report.suites ?? []) {
+        visit(suite);
+    }
+
     if (
         tests.length < flow.minimumTests ||
         report.errors?.length ||
@@ -607,10 +662,12 @@ export function assertPassingReport(report, flow = { minimumTests: 1 }) {
                 !test.results?.length ||
                 test.results.some((result) => result.status !== 'passed'),
         )
-    )
+    ) {
         throw new Error(
             'Critical flow did not pass cleanly: missing required tests, skipped, interrupted, flaky, or failed results are not accepted.',
         );
+    }
+
     return tests.length;
 }
 
@@ -628,10 +685,11 @@ export function validateFeatureFlags(flags = {}) {
         if (
             !Object.hasOwn(featureFlags, key) ||
             !featureFlags[key].includes(value)
-        )
+        ) {
             throw new Error(
                 `Unsafe critical flow environment override: ${key}`,
             );
+        }
     }
 }
 
@@ -646,6 +704,7 @@ export function assertPassingBackendReport(
     const assertions = Array.isArray(files)
         ? files.flatMap((file) => file.assertionResults ?? [])
         : [];
+
     if (
         requiredBackendScenarios
             .filter(({ file }) => flow.files.includes(file))
@@ -653,6 +712,7 @@ export function assertPassingBackendReport(
                 const result = files?.find(
                     (entry) => entry.name === resolve(backendRoot, file),
                 );
+
                 return titles.some(
                     (title) =>
                         !result?.assertionResults?.some(
@@ -692,9 +752,11 @@ export function assertPassingBackendReport(
                 test.meta?.criticalRepeatCount !== 0 ||
                 test.meta?.criticalExpectedFailure !== false,
         )
-    )
+    ) {
         throw new Error(
             'Critical backend execution contracts did not pass cleanly: missing, unexpected, skipped, flaky, incomplete or failed tests are not accepted.',
         );
+    }
+
     return assertions.length;
 }

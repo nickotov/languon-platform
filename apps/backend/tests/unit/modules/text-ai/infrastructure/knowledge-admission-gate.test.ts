@@ -13,15 +13,18 @@ describe('knowledge structured-action rollout isolation', () => {
         DICTIONARY_JOB_API_ENQUEUED_FORMATS: existing,
         DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: existing,
     };
+
     it('keeps existing Texts available while the new knowledge format is not deployed', () => {
         expect(textsAiAdmissionsEnabled(production)).toBe(true);
         expect(knowledgeTextAiAdmissionsEnabled(production)).toBe(false);
     });
+
     it('requires both API and workers to accept the new format in production', () => {
         const apiOnly = {
             ...production,
             DICTIONARY_JOB_API_ENQUEUED_FORMATS: `${existing},text-translation:v4`,
         };
+
         expect(knowledgeTextAiAdmissionsEnabled(apiOnly)).toBe(false);
         expect(
             knowledgeTextAiAdmissionsEnabled({
@@ -30,6 +33,7 @@ describe('knowledge structured-action rollout isolation', () => {
             }),
         ).toBe(true);
     });
+
     it('never bypasses the main generation off switch', () => {
         expect(
             knowledgeTextAiAdmissionsEnabled({
@@ -37,6 +41,7 @@ describe('knowledge structured-action rollout isolation', () => {
                 TEXTS_AI_ENABLED: 'false',
             }),
         ).toBe(false);
+
         expect(
             knowledgeTextAiAdmissionsEnabled({
                 APP_ENV: 'test',

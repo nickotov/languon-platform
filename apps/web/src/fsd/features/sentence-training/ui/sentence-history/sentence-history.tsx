@@ -145,8 +145,12 @@ export function SentenceHistory({
             </div>
         </>
     );
-    if (!open) return null;
-    if (inline)
+
+    if (!open) {
+        return null;
+    }
+
+    if (inline) {
         return (
             <section className={styles.inlineHistory}>
                 <h3 className={styles.historyTitle}>
@@ -155,6 +159,8 @@ export function SentenceHistory({
                 {content}
             </section>
         );
+    }
+
     return (
         <Dialog
             variant={compact ? 'sheet' : 'dialog'}
@@ -181,6 +187,7 @@ function HistoryResult({
     function toggle(event: SyntheticEvent<HTMLDetailsElement>) {
         setExpanded(event.currentTarget.open);
     }
+
     return (
         <details className={styles.itemDetails} onToggle={toggle}>
             <summary className={styles.detailsAction}>

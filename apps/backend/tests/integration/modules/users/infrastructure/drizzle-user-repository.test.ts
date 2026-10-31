@@ -82,6 +82,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
             },
             verifiedAt: null,
         });
+
         await expect(
             reader.findByCanonicalEmail('learner@example.com'),
         ).resolves.toMatchObject({ user: { id: identity.user.id } });
@@ -94,6 +95,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
         await expect(
             unitOfWork.execute(async (users) => {
                 await users.addWithPrimaryEmail(identity);
+
                 throw failure;
             }),
         ).rejects.toBe(failure);
@@ -120,6 +122,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
                 if (readyCount === 2) {
                     release();
                 }
+
                 await gate;
                 await users.addWithPrimaryEmail(identity);
             });
@@ -132,11 +135,13 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
         expect(
             results.filter(({ status }) => status === 'fulfilled'),
         ).toHaveLength(1);
+
         expect(results.filter(({ status }) => status === 'rejected')).toEqual([
             expect.objectContaining({
                 reason: expect.any(UserEmailAlreadyExistsError),
             }),
         ]);
+
         expect(identityCount[0]?.value).toBe(1);
     });
 
@@ -149,12 +154,14 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
                 user: first.user.activate(now),
             }),
         );
+
         await unitOfWork.execute((users) =>
             users.addWithPrimaryEmail({
                 ...second,
                 user: second.user.activate(now),
             }),
         );
+
         const profiles = new UserProfileService(unitOfWork);
         const claims = await Promise.allSettled([
             profiles.updateHandle({
@@ -168,17 +175,21 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
                 userId: second.user.id,
             }),
         ]);
+
         expect(
             claims.filter((claim) => claim.status === 'fulfilled'),
         ).toHaveLength(1);
+
         expect(claims.filter((claim) => claim.status === 'rejected')).toEqual([
             expect.objectContaining({
                 reason: expect.any(UserHandleAlreadyExistsError),
             }),
         ]);
+
         const rows = await database
             .select({ handle: usersTable.handle })
             .from(usersTable);
+
         expect(
             rows.filter(({ handle }) => handle === 'learner_123'),
         ).toHaveLength(1);
@@ -198,6 +209,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
                 userId: identity.user.id,
             }),
         ).rejects.toMatchObject({ cause: { code: '23514' } });
+
         await expect(
             database.insert(userEmailsTable).values({
                 canonicalEmail: 'orphan@example.com',
@@ -206,6 +218,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
                 userId: randomUUID(),
             }),
         ).rejects.toMatchObject({ cause: { code: '23503' } });
+
         await expect(
             database.insert(userEmailsTable).values({
                 canonicalEmail: 'second@example.com',
@@ -225,6 +238,7 @@ describe.runIf(isDatabaseIntegrationEnabled())('DrizzleUserRepository', () => {
                     eq(userEmailsTable.isPrimary, true),
                 ),
             );
+
         expect(persisted).toHaveLength(1);
     });
 });

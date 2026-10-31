@@ -32,16 +32,19 @@ test('development speech storage renders private, persistent and bucket-scoped',
     for (const port of services.minio.ports) {
         assert.equal(port.host_ip, '127.0.0.1');
     }
+
     assert.equal(services.minio.ports[0].published, '9000');
     assert.equal(services.minio.ports[1].published, '9001');
     assert.match(
         services.minio.image,
         /^heifeng\/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e$/,
     );
+
     assert.match(
         services['minio-init'].image,
         /^heifeng\/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3$/,
     );
+
     assert.ok(volumes['speech-minio-data']);
     assert.equal(services.minio.volumes[0].type, 'volume');
     const initCommand = services['minio-init'].command.join(' ');
@@ -50,11 +53,13 @@ test('development speech storage renders private, persistent and bucket-scoped',
         initCommand,
         /anonymous set none speech-dev\/languon-speech-dev/,
     );
+
     assert.match(initCommand, /admin policy attach speech-dev speech-api/);
     assert.equal(
         services.backend.environment.DICTIONARY_AUDIO_S3_ENDPOINT,
         'http://minio:9000',
     );
+
     assert.equal(
         services.backend.depends_on['minio-init'].condition,
         'service_completed_successfully',
@@ -80,6 +85,7 @@ test('development speech storage renders private, persistent and bucket-scoped',
             ),
         );
     }
+
     assert.notEqual(
         services.backend.environment.DICTIONARY_AUDIO_S3_ACCESS_KEY_ID,
         services.minio.environment.MINIO_ROOT_USER,

@@ -9,11 +9,15 @@ export function LearningProgress({
     model: ReturnType<typeof useWorkbookLearning>;
 }) {
     const { labels, state } = model;
-    if (!model.signedIn)
+    if (!model.signedIn) {
         return <p className={styles.notice}>{labels.signIn}</p>;
-    if (model.query.isPending)
+    }
+
+    if (model.query.isPending) {
         return <LoadingState>{labels.loading}</LoadingState>;
-    if (model.query.isError)
+    }
+
+    if (model.query.isError) {
         return (
             <InlineAlert
                 tone='error'
@@ -24,11 +28,19 @@ export function LearningProgress({
                 {labels.loadError}
             </InlineAlert>
         );
-    if (model.stale)
+    }
+
+    if (model.stale) {
         return <InlineAlert tone='warning'>{labels.stale}</InlineAlert>;
-    if (!state) return null;
+    }
+
+    if (!state) {
+        return null;
+    }
+
     const completed = state.completion !== null;
     const action = completed ? labels.incomplete : labels.complete;
+
     return (
         <section className={styles.panel}>
             <ActionConsentDialog

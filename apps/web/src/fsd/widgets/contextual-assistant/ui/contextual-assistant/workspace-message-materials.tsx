@@ -7,6 +7,7 @@ import styles from './workspace-message-materials.module.css';
 export function WorkspaceMessagePassage({ content }: { content: string }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
+
     return (
         <details className={styles.material}>
             <summary>
@@ -31,12 +32,15 @@ export function WorkspaceMessageMaterials({
     attachments: CopiedAttachment[];
 }) {
     return attachments.map((attachment) => {
-        if (attachment.kind === 'dictionary-card')
+        if (attachment.kind === 'dictionary-card') {
             return (
                 <CopiedMaterial key={attachment.id} attachment={attachment} />
             );
+        }
+
         const reference = attachment.kind === 'text-reference';
         const Icon = reference ? Clipboard : TextQuote;
+
         return (
             <details
                 className={styles.material}

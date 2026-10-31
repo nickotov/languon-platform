@@ -18,6 +18,7 @@ export class ConversationService {
         private readonly rateLimiter: RateLimiter,
         private readonly streamLimiter: ConcurrentRequestLimiter,
     ) {}
+
     async admitStream(
         actor: ConversationAccess,
         signal: AbortSignal,
@@ -31,11 +32,14 @@ export class ConversationService {
                 windowMs: 60_000,
                 signal,
             });
-            if (!decision.allowed)
+
+            if (!decision.allowed) {
                 throw new ConversationError(
                     'rate_limited',
                     'Too many conversation connections. Try again shortly.',
                 );
+            }
+
             const lease = await this.streamLimiter.acquireLease({
                 scope: 'contextual-assistant-streams',
                 subject: actor.ownerId,
@@ -43,12 +47,16 @@ export class ConversationService {
                 ttlMs: 300_000,
                 signal,
             });
-            if (!lease)
+
+            if (!lease) {
                 throw new ConversationError(
                     'capacity_unavailable',
                     'Too many conversations are open. Close another tab and try again.',
                 );
+            }
+
             let released: Promise<void> | undefined;
+
             return {
                 release: () =>
                     (released ??= lease.release().catch(() => {
@@ -56,14 +64,17 @@ export class ConversationService {
                     })),
             };
         } catch (error) {
-            if (signal.aborted || error instanceof ConversationError)
+            if (signal.aborted || error instanceof ConversationError) {
                 throw error;
+            }
+
             throw new ConversationError(
                 'service_unavailable',
                 'Conversation streaming is temporarily unavailable. Try again shortly.',
             );
         }
     }
+
     /** Bounds source materialization before billing and final transactional admission. */
     async admitSubmission(
         actor: ConversationAccess,
@@ -78,11 +89,14 @@ export class ConversationService {
                 windowMs: 60_000,
                 signal,
             });
-            if (!decision.allowed)
+
+            if (!decision.allowed) {
                 throw new ConversationError(
                     'rate_limited',
                     'Too many messages are being submitted. Try again shortly.',
                 );
+            }
+
             const ownerLease = await this.streamLimiter.acquireLease({
                 scope: 'contextual-assistant-turn-submissions',
                 subject: actor.ownerId,
@@ -90,11 +104,14 @@ export class ConversationService {
                 ttlMs: 300_000,
                 signal,
             });
-            if (!ownerLease)
+
+            if (!ownerLease) {
                 throw new ConversationError(
                     'capacity_unavailable',
                     'A message is already being prepared. Try again shortly.',
                 );
+            }
+
             let globalLease: ConcurrentRequestLease | null;
             try {
                 globalLease = await this.streamLimiter.acquireLease({
@@ -106,16 +123,21 @@ export class ConversationService {
                 });
             } catch (error) {
                 await ownerLease.release().catch(() => undefined);
+
                 throw error;
             }
+
             if (!globalLease) {
                 await ownerLease.release().catch(() => undefined);
+
                 throw new ConversationError(
                     'capacity_unavailable',
                     'Messages are being prepared right now. Try again shortly.',
                 );
             }
+
             let released: Promise<void> | undefined;
+
             return {
                 release: () =>
                     (released ??= Promise.all([
@@ -124,14 +146,17 @@ export class ConversationService {
                     ]).then(() => undefined)),
             };
         } catch (error) {
-            if (signal.aborted || error instanceof ConversationError)
+            if (signal.aborted || error instanceof ConversationError) {
                 throw error;
+            }
+
             throw new ConversationError(
                 'service_unavailable',
                 'Message preparation is temporarily unavailable. Try again shortly.',
             );
         }
     }
+
     async access(
         token: string,
         signal: AbortSignal,
@@ -147,20 +172,26 @@ export class ConversationService {
                 signal,
             })
             .catch((error: unknown) => {
-                if (error instanceof RateLimitUnavailableError)
+                if (error instanceof RateLimitUnavailableError) {
                     throw new ConversationError(
                         'service_unavailable',
                         'Conversation request limits are temporarily unavailable. Try again shortly.',
                     );
+                }
+
                 throw error;
             });
-        if (!decision.allowed)
+
+        if (!decision.allowed) {
             throw new ConversationError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         return actor;
     }
+
     /** An existing stream rechecks the session without admitting another HTTP action. */
     async revalidate(
         token: string,
@@ -170,6 +201,7 @@ export class ConversationService {
         signal.throwIfAborted();
         const actor = await this.authenticate(token);
         signal.throwIfAborted();
+
         return { ownerId: actor.userId, ...(shareKey ? { shareKey } : {}) };
     }
 }

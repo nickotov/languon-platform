@@ -10,6 +10,7 @@ export function subscribeHistoryTraversalGuard(
     guard: TraversalGuard,
 ): () => void {
     traversalGuards.add(guard);
+
     return () => {
         traversalGuards.delete(guard);
     };
@@ -18,7 +19,9 @@ export function subscribeHistoryTraversalGuard(
 function dispatchTraversalGuards(event: PopStateEvent): void {
     for (const guard of traversalGuards) {
         guard(event);
-        if (event.cancelBubble) break;
+        if (event.cancelBubble) {
+            break;
+        }
     }
 }
 
@@ -26,8 +29,12 @@ const positionKey = '__languonHistoryPosition';
 
 /** Only a numeric position accompanies Next's existing history state. */
 export function readHistoryPosition(state: unknown): number | null {
-    if (!state || typeof state !== 'object') return null;
+    if (!state || typeof state !== 'object') {
+        return null;
+    }
+
     const value = (state as Record<string, unknown>)[positionKey];
+
     return typeof value === 'number' && Number.isSafeInteger(value)
         ? value
         : null;
@@ -38,6 +45,7 @@ function withPosition(
     position: number,
 ): Record<string, unknown> {
     const existing = state && typeof state === 'object' ? state : {};
+
     return { ...existing, [positionKey]: position };
 }
 
@@ -66,13 +74,19 @@ export function trackHistoryPositions(): () => void {
         const current = readHistoryPosition(history.state) ?? initialPosition;
         originalReplace.call(history, withPosition(state, current), title, url);
     };
+
     history.pushState = push;
     history.replaceState = replace;
+
     return () => {
         // Another framework/hook wrapper may have superseded ours during cleanup.
-        if (history.pushState === push) history.pushState = originalPush;
-        if (history.replaceState === replace)
+        if (history.pushState === push) {
+            history.pushState = originalPush;
+        }
+
+        if (history.replaceState === replace) {
             history.replaceState = originalReplace;
+        }
     };
 }
 
@@ -83,6 +97,7 @@ export function useHistoryPositionTracking(): void {
     // Layout setup at the root precedes Next's passive effect registration.
     useLayoutEffect(() => {
         window.addEventListener('popstate', dispatchTraversalGuards, true);
+
         return () =>
             window.removeEventListener(
                 'popstate',
@@ -90,12 +105,16 @@ export function useHistoryPositionTracking(): void {
                 true,
             );
     }, []);
+
     useEffect(() => {
         let active = true;
         let cleanup: (() => void) | undefined;
         queueMicrotask(() => {
-            if (active) cleanup = trackHistoryPositions();
+            if (active) {
+                cleanup = trackHistoryPositions();
+            }
         });
+
         return () => {
             active = false;
             cleanup?.();

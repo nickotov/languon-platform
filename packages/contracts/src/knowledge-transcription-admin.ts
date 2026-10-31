@@ -9,11 +9,13 @@ export const KNOWLEDGE_TRANSCRIPTION_PROCESSING_REVISION =
 const creditRate = z.string().refine((value) => {
     try {
         parseCreditMilli(value);
+
         return true;
     } catch {
         return false;
     }
 }, 'Use exact credits with at most three decimal places.');
+
 export const KnowledgeTranscriptionAdminConfigSchema = z
     .object({
         enabled: z.boolean(),
@@ -47,12 +49,13 @@ export const KnowledgeTranscriptionAdminConfigSchema = z
                 value.creditsPerMinute === null ||
                 !value.billingRulesVerified ||
                 !value.billingEvidence)
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message:
                     'Enabling requires a reviewed provider price, customer tariff and billing evidence.',
             });
+        }
     });
 export const KnowledgeTranscriptionAdminRevisionSchema =
     KnowledgeTranscriptionAdminConfigSchema.safeExtend({
@@ -111,6 +114,7 @@ const proof = z
         signature: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
     })
     .strict();
+
 export const KnowledgeTranscriptionAdminPreviewSchema = z
     .object({
         request: KnowledgeTranscriptionAdminPreviewRequestSchema,

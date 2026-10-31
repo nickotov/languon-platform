@@ -55,8 +55,10 @@ describe('workbook semantic revisions', () => {
                 [audio],
             ),
         ).toBe(revision);
+
         expect(revision).toMatch(/^[a-f0-9]{64}$/u);
     });
+
     it('changes for question, answer, criteria or choices', () => {
         const revision = exerciseSemanticRevision(exercise, [audio]);
         for (const change of [
@@ -70,14 +72,19 @@ describe('workbook semantic revisions', () => {
                     { id: otherId, text: 'A dog' },
                 ],
             },
-        ])
+        ]) {
             expect(
                 exerciseSemanticRevision({ ...exercise, ...change }, [audio]),
             ).not.toBe(revision);
+        }
     });
+
     it('resolves source wording, media identity and timing instead of only opaque ids', () => {
         const revision = exerciseSemanticRevision(exercise, [audio]);
-        if (audio.type !== 'audio') throw new Error('fixture');
+        if (audio.type !== 'audio') {
+            throw new Error('fixture');
+        }
+
         expect(
             exerciseSemanticRevision(exercise, [
                 {
@@ -89,9 +96,11 @@ describe('workbook semantic revisions', () => {
                 },
             ]),
         ).not.toBe(revision);
+
         expect(
             exerciseSemanticRevision(exercise, [{ ...audio, assetId: id }]),
         ).not.toBe(revision);
+
         expect(
             exerciseSemanticRevision(exercise, [
                 {
@@ -110,28 +119,41 @@ describe('workbook semantic revisions', () => {
             ]),
         ).not.toBe(revision);
     });
+
     it('versions an exercise again when its prepared transcript gains audio', () => {
-        if (audio.type !== 'audio') throw new Error('fixture');
+        if (audio.type !== 'audio') {
+            throw new Error('fixture');
+        }
+
         const { assetId: _assetId, ...unprepared } = audio;
         const revision = exerciseSemanticRevision(exercise, [unprepared]);
         expect(exerciseSemanticRevision(exercise, [audio])).not.toBe(revision);
     });
+
     it('preserves legacy progress for a title edit and redundant explicit audio language', () => {
-        if (audio.type !== 'audio') throw new Error('fixture');
+        if (audio.type !== 'audio') {
+            throw new Error('fixture');
+        }
+
         const revision = exerciseSemanticRevision(exercise, [audio]);
-        for (const language of ['en', 'EN'])
+        for (const language of ['en', 'EN']) {
             expect(
                 exerciseSemanticRevision(exercise, [
                     { ...audio, title: 'Listening', language },
                 ]),
             ).toBe(revision);
+        }
+
         expect(
             exerciseSemanticRevision(exercise, [{ ...audio, language: 'fr' }]),
         ).not.toBe(revision);
     });
+
     it('versions video-based exercises when the author-supplied source description changes', () => {
-        if (audio.type !== 'audio' || !audio.transcript)
+        if (audio.type !== 'audio' || !audio.transcript) {
             throw new Error('fixture');
+        }
+
         const video: LearningBlock = {
             id: sourceId,
             type: 'video',
@@ -144,12 +166,14 @@ describe('workbook semantic revisions', () => {
                 { ...video, description: 'A cat sleeps on the mat.' },
             ]),
         ).not.toBe(revision);
+
         expect(
             exerciseSemanticRevision(exercise, [
                 { ...video, title: 'A clearer title' },
             ]),
         ).toBe(revision);
     });
+
     it('refuses missing source passages', () => {
         expect(() => exerciseSemanticRevision(exercise)).toThrow('source');
         expect(() =>
@@ -162,9 +186,12 @@ describe('workbook semantic revisions', () => {
             ),
         ).toThrow('passage');
     });
+
     it('does not reset when source segment identities change without content changes', () => {
-        if (audio.type !== 'audio' || !audio.transcript)
+        if (audio.type !== 'audio' || !audio.transcript) {
             throw new Error('fixture');
+        }
+
         const original = exerciseSemanticRevision(exercise, [audio]);
         const renamed: LearningBlock = {
             ...audio,
@@ -181,6 +208,7 @@ describe('workbook semantic revisions', () => {
             ...exercise,
             source: { blockId: choiceId, segmentIds: [otherId] },
         };
+
         expect(exerciseSemanticRevision(changed, [renamed])).toBe(original);
     });
 });
@@ -193,12 +221,14 @@ describe('server-owned answer evaluation', () => {
                 choiceId,
             }),
         ).toEqual({ status: 'correct', method: 'deterministic' });
+
         expect(
             evaluateWorkbookAnswer(exercise, {
                 format: 'multiple-choice',
                 choiceId: otherId,
             }),
         ).toEqual({ status: 'incorrect', method: 'deterministic' });
+
         expect(() =>
             evaluateWorkbookAnswer(exercise, {
                 format: 'multiple-choice',
@@ -206,6 +236,7 @@ describe('server-owned answer evaluation', () => {
             }),
         ).toThrow('choice');
     });
+
     it('normalizes Unicode/whitespace but preserves meaningful case and punctuation', () => {
         const gap: ExerciseLearningBlock = {
             id,
@@ -218,18 +249,21 @@ describe('server-owned answer evaluation', () => {
                 { kind: 'gap', id: choiceId, acceptedAnswers: ['café noir'] },
             ],
         };
+
         expect(
             evaluateWorkbookAnswer(gap, {
                 format: 'fill-in-the-blank',
                 gaps: [{ id: choiceId, answer: ' cafe\u0301   noir ' }],
             }).status,
         ).toBe('correct');
+
         expect(
             evaluateWorkbookAnswer(gap, {
                 format: 'fill-in-the-blank',
                 gaps: [{ id: choiceId, answer: 'Café noir' }],
             }).status,
         ).toBe('incorrect');
+
         expect(() =>
             evaluateWorkbookAnswer(gap, {
                 format: 'fill-in-the-blank',
@@ -237,6 +271,7 @@ describe('server-owned answer evaluation', () => {
             }),
         ).toThrow('gap');
     });
+
     it('makes no correctness claim for free text even when matching a reference', () => {
         const free: ExerciseLearningBlock = {
             id,
@@ -246,12 +281,14 @@ describe('server-owned answer evaluation', () => {
             referenceAnswer: 'A cat',
             explanation: 'Example',
         };
+
         expect(
             evaluateWorkbookAnswer(free, {
                 format: 'free-text',
                 text: 'A cat',
             }),
         ).toEqual({ status: 'unchecked' });
+
         expect(() =>
             evaluateWorkbookAnswer(free, {
                 format: 'multiple-choice',
@@ -259,6 +296,7 @@ describe('server-owned answer evaluation', () => {
             }),
         ).toThrow('format');
     });
+
     it('retains completion while indicating a newer saved note', () => {
         expect(noteUpdatedSinceCompletion(2, 2)).toBe(false);
         expect(noteUpdatedSinceCompletion(2, 3)).toBe(true);

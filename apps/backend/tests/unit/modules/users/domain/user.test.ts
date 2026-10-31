@@ -20,6 +20,7 @@ describe('User', () => {
             updatedAt: createdAt,
             version: 1,
         });
+
         expect(Object.keys(user)).not.toEqual(
             expect.arrayContaining([
                 'password',
@@ -58,9 +59,21 @@ describe('User', () => {
     });
 
     it('changes only an active account handle with a new version', () => {
-        const active = User.createPending({ id: userId, now: createdAt }).activate(createdAt);
-        const updated = active.withHandle('learner_123', new Date('2026-08-13T09:00:00.000Z'));
-        expect(updated).toMatchObject({ handle: 'learner_123', status: 'active', version: 3 });
+        const active = User.createPending({
+            id: userId,
+            now: createdAt,
+        }).activate(createdAt);
+        const updated = active.withHandle(
+            'learner_123',
+            new Date('2026-08-13T09:00:00.000Z'),
+        );
+
+        expect(updated).toMatchObject({
+            handle: 'learner_123',
+            status: 'active',
+            version: 3,
+        });
+
         expect(active.handle).toBeNull();
         expect(() => active.withHandle('Bad Handle', createdAt)).toThrow();
     });
@@ -90,6 +103,7 @@ describe('User', () => {
             updatedAt: disabledAt,
             version: 2,
         });
+
         expect(active.disable(disabledAt)).toMatchObject({
             status: 'disabled',
             updatedAt: disabledAt,
@@ -120,6 +134,7 @@ describe('User', () => {
             updatedAt: restoredAt,
             version: 3,
         });
+
         expect(disabled.restoreAvailability(false, restoredAt)).toMatchObject({
             status: 'pending',
             updatedAt: restoredAt,

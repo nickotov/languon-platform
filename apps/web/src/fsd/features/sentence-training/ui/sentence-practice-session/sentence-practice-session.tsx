@@ -93,28 +93,39 @@ export function SentencePracticeSession({
     function toggleEarlierAttempts(event: SyntheticEvent<HTMLDetailsElement>) {
         setEarlierAttemptsOpen(event.currentTarget.open);
     }
+
     const draftRef = useRef<HTMLTextAreaElement>(null);
     const frameRef = useRef<HTMLDivElement>(null);
     useLayoutEffect(() => {
-        if (open && display.mode === 'fullscreen')
+        if (open && display.mode === 'fullscreen') {
             restoreSentenceTopLayer(
                 frameRef.current?.closest('dialog') ?? null,
             );
+        }
     }, [open, display.mode]);
+
     useEffect(() => {
-        if (!open || !window.visualViewport) return;
+        if (!open || !window.visualViewport) {
+            return;
+        }
+
         const viewport = window.visualViewport;
         const dialog = frameRef.current?.closest('dialog');
-        if (!dialog) return;
+        if (!dialog) {
+            return;
+        }
+
         const previousHeight = dialog.style.height;
         const previousTop = dialog.style.top;
         const update = () => {
             dialog.style.height = `${Math.min(window.innerHeight, viewport.height)}px`;
             dialog.style.top = `${viewport.offsetTop}px`;
         };
+
         update();
         viewport.addEventListener('resize', update);
         viewport.addEventListener('scroll', update);
+
         return () => {
             viewport.removeEventListener('resize', update);
             viewport.removeEventListener('scroll', update);
@@ -122,6 +133,7 @@ export function SentencePracticeSession({
             dialog.style.top = previousTop;
         };
     }, [open]);
+
     const hasUnsentDraft =
         c.phase !== 'completed' &&
         !!c.draft.trim() &&
@@ -135,13 +147,17 @@ export function SentencePracticeSession({
             historyOpen ||
             confirmClose ||
             c.phase === 'completed'
-        )
+        ) {
             return;
-        if (c.exercise) draftRef.current?.focus();
-        else
+        }
+
+        if (c.exercise) {
+            draftRef.current?.focus();
+        } else {
             frameRef.current
                 ?.querySelector<HTMLButtonElement>('button')
                 ?.focus();
+        }
     }, [
         c.exercise?.id,
         c.phase,
@@ -150,50 +166,76 @@ export function SentencePracticeSession({
         historyOpen,
         confirmClose,
     ]);
+
     useEffect(() => {
         if (
             !open ||
             (!hasUnsentDraft && !c.busy && !c.uncertain && !c.referenceLoading)
-        )
+        ) {
             return;
+        }
+
         const beforeUnload = (event: BeforeUnloadEvent) => {
             event.preventDefault();
         };
+
         window.addEventListener('beforeunload', beforeUnload);
+
         return () => window.removeEventListener('beforeunload', beforeUnload);
     }, [open, hasUnsentDraft, c.busy, c.uncertain, c.referenceLoading]);
+
     function leaveFullscreen() {
         display.toDialog();
     }
+
     function togglePresentation() {
-        if (fullscreen) display.toDialog();
-        else display.toFullscreen();
+        if (fullscreen) {
+            display.toDialog();
+        } else {
+            display.toFullscreen();
+        }
     }
+
     function close() {
         if (preferencesOpen) {
             onPreferencesClose?.(closePracticeWithGuard);
+
             return;
         }
+
         closePracticeWithGuard();
     }
+
     function closePracticeWithGuard() {
-        if (hasUnsentDraft || c.busy || c.uncertain || c.referenceLoading)
+        if (hasUnsentDraft || c.busy || c.uncertain || c.referenceLoading) {
             setConfirmClose(true);
-        else finish();
+        } else {
+            finish();
+        }
     }
+
     function backToPractice() {
-        if (historyOpen) onHistoryClose?.();
-        else onPreferencesClose?.();
+        if (historyOpen) {
+            onHistoryClose?.();
+        } else {
+            onPreferencesClose?.();
+        }
     }
+
     function nextSentence() {
-        if (c.attempt || c.reference) void c.next();
-        else void c.skip();
+        if (c.attempt || c.reference) {
+            void c.next();
+        } else {
+            void c.skip();
+        }
     }
+
     function finish() {
         setConfirmClose(false);
         void leaveFullscreen();
         onClose();
     }
+
     const exercise = c.exercise;
     const sessionId = c.sessionId;
     const promptAudio =
@@ -211,30 +253,48 @@ export function SentencePracticeSession({
     const completed = !!(c.attempt || c.reference);
     const hasRoundCoverage = c.roundEligibleCount !== null;
     let emptyTitle = t('No eligible sentences');
-    if (c.roundComplete) emptyTitle = t('Round complete');
-    else if (c.emptyReason === 'review-exhausted')
+    if (c.roundComplete) {
+        emptyTitle = t('Round complete');
+    } else if (c.emptyReason === 'review-exhausted') {
         emptyTitle = t('Saved review complete');
+    }
+
     let nextLabel = t('Skip');
-    if (c.roundComplete) nextLabel = t('Skip and finish');
-    else if (completed) nextLabel = t('Next sentence');
+    if (c.roundComplete) {
+        nextLabel = t('Skip and finish');
+    } else if (completed) {
+        nextLabel = t('Next sentence');
+    }
+
     function compareAnswer() {
         void c.recompare();
     }
+
     function revealReference() {
         void c.revealReference();
     }
+
     function cancelRequest() {
         void c.cancel();
     }
+
     function checkAnswer() {
         void c.check();
     }
+
     const innerView = !!(preferencesOpen || historyOpen);
     let headerTitle = t('Sentence practice');
-    if (preferencesOpen) headerTitle = t('AI settings');
-    else if (historyOpen) headerTitle = t('My practice history');
+    if (preferencesOpen) {
+        headerTitle = t('AI settings');
+    } else if (historyOpen) {
+        headerTitle = t('My practice history');
+    }
+
     const dialogLabel = headerTitle;
-    if (!innerView && dictionaryTitle) headerTitle += ` · ${dictionaryTitle}`;
+    if (!innerView && dictionaryTitle) {
+        headerTitle += ` · ${dictionaryTitle}`;
+    }
+
     let headerSubtitle = t('Your answer and exercise are kept');
     if (!innerView) {
         if (c.phase === 'completed') {
@@ -252,9 +312,11 @@ export function SentencePracticeSession({
                           ? 'Loading progress…'
                           : 'Progress unavailable',
                   );
+
             headerSubtitle = `${direction}${t('Sentence')} ${Math.max(1, c.counts.presented)} · ${coverage}`;
         }
     }
+
     const actionPending = c.busy || c.uncertain || c.referenceLoading;
     const footer = (
         <SentencePracticeFooter
@@ -276,6 +338,7 @@ export function SentencePracticeSession({
             onCheck={checkAnswer}
         />
     );
+
     return (
         <Dialog
             open={open}
@@ -285,17 +348,27 @@ export function SentencePracticeSession({
             showCloseButton={false}
             dismissOnOverlayClick={false}
             onClose={() => {
-                if (confirmClose) return;
+                if (confirmClose) {
+                    return;
+                }
+
                 if (historyOpen) {
                     onHistoryClose?.();
+
                     return;
                 }
+
                 if (preferencesOpen) {
                     onPreferencesClose?.();
+
                     return;
                 }
-                if (fullscreen) void leaveFullscreen();
-                else close();
+
+                if (fullscreen) {
+                    void leaveFullscreen();
+                } else {
+                    close();
+                }
             }}
             className={styles.practiceDialog}
             bodyClassName={styles.practiceBody}

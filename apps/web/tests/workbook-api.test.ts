@@ -14,6 +14,7 @@ const workbook = {
     createdAt: '2026-10-28T00:00:00.000Z',
     updatedAt: '2026-10-28T00:00:00.000Z',
 };
+
 function mockResponse(payload: unknown, status = 200) {
     const fetch = vi.fn().mockResolvedValue(
         new Response(JSON.stringify(payload), {
@@ -21,9 +22,12 @@ function mockResponse(payload: unknown, status = 200) {
             headers: { 'Content-Type': 'application/json' },
         }),
     );
+
     vi.stubGlobal('fetch', fetch);
+
     return fetch;
 }
+
 afterEach(() => vi.unstubAllGlobals());
 describe('workbook API boundaries', () => {
     it('sends versioned ordered membership and explicit sharing acknowledgement', async () => {
@@ -33,6 +37,7 @@ describe('workbook API boundaries', () => {
             noteIds: [noteId],
             acknowledgeSharedAddition: true,
         });
+
         const [url, options] = fetch.mock.calls[0]!;
         expect(url).toContain(`/knowledge/workbooks/${id}/notes`);
         expect(options.method).toBe('PUT');
@@ -43,6 +48,7 @@ describe('workbook API boundaries', () => {
             acknowledgeSharedAddition: true,
         });
     });
+
     it('keeps public access secrets out of URLs and sends no bearer identity', async () => {
         const { shared: _shared, ...publicWorkbook } = workbook;
         const fetch = mockResponse({ workbook: publicWorkbook });
@@ -54,22 +60,26 @@ describe('workbook API boundaries', () => {
         expect(options.headers.Authorization).toBeUndefined();
         expect(options.cache).toBe('no-store');
     });
+
     it('rejects malformed shared locators before making a request', async () => {
         const fetch = mockResponse({ workbook });
         expect(() => workbookApi.readShared('../private', key)).toThrow();
         expect(fetch).not.toHaveBeenCalled();
     });
+
     it('sends one stable copy identity with authenticated source access', async () => {
         const fetch = mockResponse({ workbook });
         await workbookApi.copyShared('session', locator, key, {
             id,
             title: 'Copy',
         });
+
         const [, options] = fetch.mock.calls[0]!;
         expect(options.headers.Authorization).toBe('Bearer session');
         expect(options.headers['X-Languon-Share-Key']).toBe(key);
         expect(JSON.parse(options.body)).toEqual({ id, title: 'Copy' });
     });
+
     it('copies an owner workbook with a fixed source version and fresh identity', async () => {
         const fetch = mockResponse({ workbook });
         await workbookApi.copy('session', id, {
@@ -77,6 +87,7 @@ describe('workbook API boundaries', () => {
             title: 'Copy',
             expectedVersion: 1,
         });
+
         const [url, options] = fetch.mock.calls[0]!;
         expect(url).toContain(`/knowledge/workbooks/${id}/copy`);
         expect(JSON.parse(options.body)).toEqual({
@@ -85,12 +96,14 @@ describe('workbook API boundaries', () => {
             expectedVersion: 1,
         });
     });
+
     it('rejects malformed successful payloads instead of rendering unchecked content', async () => {
         mockResponse({ workbooks: [{ id, title: '<script>x</script>' }] });
         await expect(workbookApi.list('session')).rejects.toBeInstanceOf(
             WorkbookApiError,
         );
     });
+
     it('preserves conflict status for reload and does not retry a write', async () => {
         const fetch = mockResponse(
             {
@@ -102,12 +115,14 @@ describe('workbook API boundaries', () => {
             },
             409,
         );
+
         await expect(
             workbookApi.rename('session', id, {
                 expectedVersion: 1,
                 title: 'New',
             }),
         ).rejects.toMatchObject({ status: 409 });
+
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 });

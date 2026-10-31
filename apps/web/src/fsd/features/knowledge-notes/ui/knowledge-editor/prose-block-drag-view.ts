@@ -29,10 +29,15 @@ export function createProseBlockDragView(
         active = null;
         handle.hidden = true;
     }
+
     function inHoverCorridor(event: MouseEvent) {
-        if (!active) return false;
+        if (!active) {
+            return false;
+        }
+
         const block = active.element.getBoundingClientRect();
         const grip = handle.getBoundingClientRect();
+
         return (
             event.clientX >= Math.min(block.left, grip.left) &&
             event.clientX <= Math.max(block.right, grip.right) &&
@@ -40,22 +45,35 @@ export function createProseBlockDragView(
             event.clientY <= Math.max(block.bottom, grip.bottom)
         );
     }
+
     function leaveCorridor(event: MouseEvent) {
-        if (!active || dragState.current) return;
+        if (!active || dragState.current) {
+            return;
+        }
+
         if (
             event.target instanceof globalThis.Node &&
             (view.dom.contains(event.target) || handle.contains(event.target))
-        )
+        ) {
             return;
-        if (!inHoverCorridor(event)) hide();
+        }
+
+        if (!inHoverCorridor(event)) {
+            hide();
+        }
     }
+
     function position() {
-        if (!active || !view.editable) return hide();
+        if (!active || !view.editable) {
+            return hide();
+        }
+
         const nodeRect = active.element.getBoundingClientRect();
         const hostRect = host.getBoundingClientRect();
         handle.style.top = `${nodeRect.top - hostRect.top + host.scrollTop}px`;
         handle.style.left = `${nodeRect.left - hostRect.left + host.scrollLeft}px`;
     }
+
     function show(at: number, element: HTMLElement) {
         const node = view.state.doc.nodeAt(at);
         if (
@@ -63,55 +81,87 @@ export function createProseBlockDragView(
             !node ||
             node.type.name === 'learningBlock' ||
             !NodeSelection.isSelectable(node)
-        )
+        ) {
             return hide();
+        }
+
         active = { position: at, node, element };
         handle.setAttribute('aria-label', label(node));
         handle.title = label(node);
         handle.hidden = false;
         position();
     }
+
     function followSelection(event?: Event) {
         if (
             event?.target instanceof HTMLElement &&
             event.target.closest('[data-learning-block-id]')
-        )
+        ) {
             return hide();
-        if (dragState.current || !view.editable) return;
+        }
+
+        if (dragState.current || !view.editable) {
+            return;
+        }
+
         const resolved = view.state.doc.resolve(view.state.selection.from);
         const at = resolved.depth ? resolved.before(1) : resolved.pos;
         const element = view.nodeDOM(at);
-        if (element instanceof HTMLElement) show(at, element);
+        if (element instanceof HTMLElement) {
+            show(at, element);
+        }
     }
+
     function hover(event: MouseEvent) {
-        if (dragState.current) return;
-        if (!view.editable || !(event.target instanceof HTMLElement))
-            return hide();
-        let element = event.target;
-        while (element.parentElement && element.parentElement !== view.dom)
-            element = element.parentElement;
-        if (element.parentElement !== view.dom) {
-            if (!inHoverCorridor(event)) hide();
+        if (dragState.current) {
             return;
         }
-        if (element === active?.element) return;
+
+        if (!view.editable || !(event.target instanceof HTMLElement)) {
+            return hide();
+        }
+
+        let element = event.target;
+        while (element.parentElement && element.parentElement !== view.dom) {
+            element = element.parentElement;
+        }
+
+        if (element.parentElement !== view.dom) {
+            if (!inHoverCorridor(event)) {
+                hide();
+            }
+
+            return;
+        }
+
+        if (element === active?.element) {
+            return;
+        }
+
         const inside = view.state.doc.resolve(view.posAtDOM(element, 0));
         const at = inside.depth ? inside.before(1) : inside.pos;
         show(at, element);
     }
+
     function select() {
-        if (!active || !view.editable) return;
+        if (!active || !view.editable) {
+            return;
+        }
+
         view.dispatch(
             view.state.tr.setSelection(
                 NodeSelection.create(view.state.doc, active.position),
             ),
         );
     }
+
     function drag(event: DragEvent) {
         if (!active || !view.editable || !event.dataTransfer) {
             event.preventDefault();
+
             return;
         }
+
         select();
         const slice = view.state.selection.content();
         const serialized = view.serializeForClipboard(slice);
@@ -126,15 +176,18 @@ export function createProseBlockDragView(
             source: active,
         };
     }
+
     function endDrag() {
         dragState.current = null;
         view.dragging = null;
     }
+
     function keyboard(event: KeyboardEvent) {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             select();
         }
+
         if (
             event.altKey &&
             (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
@@ -146,10 +199,13 @@ export function createProseBlockDragView(
                 active.position,
                 event.key === 'ArrowUp' ? -1 : 1,
             );
-            if (destination !== null)
+
+            if (destination !== null) {
                 moveEditorBlock(view, active, destination);
+            }
         }
     }
+
     view.dom.addEventListener('mousemove', hover);
     view.dom.addEventListener('pointerdown', hover);
     view.dom.addEventListener('focusin', followSelection);
@@ -161,18 +217,25 @@ export function createProseBlockDragView(
     handle.addEventListener('keydown', keyboard);
     handle.addEventListener('dragstart', drag);
     handle.addEventListener('dragend', endDrag);
+
     return {
         update(current, previous) {
             const documentChanged = current.state.doc !== previous.doc;
             const selectionChanged = !current.state.selection.eq(
                 previous.selection,
             );
-            if (documentChanged || !current.editable) hide();
-            else position();
+
+            if (documentChanged || !current.editable) {
+                hide();
+            } else {
+                position();
+            }
+
             // Status/options updates must not replace a hovered block with the
             // block containing the unchanged text caret while crossing the gap.
-            if (current.hasFocus() && (documentChanged || selectionChanged))
+            if (current.hasFocus() && (documentChanged || selectionChanged)) {
                 followSelection();
+            }
         },
         destroy() {
             view.dom.removeEventListener('mousemove', hover);
@@ -198,7 +261,7 @@ function createHandle() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
     svg.setAttribute('aria-hidden', 'true');
-    for (const x of [9, 15])
+    for (const x of [9, 15]) {
         for (const y of [5, 12, 19]) {
             const circle = document.createElementNS(svg.namespaceURI, 'circle');
             circle.setAttribute('cx', String(x));
@@ -206,6 +269,9 @@ function createHandle() {
             circle.setAttribute('r', '1');
             svg.append(circle);
         }
+    }
+
     handle.append(svg);
+
     return handle;
 }

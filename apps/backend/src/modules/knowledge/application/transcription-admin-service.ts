@@ -16,9 +16,11 @@ export class TranscriptionAdminService {
         private readonly signer: TranscriptionAdminPreviewSigner,
         private readonly now: () => Date = () => new Date(),
     ) {}
+
     read() {
         return this.store.read();
     }
+
     async preview(actor: TranscriptionAdminActor, candidate: unknown) {
         const request =
             KnowledgeTranscriptionAdminPreviewRequestSchema.parse(candidate);
@@ -26,6 +28,7 @@ export class TranscriptionAdminService {
         const expiresAt = new Date(
             this.now().getTime() + 5 * 60_000,
         ).toISOString();
+
         return {
             request,
             proof: {
@@ -35,9 +38,11 @@ export class TranscriptionAdminService {
             readiness,
         };
     }
+
     async apply(actor: TranscriptionAdminActor, candidate: unknown) {
         const input =
             KnowledgeTranscriptionAdminApplyRequestSchema.parse(candidate);
+
         if (
             !this.signer.verify(
                 actor,
@@ -45,8 +50,10 @@ export class TranscriptionAdminService {
                 input.proof.expiresAt,
                 input.proof.signature,
             )
-        )
+        ) {
             throw new AdminAiSettingsConflictError();
+        }
+
         return this.store.apply(
             actor,
             input.request,

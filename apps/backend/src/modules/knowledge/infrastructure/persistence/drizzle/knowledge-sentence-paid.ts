@@ -73,7 +73,10 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                     )
                     .slice(0, 12);
 
-                if (!shortlist.length) throw new SentenceUnavailableError();
+                if (!shortlist.length) {
+                    throw new SentenceUnavailableError();
+                }
+
                 const forward = input.direction === 'source-to-target';
                 const payload: SentenceGenerationInput = {
                     schemaVersion: 1,
@@ -128,8 +131,10 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                         ),
                     );
 
-                if (reviewConflict || attemptConflict)
+                if (reviewConflict || attemptConflict) {
                     throw new SentenceConflictError('operation_conflict');
+                }
+
                 const hash = sentenceRequestFingerprint(source, input);
                 const [prior] = await tx
                     .select()
@@ -146,8 +151,9 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                         prior.sourceKind !== 'knowledge-vocabulary' ||
                         prior.sourceNoteId !== source.noteId ||
                         prior.requestFingerprint !== hash
-                    )
+                    ) {
                         throw new SentenceConflictError('operation_conflict');
+                    }
 
                     await readKnowledgeSentenceJobSource(tx, {
                         jobId: prior.id,
@@ -213,8 +219,10 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                     ),
                 );
 
-            if (!exercise || !currentKnowledgeSentence(exercise, content))
+            if (!exercise || !currentKnowledgeSentence(exercise, content)) {
                 throw new SentenceUnavailableError();
+            }
+
             assertRequestedHints(exercise.publicContent, input.revealedHintIds);
             const hash = sentenceRequestFingerprint(source, {
                 ...input,
@@ -237,8 +245,9 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                 if (
                     prior.sourceKind !== 'knowledge-vocabulary' ||
                     prior.requestFingerprint !== hash
-                )
+                ) {
                     throw new SentenceConflictError('operation_conflict');
+                }
 
                 const provenance = await readKnowledgeSentenceJobSource(tx, {
                     jobId: prior.id,
@@ -247,8 +256,9 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                     blockId: source.blockId,
                 });
 
-                if (provenance.sourceExerciseId !== exerciseId)
+                if (provenance.sourceExerciseId !== exerciseId) {
                     throw new SentenceConflictError('operation_conflict');
+                }
 
                 return presentKnowledgeSentenceJob(tx, prior);
             }
@@ -272,8 +282,10 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                     ),
                 );
 
-            if (receiptConflict || reviewConflict)
+            if (receiptConflict || reviewConflict) {
                 throw new SentenceConflictError('operation_conflict');
+            }
+
             const payload: SentenceCheckInput = {
                 schemaVersion: 1,
                 exerciseId,
@@ -311,11 +323,12 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                     ),
                 );
 
-            if (review)
+            if (review) {
                 await tx
                     .update(jobs)
                     .set({ referenceRevealed: true })
                     .where(eq(jobs.id, job.id));
+            }
 
             return presentKnowledgeSentenceJob(tx, {
                 ...job,
@@ -363,8 +376,10 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                 )
                 .for('update');
 
-            if (!job || job.sourceKind !== 'knowledge-vocabulary')
+            if (!job || job.sourceKind !== 'knowledge-vocabulary') {
                 throw new SentenceUnavailableError();
+            }
+
             await readKnowledgeSentenceJobSource(tx, {
                 jobId: job.id,
                 actorId: source.actorId,
@@ -391,7 +406,7 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                         failureCategory: 'explicit_stop',
                     })
                     .where(eq(jobs.id, job.id));
-            } else if (cancel && job.executionState === 'running')
+            } else if (cancel && job.executionState === 'running') {
                 await tx
                     .update(jobs)
                     .set({
@@ -400,6 +415,8 @@ export class DrizzleKnowledgeSentencePaid implements KnowledgeSentencePaidOperat
                         failureCategory: 'explicit_stop',
                     })
                     .where(eq(jobs.id, job.id));
+            }
+
             const [updated] = await tx
                 .select()
                 .from(jobs)

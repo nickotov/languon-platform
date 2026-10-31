@@ -7,6 +7,7 @@ export function KnowledgeAudioTranscription(
     props: KnowledgeAudioTranscriptionProps,
 ) {
     const state = useAudioTranscriptionProps(props);
+
     return (
         <KnowledgeTranscription
             key={`${props.noteId}:${props.branchId}:${props.block.id}:${props.language}`}

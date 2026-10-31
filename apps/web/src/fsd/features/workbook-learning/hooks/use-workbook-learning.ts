@@ -93,6 +93,7 @@ export function useWorkbookLearning({
             setFailed((writes) =>
                 writes.filter((item) => item.id !== write.id),
             );
+
             await query.refetch();
             await queryClient.invalidateQueries({
                 queryKey: ['workbook-progress', actorId],
@@ -107,20 +108,31 @@ export function useWorkbookLearning({
             setPending((count) => count - 1);
         }
     }
+
     function retry() {
-        if (pending === 0) for (const write of failed) void run(write);
+        if (pending === 0) {
+            for (const write of failed) {
+                void run(write);
+            }
+        }
     }
+
     function reload() {
         setLocalError(false);
         void query.refetch();
     }
+
     function complete() {
-        if (!ready || !state || pending) return;
+        if (!ready || !state || pending) {
+            return;
+        }
+
         const input = {
             id: crypto.randomUUID(),
             noteVersion: state.noteVersion,
             completed: state.completion === null,
         };
+
         void run({
             id: input.id,
             execute: () =>
@@ -129,6 +141,7 @@ export function useWorkbookLearning({
                 ),
         });
     }
+
     function options(
         block: LearningBlock,
     ): Omit<Partial<LearningBlockViewProps>, 'block' | 'labels'> {
@@ -136,9 +149,12 @@ export function useWorkbookLearning({
         const revision = state?.exerciseRevisions.find(
             (item) => item.exerciseId === block.id,
         )?.revision;
+
         function submit(_id: string, answer: LearningAnswer) {
-            if (!ready || !state || !revision || block.type !== 'exercise')
+            if (!ready || !state || !revision || block.type !== 'exercise') {
                 return;
+            }
+
             try {
                 const input = {
                     id: crypto.randomUUID(),
@@ -147,6 +163,7 @@ export function useWorkbookLearning({
                     exerciseRevision: revision,
                     answer: attemptAnswer(block, answer),
                 };
+
                 void run({
                     id: input.id,
                     execute: () =>
@@ -158,9 +175,12 @@ export function useWorkbookLearning({
                 setLocalError(true);
             }
         }
+
         function evaluate(_id: string, answer: LearningAnswer) {
-            if (!ready || !state || !revision || block.type !== 'exercise')
+            if (!ready || !state || !revision || block.type !== 'exercise') {
                 return;
+            }
+
             try {
                 void evaluation.run({
                     id: crypto.randomUUID(),
@@ -173,14 +193,17 @@ export function useWorkbookLearning({
                 setLocalError(true);
             }
         }
+
         function interaction(_id: string, event: LearningInteraction) {
             if (
                 !ready ||
                 !state ||
                 event.kind === 'answer' ||
                 event.kind === 'retry'
-            )
+            ) {
                 return;
+            }
+
             const input = {
                 id: crypto.randomUUID(),
                 noteVersion: state.noteVersion,
@@ -188,6 +211,7 @@ export function useWorkbookLearning({
                 ...(revision ? { exerciseRevision: revision } : {}),
                 kind: event.kind,
             };
+
             void run({
                 id: input.id,
                 execute: () =>
@@ -196,9 +220,14 @@ export function useWorkbookLearning({
                     ),
             });
         }
+
         let evaluationUnavailableReason: string | undefined;
-        if (!actorId) evaluationUnavailableReason = labels.signIn;
-        else if (!ready) evaluationUnavailableReason = labels.loading;
+        if (!actorId) {
+            evaluationUnavailableReason = labels.signIn;
+        } else if (!ready) {
+            evaluationUnavailableReason = labels.loading;
+        }
+
         return {
             interactionsDisabled: Boolean(actorId && !ready),
             ...(source.transcript ? { hintTranscript: source.transcript } : {}),
@@ -235,6 +264,7 @@ export function useWorkbookLearning({
             }),
         };
     }
+
     return {
         labels,
         evaluationConsent: evaluation.consent,

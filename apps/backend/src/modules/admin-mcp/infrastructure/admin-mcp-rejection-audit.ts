@@ -19,17 +19,24 @@ function safeReason(raw: unknown): string {
     if (reason.success) {
         try {
             assertSafeAuditContext(reason.data);
+
             return reason.data;
         } catch {
             /* Credential-shaped context must not be persisted. */
         }
     }
+
     return 'Delegated operation rejected; no safe caller reason supplied';
 }
+
 function fields(raw: unknown): Record<string, unknown> {
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return {};
+    }
+
     return raw as Record<string, unknown>;
 }
+
 function safeScalars(raw: unknown) {
     const source = fields(raw);
     const safe: Record<string, unknown> = {};
@@ -39,9 +46,11 @@ function safeScalars(raw: unknown) {
             typeof value === 'number' &&
             Number.isSafeInteger(value) &&
             value >= 0
-        )
+        ) {
             safe[key] = value;
+        }
     }
+
     for (const key of [
         'amountCredits',
         'maxCreditsPerAction',
@@ -54,11 +63,14 @@ function safeScalars(raw: unknown) {
         if (
             typeof value === 'string' &&
             /^(0|[1-9]\d{0,11})(\.\d{1,6})?$/.test(value)
-        )
+        ) {
             safe[key] = value;
+        }
     }
+
     return safe;
 }
+
 /** Safe post-rollback disclosure: identifiers and financial scalars, never raw request/configuration bodies. */
 export class AdminMcpRejectionAudit {
     constructor(private readonly database: AdminMcpDatabase) {}
@@ -77,13 +89,18 @@ export class AdminMcpRejectionAudit {
         const metadata: Record<string, unknown> = {};
         for (const key of ['page', 'pageSize']) {
             const n = input[key];
-            if (typeof n === 'number' && Number.isSafeInteger(n))
+            if (typeof n === 'number' && Number.isSafeInteger(n)) {
                 metadata[key] = n;
+            }
         }
+
         for (const key of ['from', 'to']) {
             const date = z.iso.datetime().safeParse(input[key]);
-            if (date.success) metadata[key] = date.data;
+            if (date.success) {
+                metadata[key] = date.data;
+            }
         }
+
         await this.database.transaction((tx) =>
             audit(
                 tx,
@@ -97,6 +114,7 @@ export class AdminMcpRejectionAudit {
             ),
         );
     }
+
     async record(
         actor: AdminMcpActor,
         operation: string,
@@ -117,8 +135,11 @@ export class AdminMcpRejectionAudit {
                     : 'operation_rejected',
             proposed: safeScalars(raw),
         };
-        if (operationKey.success)
+
+        if (operationKey.success) {
             metadata.operationKeyHash = payloadHash(operationKey.data);
+        }
+
         if (previewId.success) {
             metadata.previewId = previewId.data;
             const [preview] = await this.database
@@ -131,6 +152,7 @@ export class AdminMcpRejectionAudit {
                     ),
                 )
                 .limit(1);
+
             if (preview) {
                 operation = preview.operation;
                 target = preview.target;
@@ -141,6 +163,7 @@ export class AdminMcpRejectionAudit {
                 metadata.expectedVersion = preview.expectedVersion;
             }
         }
+
         const request = fields(input.request);
         const routeId = request.routeId;
         if (
@@ -152,8 +175,11 @@ export class AdminMcpRejectionAudit {
             target = routeId;
             metadata.routeId = routeId;
             const flow = TextAiFlowIdSchema.safeParse(request.flowId);
-            if (flow.success) metadata.flowId = flow.data;
+            if (flow.success) {
+                metadata.flowId = flow.data;
+            }
         }
+
         await this.database.transaction((tx) =>
             audit(
                 tx,

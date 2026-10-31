@@ -21,10 +21,13 @@ describe('MCP optimistic conflict recovery', () => {
                     'Checks never run automatically',
                 ),
             });
+
             return;
         }
+
         throw new Error('Expected a check prerequisite');
     });
+
     it.each([
         TextAiRoutingConflictError,
         TextAiPreferenceConflictError,
@@ -42,11 +45,15 @@ describe('MCP optimistic conflict recovery', () => {
                 code: 'stale_preview',
                 message: expect.stringContaining('create a new preview'),
             });
+
             expect((error as Error).message).not.toContain('Private');
+
             return;
         }
+
         throw new Error('Expected a mapped conflict');
     });
+
     it('preserves non-conflict errors for the transport error policy', () => {
         const failure = new Error('Database unavailable');
         expect(() => rethrowOperationConflict(failure)).toThrow(failure);

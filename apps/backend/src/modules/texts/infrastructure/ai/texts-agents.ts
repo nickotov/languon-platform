@@ -22,9 +22,12 @@ export function createTextsAgents(options: {
             defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             defaultOptions: { maxSteps: 1 },
         });
+
         agent.__registerPrimitives({ logger: noopLogger });
+
         return agent;
     };
+
     return {
         textTranslationAgent: create('text-translation-agent'),
         textDetectionAgent: create('text-detection-agent'),

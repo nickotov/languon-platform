@@ -62,7 +62,9 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
                 source.access,
             );
 
-            if (note.version !== source.expectedVersion) stale();
+            if (note.version !== source.expectedVersion) {
+                stale();
+            }
 
             return note.body;
         }
@@ -79,7 +81,9 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
             )
             .for('share');
 
-        if (!branch || branch.version !== source.expectedVersion) stale();
+        if (!branch || branch.version !== source.expectedVersion) {
+            stale();
+        }
 
         return branch.content.body;
     }
@@ -119,8 +123,13 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
                         ),
                     );
 
-                if (!share || !this.crypto.verify(access.key, share.keyDigest))
+                if (
+                    !share ||
+                    !this.crypto.verify(access.key, share.keyDigest)
+                ) {
                     throw knowledgeUnavailable();
+                }
+
                 await tx
                     .select({ id: knowledgeWorkbooksTable.id })
                     .from(knowledgeWorkbooksTable)
@@ -152,7 +161,10 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
                 )
                 .for('update');
 
-            if (!destination) throw knowledgeUnavailable();
+            if (!destination) {
+                throw knowledgeUnavailable();
+            }
+
             if (receipt) {
                 // The completed independent destination remains readable after source revocation.
                 const count = input.blockIds.length;
@@ -170,7 +182,10 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
                 });
             }
 
-            if (destination.version !== input.expectedBranchVersion) stale();
+            if (destination.version !== input.expectedBranchVersion) {
+                stale();
+            }
+
             const source = selectKnowledgeBlocksForCopy(
                 await this.source(tx, ownerId, input),
                 input.blockIds,
@@ -186,7 +201,10 @@ export class DrizzleKnowledgeBlockCopyStore implements KnowledgeBlockCopyStore {
                     replayed: false,
                 };
 
-            if (input.preview) return { ...summary, branch: null };
+            if (input.preview) {
+                return { ...summary, branch: null };
+            }
+
             const media = await prepareMediaCopy(
                 tx,
                 input.source.noteId,

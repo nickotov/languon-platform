@@ -13,6 +13,7 @@ const appliedSchema = z
         language: AssistantLanguageSchema,
     })
     .strict();
+
 export async function applyNarration(
     request: RequestWithSession,
     noteId: string,
@@ -34,7 +35,11 @@ export async function applyNarration(
                 body: JSON.stringify({ playbackId }),
             },
         );
-        if (!response.ok) throw new Error('Unable to apply narration.');
+
+        if (!response.ok) {
+            throw new Error('Unable to apply narration.');
+        }
+
         return appliedSchema.parse(await response.json());
     });
 }

@@ -75,6 +75,7 @@ const feedback: SentenceCheckDraft = {
     improvedTranslation: 'Wir gehen.',
     explanation: 'Correct.',
 };
+
 describe('sentence domain', () => {
     it('rejects French source text for Russian-to-French generation and accepts Russian morphology', () => {
         const input = {
@@ -99,9 +100,11 @@ describe('sentence domain', () => {
                 },
             ],
         };
+
         expect(() => validateSentenceGeneration(input, wrong)).toThrow(
             'Sentence languages',
         );
+
         const correct = {
             ...wrong,
             sourceText: 'Сегодня у меня много работы.',
@@ -112,9 +115,11 @@ describe('sentence domain', () => {
                 { text: '.', entryId: null },
             ],
         };
+
         expect(validateSentenceGeneration(input, correct).sourceText).toBe(
             correct.sourceText,
         );
+
         expect(() =>
             validateSentenceGeneration(input, {
                 ...correct,
@@ -122,10 +127,12 @@ describe('sentence domain', () => {
             }),
         ).toThrow('Sentence languages');
     });
+
     it('accepts normal foreign names and loans without accepting a reversed sentence', () => {
         expect(
             sentenceLanguageMatches('Сегодня Pierre читает книгу.', 'ru', 'fr'),
         ).toBe(true);
+
         expect(
             sentenceLanguageMatches(
                 'Je travaille chez Яндекс aujourd’hui.',
@@ -133,6 +140,7 @@ describe('sentence domain', () => {
                 'ru',
             ),
         ).toBe(true);
+
         expect(
             sentenceLanguageMatches(
                 'Сегодня используем Wi-Fi дома.',
@@ -140,23 +148,29 @@ describe('sentence domain', () => {
                 'fr',
             ),
         ).toBe(true);
+
         expect(sentenceLanguageMatches('Bonjour monde, да.', 'ru', 'fr')).toBe(
             false,
         );
+
         expect(
             sentenceLanguageMatches('Сегодня много работы, oui.', 'fr', 'ru'),
         ).toBe(false);
+
         expect(sentenceLanguageMatches('123 + 456 = 579 😀', 'ru', 'fr')).toBe(
             true,
         );
+
         expect(sentenceLanguageMatches('123 + 456 = 579 😀', 'fr', 'ru')).toBe(
             true,
         );
+
         // Shared script cannot establish semantic language identity.
         expect(sentenceLanguageMatches('This is English.', 'fr', 'en')).toBe(
             true,
         );
     });
+
     it('uses letter-only SQL ranges matching runtime script checks beyond historical blocks', () => {
         for (const [text, language, otherLanguage, matches] of [
             ['Hello ١٢٣٤٥٦', 'ar', 'en', false],
@@ -170,6 +184,7 @@ describe('sentence domain', () => {
             expect(sentenceLanguageMatches(text, language, otherLanguage)).toBe(
                 matches,
             );
+
             const expected = sentenceLanguageScript(language)!;
             const other = sentenceLanguageScript(otherLanguage)!;
             const allLetters = new RegExp(
@@ -183,24 +198,29 @@ describe('sentence domain', () => {
             const sqlRangeMatch =
                 !allLetters.test(text) ||
                 (expectedCount > 0 && expectedCount >= otherCount);
+
             expect(sqlRangeMatch).toBe(matches);
         }
+
         expect(
             new RegExp(`[${sentenceLanguageScript('ar')!.sqlRange}]`, 'u').test(
                 '١',
             ),
         ).toBe(false);
+
         expect(
             new RegExp(`[${sentenceLanguageScript('hi')!.sqlRange}]`, 'u').test(
                 '१',
             ),
         ).toBe(false);
+
         expect(
             new RegExp(`[${sentenceLanguageScript('he')!.sqlRange}]`, 'u').test(
                 'ְ',
             ),
         ).toBe(false);
     });
+
     it('rejects English source reversal for additional distinct writing scripts', () => {
         for (const [language, text] of [
             ['th', 'วันนี้ฉันอ่านหนังสือ'],
@@ -213,27 +233,33 @@ describe('sentence domain', () => {
             expect(
                 sentenceLanguageMatches('I read a book today.', language, 'en'),
             ).toBe(false);
+
             expect(sentenceLanguageMatches(text, language, 'en')).toBe(true);
             expect(sentenceLanguageMatches(text, 'en', language)).toBe(false);
         }
     });
+
     it('prioritizes uncovered entries then least exposure without mutating inputs', () => {
         const entries = [
             { ...entry, entryId: a, exposureCount: 2, sortKey: 1n },
             { ...entry, entryId: b, exposureCount: 0, sortKey: 3n },
             { ...entry, entryId: c, exposureCount: 0, sortKey: 2n },
         ];
+
         expect(selectSentenceCandidates(entries).map((v) => v.entryId)).toEqual(
             [c, b, a],
         );
+
         expect(entries[0]?.entryId).toBe(a);
         expect(() => selectSentenceCandidates(entries, 13)).toThrow();
     });
+
     it('maps repeated inflected source occurrences to one lexical target hint', () => {
         const result = validateSentenceGeneration(generation, content);
         expect(result.segments.map((s) => s.text).join('')).toBe(
             content.sourceText,
         );
+
         expect(result.hints).toEqual([{ id: 'hint-1', text: 'gehen' }]);
         expect(
             result.segments.filter((s) => s.target).map((s) => s.target),
@@ -241,8 +267,10 @@ describe('sentence domain', () => {
             { entryId: a, occurrenceId: 'occurrence-1', hintId: 'hint-1' },
             { entryId: a, occurrenceId: 'occurrence-2', hintId: 'hint-1' },
         ]);
+
         expect(result.segments[0]?.target).toBeNull();
     });
+
     it('requires unique admitted targets including priority and actual occurrences', () => {
         expect(() =>
             validateSentenceGeneration(generation, {
@@ -250,6 +278,7 @@ describe('sentence domain', () => {
                 targets: [...content.targets, ...content.targets],
             }),
         ).toThrow();
+
         expect(() =>
             validateSentenceGeneration(generation, {
                 ...content,
@@ -258,12 +287,14 @@ describe('sentence domain', () => {
                 ],
             }),
         ).toThrow();
+
         expect(() =>
             validateSentenceGeneration(generation, {
                 ...content,
                 segments: [{ text: content.sourceText, entryId: null }],
             }),
         ).toThrow();
+
         expect(() =>
             validateSentenceGeneration(generation, {
                 ...content,
@@ -271,6 +302,7 @@ describe('sentence domain', () => {
             }),
         ).toThrow();
     });
+
     it('accepts three unique targets and rejects a fourth or missing priority', () => {
         const candidates = [
             entry,
@@ -300,15 +332,18 @@ describe('sentence domain', () => {
                 hintForm: 'infinitive',
             })),
         };
+
         expect(validateSentenceGeneration(input, draft).targets).toEqual(
             candidates,
         );
+
         expect(() =>
             validateSentenceGeneration(input, {
                 ...draft,
                 targets: draft.targets.slice(1),
             }),
         ).toThrow();
+
         expect(() =>
             validateSentenceGeneration(input, {
                 ...draft,
@@ -322,11 +357,13 @@ describe('sentence domain', () => {
             }),
         ).toThrow();
     });
+
     it('accepts normalized irregular lexical forms and unspaced phrases but rejects full reference hints', () => {
         expect(normalizeSentenceHint('  cafe\u0301   au lait ')).toBe(
             'café au lait',
         );
-        for (const hint of ['Wir gingen und gehen.'])
+
+        for (const hint of ['Wir gingen und gehen.']) {
             expect(() =>
                 validateSentenceGeneration(generation, {
                     ...content,
@@ -335,11 +372,14 @@ describe('sentence domain', () => {
                     ],
                 }),
             ).toThrow();
+        }
+
         const phrase: SentenceGenerationInput = {
             ...generation,
             candidates: [{ ...entry, targetText: 'take care of' }],
             targetLanguage: 'en',
         };
+
         expect(
             validateSentenceGeneration(phrase, {
                 ...content,
@@ -352,6 +392,7 @@ describe('sentence domain', () => {
                 ],
             }).hints[0]?.text,
         ).toBe('take care of');
+
         for (const [targetText, normalizedHint, language] of [
             ['ging', 'gehen', 'de'],
             ['went', 'go', 'en'],
@@ -381,6 +422,7 @@ describe('sentence domain', () => {
                 ).hints[0]?.text,
             ).toBe(normalizedHint);
         }
+
         expect(
             validateSentenceGeneration(
                 {
@@ -402,11 +444,12 @@ describe('sentence domain', () => {
             ).hints[0]?.text,
         ).toBe('照顾');
     });
+
     it('rejects source splits inside combining graphemes and emoji', () => {
         for (const pieces of [
             ['e', '\u0301'],
             ['\ud83d', '\ude00'],
-        ])
+        ]) {
             expect(() =>
                 validateSentenceGeneration(generation, {
                     ...content,
@@ -414,7 +457,9 @@ describe('sentence domain', () => {
                     segments: pieces.map((text) => ({ text, entryId: a })),
                 }),
             ).toThrow();
+        }
     });
+
     it('uses exact UTF16 grapheme ranges in immutable answers', () => {
         expect(
             isSentenceSpanValid('e\u0301 😀', {
@@ -423,9 +468,11 @@ describe('sentence domain', () => {
                 quote: 'e\u0301',
             }),
         ).toBe(true);
+
         expect(
             isSentenceSpanValid('e\u0301 😀', { start: 0, end: 1, quote: 'e' }),
         ).toBe(false);
+
         expect(
             isSentenceSpanValid('e\u0301 😀', {
                 start: 3,
@@ -433,6 +480,7 @@ describe('sentence domain', () => {
                 quote: '😀',
             }),
         ).toBe(true);
+
         expect(
             isSentenceSpanValid('e\u0301 😀', {
                 start: 3,
@@ -440,6 +488,7 @@ describe('sentence domain', () => {
                 quote: '\ud83d',
             }),
         ).toBe(false);
+
         expect(
             isSentenceSpanValid(check.answer, {
                 start: 2,
@@ -448,6 +497,7 @@ describe('sentence domain', () => {
             }),
         ).toBe(false);
     });
+
     it('derives rating boundaries and caps without penalizing hints', () => {
         expect([100, 99, 80, 79, 50, 49, 0].map(sentenceRating)).toEqual([
             'perfect',
@@ -458,42 +508,50 @@ describe('sentence domain', () => {
             'practise-again-later',
             'practise-again-later',
         ]);
+
         expect(
             validateSentenceCheck(
                 { ...check, revealedHintIds: ['hint-1'] },
                 feedback,
             ).percentage,
         ).toBe(100);
+
         expect(
             validateSentenceCheck(check, {
                 ...feedback,
                 targets: [{ ...feedback.targets[0]!, status: 'missing' }],
             }).percentage,
         ).toBe(79);
+
         expect(
             validateSentenceCheck(check, {
                 ...feedback,
                 grammar: 'substantive-errors',
             }).percentage,
         ).toBe(99);
+
         expect(
             validateSentenceCheck(check, { ...feedback, meaning: 'partial' })
                 .percentage,
         ).toBe(99);
     });
+
     it('rejects incomplete duplicate targets, mismatched spans and unsafe answers', () => {
         expect(() =>
             validateSentenceCheck(check, { ...feedback, targets: [] }),
         ).toThrow();
+
         expect(() =>
             validateSentenceCheck(check, {
                 ...feedback,
                 targets: [...feedback.targets, ...feedback.targets],
             }),
         ).toThrow();
+
         expect(() =>
             validateSentenceCheck({ ...check, answer: 'a\u0000' }, feedback),
         ).toThrow();
+
         const issue = {
             kind: 'grammar' as const,
             severity: 'substantive' as const,
@@ -501,9 +559,11 @@ describe('sentence domain', () => {
             explanation: 'Wrong.',
             correction: null,
         };
+
         expect(() =>
             validateSentenceCheck(check, { ...feedback, issues: [issue] }),
         ).toThrow();
+
         expect(
             validateSentenceCheck(check, {
                 ...feedback,
@@ -511,6 +571,7 @@ describe('sentence domain', () => {
             }).issues[0]?.span,
         ).toBeNull();
     });
+
     it.each([
         ['  café e\u0301 😀  ', 'café', { start: 2, end: 6, quote: 'café' }],
         [
@@ -537,6 +598,7 @@ describe('sentence domain', () => {
             expect(resolveSentenceIssueSpan(answer, quote)).toEqual(span);
         },
     );
+
     it('distinguishes target inventory, forged spans and immutable input rejection without changing score caps', () => {
         for (const targets of [
             [],
@@ -551,9 +613,11 @@ describe('sentence domain', () => {
                 }),
             );
         }
+
         expect(() =>
             validateSentenceCheck({ ...check, answer: 'a\u0000' }, feedback),
         ).toThrow(expect.objectContaining({ reason: 'input_invalid' }));
+
         const issue = {
             kind: 'grammar' as const,
             severity: 'minor' as const,
@@ -561,9 +625,11 @@ describe('sentence domain', () => {
             explanation: 'Review.',
             correction: null,
         };
+
         expect(() =>
             validateSentenceCheck(check, { ...feedback, issues: [issue] }),
         ).toThrow(expect.objectContaining({ reason: 'answer_span_invalid' }));
+
         expect(
             validateSentenceCheck(check, {
                 ...feedback,

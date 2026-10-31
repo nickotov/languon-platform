@@ -58,26 +58,43 @@ export function BlockActions({
             (candidate) => candidate.block.id === item.block.id,
         );
     }
+
     function currentGroup() {
         return authoringBlockGroup(blocks(editor), item.block.id);
     }
+
     function edit() {
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
+
         const found = current();
-        if (found) onEdit(found.block);
+        if (found) {
+            onEdit(found.block);
+        }
     }
+
     function remove() {
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
+
         const found = current();
-        if (!found) return;
+        if (!found) {
+            return;
+        }
+
         const group = currentGroup();
         const last = group[group.length - 1] ?? found;
         const transaction = editor.state.tr.delete(
             found.position,
             last.position + last.size,
         );
-        if (transaction.doc.childCount === 0)
+
+        if (transaction.doc.childCount === 0) {
             transaction.insert(0, editor.schema.nodes.paragraph!.create());
+        }
+
         try {
             normalizeEditorDocument(transaction.doc.toJSON());
             editor.view.dispatch(transaction);
@@ -85,10 +102,17 @@ export function BlockActions({
             setCopyError(true);
         }
     }
+
     function duplicate() {
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
+
         const found = current();
-        if (!found) return;
+        if (!found) {
+            return;
+        }
+
         const group = currentGroup();
         if (
             group.some(
@@ -98,8 +122,10 @@ export function BlockActions({
             )
         ) {
             onServerDuplicate?.(found.block);
+
             return;
         }
+
         const copied = copyLearningBlocks(group.map((item) => item.block));
         const nodes = copied.map((block) =>
             editor.schema.nodes.learningBlock!.create({ block }),
@@ -109,6 +135,7 @@ export function BlockActions({
             last.position + last.size,
             nodes,
         );
+
         try {
             normalizeEditorDocument(transaction.doc.toJSON());
             editor.view.dispatch(transaction);
@@ -116,33 +143,47 @@ export function BlockActions({
             setCopyError(true);
         }
     }
+
     function move(direction: -1 | 1) {
-        if (!disabled && !moveLearningBlock(editor, item.block.id, direction))
+        if (!disabled && !moveLearningBlock(editor, item.block.id, direction)) {
             setCopyError(true);
+        }
     }
+
     function up() {
         move(-1);
     }
+
     function down() {
         move(1);
     }
+
     async function copy() {
         const found = current();
-        if (!found) return;
-        if (copyUnavailable) {
-            if (!disabled) onServerCopy?.(found.block);
+        if (!found) {
             return;
         }
+
+        if (copyUnavailable) {
+            if (!disabled) {
+                onServerCopy?.(found.block);
+            }
+
+            return;
+        }
+
         try {
             await navigator.clipboard.writeText(
                 learningBlockClipboardPrefix +
                     JSON.stringify(current()?.block ?? item.block),
             );
+
             setCopyError(false);
         } catch {
             setCopyError(true);
         }
     }
+
     const groupSize = currentGroup().length;
     const duplicateUnavailable = currentGroup().some(
         ({ block }) =>
@@ -213,6 +254,7 @@ export function BlockActions({
             allowDisabledItems
         />
     );
+
     return (
         <div className={styles.blockMenu}>
             {menu}

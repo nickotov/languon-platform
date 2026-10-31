@@ -47,35 +47,46 @@ export function useWorkbookDetail(id: string) {
     });
     const workbook = query.data?.workbook;
     async function mutate(action: (token: string) => Promise<unknown>) {
-        if (busy) return false;
+        if (busy) {
+            return false;
+        }
+
         setBusy(true);
         setError(false);
         try {
             await requestWithSession(action);
             await query.refetch();
+
             return true;
         } catch {
             setError(true);
             await query.refetch();
+
             return false;
         } finally {
             setBusy(false);
         }
     }
+
     async function rename(title: string) {
-        if (workbook)
+        if (workbook) {
             await mutate((token) =>
                 workbookApi.rename(token, id, {
                     title,
                     expectedVersion: workbook.version,
                 }),
             );
+        }
     }
+
     async function setNotes(
         noteIds: string[],
         acknowledgeSharedAddition = false,
     ) {
-        if (!workbook) return false;
+        if (!workbook) {
+            return false;
+        }
+
         return mutate((token) =>
             workbookApi.setNotes(token, id, {
                 noteIds,
@@ -84,15 +95,26 @@ export function useWorkbookDetail(id: string) {
             }),
         );
     }
+
     async function remove() {
-        if (!workbook) return;
+        if (!workbook) {
+            return;
+        }
+
         const done = await mutate((token) =>
             workbookApi.remove(token, id, workbook.version),
         );
-        if (done) router.push(href('/workbooks'));
+
+        if (done) {
+            router.push(href('/workbooks'));
+        }
     }
+
     async function share() {
-        if (!workbook) return;
+        if (!workbook) {
+            return;
+        }
+
         await mutate(async (token) => {
             const access = await workbookApi.share(token, id, workbook.version);
             setShareLink(
@@ -100,31 +122,43 @@ export function useWorkbookDetail(id: string) {
             );
         });
     }
+
     async function copy() {
         if (
             !workbook ||
             busy ||
             workbook.notes.some((note) => note.status !== 'saved')
-        )
+        ) {
             return;
+        }
+
         const input = copyInput.current ?? {
             id: crypto.randomUUID(),
             title: workbook.title,
             expectedVersion: workbook.version,
         };
+
         copyInput.current = input;
         await mutate(async (token) => {
             const result = await workbookApi.copy(token, id, input);
             router.push(href(`/workbooks/${result.workbook.id}`));
         });
     }
+
     async function revoke() {
-        if (!workbook) return;
+        if (!workbook) {
+            return;
+        }
+
         const done = await mutate((token) =>
             workbookApi.revoke(token, id, workbook.version),
         );
-        if (done) setShareLink('');
+
+        if (done) {
+            setShareLink('');
+        }
     }
+
     return {
         query,
         library,

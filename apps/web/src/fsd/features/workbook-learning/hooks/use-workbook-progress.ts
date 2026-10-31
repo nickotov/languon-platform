@@ -13,6 +13,7 @@ export interface WorkbookProgressOptions {
 export function useWorkbookProgress(options: WorkbookProgressOptions) {
     const { workbookId, workbookVersion, actorId, access, requestWithSession } =
         options;
+
     return useQuery({
         queryKey: [
             'workbook-progress',

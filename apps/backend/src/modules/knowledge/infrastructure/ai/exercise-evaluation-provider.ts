@@ -46,14 +46,16 @@ export function preflightKnowledgeExerciseEvaluation(
             'utf8',
         ) +
         1024;
+
     if (
         inputBytes >
         Math.min(
             execution.perCallMaxInputTokens,
             budget.maxInputTokensPerAttempt,
         )
-    )
+    ) {
         throw new TextsAiError('model_capacity_exceeded');
+    }
 }
 
 export function validateKnowledgeExerciseEvaluationResult(
@@ -62,6 +64,7 @@ export function validateKnowledgeExerciseEvaluationResult(
 ): KnowledgeExerciseEvaluationResult {
     // The canonical result schema rejects claims that an incorrect answer is a valid alternative.
     void input;
+
     return KnowledgeExerciseEvaluationResultSchema.parse(value);
 }
 
@@ -131,10 +134,13 @@ export async function runKnowledgeExerciseEvaluation(
                     /* Invalid reported usage remains unknown, never a fabricated zero. */
                 }
             }
+
             throw new TextsProviderInvalidOutputError(usage);
         }
+
         throw new ProviderExecutionError(error, call.execution.providerId);
     }
+
     call.signal.throwIfAborted();
     let usage;
     try {
@@ -145,13 +151,18 @@ export async function runKnowledgeExerciseEvaluation(
     } catch {
         throw new TextsProviderInvalidOutputError();
     }
-    if (result.error)
+
+    if (result.error) {
         throw new ProviderExecutionError(
             result.error,
             call.execution.providerId,
         );
-    if (result.tripwire || result.finishReason === 'length')
+    }
+
+    if (result.tripwire || result.finishReason === 'length') {
         throw new TextsProviderInvalidOutputError(usage);
+    }
+
     try {
         return {
             draft: validateKnowledgeExerciseEvaluationResult(

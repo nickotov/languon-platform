@@ -132,6 +132,7 @@ describe('dictionary text provider wire contracts', () => {
                         ),
                     ),
                 );
+
                 vi.stubGlobal('fetch', fetchProvider);
                 const execution = {
                     adapterRevision: model.adapterRevision,
@@ -155,14 +156,18 @@ describe('dictionary text provider wire contracts', () => {
                         [model.credentialReference]: 'wire-contract-key',
                     },
                 });
+
                 if (catalogId === 'kie/gemini-2.5-pro') {
                     expect(model.retired).toBe(true);
                     expect(() => router.resolve(execution, budget)).toThrow(
                         'Text AI provider execution snapshot is unsupported.',
                     );
+
                     expect(fetchProvider).not.toHaveBeenCalled();
+
                     return;
                 }
+
                 const providers = router.resolve(execution, budget);
                 const common = {
                     providerExecution: execution,
@@ -225,6 +230,7 @@ describe('dictionary text provider wire contracts', () => {
                                     ],
                                 },
                             });
+
                 await expect(generate()).resolves.toMatchObject({
                     usage: { inputTokens: 30, outputTokens: 20 },
                 });
@@ -234,9 +240,11 @@ describe('dictionary text provider wire contracts', () => {
                 expect(String(url)).toBe(
                     `${catalogModel.apiBaseUrl}/chat/completions`,
                 );
+
                 expect(init?.headers).toMatchObject({
                     authorization: 'Bearer wire-contract-key',
                 });
+
                 const body = JSON.parse(String(init?.body)) as {
                     messages: Array<{
                         content: string | Array<{ text: string; type: string }>;
@@ -245,9 +253,11 @@ describe('dictionary text provider wire contracts', () => {
                     max_tokens?: number;
                     response_format?: { type: string };
                 };
+
                 expect(body.max_tokens).toBe(
                     Math.min(9_000, catalogModel.requestLimits.maxOutputTokens),
                 );
+
                 expect(body.model).toBe(catalogModel.modelId);
                 // Retry authorization belongs to the worker, never to the SDK.
                 fetchProvider.mockResolvedValueOnce(
@@ -264,6 +274,7 @@ describe('dictionary text provider wire contracts', () => {
                         },
                     ),
                 );
+
                 await expect(generate()).rejects.toBeInstanceOf(Error);
                 expect(fetchProvider).toHaveBeenCalledTimes(2);
                 if (catalogModel.structuredOutput === 'prompt-injection') {

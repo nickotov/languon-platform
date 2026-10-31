@@ -21,7 +21,9 @@ function textChunks(text: string, maxEncodedBytes: number) {
         bytes += size;
     }
 
-    if (chunk || !result.length) result.push(chunk);
+    if (chunk || !result.length) {
+        result.push(chunk);
+    }
 
     return result;
 }
@@ -44,7 +46,10 @@ function passageId(sourceId: string, version: string, index: number) {
 function labelPrefix(title: string, maxLength: number) {
     let label = '';
     for (const character of title) {
-        if (label.length + character.length > maxLength) break;
+        if (label.length + character.length > maxLength) {
+            break;
+        }
+
         label += character;
     }
 
@@ -90,8 +95,10 @@ export function textSourceMaterial(input: {
         }),
     };
 
-    if (Buffer.byteLength(JSON.stringify(complete), 'utf8') <= 8000)
+    if (Buffer.byteLength(JSON.stringify(complete), 'utf8') <= 8000) {
         return [complete];
+    }
+
     const pairs = input.alignment?.source.map((source, index) => ({
         pairId: source.pairId,
         sourceText: source.text,
@@ -133,8 +140,10 @@ export function noteSourceMaterial(input: {
     body: KnowledgeBody;
 }): SourceMaterial[] {
     const render = (node: KnowledgeBody['document']): string => {
-        if (node.type === 'learningBlock' && node.attrs?.block)
+        if (node.type === 'learningBlock' && node.attrs?.block) {
             return `${learningBlockPlainText(node.attrs.block)}\n`;
+        }
+
         if (node.type === 'text') {
             const link = node.marks?.find((mark) => mark.type === 'link');
 

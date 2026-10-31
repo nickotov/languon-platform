@@ -17,8 +17,13 @@ export function useNavigationOwner() {
 
 function currentOwner(owner: string | null) {
     const state = useSessionStore.getState();
-    if (!owner || state.status !== 'authenticated' || state.user?.id !== owner)
+    if (
+        !owner ||
+        state.status !== 'authenticated' ||
+        state.user?.id !== owner
+    ) {
         throw new Error('Navigation session changed');
+    }
 }
 
 export function useNavigationResources(
@@ -35,6 +40,7 @@ export function useNavigationResources(
     const owner = useNavigationOwner();
     const requested = (input.query ?? '').trim();
     const q = useDebouncedSearch(requested);
+
     return useQuery({
         enabled: Boolean(owner && input.enabled && requested === q),
         queryKey: [
@@ -49,8 +55,10 @@ export function useNavigationResources(
         queryFn: ({ signal }) =>
             requestWithSession((token) => {
                 currentOwner(owner);
-                if (input.recent && !q)
+                if (input.recent && !q) {
                     return navigationApi.recent(token, signal);
+                }
+
                 return navigationApi.resources(
                     token,
                     {
@@ -73,10 +81,12 @@ export function useNavigationResources(
 export function useResourcePin(requestWithSession: RequestWithSession) {
     const owner = useNavigationOwner();
     const client = useQueryClient();
+
     return useMutation({
         mutationFn: (resource: NavigationResource) =>
             requestWithSession((token) => {
                 currentOwner(owner);
+
                 return navigationApi.pin(
                     token,
                     resource.kind,
@@ -85,10 +95,11 @@ export function useResourcePin(requestWithSession: RequestWithSession) {
                 );
             }),
         onSuccess: () => {
-            if (owner === useSessionStore.getState().user?.id)
+            if (owner === useSessionStore.getState().user?.id) {
                 void client.invalidateQueries({
                     queryKey: ['library-navigation', owner],
                 });
+            }
         },
     });
 }
@@ -105,23 +116,32 @@ export function useRecordResourceOpen(
     useEffect(() => {
         if (!owner || !id || !loaded) {
             recorded.current = null;
+
             return;
         }
+
         const key = `${owner}:${kind}:${id}`;
-        if (recorded.current === key) return;
+        if (recorded.current === key) {
+            return;
+        }
+
         recorded.current = key;
         void requestWithSession((token) => {
             currentOwner(owner);
+
             return navigationApi.opened(token, kind, id);
         })
             .then(() => {
-                if (owner === useSessionStore.getState().user?.id)
+                if (owner === useSessionStore.getState().user?.id) {
                     void client.invalidateQueries({
                         queryKey: ['library-navigation', owner],
                     });
+                }
             })
             .catch(() => {
-                if (recorded.current === key) recorded.current = null;
+                if (recorded.current === key) {
+                    recorded.current = null;
+                }
             });
     }, [owner, kind, id, loaded, client, requestWithSession]);
 }
@@ -130,7 +150,9 @@ function useDebouncedSearch(value: string) {
     const [query, setQuery] = useState(value.trim());
     useEffect(() => {
         const timer = window.setTimeout(() => setQuery(value.trim()), 150);
+
         return () => window.clearTimeout(timer);
     }, [value]);
+
     return query;
 }

@@ -61,10 +61,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const owner = randomUUID(),
                     reader = randomUUID(),
                     now = new Date();
+
                 await db.insert(usersTable).values([
                     { id: owner, status: 'active' },
                     { id: reader, status: 'active' },
                 ]);
+
                 const crypto = new KnowledgeShareCrypto(
                     'synthetic-knowledge-learning-purge',
                 );
@@ -118,11 +120,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 );
                 const copiedBlock =
                     copy.body.document.content?.[0]?.attrs?.block;
-                if (copiedBlock?.type !== 'bilingual-text')
+
+                if (copiedBlock?.type !== 'bilingual-text') {
                     throw new Error('Missing independent text copy');
+                }
+
                 const copyShare = await notes.issueShare(reader, copy.id);
                 const model = textAiModelCatalog[0]!,
                     revisionId = randomUUID();
+
                 await db
                     .insert(dictionaryAiConfigurationRevisionsTable)
                     .values({
@@ -136,11 +142,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             supportedFormats: [...model.supportedFormats],
                         },
                     });
+
                 await db.insert(dictionaryAiConfigurationTable).values({
                     id: 'global',
                     version: 1,
                     activeRevisionId: revisionId,
                 });
+
                 await db.insert(dictionaryAiWorkerObservationsTable).values({
                     id: textsExecutionObservationId(
                         'knowledge-purge-worker',
@@ -162,8 +170,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     checkedAt: now,
                     expiresAt: new Date(now.getTime() + 3600000),
                 });
+
                 await seedLegacyActionFixture(db);
-                for (const actor of [owner, reader])
+                for (const actor of [owner, reader]) {
                     await db.transaction((tx) =>
                         new DrizzleAiCreditTransactionParticipant(
                             tx,
@@ -176,6 +185,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             sourceReference: randomUUID(),
                         }),
                     );
+                }
+
                 const jobs = new DrizzleTextsJobStore(db, {
                     fingerprintSecret: 'synthetic-knowledge-purge-jobs',
                     globalQueueLimit: 100,
@@ -197,6 +208,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now: new Date(),
                     signal: new AbortController().signal,
                 });
+
                 async function enqueue(
                     actorId: string,
                     noteId: string,
@@ -229,6 +241,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             paragraphIndex: 0,
                         },
                     ];
+
                     try {
                         return await jobs.enqueueKnowledgeTranslation(
                             actorId,
@@ -243,8 +256,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 error instanceof
                                 ActionAllowanceConfirmationRequired
                             )
-                        )
+                        ) {
                             throw error;
+                        }
+
                         return withActionAllowanceConsent(error.quote.id, () =>
                             jobs.enqueueKnowledgeTranslation(
                                 actorId,
@@ -256,6 +271,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         );
                     }
                 }
+
                 const foreign = await enqueue(reader, source.id, block, {
                     kind: 'note',
                     ...share,
@@ -274,10 +290,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                     context(),
                 );
+
                 expect(lease?.lease.jobId).toBe(foreign.id);
                 expect(await jobs.markDispatched(lease!.lease, context())).toBe(
                     true,
                 );
+
                 const actorJob = await enqueue(owner, copy.id, copiedBlock, {
                     kind: 'note',
                     ...copyShare,
@@ -286,16 +304,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client`insert into knowledge_private_translations(actor_id,note_id,block_id,source_fingerprint,target_language,segments,updated_at)
                 select actor_id,note_id,block_id,binding->>'sourceFingerprint','es','[{"sourceSegmentId":"00000000-0000-4000-8000-000000000001","text":"Private translation"}]',now()
                 from knowledge_text_job_sources where job_id in (${foreign.id}::uuid,${actorJob.id}::uuid,${control.id}::uuid)`;
+
                 const [held] = await db
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, foreign.id));
+
                 expect(held!.heldMilli).toBeGreaterThan(0n);
                 const at = new Date();
                 await db
                     .update(usersTable)
                     .set({ status: 'deletion_pending' })
                     .where(eq(usersTable.id, owner));
+
                 await db.insert(accountDeletionRequestsTable).values({
                     userId: owner,
                     state: 'pending',
@@ -304,6 +325,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     nextAttemptAt: new Date(at.getTime() - 60000),
                     updatedAt: at,
                 });
+
                 await client.unsafe(`create role ${role}`);
                 roleCreated = true;
                 const script = await readFile(
@@ -313,6 +335,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                     'utf8',
                 );
+
                 await client.unsafe(
                     script
                         .split('\n')
@@ -320,16 +343,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"account_purge_role"', role),
                 );
+
                 await connection.unsafe(`set role ${role}`);
                 for (const query of [
                     'select input_payload from texts_ai_jobs',
                     'select binding from knowledge_text_job_sources',
                     'select segments from knowledge_private_translations',
                     "update texts_ai_jobs set execution_state='cancelled' where false",
-                ])
+                ]) {
                     await expect(
                         connection.unsafe(query),
                     ).rejects.toBeDefined();
+                }
+
                 const worker = new DrizzleAccountPurgeStore(
                     createDrizzleDatabase(connection, databaseSchema),
                 );
@@ -337,16 +363,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now: at,
                     workerId: 'knowledge-learning-purger',
                 });
+
                 expect(claim?.userId).toBe(owner);
                 await expect(
                     connection`select languon_quiesce_knowledge_learning_for_purge(${owner}::uuid,'wrong-worker',${claim!.fencingToken})`,
                 ).rejects.toBeDefined();
+
                 await expect(
                     connection`select languon_quiesce_knowledge_learning_for_purge(${reader}::uuid,'knowledge-learning-purger',${claim!.fencingToken})`,
                 ).rejects.toBeDefined();
+
                 await expect(
                     connection`select languon_quiesce_knowledge_learning_for_purge(${owner}::uuid,'knowledge-learning-purger',${claim!.fencingToken + 1})`,
                 ).rejects.toBeDefined();
+
                 expect(
                     await worker.finish({
                         ...claim!,
@@ -354,10 +384,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now: new Date(),
                     }),
                 ).toBe(true);
+
                 const [cancelled] = await db
                     .select()
                     .from(textsAiJobsTable)
                     .where(eq(textsAiJobsTable.id, foreign.id));
+
                 expect(cancelled).toMatchObject({
                     ownerId: reader,
                     executionState: 'cancelled',
@@ -369,52 +401,64 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     externalSourceKind: 'knowledge-block',
                     providerReservationState: 'settled',
                 });
+
                 expect(cancelled!.fencingToken).toBeGreaterThan(
                     BigInt(lease!.lease.fencingToken),
                 );
+
                 const [settled] = await db
                     .select()
                     .from(aiCreditActionsTable)
                     .where(eq(aiCreditActionsTable.id, foreign.id));
+
                 expect(settled).toMatchObject({
                     state: 'settled',
                     outcome: 'failure',
                     chargedMilli: 0n,
                 });
+
                 expect(
                     await db
                         .select()
                         .from(aiCreditActionsTable)
                         .where(eq(aiCreditActionsTable.id, actorJob.id)),
                 ).toHaveLength(0);
+
                 const [attempt] = await db
                     .select()
                     .from(aiCreditActionAttemptsTable)
                     .where(
                         eq(aiCreditActionAttemptsTable.actionId, foreign.id),
                     );
+
                 expect(attempt).toMatchObject({
                     state: 'settled',
                     successful: 0,
                 });
+
                 expect(await notes.get(reader, copy.id)).toMatchObject({
                     id: copy.id,
                     title: content.title,
                 });
+
                 const [unchanged] = await db
                     .select()
                     .from(textsAiJobsTable)
                     .where(eq(textsAiJobsTable.id, control.id));
+
                 expect(unchanged).toMatchObject({
                     executionState: 'queued',
                     inputPayload: expect.any(Object),
                 });
+
                 expect(
                     await client`select actor_id,note_id from knowledge_private_translations`,
                 ).toMatchObject([{ actor_id: reader, note_id: copy.id }]);
+
                 await expect(
                     jobs.markDispatched(lease!.lease, context()),
                 ).resolves.toBe(false);
+
                 await expect(
                     connection`select languon_quiesce_knowledge_learning_for_purge(${owner}::uuid,'knowledge-learning-purger',${claim!.fencingToken})`,
                 ).rejects.toBeDefined();
@@ -425,6 +469,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await client.unsafe(`drop owned by ${role}`);
                     await client.unsafe(`drop role ${role}`);
                 }
+
                 await client.end();
             }
         }, 120000);

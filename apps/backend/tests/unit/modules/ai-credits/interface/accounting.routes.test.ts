@@ -32,6 +32,7 @@ describe('admin accounting boundaries', () => {
                 refreshTokenTtlSeconds: 3600,
             }),
         });
+
         return {
             app,
             record,
@@ -40,6 +41,7 @@ describe('admin accounting boundaries', () => {
             authorizeOperation,
         };
     }
+
     const payment = {
         kind: 'provider_deposit',
         providerId: 'test',
@@ -50,6 +52,7 @@ describe('admin accounting boundaries', () => {
         source: 'manual',
         idempotencyKey: '11111111-1111-4111-8111-111111111111',
     };
+
     it('checks trusted origin before recording money facts', async () => {
         const { app, record, authorizeSensitiveOperation } = setup();
         const response = await app.request('/admin/ai/accounting/records', {
@@ -61,10 +64,12 @@ describe('admin accounting boundaries', () => {
             },
             body: JSON.stringify(payment),
         });
+
         expect(response.status).toBe(403);
         expect(authorizeSensitiveOperation).not.toHaveBeenCalled();
         expect(record).not.toHaveBeenCalled();
     });
+
     it('uses recent owner authorization and authenticated actor for writes', async () => {
         const { app, record, authorizeSensitiveOperation } = setup();
         const response = await app.request('/admin/ai/accounting/records', {
@@ -76,6 +81,7 @@ describe('admin accounting boundaries', () => {
             },
             body: JSON.stringify(payment),
         });
+
         expect(response.status).toBe(200);
         expect(authorizeSensitiveOperation).toHaveBeenCalledOnce();
         expect(record).toHaveBeenCalledWith(
@@ -84,6 +90,7 @@ describe('admin accounting boundaries', () => {
             expect.any(Date),
         );
     });
+
     it('returns a valid explicit retryable response while durable reports are pending', async () => {
         const { app, report, authorizeOperation } = setup();
         authorizeOperation.mockResolvedValue(undefined);
@@ -92,18 +99,21 @@ describe('admin accounting boundaries', () => {
             '/admin/ai/accounting/report?from=2026-10-01T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z',
             { headers: { Authorization: 'Bearer fake.local.token' } },
         );
+
         expect(response.status).toBe(503);
         expect(response.headers.get('Retry-After')).toBe('2');
         expect(
             AdminErrorResponseSchema.parse(await response.json()).error.code,
         ).toBe('service_unavailable');
     });
+
     it('never queries USD reports when authorization fails', async () => {
         const { app, report } = setup();
         await app.request(
             '/admin/ai/accounting/report?from=2026-10-01T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z',
             { headers: { Authorization: 'Bearer fake.local.token' } },
         );
+
         expect(report).not.toHaveBeenCalled();
     });
 });

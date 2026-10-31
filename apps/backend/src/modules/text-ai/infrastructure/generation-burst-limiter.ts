@@ -20,10 +20,13 @@ export class RedisGenerationBurstLimiter implements GenerationBurstLimiter {
                 windowMs: 60_000,
                 ...(input.signal ? { signal: input.signal } : {}),
             });
+
             return { allowed: result.allowed };
         } catch (error) {
-            if (error instanceof RateLimitUnavailableError)
+            if (error instanceof RateLimitUnavailableError) {
                 throw new GenerationBurstUnavailableError();
+            }
+
             throw error;
         }
     }

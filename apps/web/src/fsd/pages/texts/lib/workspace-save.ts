@@ -44,6 +44,7 @@ export async function persistWorkspace(options: {
         ),
         targetLanguage: TextLanguageSchema.parse(input.targetLanguage),
     };
+
     if (!current) {
         current = (
             await request((token) =>
@@ -61,8 +62,10 @@ export async function persistWorkspace(options: {
                 }),
             )
         ).text;
+
         onCreated(current);
     }
+
     if (proposal) {
         try {
             return (
@@ -82,6 +85,7 @@ export async function persistWorkspace(options: {
                         textsApi.getText(token, current.id),
                     )
                 ).text;
+
                 if (
                     latest.version === current.version + 1 &&
                     latest.title === workspaceTitle(input) &&
@@ -90,15 +94,18 @@ export async function persistWorkspace(options: {
                     latest.targetLanguage === proposal.targetLanguage &&
                     JSON.stringify(latest.alignment) ===
                         JSON.stringify(proposal.alignment)
-                )
+                ) {
                     return latest;
+                }
             } catch {
                 /* Keep the original failure and proposal available for retry. */
             }
+
             throw cause;
         }
     }
-    if (editing)
+
+    if (editing) {
         return (
             await request((token) =>
                 textsApi.saveText(token, current.id, {
@@ -108,7 +115,9 @@ export async function persistWorkspace(options: {
                 }),
             )
         ).text;
-    if (document)
+    }
+
+    if (document) {
         return (
             await request((token) =>
                 textsApi.saveText(token, current.id, {
@@ -119,5 +128,7 @@ export async function persistWorkspace(options: {
                 }),
             )
         ).text;
+    }
+
     return current;
 }

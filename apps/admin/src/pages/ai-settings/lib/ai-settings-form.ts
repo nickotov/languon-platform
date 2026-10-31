@@ -24,6 +24,7 @@ export function enabledDefaultModels(
     const activeProviderOption = providers.find(
         (provider) => provider.id === activeProvider,
     );
+
     return (
         activeProviderOption?.models.filter(
             (model) => enabledModels.includes(model.id) && model.available,
@@ -38,6 +39,7 @@ export function toMutationRequest(
     if (!values.activeProvider || !values.defaultModel) {
         throw new Error('Provider and default model are required.');
     }
+
     return {
         activeProvider: values.activeProvider as 'deepseek' | 'kie',
         defaultModel: values.defaultModel,

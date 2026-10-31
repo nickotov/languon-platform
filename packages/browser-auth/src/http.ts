@@ -70,6 +70,7 @@ export function createBrowserApiClient<TDetail extends BrowserApiErrorDetail>(
     const createError = (status: number, detail: TDetail) =>
         options.createError?.(status, detail) ??
         new BrowserApiError(status, detail);
+
     return {
         request: async <TBody, TResponse>(
             path: string,
@@ -107,6 +108,7 @@ export function createBrowserApiClient<TDetail extends BrowserApiErrorDetail>(
                 ) {
                     throw cause;
                 }
+
                 throw createError(0, {
                     code: 'service_unavailable',
                     correlationId: 'client-network-error',
@@ -117,6 +119,7 @@ export function createBrowserApiClient<TDetail extends BrowserApiErrorDetail>(
             const payload = await readJson(response);
             if (!response.ok) {
                 const parsed = options.errorResponseSchema.safeParse(payload);
+
                 throw createError(
                     response.status,
                     parsed.success
@@ -132,6 +135,7 @@ export function createBrowserApiClient<TDetail extends BrowserApiErrorDetail>(
                           } as TDetail),
                 );
             }
+
             try {
                 return requestOptions.responseSchema.parse(payload);
             } catch {
@@ -147,7 +151,10 @@ export function createBrowserApiClient<TDetail extends BrowserApiErrorDetail>(
 
 async function readJson(response: Response): Promise<unknown> {
     const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) return undefined;
+    if (!contentType.includes('application/json')) {
+        return undefined;
+    }
+
     try {
         return await response.json();
     } catch {

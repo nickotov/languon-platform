@@ -34,9 +34,11 @@ export class JoseAccessTokenSigner implements AccessTokenSigner {
                 'The JWT secret must contain at least 32 bytes.',
             );
         }
+
         if (!options.audience || !options.issuer) {
             throw new RangeError('The JWT issuer and audience are required.');
         }
+
         if (
             !Number.isInteger(clockToleranceSeconds) ||
             clockToleranceSeconds < 0 ||

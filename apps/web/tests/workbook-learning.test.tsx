@@ -20,6 +20,7 @@ vi.mock('@/fsd/features/workbook-learning/api/learning-api', () => ({
         cancelEvaluation: vi.fn(),
     },
 }));
+
 const noteId = '11111111-1111-4111-8111-111111111111';
 const exerciseId = '22222222-2222-4222-8222-222222222222';
 const choiceId = '33333333-3333-4333-8333-333333333333';
@@ -47,6 +48,7 @@ const state: WorkbookLearningState = {
     exerciseRevisions: [{ exerciseId, revision }],
     truncated: false,
 };
+
 function wrapper({ children }: { children: ReactNode }) {
     const client = new QueryClient({
         defaultOptions: {
@@ -54,10 +56,12 @@ function wrapper({ children }: { children: ReactNode }) {
             mutations: { retry: false },
         },
     });
+
     return (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 }
+
 const requestWithSession = <T,>(operation: (token: string) => Promise<T>) =>
     operation('token');
 const options = {
@@ -67,11 +71,13 @@ const options = {
     locale: 'en',
     requestWithSession,
 };
+
 beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(learningApi.state).mockResolvedValue(state);
     vi.mocked(learningApi.event).mockResolvedValue({} as never);
 });
+
 describe('private workbook learning', () => {
     it('waits for private state before enabling tracked hints and saves both exercise identities', async () => {
         let resolveInitial!: (value: WorkbookLearningState) => void;
@@ -85,12 +91,15 @@ describe('private workbook learning', () => {
         const initial = new Promise<WorkbookLearningState>((resolve) => {
             resolveInitial = resolve;
         });
+
         vi.mocked(learningApi.state)
             .mockResolvedValue(nextState)
             .mockImplementationOnce(() => initial);
+
         const { result } = renderHook(() => useWorkbookLearning(options), {
             wrapper,
         });
+
         expect(result.current.options(block).interactionsDisabled).toBe(true);
         expect(result.current.options(block).onInteraction).toBeUndefined();
         await act(async () => resolveInitial(nextState));
@@ -100,10 +109,12 @@ describe('private workbook learning', () => {
             result.current
                 .options(block)
                 .onInteraction?.(exerciseId, { kind: 'hint-used' });
+
             result.current
                 .options({ ...block, id: noteId })
                 .onInteraction?.(noteId, { kind: 'hint-used' });
         });
+
         await waitFor(() => expect(learningApi.event).toHaveBeenCalledTimes(2));
         expect(
             vi
@@ -111,6 +122,7 @@ describe('private workbook learning', () => {
                 .mock.calls.map((call) => call[2].blockId)
                 .sort(),
         ).toEqual([exerciseId, noteId].sort());
+
         expect(learningApi.attempt).not.toHaveBeenCalled();
     });
 
@@ -118,15 +130,18 @@ describe('private workbook learning', () => {
         vi.mocked(learningApi.attempt)
             .mockRejectedValueOnce(new Error('offline'))
             .mockResolvedValueOnce({} as never);
+
         const { result } = renderHook(() => useWorkbookLearning(options), {
             wrapper,
         });
+
         await waitFor(() => expect(result.current.ready).toBe(true));
         act(() =>
             result.current
                 .options(block)
                 .onSubmitAttempt?.(exerciseId, choiceId),
         );
+
         await waitFor(() => expect(result.current.canRetry).toBe(true));
         const first = vi.mocked(learningApi.attempt).mock.calls[0]![2];
         expect(first).toMatchObject({
@@ -134,52 +149,63 @@ describe('private workbook learning', () => {
             exerciseRevision: revision,
             answer: { format: 'multiple-choice', choiceId },
         });
+
         expect(first).not.toHaveProperty('correct');
         act(() => result.current.retry());
         await waitFor(() =>
             expect(learningApi.attempt).toHaveBeenCalledTimes(2),
         );
+
         expect(vi.mocked(learningApi.attempt).mock.calls[1]![2]).toEqual(first);
         await waitFor(() => expect(result.current.canRetry).toBe(false));
     });
+
     it('does not load or save private state for anonymous readers', async () => {
         const { result } = renderHook(
             () => useWorkbookLearning({ ...options, actorId: undefined }),
             { wrapper },
         );
+
         expect(result.current.options(block).onSubmitAttempt).toBeUndefined();
         expect(result.current.options(block).interactionsDisabled).toBe(false);
         act(() => result.current.complete());
         expect(learningApi.state).not.toHaveBeenCalled();
         expect(learningApi.completion).not.toHaveBeenCalled();
     });
+
     it('blocks saves when rendered content and server note versions differ', async () => {
         const { result } = renderHook(
             () => useWorkbookLearning({ ...options, noteVersion: 2 }),
             { wrapper },
         );
+
         await waitFor(() => expect(result.current.stale).toBe(true));
         expect(result.current.options(block).onSubmitAttempt).toBeUndefined();
         act(() => result.current.complete());
         expect(learningApi.completion).not.toHaveBeenCalled();
     });
+
     it('records reveal as an observation without creating a correct attempt', async () => {
         const { result } = renderHook(() => useWorkbookLearning(options), {
             wrapper,
         });
+
         await waitFor(() => expect(result.current.ready).toBe(true));
         act(() =>
             result.current
                 .options(block)
                 .onInteraction?.(exerciseId, { kind: 'answer-revealed' }),
         );
+
         await waitFor(() => expect(learningApi.event).toHaveBeenCalledTimes(1));
         expect(vi.mocked(learningApi.event).mock.calls[0]![2]).toMatchObject({
             kind: 'answer-revealed',
             exerciseRevision: revision,
         });
+
         expect(learningApi.attempt).not.toHaveBeenCalled();
     });
+
     it('saves and evaluates an exact private attempt, then exposes inline feedback without opening chat', async () => {
         const onAiRequest = vi.fn();
         const attempt = {
@@ -197,9 +223,11 @@ describe('private workbook learning', () => {
                 validAlternative: true,
             },
         };
+
         vi.mocked(learningApi.attempt).mockResolvedValue({
             attempt: { ...attempt, evaluation: { status: 'unchecked' } },
         });
+
         vi.mocked(learningApi.evaluate).mockResolvedValue({
             job: {
                 id: choiceId,
@@ -219,21 +247,26 @@ describe('private workbook learning', () => {
                 completedAt: attempt.createdAt,
             },
         });
+
         vi.mocked(learningApi.state).mockResolvedValue({
             ...state,
             attempts: [attempt],
         });
+
         const { result } = renderHook(
             () => useWorkbookLearning({ ...options, onAiRequest }),
             { wrapper },
         );
+
         await waitFor(() => expect(result.current.ready).toBe(true));
         act(() =>
             result.current.options(block).onEvaluate?.(exerciseId, choiceId),
         );
+
         await waitFor(() =>
             expect(learningApi.evaluate).toHaveBeenCalledOnce(),
         );
+
         expect(learningApi.attempt).toHaveBeenCalledWith(
             'token',
             noteId,
@@ -244,6 +277,7 @@ describe('private workbook learning', () => {
             }),
             undefined,
         );
+
         expect(learningApi.evaluate).toHaveBeenCalledWith(
             'token',
             noteId,
@@ -251,26 +285,32 @@ describe('private workbook learning', () => {
             undefined,
             undefined,
         );
+
         await waitFor(() =>
             expect(result.current.options(block).evaluationPending).toBe(false),
         );
+
         expect(result.current.options(block).feedback).toContain(
             'Valid alternative.',
         );
+
         expect(result.current.options(block).learnerState).toMatchObject({
             answer: choiceId,
             correct: true,
             validAlternative: true,
         });
+
         expect(onAiRequest).not.toHaveBeenCalled();
         expect(learningApi.event).not.toHaveBeenCalled();
     });
+
     it('maps gap values to authored identities without accepting injected extra gaps', () => {
         const gapBlock = {
             ...block,
             format: 'fill-in-the-blank',
             parts: [{ kind: 'gap', id: choiceId, acceptedAnswers: ['a'] }],
         } as ExerciseLearningBlock;
+
         expect(
             attemptAnswer(gapBlock, { [choiceId]: 'a', unexpected: 'b' }),
         ).toEqual({

@@ -8,6 +8,7 @@ it('maps a captured cursor through edits and releases its transaction listener',
         extensions: [StarterKit],
         content: '<p>Some prose</p>',
     });
+
     editor.commands.setTextSelection(3);
     const bookmark = captureBlockInsertion(editor)!;
     editor.commands.insertContentAt(1, 'xx');
@@ -18,11 +19,13 @@ it('maps a captured cursor through edits and releases its transaction listener',
     editor.destroy();
     expect(bookmark.resolve()).toBeNull();
 });
+
 it('invalidates a captured point removed during a draft flush', () => {
     const editor = new Editor({
         extensions: [StarterKit],
         content: '<p>Some prose</p>',
     });
+
     editor.commands.setTextSelection(3);
     const bookmark = captureBlockInsertion(editor)!;
     editor.commands.deleteRange({ from: 1, to: 7 });

@@ -19,6 +19,7 @@ const vocabulary: LearningBlock = {
         },
     ],
 };
+
 describe('Knowledge snippet source selection', () => {
     it('selects the exact source field without forwarding renderer text', () => {
         expect(knowledgeSnippetSelector(vocabulary, 'travail', 'fr')).toEqual({
@@ -26,17 +27,21 @@ describe('Knowledge snippet source selection', () => {
             entryId,
             field: 'term',
         });
+
         expect(
             knowledgeSnippetSelector(vocabulary, 'Je travaille.', 'fr'),
         ).toEqual({ kind: 'vocabulary', entryId, field: 'example' });
+
         expect(knowledgeSnippetSelector(vocabulary, 'работа', 'ru')).toBeNull();
         expect(
             knowledgeSnippetSelector(vocabulary, 'arbitrary text', 'fr'),
         ).toBeNull();
+
         expect(
             knowledgeSnippetSelector(vocabulary, 'travail', 'en'),
         ).toBeNull();
     });
+
     it('binds bilingual single segments and complete original separately', () => {
         const block: LearningBlock = {
             id: blockId,
@@ -48,17 +53,21 @@ describe('Knowledge snippet source selection', () => {
             ],
             translations: [],
         };
+
         expect(knowledgeSnippetSelector(block, 'Bonjour.', 'fr')).toEqual({
             kind: 'bilingual',
             segmentId: entryId,
         });
+
         expect(
             knowledgeSnippetSelector(block, 'Bonjour.\n\nAu revoir.', 'fr'),
         ).toEqual({ kind: 'bilingual' });
+
         expect(
             knowledgeSnippetSelector(block, 'Bonjour. Au revoir.', 'fr'),
         ).toBeNull();
     });
+
     it('permits prepared grammar examples, without synthesizing rules or private translations', () => {
         const block: LearningBlock = {
             id: blockId,
@@ -67,13 +76,16 @@ describe('Knowledge snippet source selection', () => {
             rule: 'A rule.',
             examples: [{ text: 'Je joue.', translation: 'Я играю.' }],
         };
+
         expect(knowledgeSnippetSelector(block, 'Je joue.', 'fr')).toEqual({
             kind: 'grammar-example',
             index: 0,
         });
+
         expect(knowledgeSnippetSelector(block, 'A rule.', 'fr')).toBeNull();
         expect(knowledgeSnippetSelector(block, 'Я играю.', 'ru')).toBeNull();
     });
+
     it('keeps unprepared media out of text pronunciation requests', () => {
         expect(
             knowledgeSnippetSelector(

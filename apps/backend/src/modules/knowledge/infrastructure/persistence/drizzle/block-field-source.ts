@@ -24,7 +24,9 @@ export async function authorizeKnowledgeFieldDraft(
         .where(and(eq(notes.id, input.noteId), eq(notes.ownerId, actorId)))
         .for('share');
 
-    if (!source) throw new TextsAiError('access_revoked');
+    if (!source) {
+        throw new TextsAiError('access_revoked');
+    }
 }
 
 export async function authorizeKnowledgeFieldJobSource(
@@ -46,8 +48,14 @@ export async function authorizeKnowledgeFieldJobSource(
         return;
     }
 
-    if (input.externalSourceKind !== 'knowledge-field') return;
-    if (!input.id) throw new TextsAiError('access_revoked');
+    if (input.externalSourceKind !== 'knowledge-field') {
+        return;
+    }
+
+    if (!input.id) {
+        throw new TextsAiError('access_revoked');
+    }
+
     const [source] = await tx
         .select()
         .from(sources)
@@ -58,6 +66,9 @@ export async function authorizeKnowledgeFieldJobSource(
             ),
         );
 
-    if (!source) throw new TextsAiError('access_revoked');
+    if (!source) {
+        throw new TextsAiError('access_revoked');
+    }
+
     await authorizeKnowledgeFieldDraft(tx, input.ownerId, source);
 }

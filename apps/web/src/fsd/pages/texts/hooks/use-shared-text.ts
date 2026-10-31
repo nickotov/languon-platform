@@ -18,16 +18,20 @@ export function useSharedText(kind: 'text' | 'folder', shareId: string) {
             const parsed = TextShareKeySchema.safeParse(
                 window.location.hash.slice(1),
             );
+
             setCapability({
                 key: parsed.success ? parsed.data : '',
                 locator,
                 epoch: crypto.randomUUID(),
             });
         }
+
         update();
         window.addEventListener('hashchange', update);
+
         return () => window.removeEventListener('hashchange', update);
     }, [kind, shareId, locator]);
+
     const key = capability?.locator === locator ? capability.key : '';
     const query = useInfiniteQuery({
         queryKey: ['shared-texts', kind, shareId, capability?.epoch, userId],
@@ -37,6 +41,7 @@ export function useSharedText(kind: 'text' | 'folder', shareId: string) {
                 limit: 100,
                 ...(pageParam ? { cursor: pageParam } : {}),
             };
+
             return kind === 'text'
                 ? textsApi.readSharedText(shareId, key, options, signal)
                 : textsApi.readSharedFolder(shareId, key, options, signal);

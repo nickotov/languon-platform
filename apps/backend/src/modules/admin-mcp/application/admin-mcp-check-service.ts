@@ -78,6 +78,7 @@ export class AdminMcpCheckService {
         );
         const tomorrow = new Date();
         tomorrow.setUTCHours(24, 0, 0, 0);
+
         return {
             maximumCostUsd: unitsAmount(effective),
             applicationMaximumCostUsd: unitsAmount(
@@ -96,7 +97,10 @@ export class AdminMcpCheckService {
     async status(actor: AdminMcpActor, operationKey?: string) {
         requirePermission(actor, 'model-checks.run');
         requireAction(actor, 'model-checks.status');
-        if (operationKey) z.uuid().parse(operationKey);
+        if (operationKey) {
+            z.uuid().parse(operationKey);
+        }
+
         return {
             limits: await this.limits(actor),
             reservation: operationKey
@@ -104,6 +108,7 @@ export class AdminMcpCheckService {
                 : null,
         };
     }
+
     async run(
         actor: AdminMcpActor,
         secret: string,
@@ -112,6 +117,7 @@ export class AdminMcpCheckService {
         try {
             const { operationKey, request, reason } =
                 adminMcpCheckRequestSchema.parse(raw);
+
             requirePermission(actor, 'model-checks.run');
             requireAction(actor, 'model-checks.run');
             assertSafeAuditContext(reason);
@@ -122,33 +128,43 @@ export class AdminMcpCheckService {
                     this.dependencies.probes.limits.maximumCostMicros,
                 );
             const amount = unitsAmount(effectiveMaximum);
-            if (!cap || amountUnits(amount) > amountUnits(cap.perCheckUsd))
+            if (!cap || amountUnits(amount) > amountUnits(cap.perCheckUsd)) {
                 throw new AdminMcpError(
                     'quota_exceeded',
                     'Configured model-check maximum exceeds this token ceiling. An administrator must lower the application check maximum or issue a replacement token.',
                 );
+            }
+
             if (
                 amountUnits(request.approvedMaximumCostUsd) !==
                 amountUnits(amount)
-            )
+            ) {
                 throw new AdminMcpError(
                     'stale_preview',
                     `Review the current per-check maximum: USD ${amount}.`,
                 );
+            }
+
             const reservation = await this.dependencies.budget.reserve(
                 actor,
                 operationKey,
                 { request, reason },
                 amount,
             );
-            if (reservation.replay)
+
+            if (reservation.replay) {
                 return this.dependencies.quotas.get(actor, operationKey);
+            }
+
             let dispatchAuthorized = false;
             const controller = new AbortController();
             // Authority monitoring only exists while an explicit check is executing.
             let polling = false;
             const timer = setInterval(() => {
-                if (polling) return;
+                if (polling) {
+                    return;
+                }
+
                 polling = true;
                 void this.dependencies.credentials
                     .authenticate(secret, 'model-checks.run')
@@ -157,12 +173,14 @@ export class AdminMcpCheckService {
                         polling = false;
                     });
             }, 1000);
+
             timer.unref();
             try {
                 await this.dependencies.credentials.authenticate(
                     secret,
                     'model-checks.run',
                 );
+
                 const check = await this.dependencies.probes.run(
                     actor.userId,
                     request,
@@ -172,19 +190,23 @@ export class AdminMcpCheckService {
                             actor,
                             reservation.id,
                         );
+
                         dispatchAuthorized = true;
                     },
                     effectiveMaximum,
                 );
+
                 await this.dependencies.budget.settle(
                     actor,
                     reservation.id,
                     check.providerCostUsd,
                     check,
                 );
+
                 const providerExpenseId = await this.dependencies.expenseId(
                     check.id,
                 );
+
                 await this.dependencies.quotas.recordOutcome(
                     actor,
                     check.state === 'passed'
@@ -201,6 +223,7 @@ export class AdminMcpCheckService {
                     },
                     check.state === 'passed' ? 'success' : 'rejected',
                 );
+
                 return { reservationId: reservation.id, check };
             } catch (error) {
                 const notDispatched = !dispatchAuthorized;
@@ -215,6 +238,7 @@ export class AdminMcpCheckService {
                             : 'execution_unknown',
                     },
                 );
+
                 await this.dependencies.quotas.recordOutcome(
                     actor,
                     'model-check.failed',
@@ -226,6 +250,7 @@ export class AdminMcpCheckService {
                     },
                     'rejected',
                 );
+
                 throw error;
             } finally {
                 clearInterval(timer);
@@ -237,6 +262,7 @@ export class AdminMcpCheckService {
                 raw,
                 error,
             );
+
             throw error;
         }
     }

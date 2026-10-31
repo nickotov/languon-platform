@@ -32,6 +32,7 @@ export function ResponseActions({
             setCopyError(true);
         }
     }
+
     return (
         <>
             <button type='button' className={styles.quiet} onClick={copyAnswer}>

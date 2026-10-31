@@ -10,7 +10,10 @@ export function applyLearningBlockEdit(
     previous: LearningBlock[],
     next: LearningBlock[],
 ): boolean {
-    if (!editor.isEditable || next.length === 0) return false;
+    if (!editor.isEditable || next.length === 0) {
+        return false;
+    }
+
     const current = blocks(editor);
     const firstPrevious = previous[0];
     if (
@@ -21,24 +24,30 @@ export function applyLearningBlockEdit(
         if (
             JSON.stringify(actual.map((item) => item.block.id)) !==
             JSON.stringify(previous.map((block) => block.id))
-        )
+        ) {
             return false;
+        }
     }
+
     const found = previous.map((block) =>
         current.find((item) => item.block.id === block.id),
     );
+
     if (
         found.some(
             (item, index) =>
                 !item ||
                 JSON.stringify(item.block) !== JSON.stringify(previous[index]),
         )
-    )
+    ) {
         return false;
+    }
+
     const transaction = editor.state.tr;
     const nodes = next.map((block) =>
         editor.schema.nodes.learningBlock!.create({ block }),
     );
+
     if (found.length) {
         const first = found[0]!;
         const last = found[found.length - 1]!;
@@ -49,17 +58,23 @@ export function applyLearningBlockEdit(
                 (item, index) =>
                     index > 0 && !joinsPreviousBlock(found[index - 1]!, item!),
             )
-        )
+        ) {
             return false;
+        }
+
         transaction.replaceWith(
             first.position,
             last.position + last.size,
             nodes,
         );
-    } else transaction.insert(transaction.doc.content.size, nodes);
+    } else {
+        transaction.insert(transaction.doc.content.size, nodes);
+    }
+
     try {
         normalizeEditorDocument(transaction.doc.toJSON());
         editor.view.dispatch(transaction);
+
         return true;
     } catch {
         return false;

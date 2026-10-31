@@ -63,8 +63,9 @@ export async function sentencePracticeAttempts(
                         cursor.dictionaryId !== owned.dictionary.id ||
                         cursor.direction !== (query.direction ?? null) ||
                         cursor.exerciseId !== (query.exerciseId ?? null)
-                    )
+                    ) {
                         throw new Error();
+                    }
                 } catch {
                     throw new LearningInvalidRequestError();
                 }
@@ -148,10 +149,12 @@ export async function sentencePracticeRevealReference(
                 ),
             );
 
-        if (receipt)
+        if (receipt) {
             throw new SentenceConflictError(
                 receipt.invalidatedAt ? 'stale_content' : 'operation_conflict',
             );
+        }
+
         const [paid] = await tx
             .select({ id: jobs.id })
             .from(jobs)
@@ -162,7 +165,10 @@ export async function sentencePracticeRevealReference(
                 ),
             );
 
-        if (paid) throw new SentenceConflictError('operation_conflict');
+        if (paid) {
+            throw new SentenceConflictError('operation_conflict');
+        }
+
         await assertSentencePracticeVisible(tx, exerciseId, id);
         const exercise = await readableExercise(
             tx,
@@ -182,8 +188,9 @@ export async function sentencePracticeRevealReference(
             );
 
         if (prior) {
-            if (prior.requestFingerprint !== hash)
+            if (prior.requestFingerprint !== hash) {
                 throw new SentenceConflictError('operation_conflict');
+            }
 
             return { review: await presentSentenceManualReview(tx, prior) };
         }
@@ -235,8 +242,9 @@ export async function sentencePracticeManualReviews(
                         cursor.dictionaryId !== owned.dictionary.id ||
                         cursor.direction !== (query.direction ?? null) ||
                         cursor.exerciseId !== (query.exerciseId ?? null)
-                    )
+                    ) {
                         throw new Error();
+                    }
                 } catch {
                     throw new LearningInvalidRequestError();
                 }

@@ -35,7 +35,10 @@ async function recoverInterview(
         .select()
         .from(operations)
         .where(eq(operations.id, operationId));
-    if (operation) await settleInterruptedInterviewCalls(tx, operation);
+
+    if (operation) {
+        await settleInterruptedInterviewCalls(tx, operation);
+    }
 }
 
 export function createLearnerPortraitModule(input: {
@@ -51,6 +54,7 @@ export function createLearnerPortraitModule(input: {
         }),
         recoverInterview,
     );
+
     return {
         portraits: new PortraitService(
             new DrizzlePortraitStore(input.database),
@@ -65,6 +69,7 @@ export function createLearnerPortraitModule(input: {
         store,
     };
 }
+
 export function createLearnerPortraitWorkerComposition(input: {
     database: PortraitDatabase;
     credentials: Partial<
@@ -94,9 +99,13 @@ export function createLearnerPortraitWorkerComposition(input: {
         createRunner(operation) {
             const execution =
                 operation.execution as unknown as InterviewExecution;
-            if (!execution.snapshot)
+
+            if (!execution.snapshot) {
                 throw new Error('Interview execution snapshot is unavailable.');
+            }
+
             const snapshot = execution.snapshot;
+
             return {
                 run: async (runInput) =>
                     runPinnedFallback({
@@ -155,12 +164,14 @@ export function createLearnerPortraitWorkerComposition(input: {
                                         selectedExecution,
                                     ),
                             });
+
                             return runner.run(runInput);
                         },
                     }),
             };
         },
     });
+
     // processNext propagates shutdown to active calls and settles them. A killed
     // process is finalized by the 60-second durable lease recovery; never replay
     // ambiguous provider work or release its numerical liability early.

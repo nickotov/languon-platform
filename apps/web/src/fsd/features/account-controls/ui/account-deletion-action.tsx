@@ -54,7 +54,9 @@ export function AccountDeletionAction({
     async function schedule(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (confirmation !== 'DELETE' || !acknowledged || pending) return;
+        if (confirmation !== 'DELETE' || !acknowledged || pending) {
+            return;
+        }
 
         setPending(true);
 
@@ -70,14 +72,18 @@ export function AccountDeletionAction({
             setOpen(false);
         } catch (caught) {
             if (caught instanceof AuthApiError) {
-                if (caught.status === 401 || caught.status === 403)
+                if (caught.status === 401 || caught.status === 403) {
                     setError(t('profile.deleteRecentAuth'));
-                else if (caught.detail.code === 'owner_transfer_required')
+                } else if (caught.detail.code === 'owner_transfer_required') {
                     setError(t('profile.deleteOwnerTransfer'));
-                else if (caught.status === 409)
+                } else if (caught.status === 409) {
                     setError(t('profile.deleteConflict'));
-                else setError(t('profile.deleteFailed'));
-            } else setError(t('profile.deleteFailed'));
+                } else {
+                    setError(t('profile.deleteFailed'));
+                }
+            } else {
+                setError(t('profile.deleteFailed'));
+            }
         } finally {
             setPending(false);
         }

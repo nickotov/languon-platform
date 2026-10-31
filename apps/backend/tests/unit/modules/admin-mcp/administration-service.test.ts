@@ -13,6 +13,7 @@ const actor: AdminMcpActor = {
     allowedActions: ['users.lookup', 'credits.grant'],
     limits: { creditGrants: { perOperation: '10', perDay: '10' } },
 };
+
 function fixture() {
     const port = {
         read: vi.fn(async () => ({ user: { id: actor.userId } })),
@@ -21,8 +22,10 @@ function fixture() {
         recordRead: vi.fn(async () => undefined),
         recordRejected: vi.fn(async () => undefined),
     } satisfies AdminMcpAdministrationPort;
+
     return { port, service: new AdminMcpAdministrationService(port) };
 }
+
 describe('delegated administration application boundary', () => {
     it('validates read arguments, separates the reason and records success before disclosing data', async () => {
         const { service, port } = fixture();
@@ -30,9 +33,11 @@ describe('delegated administration application boundary', () => {
             email: 'synthetic@example.test',
             reason: 'Inspect synthetic account',
         });
+
         expect(port.read).toHaveBeenCalledWith(actor, 'users.lookup', {
             email: 'synthetic@example.test',
         });
+
         expect(port.recordRead).toHaveBeenCalledWith(
             actor,
             'users.lookup',
@@ -40,8 +45,10 @@ describe('delegated administration application boundary', () => {
             result,
             'Inspect synthetic account',
         );
+
         expect(port.recordRejected).not.toHaveBeenCalled();
     });
+
     it('rejects unknown input and frozen-action violations before invoking persistence', async () => {
         const { service, port } = fixture();
         await expect(
@@ -50,6 +57,7 @@ describe('delegated administration application boundary', () => {
                 sql: 'select 1',
             }),
         ).rejects.toThrow();
+
         expect(port.read).not.toHaveBeenCalled();
         await expect(
             service.preview({ ...actor, allowedActions: [] }, 'credits.grant', {
@@ -60,9 +68,11 @@ describe('delegated administration application boundary', () => {
                 reason: 'Synthetic grant',
             }),
         ).rejects.toMatchObject({ code: 'permission_denied' });
+
         expect(port.preview).not.toHaveBeenCalled();
         expect(port.recordRejected).toHaveBeenCalledTimes(2);
     });
+
     it('validates apply keys and records application rejection without swallowing recovery codes', async () => {
         const { service, port } = fixture();
         await expect(
@@ -71,6 +81,7 @@ describe('delegated administration application boundary', () => {
                 operationKey: 'invalid',
             }),
         ).rejects.toThrow();
+
         expect(port.apply).not.toHaveBeenCalled();
         const request = {
             previewId: actor.tokenId,

@@ -27,7 +27,9 @@ export function Breadcrumb({
 }: BreadcrumbProps) {
     const [expanded, setExpanded] = useState(false);
 
-    if (!items.length) return null;
+    if (!items.length) {
+        return null;
+    }
 
     const collapse =
         !expanded && maxVisibleItems > 2 && items.length > maxVisibleItems;

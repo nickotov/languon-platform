@@ -55,11 +55,13 @@ export async function submitTranscription(
             (receipt.ownerId !== ownerId ||
                 receipt.fingerprint !== fingerprint ||
                 receipt.noteId !== input.noteId)
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'idempotency_conflict',
                 'This operation identity was already used.',
             );
+        }
+
         const [existing] = await tx
             .select()
             .from(jobs)
@@ -68,13 +70,17 @@ export async function submitTranscription(
             )
             .for('update');
 
-        if (receipt && !existing)
+        if (receipt && !existing) {
             throw new KnowledgeDomainError(
                 'knowledge_not_found',
                 'This transcription was deleted and cannot be recreated.',
             );
-        if (existing && existing.state !== 'confirmation-required')
+        }
+
+        if (existing && existing.state !== 'confirmation-required') {
             return transcriptionJob(existing);
+        }
+
         const source = await ownedTranscriptionAudio(
             tx,
             ownerId,
@@ -118,11 +124,13 @@ export async function submitTranscription(
             (existing.configurationRevisionId !==
                 configuration.configuration.id ||
                 existing.checksum !== source.blob.checksum)
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'Transcription configuration changed. Start a fresh preview.',
             );
+        }
+
         if (!existing) {
             await tx.insert(receipts).values({
                 id: input.operationId,
@@ -154,7 +162,7 @@ export async function submitTranscription(
                 createdAt: at,
                 updatedAt: at,
             });
-        } else
+        } else {
             await tx
                 .update(jobs)
                 .set({
@@ -166,6 +174,8 @@ export async function submitTranscription(
                     updatedAt: at,
                 })
                 .where(eq(jobs.id, input.operationId));
+        }
+
         if (!needsConfirmation) {
             await policyParticipant.pinAction({
                 jobId: input.operationId,
@@ -199,8 +209,9 @@ export async function submitTranscription(
                 deadlineAt,
             });
 
-            if (funding === 'customer' && action.heldMilli < maximumCredits)
+            if (funding === 'customer' && action.heldMilli < maximumCredits) {
                 throw new AiCreditInsufficientBalanceError();
+            }
         }
 
         signal.throwIfAborted();

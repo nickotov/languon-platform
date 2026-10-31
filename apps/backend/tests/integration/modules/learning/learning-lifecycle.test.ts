@@ -106,11 +106,13 @@ run('flashcard learning lifecycle persistence', () => {
                   }
                 : {}),
         });
+
         await database.insert(dictionarySettingsTable).values({
             dictionaryId,
             createdAt: now,
             updatedAt: now,
         });
+
         await database.insert(dictionaryCardsTable).values({
             id: cardId,
             dictionaryId,
@@ -122,6 +124,7 @@ run('flashcard learning lifecycle persistence', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         return { cardId, dictionaryId, shareDigest, shareLocator };
     }
 
@@ -173,15 +176,18 @@ run('flashcard learning lifecycle persistence', () => {
             { configuration, expectedVersion: 0, shuffle: false },
             context(),
         );
+
         await rate({ access, cardId: dictionary.cardId });
 
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, learnerId));
+
         await expect(
             learning.progress(access, context()),
         ).rejects.toBeInstanceOf(LearningUnavailableError);
+
         const purgeNow = new Date();
         await database.insert(accountDeletionRequestsTable).values({
             nextAttemptAt: purgeNow,
@@ -190,11 +196,13 @@ run('flashcard learning lifecycle persistence', () => {
             updatedAt: purgeNow,
             userId: learnerId,
         });
+
         const purge = new DrizzleAccountPurgeStore(database);
         const claim = await purge.claimDue({
             now: purgeNow,
             workerId: 'learning-lifecycle-test',
         });
+
         expect(claim).toMatchObject({ userId: learnerId });
         expect(
             await purge.finish({
@@ -210,24 +218,28 @@ run('flashcard learning lifecycle persistence', () => {
                 .from(flashcardPreferencesTable)
                 .where(eq(flashcardPreferencesTable.learnerId, learnerId)),
         ).toHaveLength(0);
+
         expect(
             await database
                 .select()
                 .from(flashcardAttemptsTable)
                 .where(eq(flashcardAttemptsTable.learnerId, learnerId)),
         ).toHaveLength(0);
+
         expect(
             await database
                 .select()
                 .from(flashcardEntryProgressTable)
                 .where(eq(flashcardEntryProgressTable.learnerId, learnerId)),
         ).toHaveLength(0);
+
         expect(
             await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, dictionary.dictionaryId)),
         ).toHaveLength(1);
+
         expect(
             (
                 await database
@@ -282,18 +294,23 @@ run('flashcard learning lifecycle persistence', () => {
                     { configuration, expectedVersion: 0, shuffle: true },
                     context(),
                 );
+
                 await rate({ access, cardId: dictionary.cardId });
             }),
         );
+
         await database
             .delete(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, dictionary.cardId));
+
         expect(
             await database.select().from(flashcardAttemptsTable),
         ).toHaveLength(0);
+
         expect(
             await database.select().from(flashcardEntryProgressTable),
         ).toHaveLength(0);
+
         expect(
             await database.select().from(flashcardPreferencesTable),
         ).toHaveLength(2);
@@ -301,6 +318,7 @@ run('flashcard learning lifecycle persistence', () => {
         await database
             .delete(dictionariesTable)
             .where(eq(dictionariesTable.id, dictionary.dictionaryId));
+
         expect(
             await database.select().from(flashcardPreferencesTable),
         ).toHaveLength(0);
@@ -316,6 +334,7 @@ run('flashcard learning lifecycle persistence', () => {
             dictionaryId: dictionary.dictionaryId,
             learnerId: ownerId,
         };
+
         await rate({ access: ownerAccess, cardId: dictionary.cardId });
         expect(await learning.progress(ownerAccess, context())).toEqual({
             total: 1,
@@ -331,12 +350,14 @@ run('flashcard learning lifecycle persistence', () => {
             ownerId,
             request: { expectedCardVersion: 1, expectedDictionaryVersion: 1 },
         });
+
         expect(await learning.progress(ownerAccess, context())).toEqual({
             total: 0,
             known: 0,
             again: 0,
             unstudied: 0,
         });
+
         await dictionaries.restoreCard({
             cardId: dictionary.cardId,
             context: dictionaryContext(),
@@ -347,6 +368,7 @@ run('flashcard learning lifecycle persistence', () => {
                 expectedDictionaryVersion: archived.dictionaryVersion,
             },
         });
+
         expect(await learning.progress(ownerAccess, context())).toEqual({
             total: 1,
             known: 1,
@@ -367,6 +389,7 @@ run('flashcard learning lifecycle persistence', () => {
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, fork.id));
+
         expect(forkCard?.id).not.toBe(dictionary.cardId);
         expect(
             await database
@@ -374,6 +397,7 @@ run('flashcard learning lifecycle persistence', () => {
                 .from(flashcardAttemptsTable)
                 .where(eq(flashcardAttemptsTable.dictionaryId, fork.id)),
         ).toHaveLength(0);
+
         expect(
             await learning.progress(
                 {
@@ -401,6 +425,7 @@ run('flashcard learning lifecycle persistence', () => {
             rate({ access, cardId: dictionary.cardId, operationId, sessionId }),
             rate({ access, cardId: dictionary.cardId, operationId, sessionId }),
         ]);
+
         expect(replay).toEqual(first);
         expect(
             await database.select().from(flashcardAttemptsTable),
@@ -418,6 +443,7 @@ run('flashcard learning lifecycle persistence', () => {
                 values: { source: 'greetings' },
             },
         });
+
         expect(changed.card.version).toBe(2);
         try {
             await learning.undo(
@@ -426,11 +452,13 @@ run('flashcard learning lifecycle persistence', () => {
                 { operationId: randomUUID() },
                 context(),
             );
+
             throw new Error('Expected stale learning content to reject undo.');
         } catch (error) {
             expect(error).toBeInstanceOf(LearningConflictError);
             expect(error).toMatchObject({ reason: 'stale_content' });
         }
+
         expect(
             await database
                 .select()

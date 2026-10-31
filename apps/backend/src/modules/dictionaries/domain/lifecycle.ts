@@ -41,15 +41,19 @@ export function validateDictionaryAccessState(
     if ((state.lifecycle === 'archived') !== (state.archivedAt !== null)) {
         throw new InvalidDictionaryLifecycleError('archive_timestamp');
     }
+
     if (state.lifecycle === 'archived' && state.visibility !== 'private') {
         throw new InvalidDictionaryLifecycleError('archived_visibility');
     }
+
     if (state.visibility === 'private' && state.share !== null) {
         throw new InvalidDictionaryLifecycleError('private_share');
     }
+
     if (state.visibility === 'unlisted' && state.share === null) {
         throw new InvalidDictionaryLifecycleError('unlisted_share_required');
     }
+
     if (
         state.share &&
         (!Number.isSafeInteger(state.share.keyVersion) ||

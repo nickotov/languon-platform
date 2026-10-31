@@ -54,6 +54,7 @@ export function useInterchangeMutations({
                 interchangeAttempt.current,
                 fingerprint,
             );
+
             return requestWithSession((token) =>
                 dictionaryApi.importDictionary(
                     token,
@@ -74,13 +75,16 @@ export function useInterchangeMutations({
                     ['dictionary-batch-generation-job', response.job.id],
                     { job: response.job },
                 );
+
                 return;
             }
+
             setOutcome(
                 t('dictionary.interchange.imported', {
                     count: response.cards.length,
                 }),
             );
+
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: ['dictionary-cards', dictionaryId],
@@ -99,9 +103,12 @@ export function useInterchangeMutations({
                 const result = await requestWithSession((token) =>
                     dictionaryApi.exportDictionary(token, dictionaryId, format),
                 );
+
                 await copyDictionaryExport(result.response);
+
                 return 'copied' as const;
             }
+
             const saved = await saveDictionaryExport({
                 contentType: 'text/csv; charset=utf-8',
                 description: t('dictionary.interchange.exportTypeDescription'),
@@ -115,15 +122,17 @@ export function useInterchangeMutations({
                     ),
                 suggestedName: `dictionary-${dictionaryId}.csv`,
             });
+
             return saved === 'saved' ? ('downloaded' as const) : null;
         },
         onSuccess: (result) => {
-            if (result)
+            if (result) {
                 setOutcome(
                     result === 'copied'
                         ? t('dictionary.interchange.copied')
                         : t('dictionary.interchange.downloaded'),
                 );
+            }
         },
     });
 

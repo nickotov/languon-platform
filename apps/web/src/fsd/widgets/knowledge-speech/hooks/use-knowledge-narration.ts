@@ -17,9 +17,11 @@ function delay(ms: number, signal: AbortSignal) {
             signal.removeEventListener('abort', stop);
             resolve();
         }, ms);
+
         signal.addEventListener('abort', stop, { once: true });
     });
 }
+
 export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
     const [selected, updateSelected] = useState('');
     const [preparedNoteId, setPreparedNoteId] = useState(props.noteId);
@@ -31,26 +33,33 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
     const controller = useRef<AbortController | null>(null),
         preview = useRef<string | null>(null),
         confirmation = useRef<string | null>(null);
+
     useEffect(
         () => () => {
             controller.current?.abort();
-            if (preview.current) URL.revokeObjectURL(preview.current);
+            if (preview.current) {
+                URL.revokeObjectURL(preview.current);
+            }
         },
         [props.noteId],
     );
+
     useEffect(
         () =>
             useSessionStore.subscribe((next, previous) => {
                 if (
                     next.status === 'authenticated' &&
                     next.user?.id === previous.user?.id
-                )
+                ) {
                     return;
+                }
+
                 controller.current?.abort();
                 if (preview.current) {
                     URL.revokeObjectURL(preview.current);
                     preview.current = null;
                 }
+
                 setResponse(null);
                 setUrl(null);
                 setBusy(false);
@@ -59,34 +68,44 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
             }),
         [],
     );
+
     async function consume(result: SpeechResponse, signal: AbortSignal) {
         signal.throwIfAborted();
         const api = speechApi(props.requestWithSession),
             deadline = Date.now() + 600000;
+
         setResponse(result);
         while (
             ['queued', 'processing'].includes(result.state) &&
             result.requestId
         ) {
-            if (Date.now() > deadline)
+            if (Date.now() > deadline) {
                 throw new Error('Audio preview deadline reached.');
+            }
+
             await delay(
                 Math.min(Math.max(result.retryAfterMs ?? 1000, 250), 5000),
                 signal,
             );
+
             result = await api.status(result.requestId, signal);
             signal.throwIfAborted();
             setResponse(result);
         }
+
         if (result.state === 'ready' && result.playbackId) {
             const blob = await api.bytes(result.playbackId, signal);
             signal.throwIfAborted();
-            if (preview.current) URL.revokeObjectURL(preview.current);
+            if (preview.current) {
+                URL.revokeObjectURL(preview.current);
+            }
+
             const next = URL.createObjectURL(blob);
             preview.current = next;
             setUrl(next);
         }
     }
+
     async function generate() {
         controller.current?.abort();
         const operation = new AbortController();
@@ -101,6 +120,7 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
             URL.revokeObjectURL(preview.current);
             preview.current = null;
         }
+
         try {
             const draft = await props.flush();
             operation.signal.throwIfAborted();
@@ -111,7 +131,11 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
                         item.type,
                     ),
                 );
-            if (!block) throw new Error('Select a source block.');
+
+            if (!block) {
+                throw new Error('Select a source block.');
+            }
+
             const result = await speechApi(props.requestWithSession).prepare(
                 {
                     kind: 'knowledge-block',
@@ -122,18 +146,28 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
                 },
                 operation.signal,
             );
+
             confirmation.current = crypto.randomUUID();
             await consume(result, operation.signal);
         } catch {
-            if (!operation.signal.aborted) setFailed(true);
+            if (!operation.signal.aborted) {
+                setFailed(true);
+            }
         } finally {
-            if (!operation.signal.aborted) setBusy(false);
+            if (!operation.signal.aborted) {
+                setBusy(false);
+            }
         }
     }
+
     async function confirm() {
         const quote = response?.quote,
             operation = controller.current;
-        if (!quote || !operation) return;
+
+        if (!quote || !operation) {
+            return;
+        }
+
         setBusy(true);
         setFailed(false);
         try {
@@ -151,19 +185,26 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
                 setResponse(null);
             }
         } finally {
-            if (!operation.signal.aborted) setBusy(false);
+            if (!operation.signal.aborted) {
+                setBusy(false);
+            }
         }
     }
+
     function cancelQuote() {
         controller.current?.abort();
         setResponse(null);
         setBusy(false);
     }
+
     async function apply() {
         const playbackId = response?.playbackId,
             operation = controller.current;
-        if (!playbackId || !operation || preparedNoteId !== props.noteId)
+
+        if (!playbackId || !operation || preparedNoteId !== props.noteId) {
             return;
+        }
+
         setBusy(true);
         setFailed(false);
         try {
@@ -173,6 +214,7 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
                 playbackId,
                 operation.signal,
             );
+
             operation.signal.throwIfAborted();
             await props.onApply({
                 id: crypto.randomUUID(),
@@ -186,19 +228,26 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
                     ],
                 },
             });
+
             setApplied(true);
         } catch {
-            if (!operation.signal.aborted) setFailed(true);
+            if (!operation.signal.aborted) {
+                setFailed(true);
+            }
         } finally {
-            if (!operation.signal.aborted) setBusy(false);
+            if (!operation.signal.aborted) {
+                setBusy(false);
+            }
         }
     }
+
     function setSelected(value: string) {
         controller.current?.abort();
         if (preview.current) {
             URL.revokeObjectURL(preview.current);
             preview.current = null;
         }
+
         updateSelected(value);
         setResponse(null);
         setUrl(null);
@@ -206,7 +255,9 @@ export function useKnowledgeNarration(props: KnowledgeNarrationProps) {
         setApplied(false);
         setFailed(false);
     }
+
     const sameNote = preparedNoteId === props.noteId;
+
     return {
         selected,
         setSelected,

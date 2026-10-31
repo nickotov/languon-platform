@@ -67,6 +67,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             status: 'active',
             updatedAt: instant(),
         });
+
         creditDictionaryId = randomUUID();
         await database.insert(dictionariesTable).values({
             createdAt: instant(),
@@ -106,19 +107,23 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         eq(aiCreditReservationsTable.state, 'active'),
                     ),
                 );
-            for (const reservation of active)
+
+            for (const reservation of active) {
                 await credits.settleFailedAttempt({
                     ownerId: targetOwnerId,
                     reservationId: reservation.id,
                     settledAt: new Date(),
                 });
+            }
         });
+
         const now = new Date();
         const workerId = 'ai-credit-participant-purge-fixture';
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending', updatedAt: now })
             .where(eq(usersTable.id, targetOwnerId));
+
         await database.insert(accountDeletionRequestsTable).values({
             userId: targetOwnerId,
             scheduledAt: new Date(now.getTime() - 120_000),
@@ -126,12 +131,16 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             nextAttemptAt: new Date(now.getTime() - 60_000),
             updatedAt: now,
         });
+
         const claim = await new DrizzleAccountPurgeStore(database).claimDue({
             now,
             workerId,
         });
-        if (!claim || claim.userId !== targetOwnerId)
+
+        if (!claim || claim.userId !== targetOwnerId) {
             throw new Error('Expected an actively leased deletion claim.');
+        }
+
         await withCredits((credits) =>
             credits.purgeOwner(targetOwnerId, {
                 workerId,
@@ -186,6 +195,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             targetLanguageTag: 'fr',
             updatedAt: instant(),
         });
+
         return id;
     }
 
@@ -229,11 +239,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             sourceLanguageTag: 'en',
             targetLanguageTag: 'de',
         });
+
         const model = textAiModelCatalog[0]!;
         let [revision] = await database
             .select()
             .from(dictionaryAiConfigurationRevisionsTable)
             .limit(1);
+
         if (!revision) {
             [revision] = await database
                 .insert(dictionaryAiConfigurationRevisionsTable)
@@ -250,12 +262,16 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 })
                 .returning();
         }
-        if (!revision)
+
+        if (!revision) {
             throw new Error('Failed to create credit fixture revision');
+        }
+
         await database.transaction(async (transaction) => {
             await transaction.execute(
                 sql`select set_config('languon.learning_execution_revision', '1', true), set_config('languon.text_ai_selection_revision', '1', true), set_config('languon.text_ai_capacity_revision', '1', true), set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
+
             await transaction.insert(sentenceAiJobsTable).values({
                 id,
                 learnerId: ownerId,
@@ -317,6 +333,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 updatedAt: instant(0),
             });
         });
+
         return id;
     }
 
@@ -331,6 +348,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 amount: 200n,
                 sourceReference: `grant:typed:${jobKind}`,
             });
+
             const jobId =
                 jobKind === 'dictionary-generation'
                     ? await creditJob(60n)
@@ -346,11 +364,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     ownerId,
                     reservationId,
                 });
+
                 await credits.markProviderDispatched({
                     dispatchedAt: instant(2),
                     ownerId,
                     reservationId,
                 });
+
                 expect(
                     await credits.settleAttempt({
                         measuredCredits: 20n,
@@ -361,10 +381,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     }),
                 ).toMatchObject({ chargedCredits: 20n, releasedCredits: 40n });
             });
+
             await database.transaction(async (transaction) => {
                 await transaction.execute(
                     sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
                 );
+
                 await transaction
                     .update(
                         jobKind === 'dictionary-generation'
@@ -381,6 +403,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         ),
                     );
             });
+
             const second = randomUUID();
             await withCredits(async (credits) => {
                 await credits.reserveAttempt({
@@ -392,11 +415,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     ownerId,
                     reservationId: second,
                 });
+
                 await credits.releaseUndispatchedAttempt({
                     ownerId,
                     reservationId: second,
                     releasedAt: instant(5),
                 });
+
                 expect(
                     await credits.accountSummary(ownerId, instant(6)),
                 ).toMatchObject({
@@ -444,11 +469,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     ownerId,
                     reservationId,
                 });
+
                 await credits.markProviderDispatched({
                     dispatchedAt: instant(2),
                     ownerId,
                     reservationId,
                 });
+
                 if (!missingUsage) {
                     await expect(
                         credits.settleAttempt({
@@ -462,6 +489,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         'Estimated and unmetered settlement cannot claim measured credits.',
                     );
                 }
+
                 expect(
                     await credits.settleAttempt({
                         measuredCredits: null,
@@ -485,11 +513,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 amount: 200n,
                 sourceReference: 'grant:typed:rollback',
             });
+
             const jobId = await sentenceCreditJob(jobKind, 60n);
             const otherOwner = randomUUID();
             await database
                 .insert(usersTable)
                 .values({ id: otherOwner, status: 'active' });
+
             await withCredits(async (credits) =>
                 credits.issueGrant({
                     amount: 100n,
@@ -500,6 +530,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     sourceReference: 'grant:typed:other',
                 }),
             );
+
             await expect(
                 withCredits(async (credits) =>
                     credits.reserveAttempt({
@@ -513,6 +544,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     }),
                 ),
             ).rejects.toThrow();
+
             const reservationId = randomUUID();
             await expect(
                 withCredits(async (credits) => {
@@ -525,12 +557,15 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         ownerId,
                         reservationId,
                     });
+
                     throw new Error('rollback fixture');
                 }),
             ).rejects.toThrow('rollback fixture');
+
             expect(
                 await database.select().from(aiCreditReservationsTable),
             ).toEqual([]);
+
             await withCredits(async (credits) => {
                 expect(
                     await credits.accountSummary(ownerId, instant(2)),
@@ -553,6 +588,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 amount: 100n,
                 sourceReference: 'grant:typed:activeerase',
             });
+
             const jobId =
                 jobKind === 'dictionary-generation'
                     ? await creditJob(60n)
@@ -571,6 +607,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     }),
                 ),
             ).rejects.toThrow();
+
             await withCredits((credits) =>
                 credits.reserveAttempt({
                     at: instant(1),
@@ -582,6 +619,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     reservationId,
                 }),
             );
+
             await expect(
                 database
                     .delete(
@@ -598,10 +636,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         ),
                     ),
             ).rejects.toThrow();
+
             const [reservation] = await database
                 .select()
                 .from(aiCreditReservationsTable)
                 .where(eq(aiCreditReservationsTable.id, reservationId));
+
             expect(reservation).toMatchObject({
                 state: 'active',
                 reservedCredits: 60n,
@@ -615,6 +655,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
         await expect(
             sentenceCreditJob('sentence-generation', 60n, jobId),
         ).rejects.toThrow();
+
         const reservationId = randomUUID();
         await withCredits(async (credits) => {
             await credits.reserveAttempt({
@@ -626,6 +667,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 reservationId,
             });
         });
+
         await expect(
             withCredits(async (credits) =>
                 credits.reserveAttempt({
@@ -639,22 +681,26 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 }),
             ),
         ).rejects.toThrow();
+
         await expect(
             database
                 .update(aiCreditReservationsTable)
                 .set({ jobKind: 'sentence-generation' })
                 .where(eq(aiCreditReservationsTable.id, reservationId)),
         ).rejects.toThrow();
+
         await expect(
             database
                 .update(aiCreditReservationsTable)
                 .set({ jobKind: 'unknown' })
                 .where(eq(aiCreditReservationsTable.id, reservationId)),
         ).rejects.toThrow();
+
         const [row] = await database
             .select()
             .from(aiCreditReservationsTable)
             .where(eq(aiCreditReservationsTable.id, reservationId));
+
         expect(row).toMatchObject({
             jobKind: 'dictionary-generation',
             state: 'active',
@@ -683,19 +729,23 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 ownerId,
                 reservationId,
             });
+
             await credits.releaseUndispatchedAttempt({
                 ownerId,
                 reservationId,
                 releasedAt: instant(2),
             });
         });
+
         await database
             .update(sentenceAiJobsTable)
             .set({ executionState: 'cancelled', completedAt: instant(3) })
             .where(eq(sentenceAiJobsTable.id, jobId));
+
         await database
             .delete(sentenceAiJobsTable)
             .where(eq(sentenceAiJobsTable.id, jobId));
+
         await expect(
             database.transaction(async (transaction) => {
                 await transaction
@@ -710,10 +760,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     });
             }),
         ).rejects.toThrow();
+
         const [row] = await database
             .select()
             .from(aiCreditReservationsTable)
             .where(eq(aiCreditReservationsTable.id, reservationId));
+
         expect(row).toMatchObject({
             state: 'released',
             reservedCredits: 60n,
@@ -727,11 +779,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             expiresAt: instant(100),
             sourceReference: 'grant:early',
         });
+
         await grant({
             amount: 50n,
             expiresAt: instant(500),
             sourceReference: 'grant:late',
         });
+
         const reservationId = randomUUID();
         const jobId = await creditJob(60n);
 
@@ -744,6 +798,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 ownerId,
                 reservationId,
             });
+
             const allocations = await transaction
                 .select()
                 .from(aiCreditReservationAllocationsTable)
@@ -753,11 +808,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         reservationId,
                     ),
                 );
+
             expect(
                 allocations.find(
                     (allocation) => allocation.grantId === early.grantId,
                 ),
             ).toMatchObject({ allocatedCredits: 50n });
+
             await credits.markProviderDispatched({
                 dispatchedAt: instant(20),
                 ownerId,
@@ -780,6 +837,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 measurement: 'provider_reported',
                 releasedCredits: 30n,
             });
+
             await expect(
                 credits.accountSummary(ownerId, instant(200)),
             ).resolves.toMatchObject({
@@ -817,11 +875,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     policy: { mode: 'limited' },
                     reservedCredits: 50n,
                 });
+
                 await credits.releaseUndispatchedAttempt({
                     ownerId,
                     releasedAt: instant(11),
                     reservationId: limitedAttemptOne,
                 });
+
                 await credits.updatePolicy({
                     at: instant(12),
                     expectedManagementVersion: 0,
@@ -830,9 +890,11 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     reason: 'Enable support override',
                     unlimitedUntil: instant(1_000),
                 });
+
                 await transaction.execute(
                     sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
                 );
+
                 await transaction
                     .update(
                         jobKind === 'dictionary-generation'
@@ -848,6 +910,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                             limitedJobId,
                         ),
                     );
+
                 await expect(
                     credits.reserveAttempt({
                         at: instant(13),
@@ -892,11 +955,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     },
                     reservedCredits: 0n,
                 });
+
                 await credits.releaseUndispatchedAttempt({
                     ownerId,
                     releasedAt: instant(21),
                     reservationId: unlimitedAttemptOne,
                 });
+
                 await credits.updatePolicy({
                     at: instant(22),
                     expectedManagementVersion: 1,
@@ -905,9 +970,11 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     reason: 'End support override',
                     unlimitedUntil: null,
                 });
+
                 await transaction.execute(
                     sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
                 );
+
                 await transaction
                     .update(
                         jobKind === 'dictionary-generation'
@@ -923,6 +990,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                             unlimitedJobId,
                         ),
                     );
+
                 await expect(
                     credits.reserveAttempt({
                         at: instant(23),
@@ -957,11 +1025,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 ownerId,
                 reservationId: firstReservationId,
             });
+
             await credits.releaseUndispatchedAttempt({
                 ownerId,
                 releasedAt: instant(11),
                 reservationId: firstReservationId,
             });
+
             await credits.adjustByAdmin({
                 amount: -25n,
                 at: instant(12),
@@ -972,10 +1042,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 sourceReference: 'removal:worker-role',
             });
         });
+
         await database.transaction(async (transaction) => {
             await transaction.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
+
             await transaction
                 .update(dictionaryGenerationJobsTable)
                 .set({ attemptCount: 2, updatedAt: instant(12) })
@@ -990,33 +1062,43 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             await client.unsafe(
                 `grant select on users, dictionary_generation_jobs to ${role}`,
             );
+
             await client.unsafe(
                 `grant select (user_id, mode, unlimited_until) on ai_credit_accounts to ${role}`,
             );
+
             await client.unsafe(
                 `grant select (id, owner_id, amount, created_at, expires_at) on ai_credit_grants to ${role}`,
             );
+
             await client.unsafe(
                 `grant select (id, owner_id) on ai_credit_admin_removals to ${role}`,
             );
+
             await client.unsafe(
                 `grant select (removal_id, grant_id, allocated_credits) on ai_credit_admin_removal_allocations to ${role}`,
             );
+
             await client.unsafe(
                 `grant select, insert on ai_credit_reservations, ai_credit_reservation_allocations to ${role}`,
             );
+
             await client.unsafe(
                 `grant update (charged_credits, dispatched_at, measured_credits, measurement, settled_at, state) on ai_credit_reservations to ${role}`,
             );
+
             await client.unsafe(
                 `grant update (settled_credits) on ai_credit_reservation_allocations to ${role}`,
             );
+
             await client.unsafe(
                 `grant select on ai_credit_grant_balances, ai_capability_policy_revisions to ${role}`,
             );
+
             await client.unsafe(
                 `grant select, insert on ai_action_charging_policies to ${role}`,
             );
+
             await client.unsafe(`grant insert on ai_credit_history to ${role}`);
             await database.transaction(async (transaction) => {
                 await transaction.execute(sql.raw(`set local role ${role}`));
@@ -1036,11 +1118,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     reservedCredits: 50n,
                 });
             });
+
             await expect(
                 database.transaction(async (transaction) => {
                     await transaction.execute(
                         sql.raw(`set local role ${role}`),
                     );
+
                     await transaction
                         .update(aiCreditReservationsTable)
                         .set({
@@ -1058,11 +1142,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         );
                 }),
             ).rejects.toThrow();
+
             await expect(
                 database.transaction(async (transaction) => {
                     await transaction.execute(
                         sql.raw(`set local role ${role}`),
                     );
+
                     await transaction
                         .update(aiCreditReservationsTable)
                         .set({
@@ -1080,11 +1166,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         );
                 }),
             ).rejects.toThrow();
+
             await expect(
                 database.transaction(async (transaction) => {
                     await transaction.execute(
                         sql.raw(`set local role ${role}`),
                     );
+
                     const forgedReservationId = randomUUID();
                     await transaction.insert(aiCreditReservationsTable).values({
                         attempt: 3,
@@ -1095,12 +1183,17 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                         policyMode: 'limited',
                         reservedCredits: 50n,
                     });
+
                     const [lot] = await transaction
                         .select({ id: aiCreditGrantsTable.id })
                         .from(aiCreditGrantsTable)
                         .where(eq(aiCreditGrantsTable.ownerId, ownerId))
                         .limit(1);
-                    if (!lot) throw new Error('Expected a credit grant.');
+
+                    if (!lot) {
+                        throw new Error('Expected a credit grant.');
+                    }
+
                     await transaction
                         .insert(aiCreditReservationAllocationsTable)
                         .values({
@@ -1123,9 +1216,11 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             to: new Date(instant().getTime() + 86_400_000),
             requestedAt: instant(),
         });
+
         const version = async () =>
             (await database.select().from(aiAccountingReportSnapshotsTable))[0]!
                 .changeVersion;
+
         await grant({ amount: 100n });
         const releaseJob = await creditJob(60n);
         const releaseId = randomUUID();
@@ -1138,12 +1233,14 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 at: instant(1),
                 maximumCredits: 60n,
             });
+
             await credits.releaseUndispatchedAttempt({
                 ownerId,
                 reservationId: releaseId,
                 releasedAt: instant(2),
             });
         });
+
         expect(await version()).toBe(0n);
         const chargedJob = await creditJob(60n);
         const chargedId = randomUUID();
@@ -1156,11 +1253,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 at: instant(3),
                 maximumCredits: 60n,
             });
+
             await credits.markProviderDispatched({
                 ownerId,
                 reservationId: chargedId,
                 dispatchedAt: instant(4),
             });
+
             await credits.settleAttempt({
                 ownerId,
                 reservationId: chargedId,
@@ -1169,6 +1268,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 measuredCredits: 20n,
             });
         });
+
         expect(await version()).toBe(1n);
         await withCredits((credits) =>
             credits.adjustByAdmin({
@@ -1181,6 +1281,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 reason: 'Remove unused value',
             }),
         );
+
         expect(await version()).toBe(2n);
     });
 
@@ -1199,12 +1300,15 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     attempt: 1,
                     maximumCredits: 60n,
                 });
-                if (dispatched)
+
+                if (dispatched) {
                     await credits.markProviderDispatched({
                         ownerId,
                         reservationId,
                         dispatchedAt: instant(2),
                     });
+                }
+
                 expect(
                     await credits.settleFailedAttempt({
                         ownerId,
@@ -1217,6 +1321,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     measuredCredits: null,
                     measurement: 'technical_failure',
                 });
+
                 expect(
                     await credits.settleFailedAttempt({
                         ownerId,
@@ -1228,6 +1333,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     releasedCredits: 60n,
                     measurement: 'technical_failure',
                 });
+
                 expect(
                     await credits.accountSummary(ownerId, instant(5)),
                 ).toMatchObject({
@@ -1236,10 +1342,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     reservedCredits: 0n,
                 });
             });
+
             const [record] = await database
                 .select()
                 .from(aiCreditReservationsTable)
                 .where(eq(aiCreditReservationsTable.id, reservationId));
+
             expect(record).toMatchObject({
                 state: 'settled',
                 chargedCredits: 0n,
@@ -1259,6 +1367,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             createdBy: ownerId,
             reason: 'Operator-funded generation test',
         });
+
         const jobId = await creditJob(20n);
         const reservationId = randomUUID();
         await withCredits(async (credits) => {
@@ -1275,12 +1384,14 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 policy: { mode: 'unlimited' },
                 reservedCredits: 0n,
             });
+
             await credits.releaseUndispatchedAttempt({
                 ownerId,
                 reservationId,
                 releasedAt: instant(2),
             });
         });
+
         await database.insert(capabilityPolicyRevisionsTable).values({
             id: randomUUID(),
             capability: 'dictionary-generation',
@@ -1290,15 +1401,18 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             createdBy: ownerId,
             reason: 'Charge new generation actions only',
         });
+
         await database.transaction(async (transaction) => {
             await transaction.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
+
             await transaction
                 .update(dictionaryGenerationJobsTable)
                 .set({ attemptCount: 2 })
                 .where(eq(dictionaryGenerationJobsTable.id, jobId));
         });
+
         await withCredits(async (credits) => {
             expect(
                 await credits.reserveAttempt({
@@ -1314,6 +1428,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 reservedCredits: 0n,
             });
         });
+
         const newJobId = await creditJob(20n);
         await expect(
             withCredits((credits) =>
@@ -1342,6 +1457,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             ownerId,
             reservationId,
         };
+
         await withCredits(async (credits) => {
             await credits.reserveAttempt(reserve);
             await credits.reserveAttempt(reserve);
@@ -1350,6 +1466,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 reservationId,
                 dispatchedAt: instant(2),
             });
+
             await credits.settleAttempt({
                 ownerId,
                 reservationId,
@@ -1357,6 +1474,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 measurement: 'provider_reported',
                 settledAt: instant(101),
             });
+
             await credits.settleAttempt({
                 ownerId,
                 reservationId,
@@ -1365,9 +1483,11 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 settledAt: instant(102),
             });
         });
+
         const balances = await database
             .select()
             .from(aiCreditGrantBalancesTable);
+
         expect(
             balances.find((row) => row.grantId === expiring.grantId),
         ).toMatchObject({
@@ -1376,6 +1496,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             consumedCredits: 30n,
             removedCredits: 0n,
         });
+
         expect(
             balances.find((row) => row.grantId === permanent.grantId),
         ).toMatchObject({
@@ -1383,6 +1504,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             reservedCredits: 0n,
             consumedCredits: 0n,
         });
+
         await withCredits(async (credits) => {
             expect(
                 await credits.accountSummary(ownerId, instant(103)),
@@ -1392,6 +1514,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 reservedCredits: 0n,
                 nextExpirationAt: null,
             });
+
             await credits.adjustByAdmin({
                 ownerId,
                 amount: -10n,
@@ -1402,6 +1525,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 sourceReference: 'projection-removal',
             });
         });
+
         const rollbackJob = await creditJob(20n);
         await expect(
             withCredits(async (credits) => {
@@ -1412,9 +1536,11 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     at: instant(105),
                     maximumCredits: 20n,
                 });
+
                 throw new Error('projection rollback');
             }),
         ).rejects.toThrow('projection rollback');
+
         expect(
             await database.select().from(aiCreditWalletTotalsTable),
         ).toMatchObject([
@@ -1424,6 +1550,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 consumedCredits: 30n,
             },
         ]);
+
         expect(
             await withCredits((credits) =>
                 credits.accountSummary(ownerId, instant(106)),
@@ -1455,16 +1582,19 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             reason: 'Purchase refund',
             at: instant(1),
         };
+
         expect(
             await withCredits((credits) =>
                 credits.revokePurchaseGrantAvailable(revoke),
             ),
         ).toEqual({ created: true, revokedCredits: 60n });
+
         expect(
             await withCredits((credits) =>
                 credits.revokePurchaseGrantAvailable(revoke),
             ),
         ).toEqual({ created: false, revokedCredits: 60n });
+
         await expect(
             withCredits((credits) =>
                 credits.revokePurchaseGrantAvailable({
@@ -1473,6 +1603,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 }),
             ),
         ).rejects.toThrow();
+
         await expect(
             withCredits((credits) =>
                 credits.revokePurchaseGrantAvailable({
@@ -1482,21 +1613,25 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 }),
             ),
         ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+
         const [remaining] = await database
             .select()
             .from(aiCreditGrantBalancesTable)
             .where(eq(aiCreditGrantBalancesTable.grantId, purchase.grantId));
+
         expect(remaining).toMatchObject({
             remainingCredits: 40n,
             removedCredits: 60n,
             consumedCredits: 0n,
             reservedCredits: 0n,
         });
+
         expect(
             await withCredits((credits) =>
                 credits.accountSummary(ownerId, instant(2)),
             ),
         ).toMatchObject({ availableCredits: 540n });
+
         const jobId = await creditJob(520n);
         const reservationId = randomUUID();
         await withCredits((credits) =>
@@ -1509,6 +1644,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 maximumCredits: 520n,
             }),
         );
+
         await expect(
             withCredits((credits) =>
                 credits.revokePurchaseGrantAvailable({
@@ -1518,12 +1654,14 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 }),
             ),
         ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+
         await withCredits(async (credits) => {
             await credits.markProviderDispatched({
                 ownerId,
                 reservationId,
                 dispatchedAt: instant(4),
             });
+
             await credits.settleAttempt({
                 ownerId,
                 reservationId,
@@ -1532,6 +1670,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 measuredCredits: 510n,
             });
         });
+
         await expect(
             withCredits((credits) =>
                 credits.revokePurchaseGrantAvailable({
@@ -1541,6 +1680,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 }),
             ),
         ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+
         expect(
             await database
                 .select()
@@ -1572,17 +1712,20 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 maximumCredits: 20n,
             }),
         );
+
         await expect(
             database
                 .update(aiCreditGrantBalancesTable)
                 .set({ remainingCredits: 90n })
                 .where(eq(aiCreditGrantBalancesTable.grantId, issued.grantId)),
         ).rejects.toThrow();
+
         await expect(
             database
                 .delete(aiCreditReservationsTable)
                 .where(eq(aiCreditReservationsTable.id, reservationId)),
         ).rejects.toThrow();
+
         await expect(
             database
                 .delete(aiCreditReservationAllocationsTable)
@@ -1593,10 +1736,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     ),
                 ),
         ).rejects.toThrow();
+
         await purgeOwnerForDeletion();
         expect(
             await database.select().from(aiCreditGrantBalancesTable),
         ).toEqual([]);
+
         expect(await database.select().from(aiCreditWalletTotalsTable)).toEqual(
             [],
         );
@@ -1622,6 +1767,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             ownerId,
             reservationId: reportedReservationId,
         };
+
         await withCredits(async (credits) => {
             await credits.reserveAttempt(reportedInput);
             await expect(
@@ -1630,11 +1776,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 reservationId: reportedReservationId,
                 reservedCredits: 100n,
             });
+
             await credits.markProviderDispatched({
                 dispatchedAt: instant(11),
                 ownerId,
                 reservationId: reportedReservationId,
             });
+
             await expect(
                 credits.settleAttempt({
                     measuredCredits: 40n,
@@ -1660,11 +1808,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 ownerId,
                 reservationId: estimatedReservationId,
             });
+
             await credits.markProviderDispatched({
                 dispatchedAt: instant(21),
                 ownerId,
                 reservationId: estimatedReservationId,
             });
+
             await expect(
                 credits.settleAttempt({
                     measuredCredits: null,
@@ -1678,6 +1828,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 measurement: 'estimated',
                 releasedCredits: 0n,
             });
+
             await credits.updatePolicy({
                 at: instant(30),
                 expectedManagementVersion: 0,
@@ -1704,11 +1855,13 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 policy: { mode: 'unlimited' },
                 reservedCredits: 0n,
             });
+
             await credits.markProviderDispatched({
                 dispatchedAt: instant(32),
                 ownerId,
                 reservationId,
             });
+
             await expect(
                 credits.settleAttempt({
                     measuredCredits: 25n,
@@ -1723,6 +1876,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 measurement: 'provider_reported',
                 releasedCredits: 0n,
             });
+
             await expect(
                 credits.accountSummary(ownerId, instant(33)),
             ).resolves.toMatchObject({
@@ -1760,9 +1914,11 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 }),
             ),
         ]);
+
         expect(
             results.filter((result) => result.status === 'fulfilled'),
         ).toHaveLength(1);
+
         expect(
             results.filter((result) => result.status === 'rejected'),
         ).toHaveLength(1);
@@ -1772,6 +1928,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             expect(
                 summary.availableCredits + summary.reservedCredits,
             ).toBeLessThanOrEqual(100n);
+
             expect(summary.availableCredits).toBe(0n);
         });
     });
@@ -1781,12 +1938,14 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             amount: 100n,
             sourceReference: 'grant:guarded',
         });
+
         await expect(
             database
                 .update(aiCreditGrantsTable)
                 .set({ amount: 90n })
                 .where(eq(aiCreditGrantsTable.id, issued.grantId)),
         ).rejects.toThrow();
+
         await expect(
             database
                 .delete(aiCreditHistoryTable)
@@ -1806,6 +1965,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     policyMode: 'limited',
                     reservedCredits: 100n,
                 });
+
                 await transaction
                     .insert(aiCreditReservationAllocationsTable)
                     .values({
@@ -1823,6 +1983,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             status: 'active',
             updatedAt: instant(),
         });
+
         const otherDictionaryId = randomUUID();
         await database.insert(dictionariesTable).values({
             createdAt: instant(),
@@ -1833,6 +1994,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             targetLanguageTag: 'fr',
             updatedAt: instant(),
         });
+
         const otherJobId = randomUUID();
         await database.insert(dictionaryGenerationJobsTable).values({
             aiCreditAccounted: true,
@@ -1855,6 +2017,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             targetLanguageTag: 'fr',
             updatedAt: instant(),
         });
+
         const otherReservationId = randomUUID();
         await expect(
             database.transaction(async (transaction) => {
@@ -1867,6 +2030,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                     policyMode: 'limited',
                     reservedCredits: 100n,
                 });
+
                 await transaction
                     .insert(aiCreditReservationAllocationsTable)
                     .values({
@@ -1898,6 +2062,7 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             targetLanguageTag: 'fr',
             updatedAt: instant(),
         });
+
         await database.insert(dictionaryGenerationJobsTable).values({
             aiCreditAccounted: true,
             aiCreditInputCreditsPerMillionTokens: 1_000_000,
@@ -1935,12 +2100,14 @@ run('DrizzleAiCreditTransactionParticipant', () => {
             .select({ state: dictionaryGenerationJobsTable.executionState })
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, jobId));
+
         expect(rejectedJob?.state).toBe('queued');
 
         await database.transaction(async (transaction) => {
             await transaction.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
+
             await transaction
                 .update(dictionaryGenerationJobsTable)
                 .set({
@@ -1950,10 +2117,12 @@ run('DrizzleAiCreditTransactionParticipant', () => {
                 })
                 .where(eq(dictionaryGenerationJobsTable.id, jobId));
         });
+
         const [job] = await database
             .select({ state: dictionaryGenerationJobsTable.executionState })
             .from(dictionaryGenerationJobsTable)
             .where(and(eq(dictionaryGenerationJobsTable.id, jobId)));
+
         expect(job?.state).toBe('failed');
     });
 });

@@ -43,12 +43,14 @@ const exercise = {
         { id: 'hint-2', text: 'à l’intérieur', kind: 'contextual' },
     ],
 };
+
 describe('versioned contextual hint contracts', () => {
     it('accepts correctly linked contextual hints without fabricated target identity', () => {
         expect(
             SentenceExerciseSchema.parse(exercise).segments[2]?.target,
         ).toBeNull();
     });
+
     it('accepts unchanged legacy content and rejects version hybrids', () => {
         const legacy = {
             ...exercise,
@@ -58,6 +60,7 @@ describe('versioned contextual hint contracts', () => {
             ),
             hints: [{ id: 'hint-1', text: 'rester' }],
         };
+
         expect(SentenceExerciseSchema.safeParse(legacy).success).toBe(true);
         expect(
             SentenceExerciseSchema.safeParse({
@@ -65,6 +68,7 @@ describe('versioned contextual hint contracts', () => {
                 generationPolicyVersion: 1,
             }).success,
         ).toBe(false);
+
         expect(
             SentenceExerciseSchema.safeParse({
                 ...legacy,
@@ -72,6 +76,7 @@ describe('versioned contextual hint contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects missing, conflicting, duplicate and unreferenced associations', () => {
         for (const malformed of [
             {
@@ -108,11 +113,13 @@ describe('versioned contextual hint contracts', () => {
                     { id: 'hint-3', text: 'ailleurs', kind: 'contextual' },
                 ],
             },
-        ])
+        ]) {
             expect(SentenceExerciseSchema.safeParse(malformed).success).toBe(
                 false,
             );
+        }
     });
+
     it('admits disclosed helper IDs for AI checking while free reference review stays unchanged', () => {
         const request = {
             operationId: id,
@@ -122,12 +129,14 @@ describe('versioned contextual hint contracts', () => {
                 (_, index) => `hint-${index + 1}`,
             ),
         };
+
         expect(
             SentenceReferenceRevealRequestSchema.safeParse({
                 operationId: id,
                 sessionId: id,
             }).success,
         ).toBe(true);
+
         expect(
             SentenceCheckRequestSchema.safeParse({
                 ...request,
@@ -135,6 +144,7 @@ describe('versioned contextual hint contracts', () => {
                 explanationLanguage: 'en',
             }).success,
         ).toBe(true);
+
         expect(
             SentenceCheckRequestSchema.safeParse({
                 ...request,

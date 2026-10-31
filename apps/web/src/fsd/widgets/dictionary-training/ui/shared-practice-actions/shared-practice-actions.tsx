@@ -16,7 +16,10 @@ export function SharedPracticeActions({
     onOpenHistory(): void;
 }) {
     const { t } = useI18n();
-    if (!signedIn) return null;
+    if (!signedIn) {
+        return null;
+    }
+
     const items = [
         {
             label: t('dictionary.editor.savedSentences'),
@@ -30,6 +33,7 @@ export function SharedPracticeActions({
             onSelect: onOpenHistory,
         },
     ];
+
     return (
         <Menu
             label={t('dictionary.editor.actions')}

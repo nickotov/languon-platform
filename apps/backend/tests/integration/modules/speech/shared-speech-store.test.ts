@@ -76,9 +76,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             cardId: randomUUID(),
             field: 'source',
         };
+
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -98,6 +100,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: now,
                 })),
             );
+
             await db.insert(adminMembershipsTable).values({
                 id: randomUUID(),
                 userId: actors[0]!,
@@ -105,7 +108,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 grantedByUserId: actors[0]!,
                 grantReason: 'Disposable speech test administrator',
             });
-            for (const actor of actors)
+
+            for (const actor of actors) {
                 await db.transaction((tx) =>
                     new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                         amount: 1_000_000n,
@@ -116,6 +120,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         sourceReference: randomUUID(),
                     }),
                 );
+            }
+
             await db.insert(aiAccountingSettingsRevisionsTable).values({
                 id: randomUUID(),
                 version: 1,
@@ -126,7 +132,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Synthetic disposable speech limits',
             });
-            for (const providerId of ['fixture', 'kie'])
+
+            for (const providerId of ['fixture', 'kie']) {
                 await new DrizzleProviderPriceStore(db).publish(
                     {
                         expectedVersion: 0,
@@ -146,6 +153,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     actors[0]!,
                     now,
                 );
+            }
+
             storage = new PostgresAudioObjectStorage(db);
             store = new DrizzleSpeechStore({
                 database: db,
@@ -169,8 +178,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         _source.kind === 'knowledge-block' ||
                         _source.kind === 'knowledge-snippet' ||
                         _source.kind === 'knowledge-audio-draft'
-                    )
+                    ) {
                         throw new SpeechError('speech_source_unavailable', 404);
+                    }
+
                     const [user] = await tx
                         .select()
                         .from(usersTable)
@@ -181,8 +192,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             ),
                         )
                         .for('share');
-                    if (!user || revoked)
+
+                    if (!user || revoked) {
                         throw new SpeechError('speech_source_unavailable', 404);
+                    }
+
                     const authority =
                         _source.access.kind === 'shared' &&
                         'shareKey' in _source.access
@@ -202,19 +216,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                   },
                               } as StoredSpeechSource)
                             : (_source as StoredSpeechSource);
+
                     return { text, language: 'fr', revision: 'v1', authority };
                 },
             });
         }, 45000);
+
         afterAll(async () => {
-            if (client) await client.end();
+            if (client) {
+                await client.end();
+            }
         });
+
         const schedulePurge = async (actor: string) => {
             const at = new Date();
             await db
                 .update(usersTable)
                 .set({ status: 'deletion_pending' })
                 .where(eq(usersTable.id, actor));
+
             await db.insert(accountDeletionRequestsTable).values({
                 userId: actor,
                 state: 'running',
@@ -277,10 +297,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', failingProvider]]),
                 now: () => now,
             });
+
             expect(await worker.runOnce()).toBe(true);
             await db.update(speechJobsTable).set({
                 nextPollAt: sql`clock_timestamp() - interval '1 millisecond'`,
             });
+
             expect(await worker.runOnce()).toBe(true);
             expect(failingProvider.submit).toHaveBeenCalledOnce();
             expect(failingProvider.poll).toHaveBeenCalledOnce();
@@ -291,12 +313,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ? 'speech_provider_unavailable'
                         : 'speech_generation_failed',
             });
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0],
             ).toMatchObject({
                 state: 'deleting',
                 text: '',
             });
+
             await worker.runOnce();
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
@@ -311,6 +335,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 prepared.requestId!,
                 now,
             );
+
             expect(response).toMatchObject({
                 state: 'failed',
                 requestId: prepared.requestId,
@@ -319,6 +344,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 billingState: 'free',
                 retryAfterMs: null,
             });
+
             expect((await wallet(actors[0]!)).consumedCredits).toBe(0n);
             await expect(
                 store.adminPlayback(
@@ -332,6 +358,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             async (reason) => {
                 text =
                     'This longer sentence has more than ten distinct words and requires paid pronunciation.';
+
                 const quote = await prepare(actors[0]!);
                 const payer = await confirm(actors[0]!, quote);
                 const joiner = await prepare(actors[1]!);
@@ -352,6 +379,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 : 'speech_generation_failed',
                         billingState,
                     });
+
                     expect((await wallet(actor)).consumedCredits).toBe(0n);
                     expect((await wallet(actor)).reservedCredits).toBe(0n);
                 }
@@ -366,6 +394,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             const snapshot = (
                 await store.listRecordings({ page: 1, pageSize: 25 })
             ).recordings[0]!;
@@ -384,11 +413,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     occurredAt: now,
                 },
             });
+
             for (const cleanup of [false, true]) {
                 if (cleanup) {
                     await storage.delete(selected[0]!.storage);
                     await store.deleted(snapshot.id, now);
                 }
+
                 expect(
                     (await store.request(actors[0]!, prepared.requestId!, now))
                         .response,
@@ -405,6 +436,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const results = await Promise.all(
                 actors.map((actor) => prepare(actor)),
             );
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             const worker = new SpeechWorker({
                 store,
@@ -412,12 +444,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             });
+
             expect(await worker.runOnce()).toBe(true);
             expect(
                 (await store.listRecordings({ page: 1, pageSize: 25 }))
                     .recordings[0]?.durationMs,
             ).toBe(1000);
-            for (let index = 0; index < actors.length; index++)
+
+            for (let index = 0; index < actors.length; index++) {
                 expect(
                     (
                         await store.request(
@@ -427,14 +461,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )
                     ).response,
                 ).toMatchObject({ state: 'ready', billingState: 'free' });
+            }
+
             await schedulePurge(actors[0]!);
             await store.purgeActor(actors[0]!, now, {
                 workerId: 'synthetic-speech-purge-test',
                 fencingToken: 1,
             });
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('ready');
+
             expect(await db.select().from(speechBindingsTable)).toHaveLength(1);
             text = '  bonjour\t  ';
             expect((await prepare(actors[1]!)).state).toBe('ready');
@@ -442,8 +480,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await Promise.all(
                 Array.from({ length: 5 }, () => prepare(actors[1]!)),
             );
+
             expect(await db.select().from(speechBindingsTable)).toHaveLength(1);
         });
+
         it('purges payer associations and releases paid holds while admitted audio completes without a debit', async () => {
             await prepare(actors[0]!);
             await new SpeechWorker({
@@ -451,11 +491,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 storage,
                 providers: new Map([['fixture-v1', provider]]),
             }).runOnce();
+
             const [successful] = await db.select().from(speechRecordingsTable);
             const originalBytes = await storage.read(successful!.storage);
             const originalText = successful!.text;
             text =
                 'A private sentence contains considerably more than ten words and requires confirmed pronunciation credits.';
+
             const prepared = await prepare(actors[0]!);
             await confirm(actors[0]!, prepared);
             const job = await store.claim(now);
@@ -466,11 +508,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 job!.storage,
                 audio,
             );
+
             expect((await wallet(actors[0]!)).reservedCredits).toBeGreaterThan(
                 0n,
             );
+
             const availableBeforePurge = (await wallet(actors[0]!))
                 .availableCredits;
+
             await schedulePurge(actors[0]!);
             let completion!: Promise<void>;
             await db.transaction(async (tx) => {
@@ -478,10 +523,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workerId: 'synthetic-speech-purge-test',
                     fencingToken: 1,
                 });
+
                 // Completion must wait for the deletion transaction's held job lock.
                 completion = store.complete(job!, reference, audio, now);
                 await tx.execute(sql`select pg_sleep(0.05)`);
             });
+
             await completion;
             expect(await db.select().from(speechBindingsTable)).toHaveLength(0);
             expect(await db.select().from(speechQuotesTable)).toHaveLength(0);
@@ -489,12 +536,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(speechJobsTable)
                 .where(eq(speechJobsTable.id, job!.id));
+
             expect(finished).toMatchObject({
                 state: 'ready',
                 payerId: null,
                 reservationId: null,
                 billingState: 'released_no_charge',
             });
+
             const after = await wallet(actors[0]!);
             expect(after.reservedCredits).toBe(0n);
             expect(after.consumedCredits).toBe(0n);
@@ -502,35 +551,44 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 availableBeforePurge +
                     parseCreditMilli(prepared.quote!.credits),
             );
+
             const retained = await db.select().from(speechRecordingsTable);
             expect(retained).toHaveLength(2);
             expect(
                 retained.every((recording) => recording.state === 'ready'),
             ).toBe(true);
+
             expect(
                 retained.find((recording) => recording.id === successful!.id)!
                     .text,
             ).toBe(originalText);
+
             expect((await storage.read(successful!.storage))!.bytes).toEqual(
                 originalBytes!.bytes,
             );
+
             expect(
                 retained.find((recording) => recording.id === job!.recordingId)!
                     .text,
             ).toBe(text);
+
             expect((await storage.read(reference))!.bytes).toEqual(audio.bytes);
         });
+
         it('admits one payer across concurrent confirmed quotes and bills once after publication', async () => {
             text =
                 'This is a sentence with more than ten words that needs pronunciation generation.';
+
             const prepared = await Promise.all(
                 actors.map((actor) => prepare(actor)),
             );
+
             expect(
                 prepared.every(
                     (result) => result.state === 'confirmation_required',
                 ),
             ).toBe(true);
+
             const results = await Promise.all(
                 actors.map((actor, index) => confirm(actor, prepared[index]!)),
             );
@@ -539,6 +597,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect((await wallet(job!.payerId!)).reservedCredits).toBe(
                 parseCreditMilli(prepared[0]!.quote!.credits),
             );
+
             const joiner = actors.find((actor) => actor !== job!.payerId)!;
             expect((await wallet(joiner)).reservedCredits).toBe(0n);
             const worker = new SpeechWorker({
@@ -547,18 +606,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             });
+
             await worker.runOnce();
             expect((await wallet(job!.payerId!)).consumedCredits).toBe(
                 job!.credits,
             );
+
             expect((await wallet(joiner)).consumedCredits).toBe(0n);
             await confirm(
                 job!.payerId!,
                 prepared[actors.indexOf(job!.payerId!)]!,
             );
+
             expect((await wallet(job!.payerId!)).consumedCredits).toBe(
                 job!.credits,
             );
+
             expect(
                 (
                     await store.request(
@@ -569,9 +632,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).response.billingState,
             ).toBe('free');
         });
+
         it('releases paid credit holds on definitive failure and allows a separately confirmed retry', async () => {
             text =
                 'This longer sentence has more than ten distinct words and requires paid pronunciation.';
+
             const prepared = await prepare(actors[0]!);
             await confirm(actors[0]!, prepared);
             const job = await store.claim(now);
@@ -581,6 +646,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await db.select().from(speechJobsTable))[0]?.billingState,
             ).toBe('released_no_charge');
+
             const retry = await prepare(actors[0]!);
             expect(retry.state).toBe('confirmation_required');
             await confirm(actors[0]!, retry);
@@ -589,11 +655,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 parseCreditMilli(retry.quote!.credits),
             );
         });
+
         it('uses a cache filled after quoting without charging the original quote requester', async () => {
             text =
                 'This sentence is long enough to need payment when there is no cached audio.';
+
             const first = await prepare(actors[0]!),
                 second = await prepare(actors[1]!);
+
             await confirm(actors[1]!, second);
             await new SpeechWorker({
                 store,
@@ -601,32 +670,39 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             expect((await confirm(actors[0]!, first)).state).toBe('ready');
             expect((await wallet(actors[0]!)).reservedCredits).toBe(0n);
             expect((await wallet(actors[0]!)).consumedCredits).toBe(0n);
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
         });
+
         it('deduplicates simultaneous confirmations with the same operation and quote', async () => {
             text =
                 'A long sentence is charged only once even if confirmation requests are duplicated.';
+
             const quote = await prepare(actors[0]!),
                 operationId = randomUUID();
             const results = await Promise.all([
                 confirm(actors[0]!, quote, operationId),
                 confirm(actors[0]!, quote, operationId),
             ]);
+
             expect(results[0]?.requestId).toBe(results[1]?.requestId);
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect((await wallet(actors[0]!)).reservedCredits).toBe(
                 parseCreditMilli(quote.quote!.credits),
             );
         });
+
         it('serializes text and speech reservations against one wallet without overspending', async () => {
             text =
                 'A long sentence is charged only once when competing with another AI request.';
+
             const prepared = await prepare(actors[0]!),
                 dictionaryId = randomUUID(),
                 jobId = randomUUID();
+
             await db.insert(dictionariesTable).values({
                 id: dictionaryId,
                 ownerId: actors[0]!,
@@ -636,6 +712,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             await db.insert(dictionaryGenerationJobsTable).values({
                 id: jobId,
                 ownerId: actors[0]!,
@@ -659,6 +736,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 updatedAt: now,
                 nextAttemptAt: now,
             });
+
             const outcomes = await Promise.allSettled([
                 confirm(actors[0]!, prepared),
                 db.transaction((tx) =>
@@ -675,24 +753,30 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             ]);
+
             expect(
                 outcomes.filter((outcome) => outcome.status === 'fulfilled'),
             ).toHaveLength(1);
+
             const summary = await wallet(actors[0]!);
             expect(summary.reservedCredits).toBeLessThanOrEqual(1_000_000n);
             expect(summary.availableCredits).toBeGreaterThanOrEqual(0n);
         });
+
         it('invalidates a quote when voice settings change even if the tariff is unchanged', async () => {
             text =
                 'This sentence has enough words to require confirmation before its pronunciation is generated.';
+
             const prepared = await prepare(actors[0]!);
             voice = 'changed-default-voice';
             await expect(confirm(actors[0]!, prepared)).rejects.toThrow(
                 'speech_quote_stale',
             );
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(0);
             expect((await wallet(actors[0]!)).reservedCredits).toBe(0n);
         });
+
         it('preserves approved cached recordings when configured voices change', async () => {
             await prepare(actors[0]!);
             await new SpeechWorker({
@@ -701,6 +785,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             voice = 'changed-default-voice';
             expect((await prepare(actors[1]!)).state).toBe('ready');
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
@@ -709,6 +794,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .voice,
             ).toBe('fixture');
         });
+
         it('reuses ready live pronunciation after the configured default model changes', async () => {
             providerKind = 'kie';
             configurationId = 'kie-turbo-bella-v1';
@@ -733,6 +819,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 voice: 'bella',
             });
         });
+
         it('uses the pinned profile configuration for work queued before a default switch', async () => {
             providerKind = 'kie';
             configurationId = 'kie-turbo-bella-v1';
@@ -746,6 +833,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 submit: vi.fn(provider.submit.bind(provider)),
                 poll: vi.fn(provider.poll.bind(provider)),
             };
+
             expect(
                 await new SpeechWorker({
                     store,
@@ -756,6 +844,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now: () => now,
                 }).runOnce(),
             ).toBe(true);
+
             expect(retainedProvider.submit).toHaveBeenCalledWith(
                 expect.objectContaining({
                     profile: expect.objectContaining({
@@ -764,10 +853,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 }),
             );
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.profile,
             ).toMatchObject({ configurationId: 'kie-turbo-bella-v1' });
         });
+
         const finishRecording = async () => {
             expect(
                 await new SpeechWorker({
@@ -812,7 +903,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 lastAccessedAt: now,
             });
-            if (!ready)
+
+            if (!ready) {
                 await db.insert(speechJobsTable).values({
                     id: randomUUID(),
                     recordingId: id,
@@ -826,7 +918,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     billingDeadline: new Date(now.getTime() + 600_000),
                     recoveryDeadline: new Date(now.getTime() + 86_400_000),
                 });
+            }
         };
+
         {
             for (const firstProvider of ['fixture', 'kie'] as const) {
                 it(`isolates scoped ${firstProvider} cached audio from the other recording class`, async () => {
@@ -835,26 +929,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         await prepare(actors[0]!);
                         await finishRecording();
                     }
+
                     providerKind =
                         firstProvider === 'fixture' ? 'kie' : 'fixture';
+
                     expect((await prepare(actors[1]!)).state).toBe('queued');
                     expect(
                         await db.select().from(speechJobsTable),
                     ).toHaveLength(2);
+
                     await finishRecording();
                     expect((await prepare(actors[1]!)).state).toBe('ready');
                     const recordings = await db
                         .select()
                         .from(speechRecordingsTable);
+
                     expect(
                         recordings.map((row) => row.profile.provider).sort(),
                     ).toEqual(['fixture', 'kie']);
+
                     expect(
                         new Set(recordings.map((row) => row.canonicalKey)).size,
                     ).toBe(2);
+
                     expect((await wallet(actors[1]!)).consumedCredits).toBe(0n);
                 });
             }
+
             it(`does not join scoped pending fixture jobs when live pronunciation is requested`, async () => {
                 await prepare(actors[0]!);
                 providerKind = 'kie';
@@ -865,6 +966,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(new Set(jobs.map((row) => row.canonicalKey)).size).toBe(
                     2,
                 );
+
                 const bindings = await db.select().from(speechBindingsTable);
                 expect(new Set(bindings.map((row) => row.jobId)).size).toBe(2);
                 expect(
@@ -872,6 +974,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).not.toBe(jobs.find((row) => row.payerId === actors[0]!)!.id);
             });
         }
+
         it('reuses scoped pronunciation audio even when the current model no longer supports its language', async () => {
             providerKind = 'kie';
             await seedRecording(true);
@@ -883,9 +986,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     revision: 'v1',
                 }),
             ).toEqual({ playable: true, generationAvailable: false });
+
             expect((await prepare(actors[1]!)).state).toBe('ready');
             expect(await db.select().from(speechJobsTable)).toHaveLength(0);
         });
+
         it('does not advertise scoped fixture audio as pronunciation for unsupported languages', async () => {
             await seedRecording(true);
             providerKind = 'kie';
@@ -897,9 +1002,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     revision: 'v1',
                 }),
             ).toEqual({ playable: false, generationAvailable: false });
+
             expect((await prepare(actors[1]!)).state).toBe('unavailable');
             expect(await db.select().from(speechJobsTable)).toHaveLength(0);
         });
+
         it('publishes paid-length audio for an unlimited wallet without consuming grants', async () => {
             const before = await wallet(actors[0]!);
             await db.transaction((tx) =>
@@ -912,8 +1019,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     reason: 'Disposable unlimited speech test policy',
                 }),
             );
+
             text =
                 'This sentence has more than ten words but its owner has an unlimited credit policy.';
+
             const prepared = await prepare(actors[0]!);
             expect(prepared.quote?.unlimited).toBe(true);
             await confirm(actors[0]!, prepared);
@@ -923,6 +1032,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             const after = await wallet(actors[0]!);
             expect(after.consumedCredits).toBe(0n);
             expect(after.reservedCredits).toBe(0n);
@@ -932,6 +1042,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('ready');
         });
+
         it('persists only share digests for both free bindings and paid quotes', async () => {
             const shared: SpeechSource = {
                 ...source,
@@ -949,9 +1060,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     operationId: randomUUID(),
                     now,
                 });
+
             await request();
             text =
                 'A long sentence has more than ten words and requires a confirmed paid audio generation.';
+
             const paid = await request();
             await store.confirm({
                 actorId: actors[1]!,
@@ -959,10 +1072,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 now,
             });
+
             const [bindingRows, quoteRows] = await Promise.all([
                 db.select().from(speechBindingsTable),
                 db.select().from(speechQuotesTable),
             ]);
+
             expect(
                 JSON.stringify(
                     [...bindingRows, ...quoteRows],
@@ -970,20 +1085,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         typeof value === 'bigint' ? value.toString() : value,
                 ),
             ).not.toContain('synthetic-private-share-key-never-store');
+
             for (const row of [...bindingRows, ...quoteRows]) {
-                if (!('access' in row.source))
+                if (!('access' in row.source)) {
                     throw new Error('Expected a shared saved speech source.');
+                }
+
                 expect(row.source.access).toMatchObject({
                     kind: 'shared',
                     keyDigest: expect.stringMatching(/^hmac-sha256:v1:/),
                 });
             }
+
             expect(
                 bindingRows.map((row) => {
-                    if (!('access' in row.source))
+                    if (!('access' in row.source)) {
                         throw new Error(
                             'Expected a shared saved speech source.',
                         );
+                    }
+
                     return row.source.access;
                 }),
             ).not.toEqual(
@@ -992,11 +1113,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ]),
             );
         });
+
         it('retains consumed quote idempotency when an administrator removes its audio', async () => {
             text =
                 'A paid pronunciation is charged only once even after an administrator removes its recording.';
+
             const prepared = await prepare(actors[0]!),
                 operationId = randomUUID();
+
             await confirm(actors[0]!, prepared, operationId);
             await new SpeechWorker({
                 store,
@@ -1004,6 +1128,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             const snapshot = (
                 await store.listRecordings({ page: 1, pageSize: 25 })
             ).recordings[0]!;
@@ -1022,20 +1147,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     occurredAt: now,
                 },
             });
+
             await storage.delete(selected[0]!.storage);
             await store.deleted(snapshot.id, now);
             expect(
                 (await confirm(actors[0]!, prepared, operationId)).state,
             ).toBe('failed');
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect((await wallet(actors[0]!)).consumedCredits).toBe(
                 parseCreditMilli(prepared.quote!.credits),
             );
+
             expect((await wallet(actors[0]!)).reservedCredits).toBe(0n);
             expect((await prepare(actors[0]!)).state).toBe(
                 'confirmation_required',
             );
         });
+
         it('revalidates shared-source digests through the real resolver for status and private byte delivery', async () => {
             const dictionaries = new DrizzleDictionaryStore(db, {
                 generate: randomUUID,
@@ -1096,6 +1225,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 keyVersion: 1,
                 locator: share.locator,
             });
+
             const resolver = new DrizzleSpeechSourceResolver(db, cryptography);
             const realStore = new DrizzleSpeechStore({
                 database: db,
@@ -1128,24 +1258,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 source: reference,
                 operationId: randomUUID(),
             });
+
             expect(
                 (await service.status(actors[1]!, prepared.requestId!)).state,
             ).toBe('queued');
+
             await new SpeechWorker({
                 store: realStore,
                 storage,
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             const ready = await service.status(actors[1]!, prepared.requestId!);
             expect(ready.state).toBe('ready');
             expect(
                 (await service.content(actors[1]!, ready.playbackId!)).audio
                     .bytes.length,
             ).toBeGreaterThan(0);
+
             expect(
                 JSON.stringify(await db.select().from(speechBindingsTable)),
             ).not.toContain(share.key);
+
             await db
                 .update(dictionariesTable)
                 .set({
@@ -1157,18 +1292,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     version: sql`${dictionariesTable.version}+1`,
                 })
                 .where(eq(dictionariesTable.id, dictionary.id));
+
             await expect(
                 service.status(actors[1]!, prepared.requestId!),
             ).rejects.toThrow();
+
             await expect(
                 service.content(actors[1]!, ready.playbackId!),
             ).rejects.toThrow();
+
             const owned: SpeechSource = {
                 kind: 'dictionary-field',
                 access: { kind: 'owner', dictionaryId: dictionary.id },
                 cardId: card.id,
                 field: 'source',
             };
+
             expect(
                 (
                     await service.prepare(actors[0]!, {
@@ -1177,11 +1316,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).state,
             ).toBe('ready');
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
         });
+
         it('scrubs definitive failure text while preserving a retryable private object inventory', async () => {
             text =
                 'This private sentence should disappear from failed derived recordings rather than live forever.';
+
             const quote = await prepare(actors[0]!);
             await confirm(actors[0]!, quote);
             const job = await store.claim(now);
@@ -1193,16 +1335,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(await store.deletionInventory(now)).toEqual([
                 { id: failed!.id, storage: failed!.storage },
             ]);
+
             await new SpeechWorker({
                 store,
                 storage,
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('deleted');
         });
+
         it('scrubs admin-removed text before storage deletion has succeeded', async () => {
             text = 'private pronunciation';
             await prepare(actors[0]!);
@@ -1212,6 +1357,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             const snapshot = (
                 await store.listRecordings({ page: 1, pageSize: 25 })
             ).recordings[0]!;
@@ -1239,9 +1385,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 'speech_recording_unavailable',
             );
         });
+
         it('preserves provider budget expenditure after a known failed task text is scrubbed', async () => {
             text =
                 'This sufficiently long sentence uses a provider budget even when the generated audio fails.';
+
             const pricedStore = new DrizzleSpeechStore({
                 database: db,
                 fingerprintSecret: 'synthetic-shared-speech-secret',
@@ -1268,12 +1416,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 now,
             });
+
             await pricedStore.confirm({
                 actorId: actors[0]!,
                 quoteId: quote.quote!.id,
                 operationId: randomUUID(),
                 now,
             });
+
             const first = await pricedStore.claim(now);
             await pricedStore.submitted(
                 first!,
@@ -1281,18 +1431,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 2500,
                 now,
             );
+
             await db
                 .update(speechJobsTable)
                 .set({
                     nextPollAt: sql`clock_timestamp() - interval '1 millisecond'`,
                 })
                 .where(eq(speechJobsTable.id, first!.id));
+
             const later = new Date(now.getTime() + 2500),
                 known = await pricedStore.claim(later);
+
             await pricedStore.fail(known!, 'failure', later);
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.text,
             ).toBe('');
+
             const retry = await pricedStore.prepare({
                 actorId: actors[0]!,
                 source,
@@ -1300,6 +1454,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 now: later,
             });
+
             await expect(
                 pricedStore.confirm({
                     actorId: actors[0]!,
@@ -1308,8 +1463,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now: later,
                 }),
             ).rejects.toThrow('speech_provider_budget');
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
         });
+
         it('deduplicates concurrent fingerprint rotations when both configurations retain the other key', async () => {
             const oldSecret =
                     'synthetic-old-fingerprint-secret-at-least-32-bytes',
@@ -1330,6 +1487,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             .from(usersTable)
                             .where(eq(usersTable.id, actor))
                             .for('share');
+
                         return { text, language: 'fr', revision: 'v1' };
                     },
                 });
@@ -1347,13 +1505,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 request(older, actors[0]!),
                 request(newer, actors[1]!),
             ]);
+
             expect(requests.every((result) => result.state === 'queued')).toBe(
                 true,
             );
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect(await db.select().from(speechRecordingsTable)).toHaveLength(
                 1,
             );
+
             const submitted = vi.spyOn(provider, 'submit');
             await new SpeechWorker({
                 store: older,
@@ -1361,6 +1522,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providers: new Map([['fixture-v1', provider]]),
                 now: () => now,
             }).runOnce();
+
             expect(submitted).toHaveBeenCalledOnce();
             submitted.mockRestore();
             expect((await request(newer, actors[0]!)).state).toBe('ready');
@@ -1370,6 +1532,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 1,
             );
         });
+
         it('serializes retained-key binding with audited deletion impact', async () => {
             await prepare(actors[0]!);
             await new SpeechWorker({
@@ -1377,6 +1540,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 storage,
                 providers: new Map([['fixture-v1', provider]]),
             }).runOnce();
+
             const snapshot = (
                 await store.listRecordings({ page: 1, pageSize: 25 })
             ).recordings[0]!;
@@ -1402,6 +1566,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(speechRecordingsTable)
                     .where(eq(speechRecordingsTable.id, snapshot.id))
                     .for('update');
+
                 competing = Promise.allSettled([
                     store.markDeleting({
                         audit: {
@@ -1426,9 +1591,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now,
                     }),
                 ]);
+
                 // Both independent canonical locks reach the held recording row.
                 await tx.execute(sql`select pg_sleep(0.1)`);
             });
+
             const [deletion, binding] = await competing;
             const [recording] = await db
                 .select()
@@ -1438,6 +1605,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(speechBindingsTable)
                 .where(eq(speechBindingsTable.recordingId, snapshot.id));
+
             if (deletion!.status === 'fulfilled') {
                 expect(recording!.state).toBe('deleting');
                 expect(links).toHaveLength(snapshot.bindingCount);
@@ -1446,21 +1614,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(String(deletion!.reason)).toContain(
                     'speech_delete_impact_changed',
                 );
+
                 expect(binding!.status).toBe('fulfilled');
                 expect(recording!.state).toBe('ready');
                 expect(links).toHaveLength(snapshot.bindingCount + 1);
             }
         });
+
         it('rechecks authorization inside the transaction and rolls back admission', async () => {
             revoked = true;
             await expect(prepare(actors[0]!)).rejects.toThrow(
                 'speech_source_unavailable',
             );
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(0);
         });
+
         it('refunds at the exact billing deadline and publishes late audio without a charge', async () => {
             text =
                 'A sufficiently long sentence has more than ten words to require a paid generation.';
+
             const prepared = await prepare(actors[0]!);
             await confirm(actors[0]!, prepared);
             const job = await store.claim(now);
@@ -1474,6 +1647,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     billingDeadline: sql`clock_timestamp() - interval '1 millisecond'`,
                 })
                 .where(eq(speechJobsTable.id, job!.id));
+
             // A backdated worker-supplied clock must never revive billing permission.
             await store.complete(
                 job!,
@@ -1481,19 +1655,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 audio,
                 new Date('1900-01-01T00:00:00Z'),
             );
+
             const summary = await wallet(actors[0]!);
             expect(summary.consumedCredits).toBe(0n);
             expect(summary.reservedCredits).toBe(0n);
             expect(
                 (await db.select().from(speechJobsTable))[0]?.billingState,
             ).toBe('released_no_charge');
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('ready');
         });
+
         it('retains unknown-submission tombstones after refund and joins without another task', async () => {
             text =
                 'Another sufficiently long sentence has more than ten words to require paid audio.';
+
             const prepared = await prepare(actors[0]!);
             await confirm(actors[0]!, prepared);
             const job = await store.claim(now);
@@ -1504,29 +1682,35 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     billingDeadline: sql`clock_timestamp() - interval '1 millisecond'`,
                 })
                 .where(eq(speechJobsTable.id, job!.id));
+
             await store.releaseDeadlines(new Date('1900-01-01T00:00:00Z'));
             expect((await wallet(actors[0]!)).reservedCredits).toBe(0n);
             expect((await prepare(actors[1]!)).state).toBe(
                 'submission_unknown',
             );
+
             expect(await db.select().from(speechJobsTable)).toHaveLength(1);
             expect(
                 await store.claim(new Date(now.getTime() + 86_400_001)),
             ).toBeNull();
+
             await db
                 .update(speechJobsTable)
                 .set({
                     recoveryDeadline: sql`clock_timestamp() - interval '1 millisecond'`,
                 })
                 .where(eq(speechJobsTable.id, job!.id));
+
             await store.releaseDeadlines(new Date('1900-01-01'));
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.text,
             ).toBe('');
+
             expect((await prepare(actors[1]!)).state).toBe(
                 'submission_unknown',
             );
         });
+
         it('fences stale completions and rejects stale admin deletion impact', async () => {
             await prepare(actors[0]!);
             const job = await store.claim(now);
@@ -1536,19 +1720,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 job!.storage,
                 audio,
             );
+
             await store.complete(
                 { ...job!, leaseToken: randomUUID() },
                 reference,
                 audio,
                 now,
             );
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).toBe('pending');
+
             await store.complete(job!, reference, audio, now);
             const snapshot = (
                 await store.listRecordings({ page: 1, pageSize: 25 })
             ).recordings[0]!;
+
             await prepare(actors[1]!);
             const audit = {
                 actorId: actors[0]!,
@@ -1556,6 +1744,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reason: 'Remove disposable pronunciation fixture',
                 occurredAt: now,
             };
+
             await expect(
                 store.markDeleting({
                     recordings: [
@@ -1568,9 +1757,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     audit,
                 }),
             ).rejects.toThrow('speech_delete_impact_changed');
+
             const latest = (
                 await store.listRecordings({ page: 1, pageSize: 25 })
             ).recordings[0]!;
+
             expect(latest.state).toBe('ready');
             expect(latest.bindingCount).toBe(2);
             const selected = await store.markDeleting({
@@ -1583,15 +1774,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ],
                 audit,
             });
+
             expect(
                 (await store.listRecordings({ page: 1, pageSize: 25 }))
                     .recordings[0]?.state,
             ).toBe('deleting');
+
             await storage.delete(selected[0]!.storage);
             await store.deleted(latest.id, now);
             expect(
                 (await store.listRecordings({ page: 1, pageSize: 25 })).total,
             ).toBe(0);
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.text,
             ).toBe('');

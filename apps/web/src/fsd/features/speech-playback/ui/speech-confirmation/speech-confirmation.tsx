@@ -20,13 +20,16 @@ export function SpeechConfirmation({
     const [expired, setExpired] = useState(
         Date.parse(quote.expiresAt) <= Date.now(),
     );
+
     useEffect(() => {
         const timer = setTimeout(
             () => setExpired(true),
             Math.max(0, Date.parse(quote.expiresAt) - Date.now()),
         );
+
         return () => clearTimeout(timer);
     }, [quote.expiresAt]);
+
     const insufficient =
         !quote.unlimited &&
         parseCreditMilli(quote.availableCredits) <
@@ -42,7 +45,11 @@ export function SpeechConfirmation({
             </Button>
         </>
     );
-    if (typeof document === 'undefined') return null;
+
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
     return createPortal(
         <Dialog
             open

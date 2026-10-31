@@ -2,8 +2,10 @@ import type { LearningBlock } from '@languon/contracts';
 
 function canonical(value: unknown) {
     return JSON.stringify(value, (_key, child: unknown) => {
-        if (!child || typeof child !== 'object' || Array.isArray(child))
+        if (!child || typeof child !== 'object' || Array.isArray(child)) {
             return child;
+        }
+
         return Object.fromEntries(
             Object.entries(child).sort(([left], [right]) =>
                 left.localeCompare(right),
@@ -20,6 +22,7 @@ function material(block: Extract<LearningBlock, { type: 'exercise' }>) {
         group: _group,
         ...content
     } = block;
+
     return content;
 }
 
@@ -29,20 +32,33 @@ export function hasSavedExerciseMaterial(
     working: LearningBlock[],
     saved: LearningBlock[],
 ) {
-    if (block.type !== 'exercise') return false;
+    if (block.type !== 'exercise') {
+        return false;
+    }
+
     const original = saved.find((item) => item.id === block.id);
     if (
         original?.type !== 'exercise' ||
         canonical(material(block)) !== canonical(material(original))
-    )
+    ) {
         return false;
-    if (!block.source) return true;
+    }
+
+    if (!block.source) {
+        return true;
+    }
+
     const source = working.find((item) => item.id === block.source?.blockId);
     const savedSource = saved.find(
         (item) => item.id === original.source?.blockId,
     );
-    if (!source || !savedSource) return false;
+
+    if (!source || !savedSource) {
+        return false;
+    }
+
     const { title: _title, ...content } = source;
     const { title: _savedTitle, ...savedContent } = savedSource;
+
     return canonical(content) === canonical(savedContent);
 }

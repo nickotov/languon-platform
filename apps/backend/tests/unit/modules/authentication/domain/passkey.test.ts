@@ -45,6 +45,7 @@ describe('Passkey', () => {
         expect(renamed.credentialPublicKey).toEqual(
             original.credentialPublicKey,
         );
+
         expect(renamed.id).toBe(original.id);
     });
 
@@ -63,6 +64,7 @@ describe('Passkey', () => {
             deviceType: 'multi_device',
             lastUsedAt: now,
         });
+
         expect(revoked.revokedAt).toEqual(now);
         expect(revoked.revoke(now)).toBe(revoked);
     });

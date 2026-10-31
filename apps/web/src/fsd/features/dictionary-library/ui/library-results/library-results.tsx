@@ -72,7 +72,7 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
         ? dictionaryErrorMessage(state.loadError, t)
         : null;
 
-    if (error)
+    if (error) {
         return (
             <ErrorState
                 action={
@@ -85,8 +85,9 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
                 {error}
             </ErrorState>
         );
+    }
 
-    if (state.pending)
+    if (state.pending) {
         return (
             <ul
                 className={styles.list}
@@ -110,8 +111,9 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
                 ))}
             </ul>
         );
+    }
 
-    if (state.list.length === 0)
+    if (state.list.length === 0) {
         return (
             <Card variant='outlined' padding='lg' className={emptyClass}>
                 {firstDictionary ? (
@@ -151,6 +153,7 @@ export function LibraryResults({ state }: { state: LibraryResultsProps }) {
                 )}
             </Card>
         );
+    }
 
     return (
         <ul className={styles.list}>

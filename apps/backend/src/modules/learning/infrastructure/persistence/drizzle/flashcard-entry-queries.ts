@@ -48,8 +48,10 @@ export async function flashcardListEntries(
             (cursor.dictionaryId !== owned.dictionary.id ||
                 cursor.dictionaryVersion !== owned.dictionary.version ||
                 cursor.search !== (query.search ?? null))
-        )
+        ) {
             throw new LearningInvalidRequestError();
+        }
+
         const search = query.search?.replace(/[\\%_]/g, '\\$&');
         const rows = await tx
             .select({
@@ -157,22 +159,25 @@ export async function flashcardSavePreferences(
                 .from(preferences)
                 .where(condition);
 
-            if ((current?.version ?? 0) !== input.expectedVersion)
+            if ((current?.version ?? 0) !== input.expectedVersion) {
                 throw new LearningConflictError('preferences_conflict');
+            }
+
             const next = {
                 configuration: input.configuration,
                 shuffle: input.shuffle,
                 version: input.expectedVersion + 1,
             };
 
-            if (current)
+            if (current) {
                 await tx.update(preferences).set(next).where(condition);
-            else
+            } else {
                 await tx.insert(preferences).values({
                     ...next,
                     learnerId,
                     dictionaryId: owned.dictionary.id,
                 });
+            }
 
             return next;
         },

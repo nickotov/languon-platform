@@ -70,26 +70,33 @@ export function ReaderLearningBlock({
         (block.type === 'exercise' ? block.group?.title : undefined) ??
         block.title ??
         labels.view.kinds[block.type];
+
     function openCopy() {
         setDialog('copy');
     }
+
     function openLibrary() {
         setDialog('library');
     }
+
     function close() {
         setDialog(null);
     }
+
     function toggleTranslations() {
         setExpansion((prior) => ({ open: !prior.open, at: prior.at + 1 }));
     }
+
     const items: MenuItem[] = [];
-    if (blockCopy)
+    if (blockCopy) {
         items.push({
             label: labels.copy,
             icon: <Copy size={16} />,
             onSelect: openCopy,
         });
-    if (library && canSave)
+    }
+
+    if (library && canSave) {
         items.push({
             label:
                 block.type === 'vocabulary'
@@ -98,7 +105,9 @@ export function ReaderLearningBlock({
             icon: <BookPlus size={16} />,
             onSelect: openLibrary,
         });
-    if (block.type === 'vocabulary')
+    }
+
+    if (block.type === 'vocabulary') {
         items.push({
             label: labels.field(
                 expansion.open
@@ -108,6 +117,8 @@ export function ReaderLearningBlock({
             icon: <Languages size={16} />,
             onSelect: toggleTranslations,
         });
+    }
+
     items.push(...(getBlockActions?.(block) ?? []));
     const menuLabel = `${labels.field('Block settings')}: ${title}`;
     let menu: ReactNode = items.length ? (
@@ -120,7 +131,10 @@ export function ReaderLearningBlock({
         />
     ) : null;
     const customMenu = renderBlockMenu?.(block, items);
-    if (customMenu !== null && customMenu !== undefined) menu = customMenu;
+    if (customMenu !== null && customMenu !== undefined) {
+        menu = customMenu;
+    }
+
     const headingActions = (
         <>
             {options.headingActions}
@@ -161,6 +175,7 @@ export function ReaderLearningBlock({
     function renderDefault(overrides: KnowledgeReadingBlockOverrides = {}) {
         const effectiveLibrary = overrides.library ?? library;
         const effectiveContent = overrides.content ?? content;
+
         return (
             <>
                 {group?.length ? (
@@ -209,5 +224,6 @@ export function ReaderLearningBlock({
             </>
         );
     }
+
     return wrapBlock?.(block, renderDefault) ?? renderDefault();
 }

@@ -26,9 +26,13 @@ export function useOwnedBlockPractice(
         note?.body.document.content?.flatMap((node) =>
             node.attrs?.block ? [node.attrs.block] : [],
         ) ?? [];
+
     function options(block: LearningBlock) {
         if (!hasSavedExerciseMaterial(block, working, saved)) {
-            if (block.type !== 'exercise') return {};
+            if (block.type !== 'exercise') {
+                return {};
+            }
+
             return {
                 evaluationUnavailableReason: {
                     en: 'Save this sheet before requesting AI feedback on the changed exercise.',
@@ -38,7 +42,9 @@ export function useOwnedBlockPractice(
                 }[locale],
             };
         }
+
         return model.options(block);
     }
+
     return { options, consent: model.evaluationConsent };
 }

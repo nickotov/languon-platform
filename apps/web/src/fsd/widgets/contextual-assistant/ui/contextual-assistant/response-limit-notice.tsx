@@ -24,6 +24,7 @@ export function ResponseLimitNotice({
         'Continuar inicia una acción nueva dentro de tu presupuesto máximo guardado.',
     ][at]!;
     const action = ['Continue', 'Продолжить', 'Continuer', 'Continuar'][at]!;
+
     return (
         <section className={styles.incomplete} aria-label={label}>
             <p>

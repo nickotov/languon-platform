@@ -25,6 +25,7 @@ const body = KnowledgeBodySchema.parse({
         ],
     },
 });
+
 it('preserves a learner answer when parent query options and callbacks rerender', () => {
     const first = vi.fn();
     const second = vi.fn();
@@ -36,10 +37,12 @@ it('preserves a learner answer when parent query options and callbacks rerender'
             />
         </I18nProvider>,
     );
+
     fireEvent.click(screen.getByRole('button', { name: /When\?/ }));
     fireEvent.change(screen.getByLabelText('Your answer'), {
         target: { value: 'My unsent answer' },
     });
+
     rerender(
         <I18nProvider locale='en' messages={en}>
             <KnowledgeDocumentView
@@ -48,9 +51,11 @@ it('preserves a learner answer when parent query options and callbacks rerender'
             />
         </I18nProvider>,
     );
+
     expect(screen.getByLabelText('Your answer')).toHaveValue(
         'My unsent answer',
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Check with AI' }));
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledWith(

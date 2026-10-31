@@ -32,11 +32,14 @@ export function WorkspaceLanguages({
             : {};
     const sourceTag = ws.proposal?.sourceLanguage ?? ws.input.sourceLanguage;
     let sourceName: string;
-    if (sourceTag === 'auto') sourceName = copy('auto');
-    else
+    if (sourceTag === 'auto') {
+        sourceName = copy('auto');
+    } else {
         sourceName =
             options.find((option) => option.value === sourceTag)?.label ??
             sourceTag;
+    }
+
     const targetName =
         options.find((option) => option.value === ws.input.targetLanguage)
             ?.label ?? ws.input.targetLanguage;
@@ -58,18 +61,20 @@ export function WorkspaceLanguages({
     }
 
     function accept() {
-        if (ws.detectionResult?.language)
+        if (ws.detectionResult?.language) {
             ws.setInput({
                 ...ws.input,
                 sourceLanguage: ws.detectionResult.language,
             });
+        }
     }
 
     const editable =
         ws.mode === 'compose' &&
         !ws.proposal &&
         !(ws.aiActive ?? ws.translation.active);
-    if (!editable)
+
+    if (!editable) {
         return (
             <div className={styles.languageSummary}>
                 <span>
@@ -85,6 +90,8 @@ export function WorkspaceLanguages({
                 )}
             </div>
         );
+    }
+
     const suggestion =
         ws.input.sourceLanguage === 'auto' ? null : ws.detectionResult;
     const detectionFailed = Boolean(

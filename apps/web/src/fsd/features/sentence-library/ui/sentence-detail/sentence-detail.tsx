@@ -59,14 +59,19 @@ export function SentenceDetail({
     function retry() {
         void query.refetch();
     }
+
     function toggle() {
         setExpanded((value) => !value);
     }
+
     function archive() {
-        if (sentence) onArchiveToggle(sentence);
+        if (sentence) {
+            onArchiveToggle(sentence);
+        }
     }
+
     let content;
-    if (query.isPending)
+    if (query.isPending) {
         content = (
             <div
                 role='status'
@@ -78,10 +83,10 @@ export function SentenceDetail({
                 <Skeleton variant='rect' width='100%' height='7rem' />
             </div>
         );
-    else if (
+    } else if (
         query.error instanceof LibraryApiError &&
         [401, 403, 404].includes(query.error.status)
-    )
+    ) {
         content = (
             <div className={styles.statusContent}>
                 <InlineAlert
@@ -101,7 +106,7 @@ export function SentenceDetail({
                 </InlineAlert>
             </div>
         );
-    else if (query.isError)
+    } else if (query.isError) {
         content = (
             <div className={styles.statusContent}>
                 <InlineAlert
@@ -121,7 +126,7 @@ export function SentenceDetail({
                 </InlineAlert>
             </div>
         );
-    else if (sentence) {
+    } else if (sentence) {
         content = (
             <div className={styles.content}>
                 <section
@@ -200,11 +205,13 @@ export function SentenceDetail({
             </div>
         );
     }
+
     const closeIcon = compact ? (
         <ArrowLeftIcon aria-hidden className={styles.icon} />
     ) : (
         <XIcon aria-hidden className={styles.icon} />
     );
+
     return (
         <Dialog
             open

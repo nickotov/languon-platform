@@ -30,28 +30,37 @@ describe('current note block references', () => {
         const { result } = renderHook(() =>
             useBlockReferences('chat', undefined, blocks),
         );
+
         act(() => {
-            for (const block of blocks) result.current.add(block.id);
+            for (const block of blocks) {
+                result.current.add(block.id);
+            }
+
             result.current.add(blocks[0]!.id);
         });
+
         expect(result.current.selected).toHaveLength(8);
         expect(result.current.limitReached).toBe(true);
         act(() => {
             result.current.sent([blocks[0]!.id]);
         });
+
         expect(result.current.selected).toHaveLength(7);
         expect(result.current.selected[0]?.id).toBe(blocks[1]!.id);
     });
+
     it('marks removed targets as missing instead of silently dropping or retargeting them', () => {
         const { result, rerender } = renderHook(
             ({ available }) => useBlockReferences('chat', undefined, available),
             { initialProps: { available: blocks } },
         );
+
         act(() => result.current.add(blocks[0]!.id));
         rerender({ available: blocks.slice(1) });
         expect(result.current.missing).toBe(true);
         expect(result.current.selected[0]?.id).toBe(blocks[0]!.id);
     });
+
     it('adds editor requests once and clears selections on conversation switch', async () => {
         const request = {
             id: 'request',
@@ -61,10 +70,12 @@ describe('current note block references', () => {
             ({ id }) => useBlockReferences(id, request, blocks),
             { initialProps: { id: 'chat' } },
         );
+
         await waitFor(() => expect(result.current.selected).toHaveLength(2));
         rerender({ id: 'other' });
         expect(result.current.selected).toEqual([]);
     });
+
     it('lets the slash picker select several blocks, search by title and finish explicitly', () => {
         const add = vi.fn();
         const close = vi.fn();
@@ -78,6 +89,7 @@ describe('current note block references', () => {
                 onTexts={vi.fn()}
             />,
         );
+
         fireEvent.click(screen.getByRole('button', { name: /Rule 1/ }));
         fireEvent.click(screen.getByRole('button', { name: /Rule 2/ }));
         expect(add.mock.calls).toEqual([[blocks[0]!.id], [blocks[1]!.id]]);
@@ -86,10 +98,12 @@ describe('current note block references', () => {
             screen.getByRole('textbox', { name: 'Search note blocks' }),
             { target: { value: 'Rule 9' } },
         );
+
         expect(screen.queryByRole('button', { name: /Rule 1/ })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Done' }));
         expect(close).toHaveBeenCalledOnce();
     });
+
     it('shows missing references and removes each chip independently', () => {
         const remove = vi.fn();
         render(
@@ -99,14 +113,17 @@ describe('current note block references', () => {
                 onRemove={remove}
             />,
         );
+
         expect(screen.getByText('Block removed from note')).toBeVisible();
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Remove block reference: Rule 1',
             }),
         );
+
         expect(remove).toHaveBeenCalledWith(blocks[0]!.id);
     });
+
     it('offers the same add-to-chat action in custom block settings without changing content', async () => {
         const value = KnowledgeBodySchema.parse({
             schemaVersion: 2,
@@ -144,14 +161,17 @@ describe('current note block references', () => {
                 }}
             />,
         );
+
         fireEvent.click(
             await screen.findByRole('button', {
                 name: 'Block settings: Rule 1',
             }),
         );
+
         fireEvent.click(
             await screen.findByRole('menuitem', { name: 'Add block to chat' }),
         );
+
         expect(mention).toHaveBeenCalledWith(blocks[0]!.id);
         expect(change).not.toHaveBeenCalled();
         expect(knowledgeBlockReferences(value.document)).toEqual([blocks[0]]);
@@ -163,9 +183,11 @@ it('rejects oversized grouped requests atomically instead of selecting the first
     const { result } = renderHook(() =>
         useBlockReferences('chat', request, blocks),
     );
+
     await waitFor(() => expect(result.current.limitReached).toBe(true));
     expect(result.current.selected).toEqual([]);
 });
+
 it('distinguishes untitled exercise and media blocks with bounded type-specific descriptors', () => {
     const document = KnowledgeBodySchema.parse({
         schemaVersion: 2,
@@ -203,5 +225,6 @@ it('distinguishes untitled exercise and media blocks with bounded type-specific 
         'What happened in this story?',
         'A short French conversation.',
     ]);
+
     expect(references.every((item) => item.title.length <= 200)).toBe(true);
 });

@@ -25,10 +25,12 @@ test('Mastra development command starts only required local infrastructure and w
         '--wait',
         'postgres',
     ]);
+
     assert.equal(
         mastraDevelopmentCommands.studio.includes('--request-context-presets'),
         true,
     );
+
     assert.equal(mastraDevelopmentCommands.studio.includes('--root'), false);
     assert.equal(
         [
@@ -97,6 +99,7 @@ setInterval(() => {}, 1_000);
             .trim()
             .split('\n')
             .map((line) => JSON.parse(line));
+
         assert.deepEqual(
             records.slice(0, 2).map(({ args, executable }) => ({
                 args,
@@ -117,28 +120,34 @@ setInterval(() => {}, 1_000);
                 },
             ],
         );
+
         assert.equal(
             records.every(({ gate }) => gate === 'true'),
             true,
         );
+
         assert.equal(
             records.every(({ autoDetectUrl }) => autoDetectUrl === 'true'),
             true,
         );
+
         assert.equal(
             records.every(({ agentSignals }) => agentSignals === 'false'),
             true,
         );
+
         assert.equal(
             records.every(
                 ({ telemetryDisabled }) => telemetryDisabled === 'true',
             ),
             true,
         );
+
         assert.equal(
             records.every(({ sentinel }) => sentinel === 'from-test'),
             true,
         );
+
         assert.equal(
             records.some(
                 ({ args, event }) =>

@@ -50,14 +50,20 @@ export async function resolveSelectionSource(
 
     let share;
     if (source.kind === 'shared-text') {
-        if (!shareKey) throw new TextSelectionError('not_found');
+        if (!shareKey) {
+            throw new TextSelectionError('not_found');
+        }
+
         const [row] = await tx
             .select()
             .from(textSharesTable)
             .where(eq(textSharesTable.locator, source.shareId))
             .limit(1);
 
-        if (!row) throw new TextSelectionError('not_found');
+        if (!row) {
+            throw new TextSelectionError('not_found');
+        }
+
         share = { kind: row.kind, locator: source.shareId, key: shareKey };
     }
 
@@ -72,8 +78,9 @@ export async function resolveSelectionSource(
         options.verifyShare,
     );
 
-    if (!result.document.alignment)
+    if (!result.document.alignment) {
         throw new TextSelectionError('stale_content');
+    }
 
     return {
         sourceOwnerId: result.sourceOwnerId,
@@ -90,12 +97,13 @@ export async function assertSelectionSource(
     authority: SelectionSourceAuthority,
     now: Date,
 ) {
-    if (authority.kind === 'text')
+    if (authority.kind === 'text') {
         await assertTextSourceAuthority(tx, authority);
-    else
+    } else {
         await options.proposal(tx, {
             ownerId: authority.ownerId,
             jobId: authority.jobId,
             now,
         });
+    }
 }

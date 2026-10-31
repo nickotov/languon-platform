@@ -86,8 +86,10 @@ export async function finish(
             request.leaseWorkerId !== input.workerId ||
             !request.leaseDeadline ||
             request.leaseDeadline <= input.now
-        )
+        ) {
             return false;
+        }
+
         await tx.execute(
             sql`select languon_assert_accounting_purge_claim(${input.userId}::uuid,${input.workerId},${input.fencingToken}::integer)`,
         );
@@ -98,7 +100,9 @@ export async function finish(
             .where(eq(usersTable.id, input.userId))
             .limit(1);
 
-        if (user?.status !== 'deletion_pending') return false;
+        if (user?.status !== 'deletion_pending') {
+            return false;
+        }
 
         // Source ownership can revoke other learners' in-flight private work.
         // This due-claim definer settles it before generic busy checks and cascades.
@@ -122,19 +126,27 @@ export async function finish(
                 { ownerId: input.userId },
                 input.now,
             )
-        )
+        ) {
             throw new Error('Conversation work is not quiescent');
+        }
+
         if (
             await portraitDeletionBusy(tx, input.userId, input.now, {
                 workerId: input.workerId,
                 fencingToken: input.fencingToken,
             })
-        )
+        ) {
             throw new Error('Portrait work is not quiescent');
-        if (await textsDeletionBusy(tx, input.userId))
+        }
+
+        if (await textsDeletionBusy(tx, input.userId)) {
             throw new Error('Text work is not quiescent');
-        if (await sentenceDeletionBusy(tx, sentenceScope))
+        }
+
+        if (await sentenceDeletionBusy(tx, sentenceScope)) {
             throw new Error('Sentence work is not quiescent');
+        }
+
         const [active] = await tx
             .select({ count: sql<number>`count(*)::int` })
             .from(dictionaryGenerationJobsTable)

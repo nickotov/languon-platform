@@ -87,16 +87,20 @@ const DictionaryImportContentSchema = z
         if (
             new TextEncoder().encode(value).byteLength >
             dictionaryInterchangeLimitsV1.maximumInputUtf8Bytes
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message: 'Import content exceeds the UTF-8 byte limit',
             });
-        if (value.includes('\0'))
+        }
+
+        if (value.includes('\0')) {
             context.addIssue({
                 code: 'custom',
                 message: 'Import content contains a NUL character',
             });
+        }
+
         for (let index = 0; index < value.length; index += 1) {
             const unit = value.charCodeAt(index);
             const previous = value.charCodeAt(index - 1);
@@ -113,11 +117,13 @@ const DictionaryImportContentSchema = z
                 unit !== 9 &&
                 unit !== 10 &&
                 unit !== 13;
+
             if (loneSurrogate || disallowedControl) {
                 context.addIssue({
                     code: 'custom',
                     message: 'Import content contains invalid text characters',
                 });
+
                 break;
             }
         }
@@ -143,12 +149,13 @@ export const DictionaryImportOptionsSchema = z
     })
     .strict()
     .superRefine((options, context) => {
-        if (options.sourceColumnIndex === options.targetColumnIndex)
+        if (options.sourceColumnIndex === options.targetColumnIndex) {
             context.addIssue({
                 code: 'custom',
                 path: ['targetColumnIndex'],
                 message: 'Source and target columns must be distinct',
             });
+        }
     });
 
 const DictionaryImportPayloadFieldsSchema = z
@@ -189,12 +196,13 @@ export const DictionaryImportRowWarningSchema = z
             Number(warning.duplicateCardId !== null) +
                 Number(warning.duplicateRowIndex !== null) !==
             1
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message:
                     'A duplicate warning must reference exactly one prior row or retained card',
             });
+        }
     });
 
 export const DictionaryImportPreviewColumnSchema = z
@@ -248,12 +256,13 @@ export const PreviewDictionaryImportResponseSchema = z
         if (
             response.capacity.wouldExceed !==
             response.summary.readyRows > response.capacity.remainingRows
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['capacity', 'wouldExceed'],
                 message: 'Preview capacity must match the ready row count',
             });
+        }
     });
 
 export const DictionaryImportTargetSchema = z.discriminatedUnion('kind', [
@@ -267,12 +276,13 @@ export const DictionaryImportTargetSchema = z.discriminatedUnion('kind', [
         })
         .strict()
         .superRefine((target, context) => {
-            if (target.sourceLanguage === target.targetLanguage)
+            if (target.sourceLanguage === target.targetLanguage) {
                 context.addIssue({
                     code: 'custom',
                     path: ['targetLanguage'],
                     message: 'Source and target languages must be distinct',
                 });
+            }
         }),
     z
         .object({
@@ -295,11 +305,12 @@ export const DictionaryImportEnrichmentSchema = z.discriminatedUnion('mode', [
                 .min(1)
                 .max(100)
                 .superRefine((indexes, context) => {
-                    if (new Set(indexes).size !== indexes.length)
+                    if (new Set(indexes).size !== indexes.length) {
                         context.addIssue({
                             code: 'custom',
                             message: 'Selected row indexes must be unique',
                         });
+                    }
                 }),
         })
         .strict(),

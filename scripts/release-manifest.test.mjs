@@ -79,6 +79,7 @@ test('rejects retired pronunciation metadata instead of silently reviving old ad
         () => validateManifest(fixture({ pronunciationAudio: {} })),
         /Retired pronunciationAudio/u,
     );
+
     const manifest = validateManifest(fixture({ sharedSpeech, modelPricing }));
     assert.deepEqual(manifest.sharedSpeech, sharedSpeech);
     assert.equal(manifest.pronunciationAudio, undefined);
@@ -128,6 +129,7 @@ test('resolves stage head and permits only release commits contained in main', a
             resolveReleaseCommit('v1.2.3', 'origin/main', directory),
             mainSha,
         );
+
         assert.equal(resolveBranchHead('origin/stage', directory), mainSha);
 
         git(['checkout', '--quiet', '--orphan', 'divergent']);
@@ -161,11 +163,13 @@ test('rejects mutable, missing, extra, or unverified image sets', () => {
             ),
         /backend image must be a permitted sha256 digest reference/,
     );
+
     const { admin: _admin, ...missingAdmin } = fixture().images;
     assert.throws(
         () => validateManifest(fixture({ images: missingAdmin })),
         /exactly: backend, web, admin, migrator/,
     );
+
     assert.throws(
         () =>
             validateManifest(
@@ -178,6 +182,7 @@ test('rejects mutable, missing, extra, or unverified image sets', () => {
             ),
         /exactly: backend, web, admin, migrator/,
     );
+
     assert.throws(
         () => validateManifest(fixture({ verified: false })),
         /not build-ready/,
@@ -192,14 +197,17 @@ test('rejects deployment identity and migration substitution', () => {
             }),
         /does not belong/,
     );
+
     assert.throws(
         () => validateManifest(fixture(), { sourceSha: 'c'.repeat(40) }),
         /does not match expected commit/,
     );
+
     assert.throws(
         () => validateManifest(fixture(), { version: 'v1.2.4' }),
         /does not match expected release/,
     );
+
     assert.throws(
         () =>
             validateManifest(
@@ -280,6 +288,7 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
         assert.deepEqual(manifest.dictionaryJobs.workerProcessable, [
             'single-card:v1',
         ]);
+
         assert.deepEqual(manifest.dictionaryJobs.retireFormats, []);
         assert.deepEqual(
             manifest.dictionaryJobs.generationBudget,
@@ -289,6 +298,7 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
         const duplicate = spawnSync(process.execPath, args, {
             encoding: 'utf8',
         });
+
         assert.notEqual(duplicate.status, 0);
 
         const checked = spawnSync(
@@ -305,6 +315,7 @@ test('create CLI writes a canonical manifest once and validate CLI checks expect
             ],
             { encoding: 'utf8' },
         );
+
         assert.equal(checked.status, 0, checked.stderr);
     } finally {
         await rm(directory, { recursive: true, force: true });

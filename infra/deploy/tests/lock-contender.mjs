@@ -6,7 +6,10 @@ try {
     const release = await acquireDeployLock(stateDirectory, identity);
     process.send?.({ status: 'acquired' });
     process.once('message', async (message) => {
-        if (message !== 'release') return;
+        if (message !== 'release') {
+            return;
+        }
+
         await release();
         process.exit(0);
     });

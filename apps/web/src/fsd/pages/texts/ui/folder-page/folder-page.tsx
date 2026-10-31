@@ -77,7 +77,9 @@ function FolderContent({ folderId }: { folderId: string }) {
     }
 
     function restoreFolder() {
-        if (folder) library.restore.mutate(folder);
+        if (folder) {
+            library.restore.mutate(folder);
+        }
     }
 
     function restoreText(document: TextDocument) {
@@ -112,7 +114,8 @@ function FolderContent({ folderId }: { folderId: string }) {
             {t('texts.library.retry')}
         </Button>
     );
-    if (library.isError)
+
+    if (library.isError) {
         return (
             <main className={styles.page}>
                 <InlineAlert
@@ -124,13 +127,17 @@ function FolderContent({ folderId }: { folderId: string }) {
                 </InlineAlert>
             </main>
         );
-    if (library.isPending)
+    }
+
+    if (library.isPending) {
         return (
             <main className={styles.page} aria-busy='true'>
                 <Skeleton lines={3} />
             </main>
         );
-    if (!folder)
+    }
+
+    if (!folder) {
         return (
             <main className={styles.page}>
                 <EmptyState
@@ -143,6 +150,8 @@ function FolderContent({ folderId }: { folderId: string }) {
                 </EmptyState>
             </main>
         );
+    }
+
     const readOnly = folder.lifecycle === 'archived';
     const activeBadge = `${active.documents.length}${active.hasNextPage ? '+' : ''}`;
     const archivedBadge = `${archived.documents.length}${archived.hasNextPage ? '+' : ''}`;

@@ -10,6 +10,7 @@ it('validates PCM WAV bytes and derives duration rather than trusting metadata',
         bytes: audio.bytes,
     });
 });
+
 it('rejects spoofed MIME, corrupt WAV bounds and invalid sample layout', () => {
     const audio = createFixtureAudio();
     expect(() =>
@@ -18,6 +19,7 @@ it('rejects spoofed MIME, corrupt WAV bounds and invalid sample layout', () => {
             'audio/wav',
         ),
     ).toThrow();
+
     expect(() => verifyKnowledgeAudio(audio.bytes, 'text/html')).toThrow();
     const corrupt = Buffer.from(audio.bytes);
     corrupt.writeUInt32LE(0xffffffff, 40);
@@ -26,6 +28,7 @@ it('rejects spoofed MIME, corrupt WAV bounds and invalid sample layout', () => {
     invalid.writeUInt16LE(8, 32);
     expect(() => verifyKnowledgeAudio(invalid, 'audio/wav')).toThrow();
 });
+
 it('parses MP3 frames, strips ID3 metadata and rejects arbitrary trailing bytes', () => {
     const frame = Buffer.alloc(417);
     frame.set([0xff, 0xfb, 0x90, 0]);
@@ -40,6 +43,7 @@ it('parses MP3 frames, strips ID3 metadata and rejects arbitrary trailing bytes'
             'audio/mpeg',
         ),
     ).toThrow();
+
     expect(() =>
         verifyKnowledgeAudio(frame.subarray(0, 400), 'audio/mpeg'),
     ).toThrow();

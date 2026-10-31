@@ -28,9 +28,11 @@ export function CopyBlocksToNote({
     function show() {
         setOpen(true);
     }
+
     function close() {
         setOpen(false);
     }
+
     return (
         <>
             <Button
@@ -52,6 +54,7 @@ export function CopyBlocksToNote({
         </>
     );
 }
+
 export function BlockCopyDialog({
     context,
     blocks,
@@ -70,8 +73,11 @@ export function BlockCopyDialog({
     const viewLabels = localizedBlockLabels(locale).view;
     const copy = useBlockCopy(context, initialSelection, initialDestination);
     function close() {
-        if (!copy.busy) onClose();
+        if (!copy.busy) {
+            onClose();
+        }
     }
+
     function toggle(event: ChangeEvent<HTMLInputElement>) {
         const id = event.target.value;
         copy.chooseBlocks(
@@ -80,6 +86,7 @@ export function BlockCopyDialog({
                 : copy.selected.filter((value) => value !== id),
         );
     }
+
     const previewUnavailable =
         copy.busy ||
         copy.selected.length === 0 ||
@@ -100,7 +107,8 @@ export function BlockCopyDialog({
                 {labels.preview}
             </Button>
         );
-        if (copy.plan)
+
+        if (copy.plan) {
             primaryAction = (
                 <Button
                     type='button'
@@ -111,7 +119,9 @@ export function BlockCopyDialog({
                     {labels.apply}
                 </Button>
             );
+        }
     }
+
     const footer = (
         <div className={styles.actions}>
             <Button
@@ -126,6 +136,7 @@ export function BlockCopyDialog({
             {primaryAction}
         </div>
     );
+
     return (
         <BlockEditorPanel
             kind={kind}

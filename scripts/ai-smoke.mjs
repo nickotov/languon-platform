@@ -25,9 +25,14 @@ export function parseOptions(args) {
             help: { type: 'boolean', default: false },
         },
     });
+
     requireSafe(!(values.run && values.initialize), 'choose-run-or-initialize');
-    if (values.run) TaskSchema.parse(values.task);
+    if (values.run) {
+        TaskSchema.parse(values.task);
+    }
+
     requireSafe(!values.task || values.run, 'task-requires-run');
+
     return values;
 }
 
@@ -37,16 +42,21 @@ export async function main(args = process.argv.slice(2)) {
         console.log(
             'pnpm ai:smoke [--initialize | --run --task stable-task-slug]\nDefault: read-only preflight. Uses only .env.local and dedicated .env.ai-smoke.local (or AI_SMOKE_* environment). One synthetic learner conversation per --run; no retry/top-up. Local journal holds $0.10 per attempt permanently; max 2 per task and conservative $0.50 per UTC day including all application operator expenses. Keep evidence and never remove/reset journal or stale locks without reconciliation.',
         );
+
         return;
     }
+
     let fileCredentials = {};
     try {
         fileCredentials = parseEnv(
             await privateRead(resolve(root, '.env.ai-smoke.local')),
         );
     } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
     }
+
     const credentials = CredentialsSchema.parse(
         Object.fromEntries(
             ['AI_SMOKE_EMAIL', 'AI_SMOKE_PASSWORD', 'AI_SMOKE_USER_ID'].map(
@@ -61,6 +71,7 @@ export async function main(args = process.argv.slice(2)) {
         env,
         credentials.AI_SMOKE_USER_ID,
     );
+
     try {
         if (!options.run && !options.initialize) {
             const current = await inspection.inspect();
@@ -74,8 +85,10 @@ export async function main(args = process.argv.slice(2)) {
                     scope: 'Configuration/readiness only; no learner login or provider request. Run still requires initialized quota journal and available allowance.',
                 }),
             );
+
             return;
         }
+
         await withJournal(
             root,
             credentials.AI_SMOKE_USER_ID,
@@ -89,14 +102,17 @@ export async function main(args = process.argv.slice(2)) {
                             paidCalls: 0,
                         }),
                     );
+
                     return;
                 }
+
                 await journal.read();
                 // Avoid ambiguous UTC-day accounting across a running request.
                 requireSafe(
                     Date.now() % 86400000 < 86400000 - 300000,
                     'utc-rollover-window',
                 );
+
                 const contracts =
                     await import('../packages/contracts/dist/index.js');
                 const api = createApi(contracts);
@@ -109,6 +125,7 @@ export async function main(args = process.argv.slice(2)) {
                             current.routingRevision === initial.routingRevision,
                         'preflight-changed-no-dispatch',
                     );
+
                     const reservation = await journal.reserve(
                         options.task,
                         current.day,
@@ -123,6 +140,7 @@ export async function main(args = process.argv.slice(2)) {
                         initial: current,
                         verifyExpense: inspection.verifyExpense,
                     });
+
                     console.log(
                         JSON.stringify({
                             ...result,
@@ -157,6 +175,7 @@ if (
         console.error(
             `AI smoke stopped: ${error instanceof SmokeError ? error.message : 'local-preflight-or-contract-failure'}. No automatic retry; any existing quota reservation and synthetic artifacts are retained. Inspect local readiness and journal without publishing credentials or response text.`,
         );
+
         process.exitCode = 1;
     });
 }

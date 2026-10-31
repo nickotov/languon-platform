@@ -40,9 +40,11 @@ run('reviewed provider per-request minimum accounting', () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
     }, 120000);
+
     afterAll(async () => {
         await client?.end();
     });
+
     beforeEach(async () => {
         ownerId = randomUUID();
         providerId = `minimum-${randomUUID()}`;
@@ -57,6 +59,7 @@ run('reviewed provider per-request minimum accounting', () => {
                 sourceReference: randomUUID(),
             }),
         );
+
         await db.insert(prices).values({
             id: randomUUID(),
             providerId,
@@ -82,6 +85,7 @@ run('reviewed provider per-request minimum accounting', () => {
             },
         });
     });
+
     async function reserve(maximum = 150n) {
         return db.transaction((tx) =>
             reserveConversationActionFixture(tx, {
@@ -93,6 +97,7 @@ run('reviewed provider per-request minimum accounting', () => {
             }),
         );
     }
+
     async function admit(actionId: string) {
         return db.transaction((tx) =>
             new DrizzleActionAccountingParticipant(tx).admitAttempt({
@@ -114,6 +119,7 @@ run('reviewed provider per-request minimum accounting', () => {
             }),
         );
     }
+
     it('keeps admission policy reads transaction scoped and invalidates same-transaction admin publications', async () => {
         await db.insert(adminMembershipsTable).values({
             id: randomUUID(),
@@ -124,6 +130,7 @@ run('reviewed provider per-request minimum accounting', () => {
             grantedAt: new Date(),
             updatedAt: new Date(),
         });
+
         await db.transaction(async (tx) => {
             enableAdmissionPolicyReadCache(tx);
             const participant = new DrizzleCapabilityPolicyParticipant(tx);
@@ -141,10 +148,12 @@ run('reviewed provider per-request minimum accounting', () => {
                 ownerId,
                 new Date(),
             );
+
             expect(
                 (await new DrizzleCapabilityPolicyParticipant(tx).settings())
                     .version,
             ).toBe(settings.version);
+
             expect(settings.version).toBe(before.version + 1);
             const policy = await participant.publish(
                 {
@@ -156,6 +165,7 @@ run('reviewed provider per-request minimum accounting', () => {
                 ownerId,
                 new Date(),
             );
+
             expect(
                 (
                     await new DrizzleCapabilityPolicyParticipant(tx).current(
@@ -163,6 +173,7 @@ run('reviewed provider per-request minimum accounting', () => {
                     )
                 ).revisionId,
             ).toBe(policy.revisionId);
+
             expect(policy.version).toBe(currentPolicy.version + 1);
             await participant.publish(
                 {
@@ -175,6 +186,7 @@ run('reviewed provider per-request minimum accounting', () => {
                 new Date(),
             );
         });
+
         expect(
             (
                 await db.transaction((tx) =>
@@ -183,6 +195,7 @@ run('reviewed provider per-request minimum accounting', () => {
             ).defaultMaxCreditsPerAction,
         ).toBe('2');
     });
+
     it('reserves and settles the minimum rather than adding it to token cost or learner tariffs', async () => {
         const action = await reserve();
         const attempt = await admit(action.id);
@@ -196,10 +209,12 @@ run('reviewed provider per-request minimum accounting', () => {
                 usage: { inputTokens: 1, outputTokens: 1 },
             }),
         );
+
         const [expense] = await db
             .select()
             .from(expenses)
             .where(eq(expenses.attemptId, attempt.id));
+
         expect(expense?.amountUsdMicros).toBe(150n);
         const settled = await db.transaction((tx) =>
             settleConversationActionFixture(tx, {
@@ -208,8 +223,10 @@ run('reviewed provider per-request minimum accounting', () => {
                 outcome: 'success',
             }),
         );
+
         expect(settled.chargedMilli).toBe(1n);
     });
+
     it('rejects dispatch if remaining operator authorization cannot fund the floor', async () => {
         const action = await reserve(149n);
         await expect(admit(action.id)).rejects.toThrow();
@@ -219,6 +236,7 @@ run('reviewed provider per-request minimum accounting', () => {
                 .from(attempts)
                 .where(eq(attempts.actionId, action.id)),
         ).toHaveLength(0);
+
         const settled = await db.transaction((tx) =>
             settleConversationActionFixture(tx, {
                 ownerId,
@@ -226,8 +244,10 @@ run('reviewed provider per-request minimum accounting', () => {
                 outcome: 'failure',
             }),
         );
+
         expect(settled.chargedMilli).toBe(0n);
     });
+
     it('keeps unknown usage and provider expense unknown while retaining the reserved ceiling', async () => {
         const action = await reserve();
         const attempt = await admit(action.id);
@@ -239,15 +259,18 @@ run('reviewed provider per-request minimum accounting', () => {
                 successful: false,
             }),
         );
+
         const [expense] = await db
             .select()
             .from(expenses)
             .where(eq(expenses.attemptId, attempt.id));
+
         expect(expense).toMatchObject({
             amountUsdMicros: null,
             measurement: 'unknown',
             costSource: 'unknown',
         });
+
         const settled = await db.transaction((tx) =>
             settleConversationActionFixture(tx, {
                 ownerId,
@@ -255,14 +278,17 @@ run('reviewed provider per-request minimum accounting', () => {
                 outcome: 'failure',
             }),
         );
+
         expect(settled.chargedMilli).toBe(0n);
     });
+
     it('pins the minimum revision and never rewrites an admitted action when prices change', async () => {
         const action = await reserve();
         const [first] = await db
             .select()
             .from(prices)
             .where(eq(prices.providerId, providerId));
+
         await db.insert(prices).values({
             ...first!,
             id: randomUUID(),
@@ -271,6 +297,7 @@ run('reviewed provider per-request minimum accounting', () => {
             createdAt: new Date(),
             data: { ...first!.data, minimumUsdPerRequest: '0.000300' },
         });
+
         const attempt = await admit(action.id);
         expect(attempt.reservedCostMicros).toBe(150);
         await db.transaction((tx) =>
@@ -282,10 +309,12 @@ run('reviewed provider per-request minimum accounting', () => {
                 usage: { inputTokens: 1, outputTokens: 1 },
             }),
         );
+
         const [expense] = await db
             .select()
             .from(expenses)
             .where(eq(expenses.attemptId, attempt.id));
+
         expect(expense?.amountUsdMicros).toBe(150n);
         await db.transaction((tx) =>
             settleConversationActionFixture(tx, {

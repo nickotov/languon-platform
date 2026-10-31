@@ -26,6 +26,7 @@ export function preferredLocale(
             const parsedQuality = qualityParameter
                 ? Number(qualityParameter.slice(2))
                 : 1;
+
             return {
                 index,
                 quality:
@@ -45,11 +46,19 @@ export function preferredLocale(
 
     for (const preference of preferences) {
         const { tag } = preference;
-        if (!tag || tag === '*') continue;
+        if (!tag || tag === '*') {
+            continue;
+        }
+
         const exact = locales.find((locale) => locale === tag);
-        if (exact) return exact;
+        if (exact) {
+            return exact;
+        }
+
         const base = tag.split('-')[0];
-        if (base && isLocale(base)) return base;
+        if (base && isLocale(base)) {
+            return base;
+        }
     }
 
     return defaultLocale;

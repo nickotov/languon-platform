@@ -85,20 +85,29 @@ export async function sentencePreparationSettleParent(
     at: Date,
     stopped = false,
 ) {
-    if (!row.currentActionId) return;
+    if (!row.currentActionId) {
+        return;
+    }
+
     const [parent] = await tx
         .select()
         .from(accountingActions)
         .where(eq(accountingActions.id, row.currentActionId));
 
-    if (!parent || parent.state !== 'active') return;
+    if (!parent || parent.state !== 'active') {
+        return;
+    }
+
     const attempts = await tx
         .select()
         .from(accountingAttempts)
         .where(eq(accountingAttempts.actionId, parent.id));
 
     // A running/ambiguous child is recovered by its worker fence before the hold is closed.
-    if (attempts.some((call) => call.state === 'dispatched')) return;
+    if (attempts.some((call) => call.state === 'dispatched')) {
+        return;
+    }
+
     const [usable] = await tx
         .select({ id: jobs.id })
         .from(jobs)
@@ -137,14 +146,19 @@ export async function sentencePreparationParentAvailable(
     row: Preparation,
     now: Date,
 ) {
-    if (!row.currentActionId) return false;
+    if (!row.currentActionId) {
+        return false;
+    }
+
     const [parent] = await tx
         .select()
         .from(accountingActions)
         .where(eq(accountingActions.id, row.currentActionId));
 
-    if (!parent || parent.state !== 'active' || parent.deadlineAt <= now)
+    if (!parent || parent.state !== 'active' || parent.deadlineAt <= now) {
         return false;
+    }
+
     const attempts = await tx
         .select()
         .from(accountingAttempts)

@@ -24,6 +24,7 @@ export async function readKnowledgeAudio(
         query.set('kind', options.access.kind);
         query.set('locator', options.access.locator);
     }
+
     const origin = resolveApiUrl(
         process.env.NODE_ENV,
         process.env.NEXT_PUBLIC_API_URL,
@@ -45,22 +46,27 @@ export async function readKnowledgeAudio(
             },
         },
     );
-    if (!response.ok)
+
+    if (!response.ok) {
         throw new KnowledgeApiError(response.status, {
             code: 'knowledge_not_found',
             message: 'Audio is unavailable.',
             correlationId: 'knowledge-audio-read',
         });
+    }
+
     const blob = await response.blob();
     if (
         !['audio/wav', 'audio/mpeg'].includes(blob.type) ||
         blob.size > knowledgeAudioMaximumBytes
-    )
+    ) {
         throw new KnowledgeApiError(400, {
             code: 'invalid_request',
             message: 'Audio is unavailable.',
             correlationId: 'knowledge-audio-read',
         });
+    }
+
     return blob;
 }
 
@@ -76,16 +82,19 @@ export async function uploadKnowledgeAudio(
             : file.type === 'audio/mp3'
               ? 'audio/mpeg'
               : file.type;
+
     if (
         !['audio/wav', 'audio/mpeg'].includes(mime) ||
         file.size === 0 ||
         file.size > knowledgeAudioMaximumBytes
-    )
+    ) {
         throw new KnowledgeApiError(400, {
             code: 'invalid_request',
             message: 'Choose a WAV or MP3 audio file up to 5 MiB.',
             correlationId: 'knowledge-audio-upload',
         });
+    }
+
     const response = await fetch(
         `${resolveApiUrl(process.env.NODE_ENV, process.env.NEXT_PUBLIC_API_URL)}/knowledge/notes/${noteId}/media`,
         {
@@ -101,14 +110,18 @@ export async function uploadKnowledgeAudio(
             signal: AbortSignal.timeout(30_000),
         },
     );
-    if (!response.ok)
+
+    if (!response.ok) {
         throw new KnowledgeApiError(response.status, {
             code: 'invalid_request',
             message: 'Audio upload failed.',
             correlationId: 'knowledge-audio-upload',
         });
+    }
+
     const { asset } = z
         .object({ asset: KnowledgeMediaAssetSchema })
         .parse(await response.json());
+
     return { assetId: asset.id };
 }

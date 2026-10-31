@@ -44,6 +44,7 @@ function fixture() {
         appEnvironment: 'test',
         refreshTokenTtlSeconds: 3600,
     });
+
     return {
         actor,
         store,
@@ -52,11 +53,13 @@ function fixture() {
         app: createKnowledgeSentenceRoutes({ service, policy }),
     };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     'Content-Type': 'application/json',
     Origin: 'http://localhost:3000',
 };
+
 describe('knowledge sentence HTTP authority', () => {
     it('requires account and derives private actor from authenticated identity', async () => {
         const { app, path, actor, store } = fixture();
@@ -70,6 +73,7 @@ describe('knowledge sentence HTTP authority', () => {
             expect.anything(),
         );
     });
+
     it('rejects caller-selected actor and partial share credentials before effects', async () => {
         const { app, path, store } = fixture();
         expect(
@@ -79,6 +83,7 @@ describe('knowledge sentence HTTP authority', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(
             (
                 await app.request(path + '/prepare', {
@@ -93,18 +98,22 @@ describe('knowledge sentence HTTP authority', () => {
                 })
             ).status,
         ).toBe(400);
+
         expect(store.prepare).not.toHaveBeenCalled();
         expect(store.manualReviews).not.toHaveBeenCalled();
     });
+
     it('returns unavailable source after revoked access and preserves header-only grant', async () => {
         const { app, path, store } = fixture();
         store.manualReviews.mockRejectedValue(
             new KnowledgeDomainError('knowledge_not_found', 'Unavailable'),
         );
+
         expect((await app.request(path + '/reviews', { headers })).status).toBe(
             404,
         );
     });
+
     it('preflights bearer and complete share header transport', async () => {
         const { app, path } = fixture();
         const response = await app.request(path + '/next', {
@@ -114,6 +123,7 @@ describe('knowledge sentence HTTP authority', () => {
                 'Access-Control-Request-Method': 'POST',
             },
         });
+
         expect(response.status).toBe(204);
         expect(response.headers.get('access-control-allow-headers')).toContain(
             'X-Languon-Share-Key',

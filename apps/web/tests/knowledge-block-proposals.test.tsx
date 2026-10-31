@@ -56,6 +56,7 @@ const branch = KnowledgeWorkingBranchSchema.parse({
     },
     updatedAt: '2026-10-28T00:00:00.000Z',
 });
+
 afterEach(() => vi.unstubAllGlobals());
 function context(): KnowledgeBlockProposalContext {
     return {
@@ -67,6 +68,7 @@ function context(): KnowledgeBlockProposalContext {
         onApplied: vi.fn(),
     };
 }
+
 it('previews safe blocks and changes only the working branch after explicit Apply', async () => {
     const requests: { method: string; body: unknown }[] = [];
     vi.stubGlobal(
@@ -76,6 +78,7 @@ it('previews safe blocks and changes only the working branch after explicit Appl
                 method: init.method ?? 'GET',
                 body: init.body ? JSON.parse(String(init.body)) : null,
             });
+
             return init.method === 'POST'
                 ? Response.json({
                       proposal: {
@@ -88,6 +91,7 @@ it('previews safe blocks and changes only the working branch after explicit Appl
                 : Response.json({ proposals: [proposal] });
         }),
     );
+
     const current = context();
     const { container } = render(<KnowledgeBlockProposals context={current} />);
     expect(await screen.findByText('<script>literal</script>')).toBeVisible();
@@ -96,15 +100,18 @@ it('previews safe blocks and changes only the working branch after explicit Appl
     fireEvent.click(
         screen.getByRole('button', { name: 'Apply to working draft' }),
     );
+
     await waitFor(() => expect(current.onApplied).toHaveBeenCalledWith(branch));
     expect(current.beforeApply).toHaveBeenCalledTimes(1);
     expect(requests.find((request) => request.method === 'POST')?.body).toEqual(
         { expectedBranchVersion: 3 },
     );
+
     expect(await screen.findByRole('status')).toHaveTextContent(
         'Save the note to publish',
     );
 });
+
 it('refuses applying if draft recovery changes the destination branch', async () => {
     const fetch = vi.fn(async () => Response.json({ proposals: [proposal] }));
     vi.stubGlobal('fetch', fetch);
@@ -112,13 +119,16 @@ it('refuses applying if draft recovery changes the destination branch', async ()
     current.beforeApply = vi
         .fn()
         .mockResolvedValue({ branchId: id, version: 4 });
+
     render(<KnowledgeBlockProposals context={current} />);
     fireEvent.click(
         await screen.findByRole('button', { name: 'Apply to working draft' }),
     );
+
     await screen.findByText(
         'The document changed. Ask for a new proposal before applying.',
     );
+
     expect(current.onApplied).not.toHaveBeenCalled();
     expect(fetch).toHaveBeenCalledTimes(1);
 });
@@ -128,6 +138,7 @@ it('renders a proposal at its originating assistant turn and opens a full review
     const fetch = vi.fn(async () =>
         Response.json({ proposals: [{ ...proposal, turnId }] }),
     );
+
     vi.stubGlobal('fetch', fetch);
     const current = context();
     render(
@@ -140,22 +151,27 @@ it('renders a proposal at its originating assistant turn and opens a full review
             </div>
         </KnowledgeBlockProposals>,
     );
+
     await screen.findByText('<script>literal</script>');
     expect(screen.getByTestId('other-turn')).toBeEmptyDOMElement();
     expect(screen.getByTestId('origin-turn')).toHaveTextContent(
         '<script>literal</script>',
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Review' }));
     const dialog = await screen.findByRole('dialog', {
         name: 'Review proposed content',
     });
+
     expect(dialog).toHaveTextContent('Review prepared translations');
     expect(
         within(dialog).getAllByText(/Review prepared translations/u),
     ).toHaveLength(1);
+
     expect(
         within(dialog).getByText('Not published until you Save.'),
     ).toBeVisible();
+
     expect(dialog).toHaveTextContent('Grammar · 1');
     expect(dialog).toHaveTextContent('<script>literal</script>');
     expect(current.beforeApply).not.toHaveBeenCalled();
@@ -169,6 +185,7 @@ it('adds a stale proposal separately only after explicit confirmation with the c
         vi.fn(async (_url: string, init: RequestInit) => {
             if (init.method === 'POST') {
                 requests.push(JSON.parse(String(init.body)));
+
                 return Response.json({
                     proposal: {
                         ...proposal,
@@ -178,23 +195,28 @@ it('adds a stale proposal separately only after explicit confirmation with the c
                     branch: { ...branch, version: 5 },
                 });
             }
+
             return Response.json({
                 proposals: [{ ...proposal, targetStale: true }],
             });
         }),
     );
+
     const current = {
         ...context(),
         branchVersion: 4,
         beforeApply: vi.fn().mockResolvedValue({ branchId, version: 4 }),
     };
+
     render(<KnowledgeBlockProposals context={current} />);
     const button = await screen.findByRole('button', {
         name: 'Add separately',
     });
+
     expect(
         screen.queryByRole('button', { name: 'Apply to working draft' }),
     ).not.toBeInTheDocument();
+
     expect(requests).toHaveLength(0);
     fireEvent.click(button);
     await waitFor(() => expect(current.onApplied).toHaveBeenCalled());
@@ -209,6 +231,7 @@ it('uses target staleness rather than unrelated document revisions for update pr
         target: { blockId: id, blockHash: 'a'.repeat(64) },
         targetStale: false,
     };
+
     vi.stubGlobal(
         'fetch',
         vi.fn(async (_url: string, init: RequestInit) =>
@@ -224,15 +247,18 @@ it('uses target staleness rather than unrelated document revisions for update pr
                 : Response.json({ proposals: [changed] }),
         ),
     );
+
     const current = {
         ...context(),
         branchVersion: 4,
         beforeApply: vi.fn().mockResolvedValue({ branchId, version: 4 }),
     };
+
     render(<KnowledgeBlockProposals context={current} />);
     fireEvent.click(
         await screen.findByRole('button', { name: 'Update block' }),
     );
+
     await waitFor(() => expect(current.onApplied).toHaveBeenCalled());
 });
 
@@ -241,6 +267,7 @@ it('keeps the applying action visible and disabled, then reveals the applied blo
     const pending = new Promise<Response>((resolve) => {
         finish = resolve;
     });
+
     vi.stubGlobal(
         'fetch',
         vi.fn(async (_url: string, init: RequestInit) =>
@@ -249,22 +276,27 @@ it('keeps the applying action visible and disabled, then reveals the applied blo
                 : Response.json({ proposals: [proposal] }),
         ),
     );
+
     const current = { ...context(), onShowBlocks: vi.fn() };
     render(<KnowledgeBlockProposals context={current} />);
     fireEvent.click(
         await screen.findByRole('button', { name: 'Apply to working draft' }),
     );
+
     await waitFor(() =>
         expect(
             screen.getByRole('button', { name: 'Apply to working draft' }),
         ).toBeDisabled(),
     );
+
     expect(
         screen.getByRole('button', { name: 'Apply to working draft' }),
     ).toHaveAttribute('aria-busy', 'true');
+
     expect(
         screen.queryByRole('button', { name: 'Show in sheet' }),
     ).not.toBeInTheDocument();
+
     finish(
         Response.json({
             proposal: {
@@ -275,9 +307,11 @@ it('keeps the applying action visible and disabled, then reveals the applied blo
             branch,
         }),
     );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Show in sheet' }),
     );
+
     expect(current.onShowBlocks).toHaveBeenCalledWith([id]);
 });
 
@@ -286,10 +320,12 @@ it('retains a failed proposal for explicit retry without silently applying or dr
     vi.stubGlobal(
         'fetch',
         vi.fn(async (_url: string, init: RequestInit) => {
-            if (init.method !== 'POST')
+            if (init.method !== 'POST') {
                 return Response.json({ proposals: [proposal] });
+            }
+
             submissions++;
-            if (submissions === 1)
+            if (submissions === 1) {
                 return Response.json(
                     {
                         error: {
@@ -300,6 +336,8 @@ it('retains a failed proposal for explicit retry without silently applying or dr
                     },
                     { status: 503 },
                 );
+            }
+
             return Response.json({
                 proposal: {
                     ...proposal,
@@ -310,11 +348,13 @@ it('retains a failed proposal for explicit retry without silently applying or dr
             });
         }),
     );
+
     const current = context();
     render(<KnowledgeBlockProposals context={current} />);
     fireEvent.click(
         await screen.findByRole('button', { name: 'Apply to working draft' }),
     );
+
     const retry = await screen.findByRole('button', { name: 'Retry' });
     expect(screen.getByText('<script>literal</script>')).toBeVisible();
     expect(current.onApplied).not.toHaveBeenCalled();
@@ -352,6 +392,7 @@ it('reviews stale source dependencies before an explicit independent copy and re
         dependencies: [source],
         targetStale: true,
     };
+
     vi.stubGlobal(
         'fetch',
         vi.fn(async (_url: string, init: RequestInit) =>
@@ -368,6 +409,7 @@ it('reviews stale source dependencies before an explicit independent copy and re
                 : Response.json({ proposals: [captured] }),
         ),
     );
+
     const current = { ...context(), onShowBlocks: vi.fn() };
     render(<KnowledgeBlockProposals context={current} />);
     await screen.findByRole('button', { name: 'Add separately' });
@@ -375,6 +417,7 @@ it('reviews stale source dependencies before an explicit independent copy and re
     const dialog = await screen.findByRole('dialog', {
         name: 'Review proposed content',
     });
+
     expect(dialog).toHaveTextContent('Source passages');
     expect(dialog).toHaveTextContent('Le train part à midi.');
     expect(dialog).toHaveTextContent('also copies these sources independently');
@@ -383,13 +426,16 @@ it('reviews stale source dependencies before an explicit independent copy and re
             name: 'Apply to working draft',
         }),
     ).not.toBeInTheDocument();
+
     fireEvent.click(
         within(dialog).getByRole('button', { name: 'Close', exact: true }),
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Add separately' }));
     fireEvent.click(
         await screen.findByRole('button', { name: 'Show in sheet' }),
     );
+
     expect(current.onShowBlocks).toHaveBeenCalledWith([copiedId]);
 });
 
@@ -400,14 +446,17 @@ it('dismisses a proposal reversibly without applying any content', async () => {
     fireEvent.click(
         await screen.findByRole('button', { name: 'Dismiss', exact: true }),
     );
+
     expect(screen.getByText('Proposal dismissed')).toBeVisible();
     expect(
         screen.queryByRole('button', { name: 'Apply to working draft' }),
     ).toBeNull();
+
     fireEvent.click(screen.getByRole('button', { name: 'Show proposal' }));
     expect(
         screen.getByRole('button', { name: 'Apply to working draft' }),
     ).toBeVisible();
+
     expect(
         fetch.mock.calls.every(
             (call) =>
@@ -415,14 +464,18 @@ it('dismisses a proposal reversibly without applying any content', async () => {
         ),
     ).toBe(true);
 });
+
 it('captures the insertion cursor before flush and sends its mapped position with the current version', async () => {
     const posts: unknown[] = [];
     vi.stubGlobal(
         'fetch',
         vi.fn(async (_url: string, init: RequestInit) => {
-            if (init.method !== 'POST')
+            if (init.method !== 'POST') {
                 return Response.json({ proposals: [proposal] });
+            }
+
             posts.push(JSON.parse(String(init.body)));
+
             return Response.json({
                 proposal: {
                     ...proposal,
@@ -433,6 +486,7 @@ it('captures the insertion cursor before flush and sends its mapped position wit
             });
         }),
     );
+
     const bookmark = { resolve: vi.fn(() => 7), release: vi.fn() };
     const captureInsertion = vi.fn(() => bookmark);
     const current = {
@@ -440,9 +494,11 @@ it('captures the insertion cursor before flush and sends its mapped position wit
         captureInsertion,
         beforeApply: vi.fn(async () => {
             expect(captureInsertion).toHaveBeenCalledOnce();
+
             return { branchId, version: 4 };
         }),
     };
+
     render(<KnowledgeBlockProposals context={current} />);
     fireEvent.click(
         await screen.findByRole('button', {
@@ -450,6 +506,7 @@ it('captures the insertion cursor before flush and sends its mapped position wit
             exact: true,
         }),
     );
+
     await waitFor(() => expect(current.onApplied).toHaveBeenCalled());
     expect(posts).toEqual([
         {
@@ -458,6 +515,7 @@ it('captures the insertion cursor before flush and sends its mapped position wit
             insertionPosition: 7,
         },
     ]);
+
     expect(bookmark.release).toHaveBeenCalledOnce();
 });
 
@@ -466,10 +524,12 @@ it('identifies the original target independently of the proposed block title', a
         ...proposal,
         target: { blockId: id, blockHash: 'a'.repeat(64) },
     };
+
     vi.stubGlobal(
         'fetch',
         vi.fn(async () => Response.json({ proposals: [update] })),
     );
+
     render(
         <KnowledgeBlockProposals
             context={{
@@ -479,6 +539,7 @@ it('identifies the original target independently of the proposed block title', a
             }}
         />,
     );
+
     expect(await screen.findByText('Original grammar material')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Update block' })).toBeVisible();
 });

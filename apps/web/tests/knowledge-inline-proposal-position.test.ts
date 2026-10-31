@@ -15,6 +15,7 @@ it('clamps the inline proposal at the final line near either document edge', () 
     expect(inlineProposalPosition(root, { left: 200, bottom: 260 }).left).toBe(
         -8,
     );
+
     expect(inlineProposalPosition(root, { left: 900, bottom: 260 }).left).toBe(
         304,
     );
@@ -27,6 +28,7 @@ it('fits a narrow editor with the source eight-pixel gutters and scales with roo
             { left: 30, bottom: 150 },
         ),
     ).toEqual({ top: 58, left: -8, width: 316 });
+
     expect(
         inlineProposalPosition(
             { top: 100, left: 20, width: 736 },

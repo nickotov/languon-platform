@@ -78,6 +78,7 @@ run('manual AI accounting persisted facts', () => {
         reference: randomUUID(),
         reason: 'Synthetic manual evidence',
     });
+
     beforeAll(() => {
         client = createTestPostgresClient();
         database = createDrizzleDatabase(client, databaseSchema);
@@ -86,6 +87,7 @@ run('manual AI accounting persisted facts', () => {
             (tx) => new DrizzleAiCreditTransactionParticipant(tx),
         );
     });
+
     beforeEach(async () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
@@ -97,9 +99,11 @@ run('manual AI accounting persisted facts', () => {
             updatedAt: at,
         });
     });
+
     afterAll(async () => {
         await client.end();
     });
+
     async function actualTextExpense(
         amount: bigint | null,
         providerId = 'test-provider',
@@ -132,6 +136,7 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             new Date(),
         );
+
         const budget = {
             maxInputTokensPerAttempt: 10000,
             maxOutputTokensPerAttempt: 10000,
@@ -149,6 +154,7 @@ run('manual AI accounting persisted facts', () => {
                 modelId,
             }),
         );
+
         await database.transaction(async (tx) => {
             const participant = new DrizzleActionAccountingParticipant(tx);
             const attempt = await participant.admitAttempt({
@@ -162,6 +168,7 @@ run('manual AI accounting persisted facts', () => {
                 budget,
                 at: new Date(),
             });
+
             await participant.recordAttempt({
                 actionId: action.id,
                 ownerId,
@@ -172,12 +179,14 @@ run('manual AI accounting persisted facts', () => {
                     : { usage: { inputTokens: 1000, outputTokens: 0 } }),
                 at: new Date(),
             });
+
             await settleConversationActionFixture(tx, {
                 ownerId,
                 actionId: action.id,
                 outcome: 'failure',
             });
         });
+
         return (
             await database
                 .select()
@@ -185,6 +194,7 @@ run('manual AI accounting persisted facts', () => {
                 .where(eq(aiProviderExpenseRecordsTable.actionId, action.id))
         )[0]!;
     }
+
     async function actualEstimatedSpeechExpense() {
         const provider = new FixtureSpeechProvider();
         await new DrizzleProviderPriceStore(database).publish(
@@ -206,6 +216,7 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             new Date(),
         );
+
         const storage = new PostgresAudioObjectStorage(database),
             speech = new DrizzleSpeechStore({
                 database,
@@ -226,6 +237,7 @@ run('manual AI accounting persisted facts', () => {
                     revision: '1',
                 }),
             });
+
         await speech.prepare({
             actorId: ownerId,
             source: {
@@ -238,8 +250,10 @@ run('manual AI accounting persisted facts', () => {
             operationId: randomUUID(),
             now: new Date(),
         });
+
         const job = await speech.claim(new Date()),
             audio = createFixtureAudio();
+
         await speech.storing(job!, audio, new Date());
         await speech.complete(
             job!,
@@ -248,6 +262,7 @@ run('manual AI accounting persisted facts', () => {
             new Date(),
         );
     }
+
     async function payment() {
         const request = AccountingRecordRequestSchema.parse({
             ...base(),
@@ -262,8 +277,10 @@ run('manual AI accounting persisted facts', () => {
         await expect(
             store.record({ ...request, reference: 'different' }, ownerId, at),
         ).rejects.toThrow('Idempotency');
+
         return first;
     }
+
     async function creditJob(maximumCredits: bigint) {
         const dictionaryId = randomUUID();
         await database.insert(dictionariesTable).values({
@@ -275,6 +292,7 @@ run('manual AI accounting persisted facts', () => {
             createdAt: at,
             updatedAt: at,
         });
+
         const id = randomUUID();
         await database.insert(dictionaryGenerationJobsTable).values({
             id,
@@ -299,8 +317,10 @@ run('manual AI accounting persisted facts', () => {
             sourceLanguageTag: 'en',
             targetLanguageTag: 'fr',
         });
+
         return id;
     }
+
     it('payment atomically issues one purchase lot; refunds revoke only explicit available credits', async () => {
         const paid = await payment();
         expect(await store.refundContext(paid.id)).toMatchObject({
@@ -308,6 +328,7 @@ run('manual AI accounting persisted facts', () => {
             reservedCredits: '0.000',
             consumedCredits: '0.000',
         });
+
         const refund = AccountingRecordRequestSchema.parse({
             ...base(),
             kind: 'refund',
@@ -322,6 +343,7 @@ run('manual AI accounting persisted facts', () => {
             availableCredits: '8.000',
             revokedCredits: '2.001',
         });
+
         await expect(
             store.record(
                 AccountingRecordRequestSchema.parse({
@@ -335,6 +357,7 @@ run('manual AI accounting persisted facts', () => {
                 at,
             ),
         ).rejects.toThrow('Refund exceeds');
+
         await expect(
             store.record(
                 AccountingRecordRequestSchema.parse({
@@ -348,10 +371,12 @@ run('manual AI accounting persisted facts', () => {
                 at,
             ),
         ).rejects.toThrow();
+
         expect((await store.refundContext(paid.id)).refundedUsd).toBe(
             '0.500001',
         );
     });
+
     it('refunds cannot claw back reserved or previously consumed credits', async () => {
         const paid = await payment();
         const firstReservation = randomUUID();
@@ -367,11 +392,13 @@ run('manual AI accounting persisted facts', () => {
                 reservationId: firstReservation,
                 maximumCredits: 3000n,
             });
+
             await credits.markProviderDispatched({
                 ownerId,
                 reservationId: firstReservation,
                 dispatchedAt: at,
             });
+
             await credits.settleAttempt({
                 ownerId,
                 reservationId: firstReservation,
@@ -379,6 +406,7 @@ run('manual AI accounting persisted facts', () => {
                 measurement: 'provider_reported',
                 measuredCredits: 2000n,
             });
+
             await credits.reserveAttempt({
                 ownerId,
                 at,
@@ -388,17 +416,20 @@ run('manual AI accounting persisted facts', () => {
                 maximumCredits: 4000n,
             });
         });
+
         await database.transaction((tx) =>
             reserveConversationActionFixture(tx, {
                 ownerId,
                 maximumMilli: 1000n,
             }),
         );
+
         expect(await store.refundContext(paid.id)).toMatchObject({
             availableCredits: '3.001',
             reservedCredits: '5.000',
             consumedCredits: '2.000',
         });
+
         await expect(
             store.record(
                 AccountingRecordRequestSchema.parse({
@@ -412,6 +443,7 @@ run('manual AI accounting persisted facts', () => {
                 at,
             ),
         ).rejects.toThrow();
+
         await store.record(
             AccountingRecordRequestSchema.parse({
                 ...base(),
@@ -423,6 +455,7 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             at,
         );
+
         expect(await store.refundContext(paid.id)).toMatchObject({
             availableCredits: '0.001',
             reservedCredits: '5.000',
@@ -430,6 +463,7 @@ run('manual AI accounting persisted facts', () => {
             revokedCredits: '3.000',
         });
     });
+
     it('reports measured, estimated and unknown costs independently of manual deposits and bill adjustment', async () => {
         await payment();
         await actualTextExpense(200001n);
@@ -445,6 +479,7 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             at,
         );
+
         await store.record(
             AccountingRecordRequestSchema.parse({
                 ...base(),
@@ -455,6 +490,7 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             at,
         );
+
         await store.record(
             AccountingRecordRequestSchema.parse({
                 ...base(),
@@ -467,23 +503,27 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             at,
         );
+
         await expect(
             store.report(
                 new Date('2026-10-01T00:00:00Z'),
                 new Date('2026-11-01T00:00:00Z'),
             ),
         ).rejects.toThrow('prepared');
+
         expect(await store.refreshNextReport()).toBe(true);
         const report = await store.report(
             new Date('2026-10-01T00:00:00Z'),
             new Date('2026-11-01T00:00:00Z'),
         );
+
         expect(report.cash).toEqual({
             paymentsUsd: '2.123456',
             refundsUsd: '0.000000',
             feesUsd: '0.123456',
             netReceiptsUsd: '2.000000',
         });
+
         expect(report.usage).toMatchObject({
             calculatedExpenseUsd: '0.300002',
             measuredCount: 1,
@@ -492,6 +532,7 @@ run('manual AI accounting persisted facts', () => {
             complete: false,
             manualUnallocatedAdjustmentUsd: '0.099998',
         });
+
         // HTTP-facing reads use the saved snapshot; adding a fact does not trigger a history aggregate.
         await actualTextExpense(999999n);
         expect(
@@ -500,12 +541,14 @@ run('manual AI accounting persisted facts', () => {
                 new Date('2026-11-01T00:00:00Z'),
             ),
         ).toEqual(report);
+
         expect(report.providers[0]).toMatchObject({
             depositsUsd: '10.000000',
             latestBalanceUsd: '9.100000',
             estimatedRemainingUsd: '9.600000',
         });
     });
+
     it('materializes a cold report with native null flat rates and exact expense beyond the old integer meter', async () => {
         const prices = new DrizzleProviderPriceStore(database);
         const nativePrice = {
@@ -549,9 +592,11 @@ run('manual AI accounting persisted facts', () => {
                 ],
             },
         };
+
         expect(
             ProviderPricePublishRequestSchema.safeParse(nativePrice).success,
         ).toBe(true);
+
         await prices.publish(nativePrice, ownerId, new Date());
         const nativeSpeechPrice = ProviderPricePublishRequestSchema.parse({
             ...nativePrice,
@@ -582,10 +627,12 @@ run('manual AI accounting persisted facts', () => {
                 ],
             },
         });
+
         expect(
             ProviderPricePublishRequestSchema.safeParse(nativeSpeechPrice)
                 .success,
         ).toBe(true);
+
         await prices.publish(nativeSpeechPrice, ownerId, new Date());
         const action = await database.transaction((tx) =>
             reserveConversationActionFixture(tx, {
@@ -597,6 +644,7 @@ run('manual AI accounting persisted facts', () => {
                 modelId: nativePrice.modelId,
             }),
         );
+
         await database.transaction(async (tx) => {
             const participant = new DrizzleActionAccountingParticipant(tx);
             const attempt = await participant.admitAttempt({
@@ -623,6 +671,7 @@ run('manual AI accounting persisted facts', () => {
             await tx.execute(
                 sql`select languon_observe_native_text_call(${call.callId}::uuid,${JSON.stringify({ usage: { requests: 1, providerCostUsd: '5000' } })}::jsonb)`,
             );
+
             await participant.recordAttempt({
                 actionId: action.id,
                 ownerId,
@@ -630,12 +679,14 @@ run('manual AI accounting persisted facts', () => {
                 successful: false,
                 at: new Date(),
             });
+
             await settleConversationActionFixture(tx, {
                 ownerId,
                 actionId: action.id,
                 outcome: 'failure',
             });
         });
+
         const from = new Date('2026-01-01T00:00:00Z');
         const to = new Date('2027-01-01T00:00:00Z');
         // A cold snapshot is explicitly pending, independent of native price representation.
@@ -644,12 +695,14 @@ run('manual AI accounting persisted facts', () => {
         const report = AccountingReportSchema.parse(
             await store.report(from, to),
         );
+
         expect(report.usage).toMatchObject({
             calculatedExpenseUsd: '5000.000000',
             measuredCount: 1,
             unknownCount: 0,
             complete: true,
         });
+
         expect(report.providers).toEqual([
             expect.objectContaining({
                 providerId: 'openrouter',
@@ -658,6 +711,7 @@ run('manual AI accounting persisted facts', () => {
             }),
         ]);
     });
+
     it('renews an unchanged report without history aggregation and recomputes after a committed change', async () => {
         await payment();
         const from = new Date('2026-10-01T00:00:00Z');
@@ -669,6 +723,7 @@ run('manual AI accounting persisted facts', () => {
             expect(
                 await store.refreshNextReport(new Date(Date.now() + 31000)),
             ).toBe(true);
+
             expect(spy).not.toHaveBeenCalled();
             const request = AccountingRecordRequestSchema.parse({
                 ...base(),
@@ -676,11 +731,13 @@ run('manual AI accounting persisted facts', () => {
                 providerId: 'dirty-test',
                 amountUsd: '1',
             });
+
             await store.record(request, ownerId, at);
             spy.mockClear();
             expect(
                 await store.refreshNextReport(new Date(Date.now() + 62000)),
             ).toBe(true);
+
             expect(spy).toHaveBeenCalledOnce();
             const report = await store.report(from, to);
             expect(
@@ -692,6 +749,7 @@ run('manual AI accounting persisted facts', () => {
             spy.mockRestore();
         }
     });
+
     it('preserves anonymous historical paid consumption while purging private credit attribution and allowing later cash-only refunds', async () => {
         const paid = await payment();
         const jobId = await creditJob(3000n);
@@ -706,11 +764,13 @@ run('manual AI accounting persisted facts', () => {
                 reservationId,
                 maximumCredits: 3000n,
             });
+
             await credits.markProviderDispatched({
                 ownerId,
                 reservationId,
                 dispatchedAt: at,
             });
+
             await credits.settleAttempt({
                 ownerId,
                 reservationId,
@@ -719,6 +779,7 @@ run('manual AI accounting persisted facts', () => {
                 measuredCredits: 2000n,
             });
         });
+
         const from = new Date('2026-10-01T00:00:00Z');
         const to = new Date(at.getTime() + 1000);
         await expect(store.report(from, to)).rejects.toThrow('prepared');
@@ -734,11 +795,13 @@ run('manual AI accounting persisted facts', () => {
                 message: expect.stringContaining('checked deletion claim'),
             },
         });
+
         const now = new Date();
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+
         await database.insert(accountDeletionRequestsTable).values({
             userId: ownerId,
             state: 'running',
@@ -750,15 +813,18 @@ run('manual AI accounting persisted facts', () => {
             fencingToken: 1,
             updatedAt: now,
         });
+
         await database.transaction(async (tx) => {
             await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 ownerId,
                 { workerId: 'accounting-test', fencingToken: 1 },
             );
         });
+
         const [retained] = (await store.list({ limit: 10 })).filter(
             (entry) => entry.id === paid.id,
         );
+
         expect(retained?.createdBy).toBeNull();
         expect(retained?.grantId).toBeNull();
         expect(retained?.data).toMatchObject({
@@ -768,18 +834,22 @@ run('manual AI accounting persisted facts', () => {
             reason: 'Account removed',
             amountUsd: '2.123456',
         });
+
         expect(JSON.stringify(retained)).not.toContain(ownerId);
         await store.refreshNextReport(new Date(Date.now() + 31000));
         const after = await store.report(from, to);
         expect(after.usage.allocatedPurchaseValueUsd).toBe(
             before.usage.allocatedPurchaseValueUsd,
         );
+
         expect(after.usage.unusedPurchaseValueUsd).toBe(
             before.usage.unusedPurchaseValueUsd,
         );
+
         expect(after.usage.operationalMarginUsd).toBe(
             before.usage.operationalMarginUsd,
         );
+
         expect(await store.refundContext(paid.id)).toMatchObject({
             paidUsd: '2.123456',
             refundedUsd: '0.000000',
@@ -790,6 +860,7 @@ run('manual AI accounting persisted facts', () => {
             consumedCredits: null,
             revokedCredits: null,
         });
+
         const actor = randomUUID();
         await database.insert(usersTable).values({
             id: actor,
@@ -797,6 +868,7 @@ run('manual AI accounting persisted facts', () => {
             createdAt: at,
             updatedAt: at,
         });
+
         const refund = AccountingRecordRequestSchema.parse({
             ...base(),
             kind: 'refund',
@@ -804,6 +876,7 @@ run('manual AI accounting persisted facts', () => {
             amountUsd: '0.1',
             revokeAvailableCredits: '0',
         });
+
         await expect(
             store.record(
                 { ...refund, revokeAvailableCredits: '0.001' } as typeof refund,
@@ -811,11 +884,13 @@ run('manual AI accounting persisted facts', () => {
                 at,
             ),
         ).rejects.toThrow('cash-only');
+
         expect((await store.record(refund, actor, at)).grantId).toBeNull();
         expect((await store.refundContext(paid.id)).refundedUsd).toBe(
             '0.100000',
         );
     });
+
     it('retains immutable anonymous provider expense facts and denies public accounting-purge authority', async () => {
         const recorded = await actualTextExpense(null);
         const fact = { attemptReference: recorded.attemptReference };
@@ -835,6 +910,7 @@ run('manual AI accounting persisted facts', () => {
                 message: expect.stringContaining('immutable'),
             },
         });
+
         await expect(
             database
                 .delete(aiProviderExpenseRecordsTable)
@@ -850,11 +926,14 @@ run('manual AI accounting persisted facts', () => {
                 message: expect.stringContaining('immutable'),
             },
         });
+
         const permissions = await database.execute(
             sql`select exists(select 1 from pg_proc p,aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a where p.oid in ('languon_anonymize_accounting_owner(uuid)'::regprocedure,'languon_finalize_speech_accounting_for_purge(uuid)'::regprocedure) and a.grantee=0 and a.privilege_type='EXECUTE') allowed`,
         );
+
         expect(permissions[0]?.allowed).toBe(false);
     });
+
     it('lets the restricted purge role retain anonymous cash/expense facts without reading payment JSON or resetting global operator cost', async () => {
         const paid = await payment();
         const action = await database.transaction((tx) =>
@@ -863,6 +942,7 @@ run('manual AI accounting persisted facts', () => {
                 maximumMilli: 1000n,
             }),
         );
+
         await database.transaction(async (tx) => {
             const participant = new DrizzleActionAccountingParticipant(tx);
             const attempt = await participant.admitAttempt({
@@ -882,6 +962,7 @@ run('manual AI accounting persisted facts', () => {
                 },
                 at: new Date(),
             });
+
             await participant.recordAttempt({
                 actionId: action.id,
                 ownerId,
@@ -891,12 +972,14 @@ run('manual AI accounting persisted facts', () => {
                 operatorCostMicros: 100n,
                 at: new Date(),
             });
+
             await settleConversationActionFixture(tx, {
                 ownerId,
                 actionId: action.id,
                 outcome: 'success',
             });
         });
+
         const speechProvider = new FixtureSpeechProvider();
         await new DrizzleProviderPriceStore(database).publish(
             {
@@ -917,6 +1000,7 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             new Date(),
         );
+
         let speechText = 'bonjour';
         const speech = new DrizzleSpeechStore({
             database,
@@ -931,6 +1015,7 @@ run('manual AI accounting persisted facts', () => {
                 revision: '1',
             }),
         });
+
         await speech.prepare({
             actorId: ownerId,
             source: {
@@ -943,6 +1028,7 @@ run('manual AI accounting persisted facts', () => {
             operationId: randomUUID(),
             now: new Date(),
         });
+
         const speechJob = await speech.claim(new Date());
         expect(speechJob).not.toBeNull();
         speechText = 'salut';
@@ -958,22 +1044,27 @@ run('manual AI accounting persisted facts', () => {
             operationId: randomUUID(),
             now: new Date(),
         });
+
         const [queuedSpeech] = await database
             .select()
             .from(speechJobsTable)
             .where(eq(speechJobsTable.state, 'queued'));
+
         expect(queuedSpeech).toBeDefined();
         const globalBefore = await database.execute(
             sql`select sum(consumed_micros)::text amount from ai_operator_daily_budgets where scope='global'`,
         );
+
         expect(BigInt(String(globalBefore[0]?.amount ?? '0'))).toBeGreaterThan(
             0n,
         );
+
         const now = new Date();
         await database
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, ownerId));
+
         await database.insert(accountDeletionRequestsTable).values({
             userId: ownerId,
             state: 'running',
@@ -985,6 +1076,7 @@ run('manual AI accounting persisted facts', () => {
             fencingToken: 1,
             updatedAt: now,
         });
+
         const role = `accounting_purge_test_${randomUUID().replaceAll('-', '')}`;
         const script = await readFile(
             new URL(
@@ -993,11 +1085,13 @@ run('manual AI accounting persisted facts', () => {
             ),
             'utf8',
         );
+
         await client.unsafe(`create role ${role}`);
         const connection = createPostgresClient({
             databaseUrl: getTestDatabaseUrl(),
             maxConnections: 1,
         });
+
         try {
             await client.unsafe(
                 script
@@ -1006,19 +1100,23 @@ run('manual AI accounting persisted facts', () => {
                     .join('\n')
                     .replaceAll(':"account_purge_role"', role),
             );
+
             await connection.unsafe(`set role ${role}`);
             await expect(
                 connection.unsafe('select data from ai_accounting_records'),
             ).rejects.toThrow('permission denied');
+
             await expect(
                 connection.unsafe(
                     'select report from ai_accounting_report_snapshots',
                 ),
             ).rejects.toThrow('permission denied');
+
             const restricted = createDrizzleDatabase(
                 connection,
                 databaseSchema,
             );
+
             for (const query of [
                 connection`select languon_cancel_speech_for_scheduled_deletion(${ownerId}::uuid)`,
                 connection`select languon_settle_credit_action(${action.id}::uuid,'failure',clock_timestamp())`,
@@ -1026,14 +1124,18 @@ run('manual AI accounting persisted facts', () => {
                 connection`select languon_record_text_provider_expense(${randomUUID()}::uuid,NULL)`,
                 connection`select languon_settle_speech_customer(${randomUUID()}::uuid,'failure')`,
                 connection`select languon_mark_accounting_reports_dirty()`,
-            ])
+            ]) {
                 await expect(query).rejects.toThrow('permission denied');
+            }
+
             await expect(
                 connection`select languon_recover_purge_interview_action(${ownerId}::uuid,'wrong-worker',1,${action.id}::uuid)`,
             ).rejects.toThrow('worker and fence');
+
             await expect(
                 connection`select languon_recover_purge_interview_action(${ownerId}::uuid,'accounting-role-test',1,${action.id}::uuid)`,
             ).rejects.toThrow('owned admitted interview');
+
             for (const [worker, fence] of [
                 ['wrong-worker', 1],
                 ['accounting-role-test', 0],
@@ -1043,9 +1145,11 @@ run('manual AI accounting persisted facts', () => {
                     connection`select languon_purge_ai_credit_owner(${ownerId}::uuid, ${worker}::text, ${fence}::integer)`,
                 ).rejects.toThrow('worker and fence');
             }
+
             await expect(
                 connection`select languon_purge_ai_credit_owner(${randomUUID()}::uuid, 'accounting-role-test', 1)`,
             ).rejects.toThrow('worker and fence');
+
             // Even all three guessed custom settings cannot confer raw ledger authority.
             await connection.begin(async (tx) => {
                 await tx`select set_config('languon.ai_credit_purge_owner',${ownerId},true), set_config('languon.ai_credit_purge_worker','accounting-role-test',true), set_config('languon.ai_credit_purge_fence','1',true)`;
@@ -1055,18 +1159,21 @@ run('manual AI accounting persisted facts', () => {
                             sp`delete from ai_credit_grants where owner_id=${ownerId}::uuid`,
                     ),
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     tx.savepoint(
                         (sp) =>
                             sp`delete from ai_credit_actions where owner_id=${ownerId}::uuid`,
                     ),
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     tx.savepoint(
                         (sp) =>
                             sp`update users set status='active' where id=${ownerId}::uuid`,
                     ),
                 ).rejects.toThrow('permission denied');
+
                 await expect(
                     tx.savepoint(
                         (sp) =>
@@ -1079,6 +1186,7 @@ run('manual AI accounting persisted facts', () => {
             await database
                 .insert(usersTable)
                 .values({ id: canceledOwner, status: 'active' });
+
             await database.insert(accountDeletionRequestsTable).values({
                 userId: canceledOwner,
                 state: 'cancelled',
@@ -1088,37 +1196,46 @@ run('manual AI accounting persisted facts', () => {
                 fencingToken: 1,
                 updatedAt: now,
             });
+
             await expect(
                 connection`select languon_purge_ai_credit_owner(${canceledOwner}::uuid,'accounting-role-test',1)`,
             ).rejects.toThrow('worker and fence');
+
             await expect(
                 connection`update account_deletion_requests set state='running',lease_worker_id='forged',lease_deadline=clock_timestamp()+interval '1 minute',fencing_token=2,attempt_count=attempt_count+1 where user_id=${canceledOwner}::uuid`,
             ).rejects.toThrow('due work');
+
             // An expired claim may be reclaimed only at the next fence; the prior worker is then stale.
             await database
                 .update(accountDeletionRequestsTable)
                 .set({ leaseDeadline: new Date(Date.now() - 1000) })
                 .where(eq(accountDeletionRequestsTable.userId, ownerId));
+
             await connection`update account_deletion_requests set lease_deadline=clock_timestamp()+interval '2 minutes',fencing_token=2,attempt_count=attempt_count+1 where user_id=${ownerId}::uuid`;
             await expect(
                 connection`select languon_purge_ai_credit_owner(${ownerId}::uuid,'accounting-role-test',1)`,
             ).rejects.toThrow('worker and fence');
+
             await restricted.transaction(async (tx) => {
                 await purgeSpeechActor(tx, ownerId, new Date(), {
                     workerId: 'accounting-role-test',
                     fencingToken: 2,
                 });
+
                 await new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                     ownerId,
                     { workerId: 'accounting-role-test', fencingToken: 2 },
                 );
             });
+
             const globalAfter = await database.execute(
                 sql`select sum(consumed_micros)::text amount from ai_operator_daily_budgets where scope='global'`,
             );
+
             expect(BigInt(String(globalAfter[0]?.amount))).toBe(
                 BigInt(String(globalBefore[0]?.amount)) + 70n,
             );
+
             expect(
                 (
                     await database
@@ -1127,6 +1244,7 @@ run('manual AI accounting persisted facts', () => {
                         .where(eq(speechJobsTable.id, speechJob!.id))
                 )[0]?.payerId,
             ).toBeNull();
+
             expect(
                 await database
                     .select()
@@ -1138,6 +1256,7 @@ run('manual AI accounting persisted facts', () => {
                         ),
                     ),
             ).toHaveLength(0);
+
             expect(
                 (
                     await database.execute(
@@ -1145,6 +1264,7 @@ run('manual AI accounting persisted facts', () => {
                     )
                 )[0]?.total,
             ).toBe(0);
+
             expect(
                 (
                     await database.execute(
@@ -1152,9 +1272,11 @@ run('manual AI accounting persisted facts', () => {
                     )
                 )[0]?.owner_id,
             ).toBeNull();
+
             const expenses = await database
                 .select()
                 .from(aiProviderExpenseRecordsTable);
+
             expect(
                 (
                     await database
@@ -1168,10 +1290,12 @@ run('manual AI accounting persisted facts', () => {
                         )
                 )[0],
             ).toMatchObject({ state: 'deleting', text: '' });
+
             expect(expenses).toHaveLength(2);
             expect(
                 expenses.find((entry) => entry.actionId === action.id),
             ).toMatchObject({ amountUsdMicros: 1n, attemptId: null });
+
             expect(
                 expenses.find((entry) => entry.actionId === speechJob!.id),
             ).toMatchObject({
@@ -1179,13 +1303,16 @@ run('manual AI accounting persisted facts', () => {
                 measurement: 'unknown',
                 costSource: 'unknown',
             });
+
             const cash = (await store.list({ limit: 10 })).find(
                 (entry) => entry.id === paid.id,
             );
+
             expect(JSON.stringify(cash)).not.toContain(ownerId);
             const anonymous = await database.execute(
                 sql`select sum(credits_milli)::text credits from ai_accounting_archived_purchase_movements where payment_id=${paid.id}::uuid and kind='consumed'`,
             );
+
             expect(
                 BigInt(String(anonymous[0]?.credits ?? '0')),
             ).toBeGreaterThan(0n);
@@ -1196,6 +1323,7 @@ run('manual AI accounting persisted facts', () => {
             await client.unsafe(`drop role ${role}`);
         }
     });
+
     it('pins immutable provider USD revisions by admission time with optimistic publication', async () => {
         const prices = new DrizzleProviderPriceStore(database);
         const request = ProviderPricePublishRequestSchema.parse({
@@ -1213,6 +1341,7 @@ run('manual AI accounting persisted facts', () => {
             expectedVersion: 0,
             effectiveAt: at.toISOString(),
         });
+
         expect(
             await database.transaction((tx) =>
                 pinProviderPrice(tx, {
@@ -1223,6 +1352,7 @@ run('manual AI accounting persisted facts', () => {
                 }),
             ),
         ).toBeNull();
+
         const first = await prices.publish(request, ownerId, at);
         const second = await prices.publish(
             {
@@ -1234,9 +1364,11 @@ run('manual AI accounting persisted facts', () => {
             ownerId,
             at,
         );
+
         await expect(prices.publish(request, ownerId, at)).rejects.toThrow(
             'revision',
         );
+
         expect(second.version).toBe(2);
         expect(
             await database.transaction((tx) =>
@@ -1254,6 +1386,7 @@ run('manual AI accounting persisted facts', () => {
             sourceReference: `reviewed-rate:${first.id}`,
             sourceUrl: null,
         });
+
         expect(
             await database.transaction((tx) =>
                 pinProviderPrice(tx, {
@@ -1270,11 +1403,13 @@ run('manual AI accounting persisted facts', () => {
             sourceReference: `reviewed-rate:${second.id}`,
             sourceUrl: null,
         });
+
         expect(first.inputUsdPerMillionTokens).toBe('1.234567');
         expect(await prices.list()).toContainEqual(second);
         expect(second.createdBy).toBe(ownerId);
         expect(second.sourceUrl).toBe('https://example.com/pricing');
     });
+
     it('serializes simultaneous refund totals and prevents overlapping invoice periods', async () => {
         const paid = await payment();
         const results = await Promise.allSettled(
@@ -1292,9 +1427,11 @@ run('manual AI accounting persisted facts', () => {
                 ),
             ),
         );
+
         expect(
             results.filter((result) => result.status === 'fulfilled'),
         ).toHaveLength(1);
+
         const bill = {
             ...base(),
             kind: 'provider_bill',
@@ -1303,11 +1440,13 @@ run('manual AI accounting persisted facts', () => {
             periodStart: '2026-10-01T00:00:00Z',
             periodEnd: '2026-11-01T00:00:00Z',
         };
+
         await store.record(
             AccountingRecordRequestSchema.parse(bill),
             ownerId,
             at,
         );
+
         await expect(
             store.record(
                 AccountingRecordRequestSchema.parse({

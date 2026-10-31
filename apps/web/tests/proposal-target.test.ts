@@ -4,7 +4,10 @@ import { mapProposalTarget } from '../src/fsd/features/knowledge-notes/lib/propo
 
 function mapping(...steps: Array<[number, number, number]>) {
     const result = new Mapping();
-    for (const step of steps) result.appendMap(new StepMap(step));
+    for (const step of steps) {
+        result.appendMap(new StepMap(step));
+    }
+
     return result;
 }
 
@@ -23,6 +26,7 @@ describe('proposal target mapping', () => {
             to: 13,
             changed: false,
         });
+
         expect(mapProposalTarget(selected, mapping([15, 0, 3]))).toMatchObject({
             from: 5,
             to: 10,
@@ -34,6 +38,7 @@ describe('proposal target mapping', () => {
         expect(mapProposalTarget(selected, mapping([7, 0, 2])).changed).toBe(
             true,
         );
+
         expect(mapProposalTarget(selected, mapping([5, 5, 4])).changed).toBe(
             true,
         );
@@ -44,6 +49,7 @@ describe('proposal target mapping', () => {
             selected,
             mapping([2, 0, 3], [10, 0, 1]),
         );
+
         expect(result.changed).toBe(true);
         expect(result.from).toBe(8);
         expect(result.to).toBe(14);

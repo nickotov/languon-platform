@@ -37,6 +37,7 @@ export class InvalidDictionaryBatchInputError extends Error {
                 ? `The pasted dictionary input is invalid (${reason}).`
                 : `Pasted dictionary row ${rowIndex} is invalid (${reason}).`,
         );
+
         this.name = 'InvalidDictionaryBatchInputError';
     }
 }
@@ -63,6 +64,7 @@ export function parseDictionaryBatchGenerationText(
     ) {
         throw new InvalidDictionaryBatchInputError('text_too_long');
     }
+
     if (hasDisallowedControlCharacter(text)) {
         throw new InvalidDictionaryBatchInputError('control_character');
     }
@@ -75,6 +77,7 @@ export function parseDictionaryBatchGenerationText(
     if (inputs.length === 0) {
         throw new InvalidDictionaryBatchInputError('no_rows');
     }
+
     if (inputs.length > dictionaryBatchGenerationLimits.maximumRows) {
         throw new InvalidDictionaryBatchInputError('too_many_rows');
     }
@@ -113,6 +116,7 @@ export function chunkDictionaryBatchGenerationRows(
                 .map((row) => ({ ...row })),
         );
     }
+
     return chunks;
 }
 
@@ -157,6 +161,7 @@ export function createDictionaryBatchDuplicateWarnings(
                 rowIndex: row.rowIndex,
             });
         }
+
         seenBatchSources.add(key);
     }
 
@@ -226,6 +231,7 @@ const DictionaryBatchGenerationProposalPayloadSchema = z
                     'A batch proposal must contain at least one resolved row',
             });
         }
+
         if (new Set(resolvedIndexes).size !== resolvedIndexes.length) {
             context.addIssue({
                 code: 'custom',
@@ -244,6 +250,7 @@ const DictionaryBatchGenerationProposalPayloadSchema = z
                     message: 'Warning codes must be unique for each row',
                 });
             }
+
             warningKeys.add(key);
 
             if (!resolvedIndexSet.has(warning.rowIndex)) {
@@ -277,30 +284,35 @@ const ImportPairsProposalCandidateSchema = z
     })
     .strict()
     .superRefine((row, context) => {
-        if (row.candidate.values.source !== row.source)
+        if (row.candidate.values.source !== row.source) {
             context.addIssue({
                 code: 'custom',
                 path: ['candidate', 'values', 'source'],
                 message: 'AI output must preserve the imported source',
             });
-        if (row.candidate.values.translation !== row.translation)
+        }
+
+        if (row.candidate.values.translation !== row.translation) {
             context.addIssue({
                 code: 'custom',
                 path: ['candidate', 'values', 'translation'],
                 message: 'AI output must preserve the imported translation',
             });
+        }
+
         if (
             row.fieldFeedback.some(
                 (feedback) =>
                     feedback.field === 'source' ||
                     feedback.field === 'translation',
             )
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['fieldFeedback'],
                 message: 'AI may only provide feedback for optional fields',
             });
+        }
     });
 
 export const DictionaryImportPairsGenerationProposalPayloadSchema = z
@@ -341,35 +353,44 @@ export const DictionaryImportPairsGenerationProposalPayloadSchema = z
             ...proposal.candidates.map((row) => row.rowIndex),
             ...proposal.failures.map((row) => row.rowIndex),
         ];
+
         proposal.failures.forEach((failure, index) => {
-            if (failure.input !== failure.source)
+            if (failure.input !== failure.source) {
                 context.addIssue({
                     code: 'custom',
                     path: ['failures', index, 'input'],
                     message: 'Failure input must preserve the imported source',
                 });
+            }
         });
-        if (resolved.length === 0)
+
+        if (resolved.length === 0) {
             context.addIssue({
                 code: 'custom',
                 message: 'An import-pairs proposal requires a resolved row',
             });
-        if (new Set(resolved).size !== resolved.length)
+        }
+
+        if (new Set(resolved).size !== resolved.length) {
             context.addIssue({
                 code: 'custom',
                 message: 'Import-pairs row indexes must be unique',
             });
+        }
+
         const resolvedSet = new Set(resolved);
         const warningKeys = new Set<string>();
         proposal.warnings.forEach((warning, index) => {
             const key = `${warning.rowIndex}:${warning.code}`;
-            if (!resolvedSet.has(warning.rowIndex) || warningKeys.has(key))
+            if (!resolvedSet.has(warning.rowIndex) || warningKeys.has(key)) {
                 context.addIssue({
                     code: 'custom',
                     path: ['warnings', index],
                     message:
                         'Import-pairs warnings must be unique and resolved',
                 });
+            }
+
             warningKeys.add(key);
         });
     });

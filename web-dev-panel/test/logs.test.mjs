@@ -13,6 +13,7 @@ test('redacts a secret split across arbitrary output chunks', () => {
         onText: (text) => output.push(text),
         redact: createEnvironmentRedactor({ API_TOKEN: 'split-secret-value' }),
     });
+
     stream.write(Buffer.from('before split-se'));
     stream.write(Buffer.from('cret-va'));
     stream.write(Buffer.from('lue after'));
@@ -27,6 +28,7 @@ test('recognizes common inherited credential variable names', () => {
         PGPASSWORD: 'postgres-secret',
         SENTRY_DSN: 'sentry-secret',
     });
+
     assert.equal(
         redact('github-secret mysql-secret postgres-secret sentry-secret'),
         '[REDACTED] [REDACTED] [REDACTED] [REDACTED]',
@@ -54,6 +56,7 @@ test('public auth and capability metadata do not redact startup diagnostics', ()
     });
     const line =
         '@languon/backend: Languon localhost http://127.0.0.1:3333 document-terms:v2 true false';
+
     assert.equal(redact(line), line);
     assert.equal(
         redact('actual-jwt-secret actual-provider-secret'),
@@ -67,6 +70,7 @@ test('a real credential remains protected when its value matches public metadata
         HF_HUB_DISABLE_IMPLICIT_TOKEN: '1',
         PROVIDER_API_KEY: '1',
     });
+
     assert.equal(redact('credential=1'), 'credential=[REDACTED]');
 });
 
@@ -75,6 +79,7 @@ test('bounds logs by entry count and reports truncation', () => {
         maximumBytes: 10_000,
         maximumEntries: 2,
     });
+
     buffer.append({ stream: 'stdout', text: 'one' });
     buffer.append({ stream: 'stdout', text: 'two' });
     buffer.append({ stream: 'stdout', text: 'three' });
@@ -82,5 +87,6 @@ test('bounds logs by entry count and reports truncation', () => {
         buffer.snapshot().entries.map(({ text }) => text),
         ['two', 'three'],
     );
+
     assert.equal(buffer.snapshot().truncated, true);
 });

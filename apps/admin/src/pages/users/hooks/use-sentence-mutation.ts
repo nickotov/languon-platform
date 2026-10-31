@@ -32,7 +32,10 @@ export function useSentenceMutation(
     const retryBody = useRef<AdminSentenceLibraryMutationRequest | null>(null);
 
     const close = () => {
-        if (pending) return;
+        if (pending) {
+            return;
+        }
+
         generation.current += 1;
         setConfirmation(null);
         setError(null);
@@ -66,7 +69,11 @@ export function useSentenceMutation(
                 dictionaryId,
                 { operation, query },
             );
-            if (generation.current !== requestGeneration) return;
+
+            if (generation.current !== requestGeneration) {
+                return;
+            }
+
             setConfirmation({
                 operation,
                 selection: {
@@ -78,15 +85,20 @@ export function useSentenceMutation(
                 operationId: crypto.randomUUID(),
             });
         } catch (caught) {
-            if (generation.current === requestGeneration)
+            if (generation.current === requestGeneration) {
                 setError(normalizeSentenceError(caught));
+            }
         } finally {
-            if (generation.current === requestGeneration)
+            if (generation.current === requestGeneration) {
                 setSnapshotPending(false);
+            }
         }
     };
     const submit = async (reason: string, deletionConfirmed: boolean) => {
-        if (!confirmation || pending) return;
+        if (!confirmation || pending) {
+            return;
+        }
+
         const body: AdminSentenceLibraryMutationRequest = retryBody.current ?? {
             operationId: confirmation.operationId,
             operation: confirmation.operation,
@@ -96,6 +108,7 @@ export function useSentenceMutation(
                 ? { confirmation: 'delete-archived-examples' as const }
                 : {}),
         };
+
         retryBody.current = body;
         setPending(true);
         setError(null);
@@ -110,6 +123,7 @@ export function useSentenceMutation(
             setPending(false);
         }
     };
+
     return {
         confirmation,
         error,

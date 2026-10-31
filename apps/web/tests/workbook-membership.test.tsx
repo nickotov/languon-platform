@@ -8,6 +8,7 @@ const original = '11111111-1111-4111-8111-111111111111';
 const added = '22222222-2222-4222-8222-222222222222';
 function model(shared: boolean) {
     const setNotes = vi.fn().mockResolvedValue(true);
+
     return {
         setNotes,
         model: {
@@ -35,6 +36,7 @@ function model(shared: boolean) {
         } as unknown as ReturnType<typeof useWorkbookDetail>,
     };
 }
+
 describe('workbook membership sharing notice', () => {
     it('requires acknowledgement before adding to a shared workbook', async () => {
         const state = model(true);
@@ -44,27 +46,33 @@ describe('workbook membership sharing notice', () => {
                 labels={workbookLabels('en')}
             />,
         );
+
         fireEvent.change(screen.getByRole('combobox'), {
             target: { value: added },
         });
+
         expect(
             screen.getByRole('button', { name: 'Add', exact: true }),
         ).toBeDisabled();
+
         expect(state.setNotes).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('checkbox'));
         fireEvent.click(
             screen.getByRole('button', { name: 'Add', exact: true }),
         );
+
         await waitFor(() =>
             expect(state.setNotes).toHaveBeenCalledWith(
                 [original, added],
                 true,
             ),
         );
+
         await waitFor(() =>
             expect(screen.getByRole('checkbox')).not.toBeChecked(),
         );
     });
+
     it('allows a private addition without claiming sharing acknowledgement', async () => {
         const state = model(false);
         render(
@@ -73,13 +81,16 @@ describe('workbook membership sharing notice', () => {
                 labels={workbookLabels('en')}
             />,
         );
+
         fireEvent.change(screen.getByRole('combobox'), {
             target: { value: added },
         });
+
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         fireEvent.click(
             screen.getByRole('button', { name: 'Add', exact: true }),
         );
+
         await waitFor(() =>
             expect(state.setNotes).toHaveBeenCalledWith(
                 [original, added],

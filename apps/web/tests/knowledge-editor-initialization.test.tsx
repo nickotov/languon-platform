@@ -47,9 +47,11 @@ it('opens the outline request from a workspace without mutating the private draf
             />
         </>,
     );
+
     const outline = await screen.findByRole('button', {
         name: /^AI outline/,
     });
+
     fireEvent.click(outline);
     expect(onAskOutline).toHaveBeenCalledTimes(1);
     expect(editor.current?.getSnapshot().content).toBe('');
@@ -82,12 +84,14 @@ it('inserts a lesson starter into only the working body as one undoable edit', a
             }}
         />,
     );
+
     fireEvent.click(
         await screen.findByRole('button', {
             name: 'Lesson notes',
             exact: true,
         }),
     );
+
     expect(editor.current!.getSnapshot().content).toContain('Lesson topic');
     expect(editor.current!.getSnapshot().content).toContain('Homework');
     expect(onChange).toHaveBeenCalledTimes(1);
@@ -113,10 +117,12 @@ it('accepts an append as one editable draft change', async () => {
     act(() => {
         result = editor.current?.applyProposal('A clear explanation', 'append');
     });
+
     expect(result).toBe('applied');
     expect(editor.current?.getSnapshot().content).toContain(
         'A clear explanation',
     );
+
     expect(onChange).toHaveBeenCalledTimes(1);
 });
 
@@ -139,6 +145,7 @@ it('previews the remembered passage and surrounding text after unrelated edits',
         to: 25,
         originalText: 'Selected passage.',
     });
+
     expect(targetId).not.toBeNull();
     expect(editor.current!.getProposalPreview(targetId!)).toMatchObject({
         original: 'Selected passage.',
@@ -147,6 +154,7 @@ it('previews the remembered passage and surrounding text after unrelated edits',
         after: ' After.',
         changed: false,
     });
+
     expect(onChange).not.toHaveBeenCalled();
     expect(editor.current!.getProposalPreview()).toEqual({
         original: '',
@@ -156,14 +164,17 @@ it('previews the remembered passage and surrounding text after unrelated edits',
         end: text,
         changed: false,
     });
+
     expect(editor.current!.getProposalPreview('missing-target')).toBeNull();
     act(() => {
         editor.current!.applyProposal('Added later.', 'append');
     });
+
     expect(editor.current!.getProposalPreview(targetId!)).toMatchObject({
         current: 'Selected passage.',
         changed: false,
     });
+
     expect(editor.current!.getProposalPreview(targetId!)?.end).toContain(
         'Added later.',
     );
@@ -186,6 +197,7 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
         render(
             <KnowledgeEditor ref={editor} value={body} onChange={vi.fn()} />,
         );
+
         await waitFor(() => expect(editor.current).not.toBeNull());
         const hash = await hashEditorText(text);
         const alpha = await editor.current!.restoreTarget({
@@ -200,9 +212,11 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
             to: text.length,
             originalText: 'Beta paragraph.',
         });
+
         act(() => {
             editor.current!.showTarget(alpha!);
         });
+
         const snapshot = editor.current!.getSnapshot();
         expect(snapshot.targetId).not.toBe(alpha);
         expect(snapshot.selectedPassage).toBe('Alpha paragraph.');
@@ -213,6 +227,7 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
             to: 16,
             originalText: '',
         });
+
         expect(withoutPassage.targetId).not.toBe(snapshot.targetId);
         expect(withoutPassage.content).toBe(text);
         expect(editor.current!.getSnapshot().selectedPassage).toBe(
@@ -222,9 +237,11 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
         act(() => {
             editor.current!.showTarget(beta!);
         });
+
         expect(editor.current!.getSnapshot().selectedPassage).toBe(
             'Beta paragraph.',
         );
+
         expect(editor.current!.getSnapshot(snapshot.targetId)).toMatchObject({
             targetId: snapshot.targetId,
             selectedPassage: 'Alpha paragraph.',
@@ -237,21 +254,25 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
             to: 0,
             originalText: '',
         });
+
         act(() => {
             editor.current!.applyProposal('Added above.', 'insert', beginning!);
         });
+
         const shifted = editor.current!.getSnapshot(snapshot.targetId);
         expect(shifted.content).toContain('Added above.');
         expect(shifted.selectedPassage).toBe('Alpha paragraph.');
         expect(shifted.editorTarget.from).toBeGreaterThan(
             snapshot.editorTarget.from,
         );
+
         expect(shifted.editorTarget.originalText).toBe('Alpha paragraph.');
 
         const editingTarget = await editor.current!.restoreTarget({
             documentHash: await hashEditorText(shifted.content),
             ...shifted.editorTarget,
         });
+
         act(() => {
             editor.current!.applyProposal(
                 'Changed paragraph.',
@@ -259,6 +280,7 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
                 editingTarget!,
             );
         });
+
         const changedSnapshot = editor.current!.getSnapshot(snapshot.targetId);
         expect(changedSnapshot.selectedPassage).toBe('Alpha paragraph.');
         expect(changedSnapshot.content).toContain('Changed paragraph.');
@@ -268,9 +290,11 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
                 changedSnapshot.editorTarget.to,
             ),
         );
+
         expect(
             editor.current!.getProposalPreview(snapshot.targetId)?.changed,
         ).toBe(true);
+
         expect(
             editor.current!.applyProposal(
                 'Unsafe overwrite.',
@@ -278,9 +302,11 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
                 snapshot.targetId,
             ),
         ).toBe('changed');
+
         expect(() => editor.current!.getSnapshot('missing-target')).toThrow(
             'no longer available',
         );
+
         await new Promise<void>((resolve) =>
             requestAnimationFrame(() => resolve()),
         );
@@ -318,6 +344,7 @@ it('reveals selection actions for a focused remembered passage in the workspace'
                 }}
             />,
         );
+
         await waitFor(() => expect(editor.current).not.toBeNull());
         const targetId = await editor.current!.restoreTarget({
             documentHash: await hashEditorText(text),
@@ -325,11 +352,13 @@ it('reveals selection actions for a focused remembered passage in the workspace'
             to: text.length,
             originalText: text,
         });
+
         act(() => editor.current!.showTarget(targetId!));
         const ask = await screen.findByRole('button', {
             name: 'Ask tutor',
             exact: true,
         });
+
         act(() => ask.focus());
         await waitFor(() => expect(document.activeElement).toBe(ask));
         expect(
@@ -338,18 +367,22 @@ it('reveals selection actions for a focused remembered passage in the workspace'
                 exact: true,
             }),
         ).toContainElement(ask);
+
         fireEvent.click(ask);
         expect(onAskTutor).toHaveBeenCalledWith(text);
         fireEvent.click(
             screen.getByRole('button', { name: 'Explain', exact: true }),
         );
+
         expect(onTutorAction).toHaveBeenLastCalledWith('explain', text);
         fireEvent.click(
             screen.getByRole('button', { name: 'More actions', exact: true }),
         );
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Rephrase', exact: true }),
         );
+
         expect(onTutorAction).toHaveBeenLastCalledWith('rephrase', text);
         expect(editor.current!.getSnapshot().content).toBe(text);
         expect(editor.current!.getProposalPosition(targetId!)).toMatchObject({
@@ -369,12 +402,14 @@ it('restores a captured cursor after remount only while the draft is identical',
     const view = render(
         <KnowledgeEditor ref={initial} value={body} onChange={vi.fn()} />,
     );
+
     await waitFor(() => expect(initial.current).not.toBeNull());
     const snapshot = initial.current!.getSnapshot();
     const anchor = {
         ...snapshot.editorTarget,
         documentHash: await hashEditorText(snapshot.content),
     };
+
     view.unmount();
 
     const restored = createRef<KnowledgeEditorHandle>();
@@ -393,6 +428,7 @@ it('restores a captured cursor after remount only while the draft is identical',
             ],
         },
     });
+
     render(
         <KnowledgeEditor
             ref={changed}
@@ -400,6 +436,7 @@ it('restores a captured cursor after remount only while the draft is identical',
             onChange={vi.fn()}
         />,
     );
+
     await waitFor(() => expect(changed.current).not.toBeNull());
     expect(await changed.current!.restoreTarget(anchor)).toBeNull();
 });
@@ -411,6 +448,7 @@ function mockEditorGeometry() {
     const originalBoundingRect = Range.prototype.getBoundingClientRect;
     Range.prototype.getClientRects = () => [rect] as unknown as DOMRectList;
     Range.prototype.getBoundingClientRect = () => rect;
+
     return () => {
         scroll.mockRestore();
         Range.prototype.getClientRects = originalClientRects;

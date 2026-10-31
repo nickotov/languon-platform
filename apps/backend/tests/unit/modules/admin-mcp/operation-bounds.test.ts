@@ -38,12 +38,15 @@ describe('delegated administrative bounds', () => {
         expect(() =>
             assertCreditBounds(actor, 'credits.grant', '2.145'),
         ).not.toThrow();
+
         expect(() =>
             assertCreditBounds(actor, 'credits.grant', '2.146'),
         ).toThrow('delegated limit');
+
         expect(() =>
             assertCreditBounds(actor, 'credits.revoke', '1.001'),
         ).toThrow('delegated limit');
+
         expect(() =>
             assertCreditBounds(
                 { ...actor, limits: {} },
@@ -52,17 +55,20 @@ describe('delegated administrative bounds', () => {
             ),
         ).toThrow();
     });
+
     it('rejects disabled or oversized operator limits rather than letting settings bypass the token', () => {
         expect(() => assertSpendingBounds(actor, settings)).not.toThrow();
         for (const key of Object.keys(settings) as (keyof typeof settings)[]) {
             expect(() =>
                 assertSpendingBounds(actor, { ...settings, [key]: null }),
             ).toThrow();
+
             expect(() =>
                 assertSpendingBounds(actor, { ...settings, [key]: '11' }),
             ).toThrow();
         }
     });
+
     it('accepts only positive thousandth-credit adjustments and cannot attach an expiry to revocations', () => {
         const input = {
             targetUserId: actor.userId,
@@ -71,16 +77,20 @@ describe('delegated administrative bounds', () => {
             expiresAt: null,
             reason: 'Synthetic credit adjustment',
         };
+
         expect(
             adminMcpWriteSchemas['credits.grant'].safeParse(input).success,
         ).toBe(true);
-        for (const amountCredits of ['-1', '0', '0.0001', '1e2'])
+
+        for (const amountCredits of ['-1', '0', '0.0001', '1e2']) {
             expect(
                 adminMcpWriteSchemas['credits.grant'].safeParse({
                     ...input,
                     amountCredits,
                 }).success,
             ).toBe(false);
+        }
+
         expect(
             adminMcpWriteSchemas['credits.revoke'].safeParse({
                 ...input,
@@ -88,6 +98,7 @@ describe('delegated administrative bounds', () => {
             }).success,
         ).toBe(false);
     });
+
     it('bounds report ranges and pagination and uses stable UTC default periods', () => {
         const result = reportRange({}, new Date('2026-10-27T17:00:00Z'));
         expect(result.to.toISOString()).toBe('2026-10-28T00:00:00.000Z');
@@ -95,18 +106,21 @@ describe('delegated administrative bounds', () => {
         expect(reportRange({}, new Date('2026-10-27T00:01:00Z'))).toEqual(
             reportRange({}, new Date('2026-10-27T23:59:59Z')),
         );
+
         expect(() =>
             reportRange({
                 from: '2025-01-01T00:00:00.000Z',
                 to: '2026-10-01T00:00:00.000Z',
             }),
         ).toThrow();
+
         expect(
             adminMcpReadSchemas['financial-reports.user'].safeParse({
                 userId: actor.userId,
                 pageSize: 101,
             }).success,
         ).toBe(false);
+
         expect(
             adminMcpReadSchemas['users.lookup'].safeParse({
                 email: 'a@b.test',

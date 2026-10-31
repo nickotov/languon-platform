@@ -21,6 +21,7 @@ export function WorkspaceTutorContext({
     const label = over
         ? `${copy.limit}: ${count} / ${limit.toLocaleString(locale)}`
         : `${copy.sees} ${document} · ${count}`;
+
     return (
         <div className={styles.workspaceContextRow} data-over-limit={over}>
             <Tooltip content={copy.hint} placement='bottom'>

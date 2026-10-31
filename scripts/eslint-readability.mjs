@@ -31,13 +31,21 @@ export const readabilityRules = {
     ...statementSpacingRules,
 };
 
-// BL-018 expands enrollment after the mechanical-only normalization pass.
-// Until then, enroll new/substantively changed source explicitly with its fixes.
+// Match maintained implementations and tests; generated and imported artifacts
+// retain their own immutable source identity instead of acquiring lint fixes.
 export const readabilityConfig = {
     files: [
-        'apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts',
-        'apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx',
-        'scripts/eslint-readability{,.test}.mjs',
+        '*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}',
+        '{apps,packages,scripts,infra,web-dev-panel,.github}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}',
+    ],
+    ignores: [
+        '**/generated/**',
+        '**/__generated__/**',
+        '**/next-env.d.ts',
+        'apps/backend/drizzle/**',
+        'apps/*/ios/**',
+        'apps/*/android/**',
+        'apps/backend/src/modules/ai-credits/infrastructure/pricing/fixtures/**',
     ],
     rules: readabilityRules,
 };

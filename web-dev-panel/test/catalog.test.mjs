@@ -53,6 +53,7 @@ test('accepts reviewed loopback service URLs and rejects unsafe URLs', () => {
     safe.serviceUrls = [
         { label: 'Safe service', url: 'http://localhost:4555' },
     ];
+
     const catalog = validateCatalogDocument({ commands: [safe], version: 1 });
     assert.deepEqual(catalog.commands[0].serviceUrls, safe.serviceUrls);
 
@@ -83,6 +84,7 @@ test('materializes added scripts and disables changed reviewed sources', async (
             scripts: { new: 'node new.mjs', safe: 'node changed.mjs' },
         }),
     );
+
     await writeFile(
         catalogPath,
         JSON.stringify({
@@ -90,15 +92,18 @@ test('materializes added scripts and disables changed reviewed sources', async (
             version: 1,
         }),
     );
+
     const loaded = await loadCatalog({ catalogPath, repositoryRoot: root });
     assert.equal(
         loaded.commands.find(({ id }) => id === 'safe').available,
         false,
     );
+
     assert.equal(
         loaded.commands.find(({ id }) => id === 'new').available,
         false,
     );
+
     assert.match(loaded.issues.join(' '), /changed after review/u);
     assert.match(loaded.issues.join(' '), /has not been reviewed/u);
     assert.equal(
@@ -112,16 +117,19 @@ test('rejects documented command sources that traverse a symbolic link', async (
     const external = await mkdtemp(
         resolve(tmpdir(), 'web-dev-panel-external-'),
     );
+
     await mkdir(resolve(root, 'docs'));
     await writeFile(
         resolve(root, 'package.json'),
         JSON.stringify({ scripts: {} }),
     );
+
     await writeFile(resolve(external, 'commands.md'), 'node safe.mjs\n');
     await symlink(
         resolve(external, 'commands.md'),
         resolve(root, 'docs', 'commands.md'),
     );
+
     const source = {
         args: ['safe.mjs'],
         command: 'node safe.mjs',
@@ -155,6 +163,7 @@ test('rejects documented command sources that traverse a symbolic link', async (
             version: 1,
         }),
     );
+
     const loaded = await loadCatalog({ catalogPath, repositoryRoot: root });
     assert.equal(loaded.commands[0].available, false);
     assert.match(loaded.issues[0], /without symbolic links/u);
@@ -169,6 +178,7 @@ test('constructs package-script execution through a checked pnpm JavaScript entr
         resolve(root, 'package.json'),
         JSON.stringify({ scripts: { safe: 'node safe.mjs' } }),
     );
+
     await writeFile(
         catalogPath,
         JSON.stringify({
@@ -176,11 +186,13 @@ test('constructs package-script execution through a checked pnpm JavaScript entr
             version: 1,
         }),
     );
+
     const loaded = await loadCatalog({
         catalogPath,
         packageManagerEntrypoint: entrypoint,
         repositoryRoot: root,
     });
+
     assert.deepEqual(loaded.commands[0].execution, {
         args: [await realpath(entrypoint), 'run', 'safe'],
         cwd: root,
@@ -197,6 +209,7 @@ test('fails command execution closed on Windows without Job Object supervision',
         resolve(root, 'package.json'),
         JSON.stringify({ scripts: { safe: 'node safe.mjs' } }),
     );
+
     await writeFile(
         catalogPath,
         JSON.stringify({
@@ -204,12 +217,14 @@ test('fails command execution closed on Windows without Job Object supervision',
             version: 1,
         }),
     );
+
     const loaded = await loadCatalog({
         catalogPath,
         packageManagerEntrypoint: entrypoint,
         platform: 'win32',
         repositoryRoot: root,
     });
+
     assert.equal(loaded.commands[0].available, false);
     assert.equal(loaded.commands[0].execution, null);
     assert.match(loaded.commands[0].runtimeReason, /unavailable on Windows/u);

@@ -29,6 +29,7 @@ export function useBatchJob({
                     signal,
                 ),
             );
+
             return {
                 job: batchGenerationJobForDictionary(
                     response.job,
@@ -39,6 +40,7 @@ export function useBatchJob({
         enabled: batchGenerationOpen && batchGenerationJobId !== null,
         refetchInterval: (query) => {
             const state = query.state.data?.job?.state;
+
             return state === 'queued' || state === 'running' ? 1_000 : false;
         },
     });

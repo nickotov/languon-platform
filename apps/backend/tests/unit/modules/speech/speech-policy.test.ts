@@ -13,6 +13,7 @@ describe('shared pronunciation normalization and pricing', () => {
                 '  e\u0301tude\t  française\r\nDeuxième ligne  ',
             ),
         ).toBe('étude française\nDeuxième ligne');
+
         for (const text of [
             'I',
             'İ',
@@ -23,9 +24,11 @@ describe('shared pronunciation normalization and pricing', () => {
             'Hello!',
             'hello',
             '👩‍👧',
-        ])
+        ]) {
             expect(normalizeSpeechText(text)).toBe(text);
+        }
     });
+
     it('uses language and conservative text in shared identity, independently of actors', () => {
         const key = (text: string, language = 'fr') =>
             speechTextIdentity(
@@ -34,12 +37,14 @@ describe('shared pronunciation normalization and pricing', () => {
                 normalizeSpeechText(text),
                 'pronunciation',
             );
+
         expect(key('  e\u0301tude  ')).toBe(key('étude'));
         expect(key('Hello')).not.toBe(key('hello'));
         expect(key('resume')).not.toBe(key('résumé'));
         expect(key('pain', 'fr')).not.toBe(key('pain', 'en'));
         expect(key('hello!')).not.toBe(key('hello'));
     });
+
     it('separates fixture tones from pronunciation while preserving normalized sharing', () => {
         const key = (
             text: string,
@@ -51,12 +56,15 @@ describe('shared pronunciation normalization and pricing', () => {
                 normalizeSpeechText(text),
                 recordingClass,
             );
+
         expect(key('  e\u0301tude  ', 'pronunciation')).toBe(
             key('étude', 'pronunciation'),
         );
+
         expect(key('  e\u0301tude  ', 'fixture')).toBe(key('étude', 'fixture'));
         expect(key('étude', 'fixture')).not.toBe(key('étude', 'pronunciation'));
     });
+
     it('preserves vertical separators as line breaks in normalized text and cache identity', () => {
         const key = (text: string) =>
             speechTextIdentity(
@@ -65,6 +73,7 @@ describe('shared pronunciation normalization and pricing', () => {
                 normalizeSpeechText(text),
                 'pronunciation',
             );
+
         for (const separator of [
             '\n',
             '\r\n',
@@ -78,19 +87,24 @@ describe('shared pronunciation normalization and pricing', () => {
             expect(normalizeSpeechText(`First${separator}Second`)).toBe(
                 'First\nSecond',
             );
+
             expect(key(`First${separator}Second`)).toBe(key('First\nSecond'));
             expect(key(`First${separator}Second`)).not.toBe(
                 key('First Second'),
             );
+
             expect(
                 normalizeSpeechText(`First${separator}${separator}Second`),
             ).toBe('First\n\nSecond');
         }
-        for (const horizontal of [' ', '\t', '\u00a0', '\u2003', '\u202f'])
+
+        for (const horizontal of [' ', '\t', '\u00a0', '\u2003', '\u202f']) {
             expect(
                 normalizeSpeechText(`First${horizontal}${horizontal}Second`),
             ).toBe('First Second');
+        }
     });
+
     it('requires both inclusive free thresholds', () => {
         expect(inspectSpeechText('one '.repeat(10), 'en').free).toBe(true);
         expect(inspectSpeechText('one '.repeat(11), 'en').free).toBe(false);
@@ -100,14 +114,17 @@ describe('shared pronunciation normalization and pricing', () => {
             100,
         );
     });
+
     it('segments Chinese and Japanese without relying on spaces', () => {
         expect(
             inspectSpeechText('我喜欢学习新的语言', 'zh-Hans').wordCount,
         ).toBeGreaterThan(1);
+
         expect(
             inspectSpeechText('今日は学校で日本語を勉強します', 'ja').wordCount,
         ).toBeGreaterThan(1);
     });
+
     it('prices the entire text in milli-credits with exact rounding and fractional rates', () => {
         expect(speechPrice(101, 100, 1)).toBe(10_100n);
         expect(speechPrice(1000, 100, 1)).toBe(100_000n);

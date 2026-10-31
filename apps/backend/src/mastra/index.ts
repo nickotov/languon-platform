@@ -17,10 +17,15 @@ const HarnessFlagSchema = z
 const includeDevelopmentHarness = HarnessFlagSchema.parse(
     process.env.MASTRA_DEV_HARNESS,
 );
-if (includeDevelopmentHarness) enforceDevelopmentHarnessProcessPolicy();
+
+if (includeDevelopmentHarness) {
+    enforceDevelopmentHarnessProcessPolicy();
+}
 
 function createDevelopmentHarnessOptions() {
-    if (!includeDevelopmentHarness) return undefined;
+    if (!includeDevelopmentHarness) {
+        return undefined;
+    }
 
     const environment = loadPlaygroundEnvironment();
     const sql = createPostgresClient({ databaseUrl: environment.databaseUrl });

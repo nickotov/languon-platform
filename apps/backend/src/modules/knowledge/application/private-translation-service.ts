@@ -18,6 +18,7 @@ export class KnowledgePrivateTranslationService {
             burstLimiter: GenerationBurstLimiter;
         },
     ) {}
+
     private async source(
         token: string,
         context: KnowledgeRequestContext,
@@ -33,11 +34,14 @@ export class KnowledgePrivateTranslationService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!ip.allowed)
+
+        if (!ip.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         const principal = await this.dependencies.authenticate(token);
         const actor = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-private-translation-actor',
@@ -46,15 +50,19 @@ export class KnowledgePrivateTranslationService {
             windowMs: 60_000,
             signal: context.signal,
         });
-        if (!actor.allowed)
+
+        if (!actor.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Try again shortly.',
             );
+        }
+
         const parsed =
             access === undefined
                 ? undefined
                 : WorkbookLearningShareAccessSchema.parse(access);
+
         return {
             actorId: principal.userId,
             noteId: z.uuid().parse(noteId),
@@ -62,6 +70,7 @@ export class KnowledgePrivateTranslationService {
             ...(parsed ? { access: parsed } : {}),
         };
     }
+
     async list(
         token: string,
         context: KnowledgeRequestContext,
@@ -73,6 +82,7 @@ export class KnowledgePrivateTranslationService {
             await this.source(token, context, noteId, blockId, access),
         );
     }
+
     async request(
         token: string,
         context: KnowledgeRequestContext,
@@ -88,6 +98,7 @@ export class KnowledgePrivateTranslationService {
             blockId,
             access,
         );
+
         return this.dependencies.store.request(
             source,
             RequestKnowledgeTranslationSchema.parse(input),
@@ -98,14 +109,17 @@ export class KnowledgePrivateTranslationService {
                     capability: 'text-translation',
                     signal: context.signal,
                 });
-                if (!decision.allowed)
+
+                if (!decision.allowed) {
                     throw new KnowledgeDomainError(
                         'rate_limited',
                         'Too many translation requests. Try again shortly.',
                     );
+                }
             },
         );
     }
+
     async job(
         token: string,
         context: KnowledgeRequestContext,
@@ -120,6 +134,7 @@ export class KnowledgePrivateTranslationService {
             context.signal,
         );
     }
+
     async cancel(
         token: string,
         context: KnowledgeRequestContext,

@@ -47,6 +47,7 @@ function delay(ms: number, signal: AbortSignal) {
             signal.removeEventListener('abort', cancel);
             resolve();
         }, ms);
+
         signal.addEventListener('abort', cancel, { once: true });
     });
 }
@@ -65,16 +66,19 @@ export class SpeechPlayer {
     private confirmationOperation: string | null = null;
     subscribe = (callback: () => void) => {
         this.listeners.add(callback);
+
         return () => {
             this.listeners.delete(callback);
         };
     };
+
     snapshot = () => this.state;
     serverSnapshot = () => idle;
     private publish(patch: Partial<SpeechPlayerState>) {
         this.state = { ...this.state, ...patch };
         this.listeners.forEach((listener) => listener());
     }
+
     private clear() {
         const pause = this.externalPause;
         this.externalPause = null;
@@ -90,34 +94,48 @@ export class SpeechPlayer {
             this.audio.removeAttribute('src');
             this.audio.load();
         }
+
         this.audio = null;
-        if (this.url) URL.revokeObjectURL(this.url);
+        if (this.url) {
+            URL.revokeObjectURL(this.url);
+        }
+
         this.url = null;
     }
+
     reset = () => {
         this.clear();
         this.transport = null;
         this.confirmationOperation = null;
         this.publish(idle);
     };
+
     registerExternalMedia = (pause: () => void, id?: string) => {
         if (id && id === this.externalMediaId) {
             this.externalPause = pause;
+
             return;
         }
+
         this.reset();
         this.externalPause = pause;
         this.externalMediaId = id ?? null;
     };
+
     resetSelection(key: string) {
-        if (this.state.selection === key) this.reset();
+        if (this.state.selection === key) {
+            this.reset();
+        }
     }
+
     private async start(revision: number) {
         try {
             await this.audio?.play();
-            if (revision === this.revision) this.publish({ phase: 'playing' });
+            if (revision === this.revision) {
+                this.publish({ phase: 'playing' });
+            }
         } catch (error) {
-            if (revision === this.revision)
+            if (revision === this.revision) {
                 this.publish({
                     phase:
                         error instanceof DOMException &&
@@ -125,8 +143,10 @@ export class SpeechPlayer {
                             ? 'ready'
                             : 'failed',
                 });
+            }
         }
     }
+
     async play(
         source: SpeechSource,
         transport: SpeechTransport,
@@ -139,8 +159,10 @@ export class SpeechPlayer {
             this.audio
         ) {
             await this.start(this.revision);
+
             return;
         }
+
         this.clear();
         this.transport = transport;
         this.confirmationOperation = null;
@@ -153,6 +175,7 @@ export class SpeechPlayer {
             billingState: null,
             error: null,
         });
+
         const revision = this.revision;
         const abort = new AbortController();
         this.abort = abort;
@@ -170,14 +193,20 @@ export class SpeechPlayer {
             }
         }
     }
+
     async confirm() {
         const quote = this.state.quote;
         const transport = this.transport;
-        if (!quote || !transport || this.state.phase !== 'confirmation') return;
-        if (Date.parse(quote.expiresAt) <= Date.now()) {
-            this.publish({ phase: 'failed', quote: null });
+        if (!quote || !transport || this.state.phase !== 'confirmation') {
             return;
         }
+
+        if (Date.parse(quote.expiresAt) <= Date.now()) {
+            this.publish({ phase: 'failed', quote: null });
+
+            return;
+        }
+
         // A retained id fences retries if a network response is lost.
         this.confirmationOperation ??= crypto.randomUUID();
         const revision = this.revision;
@@ -195,65 +224,98 @@ export class SpeechPlayer {
                 revision,
             );
         } catch {
-            if (revision === this.revision) this.publish({ phase: 'failed' });
+            if (revision === this.revision) {
+                this.publish({ phase: 'failed' });
+            }
         }
     }
+
     private async resolve(
         result: SpeechResponse,
         transport: SpeechTransport,
         signal: AbortSignal,
         revision: number,
     ) {
-        if (revision !== this.revision) return;
+        if (revision !== this.revision) {
+            return;
+        }
+
         this.publish({
             requestId: result.requestId,
             billingState: result.billingState,
             error: result.error,
         });
+
         const deadline = Date.now() + 10 * 60_000;
         while (result.state === 'queued' || result.state === 'processing') {
-            if (revision !== this.revision) return;
-            if (!result.requestId || Date.now() >= deadline)
+            if (revision !== this.revision) {
+                return;
+            }
+
+            if (!result.requestId || Date.now() >= deadline) {
                 throw new Error('Speech preparation timeout');
+            }
+
             await delay(
                 Math.min(5000, Math.max(500, result.retryAfterMs ?? 1000)),
                 signal,
             );
+
             result = await transport.status(result.requestId, signal);
-            if (revision !== this.revision) return;
+            if (revision !== this.revision) {
+                return;
+            }
+
             this.publish({
                 requestId: result.requestId,
                 billingState: result.billingState,
                 error: result.error,
             });
         }
-        if (revision !== this.revision) return;
-        if (result.state === 'confirmation_required' && result.quote) {
-            this.publish({ phase: 'confirmation', quote: result.quote });
+
+        if (revision !== this.revision) {
             return;
         }
+
+        if (result.state === 'confirmation_required' && result.quote) {
+            this.publish({ phase: 'confirmation', quote: result.quote });
+
+            return;
+        }
+
         if (
             result.state === 'unavailable' ||
             result.state === 'submission_unknown'
         ) {
             this.publish({ phase: 'unavailable', quote: null });
+
             return;
         }
-        if (result.state !== 'ready' || !result.playbackId)
+
+        if (result.state !== 'ready' || !result.playbackId) {
             throw new Error('Pronunciation generation failed');
+        }
+
         const blob = await transport.bytes(result.playbackId, signal);
-        if (revision !== this.revision) return;
+        if (revision !== this.revision) {
+            return;
+        }
+
         this.url = URL.createObjectURL(blob);
         this.audio = new Audio(this.url);
         this.audio.onended = () => {
-            if (revision === this.revision) this.reset();
+            if (revision === this.revision) {
+                this.reset();
+            }
         };
+
         this.audio.onerror = () => {
             if (revision === this.revision) {
                 this.clear();
                 this.publish({ phase: 'failed' });
             }
         };
+
         this.publish({ fixture: result.fixture, quote: null });
         await this.start(revision);
     }

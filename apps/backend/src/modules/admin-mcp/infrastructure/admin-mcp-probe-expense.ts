@@ -20,5 +20,6 @@ export async function probeExpenseId(
             ),
         )
         .limit(1);
+
     return expense?.id ?? null;
 }

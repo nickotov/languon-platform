@@ -14,6 +14,7 @@ function revisionsForRelease() {
             ]),
         );
     }
+
     return contractRevisions;
 }
 
@@ -22,9 +23,13 @@ export function createTextAiRouteFingerprint(
     credentials: Readonly<TextAiProviderCredentials>,
 ) {
     const revisions = revisionsForRelease();
+
     return (routeId: string, flowId: string): string | null => {
         const revision = revisions.get(flowId);
-        if (!revision) return null;
+        if (!revision) {
+            return null;
+        }
+
         try {
             return textAiProbeIdentity(
                 { routeId, flowId: flowId as TextAiFlowId, kind: 'flow' },

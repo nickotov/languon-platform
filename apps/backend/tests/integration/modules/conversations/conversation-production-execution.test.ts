@@ -90,9 +90,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         }, 120_000);
+
         afterAll(async () => {
             await client?.end();
         });
+
         afterEach(() => vi.unstubAllGlobals());
         beforeEach(async () => {
             await client`truncate dictionary_ai_worker_observations, users, ai_capability_policy_revisions, ai_accounting_settings_revisions, ai_provider_price_revisions, text_ai_routing_revisions cascade`;
@@ -136,6 +138,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => undefined },
                 crypto,
             );
+
             store = new DrizzleConversationStore({
                 database: db,
                 sources: new ConversationSourceResolver({
@@ -162,6 +165,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
             });
         });
+
         it.each([
             { funding: 'operator', outcome: 'success', operation: 'append' },
             { funding: 'customer', outcome: 'success', operation: 'append' },
@@ -191,6 +195,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     createdAt: now,
                     reason: 'Synthetic conversation execution regression',
                 });
+
                 await seedTextAiRoutingFixture(db, {
                     routeId: 'openrouter/openai/gpt-6-luna',
                     replace: true,
@@ -204,7 +209,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                               },
                           }),
                 });
-                if (funding === 'customer')
+
+                if (funding === 'customer') {
                     await db.insert(textAiPreferencesTable).values({
                         userId: ownerId,
                         mode: 'auto',
@@ -212,6 +218,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             operation === 'multi-update' ? '65' : '60',
                         version: 1,
                     });
+                }
+
                 await db.insert(dictionaryAiWorkerObservationsTable).values({
                     id: conversationExecutionObservationId(
                         'production-conversation-regression',
@@ -234,7 +242,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     conversationExecutionRevision: 1,
                     creditSettlementRevision: 1,
                 });
-                if (funding === 'customer')
+
+                if (funding === 'customer') {
                     await db.transaction((tx) =>
                         new DrizzleAiCreditTransactionParticipant(
                             tx,
@@ -247,6 +256,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             sourceReference: randomUUID(),
                         }),
                     );
+                }
+
                 const targetBlockId = randomUUID();
                 const secondTargetBlockId = randomUUID();
                 const initialBlock = {
@@ -357,20 +368,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         routingAuthority: { tariffPublished: boolean };
                     };
                 };
+
                 expect(execution.budget.maxCostMicrosPerAttempt).toBeLessThan(
                     model.aggregateBudget.maxCostMicrosPerAttempt,
                 );
+
                 expect(execution.snapshot.aggregateBudget).toEqual(
                     execution.budget,
                 );
+
                 expect(execution.admittedMaxInputTokens).toBeLessThanOrEqual(
                     execution.snapshot.perCallMaxInputTokens,
                 );
-                if (funding === 'operator')
+
+                if (funding === 'operator') {
                     expect(execution.admittedMaxInputTokens).toBe(
                         model.perCallMaxInputTokens,
                     );
-                else {
+                } else {
                     // A 60-credit single-target ceiling admits 55k input.
                     // Two complete updates use 65 credits to admit 60k,
                     // still below the model's 64k input cap.
@@ -378,21 +393,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         operation === 'multi-update' ? 60_000 : 55_000,
                     );
                 }
+
                 expect(execution.budget).toMatchObject({
                     inputCostMicrosPerMillionTokens: 125000,
                     outputCostMicrosPerMillionTokens: 500000,
                 });
+
                 expect(execution.budget.maxInputTokensPerAttempt).toBe(
                     model.aggregateBudget.maxInputTokensPerAttempt,
                 );
+
                 expect(execution.budget.maxOutputTokensPerAttempt).toBe(
                     model.aggregateBudget.maxOutputTokensPerAttempt,
                 );
 
-                if (funding === 'operator')
+                if (funding === 'operator') {
                     expect(
                         execution.snapshot.routingAuthority.tariffPublished,
                     ).toBe(false);
+                }
+
                 let ordinal = 0;
                 const outgoing: Record<string, unknown>[] = [];
                 const blocks = [
@@ -464,15 +484,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         expect(String(url)).toBe(
                             'https://openrouter.ai/api/v1/chat/completions',
                         );
+
                         const body = JSON.parse(
                             String(request?.body),
                         ) as Record<string, unknown>;
+
                         outgoing.push(body);
                         expect(body.model).toBe(model.id);
                         expect(Number(body.max_tokens)).toBeLessThanOrEqual(
                             4096,
                         );
-                        if (outcome === 'failure')
+
+                        if (outcome === 'failure') {
                             return Response.json(
                                 {
                                     error: {
@@ -482,6 +505,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 },
                                 { status: 400 },
                             );
+                        }
+
                         ordinal++;
                         const tool = ordinal === 1;
                         const delta = tool
@@ -566,6 +591,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 },
                             },
                         ];
+
                         return new Response(
                             chunks
                                 .map(
@@ -581,19 +607,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         );
                     },
                 );
+
                 vi.stubGlobal('fetch', transport);
                 const worker = createConversationWorkerComposition({
                     database: db,
                     dictionaryHmacSecret: secret,
                     credentials: textAiFixtureCredentials,
                 });
+
                 expect(
                     await worker.processNext(new AbortController().signal),
                 ).toBe(true);
+
                 const detail = await store.detail({ ownerId }, chat.id);
                 const result = detail.turns.find(
                     (item) => item.id === submitted.id,
                 )!;
+
                 // This is the incident regression: before the fix no HTTP request occurs and the turn fails here.
                 expect(
                     outgoing.length,
@@ -607,9 +637,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ),
                     }),
                 ).toBe(outcome === 'success' ? 2 : 1);
+
                 expect(result.status).toBe(
                     outcome === 'success' ? 'succeeded' : 'failed',
                 );
+
                 if (outcome === 'success') {
                     expect(
                         detail.messages.some(
@@ -620,13 +652,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 ),
                         ),
                     ).toBe(true);
+
                     const proposals = await store.listBlockProposals(
                         { ownerId },
                         chat.id,
                     );
+
                     expect(proposals.proposals).toHaveLength(
                         operation === 'multi-update' ? 2 : 1,
                     );
+
                     expect(proposals.proposals[0]?.blocks[0]).toMatchObject({
                         type: 'vocabulary',
                         entries: blocks[0]!.entries.map((entry) => ({
@@ -635,10 +670,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             id: expect.any(String),
                         })),
                     });
+
                     expect(
                         (await knowledge.get(ownerId, note.id)).body
                             .schemaVersion,
                     ).toBe(operation !== 'append' ? 2 : 1);
+
                     if (operation === 'multi-update') {
                         let version = branch.version;
                         for (const proposal of proposals.proposals) {
@@ -648,8 +685,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 proposal.id,
                                 version,
                             );
+
                             version = applied.branch.version;
                         }
+
                         expect(
                             (
                                 await store.listBlockProposals(
@@ -662,15 +701,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         expect(proposals.proposals[0]?.target).toMatchObject({
                             blockId: targetBlockId,
                         });
+
                         const accepted = await store.applyBlockProposal(
                             { ownerId },
                             chat.id,
                             proposals.proposals[0]!.id,
                             branch.version,
                         );
+
                         expect(
                             accepted.branch.content.body.document.content,
                         ).toHaveLength(2);
+
                         expect(
                             accepted.branch.content.body.document.content?.[1]
                                 ?.attrs?.block,
@@ -679,6 +721,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             type: 'vocabulary',
                             entries: expect.any(Array),
                         });
+
                         expect(
                             (await knowledge.get(ownerId, note.id)).body
                                 .document.content?.[1]?.attrs?.block,
@@ -692,41 +735,52 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 item.content.length > 0,
                         ),
                     ).toBe(false);
+
                     expect(result.usage.chargedCredits).toBe('0');
                     expect(
                         (await store.listBlockProposals({ ownerId }, chat.id))
                             .proposals,
                     ).toHaveLength(0);
                 }
+
                 const [action] = await db.execute(
                     sql`select state, held_milli, charged_milli, funding from ai_credit_actions where id=${submitted.id}::uuid`,
                 );
+
                 expect(action?.state).toBe('settled');
                 expect(action?.funding).toBe(funding);
-                if (funding === 'operator' || outcome === 'failure')
+                if (funding === 'operator' || outcome === 'failure') {
                     expect(String(action?.charged_milli)).toBe('0');
-                else
+                } else {
                     expect(
                         BigInt(String(action?.charged_milli)),
                     ).toBeGreaterThan(0n);
-                if (funding === 'operator')
+                }
+
+                if (funding === 'operator') {
                     expect(String(action?.held_milli)).toBe('0');
+                }
+
                 const expenses = await db.execute(
                     sql`select measurement,amount_usd_micros,provider_id,model_id from ai_provider_expense_records where action_id=${submitted.id}::uuid`,
                 );
                 const attempts = await db.execute(
                     sql`select input_limit,output_limit,budget from ai_credit_action_attempts where action_id=${submitted.id}::uuid order by ordinal`,
                 );
+
                 expect(attempts).toHaveLength(outcome === 'success' ? 2 : 1);
                 for (const attempt of attempts) {
                     expect(Number(attempt.input_limit)).toBeLessThanOrEqual(
                         execution.admittedMaxInputTokens,
                     );
+
                     expect(Number(attempt.output_limit)).toBeLessThanOrEqual(
                         4096,
                     );
+
                     expect(attempt.budget).toEqual(execution.budget);
                 }
+
                 expect(expenses).toHaveLength(outcome === 'success' ? 2 : 1);
                 for (const expense of expenses) {
                     expect(expense.provider_id).toBe(model.providerId);
@@ -746,6 +800,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .select()
                     .from(turns)
                     .where(eq(turns.id, submitted.id));
+
                 expect(persisted?.execution).toEqual(admitted?.execution);
             },
         );

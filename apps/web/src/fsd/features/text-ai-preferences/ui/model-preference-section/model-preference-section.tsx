@@ -20,8 +20,10 @@ export function ModelPreferenceSection(props: Props) {
     const actor = useSessionStore((state) => state.user?.id ?? 'signed-out');
     const status = useSessionStore((state) => state.status);
     const identity = `${actor}:${status}`;
+
     return <ScopedModelPreferenceSection key={identity} {...props} />;
 }
+
 function ScopedModelPreferenceSection({
     requestWithSession,
     onDirtyChange,
@@ -41,21 +43,35 @@ function ScopedModelPreferenceSection({
     useLayoutEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
+
     useLayoutEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
     useEffect(() => {
-        if (['error', 'rejected', 'conflict'].includes(saveState))
+        if (['error', 'rejected', 'conflict'].includes(saveState)) {
             alertRef.current?.focus({ preventScroll: true });
+        }
     }, [saveState]);
+
     let status = copy.unchanged;
-    if (dirty) status = copy.dirty;
-    if (saveState === 'saved' && !dirty) status = copy.success;
-    if (saveState === 'saving') status = copy.saving;
+    if (dirty) {
+        status = copy.dirty;
+    }
+
+    if (saveState === 'saved' && !dirty) {
+        status = copy.success;
+    }
+
+    if (saveState === 'saving') {
+        status = copy.saving;
+    }
+
     function save() {
         void controller.save();
     }
+
     function retryPreference() {
         void pref.refetch();
     }
+
     return (
         <Card className={styles.section} padding='none' variant='outlined'>
             <header className={styles.header}>

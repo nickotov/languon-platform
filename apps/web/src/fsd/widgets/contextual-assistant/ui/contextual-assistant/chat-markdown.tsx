@@ -118,7 +118,10 @@ function SafeAnchor({
     // children are the React tree produced by its Markdown renderer.
     const label = children as React.ReactNode;
     const safeHref = typeof href === 'string' ? safeChatLink(href) : undefined;
-    if (!safeHref) return <span>{label}</span>;
+    if (!safeHref) {
+        return <span>{label}</span>;
+    }
+
     return (
         <a href={safeHref} target='_blank' rel='noopener noreferrer'>
             {label}

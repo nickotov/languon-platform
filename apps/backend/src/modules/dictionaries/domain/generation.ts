@@ -58,6 +58,7 @@ const boundedText = (maximum: number) =>
             (value) =>
                 ![...value].some((character) => {
                     const code = character.codePointAt(0)!;
+
                     return (
                         code <= 8 ||
                         code === 11 ||
@@ -107,21 +108,24 @@ export const DictionarySingleCardGenerationInputPayloadSchema = z
         if (
             input.format === dictionaryGenerationFormat &&
             input.translationContext === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context snapshot is required for v2',
             });
+        }
+
         if (
             input.format === dictionaryGenerationFormatV1 &&
             input.translationContext !== undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context is not supported by v1',
             });
+        }
     });
 
 export const DictionaryPastedTermsGenerationInputPayloadSchema = z
@@ -187,21 +191,24 @@ export const DictionaryPastedTermsGenerationInputPayloadSchema = z
         if (
             input.format === dictionaryPastedTermsGenerationFormat &&
             input.translationContext === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context snapshot is required for v2',
             });
+        }
+
         if (
             input.format === dictionaryPastedTermsGenerationFormatV1 &&
             input.translationContext !== undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context is not supported by v1',
             });
+        }
     });
 
 export const DictionaryImportPairsGenerationInputPayloadSchema = z
@@ -225,12 +232,13 @@ export const DictionaryImportPairsGenerationInputPayloadSchema = z
                     .min(1)
                     .max(100)
                     .superRefine((indexes, context) => {
-                        if (new Set(indexes).size !== indexes.length)
+                        if (new Set(indexes).size !== indexes.length) {
                             context.addIssue({
                                 code: 'custom',
                                 message:
                                     'Predecessor row indexes must be unique',
                             });
+                        }
                     }),
             })
             .strict()
@@ -286,51 +294,60 @@ export const DictionaryImportPairsGenerationInputPayloadSchema = z
             !input.effectiveSettings.definitionEnabled &&
             !input.effectiveSettings.exampleEnabled &&
             !input.effectiveSettings.exampleTranslationEnabled
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['effectiveSettings'],
                 message:
                     'Import AI enrichment requires an enabled optional field',
             });
+        }
+
         if (
             new Set(input.rows.map((row) => row.rowIndex)).size !==
             input.rows.length
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['rows'],
                 message: 'Import row indexes must be unique',
             });
+        }
+
         input.rows.forEach((row, index) => {
             if (
                 row.lineage.importFingerprint !== input.importFingerprint ||
                 row.lineage.importedRowIndex !== row.rowIndex
-            )
+            ) {
                 context.addIssue({
                     code: 'custom',
                     path: ['rows', index, 'lineage'],
                     message: 'Import lineage must match its trusted import row',
                 });
+            }
         });
+
         if (
             input.format === dictionaryImportPairsGenerationFormat &&
             input.translationContext === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context snapshot is required for v2',
             });
+        }
+
         if (
             input.format === dictionaryImportPairsGenerationFormatV1 &&
             input.translationContext !== undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context is not supported by v1',
             });
+        }
     });
 
 export const DictionaryDocumentTermsGenerationInputPayloadSchema = z
@@ -363,21 +380,24 @@ export const DictionaryDocumentTermsGenerationInputPayloadSchema = z
         if (
             input.format === dictionaryDocumentGenerationFormat &&
             input.translationContext === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context snapshot is required for v2',
             });
+        }
+
         if (
             input.format === dictionaryDocumentGenerationFormatV1 &&
             input.translationContext !== undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context is not supported by v1',
             });
+        }
     });
 
 export const DictionaryGenerationInputPayloadSchema = z.union([
@@ -408,6 +428,7 @@ const FieldFeedbackSchema = z
         )
             ? dictionaryLimits.requiredCardValueCodePoints
             : dictionaryLimits.optionalLongValueCodePoints;
+
         feedback.alternatives.forEach((alternative, index) => {
             if ([...alternative].length > maximum) {
                 context.addIssue({

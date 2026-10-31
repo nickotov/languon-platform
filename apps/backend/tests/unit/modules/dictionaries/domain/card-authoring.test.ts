@@ -65,18 +65,21 @@ describe('dictionary card authoring domain', () => {
             'example',
             'exampleTranslation',
         ]);
+
         expect(
             resolveDictionaryCardAuthoringFields(settings, {
                 kind: 'field',
                 field: 'definition',
             }),
         ).toEqual(['definition']);
+
         expect(
             resolveDictionaryCardAuthoringFields(settings, {
                 kind: 'field',
                 field: 'transcription',
             }),
         ).toEqual([]);
+
         expect(
             resolveDictionaryCardAuthoringFields(
                 settings,
@@ -89,6 +92,7 @@ describe('dictionary card authoring domain', () => {
             'example',
             'exampleTranslation',
         ]);
+
         expect(
             resolveDictionaryCardAuthoringFields(
                 settings,
@@ -96,6 +100,7 @@ describe('dictionary card authoring domain', () => {
                 true,
             ),
         ).toEqual(['example', 'exampleTranslation']);
+
         expect(
             resolveDictionaryCardAuthoringFields(
                 { ...settings, exampleTranslationEnabled: false },
@@ -109,15 +114,18 @@ describe('dictionary card authoring domain', () => {
         expect(
             DictionaryCardAuthoringGenerationInputPayloadSchema.parse(input),
         ).toBeDefined();
+
         expect(parseDictionaryGenerationInput(input).format).toBe(
             'card-authoring:v1',
         );
+
         expect(() =>
             DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
                 ...input,
                 scope: { kind: 'field', field: 'definition' },
             }),
         ).toThrow();
+
         expect(() =>
             DictionaryCardAuthoringGenerationInputPayloadSchema.parse({
                 ...input,
@@ -160,6 +168,7 @@ describe('dictionary card authoring domain', () => {
                 },
             ],
         });
+
         expect(providerInput).toEqual({
             sourceLanguage: 'en',
             targetLanguage: 'es',
@@ -195,9 +204,11 @@ describe('dictionary card authoring domain', () => {
                 },
             ],
         });
+
         expect(JSON.stringify(providerInput)).not.toMatch(
             /dictionaryId|owner|version|predecessor|suggestionId/,
         );
+
         expect(JSON.stringify(providerInput)).not.toContain(
             'private inactive transcription',
         );
@@ -244,6 +255,7 @@ describe('dictionary card authoring domain', () => {
                 },
                 scope: { field: 'definition', kind: 'field' },
             });
+
         expect(successor.excludedValues).toHaveLength(3);
         expect(dictionaryCardAuthoringProviderInput(successor)).toMatchObject({
             fieldContext: [
@@ -267,10 +279,12 @@ describe('dictionary card authoring domain', () => {
                 },
                 scope: { field: 'exampleTranslation', kind: 'field' },
             });
+
         expect(dictionaryCardAuthoringProviderInput(successor)).toMatchObject({
             requestedFields: ['exampleTranslation'],
             fieldContext: [{ field: 'exampleTranslation', excludedValues: [] }],
         });
+
         expect(
             dictionaryCardAuthoringProviderInput(successor),
         ).not.toHaveProperty('exampleForTranslation');
@@ -289,6 +303,7 @@ describe('dictionary card authoring domain', () => {
                 excludedValues: [],
                 scope: { kind: 'field', field: 'translation' },
             });
+
         expect(dictionaryCardAuthoringProviderInput(successor)).toMatchObject({
             requestedFields: [
                 'translation',
@@ -389,6 +404,7 @@ describe('dictionary card authoring domain', () => {
                 { field: 'source', currentValue: 'bank', excludedValues: [] },
             ],
         });
+
         expect(providerInput).not.toHaveProperty('draft');
         expect(providerInput).not.toHaveProperty('exampleForTranslation');
         const ids = ['33333333-3333-4333-8333-333333333333'];
@@ -461,6 +477,7 @@ describe('dictionary card authoring domain', () => {
                 field: 'exampleTranslation',
             },
         ]);
+
         expect(JSON.stringify(translationInput)).not.toMatch(
             /private transcription/,
         );
@@ -469,20 +486,24 @@ describe('dictionary card authoring domain', () => {
             ...v2,
             scope: { kind: 'field', field: 'example' },
         });
+
         expect(exampleInput.requestedFields).toEqual([
             'example',
             'exampleTranslation',
         ]);
+
         expect(exampleInput).not.toHaveProperty('exampleForTranslation');
 
         const exampleTranslationInput = dictionaryCardAuthoringProviderInput({
             ...v2,
             scope: { kind: 'field', field: 'exampleTranslation' },
         });
+
         expect(exampleTranslationInput).toMatchObject({
             exampleForTranslation: 'Current example.',
             requestedFields: ['exampleTranslation'],
         });
+
         expect(JSON.stringify(exampleTranslationInput)).not.toMatch(
             /private transcription|private definition/,
         );
@@ -504,6 +525,7 @@ describe('dictionary card authoring domain', () => {
             requestedFields: ['source', 'translation'],
             nextId: () => ids.shift()!,
         });
+
         expect(proposal.suggestions[0]).toMatchObject({
             field: 'translation',
             value: 'el taller',
@@ -531,6 +553,7 @@ describe('dictionary card authoring domain', () => {
             requestedFields: ['translation'],
             nextId: () => '44444444-4444-4444-8444-444444444444',
         });
+
         expect(proposal).toMatchObject({
             source: 'teh atelier',
             sourceResult: { kind: 'suggested', suggestionId: sourceId },

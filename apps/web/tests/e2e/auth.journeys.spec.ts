@@ -30,9 +30,13 @@ function captureBrowserErrors(
             errors.push(message.text());
         }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
@@ -40,8 +44,12 @@ function captureBrowserErrors(
         const expected =
             (path === '/auth/refresh' && response.status() === 401) ||
             expectedFailures[path] === response.status();
-        if (!expected) errors.push(`${response.status()} ${path}`);
+
+        if (!expected) {
+            errors.push(`${response.status()} ${path}`);
+        }
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -99,6 +107,7 @@ async function addVirtualAuthenticator(page: Page): Promise<{
             },
         },
     );
+
     return { authenticatorId, client };
 }
 
@@ -116,11 +125,13 @@ test.describe('authentication journeys', () => {
         await expect(
             page.getByRole('heading', { level: 1, name: 'Create an account' }),
         ).toBeVisible();
+
         await expect(page.getByText(/Google|Apple|Yandex|VK/)).toHaveCount(0);
 
         expect(response?.headers()['content-security-policy']).toContain(
             "frame-ancestors 'none'",
         );
+
         expect(response?.headers()['x-frame-options']).toBe('DENY');
         await expect(page.locator('meta[name="referrer"]')).toHaveAttribute(
             'content',
@@ -131,9 +142,11 @@ test.describe('authentication journeys', () => {
         await page
             .getByLabel('Password', { exact: true })
             .fill(initialPassword);
+
         await expect(
             page.getByRole('button', { name: 'Create account' }),
         ).toBeEnabled();
+
         await page.getByRole('button', { name: 'Create account' }).click();
         await expect(page).toHaveURL(/\/verify-email\?/);
         await page.getByLabel('Verification code').fill('0000');
@@ -143,10 +156,12 @@ test.describe('authentication journeys', () => {
         await expect(
             page.getByRole('heading', { name: 'Your account', exact: true }),
         ).toBeVisible();
+
         await page.reload();
         await expect(
             page.getByRole('heading', { name: 'Your account', exact: true }),
         ).toBeVisible();
+
         await expect(page.getByText(email).first()).toBeVisible();
         expect(
             await page.evaluate(() => ({
@@ -154,6 +169,7 @@ test.describe('authentication journeys', () => {
                 session: Object.keys(sessionStorage),
             })),
         ).toEqual({ local: [], session: [] });
+
         expect(page.url()).not.toContain('token');
 
         await page.getByRole('button', { name: 'Sign out here' }).click();
@@ -162,6 +178,7 @@ test.describe('authentication journeys', () => {
         await expect(
             page.getByRole('heading', { name: 'Sign in' }),
         ).toBeVisible();
+
         assertNoBrowserErrors();
     });
 
@@ -181,6 +198,7 @@ test.describe('authentication journeys', () => {
         const assertNoSecondPageErrors = captureBrowserErrors(secondPage, {
             '/auth/login/password': 401,
         });
+
         try {
             await passwordLogin(secondPage, email, initialPassword);
             await expect(secondPage).toHaveURL(/\/profile\?tab=security$/);
@@ -190,6 +208,7 @@ test.describe('authentication journeys', () => {
             const requestCode = page.getByRole('button', {
                 name: 'Send recovery code',
             });
+
             await expect(requestCode).toBeEnabled();
             await requestCode.click();
             await expect(page).toHaveURL(/\/reset-password\?flowId=/);
@@ -197,6 +216,7 @@ test.describe('authentication journeys', () => {
             await page
                 .getByLabel('New password', { exact: true })
                 .fill(replacementPassword);
+
             await page.getByRole('button', { name: 'Change password' }).click();
             await expect(page).toHaveURL(/\/login\?passwordReset=complete$/);
 
@@ -206,39 +226,48 @@ test.describe('authentication journeys', () => {
                     name: 'Sign in to view account settings',
                 }),
             ).toBeVisible();
+
             await secondPage
                 .locator('#main-content')
                 .getByRole('link', { name: 'Sign in' })
                 .click();
+
             await expect(secondPage).toHaveURL(
                 /\/login\?returnTo=%2Fprofile%3Ftab%3Dsecurity$/,
             );
+
             await secondPage.getByLabel('Email').fill(email);
             await secondPage
                 .getByLabel('Password', { exact: true })
                 .fill(initialPassword);
+
             await secondPage
                 .getByRole('button', { name: 'Sign in', exact: true })
                 .click();
+
             await expect(secondPage.getByRole('alert')).toBeVisible();
             await expect(secondPage).toHaveURL(/\/login/);
 
             await secondPage
                 .getByLabel('Password', { exact: true })
                 .fill(replacementPassword);
+
             await secondPage
                 .getByRole('button', { name: 'Sign in', exact: true })
                 .click();
+
             await expect(secondPage).toHaveURL(/\/profile\?tab=security$/);
             await expect(secondPage.getByText(email).first()).toBeVisible();
             await secondPage
                 .getByRole('button', { name: 'Sign out here' })
                 .click();
+
             await expect(secondPage).toHaveURL(/\/login$/);
             assertNoSecondPageErrors();
         } finally {
             await secondContext.close();
         }
+
         assertNoBrowserErrors();
     });
 
@@ -258,18 +287,21 @@ test.describe('authentication journeys', () => {
         const addPasskey = page.getByRole('button', {
             name: 'Add your first passkey',
         });
+
         await expect(addPasskey).toBeEnabled();
         await addPasskey.click();
         await expect(page.getByText('Passkey added.')).toBeVisible();
         await expect(
             page.getByText('Passkey 1', { exact: true }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Rename Passkey 1' }).click();
         await page.getByLabel('New passkey name').fill(passkeyName);
         await page
             .getByRole('dialog', { name: 'Rename passkey' })
             .getByRole('button', { name: 'Save' })
             .click();
+
         await expect(
             page.getByText(passkeyName, { exact: true }),
         ).toBeVisible();
@@ -280,23 +312,28 @@ test.describe('authentication journeys', () => {
             authenticatorId,
             isBogusSignature: true,
         });
+
         await page
             .getByRole('button', { name: 'Sign in with a passkey' })
             .click();
+
         await expect(
             page.getByText('The passkey could not be verified.', {
                 exact: true,
             }),
         ).toBeVisible();
+
         await expect(page).toHaveURL(/\/login$/);
 
         await client.send('WebAuthn.setResponseOverrideBits', {
             authenticatorId,
             isBogusSignature: false,
         });
+
         await page
             .getByRole('button', { name: 'Sign in with a passkey' })
             .click();
+
         await expect(page).toHaveURL(/\/$/);
         await expect(
             page.getByRole('heading', {
@@ -305,45 +342,56 @@ test.describe('authentication journeys', () => {
                 exact: true,
             }),
         ).toBeVisible();
+
         await expect(page.getByText(email, { exact: true })).toBeVisible();
         await page
             .getByRole('button', { name: 'Account menu, Your account' })
             .click();
+
         await page.getByRole('link', { name: 'Profile', exact: true }).click();
         await page.getByRole('tab', { name: /Security/ }).click();
 
         await page
             .getByRole('button', { name: `Rename ${passkeyName}` })
             .click();
+
         await page.getByLabel('New passkey name').fill(renamedPasskeyName);
         await page
             .getByRole('dialog', { name: 'Rename passkey' })
             .getByRole('button', { name: 'Save' })
             .click();
+
         await expect(
             page.getByText(renamedPasskeyName, { exact: true }),
         ).toBeVisible();
+
         await page
             .getByRole('button', { name: `Revoke ${renamedPasskeyName}` })
             .click();
+
         await expect(
             page.getByRole('alertdialog', { name: 'Revoke this passkey?' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Keep passkey' }).click();
         await expect(
             page.getByText(renamedPasskeyName, { exact: true }),
         ).toBeVisible();
+
         await page
             .getByRole('button', { name: `Revoke ${renamedPasskeyName}` })
             .click();
+
         await page
             .getByRole('alertdialog', { name: 'Revoke this passkey?' })
             .getByRole('button', { name: 'Revoke passkey' })
             .click();
+
         await expect(page.getByText('No passkeys yet')).toBeVisible();
         await expect(
             page.getByRole('button', { name: 'Add your first passkey' }),
         ).toBeEnabled();
+
         assertNoBrowserErrors();
     });
 });

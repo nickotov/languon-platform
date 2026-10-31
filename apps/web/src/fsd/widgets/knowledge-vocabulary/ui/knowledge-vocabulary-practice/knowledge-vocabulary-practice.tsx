@@ -27,8 +27,10 @@ export function KnowledgeVocabularyPractice(
     props: KnowledgeVocabularyPracticeProps,
 ) {
     const identity = `${props.actorId}:${props.noteId}:${props.block.id}:${props.access?.kind}:${props.access?.locator}:${props.access?.key}`;
+
     return <Practice key={identity} {...props} identity={identity} />;
 }
+
 function Practice({
     identity,
     ...props
@@ -77,7 +79,7 @@ function Practice({
     if (
         props.blockMenu &&
         (catalog.isPending || catalog.isError || !source || !target)
-    )
+    ) {
         return (
             <Menu
                 iconOnly
@@ -87,7 +89,9 @@ function Practice({
                 items={props.commonMenuItems ?? []}
             />
         );
-    if (catalog.isPending)
+    }
+
+    if (catalog.isPending) {
         return (
             <p role='status'>
                 {
@@ -100,7 +104,9 @@ function Practice({
                 }
             </p>
         );
-    if (catalog.isError)
+    }
+
+    if (catalog.isError) {
         return (
             <Button variant='secondary' onClick={() => void catalog.refetch()}>
                 {
@@ -113,7 +119,9 @@ function Practice({
                 }
             </Button>
         );
-    if (!source || !target)
+    }
+
+    if (!source || !target) {
         return (
             <p>
                 {
@@ -126,6 +134,8 @@ function Practice({
                 }
             </p>
         );
+    }
+
     return (
         <VocabularyTraining
             sentenceApi={sentenceApi}

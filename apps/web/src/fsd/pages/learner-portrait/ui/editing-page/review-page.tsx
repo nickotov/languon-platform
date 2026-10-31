@@ -14,6 +14,7 @@ import styles from '../common.module.css';
 
 export function PortraitReviewPage() {
     const management = usePortraitManagement();
+
     return (
         <PortraitPageState management={management}>
             <PortraitReview key={management.ownerId} management={management} />
@@ -43,7 +44,8 @@ function PortraitReview({ management }: { management: PortraitManagement }) {
         gcTime: 0,
         staleTime: Infinity,
     });
-    if (!state.draft && !interview)
+
+    if (!state.draft && !interview) {
         return (
             <main className={`${styles.page} ${styles.center}`}>
                 <h1 className={styles.title}>
@@ -62,12 +64,16 @@ function PortraitReview({ management }: { management: PortraitManagement }) {
                 </div>
             </main>
         );
-    if (interview && session.isPending)
+    }
+
+    if (interview && session.isPending) {
         return (
             <main className={styles.page}>
                 <LoadingState>{portraitCopy(locale, 'loading')}</LoadingState>
             </main>
         );
+    }
+
     return (
         <ReviewEditor
             management={management}

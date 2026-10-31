@@ -23,7 +23,7 @@ export function createLearnerAiCreditBalanceRoutes(
 ): OpenAPIHono {
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (!result.success)
+            if (!result.success) {
                 return context.json(
                     new AuthHttpError(
                         'invalid_request',
@@ -32,6 +32,7 @@ export function createLearnerAiCreditBalanceRoutes(
                     ).response(),
                     400,
                 );
+            }
         },
     });
     const path = '/users/me/ai-credits';
@@ -40,11 +41,14 @@ export function createLearnerAiCreditBalanceRoutes(
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     app.use(path, async (context, next) => {
         for (const [name, value] of Object.entries(
             dependencies.policy.securityHeaders(),
-        ))
+        )) {
             context.header(name, value);
+        }
+
         context.header('Cache-Control', 'private, no-store');
         const origin = context.req.header('Origin');
         if (origin) {
@@ -53,30 +57,38 @@ export function createLearnerAiCreditBalanceRoutes(
             context.header('Access-Control-Allow-Credentials', 'true');
             context.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.options(path, (context) => {
         dependencies.policy.assertCookieRequestOrigin(
             context.req.header('Origin') ?? null,
         );
+
         context.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
         context.header(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID',
         );
+
         return context.body(null, 204);
     });
+
     app.onError((error, context) => {
         const mapped = mapAuthenticationHttpError(error);
+
         return context.json(
             mapped.response(context.req.header('X-Correlation-ID')),
             mapped.status,
         );
     });
+
     const error = (description: string) => ({
         description,
         content: { 'application/json': { schema: AuthErrorResponseSchema } },
     });
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -110,11 +122,13 @@ export function createLearnerAiCreditBalanceRoutes(
                 sessionId: claims.sessionId,
                 userId: claims.userId,
             });
+
             return context.json(
                 await dependencies.balances.get(claims.userId),
                 200,
             );
         },
     );
+
     return app;
 }

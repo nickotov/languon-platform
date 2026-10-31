@@ -84,10 +84,14 @@ export class DrizzleVocabularyPracticeStore implements VocabularyPracticeStore {
                     cursor.noteId !== source.noteId ||
                     cursor.blockId !== source.blockId ||
                     cursor.search !== (input.search ?? null)
-                )
+                ) {
                     throw new LearningInvalidRequestError();
-                if (cursor.version !== material.note.version)
+                }
+
+                if (cursor.version !== material.note.version) {
                     throw new LearningConflictError('stale_content');
+                }
+
                 offset = cursor.offset;
             }
 
@@ -161,8 +165,10 @@ export class DrizzleVocabularyPracticeStore implements VocabularyPracticeStore {
                 .from(preferences)
                 .where(this.preferenceCondition(source));
 
-            if ((current?.version ?? 0) !== input.expectedVersion)
+            if ((current?.version ?? 0) !== input.expectedVersion) {
                 throw new LearningConflictError('preferences_conflict');
+            }
+
             const value = {
                 configuration: input.configuration,
                 shuffle: input.shuffle,

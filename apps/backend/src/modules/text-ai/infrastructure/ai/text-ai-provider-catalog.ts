@@ -98,7 +98,10 @@ function requiredModel(
     modelId: string,
 ): TextAiModelDefinition {
     const model = findCuratedTextAiModel(providerId, modelId);
-    if (!model) throw new Error('Curated text AI model is missing.');
+    if (!model) {
+        throw new Error('Curated text AI model is missing.');
+    }
+
     return model;
 }
 
@@ -188,6 +191,7 @@ function gatewayCatalogEntry(
         providerId === 'evolink'
             ? 'https://api.evolink.ai/v1'
             : 'https://openrouter.ai/api/v1';
+
     return {
         apiBaseUrl,
         adapterRevision: model.adapterRevision,
@@ -261,7 +265,8 @@ export function createTextAiMastraModel(options: {
               outputLimit: options.model.requestLimits.maxOutputTokens,
           }
         : undefined;
-    if (options.model.providerId === 'evolink')
+
+    if (options.model.providerId === 'evolink') {
         return new RestrictedGatewayModel(
             config,
             'evolink',
@@ -269,7 +274,9 @@ export function createTextAiMastraModel(options: {
             options.onProviderFailure,
             native,
         );
-    if (options.model.providerId !== 'openrouter')
+    }
+
+    if (options.model.providerId !== 'openrouter') {
         return options.onProviderFailure || native
             ? new RestrictedGatewayModel(
                   config,
@@ -279,15 +286,19 @@ export function createTextAiMastraModel(options: {
                   native,
               )
             : config;
+    }
+
     const price = ProviderPriceSchema.parse(options.providerPrice);
     if (
         price.providerId !== options.model.providerId ||
         price.modelId !== options.model.modelId ||
         price.meter !== 'text-tokens'
-    )
+    ) {
         throw new Error(
             'Pinned gateway price does not match the reviewed route.',
         );
+    }
+
     return new RestrictedGatewayModel(
         config,
         'openrouter',
@@ -310,11 +321,15 @@ export function createTextAiMastraModel(options: {
         native,
     );
 }
+
 function requiredNativeBudget(budget?: TextAiProviderBudgetPolicy) {
-    if (!budget)
+    if (!budget) {
         throw new Error('A reviewed native provider budget is required.');
+    }
+
     return budget;
 }
+
 export function assertTextOnlyNativePrompt(prompt: unknown, tools?: unknown) {
     if (
         tools !== undefined &&
@@ -325,26 +340,45 @@ export function assertTextOnlyNativePrompt(prompt: unknown, tools?: unknown) {
                     typeof tool !== 'object' ||
                     tool.type !== 'function',
             ))
-    )
+    ) {
         throw new Error('Native text pricing excludes provider-hosted tools.');
-    if (!Array.isArray(prompt))
+    }
+
+    if (!Array.isArray(prompt)) {
         throw new Error('Native text pricing requires a text prompt.');
+    }
+
     for (const message of prompt) {
-        if (!message || typeof message !== 'object' || !('content' in message))
+        if (
+            !message ||
+            typeof message !== 'object' ||
+            !('content' in message)
+        ) {
             throw new Error('Invalid native text prompt.');
+        }
+
         const content: unknown = message.content;
-        if (typeof content === 'string') continue;
-        if (!Array.isArray(content))
+        if (typeof content === 'string') {
+            continue;
+        }
+
+        if (!Array.isArray(content)) {
             throw new Error('Native text pricing excludes media.');
+        }
+
         for (const part of content) {
-            if (!part || typeof part !== 'object')
+            if (!part || typeof part !== 'object') {
                 throw new Error('Invalid native text part.');
+            }
+
             if (
                 part.type === 'text' ||
                 part.type === 'reasoning' ||
                 part.type === 'tool-call'
-            )
+            ) {
                 continue;
+            }
+
             if (
                 part.type === 'tool-result' &&
                 part.output &&
@@ -352,8 +386,10 @@ export function assertTextOnlyNativePrompt(prompt: unknown, tools?: unknown) {
                 ['text', 'json', 'error-text', 'error-json'].includes(
                     part.output.type,
                 )
-            )
+            ) {
                 continue;
+            }
+
             throw new Error('Native text pricing excludes media.');
         }
     }
@@ -385,6 +421,7 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
     ) {
         super(config);
     }
+
     override async doGenerate(
         options: Parameters<ModelRouterLanguageModel['doGenerate']>[0],
     ) {
@@ -399,9 +436,11 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
             );
         } catch (error) {
             await this.record(error, options.abortSignal, witness);
+
             throw error;
         }
     }
+
     override async doStream(
         options: Parameters<ModelRouterLanguageModel['doStream']>[0],
     ) {
@@ -416,14 +455,19 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
             );
         } catch (error) {
             await this.record(error, options.abortSignal, witness);
+
             throw error;
         }
     }
+
     private async authorizeNative(
         options: Parameters<ModelRouterLanguageModel['doStream']>[0],
         witness?: ReturnType<typeof currentTextAiProviderAttemptWitness>,
     ): Promise<NativeTextCallReceipt | undefined> {
-        if (!this.native) return undefined;
+        if (!this.native) {
+            return undefined;
+        }
+
         assertTextOnlyNativePrompt(options.prompt, options.tools);
         const inputTokens =
             Buffer.byteLength(
@@ -438,19 +482,27 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
         if (
             inputTokens > this.native.inputLimit ||
             outputTokens > this.native.outputLimit
-        )
+        ) {
             throw new Error('Native provider request exceeds reviewed limits.');
-        if (witness && this.native.authorize)
+        }
+
+        if (witness && this.native.authorize) {
             return this.native.authorize({
                 witness,
                 inputTokens,
                 outputTokens,
             });
-        if (this.native.probeDispatchedAt) return undefined;
+        }
+
+        if (this.native.probeDispatchedAt) {
+            return undefined;
+        }
+
         throw new Error(
             'Native provider dispatch requires durable call authorization.',
         );
     }
+
     private async record(
         error: unknown,
         signal?: AbortSignal,
@@ -462,20 +514,28 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
             (error instanceof Error &&
                 /^(AbortError|TimeoutError)$/.test(error.name) &&
                 !('statusCode' in error))
-        )
+        ) {
             return;
+        }
+
         const failure = sentenceProviderFailure(error, this.providerId);
         // A learner prompt may elicit a policy 403. It is not credential
         // evidence and must never let that learner exclude the route for others.
         if (
             (failure.httpStatus === 403 || failure.providerCode === 403) &&
             failure.reason !== 'authorization_failed'
-        )
+        ) {
             return;
+        }
+
         const record = () => this.onProviderFailure?.(failure);
-        if (witness) await withTextAiProviderAttemptWitness(witness, record);
-        else await record();
+        if (witness) {
+            await withTextAiProviderAttemptWitness(witness, record);
+        } else {
+            await record();
+        }
     }
+
     private observe(
         result: Awaited<ReturnType<ModelRouterLanguageModel['doStream']>>,
         signal?: AbortSignal,
@@ -484,14 +544,21 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
     ) {
         let observation: NativeTextObservation | undefined;
         const capture = (raw: unknown) => {
-            if (!this.native) return;
+            if (!this.native) {
+                return;
+            }
+
             const next = captureNativeTextObservation(
                 raw,
                 this.providerId,
                 receipt,
                 this.native.probeDispatchedAt,
             );
-            if (!next) return;
+
+            if (!next) {
+                return;
+            }
+
             observation = {
                 ...observation,
                 ...next,
@@ -506,15 +573,20 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
                     : {}),
             };
         };
+
         capture({});
-        if (observation?.execution && this.providerId === 'openrouter')
+        if (observation?.execution && this.providerId === 'openrouter') {
             observation.execution.serviceTier = 'standard';
+        }
+
         if (
             'response' in result &&
             result.response &&
             'body' in result.response
-        )
+        ) {
             capture(result.response.body);
+        }
+
         // The installed router currently returns a stream for both methods.
         // Preserve successful nonstream results if an SDK/provider path returns
         // one; health observation must never turn success into a local failure.
@@ -523,8 +595,10 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
             !('stream' in result) ||
             !result.stream ||
             typeof result.stream.pipeThrough !== 'function'
-        )
+        ) {
             return result;
+        }
+
         return {
             ...result,
             stream: result.stream.pipeThrough(
@@ -532,10 +606,14 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
                     transform: async (part, controller) => {
                         if (this.native && part.type === 'raw') {
                             capture(part.rawValue);
+
                             return;
                         }
-                        if (part.type === 'error')
+
+                        if (part.type === 'error') {
                             await this.record(part.error, signal, witness);
+                        }
+
                         if (part.type === 'finish' && observation) {
                             try {
                                 const totals = readProviderTokenUsage(
@@ -546,6 +624,7 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
                                             this.native!.outputLimit,
                                     },
                                 );
+
                                 observation.usage = {
                                     ...observation.usage,
                                     inputTokens: totals.inputTokens,
@@ -566,6 +645,7 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
                             } catch {
                                 // Invalid/missing SDK meters remain unknown; never invent zero usage.
                             }
+
                             if (observation.callId && this.native?.observe) {
                                 const facts = observation.execution;
                                 await this.native.observe({
@@ -591,6 +671,7 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
                                         : {}),
                                 });
                             }
+
                             controller.enqueue({
                                 ...part,
                                 usage: {
@@ -621,20 +702,25 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
                                     languonNativePricing: { ...observation },
                                 },
                             });
-                        } else controller.enqueue(part);
+                        } else {
+                            controller.enqueue(part);
+                        }
                     },
                 }),
             ),
         };
     }
+
     private restrict(
         options: Parameters<ModelRouterLanguageModel['doStream']>[0],
     ) {
-        if (this.providerId !== 'openrouter' && this.providerId !== 'evolink')
+        if (this.providerId !== 'openrouter' && this.providerId !== 'evolink') {
             return {
                 ...options,
                 ...(this.native ? { includeRawChunks: true } : {}),
             };
+        }
+
         return {
             ...options,
             ...(this.native ? { includeRawChunks: true } : {}),
@@ -711,6 +797,7 @@ export function createTextAiProviderReadiness(options: {
     readiness: TextAiProviderReadiness;
 }): (signal: AbortSignal) => Promise<void> {
     const fetchProvider = options.fetchProvider ?? globalThis.fetch;
+
     return async (signal) => {
         signal.throwIfAborted();
         const response = await fetchProvider(options.readiness.url, {
@@ -725,12 +812,14 @@ export function createTextAiProviderReadiness(options: {
             referrerPolicy: 'no-referrer',
             signal,
         });
+
         if (
             !options.readiness.acceptedStatuses.includes(
                 response.status as never,
             )
-        )
+        ) {
             throw new Error('Text AI provider is unavailable.');
+        }
     };
 }
 

@@ -95,6 +95,7 @@ function completion(cost?: number) {
         },
     });
 }
+
 function nativeAgent(
     authorize = vi.fn(async () => ({ callId, dispatchedAt })),
     observe = vi.fn(async () => {}),
@@ -115,7 +116,9 @@ function nativeAgent(
         defaultOptions: { maxSteps: 1 },
         defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
     });
+
     instance.__registerPrimitives({ logger: noopLogger });
+
     return { agent: instance, model, authorize, observe };
 }
 
@@ -129,15 +132,19 @@ describe('native text provider transport observations', () => {
                 data_collection: 'deny',
                 zdr: true,
             });
+
             expect(body.provider.max_price).toEqual({
                 prompt: 2,
                 completion: 1,
                 request: 0.05,
             });
+
             expect(body.plugins).toBeUndefined();
             expect(body.models).toBeUndefined();
+
             return completion(1e-7);
         });
+
         vi.stubGlobal('fetch', fetcher);
         const { agent, authorize, observe } = nativeAgent();
         const result = await withTextAiProviderAttemptWitness(witness, () =>
@@ -163,10 +170,12 @@ describe('native text provider transport observations', () => {
                 },
             },
         ]);
+
         expect(providerTextExpenseMicros(price, usage)).toBe(1n);
         expect(authorize).toHaveBeenCalledWith(
             expect.objectContaining({ witness, outputTokens: 32 }),
         );
+
         expect(fetcher).toHaveBeenCalledOnce();
         expect(observe).toHaveBeenCalledWith({
             callId,
@@ -191,6 +200,7 @@ describe('native text provider transport observations', () => {
                 modelSettings: { maxOutputTokens: 32, maxRetries: 0 },
             }),
         ).rejects.toThrow();
+
         expect(fetcher).not.toHaveBeenCalled();
     });
 
@@ -199,6 +209,7 @@ describe('native text provider transport observations', () => {
             'fetch',
             vi.fn(async () => completion(1e-7)),
         );
+
         let release!: () => void;
         const checkpoint = new Promise<void>((resolve) => {
             release = resolve;
@@ -213,8 +224,10 @@ describe('native text provider transport observations', () => {
             }),
         ).then((value) => {
             completed = true;
+
             return value;
         });
+
         await vi.waitFor(() => expect(observe).toHaveBeenCalledOnce());
         expect(completed).toBe(false);
         release();
@@ -228,9 +241,11 @@ describe('native text provider transport observations', () => {
             vi.fn(async () => {
                 const body = await completion().json();
                 delete body.provider;
+
                 return Response.json(body);
             }),
         );
+
         const { agent } = nativeAgent();
         const result = await withTextAiProviderAttemptWitness(witness, () =>
             agent.generate('Synthetic text.', {
@@ -260,6 +275,7 @@ describe('native text provider transport observations', () => {
                     ),
             ),
         );
+
         const { agent } = nativeAgent();
         const stream = await withTextAiProviderAttemptWitness(witness, () =>
             agent.stream('Synthetic text.', {
@@ -267,14 +283,18 @@ describe('native text provider transport observations', () => {
                 toolChoice: 'none',
             }),
         );
-        for await (const part of stream.fullStream)
+
+        for await (const part of stream.fullStream) {
             expect(part.type).not.toBe('raw');
+        }
+
         const output = await stream.getFullOutput();
         const usage = readProviderTokenUsage(
             await stream.totalUsage,
             limits,
             output,
         );
+
         expect(usage.calls?.[0]?.usage.providerCostUsd).toBe('0.0000011');
         expect(providerTextExpenseMicros(price, usage)).toBe(2n);
     });
@@ -288,12 +308,14 @@ describe('native text provider transport observations', () => {
                 },
             ]),
         ).toThrow('media');
+
         expect(() =>
             assertTextOnlyNativePrompt(
                 [],
                 [{ type: 'provider-defined', id: 'synthetic-search' }],
             ),
         ).toThrow();
+
         expect(
             providerTextExpenseMicros(
                 price,
@@ -301,6 +323,7 @@ describe('native text provider transport observations', () => {
                 { dispatchedAt, serviceTier: 'standard' },
             ),
         ).toBeNull();
+
         expect(reportedPriceDecimal(1e-7)).toBe('0.0000001');
         expect(() => reportedPriceDecimal(-1)).toThrow();
     });
@@ -330,6 +353,7 @@ describe('native text provider transport observations', () => {
                 },
             ],
         };
+
         expect(sumTextAiProviderUsage(one, two)).toMatchObject({
             inputTokens: 2,
             outputTokens: 2,

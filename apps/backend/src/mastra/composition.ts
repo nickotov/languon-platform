@@ -56,10 +56,16 @@ function contextualTools(
     const registered: NonNullable<
         NonNullable<ConstructorParameters<typeof Mastra>[0]>['tools']
     > = {};
+
     for (const [name, tool] of Object.entries(contextualTutor?.tools ?? {})) {
-        if (!tool) continue;
-        if (!tool.execute || !tool.inputSchema || !tool.outputSchema)
+        if (!tool) {
+            continue;
+        }
+
+        if (!tool.execute || !tool.inputSchema || !tool.outputSchema) {
             throw new Error('Contextual tools require schemas and execution.');
+        }
+
         // Mastra's Tool class declares optional methods with explicit undefined;
         // its registration descriptor omits undefined under strict optionals.
         registered[name] = {
@@ -70,6 +76,7 @@ function contextualTools(
             execute: tool.execute,
         };
     }
+
     return registered;
 }
 

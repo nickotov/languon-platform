@@ -26,11 +26,13 @@ export async function readLibraryCopyBlock(
 ): Promise<LearningBlock> {
     let body: KnowledgeBody;
     if (request.workingSource) {
-        if (request.noteVersion !== undefined || access)
+        if (request.noteVersion !== undefined || access) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Working copies require an owned working source only.',
             );
+        }
+
         await getOwnedKnowledgeRow(tx, actorId, request.noteId);
         const [branch] = await tx
             .select()
@@ -43,16 +45,20 @@ export async function readLibraryCopyBlock(
             )
             .for('share');
 
-        if (!branch)
+        if (!branch) {
             throw new KnowledgeDomainError(
                 'knowledge_not_found',
                 'The working source is unavailable.',
             );
-        if (branch.version !== request.workingSource.expectedVersion)
+        }
+
+        if (branch.version !== request.workingSource.expectedVersion) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The working material changed. Preview the copy again.',
             );
+        }
+
         body = KnowledgeBodySchema.parse(branch.content.body);
     } else {
         const note = await readLearnerNote(
@@ -63,11 +69,13 @@ export async function readLibraryCopyBlock(
             access,
         );
 
-        if (note.version !== request.noteVersion)
+        if (note.version !== request.noteVersion) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The note changed. Preview the copy again.',
             );
+        }
+
         body = KnowledgeBodySchema.parse(note.body);
     }
 
@@ -77,11 +85,12 @@ export async function readLibraryCopyBlock(
             node.attrs?.block?.id === request.blockId,
     )?.attrs?.block;
 
-    if (!block)
+    if (!block) {
         throw new KnowledgeDomainError(
             'knowledge_not_found',
             'The learning block is unavailable.',
         );
+    }
 
     return block;
 }

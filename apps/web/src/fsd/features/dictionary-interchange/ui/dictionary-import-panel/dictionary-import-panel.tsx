@@ -117,16 +117,22 @@ export function DictionaryImportPanel({
     async function loadFile(event: ChangeEvent<HTMLInputElement>) {
         const file = event.currentTarget.files?.[0];
 
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         setFileError(null);
 
         try {
             setContent(await readDictionaryImportFile(file));
 
-            if (file.name.toLowerCase().endsWith('.csv')) setDelimiter('comma');
+            if (file.name.toLowerCase().endsWith('.csv')) {
+                setDelimiter('comma');
+            }
 
-            if (file.name.toLowerCase().endsWith('.tsv')) setDelimiter('tab');
+            if (file.name.toLowerCase().endsWith('.tsv')) {
+                setDelimiter('tab');
+            }
         } catch (cause) {
             setFileError(
                 cause instanceof DictionaryImportFileError &&
@@ -369,9 +375,11 @@ export function DictionaryImportPanel({
                                             setSelected((current) => {
                                                 const next = new Set(current);
 
-                                                if (checked)
+                                                if (checked) {
                                                     next.add(row.rowIndex);
-                                                else next.delete(row.rowIndex);
+                                                } else {
+                                                    next.delete(row.rowIndex);
+                                                }
 
                                                 return next;
                                             });

@@ -40,17 +40,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const migrationFolder = await mkdtemp(
                 join(tmpdir(), 'languon-sidebar-membership-'),
             );
+
             try {
                 await cp(getMigrationsFolder(), migrationFolder, {
                     recursive: true,
                 });
+
                 const journalPath = join(migrationFolder, 'meta/_journal.json');
                 const journal = JSON.parse(
                     await readFile(journalPath, 'utf8'),
                 ) as { entries: { idx: number }[] };
+
                 journal.entries = journal.entries.filter(
                     (entry) => entry.idx < 80,
                 );
+
                 await writeFile(journalPath, JSON.stringify(journal));
                 await runPostgresMigrations({
                     client,
@@ -78,6 +82,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(
                     await client`select folder_id from texts where id=${textId}`,
                 ).toEqual([{ folder_id: folderId }]);
+
                 expect(
                     await client`select folder_id,format from texts_ai_jobs where id=${jobId}`,
                 ).toEqual([
@@ -91,6 +96,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await tx`select set_config('languon.texts_execution_revision','1',true),set_config('languon.texts_capacity_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`;
                     await tx`insert into texts_ai_jobs(id,owner_id,folder_id,operation_id,request_fingerprint,job_kind,format,expires_at,selected_execution_snapshot,execution_revision_id,provider_max_cost_micros_per_attempt,provider_max_input_tokens_per_attempt,provider_max_output_tokens_per_attempt) values(${independentJobId},${ownerId},${null},${randomUUID()},'independent','text-detection','text-detection:v2',now()+interval '1 hour','{}'::jsonb,${revisionId},1,8192,8192)`;
                 });
+
                 expect(
                     await client`select folder_id,format from texts_ai_jobs where id=${independentJobId}`,
                 ).toEqual([{ folder_id: null, format: 'text-detection:v2' }]);
@@ -118,6 +124,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         'en',
                         randomUUID,
                     );
+
                     return {
                         id: input.jobId,
                         sourceText: 'Safe source.',
@@ -140,6 +147,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             const source = await store.createFolder(ownerId, {
                 name: 'Source',
                 description: null,
@@ -185,7 +193,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ]);
 
-            if (rotation.status !== 'fulfilled') throw rotation.reason;
+            if (rotation.status !== 'fulfilled') {
+                throw rotation.reason;
+            }
+
             await expect(
                 store.readShared(
                     {
@@ -196,6 +207,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { limit: 10 },
                 ),
             ).rejects.toMatchObject({ code: 'text_not_found' });
+
             const activeCapability = rotation.value;
             const visible = await store.readShared(
                 {
@@ -205,12 +217,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { limit: 10 },
             );
+
             if (move.status === 'fulfilled') {
                 expect(visible.texts.map((item) => item.id)).toEqual([text.id]);
             } else {
                 expect(move.reason).toMatchObject({
                     code: 'shared_folder_confirmation_required',
                 });
+
                 expect(visible.texts).toEqual([]);
             }
         }, 60_000);

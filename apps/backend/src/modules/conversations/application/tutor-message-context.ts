@@ -58,6 +58,7 @@ export function projectTutorUserMessage(input: {
                       : {}),
               },
     );
+
     return {
         format: 2,
         parts: [
@@ -123,11 +124,12 @@ export function assertTutorCurrentMessageFits(
     modelContent: Record<string, unknown>,
     limit = currentTutorMessageByteLimit,
 ): void {
-    if (tutorCurrentMessageBytes(modelContent) > limit)
+    if (tutorCurrentMessageBytes(modelContent) > limit) {
         throw new ConversationError(
             'context_too_large',
             'Shorten the question or remove attachments before sending again.',
         );
+    }
 }
 
 export function tutorMessageModelContent(

@@ -29,6 +29,7 @@ type Library = ReturnType<typeof useKnowledgeLibrary>;
 
 export function KnowledgeLibraryPage() {
     const actorId = useSessionStore((state) => state.user?.id);
+
     return (
         <KnowledgeAuthBoundary returnTo='/knowledge'>
             <LibraryContent key={actorId} />
@@ -56,19 +57,24 @@ function LibraryContent() {
             label: t(knowledgeCategoryKeys[category]),
         })),
     ];
+
     function search(event: ChangeEvent<HTMLInputElement>) {
         library.setSearch(event.target.value);
     }
+
     function category(event: ChangeEvent<HTMLSelectElement>) {
         const result = KnowledgeCategorySchema.safeParse(event.target.value);
         library.setCategory(result.success ? result.data : '');
     }
+
     function language(event: ChangeEvent<HTMLSelectElement>) {
         library.setLanguage(event.target.value);
     }
+
     function more() {
         void library.notes.fetchNextPage();
     }
+
     async function create() {
         setCreating(true);
         setCreateError(false);
@@ -76,6 +82,7 @@ function LibraryContent() {
             const workspace = await requestWithSession((token) =>
                 knowledgeApi.createDraft(token, createId.current),
             );
+
             createId.current = crypto.randomUUID();
             router.push(href(`/knowledge/${workspace.noteId}`));
         } catch {
@@ -84,6 +91,7 @@ function LibraryContent() {
             setCreating(false);
         }
     }
+
     return (
         <main className={styles.page}>
             <Link href={href('/workbooks')}>
@@ -152,9 +160,12 @@ function LibraryResults({ library }: { library: Library }) {
     function reload() {
         void library.notes.refetch();
     }
-    if (library.notes.isPending)
+
+    if (library.notes.isPending) {
         return <LoadingState>{t('knowledge.loading')}</LoadingState>;
-    if (library.notes.isError)
+    }
+
+    if (library.notes.isError) {
         return (
             <InlineAlert
                 tone='error'
@@ -167,12 +178,15 @@ function LibraryResults({ library }: { library: Library }) {
                 {t('knowledge.loadError')}
             </InlineAlert>
         );
+    }
+
     const notes =
         library.notes.data?.pages.flatMap((page) => page.workspaces) ?? [];
     const hasFilters = Boolean(
         library.search || library.category || library.language,
     );
-    if (!notes.length)
+
+    if (!notes.length) {
         return (
             <EmptyState
                 title={t(
@@ -182,6 +196,8 @@ function LibraryResults({ library }: { library: Library }) {
                 {!hasFilters && t('knowledge.emptyHelp')}
             </EmptyState>
         );
+    }
+
     return (
         <ul className={styles.notes}>
             {notes.map((note) => (
@@ -193,6 +209,7 @@ function LibraryResults({ library }: { library: Library }) {
 
 function KnowledgeResult({ note }: { note: KnowledgeWorkspaceSummary }) {
     const { t, href, formatDate } = useI18n();
+
     return (
         <li>
             <Link href={href(`/knowledge/${note.id}`)} className={styles.note}>

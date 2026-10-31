@@ -51,17 +51,22 @@ export function SentenceFilters({ value, onChange, disabled = false }: Props) {
     ) => onChange({ ...value, contentState });
     const changeDirection = (direction: string) => {
         const { direction: _previous, ...rest } = value;
-        if (direction === 'all') onChange(rest);
-        else
+        if (direction === 'all') {
+            onChange(rest);
+        } else {
             onChange({
                 ...rest,
                 direction: direction as 'source-to-target' | 'target-to-source',
             });
+        }
     };
     const changeCreatorArchived = (next: string) => {
         const { creatorArchived: _previous, ...rest } = value;
-        if (next === 'all') onChange(rest);
-        else onChange({ ...rest, creatorArchived: next === 'true' });
+        if (next === 'all') {
+            onChange(rest);
+        } else {
+            onChange({ ...rest, creatorArchived: next === 'true' });
+        }
     };
     const changeCreator = (event: React.ChangeEvent<HTMLInputElement>) => {
         setCreator(event.target.value);
@@ -76,8 +81,10 @@ export function SentenceFilters({ value, onChange, disabled = false }: Props) {
             )
         ) {
             setCreatorError(true);
+
             return;
         }
+
         const { creatorId: _previous, ...rest } = value;
         onChange(trimmed ? { ...rest, creatorId: trimmed } : rest);
     };
@@ -85,6 +92,7 @@ export function SentenceFilters({ value, onChange, disabled = false }: Props) {
         value.creatorArchived === undefined
             ? 'all'
             : String(value.creatorArchived);
+
     return (
         <div className={styles.filters}>
             <label>

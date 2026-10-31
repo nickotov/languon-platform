@@ -14,6 +14,7 @@ export class SentenceHistory {
         hasMoreAttempts: false,
         hasMoreReviews: false,
     };
+
     private listeners = new Set<() => void>();
     private epoch = 0;
     private enabled = false;
@@ -25,26 +26,34 @@ export class SentenceHistory {
         private readonly direction?: SentenceDirection,
         private readonly exerciseId?: string,
     ) {}
+
     public subscribe = (listener: () => void) => {
         this.listeners.add(listener);
+
         return () => {
             this.listeners.delete(listener);
         };
     };
+
     public getSnapshot = () => this.state;
     private update(patch: Partial<State>) {
         this.state = { ...this.state, ...patch };
-        for (const listener of this.listeners) listener();
+        for (const listener of this.listeners) {
+            listener();
+        }
     }
+
     public enable = () => {
         this.enabled = true;
         this.refresh();
     };
+
     public stop = () => {
         this.enabled = false;
         this.epoch++;
         this.pending = false;
     };
+
     public invalidate = () => {
         this.stop();
         this.attemptsCursor = null;
@@ -58,6 +67,7 @@ export class SentenceHistory {
             hasMoreReviews: false,
         });
     };
+
     private query() {
         return {
             limit: 25,
@@ -65,8 +75,12 @@ export class SentenceHistory {
             ...(this.exerciseId ? { exerciseId: this.exerciseId } : {}),
         };
     }
+
     private async load(kind: 'all' | 'attempts' | 'reviews') {
-        if (!this.enabled || this.pending) return;
+        if (!this.enabled || this.pending) {
+            return;
+        }
+
         this.pending = true;
         const epoch = this.epoch;
         this.update({ loading: true, error: null });
@@ -89,7 +103,11 @@ export class SentenceHistory {
                               : {}),
                       }),
             ]);
-            if (!this.enabled || epoch !== this.epoch) return;
+
+            if (!this.enabled || epoch !== this.epoch) {
+                return;
+            }
+
             const patch: Partial<State> = { loading: false };
             if (attempts) {
                 this.attemptsCursor = attempts.nextCursor;
@@ -106,6 +124,7 @@ export class SentenceHistory {
                               ).values(),
                           ];
             }
+
             if (reviews) {
                 this.reviewsCursor = reviews.nextCursor;
                 patch.hasMoreReviews = reviews.nextCursor !== null;
@@ -121,9 +140,13 @@ export class SentenceHistory {
                               ).values(),
                           ];
             }
+
             this.update(patch);
         } catch (error) {
-            if (!this.enabled || epoch !== this.epoch) return;
+            if (!this.enabled || epoch !== this.epoch) {
+                return;
+            }
+
             const converted = toApiError(error);
             this.update({
                 loading: false,
@@ -138,9 +161,12 @@ export class SentenceHistory {
                     : {}),
             });
         } finally {
-            if (epoch === this.epoch) this.pending = false;
+            if (epoch === this.epoch) {
+                this.pending = false;
+            }
         }
     }
+
     public refresh = () => {
         this.epoch++;
         this.pending = false;
@@ -148,10 +174,16 @@ export class SentenceHistory {
         this.reviewsCursor = null;
         void this.load('all');
     };
+
     public loadMoreAttempts = async () => {
-        if (this.attemptsCursor) await this.load('attempts');
+        if (this.attemptsCursor) {
+            await this.load('attempts');
+        }
     };
+
     public loadMoreReviews = async () => {
-        if (this.reviewsCursor) await this.load('reviews');
+        if (this.reviewsCursor) {
+            await this.load('reviews');
+        }
     };
 }

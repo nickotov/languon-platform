@@ -19,6 +19,7 @@ const base = {
     reason: z.string().trim().min(5).max(500),
     source: z.literal('manual'),
 };
+
 export const AccountingPaymentRequestSchema = z
     .object({
         ...base,
@@ -31,6 +32,7 @@ export const AccountingPaymentRequestSchema = z
                 const [whole = '0', fraction = ''] = value.split('.');
                 const milli =
                     BigInt(whole) * 1000n + BigInt(fraction.padEnd(3, '0'));
+
                 return milli > 0n && milli <= 1000000000000000n;
             } catch {
                 return false;
@@ -95,23 +97,26 @@ export const AccountingRecordRequestSchema = z
         if (
             value.kind === 'provider_bill' &&
             new Date(value.periodEnd) <= new Date(value.periodStart)
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 path: ['periodEnd'],
                 message: 'Period end must follow start.',
             });
+        }
+
         if (
             value.kind === 'payment' &&
             (value.originalCurrency === null) !==
                 (value.originalAmount === null)
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 path: ['originalAmount'],
                 message:
                     'Original amount and currency must be supplied together.',
             });
+        }
     });
 export type AccountingRecordRequest = z.infer<
     typeof AccountingRecordRequestSchema

@@ -36,49 +36,77 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
         props.variant === 'compact' && transcript
             ? { ...transcript, segments: transcript.segments.slice(0, 2) }
             : transcript;
+
     function handlePosition(seconds: number) {
         setPosition(seconds);
     }
+
     function handlePlaybackStart(pause: () => void) {
         setFailed(false);
-        if (props.playback?.onMediaStart)
+        if (props.playback?.onMediaStart) {
             props.playback.onMediaStart({
                 id: `${props.scope ?? block.id}:${block.id}:media`,
                 pause,
             });
-        else props.playback?.onStop?.();
+        } else {
+            props.playback?.onStop?.();
+        }
     }
+
     function handleFailure() {
         setFailed(true);
     }
+
     function handleTranscript() {
-        if (props.interactionsDisabled) return;
-        if (!transcriptVisible)
+        if (props.interactionsDisabled) {
+            return;
+        }
+
+        if (!transcriptVisible) {
             props.onInteraction?.(block.id, { kind: 'transcript-revealed' });
+        }
+
         setTranscriptVisible(!transcriptVisible);
     }
+
     function handleHint() {
-        if (props.interactionsDisabled) return;
-        if (!hintVisible)
+        if (props.interactionsDisabled) {
+            return;
+        }
+
+        if (!hintVisible) {
             props.onInteraction?.(block.id, { kind: 'hint-used' });
+        }
+
         setHintVisible(!hintVisible);
     }
+
     function handlePlayer(element: HTMLMediaElement | null) {
         player.current = element;
     }
+
     function handleReplay(seconds: number) {
-        if (!Number.isFinite(seconds) || seconds < 0) return;
+        if (!Number.isFinite(seconds) || seconds < 0) {
+            return;
+        }
+
         if (block.type === 'video' && block.source.kind === 'youtube') {
             setVideoSeek((prior) => ({
                 seconds,
                 revision: (prior?.revision ?? 0) + 1,
             }));
+
             return;
         }
-        if (!player.current) return;
+
+        if (!player.current) {
+            return;
+        }
+
         player.current.currentTime = seconds;
         void player.current.play().catch(handleFailure);
     }
+
     let media;
     if (block.type === 'audio') {
         media =
@@ -125,16 +153,21 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
             />
         );
     }
+
     const showPreparedTranscript =
         preview && (block.type === 'audio' || props.variant === 'review');
     let sourceUrl: string | undefined;
     if (block.type === 'video') {
-        if (block.source.kind === 'youtube')
+        if (block.source.kind === 'youtube') {
             sourceUrl = `https://www.youtube.com/watch?v=${block.source.videoId}`;
-        else sourceUrl = block.source.url;
+        } else {
+            sourceUrl = block.source.url;
+        }
     }
+
     const sourceHost = sourceUrl ? new URL(sourceUrl).hostname : undefined;
     const canReplay = block.type === 'video' || Boolean(audioUrl);
+
     return (
         <div className={styles.stack}>
             {media}

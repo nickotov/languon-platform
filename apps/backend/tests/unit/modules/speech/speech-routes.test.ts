@@ -40,6 +40,7 @@ function setup() {
             refreshTokenTtlSeconds: 60,
         }),
     });
+
     return {
         app,
         authenticate,
@@ -66,16 +67,20 @@ describe('speech HTTP boundary', () => {
                 'Access-Control-Request-Headers': 'authorization,content-type',
             },
         });
+
         expect(result.status).toBe(204);
         expect(result.headers.get('Access-Control-Allow-Origin')).toBe(
             'http://localhost:3333',
         );
+
         expect(result.headers.get('Access-Control-Allow-Methods')).toBe(
             'GET, POST, OPTIONS',
         );
+
         expect(result.headers.get('Access-Control-Allow-Headers')).toBe(
             'Authorization, Content-Type, X-Correlation-ID',
         );
+
         expect(result.headers.get('Vary')).toBe('Origin');
         expect(authenticate).not.toHaveBeenCalled();
         expect(service.prepare).not.toHaveBeenCalled();
@@ -88,11 +93,13 @@ describe('speech HTTP boundary', () => {
                 method: 'OPTIONS',
                 headers: origin ? { Origin: origin } : {},
             });
+
             expect(result.status).toBe(400);
             expect(
                 result.headers.get('Access-Control-Allow-Origin'),
             ).toBeNull();
         }
+
         const result = await app.request('/speech/prepare', {
             method: 'POST',
             headers: {
@@ -102,6 +109,7 @@ describe('speech HTTP boundary', () => {
             },
             body: JSON.stringify({ source, operationId }),
         });
+
         expect(result.status).toBe(400);
         expect(authenticate).not.toHaveBeenCalled();
         expect(service.prepare).not.toHaveBeenCalled();
@@ -114,6 +122,7 @@ describe('speech HTTP boundary', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ source, operationId }),
         });
+
         expect(result.status).toBe(401);
         expect(service.prepare).not.toHaveBeenCalled();
     });
@@ -132,6 +141,7 @@ describe('speech HTTP boundary', () => {
                 text: 'client supplied text',
             }),
         });
+
         expect(rejected.status).toBe(400);
         expect(service.prepare).not.toHaveBeenCalled();
         const accepted = await app.request('/speech/prepare', {
@@ -142,6 +152,7 @@ describe('speech HTTP boundary', () => {
             },
             body: JSON.stringify({ source, operationId }),
         });
+
         expect(accepted.status).toBe(202);
         expect(authenticate).toHaveBeenCalledWith('header.payload.signature');
         expect(service.prepare).toHaveBeenCalledWith(
@@ -149,6 +160,7 @@ describe('speech HTTP boundary', () => {
             { source, operationId },
             expect.any(AbortSignal),
         );
+
         expect(accepted.headers.get('Cache-Control')).toBe('private, no-store');
         expect(accepted.headers.get('X-Content-Type-Options')).toBe('nosniff');
     });
@@ -181,8 +193,10 @@ describe('speech HTTP boundary', () => {
                 },
                 body: JSON.stringify(body),
             });
+
             expect(result.status).toBe(400);
         }
+
         expect(service.prepare).not.toHaveBeenCalled();
     });
 
@@ -191,6 +205,7 @@ describe('speech HTTP boundary', () => {
         service.prepare.mockRejectedValueOnce(
             new SpeechError('speech_source_unavailable', 404),
         );
+
         const result = await app.request('/speech/prepare', {
             method: 'POST',
             headers: {
@@ -199,6 +214,7 @@ describe('speech HTTP boundary', () => {
             },
             body: JSON.stringify({ source, operationId }),
         });
+
         expect(result.status).toBe(404);
         const body = await result.json();
         expect(body).toMatchObject({
@@ -207,6 +223,7 @@ describe('speech HTTP boundary', () => {
                 message: 'Pronunciation is unavailable for this request.',
             },
         });
+
         expect(JSON.stringify(body)).not.toContain(cardId);
     });
 });

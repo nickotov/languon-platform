@@ -19,6 +19,7 @@ const profile = {
     settingsVersion: GEMINI_PRONUNCIATION_SETTINGS_VERSION,
     estimatedCostUnitsPerCharacter: 1,
 };
+
 function fixture(overrides: Record<string, unknown> = {}) {
     const data = {
         taskId: 'native-task',
@@ -43,8 +44,10 @@ function fixture(overrides: Record<string, unknown> = {}) {
         fetch: fetcher,
         download,
     });
+
     return { provider, fetcher, download };
 }
+
 describe('native Kie speech expense observations', () => {
     it('retains actual reported credits without inventing token or audio-duration usage', async () => {
         const f = fixture();
@@ -52,16 +55,21 @@ describe('native Kie speech expense observations', () => {
             taskId: 'native-task',
             profile,
         });
+
         expect(result).toMatchObject({
             state: 'ready',
             usage: { requests: 1, providerCreditsConsumed: '1.23' },
         });
-        if (result.state !== 'ready')
+
+        if (result.state !== 'ready') {
             throw new Error('Expected synthesized output.');
+        }
+
         expect(result.usage).not.toHaveProperty('audioOutputTokens');
         expect(result.usage).not.toHaveProperty('inputTokens');
         expect(result.audio.durationMs).not.toBe(12345);
     });
+
     it('retains a definitive failed task zero-credit observation without exposing provider diagnostics', async () => {
         const f = fixture({
             state: 'fail',
@@ -75,18 +83,22 @@ describe('native Kie speech expense observations', () => {
                 usage: { requests: 1, providerCreditsConsumed: '0' },
             },
         });
+
         await expect(result).rejects.not.toHaveProperty('failMsg');
         expect(f.download).not.toHaveBeenCalled();
     });
+
     it('leaves missing provider credits unknown while retaining valid output', async () => {
         const f = fixture({ creditsConsumed: undefined });
         const result = await f.provider.poll({
             taskId: 'native-task',
             profile,
         });
+
         expect(result.state).toBe('ready');
         expect(result).not.toHaveProperty('usage');
     });
+
     it('preserves a billed task observation when its audio cannot yet be downloaded', async () => {
         const f = fixture();
         f.download.mockRejectedValueOnce(new Error('Synthetic CDN outage'));
@@ -94,12 +106,14 @@ describe('native Kie speech expense observations', () => {
         await expect(result).rejects.toBeInstanceOf(
             SpeechOutputUnavailableError,
         );
+
         await expect(result).rejects.toMatchObject({
             observation: {
                 usage: { requests: 1, providerCreditsConsumed: '1.23' },
             },
         });
     });
+
     it.each([-1, 1e-7, 1_000_001, '1.23'])(
         'rejects invalid or non-representable credit observation %s',
         async (creditsConsumed) => {
@@ -107,14 +121,17 @@ describe('native Kie speech expense observations', () => {
             await expect(
                 f.provider.poll({ taskId: 'native-task', profile }),
             ).rejects.toThrow();
+
             expect(f.download).not.toHaveBeenCalled();
         },
     );
+
     it('never binds another task credits to the admitted task', async () => {
         const f = fixture({ taskId: 'another-task' });
         await expect(
             f.provider.poll({ taskId: 'native-task', profile }),
         ).rejects.toThrow('Mismatched');
+
         expect(f.download).not.toHaveBeenCalled();
     });
 });

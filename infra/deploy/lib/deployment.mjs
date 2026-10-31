@@ -35,7 +35,10 @@ function inactiveSlot(activeSlot) {
 
 export function assertDictionaryGenerationBudgetConfig(manifest, config) {
     const budget = manifest.dictionaryJobs?.generationBudget;
-    if (!budget) return;
+    if (!budget) {
+        return;
+    }
+
     const configuredValues = Object.values(
         DICTIONARY_GENERATION_BUDGET_ENVIRONMENT,
     ).filter(
@@ -43,6 +46,7 @@ export function assertDictionaryGenerationBudgetConfig(manifest, config) {
             config[environmentName] !== undefined &&
             config[environmentName] !== '',
     );
+
     if (
         configuredValues.length === 0 &&
         (config.DICTIONARY_GENERATION_PROVIDER_MODE ?? 'unavailable') ===
@@ -51,6 +55,7 @@ export function assertDictionaryGenerationBudgetConfig(manifest, config) {
     ) {
         return;
     }
+
     const mismatches = Object.entries(DICTIONARY_GENERATION_BUDGET_ENVIRONMENT)
         .filter(([name, environmentName]) => {
             return (
@@ -58,6 +63,7 @@ export function assertDictionaryGenerationBudgetConfig(manifest, config) {
             );
         })
         .map(([, environmentName]) => environmentName);
+
     if (mismatches.length > 0) {
         throw new Error(
             `Deployment dictionary generation budget must match the release manifest: ${mismatches.join(', ')}.`,
@@ -73,12 +79,17 @@ async function readState(stateDirectory) {
                 'utf8',
             ),
         );
-        if (!SLOTS.includes(value.activeSlot))
+
+        if (!SLOTS.includes(value.activeSlot)) {
             throw new Error('Invalid active slot.');
+        }
+
         return value;
     } catch (error) {
-        if (error.code === 'ENOENT')
+        if (error.code === 'ENOENT') {
             return { activeSlot: null, current: null, previous: null };
+        }
+
         throw new Error('Deployment state is invalid.', { cause: error });
     }
 }
@@ -93,12 +104,16 @@ export function assertDictionaryWorkerDatabasePrivileges(
     privileges,
     { sharedSpeech = false, modelPricing = false } = {},
 ) {
-    if (sharedSpeech && privileges.sharedSpeech !== true)
+    if (sharedSpeech && privileges.sharedSpeech !== true) {
         throw new Error(
             'Shared speech worker lacks its required least-privilege execution capabilities.',
         );
-    if (modelPricing && privileges.modelPricing !== true)
+    }
+
+    if (modelPricing && privileges.modelPricing !== true) {
         throw new Error('Worker lacks immutable model price read capability.');
+    }
+
     if (
         privileges.jobs !== true ||
         privileges.proposals !== true ||
@@ -337,10 +352,12 @@ export class Deployment {
         this.pollMilliseconds = pollMilliseconds;
         this.projectPrefix =
             config.DEPLOY_PROJECT_PREFIX || `languon-${environment}`;
+
         this.composeDirectory = path.join(
             repositoryRoot,
             'infra/deploy/compose',
         );
+
         this.nginxDirectory = path.join(repositoryRoot, 'infra/nginx');
         this.timings = {};
     }
@@ -358,6 +375,7 @@ export class Deployment {
                 ],
             ),
         );
+
         return {
             ...process.env,
             ...this.config,
@@ -459,10 +477,14 @@ export class Deployment {
             this.runtimeDirectory,
             'active-upstream.conf',
         );
+
         try {
             await readFile(upstreamPath);
         } catch (error) {
-            if (error.code !== 'ENOENT') throw error;
+            if (error.code !== 'ENOENT') {
+                throw error;
+            }
+
             await writeFile(
                 upstreamPath,
                 'upstream languon_web { server 127.0.0.1:9; }\nupstream languon_backend { server 127.0.0.1:9; }\nupstream languon_admin { server 127.0.0.1:9; }\n',
@@ -500,10 +522,13 @@ export class Deployment {
                 () => true,
                 () => false,
             );
+
             if (!exists) {
                 const args = ['network', 'create'];
-                if (suffix === 'edge')
+                if (suffix === 'edge') {
                     args.push('--subnet', this.config.EDGE_SUBNET);
+                }
+
                 args.push(network);
                 await this.runner('docker', args);
             }
@@ -514,6 +539,7 @@ export class Deployment {
         const files = [
             path.join(this.composeDirectory, 'migrate.compose.yaml'),
         ];
+
         if (this.environment === 'production') {
             files.push(
                 path.join(
@@ -522,12 +548,14 @@ export class Deployment {
                 ),
             );
         }
+
         await this.compose(
             files,
             `${this.projectPrefix}-migration`,
             ['pull', 'migrator'],
             slot,
         );
+
         await this.compose(
             files,
             `${this.projectPrefix}-migration`,
@@ -540,13 +568,16 @@ export class Deployment {
         const files = [
             path.join(this.composeDirectory, 'recovery-gate.compose.yaml'),
         ];
-        if (this.environment === 'production')
+
+        if (this.environment === 'production') {
             files.push(
                 path.join(
                     this.composeDirectory,
                     'recovery-gate.production.compose.yaml',
                 ),
             );
+        }
+
         await this.compose(
             files,
             `${this.projectPrefix}-recovery-gate`,
@@ -556,7 +587,10 @@ export class Deployment {
     }
 
     async verifyBackupGate() {
-        if (this.environment !== 'production') return;
+        if (this.environment !== 'production') {
+            return;
+        }
+
         await this.runner(
             path.join(this.repositoryRoot, 'infra/backup/backup.sh'),
             [
@@ -573,7 +607,10 @@ export class Deployment {
     }
 
     async verifyDictionaryJobRetirement(slot, formats) {
-        if (!slot || formats.length === 0) return;
+        if (!slot || formats.length === 0) {
+            return;
+        }
+
         const files = [path.join(this.composeDirectory, 'apps.compose.yaml')];
         if (this.environment === 'production') {
             files.push(
@@ -583,6 +620,7 @@ export class Deployment {
                 ),
             );
         }
+
         const serializedFormats = JSON.stringify(formats);
         const source = [
             "import postgres from 'postgres';",
@@ -623,6 +661,7 @@ export class Deployment {
                 'Dictionary job retirement preflight returned an invalid result.',
             );
         }
+
         if (
             !Number.isSafeInteger(counts.queuedOrRunning) ||
             counts.queuedOrRunning < 0 ||
@@ -643,12 +682,14 @@ export class Deployment {
                 'Dictionary job retirement preflight returned invalid counts.',
             );
         }
+
         const documentBlockers =
             counts.documentAwaitingUploads +
             counts.documentProcessingUploads +
             counts.documentCleanupUploads +
             counts.documentTombstoneVersions +
             counts.documentActiveCapabilities;
+
         if (
             counts.queuedOrRunning > 0 ||
             counts.reviewableProposals > 0 ||
@@ -661,7 +702,10 @@ export class Deployment {
     }
 
     async verifyDictionaryWorkerDatabasePrivileges(slot) {
-        if (this.environment !== 'production') return;
+        if (this.environment !== 'production') {
+            return;
+        }
+
         const files = [
             path.join(this.composeDirectory, 'apps.compose.yaml'),
             path.join(this.composeDirectory, 'apps.production.compose.yaml'),
@@ -714,6 +758,7 @@ export class Deployment {
                 'Dictionary worker database privilege preflight returned an invalid result.',
             );
         }
+
         assertDictionaryWorkerDatabasePrivileges(privileges, {
             sharedSpeech,
             modelPricing,
@@ -730,6 +775,7 @@ export class Deployment {
                 ),
             );
         }
+
         const project = `${this.projectPrefix}-${slot}`;
         await this.compose(files, project, ['pull'], slot);
         await this.compose(
@@ -741,7 +787,10 @@ export class Deployment {
     }
 
     async stopSlot(slot) {
-        if (!slot) return;
+        if (!slot) {
+            return;
+        }
+
         const files = [path.join(this.composeDirectory, 'apps.compose.yaml')];
         if (this.environment === 'production') {
             files.push(
@@ -751,6 +800,7 @@ export class Deployment {
                 ),
             );
         }
+
         await this.compose(
             files,
             `${this.projectPrefix}-${slot}`,
@@ -766,6 +816,7 @@ export class Deployment {
             [`http://${slot}-web:3333/healthz`, this.manifest.sourceSha],
             [`http://${slot}-admin:3001/healthz`, this.manifest.sourceSha],
         ];
+
         for (const [url, release] of checks) {
             await this.runner(
                 'docker',
@@ -813,6 +864,7 @@ export class Deployment {
                     'nginx',
                     '-t',
                 ]);
+
                 await this.runner('docker', [
                     'exec',
                     `${project}-nginx`,
@@ -820,14 +872,17 @@ export class Deployment {
                     '-s',
                     'reload',
                 ]);
+
                 return;
             }
+
             await this.compose(
                 [edgeFile],
                 project,
                 ['up', '--detach', '--wait'],
                 slot,
             );
+
             await this.runner('docker', [
                 'exec',
                 `${project}-nginx`,
@@ -838,6 +893,7 @@ export class Deployment {
             const temporary = `${upstreamPath}.${process.pid}.rollback`;
             await writeFile(temporary, previous, { mode: 0o600 });
             await rename(temporary, upstreamPath);
+
             throw error;
         }
     }
@@ -849,15 +905,21 @@ export class Deployment {
             if (this.config.TLS_CA_PATH) {
                 args.push('--cacert', this.config.TLS_CA_PATH);
             }
+
             args.push(url);
             const result = await this.runner('curl', args, {
                 capture: true,
             }).catch(() => null);
-            if (result?.stdout.includes(expectedSourceSha)) return;
+
+            if (result?.stdout.includes(expectedSourceSha)) {
+                return;
+            }
+
             if (attempt < 30) {
                 await new Promise((resolve) => setTimeout(resolve, 1000));
             }
         }
+
         throw new Error(
             'Edge smoke check did not reach the selected release identity.',
         );
@@ -879,17 +941,22 @@ export class Deployment {
             () => true,
             () => false,
         );
+
         return result;
     }
 
     async drain() {
         const deadline = now() + this.drainSeconds * 1000;
         while (await this.hasOldWorkers()) {
-            if (now() >= deadline) return { forced: true };
+            if (now() >= deadline) {
+                return { forced: true };
+            }
+
             await new Promise((resolve) =>
                 setTimeout(resolve, this.pollMilliseconds),
             );
         }
+
         return { forced: false };
     }
 
@@ -924,6 +991,7 @@ export class Deployment {
             outcome: 'not-run',
             ledger: this.manifest.migration.ledger,
         };
+
         try {
             assertDictionaryGenerationBudgetConfig(this.manifest, this.config);
             const retiringFormats = assertDictionaryJobRollbackCompatibility(
@@ -931,6 +999,7 @@ export class Deployment {
                 state.current,
                 { direction },
             );
+
             if (
                 this.manifest.sharedSpeech?.apiEnqueued.length &&
                 (this.config.SPEECH_GENERATION_ENABLED !== 'true' ||
@@ -943,6 +1012,7 @@ export class Deployment {
                     'Shared speech admission requires live Kie, private S3, both speech flags and revision-aware pricing',
                 );
             }
+
             if (
                 (
                     this.manifest.dictionaryJobs ??
@@ -954,6 +1024,7 @@ export class Deployment {
                     'Worker-processable dictionary format support requires a configured live provider until queued work drains.',
                 );
             }
+
             phase = 'retirement-preflight';
             await this.timed('retirementPreflightMs', () =>
                 this.verifyDictionaryJobRetirement(
@@ -961,6 +1032,7 @@ export class Deployment {
                     retiringFormats,
                 ),
             );
+
             await this.ensureNetworks();
             if (!skipMigration) {
                 phase = 'backup-gate';
@@ -969,11 +1041,13 @@ export class Deployment {
                 await this.timed('migrationMs', () =>
                     this.runMigration(nextSlot),
                 );
+
                 migration = {
                     outcome: 'succeeded',
                     ledger: this.manifest.migration.ledger,
                 };
             }
+
             // Replay is a mutating restore operation. An active slot shares this
             // database; its admin traffic and purge worker must not race replay.
             // Restore operators run the gate against a quiesced database before
@@ -982,10 +1056,12 @@ export class Deployment {
                 phase = 'account-recovery-gate';
                 await this.runAccountRecoveryGate(nextSlot);
             }
+
             phase = 'worker-database-privileges';
             await this.timed('workerDatabasePrivilegesMs', () =>
                 this.verifyDictionaryWorkerDatabasePrivileges(nextSlot),
             );
+
             phase = 'start';
             await this.timed('startMs', () => this.startSlot(nextSlot));
             started = true;
@@ -995,6 +1071,7 @@ export class Deployment {
             await this.timed('switchMs', () =>
                 this.validateAndSwitch(nextSlot, Boolean(state.activeSlot)),
             );
+
             switched = true;
             phase = 'smoke';
             await this.timed('smokeMs', () => this.smoke());
@@ -1004,10 +1081,12 @@ export class Deployment {
                 previous: state.current,
                 updatedAt: new Date().toISOString(),
             };
+
             await writeJsonAtomic(
                 path.join(this.stateDirectory, 'deployment-state.json'),
                 newState,
             );
+
             committed = true;
             phase = 'drain';
             const drain = await this.timed('drainMs', () => this.drain());
@@ -1015,6 +1094,7 @@ export class Deployment {
             await this.timed('cleanupMs', () =>
                 this.stopSlot(state.activeSlot),
             );
+
             const audit = createAuditRecord({
                 actor: this.actor,
                 environment: this.environment,
@@ -1027,8 +1107,10 @@ export class Deployment {
                 timings: this.timings,
                 forcedDrain: drain.forced,
             });
+
             phase = 'audit';
             await this.appendAudit(audit);
+
             return audit;
         } catch (error) {
             let safeToStopNewSlot = !switched || !state.activeSlot;
@@ -1041,9 +1123,11 @@ export class Deployment {
                     error.rollbackError = rollbackError;
                 }
             }
+
             if (!committed && started && safeToStopNewSlot) {
                 await this.stopSlot(nextSlot).catch(() => {});
             }
+
             const audit = createAuditRecord({
                 actor: this.actor,
                 environment: this.environment,
@@ -1059,9 +1143,11 @@ export class Deployment {
                 timings: this.timings,
                 failurePhase: phase,
             });
+
             await this.appendAudit(audit).catch((auditError) => {
                 error.auditError = auditError;
             });
+
             throw error;
         } finally {
             await release();
@@ -1070,19 +1156,25 @@ export class Deployment {
 
     async verify() {
         const state = await readState(this.stateDirectory);
-        if (!state.activeSlot || !state.current)
+        if (!state.activeSlot || !state.current) {
             throw new Error('No active deployment exists.');
+        }
+
         this.manifest = state.current;
         await this.readiness(state.activeSlot);
         await this.smoke();
+
         return state;
     }
 
     async rollback() {
         const state = await readState(this.stateDirectory);
-        if (!state.previous)
+        if (!state.previous) {
             throw new Error('No previous digest manifest is available.');
+        }
+
         this.manifest = state.previous;
+
         return await this.deploy({
             direction: 'rollback',
             skipMigration: true,

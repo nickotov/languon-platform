@@ -36,24 +36,34 @@ export function ExerciseSetDialog({
     function markDirty() {
         setDirty(true);
     }
+
     function close() {
-        if (confirming) setConfirming(false);
-        else if (dirty) setConfirming(true);
-        else onClose();
+        if (confirming) {
+            setConfirming(false);
+        } else if (dirty) {
+            setConfirming(true);
+        } else {
+            onClose();
+        }
     }
+
     function keepEditing() {
         setConfirming(false);
     }
+
     function changeTitle(event: ChangeEvent<HTMLInputElement>) {
         setTitle(event.currentTarget.value);
         markDirty();
     }
+
     function apply() {
         const questions = fields.current?.read();
         if (!questions) {
             setError(true);
+
             return;
         }
+
         const next = questions.map((block) => ({
             ...block,
             group: {
@@ -64,8 +74,12 @@ export function ExerciseSetDialog({
                 ...(title.trim() ? { title: title.trim() } : {}),
             },
         }));
-        if (!onApply(next)) setError(true);
+
+        if (!onApply(next)) {
+            setError(true);
+        }
     }
+
     const footer = (
         <BlockEditorFooter
             confirming={confirming}
@@ -77,6 +91,7 @@ export function ExerciseSetDialog({
             onApply={apply}
         />
     );
+
     return (
         <BlockEditorPanel
             kind='exercise'

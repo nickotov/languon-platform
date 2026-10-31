@@ -28,9 +28,11 @@ export function useKnowledgeLearningIntegrations(
             uploadKnowledgeAudio(token, noteId, file),
         );
     }
+
     async function proposalApplied() {
         await state.reload();
     }
+
     const referenceCatalog = draft
         ? knowledgeBlockReferences(draft.content.body.document)
         : [];
@@ -67,6 +69,7 @@ export function useKnowledgeLearningIntegrations(
               },
               resolveWorkingSource: async () => {
                   const current = await state.flush();
+
                   return {
                       branchId: current.branchId,
                       expectedVersion: current.version,
@@ -98,8 +101,10 @@ export function useKnowledgeLearningIntegrations(
         workspace?.published,
         blocks,
     );
+
     async function flushNarration() {
         const current = await state.flush();
+
         return {
             branchId: current.branchId,
             branchVersion: current.version,
@@ -109,12 +114,15 @@ export function useKnowledgeLearningIntegrations(
                 ) ?? [],
         };
     }
+
     function applyNarration(block: LearningBlock) {
-        if (!actions.editor.current?.appendLearningBlock(block))
+        if (!actions.editor.current?.appendLearningBlock(block)) {
             throw new Error(
                 'The prepared audio could not be added to this document.',
             );
+        }
     }
+
     const narration = {
         noteId,
         blocks,
@@ -130,8 +138,10 @@ export function useKnowledgeLearningIntegrations(
         if (
             source.noteId !== noteId ||
             actions.draft?.branchId !== source.branchId
-        )
+        ) {
             return 'changed';
+        }
+
         return (
             actions.editor.current?.replaceLearningBlock(
                 expected,
@@ -147,8 +157,10 @@ export function useKnowledgeLearningIntegrations(
         flush: flushNarration,
         onApply: applyTranscription,
     };
+
     async function copySource() {
         const current = await state.flush();
+
         return {
             kind: 'owned-working' as const,
             noteId,
@@ -156,12 +168,19 @@ export function useKnowledgeLearningIntegrations(
             expectedVersion: current.version,
         };
     }
+
     async function beforeCopyApply(destinationNoteId: string) {
-        if (destinationNoteId === noteId) await state.flush();
+        if (destinationNoteId === noteId) {
+            await state.flush();
+        }
     }
+
     async function copied(destinationNoteId: string) {
-        if (destinationNoteId === noteId) await state.reload();
+        if (destinationNoteId === noteId) {
+            await state.reload();
+        }
     }
+
     const blockCopy: KnowledgeBlockCopyContext | undefined = draft
         ? {
               requestWithSession,
@@ -177,8 +196,10 @@ export function useKnowledgeLearningIntegrations(
               onApplyingChange: actions.setProposalApplying,
           }
         : undefined;
+
     function blockViewOptions(block: LearningBlock) {
         const source = exerciseSource(block, draft?.content.body);
+
         return {
             ...practice.options(block),
             ...(block.type === 'audio' && block.assetId
@@ -193,6 +214,7 @@ export function useKnowledgeLearningIntegrations(
                 : {}),
             playback: playback.options(async () => {
                 const current = await flushNarration();
+
                 return {
                     origin: {
                         kind: 'working',
@@ -206,11 +228,13 @@ export function useKnowledgeLearningIntegrations(
             }),
         };
     }
+
     const branchId = draft?.branchId;
     const fieldAi = useMemo(
         () => (branchId ? { noteId, branchId, requestWithSession } : undefined),
         [noteId, branchId, requestWithSession],
     );
+
     return {
         fieldAi,
         blockViewOptions,

@@ -24,7 +24,9 @@ export function MenuItemButton({
     );
 
     function select() {
-        if (item.closeOnSelect !== false) onClose();
+        if (item.closeOnSelect !== false) {
+            onClose();
+        }
 
         item.onSelect();
     }

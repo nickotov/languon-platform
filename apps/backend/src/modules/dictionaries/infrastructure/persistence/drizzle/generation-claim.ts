@@ -58,10 +58,12 @@ export async function claim(
 ): Promise<ClaimedDictionaryGenerationJob | null> {
     return modelPricingTransaction(context.database, async (tx) => {
         abort(input.context);
-        if (input.creditSettlementRevision === 1)
+        if (input.creditSettlementRevision === 1) {
             await tx.execute(
                 sql`select set_config('languon.ai_credit_settlement_revision', '1', true)`,
             );
+        }
+
         if (input.textAiSelectionRevision === 1) {
             await tx.execute(
                 sql`select set_config('languon.text_ai_selection_revision', '1', true)`,
@@ -83,8 +85,10 @@ export async function claim(
             budget: context.providerBudget,
         });
 
-        if (runningCapacity.globalRunning >= input.globalConcurrency)
+        if (runningCapacity.globalRunning >= input.globalConcurrency) {
             return null;
+        }
+
         const runningForOwner = sql<number>`(
                 select count(*) from (
                     select owner_id as actor_id from dictionary_generation_jobs where execution_state='running'
@@ -159,7 +163,10 @@ export async function claim(
             .limit(1)
             .for('update', { skipLocked: true });
 
-        if (!candidate?.inputPayload) return null;
+        if (!candidate?.inputPayload) {
+            return null;
+        }
+
         const [candidateCircuit] = await tx
             .select()
             .from(dictionaryGenerationProviderCircuitTable)
@@ -175,8 +182,10 @@ export async function claim(
         if (
             candidateCircuit?.openUntil &&
             candidateCircuit.openUntil > input.context.now
-        )
+        ) {
             return null;
+        }
+
         let candidateProviderBudget = persistedProviderBudget(candidate);
         const reservedAttempts =
             candidate.providerReservedAttempts ||
@@ -210,8 +219,10 @@ export async function claim(
                 needsAttemptReservation,
                 candidateProviderBudget,
             )
-        )
+        ) {
             return null;
+        }
+
         let aiCreditReservation:
             { id: string; mode: 'limited' | 'unlimited' } | undefined;
 
@@ -225,8 +236,10 @@ export async function claim(
                     input.context.now,
                 );
             } catch (error) {
-                if (!(error instanceof AiCreditInsufficientBalanceError))
+                if (!(error instanceof AiCreditInsufficientBalanceError)) {
                     throw error;
+                }
+
                 await tx
                     .update(dictionaryGenerationJobsTable)
                     .set({
@@ -252,13 +265,14 @@ export async function claim(
                     })
                     .where(eq(dictionaryGenerationJobsTable.id, candidate.id));
 
-                if (candidate.kind === 'document-terms')
+                if (candidate.kind === 'document-terms') {
                     await scheduleDocumentCleanup(
                         tx,
                         candidate.id,
                         input.context.now,
                         'failed',
                     );
+                }
 
                 return null;
             }
@@ -323,7 +337,10 @@ export async function claim(
             )
             .returning();
 
-        if (!claimed) return null;
+        if (!claimed) {
+            return null;
+        }
+
         if (usesLegacyAction(candidate.selectedExecutionSnapshot)) {
             let routeUnavailable = false;
             const admitted = await admitLegacyAttempt(tx, {
@@ -380,13 +397,14 @@ export async function claim(
                     })
                     .where(eq(dictionaryGenerationJobsTable.id, candidate.id));
 
-                if (candidate.kind === 'document-terms')
+                if (candidate.kind === 'document-terms') {
                     await scheduleDocumentCleanup(
                         tx,
                         candidate.id,
                         input.context.now,
                         'failed',
                     );
+                }
 
                 return null;
             }
@@ -410,7 +428,9 @@ export async function claim(
                   .limit(1)
             : [];
 
-        if (claimed.executionRevisionId && !revision) return null;
+        if (claimed.executionRevisionId && !revision) {
+            return null;
+        }
 
         return {
             attempt: claimed.attemptCount,

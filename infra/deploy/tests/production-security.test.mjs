@@ -11,6 +11,7 @@ test('production data plane requires verified TLS and restricted Redis ACLs', as
         'infra/deploy/compose/apps.production.compose.yaml',
         'utf8',
     );
+
     assert.match(data, /ssl=on/);
     assert.match(data, /--port[\s\S]*'0'/);
     assert.match(data, /--tls-port/);
@@ -38,10 +39,12 @@ test('web and admin cannot reach the data network and readiness is private', asy
         nginx,
         /limit_req_zone \$binary_remote_addr zone=dictionary_import_requests:10m rate=30r\/m;/,
     );
+
     assert.match(
         nginx,
         /location = \/api\/dictionary-imports\/preview[\s\S]*limit_conn dictionary_import_connections 2;[\s\S]*limit_req zone=dictionary_import_requests burst=5 nodelay;[\s\S]*proxy_pass http:\/\/languon_backend\/dictionary-imports\/preview;/,
     );
+
     const web = apps.slice(
         apps.indexOf('    web:'),
         apps.indexOf('    admin:'),
@@ -50,6 +53,7 @@ test('web and admin cannot reach the data network and readiness is private', asy
         apps.indexOf('    admin:'),
         apps.indexOf('\nnetworks:'),
     );
+
     assert.doesNotMatch(web, /data:/);
     assert.doesNotMatch(admin, /data:/);
     assert.match(nginx, /location = \/api\/readyz[\s\S]*deny all/);
@@ -61,6 +65,7 @@ test('web and admin cannot reach the data network and readiness is private', asy
         edgeCompose,
         /ADMIN_HTPASSWD_PATH[^\n]+:\/run\/secrets\/languon-admin-htpasswd:ro/,
     );
+
     assert.match(edgeCompose, /\/etc\/nginx\/admin:size=64k/);
     assert.match(edgeEntrypoint, /chown nginx:nginx \/etc\/nginx\/admin/);
     assert.match(edgeEntrypoint, /chmod 0400 \/etc\/nginx\/admin\/htpasswd/);
@@ -68,17 +73,20 @@ test('web and admin cannot reach the data network and readiness is private', asy
         nginx,
         /proxy_set_header Authorization \$http_x_languon_admin_authorization/,
     );
+
     assert.match(nginx, /proxy_set_header X-Languon-Admin-Authorization ""/);
     assert.match(nginx, /access_log \/dev\/stdout admin_safe/);
     assert.match(
         nginx.slice(nginx.indexOf('listen 8444 ssl;')),
         /error_log \/dev\/stderr crit/,
     );
+
     assert.match(nginx, /"\$request_method \$uri \$server_protocol"/);
     assert.doesNotMatch(
         nginx.slice(nginx.indexOf('listen 8444 ssl;')),
         /\$request_uri/,
     );
+
     assert.ok(
         nginx.indexOf('location ^~ /api/admin/') <
             nginx.indexOf('location /api/'),
@@ -116,6 +124,7 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         apps.indexOf('    dictionary-worker:'),
         apps.indexOf('    account-purge-worker:'),
     );
+
     assert.match(worker, /image: \$\{BACKEND_IMAGE/);
     assert.match(worker, /dictionary-worker-command\.js/);
     assert.match(worker, /DICTIONARY_WORKER_DATABASE_URL/);
@@ -127,12 +136,14 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         worker,
         /DICTIONARY_GENERATION_MODEL_API_KEY|DICTIONARY_GENERATION_MODEL_BASE_URL/,
     );
+
     assert.match(worker, /DEEPSEEK_API_KEY/);
     assert.match(worker, /KIE_API_KEY/);
     const backend = apps.slice(
         apps.indexOf('    backend:'),
         apps.indexOf('    dictionary-worker:'),
     );
+
     assert.match(backend, /DICTIONARY_HMAC_SECRET/);
     // Shared speech worker composition uses the dictionary HMAC for identity/
     // encrypted artifacts; this is distinct from HTTP auth or cache authority.
@@ -140,15 +151,18 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         worker,
         /^\s+DICTIONARY_HMAC_SECRET: \$\{DICTIONARY_HMAC_SECRET:\?required\}/m,
     );
+
     const workerComposition = await readFile(
         'apps/backend/src/infrastructure/worker/dictionary-worker-command.ts',
         'utf8',
     );
+
     assert.match(workerComposition, /createSpeechInfrastructure\(\{/);
     assert.match(
         workerComposition,
         /dictionaryHmacSecret:\s*process\.env\.DICTIONARY_HMAC_SECRET/,
     );
+
     assert.doesNotMatch(backend, /DICTIONARY_GENERATION_MODEL_API_KEY/);
     assert.doesNotMatch(backend, /^\s+DEEPSEEK_API_KEY:/m);
     assert.doesNotMatch(backend, /^\s+KIE_API_KEY:/m);
@@ -161,6 +175,7 @@ test('dictionary worker reuses the backend image without HTTP or auth/cache auth
         assert.match(backend, new RegExp(`^\\s+${safeSetting}:`, 'm'));
         assert.doesNotMatch(worker, new RegExp(`^\\s+${safeSetting}:`, 'm'));
     }
+
     for (const policy of [
         'DICTIONARY_GENERATION_MAX_INPUT_TOKENS',
         'DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS',
@@ -183,6 +198,7 @@ test('account purge worker has isolated database and version-delete credentials'
         apps.indexOf('    account-purge-worker:'),
         apps.indexOf('    web:'),
     );
+
     assert.match(worker, /account-purge-command\.js/);
     assert.match(worker, /ACCOUNT_PURGE_DATABASE_URL/);
     assert.match(worker, /ACCOUNT_PURGE_STORAGE_ACCESS_KEY_ID/);
@@ -191,33 +207,40 @@ test('account purge worker has isolated database and version-delete credentials'
         worker,
         /AUTH_|REDIS_URL|DICTIONARY_GENERATION_MODEL_API_KEY|edge:/,
     );
+
     const role = await readFile(
         'infra/deploy/sql/account-purge-worker-role.sql',
         'utf8',
     );
+
     assert.match(role, /REVOKE ALL PRIVILEGES ON ALL TABLES/);
     assert.match(
         role,
         /GRANT SELECT, DELETE ON TABLE dictionary_generation_jobs/,
     );
+
     assert.doesNotMatch(role, /GRANT ALL|GRANT INSERT ON/);
     assert.match(
         role,
         /GRANT EXECUTE ON FUNCTION[^;]*languon_finalize_speech_accounting_for_purge\(uuid,text,integer\)[^;]*languon_purge_private_knowledge_speech\(uuid,text,integer\)/,
     );
+
     assert.doesNotMatch(role, /GRANT[^;]*UPDATE[^;]*ON TABLE speech_jobs/);
     const privateSpeechPurge = await readFile(
         'apps/backend/src/modules/speech/infrastructure/knowledge-speech-purge.sql',
         'utf8',
     );
+
     assert.match(
         privateSpeechPurge,
         /PERFORM public\.languon_assert_accounting_purge_claim\(owner_value,worker_value,fence_value\)/,
     );
+
     assert.match(
         privateSpeechPurge,
         /REVOKE ALL ON FUNCTION languon_purge_private_knowledge_speech\(uuid,text,integer\) FROM PUBLIC/,
     );
+
     assert.doesNotMatch(role, /GRANT[^;]*ON TABLE speech_recordings/);
     assert.doesNotMatch(role, /GRANT[^;]*ON TABLE model_price_revisions/);
 });
@@ -243,12 +266,14 @@ test('paid speech authority belongs only to the dictionary worker and retained s
         apps.indexOf('    account-purge-worker:'),
         apps.indexOf('    web:'),
     );
+
     for (const restricted of [shared, api, purge]) {
         assert.doesNotMatch(
             restricted,
             /DICTIONARY_AUDIO_KIE_API_KEY|DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS|DICTIONARY_AUDIO_DOWNLOAD_HOSTS/,
         );
     }
+
     for (const name of [
         'DICTIONARY_AUDIO_KIE_API_KEY',
         'DICTIONARY_AUDIO_RETAINED_KIE_CONFIGURATIONS',
@@ -256,11 +281,13 @@ test('paid speech authority belongs only to the dictionary worker and retained s
     ]) {
         assert.match(worker, new RegExp(`${name}:`));
     }
+
     assert.match(api, /DICTIONARY_AUDIO_RETAINED_S3_API_CONFIGURATIONS/);
     assert.doesNotMatch(
         api,
         /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS|ACCOUNT_PURGE_AUDIO_RETAINED_S3_CONFIGURATIONS/,
     );
+
     assert.match(worker, /DICTIONARY_AUDIO_RETAINED_S3_WORKER_CONFIGURATIONS/);
     assert.doesNotMatch(purge, /ACCOUNT_PURGE_AUDIO_|DICTIONARY_AUDIO_/);
     assert.doesNotMatch(

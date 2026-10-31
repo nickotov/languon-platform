@@ -12,7 +12,10 @@ export function copyWorkbookBody(
 ): KnowledgeBody {
     const ids = new Map<string, string>();
     const visit = (value: unknown): void => {
-        if (!value || typeof value !== 'object') return;
+        if (!value || typeof value !== 'object') {
+            return;
+        }
+
         if (Array.isArray(value)) {
             value.forEach(visit);
 
@@ -24,22 +27,30 @@ export function copyWorkbookBody(
             object.type === 'audio' &&
             typeof object.assetId === 'string' &&
             !assetCopies?.has(object.assetId)
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Audio copies require independent asset ownership; this copy cannot be completed yet.',
             );
-        if (typeof object.id === 'string' && !ids.has(object.id))
+        }
+
+        if (typeof object.id === 'string' && !ids.has(object.id)) {
             ids.set(object.id, randomUUID());
+        }
+
         Object.values(object).forEach(visit);
     };
 
     visit(body.document);
     const remap = (value: unknown, key?: string): unknown => {
-        if (Array.isArray(value))
+        if (Array.isArray(value)) {
             return value.map((child) => remap(child, key));
-        if (typeof value === 'string' && key === 'assetId')
+        }
+
+        if (typeof value === 'string' && key === 'assetId') {
             return assetCopies?.get(value) ?? value;
+        }
+
         if (
             typeof value === 'string' &&
             key &&
@@ -51,9 +62,13 @@ export function copyWorkbookBody(
                 'correctChoiceId',
                 'segmentIds',
             ].includes(key)
-        )
+        ) {
             return ids.get(value) ?? value;
-        if (!value || typeof value !== 'object') return value;
+        }
+
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
 
         return Object.fromEntries(
             Object.entries(value).map(([name, child]) => [

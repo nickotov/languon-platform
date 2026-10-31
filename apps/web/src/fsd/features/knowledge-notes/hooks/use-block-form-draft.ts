@@ -42,6 +42,7 @@ export function useBlockFormDraft({
     useEffect(() => {
         refreshMountedForm((value) => value + 1);
     }, []);
+
     const [format, setFormat] = useState(
         block?.type === 'exercise' ? block.format : 'free-text',
     );
@@ -68,6 +69,7 @@ export function useBlockFormDraft({
         setTranslationKey((value) => value + 1);
         setPreview(null);
     }
+
     const bilingual = useBilingualBlockDraft({
         kind,
         block,
@@ -76,12 +78,17 @@ export function useBlockFormDraft({
         definition,
         onDefinition: replaceDefinition,
     });
+
     function count(name: string, value: number) {
         counts.current[name] = value;
         setDirty(true);
     }
+
     function parse(report = true) {
-        if (!form.current) return null;
+        if (!form.current) {
+            return null;
+        }
+
         try {
             const data = new FormData(form.current);
             const result = readBlockForm(
@@ -91,76 +98,117 @@ export function useBlockFormDraft({
                 original.current,
                 bilingual.read(data),
             );
-            if (report) setError(false);
+
+            if (report) {
+                setError(false);
+            }
+
             return result;
         } catch {
-            if (report) setError(true);
+            if (report) {
+                setError(true);
+            }
+
             return null;
         }
     }
+
     function submit(event: FormEvent) {
         event.preventDefault();
         const result = parse();
-        if (result && !onApply(result)) setError(true);
+        if (result && !onApply(result)) {
+            setError(true);
+        }
     }
+
     function change(event: FormEvent<HTMLFormElement>) {
-        if (event.target instanceof HTMLSelectElement && !event.target.name)
+        if (event.target instanceof HTMLSelectElement && !event.target.name) {
             return;
+        }
+
         setDirty(true);
         refreshMountedForm((value) => value + 1);
         const target = event.target;
-        if (target instanceof HTMLInputElement && target.name === 'title')
+        if (target instanceof HTMLInputElement && target.name === 'title') {
             setTitle(target.value || labels.view.kinds[kind]);
+        }
+
         if (target instanceof HTMLSelectElement && target.name === 'format') {
             const next = target.value;
             if (
                 next === 'free-text' ||
                 next === 'multiple-choice' ||
                 next === 'fill-in-the-blank'
-            )
+            ) {
                 setFormat(next);
+            }
         }
     }
+
     function requestClose() {
-        if (confirming) setConfirming(false);
-        else if (dirty) setConfirming(true);
-        else onClose();
+        if (confirming) {
+            setConfirming(false);
+        } else if (dirty) {
+            setConfirming(true);
+        } else {
+            onClose();
+        }
     }
+
     function keepEditing() {
         setConfirming(false);
     }
+
     function visibleField(name: string) {
-        if (name === 'correctChoice') return format === 'multiple-choice';
-        if (name === 'gapText') return format === 'fill-in-the-blank';
-        if (name === 'acceptedAnswers') return format === 'free-text';
+        if (name === 'correctChoice') {
+            return format === 'multiple-choice';
+        }
+
+        if (name === 'gapText') {
+            return format === 'fill-in-the-blank';
+        }
+
+        if (name === 'acceptedAnswers') {
+            return format === 'free-text';
+        }
+
         return true;
     }
+
     function showPreview() {
         setPreview(parse());
     }
+
     const fields = definition.fields.filter((field) =>
         visibleField(field.name),
     );
     const groups = definition.groups.filter(
         (group) => group.name !== 'choices' || format === 'multiple-choice',
     );
+
     function handlePreparedTranslationChange(
         event: ChangeEvent<HTMLSelectElement>,
     ) {
         bilingual.switchLanguage(event.currentTarget.value);
     }
+
     function acceptAudio(audio: Extract<LearningBlock, { type: 'audio' }>) {
-        if (audio.id !== blockId.current) return;
+        if (audio.id !== blockId.current) {
+            return;
+        }
+
         original.current = audio;
         const next = blockForm('audio', audio, languageDefaults);
         counts.current = Object.fromEntries(
             next.groups.map((group) => [group.name, group.rows.length]),
         );
+
         setDefinition(next);
         setTranslationKey((value) => value + 1);
         setDirty(true);
         setError(false);
     }
+
     function uploaded(audio: Extract<LearningBlock, { type: 'audio' }>) {
         const current = parse(false);
         const previousAudio =
@@ -173,16 +221,26 @@ export function useBlockFormDraft({
             assetId: audio.assetId,
         });
     }
+
     function getAudioDraft(): Extract<LearningBlock, { type: 'audio' }> | null {
-        if (kind !== 'audio') return null;
+        if (kind !== 'audio') {
+            return null;
+        }
+
         const current = parse(false);
-        if (current?.type === 'audio') return current;
-        if (!form.current)
+        if (current?.type === 'audio') {
+            return current;
+        }
+
+        if (!form.current) {
             return original.current?.type === 'audio'
                 ? original.current
                 : { id: blockId.current, type: 'audio' };
+        }
+
         return null;
     }
+
     return {
         formId,
         error,
@@ -213,4 +271,5 @@ export function useBlockFormDraft({
         setDirty,
     };
 }
+
 export type BlockFormDraft = ReturnType<typeof useBlockFormDraft>;

@@ -37,7 +37,10 @@ export function useInterviewOperationPolling({
     onError(value: string | null): void;
 }) {
     useEffect(() => {
-        if (!operationId || !isInterviewOwner(ownerId)) return;
+        if (!operationId || !isInterviewOwner(ownerId)) {
+            return;
+        }
+
         const request = ownerScopedInterviewRequest(
             ownerId,
             requestWithSession,
@@ -54,9 +57,15 @@ export function useInterviewOperationPolling({
                         controller.signal,
                     ),
                 );
-                if (controller.signal.aborted || !isInterviewOwner(ownerId))
+
+                if (controller.signal.aborted || !isInterviewOwner(ownerId)) {
                     return;
-                if (!operation) throw new Error('Operation unavailable');
+                }
+
+                if (!operation) {
+                    throw new Error('Operation unavailable');
+                }
+
                 onProjection?.(operation);
                 if (
                     operation.state === 'queued' ||
@@ -67,31 +76,41 @@ export function useInterviewOperationPolling({
                         onError(
                             'The response is still running. Reconnect to check its status.',
                         );
+
                         onBusy(false);
+
                         return;
                     }
+
                     timer = setTimeout(poll, 2000);
+
                     return;
                 }
+
                 onOperation(null);
                 onBusy(false);
                 await load();
                 onProjection?.(operation);
-                if (operation.state !== 'succeeded')
+                if (operation.state !== 'succeeded') {
                     onError(
                         operation.errorCode ??
                             'Response stopped. Your draft is unchanged.',
                     );
+                }
             } catch {
-                if (controller.signal.aborted || !isInterviewOwner(ownerId))
+                if (controller.signal.aborted || !isInterviewOwner(ownerId)) {
                     return;
+                }
+
                 onBusy(false);
                 onError(
                     'Connection lost. Your interview is kept. Reconnect before sending again.',
                 );
             }
         }
+
         void poll();
+
         return () => {
             controller.abort();
             clearTimeout(timer);

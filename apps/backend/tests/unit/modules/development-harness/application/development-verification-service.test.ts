@@ -74,6 +74,7 @@ describe('DevelopmentVerificationService', () => {
             {
                 findById: async () => {
                     accessed = true;
+
                     return null;
                 },
             },
@@ -87,6 +88,7 @@ describe('DevelopmentVerificationService', () => {
                 variant: 'concise',
             }),
         ).rejects.toBeInstanceOf(DevelopmentPrincipalAuthorizationError);
+
         expect(accessed).toBe(false);
     });
 

@@ -23,24 +23,32 @@ export function useSharedWorkbook(locator: string) {
             const fragment = window.location.hash.slice(1);
             let value = fragment;
             try {
-                if (fragment)
+                if (fragment) {
                     window.sessionStorage.setItem(storageKey, fragment);
-                else value = window.sessionStorage.getItem(storageKey) ?? '';
+                } else {
+                    value = window.sessionStorage.getItem(storageKey) ?? '';
+                }
             } catch {
                 /* Current fragment still works without session storage. */
             }
-            if (fragment)
+
+            if (fragment) {
                 window.history.replaceState(
                     window.history.state,
                     '',
                     `${window.location.pathname}${window.location.search}`,
                 );
+            }
+
             setAccess({ locator, key: value });
         }
+
         readKey();
         window.addEventListener('hashchange', readKey);
+
         return () => window.removeEventListener('hashchange', readKey);
     }, [locator, storageKey]);
+
     const query = useQuery({
         queryKey: ['shared-workbook', locator, key],
         queryFn: ({ signal }) => workbookApi.readShared(locator, key!, signal),
@@ -49,6 +57,7 @@ export function useSharedWorkbook(locator: string) {
         staleTime: 0,
         gcTime: 0,
     });
+
     useEffect(() => {
         if (
             query.error instanceof WorkbookApiError &&
@@ -61,8 +70,12 @@ export function useSharedWorkbook(locator: string) {
             }
         }
     }, [query.error, storageKey]);
+
     async function copy() {
-        if (!query.data || !key || copying) return;
+        if (!query.data || !key || copying) {
+            return;
+        }
+
         setCopying(true);
         setCopyError(false);
         try {
@@ -72,6 +85,7 @@ export function useSharedWorkbook(locator: string) {
                     title: query.data.workbook.title,
                 }),
             );
+
             router.push(href(`/workbooks/${result.workbook.id}`));
         } catch {
             setCopyError(true);
@@ -79,5 +93,6 @@ export function useSharedWorkbook(locator: string) {
             setCopying(false);
         }
     }
+
     return { key, query, copying, copyError, copy };
 }

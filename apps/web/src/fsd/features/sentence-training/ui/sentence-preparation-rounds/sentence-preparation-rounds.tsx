@@ -26,12 +26,15 @@ export function SentencePreparationRounds({
     const shown = expanded
         ? controller.batches
         : controller.batches.slice(0, 3);
+
     function toggleExpanded() {
         setExpanded((value) => !value);
     }
+
     function loadMore() {
         void controller.loadMore();
     }
+
     return (
         <section aria-labelledby='prep-rounds' className={styles.rounds}>
             <h3 id='prep-rounds' className={styles.title}>
@@ -70,15 +73,18 @@ export function SentencePreparationRounds({
                             : state === 'partial'
                               ? 'info'
                               : 'neutral';
+
                     function start() {
                         onStartRound(round);
                     }
+
                     const hint =
                         done === 0
                             ? P('startDisabled')
                             : done < total
                               ? P('startReadyPartial', { done, total })
                               : P('startReadyFull');
+
                     return (
                         <li key={round.id} className={styles.round}>
                             <div className={styles.roundMetadata}>

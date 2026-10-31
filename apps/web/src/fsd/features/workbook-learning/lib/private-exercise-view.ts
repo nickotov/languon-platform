@@ -22,33 +22,45 @@ export function privateExerciseView({
     LearningBlockViewProps,
     'feedback' | 'feedbackKind' | 'learnerState' | 'exerciseRevision'
 > {
-    if (!revision) return {};
+    if (!revision) {
+        return {};
+    }
+
     let latest = state?.attempts.find(
         (item) =>
             item.exerciseId === blockId && item.exerciseRevision === revision,
     );
+
     if (
         evaluated?.exerciseRevision === revision &&
         (!latest ||
             latest.id === evaluated.id ||
             Date.parse(evaluated.createdAt) > Date.parse(latest.createdAt))
-    )
+    ) {
         latest = evaluated;
+    }
+
     let feedback: string | undefined;
     let feedbackKind: 'prepared' | 'ai' = 'prepared';
     if (latest) {
-        if (latest.evaluation.status === 'unchecked')
+        if (latest.evaluation.status === 'unchecked') {
             feedback = labels.unchecked;
-        else {
+        } else {
             feedback =
                 latest.evaluation.status === 'correct'
                     ? labels.correct
                     : labels.incorrect;
-            if (latest.evaluation.feedback)
+
+            if (latest.evaluation.feedback) {
                 feedback += `: ${latest.evaluation.feedback}`;
-            if (latest.evaluation.method === 'ai') feedbackKind = 'ai';
+            }
+
+            if (latest.evaluation.method === 'ai') {
+                feedbackKind = 'ai';
+            }
         }
     }
+
     return {
         exerciseRevision: revision,
         feedback,

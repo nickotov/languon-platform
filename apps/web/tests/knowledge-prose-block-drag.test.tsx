@@ -71,15 +71,18 @@ it.each([
                 name: `Select or drag block: ${label}`,
             }),
         );
+
         const editor = (
             container.querySelector('[role="textbox"]') as HTMLElement & {
                 editor: Editor;
             }
         ).editor;
+
         expect(editor.state.selection.toJSON()).toMatchObject({ type: 'node' });
         expect(
             editor.state.doc.nodeAt(editor.state.selection.from)?.type.name,
         ).toBe(kind);
+
         expect(changed).not.toHaveBeenCalled();
     },
 );
@@ -89,6 +92,7 @@ it('moves complete nested blocks with the keyboard and supports undo', async () 
     const { container } = render(
         <KnowledgeEditor value={body} onChange={changed} />,
     );
+
     fireEvent.mouseMove(await screen.findByText('Nested entry'));
     fireEvent.keyDown(
         screen.getByRole('button', {
@@ -96,11 +100,13 @@ it('moves complete nested blocks with the keyboard and supports undo', async () 
         }),
         { key: 'ArrowUp', altKey: true },
     );
+
     const editor = (
         container.querySelector('[role="textbox"]') as HTMLElement & {
             editor: Editor;
         }
     ).editor;
+
     expect(editor.getJSON().content?.[1]).toEqual(body.document.content![2]);
     expect(changed).toHaveBeenCalledOnce();
     // JSDOM has no Range geometry; scrolling is verified by the real browser.
@@ -108,6 +114,7 @@ it('moves complete nested blocks with the keyboard and supports undo', async () 
     act(() => {
         editor.commands.undo();
     });
+
     expect(editor.getJSON().content?.[2]).toEqual(body.document.content![2]);
 });
 
@@ -115,6 +122,7 @@ it('serializes a complete native drag slice and rejects a stale drop', async () 
     const { container } = render(
         <KnowledgeEditor value={body} onChange={vi.fn()} />,
     );
+
     fireEvent.mouseMove(await screen.findByText('First passage'));
     const handle = screen.getByRole('button', {
         name: 'Select or drag block: Paragraph',
@@ -125,25 +133,30 @@ it('serializes a complete native drag slice and rejects a stale drop', async () 
         setDragImage: vi.fn(),
         effectAllowed: '',
     };
+
     fireEvent.dragStart(handle, { dataTransfer });
     const editor = (
         container.querySelector('[role="textbox"]') as HTMLElement & {
             editor: Editor;
         }
     ).editor;
+
     expect(editor.view.dragging?.slice.content.firstChild?.type.name).toBe(
         'paragraph',
     );
+
     expect(dataTransfer.setData).toHaveBeenCalledWith(
         'text/html',
         expect.stringContaining('>First passage</p>'),
     );
+
     act(() => {
         editor.commands.insertContentAt(
             editor.state.doc.content.size,
             paragraph('Newer prose'),
         );
     });
+
     const current = editor.getJSON();
     const event = new Event('drop', { cancelable: true }) as DragEvent;
     expect(
@@ -151,6 +164,7 @@ it('serializes a complete native drag slice and rejects a stale drop', async () 
             handler(editor.view, event, editor.state.selection.content(), true),
         ),
     ).toBe(true);
+
     expect(event.defaultPrevented).toBe(true);
     expect(editor.getJSON()).toEqual(current);
     expect(editor.view.dragging).toBeNull();
@@ -161,23 +175,28 @@ it('hides ordinary drag controls when the editor becomes read-only', async () =>
     const { container } = render(
         <KnowledgeEditor value={body} onChange={change} />,
     );
+
     fireEvent.mouseMove(await screen.findByText('First passage'));
     expect(
         screen.getByRole('button', { name: 'Select or drag block: Paragraph' }),
     ).toBeVisible();
+
     const editor = (
         container.querySelector('[role="textbox"]') as HTMLElement & {
             editor: Editor;
         }
     ).editor;
+
     act(() => {
         editor.setEditable(false);
     });
+
     await waitFor(() =>
         expect(
             screen.queryByRole('button', { name: /^Select or drag block:/ }),
         ).toBeNull(),
     );
+
     expect(change).not.toHaveBeenCalled();
 });
 
@@ -185,21 +204,26 @@ it('exposes the current block from keyboard focus and pointer input without hove
     const { container } = render(
         <KnowledgeEditor value={body} onChange={vi.fn()} />,
     );
+
     await screen.findByText('First passage');
     const editor = (
         container.querySelector('[role="textbox"]') as HTMLElement & {
             editor: Editor;
         }
     ).editor;
+
     act(() => {
         editor.view.focus();
     });
+
     expect(
         screen.getByRole('button', { name: 'Select or drag block: Paragraph' }),
     ).toBeVisible();
+
     fireEvent.pointerDown(screen.getByText('A quotation'), {
         pointerType: 'touch',
     });
+
     expect(
         screen.getByRole('button', { name: 'Select or drag block: Quotation' }),
     ).toBeVisible();
@@ -218,9 +242,11 @@ it('keeps the handle reachable across editor padding and the external gutter gap
     vi.spyOn(paragraph, 'getBoundingClientRect').mockReturnValue(
         new DOMRect(280, 100, 600, 24),
     );
+
     vi.spyOn(handle, 'getBoundingClientRect').mockReturnValue(
         new DOMRect(256, 100, 20, 28),
     );
+
     // Move from prose through its padding, leave the host, then cross the 4px
     // external gap. The control must remain available at every boundary.
     fireEvent.mouseMove(host, { clientX: 281, clientY: 112 });
@@ -229,6 +255,7 @@ it('keeps the handle reachable across editor padding and the external gutter gap
         clientX: 278,
         clientY: 112,
     });
+
     fireEvent.mouseMove(document.body, { clientX: 278, clientY: 112 });
     expect(handle).toBeVisible();
     fireEvent.mouseMove(handle, { clientX: 266, clientY: 112 });
@@ -244,25 +271,31 @@ it('does not retarget a hovered handle to the caret on unrelated view updates', 
     const { container } = render(
         <KnowledgeEditor value={body} onChange={vi.fn()} />,
     );
+
     await screen.findByText('Section title');
     const editor = (
         container.querySelector('[role="textbox"]') as HTMLElement & {
             editor: Editor;
         }
     ).editor;
+
     act(() => {
         editor.commands.setTextSelection(
             editor.state.doc.child(0).nodeSize + 1,
         );
+
         editor.view.focus();
     });
+
     fireEvent.mouseMove(screen.getByText('First passage'));
     act(() => {
         editor.view.updateState(editor.state);
     });
+
     expect(
         screen.getByRole('button', { name: 'Select or drag block: Paragraph' }),
     ).toBeVisible();
+
     expect(
         screen.queryByRole('button', {
             name: 'Select or drag block: Heading 2',
@@ -312,6 +345,7 @@ it('keyboard moves cross the complete exercise group without pointer discovery',
             editor: Editor;
         }
     ).editor;
+
     expect(editor.state.doc.child(0).type.name).toBe('learningBlock');
     expect(editor.state.doc.child(1).type.name).toBe('learningBlock');
     expect(editor.state.doc.child(2).textContent).toBe('Before group');
@@ -321,6 +355,7 @@ it('snaps an ordinary drop between exercise members to the full group boundary',
     const { container } = render(
         <KnowledgeEditor value={groupedBody} onChange={vi.fn()} />,
     );
+
     fireEvent.mouseMove(await screen.findByText('After group'));
     const editor = (
         container.querySelector('[role="textbox"]') as HTMLElement & {
@@ -329,10 +364,12 @@ it('snaps an ordinary drop between exercise members to the full group boundary',
     ).editor;
     const between =
         editor.state.doc.child(0).nodeSize + editor.state.doc.child(1).nodeSize;
+
     vi.spyOn(editor.view, 'posAtCoords').mockReturnValue({
         pos: between,
         inside: -1,
     });
+
     editor.view.setProps({ handleScrollToSelection: () => true });
     fireEvent.dragStart(
         screen.getByRole('button', { name: 'Select or drag block: Paragraph' }),
@@ -345,12 +382,14 @@ it('snaps an ordinary drop between exercise members to the full group boundary',
             },
         },
     );
+
     const event = new MouseEvent('drop', { cancelable: true }) as DragEvent;
     expect(
         editor.view.someProp('handleDrop', (handler) =>
             handler(editor.view, event, editor.view.dragging!.slice, true),
         ),
     ).toBe(true);
+
     expect(editor.state.doc.child(1).textContent).toBe('After group');
     expect(editor.state.doc.child(2).attrs.block.question).toBe('Question 1');
     expect(editor.state.doc.child(3).attrs.block.question).toBe('Question 2');

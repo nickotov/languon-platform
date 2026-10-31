@@ -89,7 +89,9 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
             .from(jobs)
             .where(and(eq(jobs.id, id), eq(jobs.ownerId, ownerId)));
 
-        if (!job) throw new TextSelectionError('not_found');
+        if (!job) {
+            throw new TextSelectionError('not_found');
+        }
 
         return withActionBilling(
             this.db,
@@ -109,7 +111,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .where(and(eq(jobs.id, id), eq(jobs.ownerId, ownerId)))
                 .for('update');
 
-            if (!job) throw new TextSelectionError('not_found');
+            if (!job) {
+                throw new TextSelectionError('not_found');
+            }
+
             if (job.executionState === 'queued') {
                 await finishSelectionJob(
                     tx,
@@ -169,8 +174,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
             if (
                 !selectionLeaseOwned(job, lease, now) ||
                 job!.cancellationRequestedAt
-            )
+            ) {
                 return false;
+            }
+
             await tx
                 .update(jobs)
                 .set({
@@ -200,7 +207,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .where(eq(jobs.id, lease.id))
                 .for('update');
 
-            if (!selectionLeaseOwned(job, lease, now)) return false;
+            if (!selectionLeaseOwned(job, lease, now)) {
+                return false;
+            }
+
             if (!ownerActive || job!.cancellationRequestedAt) {
                 await finishSelectionJob(tx, job!, 'cancelled', null, now);
 
@@ -232,8 +242,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                         now,
                     });
                 } catch (error) {
-                    if (!(error instanceof TextAiSelectionUnavailableError))
+                    if (!(error instanceof TextAiSelectionUnavailableError)) {
                         throw error;
+                    }
+
                     await finishSelectionJob(
                         tx,
                         job!,
@@ -246,7 +258,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 }
             }
 
-            if (!usesLegacyAction(job!.selectedExecutionSnapshot))
+            if (!usesLegacyAction(job!.selectedExecutionSnapshot)) {
                 await new DrizzleAiCreditTransactionParticipant(
                     tx,
                 ).markProviderDispatched({
@@ -254,6 +266,8 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                     ownerId: job!.ownerId,
                     reservationId: job!.aiCreditReservationId!,
                 });
+            }
+
             await tx
                 .update(jobs)
                 .set({ aiCreditProviderDispatchedAt: now })
@@ -282,7 +296,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .where(eq(jobs.id, lease.id))
                 .for('update');
 
-            if (!selectionLeaseOwned(job, lease, now)) return false;
+            if (!selectionLeaseOwned(job, lease, now)) {
+                return false;
+            }
+
             if (!ownerActive || job!.cancellationRequestedAt) {
                 await finishSelectionJob(
                     tx,
@@ -316,7 +333,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 );
 
                 // Canonical Source can collide even when the selected text does not.
-                if (values.source !== lease.input.source)
+                if (values.source !== lease.input.source) {
                     await selectionTarget(
                         tx,
                         job!.ownerId,
@@ -326,6 +343,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                         values.source,
                         job!.confirmDuplicate,
                     );
+                }
             } catch (error) {
                 await finishSelectionJob(
                     tx,
@@ -378,7 +396,10 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .where(eq(jobs.id, lease.id))
                 .for('update');
 
-            if (!selectionLeaseOwned(job, lease, now)) return;
+            if (!selectionLeaseOwned(job, lease, now)) {
+                return;
+            }
+
             if (
                 ownerActive &&
                 !job!.cancellationRequestedAt &&
@@ -445,7 +466,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                 .for('update');
 
             for (const job of running) {
-                if (job.aiCreditProviderDispatchedAt)
+                if (job.aiCreditProviderDispatchedAt) {
                     await finishSelectionJob(
                         tx,
                         job,
@@ -453,7 +474,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                         'worker_interrupted',
                         now,
                     );
-                else
+                } else {
                     await tx
                         .update(jobs)
                         .set({
@@ -465,6 +486,7 @@ export class DrizzleTextSelectionStore implements TextSelectionStore {
                             updatedAt: now,
                         })
                         .where(eq(jobs.id, job.id));
+                }
             }
         });
     }

@@ -96,9 +96,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(expenses)
                     .where(eq(expenses.actionId, (await job()).id))
             )[0]!;
+
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -111,6 +113,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });
+
             await db.insert(settings).values({
                 id: randomUUID(),
                 version: 1,
@@ -121,6 +124,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic disposable speech limits',
             });
+
             await price('0.01', 0);
             storage = new PostgresAudioObjectStorage(db);
             store = new DrizzleSpeechStore({
@@ -137,9 +141,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             });
         }, 120000);
+
         afterAll(async () => {
-            if (client) await client.end();
+            if (client) {
+                await client.end();
+            }
         });
+
         it('pins provider USD independently and records estimated synthesis even for free speech', async () => {
             await prepare();
             const admitted = await job();
@@ -154,15 +162,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 costSource: 'calculated',
                 attemptReference: `speech:${admitted.id}`,
             });
+
             expect((await db.select().from(budgets))[0]).toMatchObject({
                 state: 'settled',
                 consumedMicros: 70n,
             });
+
             expect((await job()).state).toBe('ready');
             await prepare();
             expect(await db.select().from(jobs)).toHaveLength(1);
             expect(await db.select().from(expenses)).toHaveLength(1);
         });
+
         it('requires reviewed pricing and configured shared USD limits before any fresh free generation', async () => {
             const unavailable = new DrizzleSpeechStore({
                 database: db,
@@ -182,6 +193,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     revision: '1',
                 }),
             });
+
             await expect(
                 unavailable.prepare({
                     actorId: owner,
@@ -191,6 +203,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now: new Date(),
                 }),
             ).rejects.toThrow('speech_provider_unavailable');
+
             expect(await db.select().from(jobs)).toHaveLength(0);
             expect(await db.select().from(budgets)).toHaveLength(0);
             await db.insert(settings).values({
@@ -199,10 +212,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic deliberately unconfigured limits',
             });
+
             await expect(prepare()).rejects.toThrow(
                 'speech_provider_unavailable',
             );
         });
+
         it('shares operator day ceilings across generation and retains unknown expense conservatively', async () => {
             await prepare();
             const ambiguous = Object.assign(new FixtureSpeechProvider(), {
@@ -210,16 +225,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     throw new SpeechSubmissionError('unknown', false);
                 },
             });
+
             await worker(ambiguous).runOnce();
             expect(await expense()).toMatchObject({
                 amountUsdMicros: null,
                 measurement: 'unknown',
                 costSource: 'unknown',
             });
+
             expect((await db.select().from(budgets))[0]).toMatchObject({
                 state: 'settled',
                 consumedMicros: 70n,
             });
+
             expect(
                 (
                     await db
@@ -228,8 +246,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(daily.scope, 'global'))
                 )[0]?.consumedMicros,
             ).toBe(70n);
+
             expect((await job()).state).toBe('submission_unknown');
         });
+
         it('records zero only when submission is known not to have occurred', async () => {
             await prepare();
             const rejected = Object.assign(new FixtureSpeechProvider(), {
@@ -237,17 +257,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     throw new SpeechSubmissionError('not_submitted', false);
                 },
             });
+
             await worker(rejected).runOnce();
             expect(await expense()).toMatchObject({
                 amountUsdMicros: 0n,
                 measurement: 'measured',
                 costSource: 'calculated',
             });
+
             expect((await db.select().from(budgets))[0]).toMatchObject({
                 state: 'settled',
                 consumedMicros: 0n,
             });
         });
+
         it('releases an undispatched queue deadline without inventing a provider attempt', async () => {
             await prepare();
             const admitted = await job();
@@ -257,12 +280,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     queueDeadline: sql`clock_timestamp()-interval '1 second'`,
                 })
                 .where(eq(jobs.id, admitted.id));
+
             await store.releaseDeadlines(new Date());
             expect((await job()).state).toBe('failed');
             expect((await db.select().from(budgets))[0]).toMatchObject({
                 state: 'settled',
                 consumedMicros: 0n,
             });
+
             expect(await db.select().from(expenses)).toHaveLength(0);
             expect(
                 (
@@ -281,6 +306,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 )[0]?.freeCount,
             ).toBe(1);
         });
+
         it('rejects an old worker dispatch that omits the new provider accounting acknowledgement', async () => {
             await prepare();
             const admitted = await job();
@@ -289,6 +315,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await tx.execute(
                         sql`select set_config('languon.speech_worker_version','1',true)`,
                     );
+
                     await tx
                         .update(jobs)
                         .set({
@@ -301,6 +328,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).rejects.toSatisfy((error: unknown) => {
                 const cause =
                     error instanceof Error && error.cause ? error.cause : error;
+
                 return (
                     !!cause &&
                     typeof cause === 'object' &&
@@ -308,15 +336,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     cause.code === '23514'
                 );
             });
+
             expect((await job()).state).toBe('queued');
             expect(await store.claim(new Date())).not.toBeNull();
         });
+
         it('cancels queued speech at scheduling while retaining in-flight USD observation and releasing its customer hold', async () => {
             await expect(
                 db.transaction((tx) =>
                     cancelSpeechActorForScheduledDeletion(tx, owner),
                 ),
             ).rejects.toMatchObject({ cause: { code: '23514' } });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: owner,
@@ -327,8 +358,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             text =
                 'A private sentence contains considerably more than ten words and requires confirmed pronunciation credits.';
+
             const prepared = await prepare();
             expect(prepared.quote).toBeDefined();
             await store.confirm({
@@ -337,6 +370,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 operationId: randomUUID(),
                 now: new Date(),
             });
+
             const inFlight = await store.claim(new Date());
             expect(inFlight).not.toBeNull();
             text = 'salut';
@@ -345,21 +379,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(jobs)
                 .where(eq(jobs.state, 'queued'));
+
             expect(queued).toBeDefined();
             await client`update users set status='deletion_pending' where id=${owner}`;
             await client`insert into account_deletion_requests(user_id,state,scheduled_at,purge_at,next_attempt_at,updated_at) values(${owner},'pending',statement_timestamp(),statement_timestamp()+interval '30 days',statement_timestamp()+interval '30 days',statement_timestamp())`;
             await db.transaction((tx) =>
                 cancelSpeechActorForScheduledDeletion(tx, owner),
             );
+
             const [retained] = await db
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, inFlight!.id));
+
             expect(retained).toMatchObject({
                 state: 'submitting',
                 payerId: owner,
                 providerOutcome: null,
             });
+
             expect(retained!.reservationId).not.toBeNull();
             expect(
                 (
@@ -369,6 +407,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(budgets.actionId, inFlight!.id))
                 )[0]?.state,
             ).toBe('active');
+
             expect(
                 (
                     await db
@@ -377,32 +416,38 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(budgets.actionId, queued!.id))
                 )[0],
             ).toMatchObject({ state: 'settled', consumedMicros: 0n });
+
             expect(
                 (
                     await db.select().from(jobs).where(eq(jobs.id, queued!.id))
                 )[0],
             ).toMatchObject({ state: 'failed', payerId: null });
+
             expect(await db.select().from(expenses)).toHaveLength(0);
             const audio = createFixtureAudio();
             expect(await store.storing(inFlight!, audio, new Date())).toBe(
                 true,
             );
+
             await store.complete(
                 inFlight!,
                 await storage.putForReference(inFlight!.storage, audio),
                 audio,
                 new Date(),
             );
+
             const [fact] = await db
                 .select()
                 .from(expenses)
                 .where(eq(expenses.actionId, inFlight!.id));
+
             expect(fact).toMatchObject({
                 measurement: 'estimated',
                 costSource: 'calculated',
                 amountUsdMicros:
                     BigInt(retained!.providerCharacterCount!) * 10n,
             });
+
             expect(
                 (
                     await db
@@ -414,15 +459,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 state: 'ready',
                 billingState: 'released_no_charge',
             });
+
             const wallet = await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).accountSummary(
                     owner,
                     new Date(),
                 ),
             );
+
             expect(wallet.consumedCredits).toBe(0n);
             expect(wallet.reservedCredits).toBe(0n);
         });
+
         it('rejects an indivisible speech operation above the shared operator action ceiling', async () => {
             await db.insert(settings).values({
                 id: randomUUID(),
@@ -434,6 +482,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic small speech ceiling',
             });
+
             await expect(prepare()).rejects.toThrow('speech_provider_budget');
             expect(await db.select().from(jobs)).toHaveLength(0);
             expect(await db.select().from(budgets)).toHaveLength(0);

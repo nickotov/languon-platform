@@ -655,6 +655,7 @@ const PREPARATION = {
         'Готово {done} из {total} слов',
     ],
 } satisfies Record<string, Row>;
+
 export function usePreparationCopy() {
     const { locale } = useI18n();
     function P(
@@ -664,16 +665,20 @@ export function usePreparationCopy() {
         const indexes = { en: 0, es: 1, fr: 2, ru: 3 };
         const value: string | Plural = PREPARATION[key][indexes[locale]]!;
         let text: string;
-        if (typeof value === 'string') text = value;
-        else
+        if (typeof value === 'string') {
+            text = value;
+        } else {
             text =
                 value[
                     new Intl.PluralRules(locale).select(Number(values.n ?? 0))
                 ] ?? value.other;
+        }
+
         return text.replace(/\{(\w+)\}/g, (_, name: string) =>
             String(values[name] ?? ''),
         );
     }
+
     return {
         P,
         num: (value: number) => new Intl.NumberFormat(locale).format(value),

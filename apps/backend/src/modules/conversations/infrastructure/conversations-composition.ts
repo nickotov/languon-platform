@@ -99,12 +99,14 @@ export function createConversationsComposition(
                 userId: claims.userId,
                 sessionId: claims.sessionId,
             });
+
             return { userId: claims.userId };
         },
         dependencies.rateLimiter,
         dependencies.rateLimiter,
     );
     const factory = dependencies.createRunner;
+
     return {
         store,
         service,

@@ -9,5 +9,6 @@ export function useExerciseRevision(revision: string | undefined) {
             fence: known.observed === undefined ? known.fence : revision,
         });
     }
+
     return known.fence;
 }

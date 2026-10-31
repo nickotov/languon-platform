@@ -19,15 +19,20 @@ export async function readLearnerNote(
     access?: LearnerSourceAccess,
 ) {
     await lockKnowledgeOwner(tx, actorId);
-    if (access?.kind === 'workbook')
+    if (access?.kind === 'workbook') {
         return readWorkbookSharedNote(tx, crypto, noteId, access);
+    }
+
     const [note] = await tx
         .select()
         .from(knowledgeNotesTable)
         .where(eq(knowledgeNotesTable.id, noteId))
         .for('share');
 
-    if (!note || note.status !== 'saved') throw knowledgeUnavailable();
+    if (!note || note.status !== 'saved') {
+        throw knowledgeUnavailable();
+    }
+
     const [owner] = await tx
         .select({ id: usersTable.id })
         .from(usersTable)
@@ -38,8 +43,14 @@ export async function readLearnerNote(
             ),
         );
 
-    if (!owner) throw knowledgeUnavailable();
-    if (note.ownerId === actorId) return note;
+    if (!owner) {
+        throw knowledgeUnavailable();
+    }
+
+    if (note.ownerId === actorId) {
+        return note;
+    }
+
     const [share] = await tx
         .select()
         .from(knowledgeSharesTable)
@@ -53,8 +64,9 @@ export async function readLearnerNote(
     if (
         access?.kind !== 'note' ||
         !crypto.verify(access.key, share?.keyDigest ?? null)
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
 
     return note;
 }

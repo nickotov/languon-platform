@@ -13,14 +13,16 @@ describe('private knowledge translation contracts', () => {
             { sourceText: 'malicious substitution' },
             { actorId: randomUUID() },
             { targetLanguage: 'zz-unsupported' },
-        ])
+        ]) {
             expect(
                 RequestKnowledgeTranslationSchema.safeParse({
                     ...input,
                     ...patch,
                 }).success,
             ).toBe(false);
+        }
     });
+
     it('requires exact original segment identifiers and a versioned private library pin', () => {
         const row = {
             noteId: randomUUID(),
@@ -30,6 +32,7 @@ describe('private knowledge translation contracts', () => {
             segments: [{ sourceSegmentId: randomUUID(), text: 'Bonjour.' }],
             updatedAt: '2026-10-29T00:00:00Z',
         };
+
         expect(KnowledgePrivateTranslationSchema.parse(row)).toEqual(row);
         expect(
             CopyKnowledgeTextRequestSchema.parse({

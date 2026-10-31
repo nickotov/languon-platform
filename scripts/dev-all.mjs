@@ -84,6 +84,7 @@ export function validateDevelopmentEnvironment(environment) {
             throw new Error(`${key} must be development for dev:all.`);
         }
     }
+
     if (
         environment.POSTGRES_HOST &&
         !localHosts.has(environment.POSTGRES_HOST)
@@ -92,6 +93,7 @@ export function validateDevelopmentEnvironment(environment) {
             'POSTGRES_HOST must be localhost or a loopback address.',
         );
     }
+
     for (const key of [
         'DATABASE_URL',
         'MIGRATION_DATABASE_URL',
@@ -99,13 +101,17 @@ export function validateDevelopmentEnvironment(environment) {
         'REDIS_URL',
     ]) {
         const value = environment[key];
-        if (!value && key !== 'DATABASE_URL' && key !== 'REDIS_URL') continue;
+        if (!value && key !== 'DATABASE_URL' && key !== 'REDIS_URL') {
+            continue;
+        }
+
         let url;
         try {
             url = new URL(value);
         } catch {
             throw new Error(`${key} must be a valid local URL.`);
         }
+
         const redis = key === 'REDIS_URL';
         const port = redis
             ? environment.REDIS_PORT || '6379'
@@ -122,6 +128,7 @@ export function validateDevelopmentEnvironment(environment) {
                 `${key} must target the local Compose service port without URL query overrides.`,
             );
         }
+
         if (
             !redis &&
             decodeURIComponent(url.pathname.slice(1)) !==
@@ -135,7 +142,10 @@ export function validateDevelopmentEnvironment(environment) {
 }
 
 async function descendantPids(rootPids) {
-    if (process.platform === 'win32') return [];
+    if (process.platform === 'win32') {
+        return [];
+    }
+
     const output = await new Promise((resolveOutput, reject) => {
         execFile(
             'ps',
@@ -159,7 +169,11 @@ async function descendantPids(rootPids) {
             }
         }
     } while (added);
-    for (const pid of rootPids) owned.delete(pid);
+
+    for (const pid of rootPids) {
+        owned.delete(pid);
+    }
+
     return [...owned].reverse();
 }
 
@@ -167,7 +181,9 @@ function signalPid(pid, signal) {
     try {
         process.kill(pid, signal);
     } catch (error) {
-        if (error.code !== 'ESRCH') throw error;
+        if (error.code !== 'ESRCH') {
+            throw error;
+        }
     }
 }
 
@@ -189,13 +205,16 @@ export async function runDevelopment({
             await readFile(resolve(cwd, '.env.local'), 'utf8'),
         );
     } catch (error) {
-        if (error.code === 'ENOENT')
+        if (error.code === 'ENOENT') {
             throw new Error(
                 '.env.local is required. Copy .env.example to .env.local and review its local settings first.',
                 { cause: error },
             );
+        }
+
         throw error;
     }
+
     // Match Node's loadEnvFile precedence used by backend commands.
     const childEnvironment = { ...fileEnvironment, ...environment };
     validateDevelopmentEnvironment(childEnvironment);
@@ -211,16 +230,21 @@ export async function runDevelopment({
     ]) {
         if (childEnvironment[key]) {
             const password = new URL(childEnvironment[key]).password;
-            if (password)
+            if (password) {
                 redactionEnvironment[`${key}_PASSWORD`] =
                     decodeURIComponent(password);
+            }
         }
     }
+
     const redact = createEnvironmentRedactor(redactionEnvironment);
     let interrupted = false;
 
     const stop = () => {
-        if (cleanup) return cleanup;
+        if (cleanup) {
+            return cleanup;
+        }
+
         stopping = true;
         cleanup = (async () => {
             // Keep the inherited process group so the panel's force-kill still
@@ -240,6 +264,7 @@ export async function runDevelopment({
                     'Could not inspect descendants; stopping direct processes.',
                 );
             }
+
             const pids = new Set([...descendants, ...roots]);
             if (process.platform === 'win32') {
                 await Promise.all(
@@ -257,28 +282,46 @@ export async function runDevelopment({
                         ),
                 );
             } else {
-                for (const pid of descendants) signalPid(pid, 'SIGTERM');
+                for (const pid of descendants) {
+                    signalPid(pid, 'SIGTERM');
+                }
+
                 // Give launchers a chance to reap children before terminating them.
-                if (descendants.length)
+                if (descendants.length) {
                     await new Promise((done) => setTimeout(done, 100));
-                for (const pid of roots) signalPid(pid, 'SIGTERM');
-                if (pids.size)
+                }
+
+                for (const pid of roots) {
+                    signalPid(pid, 'SIGTERM');
+                }
+
+                if (pids.size) {
                     await new Promise((done) => setTimeout(done, graceMs));
-                for (const pid of pids) signalPid(pid, 'SIGKILL');
+                }
+
+                for (const pid of pids) {
+                    signalPid(pid, 'SIGKILL');
+                }
             }
+
             await Promise.all([...children].map(({ done }) => done));
         })();
+
         return cleanup;
     };
     const interrupt = () => {
         interrupted = true;
         void stop();
     };
+
     signals.on('SIGINT', interrupt);
     signals.on('SIGTERM', interrupt);
 
     function start(name) {
-        if (stopping) return null;
+        if (stopping) {
+            return null;
+        }
+
         log(`Starting ${name}…`);
         const [executable, ...args] = commands[name];
         const child = spawn(executable, args, {
@@ -298,7 +341,10 @@ export async function runDevelopment({
         const redactors = [];
         let streamsFinalized = false;
         const finalizeStreams = () => {
-            if (streamsFinalized) return;
+            if (streamsFinalized) {
+                return;
+            }
+
             streamsFinalized = true;
             for (const { stream, end } of redactors) {
                 stream.removeAllListeners('data');
@@ -306,8 +352,10 @@ export async function runDevelopment({
                 end();
                 stream.destroy();
             }
+
             output.end();
         };
+
         for (const [stream, target] of [
             [child.stdout, 'stdout'],
             [child.stderr, 'stderr'],
@@ -316,38 +364,51 @@ export async function runDevelopment({
                 redact,
                 onText: (text) => output.write(target, text),
             });
+
             stream.on('data', (chunk) => redactor.write(chunk));
             let ended = false;
             const end = () => {
-                if (ended) return;
+                if (ended) {
+                    return;
+                }
+
                 ended = true;
                 redactor.end();
             };
+
             redactors.push({ stream, end });
             stream.on('end', end);
         }
+
         const record = { child, done: null };
         record.done = new Promise((done) => {
             let settled = false;
             let drainTimer;
             const finish = (result) => {
-                if (settled) return;
+                if (settled) {
+                    return;
+                }
+
                 settled = true;
                 clearTimeout(drainTimer);
                 finalizeStreams();
                 const { code } = result;
-                if (code !== 0 && !stopping)
+                if (code !== 0 && !stopping) {
                     output.failure({
                         onlyIfSilent: [
                             'readiness',
                             'runtimeReadiness',
                         ].includes(name),
                     });
+                }
+
                 done(result);
             };
+
             child.once('error', () =>
                 finish({ name, code: 1, failedToStart: true }),
             );
+
             child.once('exit', (code, signal) => {
                 // Drain final diagnostics, but do not wait indefinitely for a
                 // descendant that inherited its launcher's log pipes.
@@ -356,19 +417,24 @@ export async function runDevelopment({
                     100,
                 );
             });
+
             child.once('close', (code, signal) => {
                 finish({ name, code, signal });
             });
         });
+
         children.add(record);
+
         return record.done;
     }
 
     try {
-        if (!verbose)
+        if (!verbose) {
             log(
                 'Concise output enabled. Use pnpm dev:all --verbose for full logs.',
             );
+        }
+
         for (const name of [
             'infrastructure',
             'storageInitialization',
@@ -376,7 +442,10 @@ export async function runDevelopment({
             'migrations',
         ]) {
             const done = start(name);
-            if (!done) break;
+            if (!done) {
+                break;
+            }
+
             let result;
             let initializationTimer;
             try {
@@ -400,43 +469,56 @@ export async function runDevelopment({
             } finally {
                 clearTimeout(initializationTimer);
             }
-            if (stopping) break;
-            if (result.code !== 0)
+
+            if (stopping) {
+                break;
+            }
+
+            if (result.code !== 0) {
                 throw new Error(
                     `${name} ${result.failedToStart ? 'could not start; check Docker/pnpm installation' : 'failed; review the output above'}. No app processes were started.`,
                 );
+            }
         }
+
         if (!stopping && commands.readiness) {
             const result = await start('readiness');
-            if (result?.code !== 0 && !stopping)
+            if (result?.code !== 0 && !stopping) {
                 log(
                     'Some AI prerequisites are missing; review the doctor output. Applications will still start so you can configure them in admin.',
                 );
+            }
         }
+
         if (!stopping) {
             const running = ['applications', 'dictionary'].map(start);
             if (commands.runtimeReadiness) {
                 void start('runtimeReadiness').then((result) => {
-                    if (result?.code !== 0 && !stopping)
+                    if (result?.code !== 0 && !stopping) {
                         log(
                             'Runtime readiness is incomplete. After services are ready, run pnpm dev:doctor for actionable checks.',
                         );
+                    }
                 });
             }
+
             log(
                 'Applications and dictionary worker launched; wait for their ready messages. Stop this command to stop them. PostgreSQL, Redis and MinIO remain running.',
             );
+
             const result = await Promise.race(running);
-            if (!stopping)
+            if (!stopping) {
                 throw new Error(
                     `${result.name} exited unexpectedly; stopping the remaining app processes.`,
                 );
+            }
         }
     } finally {
         await stop();
         signals.off('SIGINT', interrupt);
         signals.off('SIGTERM', interrupt);
     }
+
     return interrupted ? 130 : 0;
 }
 
@@ -456,11 +538,11 @@ if (
 ) {
     try {
         const options = parseDevelopmentArguments(process.argv.slice(2));
-        if (options.help)
+        if (options.help) {
             console.log(
                 'pnpm dev:all [--verbose]\nStart local infrastructure, migrate and supervise the applications. Normal output shows progress, service URLs and errors; --verbose shows full redacted logs.',
             );
-        else
+        } else {
             runDevelopment(options)
                 .then((code) => {
                     process.exitCode = code;
@@ -469,6 +551,7 @@ if (
                     console.error(`[dev:all] ${error.message}`);
                     process.exitCode = 1;
                 });
+        }
     } catch (error) {
         console.error(`[dev:all] ${error.message}`);
         process.exitCode = 1;

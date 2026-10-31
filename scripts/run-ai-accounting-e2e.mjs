@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url';
 // Each existing configuration independently enforces its exclusive disposable targets.
 // Validate the learner target before starting either application; admin validates on load.
 assertContextualAssistantEnvironment(process.env);
-if (!process.env.ADMIN_E2E_DATABASE_URL || !process.env.ADMIN_E2E_REDIS_URL)
+if (!process.env.ADMIN_E2E_DATABASE_URL || !process.env.ADMIN_E2E_REDIS_URL) {
     throw new Error(
         'AI accounting journeys require both the guarded learner and admin disposable environments.',
     );
+}
 
 await withPreservedFile(
     fileURLToPath(new URL('../apps/web/next-env.d.ts', import.meta.url)),
@@ -36,12 +37,14 @@ await withPreservedFile(
                     `accounting-${Date.now().toString(36)}`,
             },
         );
+
         const learner = {
             AUTH_E2E_DATABASE_URL: process.env.AUTH_TEST_DATABASE_URL,
             AUTH_E2E_REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
             AUTH_E2E_BACKEND_ORIGIN: 'http://localhost:4006',
             AUTH_E2E_WEB_ORIGIN: 'http://localhost:3336',
         };
+
         await run(
             [
                 '--filter',
@@ -55,6 +58,7 @@ await withPreservedFile(
             ],
             { ...learner, AUTH_E2E_TEXT_SERVICES: 'true' },
         );
+
         await run(
             [
                 '--filter',
@@ -68,6 +72,7 @@ await withPreservedFile(
             ],
             { ...learner, AUTH_E2E_SENTENCE_SERVICES: 'true' },
         );
+
         await run(
             [
                 '--filter',
@@ -87,6 +92,7 @@ await withPreservedFile(
                 LEARNER_PORTRAIT_TEST_PAID: 'true',
             },
         );
+
         await run([
             '--filter',
             '@languon/admin',
@@ -99,6 +105,7 @@ await withPreservedFile(
         ]);
     },
 );
+
 function run(args, extra = {}) {
     return new Promise((resolve, reject) => {
         const child = spawn('pnpm', args, {
@@ -113,11 +120,13 @@ function run(args, extra = {}) {
         child.once('exit', (code, signal) => {
             process.removeListener('SIGINT', interrupt);
             process.removeListener('SIGTERM', terminate);
-            if (code === 0) resolve();
-            else
+            if (code === 0) {
+                resolve();
+            } else {
                 reject(
                     new Error(`AI accounting E2E failed (${signal ?? code}).`),
                 );
+            }
         });
     });
 }

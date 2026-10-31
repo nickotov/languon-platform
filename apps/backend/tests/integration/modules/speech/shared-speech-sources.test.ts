@@ -126,6 +126,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             { id: reader, status: 'active', createdAt: now, updatedAt: now },
             { id: stranger, status: 'active', createdAt: now, updatedAt: now },
         ]);
+
         await db.insert(dictionariesTable).values({
             id: dictionaryId,
             ownerId: owner,
@@ -140,6 +141,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             shareKeyVersion: 1,
             shareKeyRotatedAt: now,
         });
+
         await db.insert(dictionarySettingsTable).values({
             dictionaryId,
             exampleLanguageRole: 'target',
@@ -147,6 +149,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         await db.insert(dictionaryCardsTable).values({
             id: cardId,
             dictionaryId,
@@ -160,6 +163,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         await db.insert(sentenceExercisesTable).values({
             id: exerciseId,
             creatorId: owner,
@@ -194,6 +198,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             generationPolicyVersion: 1,
             createdAt: now,
         });
+
         await db.insert(sentenceExerciseEntriesTable).values({
             exerciseId,
             dictionaryId,
@@ -212,12 +217,14 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             store: { prepare: admission } as unknown as SpeechStore,
             storage: {} as AudioObjectStorage,
         });
+
         await expect(
             resolver.resolve(owner, {
                 ...dictionarySource('example'),
                 expectedDictionaryVersion: 1,
             }),
         ).resolves.toMatchObject({ text: 'good morning', language: 'fr' });
+
         await db
             .update(dictionarySettingsTable)
             .set({
@@ -226,10 +233,12 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 version: 2,
             })
             .where(eq(dictionarySettingsTable.dictionaryId, dictionaryId));
+
         await db
             .update(dictionariesTable)
             .set({ version: 2 })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         for (const actorId of [owner, reader]) {
             const app = createSpeechRoutes({
                 service,
@@ -240,6 +249,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                     refreshTokenTtlSeconds: 60,
                 }),
             });
+
             for (const expectedDictionaryVersion of [1, 2]) {
                 const response = await app.request('/speech/prepare', {
                     method: 'POST',
@@ -260,12 +270,14 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                         },
                     }),
                 });
+
                 expect(response.status).toBe(409);
                 expect(await response.json()).toMatchObject({
                     error: { code: 'speech_source_changed' },
                 });
             }
         }
+
         expect(admission).not.toHaveBeenCalled();
     });
 
@@ -301,19 +313,23 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             sessionId,
             field: 'reference',
         });
+
         expect(hidden.status).toBe(403);
         expect(await hidden.json()).toMatchObject({
             error: { code: 'speech_reference_hidden' },
         });
+
         await db
             .update(dictionaryCardsTable)
             .set({ lifecycle: 'archived', archivedAt: now })
             .where(eq(dictionaryCardsTable.id, cardId));
+
         const unavailable = await post(dictionarySource('source'));
         expect(unavailable.status).toBe(404);
         expect(await unavailable.json()).toMatchObject({
             error: { code: 'speech_source_unavailable' },
         });
+
         expect(admission).not.toHaveBeenCalled();
     });
 
@@ -326,6 +342,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             dictionaryId,
             cardId,
         });
+
         await expect(
             resolver.resolve(reader, {
                 kind: 'dictionary-field',
@@ -334,6 +351,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 field: 'translation',
             }),
         ).resolves.toMatchObject({ text: 'bonjour', language: 'fr' });
+
         await expect(
             resolver.resolve(reader, {
                 kind: 'flashcard-field',
@@ -342,6 +360,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 field: 'sourceExample',
             }),
         ).resolves.toMatchObject({ text: 'bonjour', language: 'en' });
+
         await expect(
             resolver.resolve(reader, {
                 kind: 'flashcard-field',
@@ -350,6 +369,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 field: 'targetExample',
             }),
         ).resolves.toMatchObject({ text: 'good morning', language: 'fr' });
+
         await expect(
             resolver.resolve(owner, dictionarySource('exampleTranslation')),
         ).resolves.toMatchObject({
@@ -365,12 +385,14 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             cardId,
             field: 'source' as const,
         };
+
         await expect(
             resolver.resolve(reader, {
                 ...shared,
                 access: { ...sharedAccess(), shareKey: 'wrong-key' },
             }),
         ).rejects.toThrow(/dictionary was not found/i);
+
         await db
             .update(dictionariesTable)
             .set({
@@ -380,35 +402,44 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 ),
             })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         await expect(resolver.resolve(reader, shared)).rejects.toThrow(
             /dictionary was not found/i,
         );
+
         await db
             .update(dictionariesTable)
             .set({ shareKeyDigest: cryptography.shareDigest(shareKey, 1) })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         await db
             .update(usersTable)
             .set({ status: 'disabled' })
             .where(eq(usersTable.id, reader));
+
         await expect(resolver.resolve(reader, shared)).rejects.toThrow(
             /dictionary was not found/i,
         );
+
         await db
             .update(usersTable)
             .set({ status: 'active' })
             .where(eq(usersTable.id, reader));
+
         await db
             .update(usersTable)
             .set({ status: 'disabled' })
             .where(eq(usersTable.id, owner));
+
         await expect(
             resolver.resolve(owner, dictionarySource('source')),
         ).rejects.toThrow(/dictionary was not found/i);
+
         await db
             .update(usersTable)
             .set({ status: 'active' })
             .where(eq(usersTable.id, owner));
+
         await db
             .update(dictionariesTable)
             .set({
@@ -421,9 +452,11 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 shareKeyRotatedAt: null,
             })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         await expect(
             resolver.resolve(owner, dictionarySource('source')),
         ).rejects.toThrow(/dictionary was not found/i);
+
         await db
             .update(dictionariesTable)
             .set({
@@ -436,6 +469,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 shareKeyRotatedAt: now,
             })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         await db
             .update(dictionaryCardsTable)
             .set({
@@ -443,6 +477,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 archivedAt: new Date(now.getTime() + 2),
             })
             .where(eq(dictionaryCardsTable.id, cardId));
+
         await expect(
             resolver.resolve(owner, dictionarySource('source')),
         ).rejects.toThrow('speech_source_unavailable');
@@ -453,26 +488,32 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             owner,
             dictionarySource('source', 1),
         );
+
         await db
             .update(dictionaryCardsTable)
             .set({ version: 2, source: 'welcome', normalizedSource: 'welcome' })
             .where(eq(dictionaryCardsTable.id, cardId));
+
         await expect(
             resolver.resolve(owner, dictionarySource('source', 1)),
         ).rejects.toThrow('speech_source_unavailable');
+
         const afterCard = await resolver.resolve(
             owner,
             dictionarySource('source', 2),
         );
+
         expect(afterCard.revision).not.toBe(before.revision);
         await db
             .update(dictionariesTable)
             .set({ version: 2 })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         const afterDictionary = await resolver.resolve(
             owner,
             dictionarySource('source', 2),
         );
+
         expect(afterDictionary.revision).not.toBe(afterCard.revision);
     });
 
@@ -489,9 +530,11 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             text: 'A good morning.',
             language: 'en',
         });
+
         await expect(resolver.resolve(reader, reference)).rejects.toThrow(
             'speech_reference_hidden',
         );
+
         await db.insert(sentenceManualReviewsTable).values({
             id: randomUUID(),
             learnerId: reader,
@@ -502,9 +545,11 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             requestFingerprint: 'manual-review-fixture',
             createdAt: now,
         });
+
         await expect(
             resolver.resolve(reader, reference),
         ).resolves.toMatchObject({ text: 'Un bonjour.', language: 'fr' });
+
         await db.insert(sentencePersonalVisibilityTable).values({
             learnerId: reader,
             exerciseId,
@@ -512,6 +557,7 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             archivedAt: now,
             updatedAt: now,
         });
+
         await expect(resolver.resolve(reader, prompt)).rejects.toThrow();
         await expect(
             resolver.resolve(reader, {
@@ -521,12 +567,14 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
                 field: 'prompt',
             }),
         ).resolves.toMatchObject({ text: 'A good morning.' });
+
         await db.insert(sentenceGlobalVisibilityTable).values({
             exerciseId,
             actorId: owner,
             archivedAt: now,
             updatedAt: now,
         });
+
         await expect(
             resolver.resolve(reader, {
                 kind: 'sentence-practice',
@@ -565,26 +613,32 @@ run('DrizzleSpeechSourceResolver saved-content authority', () => {
             }),
             createdAt: now,
         });
+
         const answer: SpeechSource = {
             kind: 'checked-answer',
             access: sharedAccess(),
             attemptId,
         };
+
         await expect(resolver.resolve(reader, answer)).resolves.toMatchObject({
             text: 'My checked answer.',
             language: 'fr',
             attemptId,
         });
+
         await expect(
             resolver.resolve(owner, { ...answer, access: ownerAccess() }),
         ).rejects.toThrow('speech_source_unavailable');
+
         await expect(resolver.resolve(stranger, answer)).rejects.toThrow(
             'speech_source_unavailable',
         );
+
         await db
             .update(dictionariesTable)
             .set({ version: 2 })
             .where(eq(dictionariesTable.id, dictionaryId));
+
         await expect(resolver.resolve(reader, answer)).resolves.toMatchObject({
             text: 'My checked answer.',
         });

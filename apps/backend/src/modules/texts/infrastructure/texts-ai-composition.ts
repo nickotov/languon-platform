@@ -55,6 +55,7 @@ export function createTextsAiComposition(input: {
         policy,
         input.enabled && (input.knowledgeActionsEnabled ?? input.enabled),
     );
+
     return {
         store,
         service: new TextsJobService({
@@ -66,6 +67,7 @@ export function createTextsAiComposition(input: {
         }),
     };
 }
+
 export function createTextsWorkerComposition(
     input: Omit<TextsWorkerDependencies, 'store' | 'provider'> & {
         database: TextsDatabase;
@@ -74,5 +76,6 @@ export function createTextsWorkerComposition(
 ) {
     const store = new DrizzleTextsJobStore(input.database);
     const worker = new TextsWorkerService({ ...input, store });
+
     return { store, worker };
 }

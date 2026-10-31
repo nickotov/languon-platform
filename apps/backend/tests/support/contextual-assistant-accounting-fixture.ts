@@ -46,17 +46,24 @@ export async function seedContextualAssistantAccountingFixture(
     const model = textAiModelCatalog.find(
         (item) => item.id === 'deepseek-flash',
     );
-    if (!model) throw new Error('The contextual fixture model is unavailable.');
+
+    if (!model) {
+        throw new Error('The contextual fixture model is unavailable.');
+    }
+
     const tariff = routing.configuration.flowTariffs.conversation;
     const [previous] = await db
         .select()
         .from(settings)
         .orderBy(desc(settings.version))
         .limit(1);
-    if (!tariff || !previous)
+
+    if (!tariff || !previous) {
         throw new Error(
             'The synthetic contextual accounting fixture is incomplete.',
         );
+    }
+
     const allowance = contextualAssistantFixtureAllowance(model, {
         inputCreditsPerMillionTokens: String(
             tariff.inputCreditsPerMillionTokens,
@@ -69,7 +76,8 @@ export async function seedContextualAssistantAccountingFixture(
                 ? null
                 : String(tariff.cachedInputCreditsPerMillionTokens),
     });
-    if (previous.defaultMaxCreditsPerAction !== allowance)
+
+    if (previous.defaultMaxCreditsPerAction !== allowance) {
         await db.insert(settings).values({
             ...previous,
             id: randomUUID(),
@@ -77,4 +85,5 @@ export async function seedContextualAssistantAccountingFixture(
             defaultMaxCreditsPerAction: allowance,
             reason: 'Synthetic tutor allowance derived from selected aggregate token bounds and seeded tariff',
         });
+    }
 }

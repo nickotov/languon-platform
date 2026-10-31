@@ -186,7 +186,9 @@ export function Toast({
     const effectiveDuration = resolveEffectiveDuration();
 
     const close = useCallback(() => {
-        if (!controlled) setInternalOpen(false);
+        if (!controlled) {
+            setInternalOpen(false);
+        }
 
         onDismiss?.();
     }, [controlled, onDismiss]);
@@ -197,15 +199,18 @@ export function Toast({
             !effectiveDuration ||
             visualTone === 'loading' ||
             paused
-        )
+        ) {
             return;
+        }
 
         const timer = setTimeout(close, effectiveDuration);
 
         return () => clearTimeout(timer);
     }, [close, effectiveDuration, paused, visible, visualTone]);
 
-    if (!visible) return null;
+    if (!visible) {
+        return null;
+    }
 
     const actionConfig = isToastAction(action) ? action : null;
 

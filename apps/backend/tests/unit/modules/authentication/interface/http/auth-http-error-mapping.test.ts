@@ -73,6 +73,7 @@ describe('authentication HTTP error mapping', () => {
         expect(JSON.stringify(mapped.response('correlation-id'))).not.toContain(
             'secret',
         );
+
         expect(mapped.status).toBe(500);
     });
 });

@@ -16,6 +16,7 @@ export async function maintainTextAiAccounting(
         await tx.execute(sql`delete from dictionary_generation_provider_usage_archive
             where ctid in (select ctid from dictionary_generation_provider_usage_archive
                 where settled_at<=${cutoff}::timestamptz order by settled_at limit 25)`);
+
         await cleanupTextAiCapacity(tx, now, 25);
     });
 }
@@ -29,20 +30,29 @@ export function startAccountingMaintenance(options: {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let pending = Promise.resolve();
     const schedule = () => {
-        if (stopped) return;
+        if (stopped) {
+            return;
+        }
+
         timer = setTimeout(() => {
             pending = options
                 .maintain()
                 .catch(options.onError)
                 .finally(schedule);
         }, options.intervalMs ?? 1000);
+
         timer.unref();
     };
+
     schedule();
+
     return {
         async stop() {
             stopped = true;
-            if (timer) clearTimeout(timer);
+            if (timer) {
+                clearTimeout(timer);
+            }
+
             await pending;
         },
     };

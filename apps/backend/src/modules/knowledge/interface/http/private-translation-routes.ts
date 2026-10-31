@@ -62,17 +62,20 @@ export function createKnowledgePrivateTranslationRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     error('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
     });
+
     for (const path of [
         '/knowledge/:noteId/blocks/:blockId/private-translations',
         '/knowledge/:noteId/blocks/:blockId/private-translations/*',
@@ -88,8 +91,10 @@ export function createKnowledgePrivateTranslationRoutes({
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -101,6 +106,7 @@ export function createKnowledgePrivateTranslationRoutes({
                     ),
             }),
         );
+
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -111,13 +117,19 @@ export function createKnowledgePrivateTranslationRoutes({
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Kind, X-Languon-Share-Locator, X-Languon-Share-Key',
             );
+
             return c.body(null, 204);
         });
+
         app.use(path, actionAllowanceRequestMiddleware);
     }
+
     app.onError((caught, c) => {
         const allowance = actionAllowanceErrorResponse(caught, c);
-        if (allowance) return allowance;
+        if (allowance) {
+            return allowance;
+        }
+
         let code = 'internal_error';
         let message = 'The translation request could not be completed.';
         let status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 500 | 503 = 500;
@@ -143,6 +155,7 @@ export function createKnowledgePrivateTranslationRoutes({
                     : code === 'access_revoked'
                       ? 'This learning material is unavailable.'
                       : 'The translation action is unavailable or changed.';
+
             status =
                 code === 'access_revoked' || code === 'generation_job_not_found'
                     ? 404
@@ -177,10 +190,13 @@ export function createKnowledgePrivateTranslationRoutes({
                 status = 401;
             }
         }
+
         return c.json(error(code, message), status);
     });
+
     const auth = (c: Context) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return [
             policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -192,6 +208,7 @@ export function createKnowledgePrivateTranslationRoutes({
         const kind = c.req.header('X-Languon-Share-Kind');
         const locator = c.req.header('X-Languon-Share-Locator');
         const key = c.req.header('X-Languon-Share-Key');
+
         return kind || locator || key ? { kind, locator, key } : undefined;
     };
     const path = '/knowledge/{noteId}/blocks/{blockId}/private-translations';
@@ -208,6 +225,7 @@ export function createKnowledgePrivateTranslationRoutes({
         }),
         async (c) => {
             const input = c.req.valid('param');
+
             return c.json(
                 await service.list(
                     ...auth(c),
@@ -219,6 +237,7 @@ export function createKnowledgePrivateTranslationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -242,6 +261,7 @@ export function createKnowledgePrivateTranslationRoutes({
         }),
         async (c) => {
             const input = c.req.valid('param');
+
             return c.json(
                 await service.request(
                     ...auth(c),
@@ -254,6 +274,7 @@ export function createKnowledgePrivateTranslationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -267,6 +288,7 @@ export function createKnowledgePrivateTranslationRoutes({
         }),
         async (c) => {
             const input = c.req.valid('param');
+
             return c.json(
                 await service.job(
                     ...auth(c),
@@ -279,6 +301,7 @@ export function createKnowledgePrivateTranslationRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -292,6 +315,7 @@ export function createKnowledgePrivateTranslationRoutes({
         }),
         async (c) => {
             const input = c.req.valid('param');
+
             return c.json(
                 await service.cancel(
                     ...auth(c),
@@ -304,5 +328,6 @@ export function createKnowledgePrivateTranslationRoutes({
             );
         },
     );
+
     return app;
 }

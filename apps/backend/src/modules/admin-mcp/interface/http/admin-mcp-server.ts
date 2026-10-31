@@ -42,13 +42,15 @@ function json(value: unknown) {
         typeof item === 'bigint' ? item.toString() : item,
     );
 }
+
 function result(value: unknown) {
     return { content: [{ type: 'text' as const, text: json(value) }] };
 }
+
 /** Never send database/provider exception text to clients. */
 function failure(error: unknown) {
     const correlationId = randomUUID();
-    if (error instanceof AdminMcpError)
+    if (error instanceof AdminMcpError) {
         return {
             ...result({
                 error: {
@@ -59,7 +61,9 @@ function failure(error: unknown) {
             }),
             isError: true,
         };
-    if (error instanceof z.ZodError)
+    }
+
+    if (error instanceof z.ZodError) {
         return {
             ...result({
                 error: {
@@ -70,6 +74,8 @@ function failure(error: unknown) {
             }),
             isError: true,
         };
+    }
+
     return {
         ...result({
             error: {
@@ -82,6 +88,7 @@ function failure(error: unknown) {
         isError: true,
     };
 }
+
 function createTools(
     deps: AdminMcpServerDependencies,
     actor: AdminMcpActor,
@@ -96,6 +103,7 @@ function createTools(
             return failure(error);
         }
     };
+
     server.registerTool(
         'admin_connection_test',
         {
@@ -112,6 +120,7 @@ function createTools(
             serverTime: new Date().toISOString(),
         })),
     );
+
     // Every operation has a fixed name and schema. New registry entries do not expand old permissions.
     for (const [operation, schema] of Object.entries(adminMcpReadSchemas)) {
         const permission = operation.startsWith('users.')
@@ -119,16 +128,20 @@ function createTools(
             : operation.startsWith('financial-reports.')
               ? 'financial-reports.read'
               : 'providers.read';
+
         if (
             !actor.permissions.includes(permission) ||
             !actor.allowedActions.includes(operation)
-        )
+        ) {
             continue;
+        }
+
         const readSchema = schema.extend({
             reason: adminMcpReasonSchema.default(
                 'Explicit delegated administrative inspection',
             ),
         });
+
         server.registerTool(
             operation.replaceAll('.', '_'),
             {
@@ -153,6 +166,7 @@ function createTools(
                                       await deps.checks.limits(actor),
                               }
                             : value;
+
                     return result(disclosedValue);
                 } catch (error) {
                     return failure(error);
@@ -160,13 +174,16 @@ function createTools(
             },
         );
     }
+
     for (const [operation, schema] of Object.entries(adminMcpWriteSchemas)) {
         const name = operation as keyof typeof adminMcpWriteSchemas;
         if (
             !actor.permissions.includes(permissionForWrite(name)) ||
             !actor.allowedActions.includes(operation)
-        )
+        ) {
             continue;
+        }
+
         server.registerTool(
             `preview_${operation.replaceAll('.', '_').replaceAll('-', '_')}`,
             {
@@ -185,6 +202,7 @@ function createTools(
             },
         );
     }
+
     if (
         actor.permissions.some(
             (p) =>
@@ -215,6 +233,7 @@ function createTools(
             },
         );
     }
+
     registerAdminMcpCheckTools(server, deps.checks, actor, secret);
     if (
         deps.actualizePrices &&
@@ -247,6 +266,7 @@ function createTools(
             },
         );
     }
+
     if (
         deps.verifyPrices &&
         actor.permissions.includes('providers.read') &&
@@ -272,8 +292,10 @@ function createTools(
             },
         );
     }
+
     return server;
 }
+
 export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
     const app = new Hono();
     let active = 0;
@@ -285,14 +307,24 @@ export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
             `127.0.0.1:${deps.port}`,
             `localhost:${deps.port}`,
         ]);
-        if (!hosts.has(c.req.header('Host') ?? url.host))
+
+        if (!hosts.has(c.req.header('Host') ?? url.host)) {
             return c.json({ error: 'invalid_host' }, 403);
+        }
+
         // Native clients omit Origin. Browser access is unnecessary for v1.
-        if (c.req.header('Origin'))
+        if (c.req.header('Origin')) {
             return c.json({ error: 'browser_origin_not_allowed' }, 403);
-        if (url.search)
+        }
+
+        if (url.search) {
             return c.json({ error: 'query_parameters_not_allowed' }, 400);
-        if (active >= 32) return c.json({ error: 'server_busy' }, 429);
+        }
+
+        if (active >= 32) {
+            return c.json({ error: 'server_busy' }, 429);
+        }
+
         active++;
         try {
             await next();
@@ -300,6 +332,7 @@ export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
             active--;
         }
     });
+
     app.get('/healthz', (c) => c.json({ status: 'ok' }));
     app.use(
         '/mcp',
@@ -308,10 +341,13 @@ export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
             onError: (c) => c.json({ error: 'request_too_large' }, 413),
         }),
     );
+
     app.all('/mcp', async (c) => {
         const header = c.req.header('Authorization');
-        if (!header?.startsWith('Bearer '))
+        if (!header?.startsWith('Bearer ')) {
             return c.json({ error: 'authentication_required' }, 401);
+        }
+
         const secret = header.slice(7);
         let actor: AdminMcpActor;
         try {
@@ -319,25 +355,40 @@ export function createAdminMcpServer(deps: AdminMcpServerDependencies) {
         } catch {
             return c.json({ error: 'invalid_or_inactive_credential' }, 401);
         }
+
         const now = Date.now();
         const burst = bursts.get(actor.tokenId);
-        if (burst && burst.until > now && burst.count >= 60)
+        if (burst && burst.until > now && burst.count >= 60) {
             return c.json({ error: 'rate_limited' }, 429);
+        }
+
         if (!burst || burst.until <= now) {
-            for (const [key, value] of bursts)
-                if (value.until <= now) bursts.delete(key);
-            if (bursts.size >= 10000)
+            for (const [key, value] of bursts) {
+                if (value.until <= now) {
+                    bursts.delete(key);
+                }
+            }
+
+            if (bursts.size >= 10000) {
                 return c.json({ error: 'server_busy' }, 429);
+            }
+
             bursts.set(actor.tokenId, { count: 1, until: now + 60000 });
-        } else burst.count++;
+        } else {
+            burst.count++;
+        }
+
         const handler = createMcpHandler(
             () => createTools(deps, actor, secret, c.req.raw.signal),
             { responseMode: 'json' },
         );
+
         return handler.fetch(c.req.raw);
     });
+
     app.onError((_error, c) =>
         c.json({ error: 'internal_error', correlationId: randomUUID() }, 500),
     );
+
     return app;
 }

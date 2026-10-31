@@ -18,16 +18,30 @@ export function useHoverIntent() {
         },
         [clear],
     );
+
     function onPointerEnter(event: PointerEvent) {
-        if (event.pointerType !== 'mouse') return;
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+
         clear();
-        if (!open) timer.current = setTimeout(() => setOpen(true, false), 180);
+        if (!open) {
+            timer.current = setTimeout(() => setOpen(true, false), 180);
+        }
     }
+
     function onPointerLeave(event: PointerEvent) {
-        if (event.pointerType !== 'mouse') return;
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+
         clear();
-        if (!pinned) timer.current = setTimeout(() => setOpen(false), 240);
+        if (!pinned) {
+            timer.current = setTimeout(() => setOpen(false), 240);
+        }
     }
+
     useEffect(() => clear, [clear]);
+
     return { open, pinned, setOpen, onPointerEnter, onPointerLeave };
 }

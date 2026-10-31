@@ -20,44 +20,72 @@ export function useInterviewQuestion(
     const requestedFor = useRef<string | null>(null);
     const previousMessages = useRef<number | undefined>(undefined);
     useEffect(() => {
-        if (!session) return;
+        if (!session) {
+            return;
+        }
+
         if (
             previousMessages.current !== undefined &&
             previousMessages.current !== session.context.messages.length
-        )
+        ) {
             setLocalTopic(null);
+        }
+
         previousMessages.current = session.context.messages.length;
-        if (requestedFor.current === session.interviewId) return;
+        if (requestedFor.current === session.interviewId) {
+            return;
+        }
+
         requestedFor.current = session.interviewId;
         const requested = new URLSearchParams(window.location.search).get(
             'topic',
         );
         const topic = interviewAllTopics.find((value) => value === requested);
-        if (topic) setLocalTopic(topic);
+        if (topic) {
+            setLocalTopic(topic);
+        }
     }, [session]);
+
     let question: PortraitInterviewerOutput | null = null;
-    if (session) question = session.initialQuestion;
-    if (session?.lastAttempt)
+    if (session) {
+        question = session.initialQuestion;
+    }
+
+    if (session?.lastAttempt) {
         question = localInterviewQuestion(
             session.lastAttempt.input.topic,
             session.context.locale,
         );
-    if (session && localTopic)
+    }
+
+    if (session && localTopic) {
         question = localInterviewQuestion(localTopic, session.context.locale);
+    }
+
     function setQuestion(value: PortraitInterviewerOutput) {
         setLocalTopic(value.topic);
     }
+
     async function answer(value: { selected: string[]; text?: string }) {
-        if (question)
+        if (question) {
             await submit({ kind: 'answer', topic: question.topic, ...value });
+        }
     }
+
     async function skip() {
-        if (question) await submit({ kind: 'skip', topic: question.topic });
+        if (question) {
+            await submit({ kind: 'skip', topic: question.topic });
+        }
     }
+
     async function send(text: string) {
-        if (!question) return false;
+        if (!question) {
+            return false;
+        }
+
         return submit({ kind: 'chat', topic: question.topic, text });
     }
+
     function focus() {
         document
             .querySelector<HTMLElement>(
@@ -65,6 +93,7 @@ export function useInterviewQuestion(
             )
             ?.focus();
     }
+
     return {
         question,
         setQuestion,

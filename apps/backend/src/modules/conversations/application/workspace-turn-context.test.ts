@@ -40,10 +40,12 @@ describe('workspace turn context', () => {
                 editorContext: { content: 'A paragraph.' },
             }).success,
         ).toBe(false);
+
         expect(
             SubmitConversationTurnRequestSchema.safeParse(valid).success,
         ).toBe(true);
     });
+
     it('counts complete Unicode code points including whitespace and explicit translations', () => {
         const input = request('a 😀', 'x\ny', '😀');
         expect(referenceCharacters(input.attachments)).toBe(4);
@@ -53,6 +55,7 @@ describe('workspace turn context', () => {
                 referenceCharacters: 4,
             }),
         ).not.toThrow();
+
         expect(() =>
             assertWorkspaceTurnContext(input, {
                 editorCharacters: 3,
@@ -69,6 +72,7 @@ describe('workspace turn context', () => {
             label: 'Legacy copy',
             content: 'def',
         });
+
         expect(referenceCharacters(input.attachments)).toBe(6);
         expect(() =>
             assertWorkspaceTurnContext(input, {
@@ -76,6 +80,7 @@ describe('workspace turn context', () => {
                 referenceCharacters: 6,
             }),
         ).not.toThrow();
+
         input.attachments[1]!.content = 'defg';
         expect(() =>
             assertWorkspaceTurnContext(input, {
@@ -93,6 +98,7 @@ describe('workspace turn context', () => {
                 referenceCharacters: 40,
             }),
         ).toThrow(/editor exceeds/u);
+
         input.editorContext!.selectedText = 'missing';
         expect(() =>
             assertWorkspaceTurnContext(input, {
@@ -109,27 +115,32 @@ describe('workspace turn context', () => {
             0,
             4,
         );
+
         expect(() =>
             assertWorkspaceTurnContext(input, {
                 editorCharacters: 100,
                 referenceCharacters: 100,
             }),
         ).not.toThrow();
+
         input.editorContext!.editorTarget = {
             ...input.editorContext!.editorTarget,
             from: 1,
             to: 5,
         };
+
         expect(() =>
             assertWorkspaceTurnContext(input, {
                 editorCharacters: 100,
                 referenceCharacters: 100,
             }),
         ).toThrow(/target changed/u);
+
         input.editorContext!.editorTarget = {
             ...anchor(input.editorContext!.content, 0, 4),
             documentHash: '0'.repeat(64),
         };
+
         expect(() =>
             assertWorkspaceTurnContext(input, {
                 editorCharacters: 100,
@@ -145,19 +156,23 @@ describe('workspace turn context', () => {
             2,
             3,
         );
+
         expect(() =>
             assertWorkspaceTurnContext(input, {
                 editorCharacters: 100,
                 referenceCharacters: 100,
             }),
         ).toThrow(/target changed/u);
+
         input.editorContext!.editorTarget = anchor(
             input.editorContext!.content,
         );
+
         input.editorContext!.proposalTarget = {
             ...anchor(input.editorContext!.content, 1, 3),
             mode: 'insert',
         };
+
         expect(() =>
             assertWorkspaceTurnContext(input, {
                 editorCharacters: 100,
@@ -170,6 +185,7 @@ describe('workspace turn context', () => {
         expect(firstThreeWords('  Why does this sentence work?  ')).toBe(
             'Why does this',
         );
+
         expect(firstThreeWords('😀'.repeat(101))).toBe('😀'.repeat(100));
     });
 

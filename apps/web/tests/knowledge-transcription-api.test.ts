@@ -24,6 +24,7 @@ const input: SubmitKnowledgeTranscriptionRequest = {
     operationId,
     languages: ['en'],
 };
+
 afterEach(() => vi.unstubAllGlobals());
 describe('transcription browser API boundary', () => {
     it('keeps prepare and explicit confirmation separate while preserving request identity', async () => {
@@ -31,6 +32,7 @@ describe('transcription browser API boundary', () => {
             .fn<typeof globalThis.fetch>()
             .mockResolvedValueOnce(Response.json({ job }))
             .mockResolvedValueOnce(Response.json({ job }));
+
         vi.stubGlobal('fetch', fetch);
         const api = transcriptionApi(
             (callback) => callback('synthetic-token'),
@@ -42,18 +44,23 @@ describe('transcription browser API boundary', () => {
             { ...input, confirmedMaximumCredits: job.maximumCredits },
             signal,
         );
+
         expect(fetch.mock.calls[0]![0]).toContain(
             `/knowledge/${noteId}/transcriptions`,
         );
+
         expect(JSON.parse(fetch.mock.calls[0]![1]!.body as string)).toEqual(
             input,
         );
+
         expect(JSON.parse(fetch.mock.calls[1]![1]!.body as string)).toEqual({
             ...input,
             confirmedMaximumCredits: '4.321',
         });
+
         expect(fetch.mock.calls[0]![1]!.cache).toBe('no-store');
     });
+
     it('rejects a response belonging to another asset or a completed response without a result', async () => {
         const fetch = vi
             .fn<typeof globalThis.fetch>()
@@ -68,35 +75,42 @@ describe('transcription browser API boundary', () => {
             .mockResolvedValueOnce(
                 Response.json({ job: { ...job, state: 'completed' } }),
             );
+
         vi.stubGlobal('fetch', fetch);
         const api = transcriptionApi(
             (callback) => callback('synthetic-token'),
             assetId,
         );
+
         await expect(
             api.read(noteId, operationId, new AbortController().signal),
         ).rejects.toMatchObject({ status: 400 });
+
         await expect(
             api.read(noteId, operationId, new AbortController().signal),
         ).rejects.toMatchObject({ status: 400 });
     });
+
     it('does not retry an unavailable provider or expose the raw response body', async () => {
         const fetch = vi
             .fn<typeof globalThis.fetch>()
             .mockResolvedValueOnce(
                 new Response('secret upstream data', { status: 503 }),
             );
+
         vi.stubGlobal('fetch', fetch);
         const api = transcriptionApi(
             (callback) => callback('synthetic-token'),
             assetId,
         );
+
         await expect(
             api.submit(input, new AbortController().signal),
         ).rejects.toMatchObject({
             status: 503,
             message: 'Transcription is unavailable.',
         });
+
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 });

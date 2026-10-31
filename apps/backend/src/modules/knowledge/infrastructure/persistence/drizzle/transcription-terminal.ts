@@ -29,11 +29,13 @@ export async function terminateTranscription(
     failureCode?: string,
 ) {
     if (result) {
-        if (result.receiptId !== row.receiptId)
+        if (result.receiptId !== row.receiptId) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'The transcript receipt does not match its operation.',
             );
+        }
+
         const duration = result.usage
             ? providerSecondsToAudioMilliseconds(result.usage.seconds)
             : null;
@@ -43,8 +45,10 @@ export async function terminateTranscription(
         );
     }
 
-    if (!['confirmation-required', 'queued', 'running'].includes(row.state))
+    if (!['confirmation-required', 'queued', 'running'].includes(row.state)) {
         return false;
+    }
+
     let sourceValid = false;
     if (
         result &&
@@ -60,7 +64,9 @@ export async function terminateTranscription(
                 source.durationMs === row.sourceDurationMs &&
                 source.bytes.length === row.byteLength;
         } catch (error) {
-            if (!(error instanceof KnowledgeDomainError)) throw error;
+            if (!(error instanceof KnowledgeDomainError)) {
+                throw error;
+            }
         }
     }
 
@@ -162,11 +168,13 @@ export async function cancelTranscription(
             )
             .for('update');
 
-        if (!row)
+        if (!row) {
             throw new KnowledgeDomainError(
                 'knowledge_not_found',
                 'The transcription is unavailable.',
             );
+        }
+
         const at = context.clock.now();
         if (
             ['confirmation-required', 'queued', 'running'].includes(row.state)

@@ -24,6 +24,7 @@ const en = {
     loadError: 'Could not load progress.',
     saved: 'Saved',
 };
+
 export type LearningLabels = typeof en;
 const messages: Record<string, LearningLabels> = {
     en,
@@ -106,6 +107,7 @@ const messages: Record<string, LearningLabels> = {
         saved: 'Guardado',
     },
 };
+
 export function learningLabels(locale: string): LearningLabels {
     return messages[locale] ?? en;
 }

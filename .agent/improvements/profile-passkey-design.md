@@ -37,12 +37,12 @@ Updated: 2026-09-15
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| Tests/E2E | Focused Vitest: 15/15 passed. Mapped Playwright auth/profile journeys with virtual authenticator: 5/5 passed on disposable local PostgreSQL and Redis. |
-| Lint/typecheck/build | Web lint, TypeScript check, and isolated production build passed. |
-| Browser | Managed agent-browser 0.33.0: authenticated empty passkey card inspected at desktop and 320×700; both Add controls present, no clipping in card, no page errors or unexpected failed auth requests. Desktop and narrow full-page captures recorded below. |
-| Documentation/user-flow | `pnpm docs:user-flows:check` passed for 10 guides; `pnpm user-flow:e2e -- check` passed for all three affected guides. |
+| Check                   | Result                                                                                                                                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tests/E2E               | Focused Vitest: 15/15 passed. Mapped Playwright auth/profile journeys with virtual authenticator: 5/5 passed on disposable local PostgreSQL and Redis.                                                                                                    |
+| Lint/typecheck/build    | Web lint, TypeScript check, and isolated production build passed.                                                                                                                                                                                         |
+| Browser                 | Managed agent-browser 0.33.0: authenticated empty passkey card inspected at desktop and 320×700; both Add controls present, no clipping in card, no page errors or unexpected failed auth requests. Desktop and narrow full-page captures recorded below. |
+| Documentation/user-flow | `pnpm docs:user-flows:check` passed for 10 guides; `pnpm user-flow:e2e -- check` passed for all three affected guides.                                                                                                                                    |
 
 ## Outcome and evidence
 

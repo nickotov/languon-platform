@@ -100,6 +100,7 @@ const en = {
     delete: 'Delete',
     cancel: 'Cancel',
 } as const;
+
 type Copy = { [K in keyof typeof en]: string };
 const ru: Copy = {
     contextTooLarge:
@@ -402,6 +403,7 @@ const fr: Copy = {
     delete: 'Supprimer',
     cancel: 'Annuler',
 };
+
 export function conversationCopy(locale: Locale): Copy {
     return { en, ru, es, fr }[locale];
 }

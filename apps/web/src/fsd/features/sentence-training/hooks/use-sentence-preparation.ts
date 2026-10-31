@@ -50,15 +50,21 @@ export function useSentencePreparation({
         () => new SentencePreparationStore(accountedApi, identity),
         [accountedApi, identity],
     );
+
     useEffect(() => {
-        if (enabled) store.enable();
+        if (enabled) {
+            store.enable();
+        }
+
         return store.disable;
     }, [store, enabled]);
+
     const snapshot = useSyncExternalStore(
         store.subscribe,
         store.getSnapshot,
         store.getSnapshot,
     );
+
     return {
         ...snapshot,
         actionConsent,

@@ -52,7 +52,10 @@ export async function publishTextAiWorkerObservations(options: {
 
     for (const model of textAiModelCatalog) {
         const catalogModel = findTextAiModel(`${model.providerId}/${model.id}`);
-        if (!catalogModel) continue;
+        if (!catalogModel) {
+            continue;
+        }
+
         const credential = options.credentials[model.credentialReference];
         const supportedFormats = [
             ...new Set(
@@ -61,6 +64,7 @@ export async function publishTextAiWorkerObservations(options: {
                 ),
             ),
         ];
+
         if (
             options.learningExecutionEnabled &&
             options.sentencePreparationExecutionEnabled
@@ -70,10 +74,12 @@ export async function publishTextAiWorkerObservations(options: {
                     supportedFormats.includes(
                         `sentence-generation:v${revision}`,
                     )
-                )
+                ) {
                     supportedFormats.push(`sentence-preparation:v${revision}`);
+                }
             }
         }
+
         let status: 'available' | 'unavailable' | 'unverified' = 'unavailable';
         let message = 'Provider credential is unavailable in the worker.';
 
@@ -88,6 +94,7 @@ export async function publishTextAiWorkerObservations(options: {
                         : {}),
                     readiness: catalogModel.readiness,
                 })(AbortSignal.timeout(options.readinessTimeoutMs));
+
                 if (catalogModel.readiness.method === 'HEAD') {
                     status = 'unverified';
                     message =
@@ -110,7 +117,10 @@ export async function publishTextAiWorkerObservations(options: {
             conversationExecution: boolean = false,
             portraitInterviewExecution: boolean = false,
         ) => {
-            if (formats.length === 0) return;
+            if (formats.length === 0) {
+                return;
+            }
+
             await options.database
                 .insert(dictionaryAiWorkerObservationsTable)
                 .values({
@@ -207,6 +217,7 @@ export async function publishTextAiWorkerObservations(options: {
             'sentence-preparation:v2',
             'sentence-check:v1',
         ];
+
         await publish(
             supportedFormats.filter(
                 (format) =>
@@ -219,7 +230,8 @@ export async function publishTextAiWorkerObservations(options: {
             ),
             false,
         );
-        if (options.textsCapacityEnabled)
+
+        if (options.textsCapacityEnabled) {
             await publish(
                 supportedFormats.filter(
                     (format) =>
@@ -233,8 +245,10 @@ export async function publishTextAiWorkerObservations(options: {
                 false,
                 true,
             );
-        if (options.textsExecutionEnabled)
-            if (options.textsCapacityEnabled)
+        }
+
+        if (options.textsExecutionEnabled) {
+            if (options.textsCapacityEnabled) {
                 await publish(
                     supportedFormats.filter((format) =>
                         textAiTextsFormats.some(
@@ -244,6 +258,9 @@ export async function publishTextAiWorkerObservations(options: {
                     false,
                     true,
                 );
+            }
+        }
+
         if (
             options.conversationCapacityEnabled &&
             options.textsCapacityEnabled
@@ -259,7 +276,8 @@ export async function publishTextAiWorkerObservations(options: {
                 false,
                 true,
             );
-            if (options.conversationExecutionEnabled)
+
+            if (options.conversationExecutionEnabled) {
                 await publish(
                     supportedFormats.filter(
                         (format) => format === 'conversation:v1',
@@ -270,7 +288,9 @@ export async function publishTextAiWorkerObservations(options: {
                     false,
                     true,
                 );
+            }
         }
+
         if (
             options.portraitInterviewExecutionEnabled &&
             options.conversationCapacityEnabled &&
@@ -288,12 +308,14 @@ export async function publishTextAiWorkerObservations(options: {
                 true,
             );
         }
-        if (options.learningExecutionEnabled)
+
+        if (options.learningExecutionEnabled) {
             await publish(
                 supportedFormats.filter((format) =>
                     sentenceFormats.includes(format),
                 ),
                 true,
             );
+        }
     }
 }

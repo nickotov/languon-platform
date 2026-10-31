@@ -16,7 +16,10 @@ export async function publishKnowledgeExerciseEvaluation(
     job: TextsJobRow,
     raw: KnowledgeExerciseEvaluationResult,
 ) {
-    if (!job.workerId) throw new TextsAiError('access_revoked');
+    if (!job.workerId) {
+        throw new TextsAiError('access_revoked');
+    }
+
     const result = KnowledgeExerciseEvaluationResultSchema.parse(raw);
     const [row] = await tx.execute<{ attempt: unknown }>(sql`
         select languon_publish_knowledge_exercise_evaluation(

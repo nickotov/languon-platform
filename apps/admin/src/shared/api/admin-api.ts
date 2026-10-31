@@ -103,9 +103,11 @@ const apiUrl = resolveAdminApiUrl(
     import.meta.env.PROD,
     import.meta.env.VITE_API_URL,
 );
+
 export function resolveAdminAccessTokenHeader(production: boolean) {
     return production ? 'X-Languon-Admin-Authorization' : 'Authorization';
 }
+
 const client = createBrowserApiClient<AdminApiErrorDetail>({
     accessTokenHeader: resolveAdminAccessTokenHeader(import.meta.env.PROD),
     baseUrl: apiUrl,
@@ -124,6 +126,7 @@ export async function authorized<TResponse>(
 ) {
     let accessToken =
         accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
+
     try {
         return await client.request(path, {
             accessToken,
@@ -131,9 +134,13 @@ export async function authorized<TResponse>(
             signal,
         });
     } catch (error) {
-        if (!isAuthenticationRequiredError(error)) throw error;
+        if (!isAuthenticationRequiredError(error)) {
+            throw error;
+        }
+
         accessTokenStore.clear();
         accessToken = await refreshAccessToken(signal);
+
         return client.request(path, {
             accessToken,
             responseSchema,
@@ -159,10 +166,15 @@ async function refreshSession(signal?: AbortSignal) {
             })
             .catch((error: unknown) => {
                 refreshError = error;
+
                 throw error;
             }),
     );
-    if (refreshError) throw refreshError;
+
+    if (refreshError) {
+        throw refreshError;
+    }
+
     if (!session) {
         throw new AdminApiError(401, {
             code: 'authentication_required',
@@ -170,7 +182,9 @@ async function refreshSession(signal?: AbortSignal) {
             message: 'Authentication is required.',
         });
     }
+
     accessTokenStore.set(session.accessToken, session.accessTokenExpiresAt);
+
     return session;
 }
 
@@ -489,6 +503,7 @@ export const adminApi = {
                 parse: (value: unknown) => {
                     const records = (value as { records?: unknown } | null)
                         ?.records;
+
                     return {
                         records: AccountingRecordSchema.array().parse(records),
                     };
@@ -514,6 +529,7 @@ export const adminApi = {
                 parse: (value: unknown) => {
                     const policies = (value as { policies?: unknown } | null)
                         ?.policies;
+
                     return {
                         policies:
                             CapabilityPolicySchema.array().parse(policies),
@@ -556,12 +572,17 @@ async function authorizedMutation(
             responseSchema: AdminUserStatusMutationResponseSchema,
             signal,
         });
+
     try {
         return await request();
     } catch (error) {
-        if (!isAuthenticationRequiredError(error)) throw error;
+        if (!isAuthenticationRequiredError(error)) {
+            throw error;
+        }
+
         accessTokenStore.clear();
         accessToken = await refreshAccessToken(signal);
+
         return request();
     }
 }
@@ -585,12 +606,17 @@ async function authorizedRequest<TBody, TResponse>(
             responseSchema,
             signal,
         });
+
     try {
         return await request();
     } catch (error) {
-        if (!isAuthenticationRequiredError(error)) throw error;
+        if (!isAuthenticationRequiredError(error)) {
+            throw error;
+        }
+
         accessTokenStore.clear();
         accessToken = await refreshAccessToken(signal);
+
         return request();
     }
 }
@@ -598,8 +624,11 @@ async function authorizedRequest<TBody, TResponse>(
 function queryString(values: object): string {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(values)) {
-        if (value !== undefined && value !== '') query.set(key, String(value));
+        if (value !== undefined && value !== '') {
+            query.set(key, String(value));
+        }
     }
+
     return query.toString();
 }
 
@@ -614,6 +643,7 @@ export async function authorizedSingleRequest<TBody, TResponse>(
 ) {
     const accessToken =
         accessTokenStore.getUsable() ?? (await refreshAccessToken(signal));
+
     return client.request(path, {
         accessToken,
         body,
@@ -640,10 +670,12 @@ async function authorizedAudio(
         redirect: 'error',
         cache: 'no-store',
     });
+
     if (!response.ok) {
         const detail = AdminErrorResponseSchema.safeParse(
             await response.json().catch(() => null),
         );
+
         throw new AdminApiError(
             response.status,
             detail.success
@@ -656,12 +688,15 @@ async function authorizedAudio(
                   },
         );
     }
+
     const blob = await response.blob();
     if (
         !blob.type.startsWith('audio/') ||
         blob.size > 5 * 1024 * 1024 ||
         blob.size === 0
-    )
+    ) {
         throw new Error('The recording response is invalid.');
+    }
+
     return blob;
 }

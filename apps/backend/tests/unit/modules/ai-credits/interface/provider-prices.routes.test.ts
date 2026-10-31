@@ -17,6 +17,7 @@ const request = {
     reason: 'Synthetic fixture rate',
     expectedVersion: 0,
 };
+
 describe('provider USD rate authorization', () => {
     function setup() {
         const publish = vi.fn().mockResolvedValue({
@@ -40,8 +41,10 @@ describe('provider USD rate authorization', () => {
                 refreshTokenTtlSeconds: 3600,
             }),
         });
+
         return { app, publish, authorizeSensitiveOperation };
     }
+
     it('checks origin before publishing an immutable provider price', async () => {
         const { app, publish, authorizeSensitiveOperation } = setup();
         const response = await app.request(
@@ -56,10 +59,12 @@ describe('provider USD rate authorization', () => {
                 body: JSON.stringify(request),
             },
         );
+
         expect(response.status).toBe(403);
         expect(authorizeSensitiveOperation).not.toHaveBeenCalled();
         expect(publish).not.toHaveBeenCalled();
     });
+
     it('uses the recently authenticated owner identity for the price audit', async () => {
         const { app, publish, authorizeSensitiveOperation } = setup();
         const response = await app.request(
@@ -74,6 +79,7 @@ describe('provider USD rate authorization', () => {
                 body: JSON.stringify(request),
             },
         );
+
         expect(response.status).toBe(200);
         expect(authorizeSensitiveOperation).toHaveBeenCalledOnce();
         expect(publish).toHaveBeenCalledWith(
@@ -82,6 +88,7 @@ describe('provider USD rate authorization', () => {
             expect.any(Date),
         );
     });
+
     it('rejects native prices through the existing flat HTTP writer before publication', async () => {
         const { app, publish, authorizeSensitiveOperation } = setup();
         const native = {
@@ -108,9 +115,11 @@ describe('provider USD rate authorization', () => {
                 ],
             },
         };
+
         expect(
             ProviderPricePublishRequestSchema.safeParse(native).success,
         ).toBe(true);
+
         const response = await app.request(
             '/admin/ai/accounting/provider-prices',
             {
@@ -123,10 +132,12 @@ describe('provider USD rate authorization', () => {
                 body: JSON.stringify(native),
             },
         );
+
         expect(response.status).toBe(400);
         expect(publish).not.toHaveBeenCalled();
         expect(authorizeSensitiveOperation).not.toHaveBeenCalled();
     });
+
     it('bounds the legacy writer body before parsing or publication', async () => {
         const { app, publish, authorizeSensitiveOperation } = setup();
         const response = await app.request(
@@ -144,6 +155,7 @@ describe('provider USD rate authorization', () => {
                 }),
             },
         );
+
         expect(response.status).toBe(413);
         expect(publish).not.toHaveBeenCalled();
         expect(authorizeSensitiveOperation).not.toHaveBeenCalled();

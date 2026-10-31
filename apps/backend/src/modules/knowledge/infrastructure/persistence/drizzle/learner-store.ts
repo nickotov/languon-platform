@@ -58,18 +58,21 @@ function replay<T extends { fingerprint: string; result: unknown }>(
     row: T | undefined,
     expected: string,
 ) {
-    if (row && row.fingerprint !== expected)
+    if (row && row.fingerprint !== expected) {
         throw new KnowledgeDomainError(
             'idempotency_conflict',
             'This request identity was already used with different content.',
         );
+    }
 
     return row;
 }
 
 function blocks(body: unknown): LearningBlock[] {
     const parsed = KnowledgeBodySchema.parse(body);
-    if (parsed.schemaVersion === 1) return [];
+    if (parsed.schemaVersion === 1) {
+        return [];
+    }
 
     return (parsed.document.content ?? []).flatMap((node) =>
         node.type === 'learningBlock' && node.attrs?.block
@@ -86,7 +89,10 @@ function exercise(
     noteId: string,
 ) {
     const found = all.find((block) => block.id === id);
-    if (!found || found.type !== 'exercise') conflict();
+    if (!found || found.type !== 'exercise') {
+        conflict();
+    }
+
     const epoch = requireLearningEpoch(
         revisions,
         'exercise',
@@ -95,13 +101,17 @@ function exercise(
         exerciseSemanticRevision(found, all),
     );
 
-    if (learningExerciseRevision(noteId, epoch) !== expected) conflict();
+    if (learningExerciseRevision(noteId, epoch) !== expected) {
+        conflict();
+    }
 
     return found;
 }
 
 function expectedVersion(current: number, expected: number) {
-    if (current !== expected) conflict();
+    if (current !== expected) {
+        conflict();
+    }
 }
 
 export class DrizzleLearnerStore implements LearnerStore {
@@ -227,8 +237,10 @@ export class DrizzleLearnerStore implements LearnerStore {
                     ),
                 );
 
-            if (replay(existing, print))
+            if (replay(existing, print)) {
                 return WorkbookLearnerAttemptSchema.parse(existing!.result);
+            }
+
             expectedVersion(note.version, input.noteVersion);
             const all = blocks(note.body);
             const target = exercise(
@@ -242,11 +254,12 @@ export class DrizzleLearnerStore implements LearnerStore {
             try {
                 evaluation = evaluateWorkbookAnswer(target, input.answer);
             } catch (error) {
-                if (error instanceof WorkbookLearningError)
+                if (error instanceof WorkbookLearningError) {
                     throw new KnowledgeDomainError(
                         'invalid_request',
                         error.message,
                     );
+                }
 
                 throw error;
             }
@@ -303,8 +316,10 @@ export class DrizzleLearnerStore implements LearnerStore {
                     and(eq(events.actorId, actorId), eq(events.id, input.id)),
                 );
 
-            if (replay(existing, print))
+            if (replay(existing, print)) {
                 return WorkbookLearningEventSchema.parse(existing!.result);
+            }
+
             expectedVersion(note.version, input.noteVersion);
             const all = blocks(note.body);
             const target = all.find((block) => block.id === input.blockId);
@@ -314,8 +329,9 @@ export class DrizzleLearnerStore implements LearnerStore {
                     !['audio', 'video'].includes(target.type) ||
                     !('transcript' in target) ||
                     !target.transcript
-                )
+                ) {
                     conflict();
+                }
             } else {
                 exercise(
                     all,
@@ -371,7 +387,10 @@ export class DrizzleLearnerStore implements LearnerStore {
                     ),
                 );
 
-            if (replay(existing, print)) return existing!.result;
+            if (replay(existing, print)) {
+                return existing!.result;
+            }
+
             expectedVersion(note.version, input.noteVersion);
             const result = input.completed
                 ? WorkbookNoteCompletionSchema.parse({

@@ -10,21 +10,29 @@ export class SessionReader {
     public async load(): Promise<void> {
         const host = this.host;
         const state = host.getState();
-        if (this.loading || !['card', 'loading'].includes(state.phase)) return;
+        if (this.loading || !['card', 'loading'].includes(state.phase)) {
+            return;
+        }
+
         if (state.index >= state.queue.length) {
             host.patch({
                 phase: 'results',
                 roundsCompleted: state.roundsCompleted + 1,
             });
+
             return;
         }
+
         const needed = state.queue
             .slice(state.index, state.index + 25)
             .filter((id) => !state.items[id]);
+
         if (!needed.length) {
             host.patch({ phase: 'card' });
+
             return;
         }
+
         const generation = host.currentGeneration();
         this.loading = true;
         host.patch({ itemsLoading: true, error: null });
@@ -33,7 +41,11 @@ export class SessionReader {
                 configuration: host.input.configuration,
                 entryIds: needed,
             });
-            if (!host.isCurrent(generation)) return;
+
+            if (!host.isCurrent(generation)) {
+                return;
+            }
+
             const current = host.getState();
             const received = new Map(
                 response.items.map((item) => [item.entryId, item]),
@@ -44,8 +56,12 @@ export class SessionReader {
                 ? removeEntries(current, removed)
                 : {};
             const items = { ...(change.items ?? current.items) };
-            for (const item of response.items)
-                if (needed.includes(item.entryId)) items[item.entryId] = item;
+            for (const item of response.items) {
+                if (needed.includes(item.entryId)) {
+                    items[item.entryId] = item;
+                }
+            }
+
             host.patch({
                 ...change,
                 items,
@@ -53,10 +69,14 @@ export class SessionReader {
                 phase: change.phase === 'results' ? 'results' : 'card',
             });
         } catch (cause) {
-            if (!host.isCurrent(generation)) return;
+            if (!host.isCurrent(generation)) {
+                return;
+            }
+
             const error = toApiError(cause);
-            if (isAccessLoss(error)) host.unavailable();
-            else
+            if (isAccessLoss(error)) {
+                host.unavailable();
+            } else {
                 host.patch({
                     phase: 'error',
                     itemsLoading: false,
@@ -64,6 +84,7 @@ export class SessionReader {
                     errorRetryAt: retryAtFor(error),
                     announcement: 'loadFailed',
                 });
+            }
         } finally {
             this.loading = false;
             if (host.isCurrent(generation)) {
@@ -71,16 +92,19 @@ export class SessionReader {
                 if (
                     current.phase === 'card' &&
                     !current.items[current.queue[current.index]!]
-                )
+                ) {
                     void host.load();
+                }
             }
         }
     }
 
     public async refreshProgress(): Promise<void> {
         const host = this.host;
-        if (!host.input.signedIn || host.getState().phase === 'unavailable')
+        if (!host.input.signedIn || host.getState().phase === 'unavailable') {
             return;
+        }
+
         const generation = host.currentGeneration();
         const sequence = ++this.progressSequence;
         host.patch({ progressStatus: 'loading' });
@@ -89,24 +113,33 @@ export class SessionReader {
             if (
                 host.isCurrent(generation) &&
                 sequence === this.progressSequence
-            )
+            ) {
                 host.patch({ progress, progressStatus: 'idle' });
+            }
         } catch (cause) {
             if (
                 !host.isCurrent(generation) ||
                 sequence !== this.progressSequence
-            )
+            ) {
                 return;
+            }
+
             const error = toApiError(cause);
-            if (isAccessLoss(error)) host.unavailable();
-            else host.patch({ progressStatus: 'error' });
+            if (isAccessLoss(error)) {
+                host.unavailable();
+            } else {
+                host.patch({ progressStatus: 'error' });
+            }
         }
     }
 
     public async reloadCurrent(): Promise<void> {
         const host = this.host;
         const entryId = host.getState().queue[host.getState().index];
-        if (!entryId || host.getState().conflictBusy) return;
+        if (!entryId || host.getState().conflictBusy) {
+            return;
+        }
+
         const generation = host.currentGeneration();
         host.patch({ conflictBusy: true });
         try {
@@ -114,16 +147,21 @@ export class SessionReader {
                 configuration: host.input.configuration,
                 entryIds: [entryId],
             });
-            if (!host.isCurrent(generation)) return;
+
+            if (!host.isCurrent(generation)) {
+                return;
+            }
+
             const item = result.items.find(
                 (candidate) => candidate.entryId === entryId,
             );
-            if (!item)
+
+            if (!item) {
                 host.patch({
                     ...removeEntries(host.getState(), [entryId]),
                     conflictBusy: false,
                 });
-            else
+            } else {
                 host.patch({
                     items: { ...host.getState().items, [entryId]: item },
                     face: 'front',
@@ -131,17 +169,24 @@ export class SessionReader {
                     conflictBusy: false,
                     announcement: 'updatedCardLoaded',
                 });
+            }
+
             void host.load();
             void host.refreshProgress();
         } catch (cause) {
-            if (!host.isCurrent(generation)) return;
+            if (!host.isCurrent(generation)) {
+                return;
+            }
+
             const error = toApiError(cause);
-            if (isAccessLoss(error)) host.unavailable();
-            else
+            if (isAccessLoss(error)) {
+                host.unavailable();
+            } else {
                 host.patch({
                     conflictBusy: false,
                     notices: [...host.getState().notices, 'updatedCardFailed'],
                 });
+            }
         }
     }
 }

@@ -75,24 +75,48 @@ export function mapOwnedDictionary(
 }
 
 export function publicState(job: JobRow, proposal: ProposalRow | null) {
-    if (job.awaitingUploadAt) return 'awaiting-upload' as const;
+    if (job.awaitingUploadAt) {
+        return 'awaiting-upload' as const;
+    }
+
     if (proposal?.documentStagedAt && !proposal.documentPublishedAt) {
-        if (job.executionState === 'cancelled') return 'cancelled' as const;
-        if (job.executionState === 'failed') return 'failed' as const;
-        if (job.executionState === 'expired') return 'expired' as const;
+        if (job.executionState === 'cancelled') {
+            return 'cancelled' as const;
+        }
+
+        if (job.executionState === 'failed') {
+            return 'failed' as const;
+        }
+
+        if (job.executionState === 'expired') {
+            return 'expired' as const;
+        }
 
         return 'running' as const;
     }
 
-    if (proposal?.reviewState === 'accepted') return 'accepted' as const;
-    if (proposal?.reviewState === 'discarded') return 'discarded' as const;
-    if (proposal?.reviewState === 'expired') return 'expired' as const;
+    if (proposal?.reviewState === 'accepted') {
+        return 'accepted' as const;
+    }
+
+    if (proposal?.reviewState === 'discarded') {
+        return 'discarded' as const;
+    }
+
+    if (proposal?.reviewState === 'expired') {
+        return 'expired' as const;
+    }
+
     if (
         proposal?.reviewState === 'reviewable' &&
         (!proposal.documentStagedAt || proposal.documentPublishedAt)
-    )
+    ) {
         return 'review' as const;
-    if (job.executionState === 'cancelled') return 'cancelled' as const;
+    }
+
+    if (job.executionState === 'cancelled') {
+        return 'cancelled' as const;
+    }
 
     return job.executionState === 'completed'
         ? ('failed' as const)
@@ -289,8 +313,9 @@ export function mapJob(
             'target' in input &&
             JSON.stringify(input.target) !==
                 JSON.stringify(persistedAuthoringTarget)
-        )
+        ) {
             throw new DictionaryGenerationNotAvailableError();
+        }
 
         return DictionaryCardAuthoringAnyGenerationJobSchema.parse({
             ...shared,
@@ -330,8 +355,9 @@ export function mapJob(
         });
     }
 
-    if (job.kind !== 'single-card')
+    if (job.kind !== 'single-card') {
         throw new DictionaryGenerationNotAvailableError();
+    }
 
     return DictionaryGenerationJobSchema.parse({
         ...shared,

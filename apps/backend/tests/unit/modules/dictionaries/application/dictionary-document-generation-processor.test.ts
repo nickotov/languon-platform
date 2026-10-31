@@ -46,6 +46,7 @@ function fixture(
         storageVersionId: 'version-1',
         uploadId: '11111111-1111-4111-8111-111111111111',
     };
+
     return {
         input: {
             context: {
@@ -111,6 +112,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             ...request(value),
             reportStage: (stage) => {
                 stages.push(stage);
+
                 return Promise.resolve();
             },
         });
@@ -119,11 +121,13 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             'bank',
             'river bank',
         ]);
+
         expect(result.proposal.failures).toEqual([]);
         expect(result.providerUsage).toEqual({
             inputTokens: 0,
             outputTokens: 0,
         });
+
         expect(stages).toEqual([
             'scanning',
             'extracting',
@@ -138,6 +142,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
         const generate = vi.fn((generationRequest) =>
             deterministic.generate(generationRequest),
         );
+
         await processor({
             storage: value.storage,
             proposalGenerator: {
@@ -197,6 +202,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             ...request(value),
             reportStage: (stage) => {
                 stages.push(stage);
+
                 return Promise.resolve();
             },
         });
@@ -205,6 +211,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             'bank',
             'shore',
         ]);
+
         expect(stages).toContain('ocr');
     });
 
@@ -232,6 +239,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             category: 'malware_detected',
             retryable: false,
         });
+
         expect(extract).not.toHaveBeenCalled();
     });
 
@@ -273,6 +281,7 @@ describe('DictionaryDocumentGenerationProcessor', () => {
                 ),
             ),
         );
+
         await expect(
             processor(overflow).process(request(overflow)),
         ).rejects.toMatchObject({
@@ -312,25 +321,30 @@ describe('DictionaryDocumentGenerationProcessor', () => {
             objectKey: value.reference.objectKey,
             signal,
         });
+
         expect(versions.map((version) => version.kind)).toEqual([
             'data',
             'tombstone',
         ]);
+
         await value.storage.deleteVersion({
             objectKey: value.reference.objectKey,
             signal,
             versionId: value.reference.storageVersionId,
         });
+
         versions = await value.storage.listVersions({
             objectKey: value.reference.objectKey,
             signal,
         });
+
         expect(versions).toEqual([tombstone]);
         await value.storage.deleteTombstone({
             objectKey: value.reference.objectKey,
             signal,
             versionId: tombstone.versionId,
         });
+
         expect(
             await value.storage.listVersions({
                 objectKey: value.reference.objectKey,

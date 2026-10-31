@@ -33,6 +33,7 @@ export function createTextLibraryPublication(options: {
         ),
         proposal: undefined,
     };
+
     return {
         async preview(
             actorId: string,
@@ -57,10 +58,12 @@ export function createTextLibraryPublication(options: {
                         actorId,
                         request.destination.textId,
                     );
+
                     assertTextVersion(
                         current.version,
                         request.destination.expectedVersion,
                     );
+
                     title = current.title;
                     content = appendPreparedLibraryText(
                         {
@@ -74,7 +77,10 @@ export function createTextLibraryPublication(options: {
                         },
                         prepared,
                     );
-                } else title = request.destination.title;
+                } else {
+                    title = request.destination.title;
+                }
+
                 return {
                     text: {
                         title,
@@ -107,6 +113,7 @@ export function createTextLibraryPublication(options: {
         },
     };
 }
+
 export type TextLibraryPublication = ReturnType<
     typeof createTextLibraryPublication
 >;

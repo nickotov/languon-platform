@@ -54,6 +54,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             },
         };
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
@@ -62,17 +63,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const crypto = new KnowledgeShareCrypto(
                 'knowledge-media-test-secret-only',
             );
+
             store = new DrizzleKnowledgeStore(
                 db,
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+
             media = new DrizzleKnowledgeMediaStore(db, crypto);
         }, 120000);
+
         beforeEach(async () => {
             await db.execute(
                 sql`truncate knowledge_notes,knowledge_media_blobs,knowledge_operation_receipts cascade`,
             );
+
             owner = randomUUID();
             reader = randomUUID();
             await db.insert(usersTable).values([
@@ -80,9 +85,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: reader, status: 'active' },
             ]);
         });
+
         afterAll(async () => client?.end());
         const upload = () =>
             verifyKnowledgeAudio(createFixtureAudio().bytes, 'audio/wav');
+
         it('isolates drafts and foreign IDs, publishes only saved media, revokes playback live', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
@@ -92,15 +99,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 media.upload(reader, note.id, upload()),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             const share = await store.issueShare(owner, note.id);
             const access = { kind: 'note' as const, ...share };
             await expect(
                 media.read(note.id, asset.id, { access }),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             expect(
                 (await media.read(note.id, asset.id, { ownerId: owner })).bytes
                     .length,
             ).toBeGreaterThan(0);
+
             const body = {
                 schemaVersion: 2 as const,
                 document: {
@@ -124,13 +134,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expectedVersion: note.version,
                 content: { ...content, body },
             });
+
             expect(
                 (await media.read(note.id, asset.id, { access })).mimeType,
             ).toBe('audio/wav');
+
             const other = await store.create(owner, {
                 operationId: randomUUID(),
                 content,
             });
+
             await expect(
                 store.update(owner, other.id, {
                     operationId: randomUUID(),
@@ -138,12 +151,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content: { ...content, body },
                 }),
             ).rejects.toMatchObject({ code: 'invalid_request' });
+
             await store.revokeShare(owner, note.id);
             await expect(
                 media.read(note.id, asset.id, { access }),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             expect(published.body.schemaVersion).toBe(2);
         });
+
         it('grants copied media independent ownership and deletes bytes only after the last copy disappears', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),
@@ -183,13 +199,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { operationId: randomUUID(), expectedVersion: saved.version },
             );
             const copiedBlock = copy.body.document.content?.[0]?.attrs?.block;
-            if (copiedBlock?.type !== 'audio' || !copiedBlock.assetId)
+            if (copiedBlock?.type !== 'audio' || !copiedBlock.assetId) {
                 throw new Error('Missing copied audio');
+            }
+
             expect(copiedBlock.assetId).not.toBe(asset.id);
             await store.delete(owner, note.id, {
                 operationId: randomUUID(),
                 expectedVersion: saved.version,
             });
+
             expect(
                 (
                     await media.read(copy.id, copiedBlock.assetId, {
@@ -197,16 +216,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).bytes,
             ).toEqual(upload().bytes);
+
             expect(
                 await db.select().from(knowledgeMediaAssetsTable),
             ).toHaveLength(1);
+
             expect(
                 await db.select().from(knowledgeMediaBlobsTable),
             ).toHaveLength(1);
+
             await store.delete(reader, copy.id, {
                 operationId: randomUUID(),
                 expectedVersion: copy.version,
             });
+
             expect(
                 await db.select().from(knowledgeMediaBlobsTable),
             ).toHaveLength(0);

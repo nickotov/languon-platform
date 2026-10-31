@@ -21,7 +21,9 @@ export class SentenceProviderInvalidModelOutputError extends SentenceInvalidMode
     readonly usage?: SentenceTokenUsage;
     constructor(reason: SentenceModelOutputReason, usage?: SentenceTokenUsage) {
         super(undefined, reason);
-        if (usage) this.usage = { ...usage };
+        if (usage) {
+            this.usage = { ...usage };
+        }
     }
 }
 export interface SentenceProviderCall<T> {

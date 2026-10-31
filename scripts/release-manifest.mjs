@@ -38,6 +38,7 @@ function parseOptions(values) {
                     : [existing, value]
                 : value,
         );
+
         index += 1;
     }
 
@@ -49,13 +50,20 @@ function required(options, name) {
     if (typeof value !== 'string' || value.length === 0) {
         fail(`--${name} is required`);
     }
+
     return value;
 }
 
 function commaSeparated(options, name) {
     const value = options.get(name);
-    if (value === undefined || value === '') return [];
-    if (typeof value !== 'string') fail(`--${name} may be provided once`);
+    if (value === undefined || value === '') {
+        return [];
+    }
+
+    if (typeof value !== 'string') {
+        fail(`--${name} may be provided once`);
+    }
+
     return value.split(',').filter(Boolean);
 }
 
@@ -64,14 +72,17 @@ function requiredInteger(options, name) {
     if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) {
         fail(`--${name} must be a non-negative safe integer`);
     }
+
     return Number(value);
 }
 
 function createManifest(options) {
-    if (options.has('pronunciation-audio'))
+    if (options.has('pronunciation-audio')) {
         fail(
             'Retired --pronunciation-audio is unsupported; use --shared-speech.',
         );
+    }
+
     const sourceSha = required(options, 'source-sha');
     const identity = required(options, 'identity');
     const workflowRunText = required(options, 'workflow-run');
@@ -85,7 +96,10 @@ function createManifest(options) {
           ? [imageValues]
           : []) {
         const separator = item.indexOf('=');
-        if (separator < 1) fail(`Invalid --image value: ${item}`);
+        if (separator < 1) {
+            fail(`Invalid --image value: ${item}`);
+        }
+
         images[item.slice(0, separator)] = item.slice(separator + 1);
     }
 
@@ -169,6 +183,7 @@ async function main() {
         await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`, {
             flag: 'wx',
         });
+
         return;
     }
 
@@ -180,7 +195,9 @@ async function main() {
             sourceSha: options.get('expected-source-sha'),
             version: options.get('expected-version'),
         });
+
         process.stdout.write(`${JSON.stringify(manifest)}\n`);
+
         return;
     }
 

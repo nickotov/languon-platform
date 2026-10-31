@@ -162,7 +162,10 @@ export async function sentencePreparationFresh(
     row: Preparation,
     partitions: Batch[],
 ) {
-    if (!partitions.length) return false;
+    if (!partitions.length) {
+        return false;
+    }
+
     const { dictionary } = await authorizeSentence(tx, accessFor(row));
     const source =
         row.direction === 'source-to-target'
@@ -173,8 +176,10 @@ export async function sentencePreparationFresh(
             ? dictionary.targetLanguageTag
             : dictionary.sourceLanguageTag;
 
-    if (source !== row.sourceLanguage || target !== row.targetLanguage)
+    if (source !== row.sourceLanguage || target !== row.targetLanguage) {
         return false;
+    }
+
     const current = (
         await sentenceCandidates(
             tx,
@@ -214,12 +219,13 @@ export async function sentencePreparationRefreshManifest(
                 item.exerciseId,
             )) &&
             (await isSentenceCurrent(tx, item.exerciseId))
-        )
+        ) {
             manifest.push(item);
+        }
     }
 
     if (manifest.length !== batch.manifest.length) {
-        if (persist)
+        if (persist) {
             await tx
                 .update(batches)
                 .set({
@@ -229,6 +235,8 @@ export async function sentencePreparationRefreshManifest(
                         : {}),
                 })
                 .where(eq(batches.id, batch.id));
+        }
+
         batch.manifest = manifest;
         if (row.mode !== 'new-only') {
             batch.reviewed = false;

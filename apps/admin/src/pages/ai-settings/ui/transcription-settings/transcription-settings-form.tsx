@@ -57,12 +57,15 @@ export function TranscriptionSettingsForm({
             billingEvidence: current?.billingEvidence ?? undefined,
             reason: '',
         });
+
         setInvalid(false);
     }, [state.version, form, state.current]);
+
     function changed() {
         setInvalid(false);
         onChange();
     }
+
     async function review(values: Values) {
         const result =
             KnowledgeTranscriptionAdminPreviewRequestSchema.safeParse({
@@ -88,17 +91,22 @@ export function TranscriptionSettingsForm({
                     billingEvidence: values.billingEvidence?.trim() || null,
                 },
             });
+
         if (!result.success) {
             setInvalid(true);
+
             return;
         }
+
         await onReview(result.data);
     }
+
     const options = state.prices.map((price) => ({
         value: price.id,
         label: `${price.modelId} · v${price.version} · ${price.sourceReference}`,
     }));
     const required = [{ required: true, message: t('transcription.required') }];
+
     return (
         <Form
             className={local.form}

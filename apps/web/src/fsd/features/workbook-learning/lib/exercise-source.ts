@@ -13,7 +13,10 @@ export function exerciseSource(
     audioAssetId?: string;
     videoSource?: Extract<LearningBlock, { type: 'video' }>['source'];
 } {
-    if (block.type !== 'exercise' || !block.source || !body) return {};
+    if (block.type !== 'exercise' || !block.source || !body) {
+        return {};
+    }
+
     const source = block.source;
     let media: LearningBlock | undefined;
     function visit(
@@ -22,18 +25,28 @@ export function exerciseSource(
         if (
             node.type === 'learningBlock' &&
             node.attrs?.block?.id === source.blockId
-        )
+        ) {
             media = node.attrs.block;
+        }
+
         node.content?.forEach(visit);
     }
+
     body.document.content?.forEach(visit);
-    if (!media) return {};
+    if (!media) {
+        return {};
+    }
+
     const ids = new Set(source.segmentIds);
     if (media.type === 'bilingual-text') {
         const segments = media.segments.filter((segment) =>
             ids.has(segment.id),
         );
-        if (segments.length !== ids.size) return {};
+
+        if (segments.length !== ids.size) {
+            return {};
+        }
+
         return {
             block: media,
             transcript: {
@@ -42,16 +55,23 @@ export function exerciseSource(
             },
         };
     }
+
     if (
         !media ||
         (media.type !== 'audio' && media.type !== 'video') ||
         !media.transcript
-    )
+    ) {
         return {};
+    }
+
     const segments = media.transcript.segments.filter((segment) =>
         ids.has(segment.id),
     );
-    if (segments.length !== ids.size) return {};
+
+    if (segments.length !== ids.size) {
+        return {};
+    }
+
     return {
         block: media,
         transcript: { language: media.transcript.language, segments },

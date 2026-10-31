@@ -31,36 +31,51 @@ export function RailFlyout({ section }: { section: NavigationSection }) {
     const buttonClass = active
         ? `${styles.button} ${styles.active}`
         : styles.button;
+
     function toggle() {
         intent.setOpen(!intent.open || !intent.pinned);
     }
+
     function focusFilter(event: FocusEvent<HTMLDivElement>) {
-        if (event.target === event.currentTarget && intent.pinned)
+        if (event.target === event.currentTarget && intent.pinned) {
             filterRef.current?.focus();
+        }
     }
+
     function pinPanel() {
         intent.setOpen(true);
     }
+
     function close() {
         intent.setOpen(false);
     }
+
     function createResource() {
         close();
         create(section.kind);
     }
+
     function changeFilter(event: ChangeEvent<HTMLInputElement>) {
         setFilter(event.target.value);
     }
+
     function keyDown(event: KeyboardEvent<HTMLButtonElement>) {
         if (event.key === 'ArrowRight') {
             event.preventDefault();
             intent.setOpen(true);
         }
     }
+
     useEffect(() => {
-        if (intent.open && intent.pinned) filterRef.current?.focus();
-        if (!intent.open) setFilter('');
+        if (intent.open && intent.pinned) {
+            filterRef.current?.focus();
+        }
+
+        if (!intent.open) {
+            setFilter('');
+        }
     }, [intent.open, intent.pinned]);
+
     return (
         <li className={styles.item}>
             <Popover open={intent.open} onOpenChange={intent.setOpen}>

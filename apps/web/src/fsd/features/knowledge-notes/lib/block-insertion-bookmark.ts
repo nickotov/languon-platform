@@ -9,7 +9,10 @@ export type BlockInsertionBookmark = {
 export function captureBlockInsertion(
     editor: Editor | null,
 ): BlockInsertionBookmark | null {
-    if (!editor || editor.isDestroyed || !editor.isEditable) return null;
+    if (!editor || editor.isDestroyed || !editor.isEditable) {
+        return null;
+    }
+
     let position = editor.state.selection.to;
     let valid = true;
     function map({ transaction }: { transaction: Transaction }) {
@@ -17,7 +20,9 @@ export function captureBlockInsertion(
         position = next.pos;
         valid = valid && !next.deleted;
     }
+
     editor.on('transaction', map);
+
     return {
         resolve() {
             return valid &&

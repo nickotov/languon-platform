@@ -33,6 +33,7 @@ export function ProviderPriceDialog(props: Props) {
             />
         );
     }
+
     return <LegacyProviderPriceDialog {...props} />;
 }
 
@@ -91,15 +92,17 @@ function LegacyProviderPriceDialog({
                 nativeRules = ProviderNativePricingRulesSchema.parse(
                     JSON.parse(nativeRulesJson ?? ''),
                 );
+
                 if (
                     !nativeProviderPricingMatchesMeter(
                         'audio-duration',
                         nativeRules,
                     )
-                )
+                ) {
                     throw new Error(
                         'Duration pricing requires a duration component.',
                     );
+                }
             } catch {
                 form.setFields([
                     {
@@ -107,9 +110,11 @@ function LegacyProviderPriceDialog({
                         errors: [t('transcription.nativeRulesInvalid')],
                     },
                 ]);
+
                 return;
             }
         }
+
         await onSubmit({
             ...fields,
             ...(duration ? { nativeRules } : {}),
@@ -125,6 +130,7 @@ function LegacyProviderPriceDialog({
                 : values.minimumUsdPerRequest || null,
         });
     };
+
     return (
         <Modal
             open
@@ -267,6 +273,7 @@ function LegacyProviderPriceDialog({
         </Modal>
     );
 }
+
 function UsdRateField({
     name,
     label,
@@ -277,6 +284,7 @@ function UsdRateField({
     required?: boolean;
 }) {
     const rules = [{ required, pattern: /^(0|[1-9]\d{0,11})(\.\d{1,6})?$/ }];
+
     return (
         <Form.Item name={name} label={label} rules={rules}>
             <Input inputMode='decimal' />

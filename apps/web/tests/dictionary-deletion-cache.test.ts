@@ -10,9 +10,11 @@ describe('dictionary deletion cache cleanup', () => {
         client.setQueryData(['dictionary-cards', 'dictionary-b'], {
             data: ['card'],
         });
+
         client.setQueryData(['dictionary-batch-generation-job', 'job-a'], {
             job: { dictionaryId: 'dictionary-a', source: 'old' },
         });
+
         client.setQueryData(['dictionary-languages'], { languages: ['en'] });
 
         removeDeletedDictionaryCaches(client, 'all');
@@ -20,12 +22,15 @@ describe('dictionary deletion cache cleanup', () => {
         expect(
             client.getQueryData(['dictionary', 'dictionary-a']),
         ).toBeUndefined();
+
         expect(
             client.getQueryData(['dictionary-cards', 'dictionary-b']),
         ).toBeUndefined();
+
         expect(
             client.getQueryData(['dictionary-batch-generation-job', 'job-a']),
         ).toBeUndefined();
+
         expect(client.getQueryData(['dictionary-languages'])).toBeDefined();
     });
 });

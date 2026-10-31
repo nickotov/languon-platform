@@ -14,6 +14,7 @@ try {
         catalogPath: resolve(panelDirectory, 'commands.json'),
         repositoryRoot,
     });
+
     if (catalog.issues.length > 0) {
         throw new Error(
             [
@@ -23,9 +24,11 @@ try {
             ].join('\n'),
         );
     }
+
     const placeholderDescriptions = catalog.commands.filter(({ description }) =>
         description.startsWith('Runs the reviewed root package script'),
     );
+
     if (placeholderDescriptions.length > 0) {
         throw new Error(
             `Web dev panel descriptions need review: ${placeholderDescriptions
@@ -33,6 +36,7 @@ try {
                 .join(', ')}`,
         );
     }
+
     console.log(
         `Web dev panel catalog: ${catalog.commands.length} reviewed command(s).`,
     );

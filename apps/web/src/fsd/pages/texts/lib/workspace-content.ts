@@ -30,14 +30,21 @@ export function workspaceValidation(input: WorkspaceInput) {
         sourceText?: 'textRequired' | 'textTooLong';
     } = {};
 
-    if (!input.sourceLanguage) errors.sourceLanguage = 'sourceRequired';
-    if (!input.targetLanguage) errors.targetLanguage = 'targetRequired';
-    else if (input.sourceLanguage === input.targetLanguage)
-        errors.targetLanguage = 'sameLanguages';
+    if (!input.sourceLanguage) {
+        errors.sourceLanguage = 'sourceRequired';
+    }
 
-    if (sourceCodePoints(input.sourceText) > WORKSPACE_SOURCE_LIMIT)
+    if (!input.targetLanguage) {
+        errors.targetLanguage = 'targetRequired';
+    } else if (input.sourceLanguage === input.targetLanguage) {
+        errors.targetLanguage = 'sameLanguages';
+    }
+
+    if (sourceCodePoints(input.sourceText) > WORKSPACE_SOURCE_LIMIT) {
         errors.sourceText = 'textTooLong';
-    else if (!input.sourceText.trim()) errors.sourceText = 'textRequired';
+    } else if (!input.sourceText.trim()) {
+        errors.sourceText = 'textRequired';
+    }
 
     return errors;
 }
@@ -45,6 +52,7 @@ export function workspaceValidation(input: WorkspaceInput) {
 export function workspaceValid(input: WorkspaceInput) {
     return Object.keys(workspaceValidation(input)).length === 0;
 }
+
 export function workspacePairs(
     document: Pick<TextDocument, 'alignment'>,
 ): WorkspacePair[] {
@@ -58,6 +66,7 @@ export function workspacePairs(
         })) ?? []
     );
 }
+
 export function workspaceInput(document: TextDocument): WorkspaceInput {
     return {
         title: document.title,
@@ -66,6 +75,7 @@ export function workspaceInput(document: TextDocument): WorkspaceInput {
         sourceText: document.sourceText,
     };
 }
+
 export function workspaceTitle(input: WorkspaceInput) {
     return (
         input.title.trim() ||

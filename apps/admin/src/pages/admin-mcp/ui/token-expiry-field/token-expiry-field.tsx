@@ -8,7 +8,9 @@ export function TokenExpiryField() {
     const [preset, setPreset] = useState(30);
     const handleChange = (value: number) => {
         setPreset(value);
-        if (value !== 0) form.setFieldValue('expiresInDays', value);
+        if (value !== 0) {
+            form.setFieldValue('expiresInDays', value);
+        }
     };
     const custom = preset === 0;
     const options = [
@@ -17,6 +19,7 @@ export function TokenExpiryField() {
         { value: 30, label: t('mcp.thirtyDays') },
         { value: 0, label: t('mcp.customExpiry') },
     ];
+
     return (
         <>
             <Form.Item label={t('mcp.expiryPreset')}>

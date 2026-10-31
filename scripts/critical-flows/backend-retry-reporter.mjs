@@ -3,8 +3,10 @@ export default class BackendRetryReporter {
     onTestCaseResult(testCase) {
         testCase.task.meta.criticalRetryCount =
             testCase.task.result?.retryCount ?? 0;
+
         testCase.task.meta.criticalExpectedFailure =
             testCase.task.fails === true;
+
         testCase.task.meta.criticalRepeatCount =
             testCase.task.result?.repeatCount ?? 0;
     }

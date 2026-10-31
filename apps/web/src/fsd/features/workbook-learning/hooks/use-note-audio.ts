@@ -14,13 +14,18 @@ function audioAssets(body: KnowledgeBody | undefined): string[] {
             node.type === 'learningBlock' &&
             node.attrs?.block?.type === 'audio' &&
             node.attrs.block.assetId
-        )
+        ) {
             ids.add(node.attrs.block.assetId);
+        }
+
         node.content?.forEach(visit);
     }
+
     body?.document.content?.forEach(visit);
+
     return [...ids];
 }
+
 export function useNoteAudio(options: {
     noteId: string;
     body: KnowledgeBody | undefined;

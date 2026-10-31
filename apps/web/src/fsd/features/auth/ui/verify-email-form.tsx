@@ -56,7 +56,9 @@ export function VerifyEmailForm({
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
         setError(null);
 
@@ -105,9 +107,13 @@ export function VerifyEmailForm({
     }
 
     async function resend() {
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
-        if (!activeFlowId) return;
+        if (!activeFlowId) {
+            return;
+        }
 
         setError(null);
 

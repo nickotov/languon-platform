@@ -36,7 +36,10 @@ export async function claimNext(
     context: TextJobContext,
 ): Promise<ClaimedTextsJob | null> {
     context.signal.throwIfAborted();
-    if (!input.supportedFormats.length) return null;
+    if (!input.supportedFormats.length) {
+        return null;
+    }
+
     await transaction(persistence, async (tx) => {
         await tx.execute(
             sql`select languon_cleanup_private_translation_results(100)`,
@@ -62,7 +65,7 @@ export async function claimNext(
             )
             .limit(100);
 
-        if (expiredTerminal.length)
+        if (expiredTerminal.length) {
             await tx
                 .update(jobs)
                 .set({ inputPayload: null, resultPayload: null })
@@ -72,6 +75,7 @@ export async function claimNext(
                         expiredTerminal.map((j) => j.id),
                     ),
                 );
+        }
     });
 
     return transaction(persistence, async (tx) => {
@@ -155,14 +159,19 @@ export async function claimNext(
                 .where(eq(jobs.id, candidate.id))
                 .for('update');
 
-            if (!job || job.executionState !== 'queued') continue;
+            if (!job || job.executionState !== 'queued') {
+                continue;
+            }
+
             if (invalid) {
                 await terminal(persistence, tx, job, context.now, invalid);
                 continue;
             }
 
-            if (await isTextAiCircuitOpen(tx, scope(job, context.now)))
+            if (await isTextAiCircuitOpen(tx, scope(job, context.now))) {
                 continue;
+            }
+
             const budget = textsBudget(job),
                 capacity = await readTextAiCapacity(tx, {
                     actorId: job.ownerId,
@@ -178,8 +187,10 @@ export async function claimNext(
                     job.providerReservationState !== 'active',
                     budget,
                 )
-            )
+            ) {
                 continue;
+            }
+
             if (job.attemptCount > 0) {
                 try {
                     await reserveTextsAttempt(

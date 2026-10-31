@@ -24,12 +24,15 @@ function toRenderNode(
 ): RenderNode {
     let learningContent: ReactNode;
     if (node.type === 'learningBlock') {
-        if (!node.attrs?.block || !renderLearningBlock)
+        if (!node.attrs?.block || !renderLearningBlock) {
             throw new Error(
                 'Interactive content requires a learning-block renderer.',
             );
+        }
+
         learningContent = renderLearningBlock(node.attrs.block);
     }
+
     return {
         ...(node.type === 'learningBlock' ? { learningContent } : {}),
         type: node.type,
@@ -47,8 +50,14 @@ function toRenderNode(
 }
 
 function headingTag(level?: number) {
-    if (level === 1) return 'h1';
-    if (level === 3) return 'h3';
+    if (level === 1) {
+        return 'h1';
+    }
+
+    if (level === 3) {
+        return 'h3';
+    }
+
     return 'h2';
 }
 
@@ -127,6 +136,7 @@ export function KnowledgeBody({
         RenderNode
     >(documentMappings);
     const containerClass = [styles.prose, className].filter(Boolean).join(' ');
+
     return (
         <div className={containerClass} lang={language} dir='auto'>
             {renderDocument({

@@ -85,13 +85,16 @@ const workspaceContext = (
         documentHash: createHash('sha256').update(content).digest('hex'),
     },
 });
+
 function latch() {
     let release!: () => void;
     const promise = new Promise<void>((resolve) => {
         release = resolve;
     });
+
     return { promise, release };
 }
+
 async function completes<T>(promise: Promise<T>): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -110,9 +113,12 @@ async function completes<T>(promise: Promise<T>): Promise<T> {
             }),
         ]);
     } finally {
-        if (timer) clearTimeout(timer);
+        if (timer) {
+            clearTimeout(timer);
+        }
     }
 }
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'durable conversation store',
     { timeout: 30_000 },
@@ -143,15 +149,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             store.create(access(), {
                 source: { kind: 'dictionary', id: dictionary },
             });
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         }, 120_000);
+
         afterAll(async () => {
             await client?.end();
         }, 30_000);
+
         beforeEach(async () => {
             await client`truncate conversation_provider_calls, dictionary_generation_provider_usage_archive, conversation_chats, dictionaries, text_folders, knowledge_notes, knowledge_operation_receipts, conversation_settings, text_ai_capacity_jobs, text_ai_capacity_queue_totals, text_ai_capacity_provider_usage, text_ai_capacity_active_totals, text_ai_capacity_settled_buckets cascade`;
             owner = randomUUID();
@@ -182,6 +191,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         id,
                     ),
             });
+
             dependencies = {
                 database: db,
                 readPortrait: async () => portraitPolicy,
@@ -195,13 +205,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ).nameUntitledFromFirstMessage(actor, noteId, title),
                 publishNote: async (tx, actor, input) => {
                     await beforePublish?.();
+
                     return new DrizzleKnowledgeTransactionParticipant(
                         tx,
                     ).publish(actor, input, clock);
                 },
             };
+
             store = new DrizzleConversationStore(dependencies);
         }, 120_000);
+
         it.each(['knowledge', 'workbook'] as const)(
             'uses saved shared %s content with private read-only AI and live revocation',
             async (shareKind) => {
@@ -222,11 +235,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     id: randomUUID(),
                     title: 'Shared workbook',
                 });
+
                 await workbooks.setNotes(owner, workbook.id, {
                     expectedVersion: 1,
                     noteIds: [note.id],
                     acknowledgeSharedAddition: false,
                 });
+
                 const proof =
                     shareKind === 'knowledge'
                         ? await knowledge.issueShare(owner, note.id)
@@ -240,34 +255,41 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         shareLocator: proof.locator,
                     },
                 });
+
                 await expect(
                     store.detail(access(), chat.id),
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
                 await expect(
                     store.submit(readerAccess, chat.id, {
                         ...submit(),
                         editorContext: workspaceContext('Forged owner draft'),
                     }),
                 ).rejects.toMatchObject({ code: 'invalid_editor_context' });
+
                 await expect(
                     store.submit(readerAccess, chat.id, {
                         ...submit(),
                         draftContext: { content: 'Forged source' },
                     }),
                 ).rejects.toThrow();
+
                 await store.submit(
                     readerAccess,
                     chat.id,
                     submit('Explain this shared rule'),
                 );
+
                 const turn = (await store.claim())!;
                 expect(turn.ownerId).toBe(learner);
                 expect(turn.authority.share?.id).toBe(
                     `${shareKind}:${shareKind === 'knowledge' ? note.id : workbook.id}`,
                 );
+
                 expect(JSON.stringify(turn.sourceSnapshot)).toContain(
                     'Ser describes identity',
                 );
+
                 expect(JSON.stringify(turn.authority)).not.toContain(proof.key);
                 await expect(
                     store.propose(turn, content, {
@@ -275,6 +297,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         version: note.version,
                     }),
                 ).rejects.toThrow('Shared conversations cannot propose');
+
                 const worker = new ConversationWorkerService({
                     store,
                     createRunner: () => ({
@@ -285,14 +308,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             ).rejects.toThrow(
                                 'Shared conversations cannot propose',
                             );
+
                             await input.onDelta({
                                 messageId: 'ignored',
                                 text: 'Explanation only.',
                             });
+
                             return { text: 'Explanation only.' };
                         },
                     }),
                 });
+
                 // Existing claim is already fenced; finish it before the worker claims a new turn.
                 await store.finish(turn, 'succeeded');
                 await store.submit(
@@ -300,9 +326,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     chat.id,
                     submit('Another explanation'),
                 );
+
                 expect(
                     await worker.processNext(new AbortController().signal),
                 ).toBe(true);
+
                 const detail = await store.detail(readerAccess, chat.id);
                 expect(detail.drafts).toHaveLength(0);
                 await store.submit(
@@ -310,18 +338,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     chat.id,
                     submit('Queued before revocation'),
                 );
+
                 const queued = (await store.claim())!;
-                if (shareKind === 'knowledge')
+                if (shareKind === 'knowledge') {
                     await knowledge.revokeShare(owner, note.id);
-                else await workbooks.revokeShare(owner, workbook.id, 2);
+                } else {
+                    await workbooks.revokeShare(owner, workbook.id, 2);
+                }
+
                 await expect(
                     store.append(queued, 'Must not publish'),
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
                 await expect(
                     store.detail(readerAccess, chat.id),
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
             },
         );
+
         it('keeps saved owner practice separate from editing chats and denies authoring', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -345,11 +379,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const practice = await store.create(access(), {
                 source: savedSource,
             });
+
             expect(
                 (await store.list(access(), savedSource)).map(
                     (chat) => chat.id,
                 ),
             ).toEqual([practice.id]);
+
             expect(
                 (
                     await store.list(access(), {
@@ -358,11 +394,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).map((chat) => chat.id),
             ).toEqual([editing.id]);
+
             await store.submit(access(), practice.id, submit());
             const turn = (await store.claim())!;
             await expect(store.propose(turn, content)).rejects.toThrow(
                 'Shared conversations cannot propose',
             );
+
             await expect(
                 store.proposeBlocks(turn, {
                     blocks: [
@@ -375,8 +413,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 }),
             ).rejects.toThrow('authorized block proposal target');
+
             await store.finish(turn, 'succeeded');
         });
+
         it('fences selected update identities in the repository and privileged SQL boundary', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -415,6 +455,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
+
             await store.submit(access(), chat.id, {
                 ...submit('Update the mentioned block'),
                 blockReferences: [first.id],
@@ -423,6 +464,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workingBranch: { id: branch.id, version: branch.version },
                 },
             });
+
             const turn = (await store.claim())!;
             await expect(
                 store.proposeBlocks(turn, {
@@ -430,23 +472,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     blocks: [second],
                 }),
             ).rejects.toThrow('explicitly mentioned');
+
             await expect(
                 client`select public.languon_propose_learning_block_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify([second])}::jsonb,${second.id}::uuid)`,
             ).rejects.toThrow('explicitly mentioned');
+
             const selected = await store.proposeBlocks(turn, {
                 targetBlockId: first.id,
                 blocks: [first],
             });
             const repeated =
                 await client`select public.languon_propose_learning_block_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify([first])}::jsonb,${first.id}::uuid) as id`;
+
             expect(repeated[0]?.['id']).toBe(selected.id);
             const detail = await store.detail(access(), chat.id);
             expect(
                 detail.messages.find((message) => message.role === 'user')
                     ?.blockReferences,
             ).toEqual([first.id]);
+
             await store.finish(turn, 'succeeded');
         });
+
         it('retains typed proposals separately and applies only to the frozen owner working branch without publishing', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -466,6 +513,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
+
             await store.submit(access(), chat.id, {
                 ...submit('Add a grammar block'),
                 editorContext: {
@@ -473,6 +521,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workingBranch: { id: branch.id, version: branch.version },
                 },
             });
+
             const turn = (await store.claim())!;
             const originalId = randomUUID();
             const role = `knowledge_proposal_worker_${randomUUID().replaceAll('-', '')}`;
@@ -484,6 +533,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
                 'utf8',
             );
+
             await client.unsafe(
                 roleSql
                     .split('\n')
@@ -491,6 +541,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .join('\n')
                     .replaceAll(':"dictionary_worker_role"', role),
             );
+
             const workerUrl = new URL(getTestDatabaseUrl());
             workerUrl.searchParams.set('options', `-c role=${role}`);
             const workerClient = createPostgresClient({
@@ -502,18 +553,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(
                     (await workerClient`select current_user as role`)[0]!.role,
                 ).toBe(role);
+
                 await expect(
                     workerClient`select content from knowledge_working_branches`,
                 ).rejects.toMatchObject({ code: '42501' });
+
                 await expect(
                     workerClient`select * from knowledge_working_branches`,
                 ).rejects.toMatchObject({ code: '42501' });
+
                 await expect(
                     workerClient`select * from knowledge_speech_recordings`,
                 ).rejects.toMatchObject({ code: '42501' });
+
                 await expect(
                     workerClient`select * from conversation_block_proposals`,
                 ).rejects.toMatchObject({ code: '42501' });
+
                 const validBlocks = JSON.stringify([
                     {
                         id: randomUUID(),
@@ -522,12 +578,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         rule: 'Una regla.',
                     },
                 ]);
+
                 await expect(
                     workerClient`select public.languon_propose_learning_blocks(${turn.id}::uuid,${randomUUID()}::uuid,${validBlocks}::jsonb)`,
                 ).rejects.toMatchObject({ code: '23514' });
+
                 await expect(
                     workerClient`insert into knowledge_speech_recordings(note_id,recording_id) values(${note.id}::uuid,${randomUUID()}::uuid)`,
                 ).rejects.toMatchObject({ code: '42501' });
+
                 const workerStore = new DrizzleConversationStore({
                     ...dependencies,
                     database: createDrizzleDatabase(
@@ -535,6 +594,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         databaseSchema,
                     ),
                 });
+
                 proposal = await workerStore.proposeBlocks(turn, {
                     blocks: [
                         {
@@ -550,6 +610,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client.unsafe(`drop owned by ${role}`);
                 await client.unsafe(`drop role ${role}`);
             }
+
             await expect(
                 store.proposeBlocks(turn, {
                     blocks: [
@@ -562,6 +623,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 }),
             ).rejects.toThrow('already generated');
+
             await store.finish(turn, 'succeeded');
             const listed = await store.listBlockProposals(access(), chat.id);
             expect(listed.proposals[0]?.id).toBe(proposal.id);
@@ -569,29 +631,35 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await knowledge.get(owner, note.id)).body.schemaVersion,
             ).toBe(1);
+
             const applied = await store.applyBlockProposal(
                 access(),
                 chat.id,
                 proposal.id,
                 branch.version,
             );
+
             expect(applied.branch.version).toBe(branch.version + 1);
             expect(applied.branch.content.body.document.content).toHaveLength(
                 2,
             );
+
             expect(
                 (await knowledge.get(owner, note.id)).body.schemaVersion,
             ).toBe(1);
+
             const replay = await store.applyBlockProposal(
                 access(),
                 chat.id,
                 proposal.id,
                 branch.version,
             );
+
             expect(replay.branch.content.body.document.content).toHaveLength(2);
             await expect(
                 store.listBlockProposals({ ownerId: learner }, chat.id),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             await store.submit(access(), chat.id, {
                 ...submit('More grammar'),
                 editorContext: {
@@ -604,10 +672,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             const next = (await store.claim())!;
             expect(
                 JSON.stringify(next.sourceSnapshot.blockTarget?.material),
             ).toContain('Use ser for identity.');
+
             const stale = await store.proposeBlocks(next, {
                 blocks: [
                     {
@@ -618,6 +688,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             });
+
             await store.finish(next, 'succeeded');
             await knowledge.updateWorking(owner, note.id, {
                 operationId: randomUUID(),
@@ -650,9 +721,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             expect(
                 JSON.stringify(next.sourceSnapshot.blockTarget?.material),
             ).not.toContain('Changed rule after admission.');
+
             const refreshed = await knowledge.getWorkspace(owner, note.id);
             const changedBranch = refreshed.branches.find(
                 (item) => item.id === branch.id,
@@ -663,14 +736,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 stale.id,
                 changedBranch.version,
             );
+
             expect(
                 independentAppend.branch.content.body.document.content?.at(-1)
                     ?.attrs?.block,
             ).toMatchObject({ rule: 'Next rule.' });
+
             expect(
                 JSON.stringify(independentAppend.branch.content.body),
             ).toContain('Changed rule after admission.');
         });
+
         it('updates only an unchanged target and copies a stale update separately with fresh identities', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -712,6 +788,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
+
             async function propose(version: number, rule: string) {
                 await store.submit(access(), chat.id, {
                     ...submit('Update the grammar block'),
@@ -720,14 +797,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         workingBranch: { id: branch.id, version },
                     },
                 });
+
                 const turn = (await store.claim())!;
                 const proposal = await store.proposeBlocks(turn, {
                     targetBlockId: blockId,
                     blocks: [{ ...original, id: randomUUID(), rule }],
                 });
+
                 await store.finish(turn, 'succeeded');
+
                 return proposal;
             }
+
             const proposal = await propose(branch.version, 'Proposed rule.');
             const edited = await knowledge.updateWorking(owner, note.id, {
                 operationId: randomUUID(),
@@ -738,6 +819,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const current = edited.branch;
             const listed = (await store.listBlockProposals(access(), chat.id))
                 .proposals[0]!;
+
             expect(listed.turnId).toBeTruthy();
             expect(listed.target).toMatchObject({ blockId });
             expect(listed.targetStale).toBe(false);
@@ -747,17 +829,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 proposal.id,
                 current.version,
             );
+
             expect(applied.branch.content.title).toBe('Unrelated title edit');
             expect(applied.branch.content.body.document.content).toHaveLength(
                 2,
             );
+
             expect(
                 applied.branch.content.body.document.content?.[1]?.attrs?.block,
             ).toMatchObject({ id: blockId, rule: 'Proposed rule.' });
+
             expect(
                 (await knowledge.get(owner, note.id)).body.document.content?.[1]
                     ?.attrs?.block,
             ).toMatchObject({ rule: 'Original rule.' });
+
             const stale = await propose(
                 applied.branch.version,
                 'Later AI proposal.',
@@ -788,10 +874,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             expect(
                 (await store.listBlockProposals(access(), chat.id)).proposals[0]
                     ?.targetStale,
             ).toBe(true);
+
             await expect(
                 store.applyBlockProposal(
                     access(),
@@ -800,6 +888,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     manual.branch.version,
                 ),
             ).rejects.toThrow('target block changed');
+
             const copied = await store.applyBlockProposal(
                 access(),
                 chat.id,
@@ -810,6 +899,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const added =
                 copied.branch.content.body.document.content?.at(-1)?.attrs
                     ?.block;
+
             expect(added).toMatchObject({ rule: 'Later AI proposal.' });
             expect(added?.id).not.toBe(blockId);
             const replay = await store.applyBlockProposal(
@@ -819,9 +909,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 manual.branch.version,
                 'add-separately',
             );
+
             expect(replay.branch.content.body.document.content).toHaveLength(3);
             expect(replay.proposal.blocks[0]?.id).toBe(added?.id);
         });
+
         it('captures exercise source passages and copies stale grounding independently', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -865,6 +957,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
+
             await store.submit(access(), chat.id, {
                 ...submit('Ask about Ana'),
                 editorContext: {
@@ -872,6 +965,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workingBranch: { id: branch.id, version: branch.version },
                 },
             });
+
             const turn = (await store.claim())!;
             const proposed = await store.proposeBlocks(turn, {
                 blocks: [
@@ -886,9 +980,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             });
+
             await store.finish(turn, 'succeeded');
             const listed = (await store.listBlockProposals(access(), chat.id))
                 .proposals[0]!;
+
             expect(listed.dependencies).toEqual([sourceBlock]);
             expect(listed.targetStale).toBe(false);
             const manual = await knowledge.updateWorking(owner, note.id, {
@@ -922,10 +1018,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             expect(
                 (await store.listBlockProposals(access(), chat.id)).proposals[0]
                     ?.targetStale,
             ).toBe(true);
+
             await expect(
                 store.applyBlockProposal(
                     access(),
@@ -934,6 +1032,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     manual.branch.version,
                 ),
             ).rejects.toThrow('source passage changed');
+
             const copied = await store.applyBlockProposal(
                 access(),
                 chat.id,
@@ -950,8 +1049,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             if (
                 copiedSource?.type !== 'bilingual-text' ||
                 copiedExercise?.type !== 'exercise'
-            )
+            ) {
                 throw new Error('Expected source and exercise');
+            }
+
             expect(copiedSource.id).not.toBe(sourceId);
             expect(copiedSource.segments[0]?.id).not.toBe(segmentId);
             expect(copiedSource.segments[0]?.text).toBe('Ana compra pescado.');
@@ -959,6 +1060,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 blockId: copiedSource.id,
                 segmentIds: [copiedSource.segments[0]!.id],
             });
+
             const replay = await store.applyBlockProposal(
                 access(),
                 chat.id,
@@ -966,9 +1068,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 manual.branch.version,
                 'add-separately',
             );
+
             expect(replay.branch.content.body.document.content).toHaveLength(4);
             expect(replay.proposal.blocks).toHaveLength(1);
         });
+
         it('freezes approved portrait at admission, applies next-message changes and removes terminal snapshots', async () => {
             portraitPolicy = {
                 enabled: true,
@@ -983,6 +1087,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             };
+
             const chat = await create();
             expect(chat.effectivePreferences?.replyLanguage).toBe('es');
             expect(chat.preferenceOrigins?.tone).toBe('portrait');
@@ -991,19 +1096,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 client`update conversation_turns set portrait_context=null where conversation_id=${chat.id} and status='queued'`,
             ).rejects.toMatchObject({ code: '23514' });
+
             const claimed = (await store.claim())!;
             expect(claimed.preferences.replyLanguage).toBe('es');
             expect(JSON.stringify(claimed.portraitContext)).toContain(
                 'PORTRAIT_SNAPSHOT',
             );
+
             expect(
                 JSON.stringify(
                     (await store.detail(access(), chat.id)).messages,
                 ),
             ).not.toContain('PORTRAIT_SNAPSHOT');
+
             await store.finish(claimed, 'succeeded');
             const [terminal] =
                 await client`select portrait_context from conversation_turns where id=${claimed.id}`;
+
             expect(terminal!.portrait_context).toBeNull();
             await store.submit(access(), chat.id, submit());
             const next = (await store.claim())!;
@@ -1022,17 +1131,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             };
+
             await store.submit(access(), chat.id, submit());
             const updated = (await store.claim())!;
             expect(updated.preferences.replyLanguage).toBe('de');
             expect(JSON.stringify(updated.portraitContext)).toContain(
                 'UPDATED_PORTRAIT',
             );
+
             expect(JSON.stringify(updated.portraitContext)).not.toContain(
                 'PORTRAIT_SNAPSHOT',
             );
+
             await store.finish(updated, 'succeeded');
         });
+
         it('keeps legacy chats manual until explicit adoption and honors per-chat exclusion', async () => {
             portraitPolicy = {
                 enabled: true,
@@ -1043,16 +1156,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     items: { explanationLanguages: ['es'], tone: 'friendly' },
                 },
             };
+
             const chat = await create();
             const legacy = ChatPreferencesSchema.parse({
                 replyLanguage: 'en',
                 tone: 'academic',
             });
+
             await client`update conversation_chats set preferences=${JSON.stringify(legacy)}::jsonb where id=${chat.id}`;
             expect(
                 (await store.detail(access(), chat.id)).conversation
                     .effectivePreferences,
             ).toEqual(legacy);
+
             await store.update(access(), chat.id, {
                 preferences: {
                     ...legacy,
@@ -1062,8 +1178,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             const adopted = (await store.detail(access(), chat.id))
                 .conversation;
+
             expect(adopted.effectivePreferences?.replyLanguage).toBe('es');
             expect(adopted.effectivePreferences?.tone).toBe('academic');
             await store.update(access(), chat.id, {
@@ -1075,12 +1193,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             await store.submit(access(), chat.id, submit());
             const next = (await store.claim())!;
             expect(next.portraitContext).toBeUndefined();
             expect(next.preferences.replyLanguage).toBe('en');
             await store.finish(next, 'succeeded');
         });
+
         it('persists independent owner defaults and reopened modes while freezing admitted turn preferences', async () => {
             expect((await store.settings(owner)).mode).toBe('auto');
             const original = await create();
@@ -1088,41 +1208,49 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 owner,
                 ChatPreferencesSchema.parse({ mode: 'explain' }),
             );
+
             const inherited = await create();
             expect(inherited.preferences.mode).toBe('explain');
             expect(
                 (await store.detail(access(), original.id)).conversation
                     .preferences.mode,
             ).toBe('auto');
+
             expect((await store.settings(learner)).mode).toBe('auto');
             await store.update(access(), inherited.id, {
                 preferences: ChatPreferencesSchema.parse({ mode: 'correct' }),
             });
+
             expect(
                 (await store.detail(access(), inherited.id)).conversation
                     .preferences.mode,
             ).toBe('correct');
+
             await store.submit(access(), inherited.id, submit());
             await store.update(access(), inherited.id, {
                 preferences: ChatPreferencesSchema.parse({ mode: 'practice' }),
             });
+
             const claimed = (await store.claim())!;
             expect(claimed.preferences.mode).toBe('correct');
             expect(
                 (await store.detail(access(), inherited.id)).conversation
                     .preferences.mode,
             ).toBe('practice');
+
             expect((await store.settings(owner)).mode).toBe('explain');
             await expect(
                 store.update({ ownerId: learner }, inherited.id, {
                     preferences: ChatPreferencesSchema.parse({ mode: 'auto' }),
                 }),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             expect(
                 (await store.detail(access(), inherited.id)).conversation
                     .preferences.mode,
             ).toBe('practice');
         });
+
         it('normalizes missing modes in stored defaults, conversations and immutable turn snapshots without rewriting history', async () => {
             const initial = await create();
             const stored = {
@@ -1130,6 +1258,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 tone: 'neutral',
                 explanationLevel: 'auto',
             };
+
             await client`insert into conversation_settings(owner_id,preferences,updated_at) values (${owner},${JSON.stringify(stored)}::jsonb,now())`;
             await client`update conversation_chats set preferences=${JSON.stringify(stored)}::jsonb where id=${initial.id}`;
             expect((await store.settings(owner)).mode).toBe('auto');
@@ -1138,6 +1267,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await store.detail(access(), initial.id)).conversation
                     .preferences.mode,
             ).toBe('auto');
+
             await store.submit(access(), initial.id, submit());
             const originalTurn = (await store.claim())!;
             await store.finish(originalTurn, 'succeeded');
@@ -1149,13 +1279,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await tx.execute(sql`insert into conversation_turns(id,conversation_id,owner_id,request_id,request_fingerprint,status,authority,source_snapshot,preferences,execution,usage,created_at,updated_at)
                     select ${historicalId},conversation_id,owner_id,${randomUUID()},request_fingerprint,'queued',authority,source_snapshot,${JSON.stringify(stored)}::jsonb,execution,usage,created_at,updated_at from conversation_turns where id=${originalTurn.id}`);
             });
+
             await client`insert into conversation_messages(id,conversation_id,turn_id,role,content,attachments,status,source_version,source_provenance,created_at)
                 select ${randomUUID()},conversation_id,${historicalId},role,content,attachments,status,source_version,source_provenance,created_at from conversation_messages where turn_id=${originalTurn.id} and role='user'`;
+
             expect((await store.claim())!.preferences.mode).toBe('auto');
             const [persisted] =
                 await client`select preferences from conversation_turns where id=${historicalId}`;
+
             expect(persisted!.preferences).not.toHaveProperty('mode');
         });
+
         it('serializes concurrent admission and request replays without duplicate learner messages or accounting', async () => {
             const chat = await create(),
                 input = submit();
@@ -1163,37 +1297,46 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 store.submit(access(), chat.id, input),
                 store.submit(access(), chat.id, input),
             ]);
+
             expect(first.id).toBe(replay.id);
             expect(admitted).toHaveBeenCalledTimes(1);
             expect(first.modelId).toBeNull();
             const [storedExecution] =
                 await client`select execution from conversation_turns where id=${first.id}`;
+
             expect(storedExecution!.execution.snapshot.modelId).toBe(
                 'deepseek-flash',
             );
+
             await expect(
                 store.submit(access(), chat.id, {
                     ...input,
                     content: 'Different question',
                 }),
             ).rejects.toMatchObject({ code: 'idempotency_conflict' });
+
             await expect(
                 store.submit(access(), chat.id, submit()),
             ).rejects.toMatchObject({ code: 'response_active' });
+
             const detail = ConversationDetailSchema.parse(
                 await store.detail(access(), chat.id),
             );
+
             expect(detail.messages).toHaveLength(2);
             expect(
                 detail.messages.filter((message) => message.role === 'user'),
             ).toHaveLength(1);
+
             expect((await store.stop(access(), chat.id, first.id)).status).toBe(
                 'cancelled',
             );
+
             expect(
                 (await store.submit(access(), chat.id, submit())).status,
             ).toBe('queued');
         });
+
         it('rejects oversized Unicode and aggregate copies before queueing or invoking credit admission', async () => {
             const chat = await create();
             const copies = [
@@ -1210,35 +1353,42 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content: '👋'.repeat(600),
                 })),
             ];
+
             for (const attachments of copies) {
                 const input = SubmitConversationTurnRequestSchema.parse({
                     requestId: randomUUID(),
                     content: 'Explain these copies.',
                     attachments,
                 });
+
                 await expect(
                     store.submit(access(), chat.id, input),
                 ).rejects.toMatchObject({ code: 'context_too_large' });
             }
+
             await expect(
                 store.submit(access(), chat.id, submit('A'.repeat(20_000))),
             ).rejects.toMatchObject({ code: 'context_too_large' });
+
             expect(admitted).not.toHaveBeenCalled();
             const [counts] = await client`select
                 (select count(*) from conversation_turns where conversation_id=${chat.id})::int as turns,
                 (select count(*) from conversation_messages where conversation_id=${chat.id})::int as messages,
                 (select count(*) from conversation_provider_calls where turn_id in (select id from conversation_turns where conversation_id=${chat.id}))::int as calls,
                 (select count(*) from ai_credit_reservations where owner_id=${owner})::int as reservations`;
+
             expect(counts).toMatchObject({
                 turns: 0,
                 messages: 0,
                 calls: 0,
                 reservations: 0,
             });
+
             expect(
                 (await store.detail(access(), chat.id)).messages,
             ).toHaveLength(0);
         });
+
         it('checks resolved retry content while preserving prior idempotent results and original history', async () => {
             const chat = await create();
             const input = submit();
@@ -1257,6 +1407,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     retryOf: original.id,
                 }),
             ).rejects.toMatchObject({ code: 'context_too_large' });
+
             expect(admitted).not.toHaveBeenCalled();
             const detail = await store.detail(access(), chat.id);
             expect(detail.turns).toHaveLength(1);
@@ -1264,8 +1415,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 detail.messages.find((message) => message.role === 'user')
                     ?.content,
             ).toBe(legacyContent);
+
             expect(detail.turns[0]?.status).toBe('cancelled');
         });
+
         it('copies only active learner-visible fields, freezes admitted content, and refreshes the next turn', async () => {
             const chat = await create();
             const copied = await store.context(access(), chat.id, 'ser');
@@ -1280,9 +1433,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(JSON.stringify(claimed.message.modelContent)).toContain(
                 'Application source provenance',
             );
+
             expect(JSON.stringify(claimed.message.modelContent)).toContain(
                 claimed.sourceSnapshot.version,
             );
+
             await store.append(claimed, 'First answer');
             await client`update dictionary_cards set source='estar',normalized_source='estar',example='Estoy aquí.',version=version+1 where id=${card}`;
             // Content edits do not invalidate live authority of the admitted turn.
@@ -1290,6 +1445,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(claimed.sourceSnapshot.material[0]?.content).toContain(
                 'Soy médico.',
             );
+
             await store.finish(claimed, 'succeeded');
             const second = await store.submit(
                 access(),
@@ -1300,9 +1456,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(next.sourceSnapshot.material[0]?.content).toContain(
                 'Estoy aquí.',
             );
+
             expect(next.sourceSnapshot.version).not.toBe(
                 claimed.sourceSnapshot.version,
             );
+
             const detail = await store.detail(access(), chat.id);
             expect(
                 detail.messages.find(
@@ -1310,20 +1468,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         message.turnId === first.id && message.role === 'user',
                 )?.content,
             ).toBe('Explain ser');
+
             expect(JSON.stringify(detail)).not.toContain(
                 'Application source provenance',
             );
+
             expect(
                 detail.messages.find(
                     (message) =>
                         message.turnId === first.id && message.role === 'user',
                 )?.attachments[0]?.content,
             ).toContain('Soy médico.');
+
             expect(
                 detail.messages.find((message) => message.turnId === second.id)
                     ?.sourceVersion,
             ).toBe(next.sourceSnapshot.version);
         });
+
         it('freezes the full Knowledge editor snapshot, copies owned Text references, and names the first conversation turn', async () => {
             const note = await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(
@@ -1352,12 +1514,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     hasTranslation: false,
                 },
             ]);
+
             const reference = (
                 await store.textReference(access(), chat.id, textId)
             ).reference;
+
             await expect(
                 store.textReference({ ownerId: learner }, chat.id, textId),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             const editor =
                 'First paragraph.\nSecond paragraph after unsaved edits.';
             const turn = await store.submit(access(), chat.id, {
@@ -1388,12 +1553,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .map((part) => part.text)
                     .join('\n'),
             ).toContain(editor);
+
             expect(JSON.stringify(claimed.message.modelContent)).toContain(
                 reference.content,
             );
+
             expect(claimed.message.editorTarget).toEqual(
                 workspaceContext(editor).editorTarget,
             );
+
             expect(
                 (await store.detail(access(), chat.id)).messages.find(
                     (message) =>
@@ -1401,11 +1569,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         message.role === 'assistant',
                 )?.editorTarget,
             ).toEqual(workspaceContext(editor).editorTarget);
+
             expect(
                 (await store.detail(access(), chat.id)).conversation.title,
             ).toBe('Explain this phrase');
+
             await store.stop(access(), chat.id, turn.id);
         });
+
         it('keeps the frozen proposal target and editor snapshot on retry', async () => {
             const note = await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(
@@ -1447,10 +1618,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(retryClaim.message.modelContent).toEqual(
                 originalModelContent,
             );
+
             expect(retryClaim.message.editorTarget).toEqual({
                 ...originalContext.editorTarget,
                 proposalMode: 'replace',
             });
+
             expect(
                 (await store.detail(access(), chat.id)).messages.find(
                     (message) =>
@@ -1459,6 +1632,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 )?.editorTarget,
             ).toEqual(retryClaim.message.editorTarget);
         });
+
         it('starts an empty Knowledge draft conversation and names the draft from its first question', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -1473,6 +1647,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: workspace.noteId },
             });
+
             await store.submit(access(), chat.id, {
                 ...submit('Why does this work?'),
                 editorContext: {
@@ -1483,22 +1658,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             const reopened = await knowledge.getWorkspace(
                 owner,
                 workspace.noteId,
             );
+
             expect(
                 reopened.branches.find(
                     (branch) => branch.id === reopened.preferredBranchId,
                 )?.content.title,
             ).toBe('Why does this');
+
             expect(
                 (await store.detail(access(), chat.id)).conversation.title,
             ).toBe('Why does this');
+
             const claimed = (await store.claim())!;
             expect(claimed.sourceSnapshot.blockTarget?.version).toBe(
                 reopened.branches[0]?.version,
             );
+
             await expect(
                 store.proposeBlocks(claimed, {
                     blocks: [
@@ -1511,12 +1691,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 }),
             ).resolves.toHaveProperty('id');
+
             expect(claimed.sourceSnapshot.scope).toBe('workspace');
             expect(claimed.sourceSnapshot.studiedLanguage).toBeNull();
             expect(JSON.stringify(claimed.message.modelContent)).toContain(
                 '\\"studiedLanguage\\":null',
             );
         });
+
         it('separates current shared authority from frozen material, suspends on archive/revocation and restores through a new share', async () => {
             await expect(
                 store.create(
@@ -1524,6 +1706,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { source: { kind: 'dictionary', id: dictionary } },
                 ),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             const locator = randomUUID();
             const digest = cryptography.shareDigest('key', 1);
             await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${digest},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
@@ -1535,27 +1718,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     shareLocator: locator,
                 },
             });
+
             await expect(store.detail(access(), chat.id)).rejects.toMatchObject(
                 { code: 'conversation_not_found' },
             );
+
             await store.submit(shared, chat.id, submit());
             const turn = (await store.claim())!;
             await client`update dictionaries set lifecycle='archived',archived_at=${clock.toISOString()},visibility='private',share_locator=null,share_key_digest=null,share_key_version=null,share_key_rotated_at=null where id=${dictionary}`;
             await expect(store.detail(shared, chat.id)).rejects.toMatchObject({
                 code: 'conversation_not_found',
             });
+
             await expect(
                 store.append(turn, 'Late private write'),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             await client`update dictionaries set lifecycle='active',archived_at=null,visibility='unlisted',share_locator=${locator},share_key_digest=${digest},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
             expect((await store.detail(shared, chat.id)).messages).toHaveLength(
                 2,
             );
+
             const nextLocator = randomUUID();
             await client`update dictionaries set share_locator=${nextLocator},share_key_digest=${cryptography.shareDigest('next', 2)},share_key_version=2 where id=${dictionary}`;
             await expect(store.detail(shared, chat.id)).rejects.toMatchObject({
                 code: 'conversation_not_found',
             });
+
             const restored = { ownerId: learner, shareKey: 'next' };
             expect(
                 await store.list(restored, {
@@ -1564,12 +1753,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     shareLocator: nextLocator,
                 }),
             ).toHaveLength(1);
+
             expect(
                 (await store.detail(restored, chat.id)).conversation.id,
             ).toBe(chat.id);
+
             await expect(
                 store.append(turn, 'Old admitted authority'),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             clock = new Date(clock.getTime() + 60_001);
             expect(await store.claim()).toBeNull();
             expect(interrupted).toHaveBeenCalledTimes(1);
@@ -1577,6 +1769,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await store.detail(restored, chat.id)).turns[0]?.status,
             ).toBe('failed');
         });
+
         it('fences stopped/expired workers and retries explicitly with the original frozen question and copied content', async () => {
             const chat = await create(),
                 initial = await store.submit(access(), chat.id, submit());
@@ -1587,10 +1780,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 name: 'read_source_context',
                 state: 'running',
             });
+
             await store.stop(access(), chat.id, initial.id);
             await expect(store.append(claimed, 'late')).rejects.toMatchObject({
                 code: 'operation_interrupted',
             });
+
             await store.finish(claimed, 'cancelled');
             const stopped = await store.detail(access(), chat.id);
             expect(stopped.messages[1]).toMatchObject({
@@ -1604,6 +1799,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             });
+
             await client`update dictionary_cards set source='estar',normalized_source='estar',version=version+1 where id=${card}`;
             const retry = await store.submit(access(), chat.id, {
                 ...submit('Ignored replacement'),
@@ -1618,6 +1814,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 store.append(retryClaim, 'Late after recovery'),
             ).rejects.toMatchObject({ code: 'operation_interrupted' });
+
             const detail = await store.detail(access(), chat.id);
             expect(
                 detail.turns.find((turn) => turn.id === retry.id),
@@ -1625,8 +1822,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 status: 'failed',
                 failureCode: 'worker_interrupted',
             });
+
             expect(await store.claim()).toBeNull(); // Recovery never redispatches an ambiguous provider call.
         });
+
         it('replays durable events and snapshots stale cursors after the 24 hour replay window', async () => {
             const chat = await create();
             await store.submit(access(), chat.id, submit());
@@ -1638,15 +1837,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 name: 'read_source_context',
                 state: 'running',
             });
+
             await store.recordMaterial(
                 claimed,
                 claimed.sourceSnapshot.material,
             );
+
             await store.recordTool(claimed, {
                 id: 'read-1',
                 name: 'read_source_context',
                 state: 'succeeded',
             });
+
             await store.append(claimed, 'Answer');
             await store.finish(claimed, 'succeeded');
             const replay = await store.events(access(), chat.id, snapshot!.id);
@@ -1657,6 +1859,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         event.data.content === 'Answer',
                 ),
             ).toBe(true);
+
             replay.forEach((event) => ConversationEventSchema.parse(event));
             const last = replay.at(-1)!;
             expect(await store.events(access(), chat.id, last.id)).toEqual([]);
@@ -1667,20 +1870,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await store.events(access(), chat.id, last.id + 100))[0]?.type,
             ).toBe('snapshot');
+
             expect(
                 (await store.detail(access(), chat.id)).messages[1]?.content,
             ).toBe('Answer');
+
             expect(await store.claim()).toBeNull();
             expect(
                 await client`select id from conversation_events where conversation_id=${chat.id}`,
             ).toHaveLength(0);
+
             expect(
                 (await store.events(access(), chat.id, last.id))[0]?.type,
             ).toBe('snapshot');
+
             expect(
                 (await store.detail(access(), chat.id)).messages[1]?.content,
             ).toBe('Answer');
         });
+
         it.each(['dictionary', 'knowledge'] as const)(
             'publishes a %s-source draft while an authorized stream read waits without a lock upgrade deadlock',
             async (kind) => {
@@ -1697,6 +1905,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         : await store.create(access(), {
                               source: { kind: 'knowledge', id: note.id },
                           });
+
                 await store.submit(
                     access(),
                     chat.id,
@@ -1709,6 +1918,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                           }
                         : submit(),
                 );
+
                 const turn = (await store.claim())!;
                 const draft = await store.propose(turn, content, {
                     noteId: note.id,
@@ -1716,10 +1926,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
                 const reached = latch(),
                     resume = latch();
+
                 beforePublish = async () => {
                     reached.release();
                     await resume.promise;
                 };
+
                 const publishing = store.publishDraft(
                     access(),
                     chat.id,
@@ -1743,7 +1955,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             while (true) {
                                 const [state] =
                                     await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%for share%') as waiting`;
-                                if (state?.waiting) return;
+
+                                if (state?.waiting) {
+                                    return;
+                                }
                             }
                         })(),
                     );
@@ -1751,24 +1966,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     resume.release();
                     await Promise.all([publicationResult, pollingResult]);
                 }
+
                 const [publication] = await publicationResult;
                 const [poll] = await pollingResult;
-                if (publication!.status === 'rejected')
+                if (publication!.status === 'rejected') {
                     throw publication!.reason;
-                if (poll!.status === 'rejected') throw poll!.reason;
+                }
+
+                if (poll!.status === 'rejected') {
+                    throw poll!.reason;
+                }
+
                 expect(publication!.value.version).toBe(2);
                 expect(poll!.value.length).toBeGreaterThan(0);
                 expect(
                     (await store.detail(access(), chat.id)).drafts,
                 ).toHaveLength(0);
+
                 const [saved] =
                     await client`select version,summary from knowledge_notes where id=${note.id}`;
+
                 expect(saved).toMatchObject({
                     version: 2,
                     summary: content.summary,
                 });
             },
         );
+
         it('fences operation callbacks before source and conversation locks when a stream reader overlaps Knowledge access', async () => {
             const note = await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(
@@ -1780,16 +2004,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
+
             await store.submit(access(), chat.id, {
                 ...submit(),
                 editorContext: workspaceContext('Current full note body.'),
             });
+
             const turn = (await store.claim())!;
             const reached = latch(),
                 resume = latch();
             const operation = store.withOperation(turn, async (tx) => {
                 reached.release();
                 await resume.promise;
+
                 return new DrizzleKnowledgeTransactionParticipant(tx).get(
                     owner,
                     note.id,
@@ -1805,7 +2032,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         while (true) {
                             const [state] =
                                 await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%for share%') as waiting`;
-                            if (state?.waiting) return;
+
+                            if (state?.waiting) {
+                                return;
+                            }
                         }
                     })(),
                 );
@@ -1813,10 +2043,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 resume.release();
                 await Promise.all([operationResult, pollingResult]);
             }
+
             const [result] = await operationResult;
             const [poll] = await pollingResult;
-            if (result!.status === 'rejected') throw result!.reason;
-            if (poll!.status === 'rejected') throw poll!.reason;
+            if (result!.status === 'rejected') {
+                throw result!.reason;
+            }
+
+            if (poll!.status === 'rejected') {
+                throw poll!.reason;
+            }
+
             expect(result!.value.id).toBe(note.id);
             expect(poll!.value.length).toBeGreaterThan(0);
             await store.finish(turn, 'succeeded');
@@ -1824,6 +2061,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await store.detail(access(), chat.id)).turns[0]?.status,
             ).toBe('succeeded');
         });
+
         it('rejects prose proposals and old draft publication against interactive targets', async () => {
             const note = await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(
@@ -1873,6 +2111,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     clock,
                 ),
             );
+
             await expect(
                 store.propose(turn, content, {
                     noteId: current.id,
@@ -1882,6 +2121,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 code: 'version_conflict',
                 message: expect.stringContaining('interactive blocks'),
             });
+
             await expect(
                 store.publishDraft(access(), chat.id, draft.id, {
                     operationId: randomUUID(),
@@ -1893,17 +2133,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 code: 'version_conflict',
                 message: expect.stringContaining('interactive blocks'),
             });
+
             const [retained] =
                 await client`select body from knowledge_notes where id=${note.id}`;
+
             expect(retained?.body).toEqual(interactive.body);
             const copy = await store.publishDraft(access(), chat.id, draft.id, {
                 operationId: randomUUID(),
                 expectedVersion: draft.version,
                 mode: 'new',
             });
+
             expect(copy.id).not.toBe(note.id);
             expect(copy.body.schemaVersion).toBe(1);
         });
+
         it('publishes drafts once, retains stale revisions, and cannot resurrect a deleted saved target', async () => {
             const chat = await create();
             await store.submit(access(), chat.id, submit());
@@ -1919,15 +2163,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 store.publishDraft(access(), chat.id, draft.id, input),
                 store.publishDraft(access(), chat.id, draft.id, input),
             ]);
+
             expect(replay.id).toBe(saved.id);
             expect(await client`select id from knowledge_notes`).toHaveLength(
                 1,
             );
+
             const revision = await store.propose(
                 turn,
                 { ...content, summary: 'A proposed revision.' },
                 { noteId: saved.id, version: saved.version },
             );
+
             await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(
                     owner,
@@ -1940,6 +2187,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     clock,
                 ),
             );
+
             await expect(
                 store.publishDraft(access(), chat.id, revision.id, {
                     operationId: randomUUID(),
@@ -1948,11 +2196,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedNoteVersion: saved.version,
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
+
             expect(
                 (await store.detail(access(), chat.id)).drafts.map(
                     (item) => item.id,
                 ),
             ).toContain(revision.id);
+
             await client`delete from knowledge_notes where id=${saved.id}`;
             await expect(
                 store.publishDraft(access(), chat.id, revision.id, {
@@ -1962,12 +2212,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expectedNoteVersion: saved.version,
                 }),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             await expect(
                 store.publishDraft(access(), chat.id, draft.id, input),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             expect(await client`select id from knowledge_notes`).toHaveLength(
                 0,
             );
+
             const independent = await store.publishDraft(
                 access(),
                 chat.id,
@@ -1978,12 +2231,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     mode: 'new',
                 },
             );
+
             await store.finish(turn, 'succeeded');
             await store.delete(access(), chat.id);
             expect(
                 await client`select id from knowledge_notes where id=${independent.id}`,
             ).toHaveLength(1);
         });
+
         it.each([false, true])(
             'rejects an inactive dictionary source owner even when the active actor differs (%s)',
             async (shared) => {
@@ -1999,21 +2254,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ...(shared ? { shareLocator: locator } : {}),
                     },
                 });
+
                 await client`update users set status='deletion_pending' where id=${owner}`;
                 await expect(
                     store.detail(actor, chat.id),
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
                 await expect(
                     store.submit(actor, chat.id, submit()),
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
-                if (shared)
+
+                if (shared) {
                     expect(
                         (
                             await client`select status from users where id=${learner}`
                         )[0]?.status,
                     ).toBe('active');
+                }
             },
         );
+
         it('respects text folder shares, saved translation changes and active owner status', async () => {
             const folder = randomUUID(),
                 text = randomUUID(),
@@ -2035,6 +2295,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     translation: [{ pairId, text: translation }],
                     editedPairIds: [],
                 });
+
             await client`insert into text_folders(id,owner_id,name,created_at,updated_at) values (${folder},${owner},'Reading',${date},${date})`;
             await client`insert into texts(id,owner_id,folder_id,title,source_language,target_language,source_text,alignment,status,created_at,updated_at) values (${text},${owner},${folder},'A text','es','en','Hola.',${alignment('Hola.', 'Hello.')}::jsonb,'translated',${date},${date})`;
             await client`insert into text_shares(id,owner_id,kind,resource_id,locator,key_digest,version,created_at) values (${share},${owner},'folder',${folder},${locator},${cryptography.shareDigest('key', 1)},1,${date})`;
@@ -2056,22 +2317,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await store.claim())?.sourceSnapshot.material[0]?.content,
             ).toContain('Adiós.');
+
             await client`update text_folders set lifecycle='archived' where id=${folder}`;
             await expect(store.detail(actor, chat.id)).rejects.toMatchObject({
                 code: 'conversation_not_found',
             });
+
             await client`update text_folders set lifecycle='active' where id=${folder}`;
             const ownedChat = await store.create(access(), {
                 source: { kind: 'text', id: text },
             });
+
             await client`update users set status='deletion_pending' where id=${owner}`;
             await expect(store.detail(actor, chat.id)).rejects.toMatchObject({
                 code: 'conversation_not_found',
             });
+
             await expect(
                 store.detail(access(), ownedChat.id),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
         });
+
         it('freezes a long saved translation as complete ordered passages and runs bounded initial and surrounding retrieval context', async () => {
             const folder = randomUUID(),
                 text = randomUUID(),
@@ -2095,6 +2361,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 translation: [{ pairId, text: translation }],
                 editedPairIds: [],
             });
+
             await client`insert into text_folders(id,owner_id,name,created_at,updated_at) values (${folder},${owner},'Long reading',${clock.toISOString()},${clock.toISOString()})`;
             await client`insert into texts(id,owner_id,folder_id,title,source_language,target_language,source_text,alignment,status,created_at,updated_at) values (${text},${owner},${folder},'Long translated text','es','en','Hola.',${alignment}::jsonb,'translated',${clock.toISOString()},${clock.toISOString()})`;
             const chat = await store.create(access(), {
@@ -2111,6 +2378,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 scope: string;
                 material: { id: string; content: string }[];
             };
+
             expect(frozen.scope).toBe('complete');
             expect(frozen.material.length).toBeGreaterThan(20);
             expect(
@@ -2125,6 +2393,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                     .join(''),
             ).toBe(translation);
+
             let observedContext: Record<string, unknown> | undefined;
             let retrieved:
                 | {
@@ -2145,23 +2414,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             query: 'TARGET_NEEDLE',
                             limit: 3,
                         });
+
                         await input.onDelta({
                             messageId: randomUUID(),
                             text: 'This explanation uses selected passages.',
                         });
+
                         return {
                             text: 'This explanation uses selected passages.',
                         };
                     },
                 }),
             });
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 true,
             );
+
             expect(observedContext).toBeDefined();
             expect(
                 Buffer.byteLength(JSON.stringify(observedContext), 'utf8'),
             ).toBeLessThanOrEqual(12_000);
+
             expect(observedContext?.scope).toBe('partial');
             expect(retrieved).toBeDefined();
             expect(retrieved?.total).toBe(frozen.material.length);
@@ -2173,10 +2447,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 Buffer.byteLength(JSON.stringify(retrieved), 'utf8'),
             ).toBeLessThanOrEqual(24_000);
+
             expect(
                 (await store.detail(access(), chat.id)).turns[0]?.status,
             ).toBe('succeeded');
         });
+
         it('hides retained example translations whenever their effective parent example is disabled for owner and shared readers', async () => {
             const locator = randomUUID();
             await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${cryptography.shareDigest('key', 1)},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
@@ -2191,6 +2467,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     shareLocator: locator,
                 },
             });
+
             for (const [actor, chat] of [
                 [access(), ownerChat],
                 [sharedAccess, sharedChat],
@@ -2199,23 +2476,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect(JSON.stringify(material)).not.toContain(
                     'RETAINED PRIVATE TRANSLATION',
                 );
+
                 expect(JSON.stringify(material)).not.toContain(
                     'DORMANT CUSTOM LABEL',
                 );
+
                 expect(material.material[0]).toMatchObject({
                     kind: 'dictionary-card',
                     card: { source: 'ser' },
                 });
+
                 await store.submit(actor, chat.id, submit());
                 const turn = (await store.claim())!;
                 expect(JSON.stringify(turn.sourceSnapshot)).not.toContain(
                     'RETAINED PRIVATE TRANSLATION',
                 );
+
                 expect(JSON.stringify(turn.sourceSnapshot)).not.toContain(
                     'DORMANT CUSTOM LABEL',
                 );
+
                 await store.finish(turn, 'succeeded');
             }
+
             await client`update dictionary_settings set example_enabled=true where dictionary_id=${dictionary}`;
             await client`update dictionary_cards set example_enabled_override='disabled' where id=${card}`;
             expect(
@@ -2223,12 +2506,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await store.context(sharedAccess, sharedChat.id, 'ser'),
                 ),
             ).not.toContain('RETAINED PRIVATE TRANSLATION');
+
             await client`update dictionary_cards set example_enabled_override='enabled' where id=${card}`;
             expect(
                 JSON.stringify(
                     await store.context(sharedAccess, sharedChat.id, 'ser'),
                 ),
             ).toContain('RETAINED PRIVATE TRANSLATION');
+
             await client`update dictionary_settings set transcription_notation='custom' where dictionary_id=${dictionary}`;
             expect(
                 JSON.stringify(
@@ -2236,11 +2521,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toContain('DORMANT CUSTOM LABEL');
         });
+
         it.each(['events', 'detail'] as const)(
             'revalidates a shared dictionary %s read during actual owner account deletion without owner/resource inversion',
             async (read) => {
                 const locator = 'S'.repeat(22),
                     key = 'shared-key';
+
                 await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${cryptography.shareDigest(key, 1)},share_key_version=1,share_key_rotated_at=now(),created_at=now()-interval '1 hour',updated_at=now() where id=${dictionary}`;
                 const sharedAccess = { ownerId: learner, shareKey: key };
                 const chat = await store.create(sharedAccess, {
@@ -2277,7 +2564,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             while (true) {
                                 const [state] =
                                     await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%from "users"%' and query ilike '%for share%') as waiting`;
-                                if (state?.waiting) return;
+
+                                if (state?.waiting) {
+                                    return;
+                                }
                             }
                         })(),
                     );
@@ -2285,15 +2575,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     resume.release();
                     await Promise.all([deletionResult, pollingResult]);
                 }
+
                 const [deletion] = await deletionResult,
                     [poll] = await pollingResult;
-                if (deletion!.status === 'rejected') throw deletion!.reason;
+
+                if (deletion!.status === 'rejected') {
+                    throw deletion!.reason;
+                }
+
                 expect(poll).toMatchObject({
                     status: 'rejected',
                     reason: { code: 'conversation_not_found' },
                 });
+
                 const [state] =
                     await client`select u.status,d.visibility,d.share_locator from users u join dictionaries d on d.owner_id=u.id where d.id=${dictionary}`;
+
                 expect(state).toMatchObject({
                     status: 'deletion_pending',
                     visibility: 'private',
@@ -2301,9 +2598,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
             },
         );
+
         it('rejects stale shared reads during actual account purge without retaining a dictionary lock ahead of its owner', async () => {
             const locator = 'P'.repeat(22),
                 key = 'stale-key';
+
             await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${cryptography.shareDigest(key, 1)},share_key_version=1,share_key_rotated_at=now(),created_at=now()-interval '1 hour',updated_at=now() where id=${dictionary}`;
             const sharedAccess = { ownerId: learner, shareKey: key };
             const chat = await store.create(sharedAccess, {
@@ -2313,6 +2612,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     shareLocator: locator,
                 },
             });
+
             await client`update users set status='deletion_pending' where id=${owner}`;
             await client`insert into account_deletion_requests(user_id,scheduled_at,purge_at,next_attempt_at,updated_at) values (${owner},now()-interval '31 days',now()-interval '1 hour',now()-interval '1 hour',now())`;
             const purge = new DrizzleAccountPurgeStore(db),
@@ -2326,9 +2626,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await tx.execute(
                     sql`select id from dictionaries where id=${dictionary} for share`,
                 );
+
                 held.release();
                 await resume.promise;
             });
+
             await completes(held.promise);
             const deleting = purge.finish({ ...claimed, now, workerId });
             const deletionResult = Promise.allSettled([deleting]);
@@ -2339,25 +2641,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                       >[]
                   >
                 | undefined;
+
             try {
                 await completes(
                     (async () => {
                         while (true) {
                             const [state] =
                                 await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%delete from "dictionaries"%') as waiting`;
-                            if (state?.waiting) return;
+
+                            if (state?.waiting) {
+                                return;
+                            }
                         }
                     })(),
                 );
+
                 pollingResult = Promise.allSettled([
                     store.events(sharedAccess, chat.id, 0),
                 ]);
+
                 await completes(
                     (async () => {
                         while (true) {
                             const [state] =
                                 await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%from "users"%' and query ilike '%for share%') as waiting`;
-                            if (state?.waiting) return;
+
+                            if (state?.waiting) {
+                                return;
+                            }
                         }
                     })(),
                 );
@@ -2366,21 +2677,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await holding;
                 await Promise.all([deletionResult, pollingResult]);
             }
+
             const [deletion] = await deletionResult;
-            if (deletion!.status === 'rejected') throw deletion!.reason;
+            if (deletion!.status === 'rejected') {
+                throw deletion!.reason;
+            }
+
             expect(deletion!.value).toBe(true);
             expect((await pollingResult)![0]).toMatchObject({
                 status: 'rejected',
                 reason: { code: 'conversation_not_found' },
             });
+
             expect(
                 await client`select id from dictionaries where id=${dictionary}`,
             ).toHaveLength(0);
+
             expect(
                 (await client`select status from users where id=${owner}`)[0]
                     ?.status,
             ).toBe('purged');
         });
+
         it.each(['owner', 'archive', 'digest', 'version'] as const)(
             'rejects a dictionary %s change after unlocked owner discovery without changing frozen turn material',
             async (change) => {
@@ -2388,6 +2706,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client`insert into users(id,status) values (${replacementOwner},'active')`;
                 const locator = 'R'.repeat(22),
                     key = 'race-key';
+
                 await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${cryptography.shareDigest(key, 1)},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
                 const sharedAccess = { ownerId: learner, shareKey: key };
                 const chat = await store.create(sharedAccess, {
@@ -2397,6 +2716,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         shareLocator: locator,
                     },
                 });
+
                 await store.submit(sharedAccess, chat.id, submit());
                 const turn = (await store.claim())!;
                 const held = latch(),
@@ -2405,37 +2725,49 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await tx.execute(
                         sql`select id from users where id=${owner} for update`,
                     );
+
                     held.release();
                     await mutate.promise;
-                    if (change === 'owner')
+                    if (change === 'owner') {
                         await tx.execute(
                             sql`update dictionaries set owner_id=${replacementOwner} where id=${dictionary}`,
                         );
-                    if (change === 'archive')
+                    }
+
+                    if (change === 'archive') {
                         await tx.execute(
                             sql`update dictionaries set lifecycle='archived',archived_at=${clock.toISOString()},visibility='private',share_locator=null,share_key_digest=null,share_key_version=null,share_key_rotated_at=null where id=${dictionary}`,
                         );
-                    if (change === 'digest')
+                    }
+
+                    if (change === 'digest') {
                         await tx.execute(
                             sql`update dictionaries set share_key_digest=${cryptography.shareDigest('replacement', 1)} where id=${dictionary}`,
                         );
-                    if (change === 'version')
+                    }
+
+                    if (change === 'version') {
                         await tx.execute(
                             sql`update dictionaries set share_key_version=2 where id=${dictionary}`,
                         );
+                    }
                 });
                 const changeResult = Promise.allSettled([changing]);
                 await completes(held.promise);
                 const writingResult = Promise.allSettled([
                     store.append(turn, 'Must not be persisted'),
                 ]);
+
                 try {
                     await completes(
                         (async () => {
                             while (true) {
                                 const [state] =
                                     await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%from "users"%' and query ilike '%for share%') as waiting`;
-                                if (state?.waiting) return;
+
+                                if (state?.waiting) {
+                                    return;
+                                }
                             }
                         })(),
                     );
@@ -2443,20 +2775,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     mutate.release();
                     await Promise.all([changeResult, writingResult]);
                 }
+
                 const [changed] = await changeResult;
-                if (changed!.status === 'rejected') throw changed!.reason;
+                if (changed!.status === 'rejected') {
+                    throw changed!.reason;
+                }
+
                 expect((await writingResult)[0]).toMatchObject({
                     status: 'rejected',
                     reason: { code: 'conversation_not_found' },
                 });
+
                 const [frozen] =
                     await client`select source_snapshot from conversation_turns where id=${turn.id}`;
+
                 expect(frozen?.source_snapshot).toEqual(turn.sourceSnapshot);
                 expect(
                     await client`select id from conversation_messages where turn_id=${turn.id} and content like '%Must not be persisted%'`,
                 ).toHaveLength(0);
             },
         );
+
         it('persists text and renews its lease without entering unrelated capacity admission', async () => {
             const chat = await create();
             await store.submit(access(), chat.id, submit());
@@ -2468,6 +2807,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 acquired.release();
                 await release.promise;
             });
+
             await acquired.promise;
             try {
                 await completes(
@@ -2489,15 +2829,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 release.release();
                 await holding;
             }
+
             const detail = await store.detail(access(), chat.id);
             expect(detail.messages[1]?.content).toBe('Still streaming');
             await expect(store.heartbeat(turn)).rejects.toMatchObject({
                 code: 'operation_interrupted',
             });
+
             await expect(store.append(turn, 'Late')).rejects.toMatchObject({
                 code: 'operation_interrupted',
             });
         });
+
         it('keeps queued claim and Stop in actor-before-turn lock order', async () => {
             const chat = await create();
             await store.submit(access(), chat.id, submit());
@@ -2513,8 +2856,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         actorLocked.release();
                         await releaseClaim.promise;
                     }
+
                     await original(tx, actor, lock);
                 });
+
             try {
                 const claim = store.claim();
                 await actorLocked.promise;
@@ -2535,6 +2880,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     select status, cancel_requested from conversation_turns
                     where conversation_id=${chat.id}
                 `;
+
                 expect(claimed).toBeNull();
                 expect(stopped.status).toBe('cancelled');
                 expect(finalTurn?.status).toBe('cancelled');
@@ -2544,6 +2890,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 actorFence.mockRestore();
             }
         });
+
         it('avoids crossed actor upgrades while streaming from shared sources', async () => {
             const otherDictionary = randomUUID();
             const firstLocator = randomUUID(),
@@ -2571,17 +2918,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             );
+
             await store.submit(
                 { ownerId: owner, shareKey: 'crossed-key' },
                 firstChat.id,
                 submit(),
             );
+
             const firstTurn = (await store.claim())!;
             await store.submit(
                 { ownerId: learner, shareKey: 'crossed-key' },
                 secondChat.id,
                 submit(),
             );
+
             const secondTurn = (await store.claim())!;
             const acquired = latch(),
                 release = latch();
@@ -2598,17 +2948,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const mutation = Promise.allSettled([
                 store.withOperation(secondTurn, async () => undefined),
             ]);
+
             await acquired.promise;
             const progress = Promise.allSettled([
                 store.append(firstTurn, 'Crossed sources stay safe'),
             ]);
+
             try {
                 await completes(
                     (async () => {
                         while (true) {
                             const [state] =
                                 await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%from "users"%' and query ilike '%for share%') as waiting`;
-                            if (state?.waiting) break;
+
+                            if (state?.waiting) {
+                                break;
+                            }
+
                             await new Promise((resolve) =>
                                 setTimeout(resolve, 10),
                             );
@@ -2619,12 +2975,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 release.release();
                 actorFence.mockRestore();
             }
+
             const results = await completes(Promise.all([mutation, progress]));
             for (const [result] of results) {
-                if (result?.status === 'rejected') throw result.reason;
+                if (result?.status === 'rejected') {
+                    throw result.reason;
+                }
+
                 expect(result?.status).toBe('fulfilled');
             }
         });
+
         it('runs common authorized reads without the global capacity lock or exclusive knowledge-source locks', async () => {
             const chat = await create();
             const note = await db.transaction((tx) =>
@@ -2644,12 +3005,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await tx.execute(
                     sql`select id from users where id=${owner} for share`,
                 );
+
                 await tx.execute(
                     sql`select id from knowledge_notes where id=${note.id} for share`,
                 );
+
                 acquired.release();
                 await release.promise;
             });
+
             await acquired.promise;
             try {
                 await completes(
@@ -2671,9 +3035,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await holding;
             }
         });
+
         it('allows unrelated admission and terminal settlement while a live event read waits for its own conversation row', async () => {
             const chat = await create(),
                 otherDictionary = randomUUID();
+
             await client`insert into dictionaries(id,owner_id,name,source_language_tag,target_language_tag) values (${otherDictionary},${learner},'Other source','es','en')`;
             const other = await store.create(
                 { ownerId: learner },
@@ -2685,9 +3051,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await tx.execute(
                     sql`select id from conversation_chats where id=${chat.id} for update`,
                 );
+
                 acquired.release();
                 await release.promise;
             });
+
             await acquired.promise;
             const polling = store.events(access(), chat.id, 0);
             try {
@@ -2696,13 +3064,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         while (true) {
                             const [state] =
                                 await client`select exists(select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and query ilike '%from "conversation_chats"%' and query ilike '%for %') as waiting`;
-                            if (state?.waiting) break;
+
+                            if (state?.waiting) {
+                                break;
+                            }
+
                             await new Promise((resolve) =>
                                 setTimeout(resolve, 10),
                             );
                         }
                     })(),
                 );
+
                 await completes(
                     (async () => {
                         await store.submit(
@@ -2710,6 +3083,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             other.id,
                             submit(),
                         );
+
                         const claimed = (await store.claim())!;
                         await store.finish(claimed, 'succeeded');
                     })(),
@@ -2720,19 +3094,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await polling;
             }
         });
+
         it('holds one running conversation per actor across conversations', async () => {
             const first = await create(),
                 second = await create();
+
             await store.submit(access(), first.id, submit());
             await store.submit(access(), second.id, submit());
             const [left, right] = await Promise.all([
                 store.claim(),
                 store.claim(),
             ]);
+
             expect([left, right].filter(Boolean)).toHaveLength(1);
             await store.finish((left ?? right)!, 'succeeded');
             expect(await store.claim()).not.toBeNull();
         });
+
         it('keeps explicitly authorized copied attachments when their originating source is permanently erased', async () => {
             const originating = await create();
             const copied = await store.context(access(), originating.id, 'ser');
@@ -2745,6 +3123,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ...submit('Explain this copied card.'),
                 attachments: copied.material,
             });
+
             await store.stop(access(), host.id, turn.id);
             await db.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
@@ -2753,19 +3132,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { sourceKind: 'dictionary', sourceIds: [dictionary] },
                     clock,
                 );
+
                 await tx.execute(
                     sql`delete from dictionaries where id=${dictionary}`,
                 );
             });
+
             await expect(
                 store.detail(access(), originating.id),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             const detail = await store.detail(access(), host.id);
             expect(detail.messages[0]?.attachments).toEqual(copied.material);
             expect(detail.messages[0]?.attachments[0]?.content).toContain(
                 'Soy médico.',
             );
         });
+
         it('bounds physical replay cleanup and preserves events for conversations with active work', async () => {
             const terminal = await create();
             const stopped = await store.submit(access(), terminal.id, submit());
@@ -2775,23 +3158,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const expired = new Date(
                 clock.getTime() - 86_400_001,
             ).toISOString();
+
             await client`insert into conversation_events(conversation_id,type,data,created_at) select ${terminal.id},'turn','{}',${expired} from generate_series(1,1005)`;
             await client`insert into conversation_events(conversation_id,type,data,created_at) values (${active.id},'turn','{}',${expired})`;
             expect(await store.claim()).not.toBeNull();
             expect(
                 await client`select id from conversation_events where conversation_id=${terminal.id} and created_at=${expired}`,
             ).toHaveLength(5);
+
             expect(
                 await client`select id from conversation_events where conversation_id=${active.id} and created_at=${expired}`,
             ).toHaveLength(1);
+
             expect(await store.claim()).toBeNull();
             expect(
                 await client`select id from conversation_events where conversation_id=${terminal.id} and created_at=${expired}`,
             ).toHaveLength(0);
+
             expect(
                 await client`select id from conversation_events where conversation_id=${active.id} and created_at=${expired}`,
             ).toHaveLength(1);
         });
+
         it('enforces the shared global running limit across different actors', async () => {
             const locator = randomUUID();
             await client`update dictionaries set visibility='unlisted',share_locator=${locator},share_key_digest=${cryptography.shareDigest('key', 1)},share_key_version=1,share_key_rotated_at=${clock.toISOString()} where id=${dictionary}`;
@@ -2806,16 +3194,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         shareLocator: locator,
                     },
                 });
+
                 await store.submit(actorAccess, chat.id, submit());
             }
+
             const claims = await Promise.all(
                 Array.from({ length: 11 }, () => store.claim()),
             );
+
             expect(claims.filter(Boolean)).toHaveLength(10);
             expect(await store.claim()).toBeNull();
             await store.finish(claims.find(Boolean)!, 'succeeded');
             expect(await store.claim()).not.toBeNull();
         });
+
         it('runs a bounded worker against the real persistence fence and pins explicit note drafts', async () => {
             const note = await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(
@@ -2824,19 +3216,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     clock,
                 ),
             );
+
             await expect(
                 store.create(
                     { ownerId: learner },
                     { source: { kind: 'knowledge', id: note.id } },
                 ),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             const chat = await store.create(access(), {
                 source: { kind: 'knowledge', id: note.id },
             });
+
             await store.submit(access(), chat.id, {
                 ...submit(),
                 editorContext: workspaceContext('Unsaved learner explanation.'),
             });
+
             const worker = new ConversationWorkerService({
                 store,
                 createRunner: () => ({
@@ -2847,32 +3243,40 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             name: 'propose_knowledge_note',
                             state: 'running',
                         });
+
                         await input.onDraft({
                             ...content,
                             summary: 'A suggested revision.',
                         });
+
                         await input.onTool?.({
                             id: 'proposal-1',
                             name: 'propose_knowledge_note',
                             state: 'succeeded',
                         });
+
                         await input.onDelta({
                             messageId: randomUUID(),
                             text: 'Review this draft.',
                         });
+
                         return { text: 'Review this draft.' };
                     },
                 }),
             });
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 true,
             );
+
             expect(await worker.processNext(new AbortController().signal)).toBe(
                 false,
             );
+
             const detail = ConversationDetailSchema.parse(
                 await store.detail(access(), chat.id),
             );
+
             expect(detail.turns[0]?.status).toBe('succeeded');
             expect(detail.messages[1]).toMatchObject({
                 content: 'Review this draft.',
@@ -2885,10 +3289,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 ],
             });
+
             expect(detail.drafts[0]).toMatchObject({
                 targetNoteId: note.id,
                 expectedNoteVersion: note.version,
             });
+
             expect(
                 (
                     await db.transaction((tx) =>

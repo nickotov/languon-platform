@@ -34,15 +34,22 @@ export function PortraitEditor({
         items.wording,
         items.approach,
     ].filter(Boolean).length;
+
     function handleLanguages(languages: PortraitItems['languages']) {
         onChange({ ...items, languages });
     }
+
     function handleAge(field: PreferenceKey, value: string) {
         const next = { ...items };
-        if (value) Object.assign(next, { [field]: value });
-        else delete next[field];
+        if (value) {
+            Object.assign(next, { [field]: value });
+        } else {
+            delete next[field];
+        }
+
         onChange(next);
     }
+
     const languageDescription = copy(
         locale,
         'Languages you know, which you’re learning now, and how you’d describe each.',
@@ -71,6 +78,7 @@ export function PortraitEditor({
         'Uniquement pour des exemples plus pertinents.',
         'Solo para que los ejemplos sean más relevantes.',
     );
+
     return (
         <div className={styles.stack}>
             <EditorSection

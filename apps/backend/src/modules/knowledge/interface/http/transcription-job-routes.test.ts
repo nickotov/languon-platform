@@ -60,13 +60,16 @@ function fixture() {
             policy,
         }),
     });
+
     return { app, noteId, operationId, assetId, ownerId, store, job };
 }
+
 const headers = {
     Authorization: 'Bearer synthetic.payload.signature',
     'Content-Type': 'application/json',
     Origin: 'http://localhost:3000',
 };
+
 describe('Transcription job HTTP authorization and explicit confirmation', () => {
     it('requires sign-in and preserves a non-dispatched confirmation response', async () => {
         const { app, noteId, operationId, assetId, store, ownerId } = fixture();
@@ -80,23 +83,28 @@ describe('Transcription job HTTP authorization and explicit confirmation', () =>
                 })
             ).status,
         ).toBe(401);
+
         const response = await app.request(path, {
             method: 'POST',
             headers,
             body: JSON.stringify({ operationId, noteId, assetId }),
         });
+
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({
             job: { state: 'confirmation-required', maximumCredits: '1.000' },
         });
+
         expect(store.submit).toHaveBeenCalledWith(
             ownerId,
             { operationId, noteId, assetId, languages: [] },
             expect.any(AbortSignal),
         );
+
         expect(store.claim).not.toHaveBeenCalled();
         expect(response.headers.get('cache-control')).toBe('private, no-store');
     });
+
     it('rejects mismatched path authority and foreign origins before store mutation', async () => {
         const { app, noteId, operationId, assetId, store } = fixture();
         const path = `/knowledge/${noteId}/transcriptions`;
@@ -113,6 +121,7 @@ describe('Transcription job HTTP authorization and explicit confirmation', () =>
                 })
             ).status,
         ).toBe(400);
+
         expect(
             (
                 await app.request(path, {
@@ -122,8 +131,10 @@ describe('Transcription job HTTP authorization and explicit confirmation', () =>
                 })
             ).status,
         ).toBe(403);
+
         expect(store.submit).not.toHaveBeenCalled();
     });
+
     it('returns explicit credit errors and forwards cancellation only for the authenticated actor', async () => {
         const { app, noteId, operationId, assetId, store, ownerId } = fixture();
         store.submit.mockRejectedValueOnce(
@@ -131,6 +142,7 @@ describe('Transcription job HTTP authorization and explicit confirmation', () =>
                 'Never expose internal credit details',
             ),
         );
+
         const response = await app.request(
             `/knowledge/${noteId}/transcriptions`,
             {
@@ -139,14 +151,17 @@ describe('Transcription job HTTP authorization and explicit confirmation', () =>
                 body: JSON.stringify({ operationId, noteId, assetId }),
             },
         );
+
         expect(response.status).toBe(402);
         expect(await response.json()).toMatchObject({
             error: { code: 'insufficient_credits' },
         });
+
         const cancelled = await app.request(
             `/knowledge/${noteId}/transcriptions/${operationId}/cancel`,
             { method: 'POST', headers },
         );
+
         expect(cancelled.status).toBe(200);
         expect(store.cancel).toHaveBeenCalledWith(ownerId, noteId, operationId);
     });

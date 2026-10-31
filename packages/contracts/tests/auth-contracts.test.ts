@@ -44,11 +44,21 @@ function authenticationResponse() {
 describe('authentication primitives', () => {
     it('normalizes only bounded lowercase ASCII handles', () => {
         expect(HandleSchema.parse('  Learner_123 ')).toBe('learner_123');
-        expect(UpdateHandleRequestSchema.parse({ handle: 'LeArNeR' })).toEqual({ handle: 'learner' });
-        for (const invalid of ['ab', 'a'.repeat(31), 'has space', 'ник', 'has-hyphen']) {
+        expect(UpdateHandleRequestSchema.parse({ handle: 'LeArNeR' })).toEqual({
+            handle: 'learner',
+        });
+
+        for (const invalid of [
+            'ab',
+            'a'.repeat(31),
+            'has space',
+            'ник',
+            'has-hyphen',
+        ]) {
             expect(HandleSchema.safeParse(invalid).success).toBe(false);
         }
     });
+
     it('normalizes bounded ASCII email addresses', () => {
         expect(EmailSchema.parse('  Learner+Test@EXAMPLE.COM ')).toBe(
             'learner+test@example.com',
@@ -83,6 +93,7 @@ describe('password and email flow contracts', () => {
             email: 'learner@example.com',
             password: '  a sufficiently long password  ',
         });
+
         expect(
             SignUpRequestSchema.safeParse({
                 ...parsed,
@@ -156,6 +167,7 @@ describe('shared authentication responses', () => {
                 error: { ...error.error, stack: 'internal details' },
             }).success,
         ).toBe(false);
+
         expect(
             AuthErrorResponseSchema.safeParse({
                 error: { ...error.error, retryAfterSeconds: 86_401 },

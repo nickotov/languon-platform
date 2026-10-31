@@ -21,9 +21,11 @@ it('retains measured Stop usage while refusing completed-result fallback eligibi
         'aborted',
         usage,
     );
+
     await validation.approve();
     expect(accounting.settle).not.toHaveBeenCalled();
 });
+
 it('never treats an unknown provider finish as positive completion evidence', async () => {
     const accounting = tutorAccountingFixture();
     const validation = createValidatedInterviewAccounting(accounting);
@@ -34,6 +36,7 @@ it('never treats an unknown provider finish as positive completion evidence', as
         maxOutputTokens: 100,
         providerCompleted: false,
     };
+
     await validation.port.settle(call, { inputTokens: 20, outputTokens: 10 });
     expect(await validation.reject()).toBe(false);
     expect(accounting.fail).toHaveBeenCalledOnce();

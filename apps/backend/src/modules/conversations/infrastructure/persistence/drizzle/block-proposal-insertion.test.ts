@@ -12,6 +12,7 @@ const paragraph = (text: string): KnowledgeNode => ({
     type: 'paragraph',
     content: [{ type: 'text', text, marks: [{ type: 'bold' }] }],
 });
+
 describe('Proposal insertion positions', () => {
     it('counts a horizontal rule as one atomic PM position and preserves H1 at adjacent insertions', () => {
         const heading: KnowledgeNode = {
@@ -24,6 +25,7 @@ describe('Proposal insertion positions', () => {
             type: 'doc',
             content: [heading, rule, paragraph('B')],
         };
+
         for (const position of [3, 4]) {
             const result = insertProposalBlocks(original, [grammar], position);
             const insertedIndex = position === 3 ? 1 : 2;
@@ -32,10 +34,12 @@ describe('Proposal insertion positions', () => {
                 result.content?.filter((node) => node.type !== 'learningBlock'),
             ).toEqual(original.content);
         }
+
         expect(
             insertProposalBlocks(original, [grammar], 7).content?.at(-1)?.type,
         ).toBe('learningBlock');
     });
+
     it('splits prose at the exact PM offset while preserving marks and surrounding nodes', () => {
         const original: KnowledgeNode = {
             type: 'doc',
@@ -48,33 +52,41 @@ describe('Proposal insertion positions', () => {
             'paragraph',
             'paragraph',
         ]);
+
         expect(inserted.content?.[0]).toEqual(paragraph('Bonjour'));
         expect(inserted.content?.[2]).toEqual(paragraph(' monde'));
         expect(inserted.content?.[3]).toEqual(original.content?.[1]);
         expect(original.content).toHaveLength(2);
     });
+
     it('supports document boundaries without replacing existing content', () => {
         const original: KnowledgeNode = {
             type: 'doc',
             content: [paragraph('Hello')],
         };
+
         expect(
             insertProposalBlocks(original, [grammar], 0).content?.[0]?.type,
         ).toBe('learningBlock');
+
         expect(
             insertProposalBlocks(original, [grammar], 7).content?.[1]?.type,
         ).toBe('learningBlock');
     });
+
     it('rejects stale/out-of-range offsets and surrogate-pair interiors', () => {
         const original: KnowledgeNode = {
             type: 'doc',
             content: [paragraph('😀')],
         };
-        for (const position of [-1, 1.5, 2, 9])
+
+        for (const position of [-1, 1.5, 2, 9]) {
             expect(() =>
                 insertProposalBlocks(original, [grammar], position),
             ).toThrow('insertion cursor');
+        }
     });
+
     it('rejects a position between members of the same exercise group', () => {
         const group = { id: '22222222-2222-4222-8222-222222222222' };
         const exercise = (id: string): KnowledgeNode => ({
@@ -99,11 +111,14 @@ describe('Proposal insertion positions', () => {
                 exercise('44444444-4444-4444-8444-444444444444'),
             ],
         };
-        for (const position of [1, 2, 3])
+
+        for (const position of [1, 2, 3]) {
             expect(() =>
                 insertProposalBlocks(original, [grammar], position),
             ).toThrow('exercise group');
+        }
     });
+
     it('lifts a valid quotation split without losing its original text', () => {
         const original: KnowledgeNode = {
             type: 'doc',
@@ -117,9 +132,11 @@ describe('Proposal insertion positions', () => {
             'learningBlock',
             'blockquote',
         ]);
+
         expect(result.content?.[0]?.content?.[0]?.content?.[0]?.text).toBe(
             'Quoted',
         );
+
         expect(result.content?.[2]?.content?.[0]?.content?.[0]?.text).toBe(
             ' words',
         );

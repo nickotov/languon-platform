@@ -25,14 +25,18 @@ function boundedText(
     for (const character of value) {
         const next =
             jsonBytes(JSON.stringify(character)) - encodedEmptyStringBytes;
+
         if (
             size + next > bytes ||
             result.length + character.length > maximumLength
-        )
+        ) {
             break;
+        }
+
         result += character;
         size += next;
     }
+
     return result;
 }
 
@@ -50,14 +54,20 @@ function splitContent(content: string): string[] {
             );
             const splitAt =
                 boundary > pending.length / 2 ? boundary + 1 : pending.length;
+
             chunks.push(pending.slice(0, splitAt));
             pending = pending.slice(splitAt);
             size = jsonBytes(pending) - 2;
         }
+
         pending += character;
         size += next;
     }
-    if (pending) chunks.push(pending);
+
+    if (pending) {
+        chunks.push(pending);
+    }
+
     return chunks;
 }
 
@@ -65,6 +75,7 @@ function excerptId(id: string, index: number, content: string) {
     const hash = createHash('sha256')
         .update(`conversation-source-excerpt:${id}:${index}:${content}`)
         .digest('hex');
+
     return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
 
@@ -72,10 +83,14 @@ function boundedMaterial(
     material: readonly SourceMaterial[],
 ): SourceMaterial[] {
     return material.flatMap((item) => {
-        if (jsonBytes(item) <= 8_000) return [item];
+        if (jsonBytes(item) <= 8_000) {
+            return [item];
+        }
+
         // Saved sources are already bounded passages. This also handles an
         // explicit unsaved draft or a legacy frozen snapshot without dropping text.
         const chunks = splitContent(item.content);
+
         return chunks.map((content, index) => ({
             id: excerptId(item.id, index, content),
             kind: 'text' as const,
@@ -102,6 +117,7 @@ function rankedIndices(material: readonly SourceMaterial[], query: string) {
     const frequencies = terms.map((term) =>
         text.reduce((count, item) => count + Number(item.includes(term)), 0),
     );
+
     return text
         .map((item, index) => ({
             index,
@@ -146,25 +162,36 @@ export function projectConversationSource(
                 index >= material.length ||
                 selected.has(index) ||
                 selected.size >= maximum
-            )
+            ) {
                 return;
+            }
+
             const candidate = [...selected, index]
                 .sort((left, right) => left - right)
                 .map((item) => material[item]!);
-            if (fits(candidate)) selected.add(index);
+
+            if (fits(candidate)) {
+                selected.add(index);
+            }
         };
+
         for (const index of rankedIndices(material, query)) {
             add(index);
             if (kind !== 'dictionary') {
                 add(index - 1);
                 add(index + 1);
             }
-            if (selected.size >= maximum) break;
+
+            if (selected.size >= maximum) {
+                break;
+            }
         }
+
         return [...selected]
             .sort((left, right) => left - right)
             .map((index) => material[index]!);
     }
+
     const metadata = {
         ...(snapshot.blockReferences?.length
             ? {
@@ -227,6 +254,7 @@ export function projectConversationSource(
                       jsonBytes(JSON.stringify(context(items))) <=
                       initialSourceContextBytes,
               );
+
     return {
         initialContext: context(initial),
         read(input: {
@@ -238,15 +266,18 @@ export function projectConversationSource(
                 const catalog = new Set(
                     blockReferenceCatalog(snapshot).map((block) => block.id),
                 );
+
                 if (
                     input.blockIds.length > 8 ||
                     new Set(input.blockIds).size !== input.blockIds.length ||
                     input.blockIds.some((id) => !catalog.has(id))
-                )
+                ) {
                     throw new ConversationError(
                         'invalid_block_reference',
                         'Requested blocks are not available in this frozen source.',
                     );
+                }
+
                 const selected = rawMaterial.filter((item) =>
                     input.blockIds!.some(
                         (id) =>
@@ -254,19 +285,23 @@ export function projectConversationSource(
                             item.label.startsWith(`Block ${id}; segment `),
                     ),
                 );
+
                 if (
                     jsonBytes({
                         material: selected,
                         total: selected.length,
                         coverage: 'complete',
                     }) > retrievedSourceContextBytes
-                )
+                ) {
                     throw new ConversationError(
                         'block_reference_too_large',
                         'The exact blocks exceed the source retrieval limit. Select fewer blocks or ask about a narrower passage. No content was truncated.',
                     );
+                }
+
                 return { material: selected, total: selected.length };
             }
+
             const selected = select(
                 input.query,
                 input.limit,
@@ -277,6 +312,7 @@ export function projectConversationSource(
                         coverage: 'complete',
                     }) <= retrievedSourceContextBytes,
             );
+
             // total deliberately describes the whole frozen source, not just
             // lexical matches: returning a few matches is still partial coverage.
             return { material: selected, total: material.length };

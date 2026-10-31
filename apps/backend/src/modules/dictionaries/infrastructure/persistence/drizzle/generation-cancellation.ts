@@ -37,19 +37,27 @@ export async function cancel(
         abort(input.context);
         const job = await lockOwnedJob(tx, input.ownerId, input.jobId);
         abort(input.context);
-        if (job.executionState === 'cancelled')
+        if (job.executionState === 'cancelled') {
             return readView(tx, job, input.context.now);
-        if (!['queued', 'running'].includes(job.executionState))
+        }
+
+        if (!['queued', 'running'].includes(job.executionState)) {
             throw new DictionaryGenerationNotAvailableError();
-        if (job.executionState === 'running' && job.cancellationRequestedAt)
+        }
+
+        if (job.executionState === 'running' && job.cancellationRequestedAt) {
             return readView(tx, job, input.context.now);
+        }
+
         const queued = job.executionState === 'queued';
         const incurredProviderCost = queued && job.attemptCount > 0;
-        if (queued)
+        if (queued) {
             await settleCurrentAiCreditAttempt(tx, job, {
                 at: input.context.now,
                 outcome: 'stopped',
             });
+        }
+
         const [updated] = await tx
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -99,7 +107,7 @@ export async function cancel(
             )
             .returning();
 
-        if (queued && job.kind === 'document-terms')
+        if (queued && job.kind === 'document-terms') {
             await tx
                 .update(dictionaryGenerationProposalsTable)
                 .set({
@@ -123,13 +131,16 @@ export async function cancel(
                         ),
                     ),
                 );
-        if (queued && job.kind === 'document-terms')
+        }
+
+        if (queued && job.kind === 'document-terms') {
             await scheduleDocumentCleanup(
                 tx,
                 job.id,
                 input.context.now,
                 'cancelled',
             );
+        }
 
         return readView(tx, updated!, input.context.now);
     });
@@ -146,17 +157,25 @@ export async function discard(
             const job = await lockOwnedJob(tx, input.ownerId, input.jobId);
             const proposal = await lockProposal(tx, job.id);
             abort(input.context);
-            if (proposal?.reviewState === 'discarded')
+            if (proposal?.reviewState === 'discarded') {
                 return {
                     expired: false as const,
                     value: await readView(tx, job, input.context.now),
                 };
-            if (proposal?.reviewState === 'expired')
+            }
+
+            if (proposal?.reviewState === 'expired') {
                 return { expired: true as const };
-            if (!proposal || proposal.reviewState !== 'reviewable')
+            }
+
+            if (!proposal || proposal.reviewState !== 'reviewable') {
                 throw new DictionaryGenerationNotReviewableError();
-            if (proposal.documentStagedAt && !proposal.documentPublishedAt)
+            }
+
+            if (proposal.documentStagedAt && !proposal.documentPublishedAt) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.expiresAt <= input.context.now) {
                 await expireProposal(tx, job.id, input.context.now);
 
@@ -186,7 +205,9 @@ export async function discard(
         },
     );
 
-    if (result.expired) throw new DictionaryGenerationProposalExpiredError();
+    if (result.expired) {
+        throw new DictionaryGenerationProposalExpiredError();
+    }
 
     return result.value;
 }
@@ -243,8 +264,9 @@ export async function terminalizeCancelled(
             ),
         );
 
-    if (job.kind === 'document-terms')
+    if (job.kind === 'document-terms') {
         await scheduleDocumentCleanup(tx, job.id, now, 'cancelled');
+    }
 }
 
 export async function scheduleDocumentCleanup(

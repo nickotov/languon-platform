@@ -49,13 +49,16 @@ it.each(['succeeded', 'failed', 'none'] as const)(
                 onAcceptWorkspaceProposal={accepted}
             />,
         );
+
         expect(
             document.querySelector('[data-assistant-content]'),
         ).toHaveTextContent(metadata.content);
+
         if (state === 'succeeded') {
             expect(
                 screen.queryByRole('button', { name: 'Use in document' }),
             ).not.toBeInTheDocument();
+
             expect(
                 screen.queryByText('Suggested document edit'),
             ).not.toBeInTheDocument();
@@ -64,6 +67,7 @@ it.each(['succeeded', 'failed', 'none'] as const)(
                 screen.getByRole('button', { name: 'Use in document' }),
             ).toBeInTheDocument();
         }
+
         expect(accepted).not.toHaveBeenCalled();
     },
 );
@@ -101,6 +105,7 @@ it('labels a running block tool as block preparation without offering prose inse
             },
         ],
     };
+
     render(
         <TutorMessage
             message={message}
@@ -112,6 +117,7 @@ it('labels a running block tool as block preparation without offering prose inse
             onRetry={vi.fn()}
         />,
     );
+
     expect(screen.getByText(/Preparing learning blocks/u)).toBeVisible();
     expect(
         screen.queryByRole('button', { name: 'Use in document' }),

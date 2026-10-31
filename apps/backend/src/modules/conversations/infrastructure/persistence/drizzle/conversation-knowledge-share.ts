@@ -28,21 +28,29 @@ export async function readSharedConversationNote(
     if (
         source.shareKind &&
         !['knowledge', 'workbook'].includes(source.shareKind)
-    )
+    ) {
         throw conversationUnavailable();
+    }
+
     const [candidate] = await tx
         .select()
         .from(knowledgeNotesTable)
         .where(eq(knowledgeNotesTable.id, source.id));
 
-    if (!candidate) throw conversationUnavailable();
+    if (!candidate) {
+        throw conversationUnavailable();
+    }
+
     const [owner] = await tx
         .select({ status: usersTable.status })
         .from(usersTable)
         .where(eq(usersTable.id, candidate.ownerId))
         .for('share');
 
-    if (owner?.status !== 'active') throw conversationUnavailable();
+    if (owner?.status !== 'active') {
+        throw conversationUnavailable();
+    }
+
     const known = access.authority?.share;
     let share: { id: string; digest: string; version: number } | undefined;
     if (workbookSource) {
@@ -56,7 +64,10 @@ export async function readSharedConversationNote(
                 ),
             );
 
-        if (!capability) throw conversationUnavailable();
+        if (!capability) {
+            throw conversationUnavailable();
+        }
+
         const [workbook] = await tx
             .select()
             .from(knowledgeWorkbooksTable)
@@ -69,7 +80,10 @@ export async function readSharedConversationNote(
             )
             .for('share');
 
-        if (!workbook) throw conversationUnavailable();
+        if (!workbook) {
+            throw conversationUnavailable();
+        }
+
         const [live] = await tx
             .select()
             .from(knowledgeWorkbookSharesTable)
@@ -93,7 +107,10 @@ export async function readSharedConversationNote(
                 ),
             );
 
-        if (!live || !membership) throw conversationUnavailable();
+        if (!live || !membership) {
+            throw conversationUnavailable();
+        }
+
         share = {
             id: `workbook:${workbook.id}`,
             digest: live.keyDigest,
@@ -107,8 +124,14 @@ export async function readSharedConversationNote(
         .where(eq(knowledgeNotesTable.id, source.id))
         .for('share');
 
-    if (!note || note.status !== 'saved' || note.ownerId !== candidate.ownerId)
+    if (
+        !note ||
+        note.status !== 'saved' ||
+        note.ownerId !== candidate.ownerId
+    ) {
         throw conversationUnavailable();
+    }
+
     if (!workbookSource) {
         const [live] = await tx
             .select()
@@ -121,7 +144,10 @@ export async function readSharedConversationNote(
             )
             .for('share');
 
-        if (!live) throw conversationUnavailable();
+        if (!live) {
+            throw conversationUnavailable();
+        }
+
         share = {
             id: `knowledge:${source.id}`,
             digest: live.keyDigest,
@@ -139,8 +165,9 @@ export async function readSharedConversationNote(
             : !access.key ||
               !verify ||
               !(await verify(access.key, share.digest)))
-    )
+    ) {
         throw conversationUnavailable();
+    }
 
     return {
         note,

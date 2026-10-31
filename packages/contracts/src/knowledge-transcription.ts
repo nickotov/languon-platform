@@ -41,6 +41,7 @@ const transcriptText = z
             !/[\uD800-\uDFFF]/u.test(value) &&
             !value.includes('\u0000'),
     );
+
 export const KnowledgeTranscriptionResultSchema = z
     .object({
         receiptId: z.uuid(),

@@ -22,20 +22,27 @@ function AuthBoundary({
     const labels = workbookLabels(locale);
     const login = href(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     useEffect(() => {
-        if (status === 'signed-out') router.replace(login);
+        if (status === 'signed-out') {
+            router.replace(login);
+        }
     }, [status, router, login]);
-    if (status !== 'authenticated')
+
+    if (status !== 'authenticated') {
         return (
             <div>
                 <LoadingState>{labels.loading}</LoadingState>
                 <Link href={login}>{labels.signIn}</Link>
             </div>
         );
+    }
+
     return children;
 }
+
 export function WorkbookPage({ workbookId }: { workbookId?: string }) {
     const actorId = useSessionStore((state) => state.user?.id);
     const returnTo = workbookId ? `/workbooks/${workbookId}` : '/workbooks';
+
     return (
         <AuthBoundary returnTo={returnTo}>
             {workbookId ? (

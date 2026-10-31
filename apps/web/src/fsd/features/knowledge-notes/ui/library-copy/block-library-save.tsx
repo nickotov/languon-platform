@@ -19,11 +19,14 @@ export function BlockLibrarySave({
     function show() {
         setOpen(true);
     }
+
     function close() {
         setOpen(false);
     }
+
     const title =
         block.type === 'vocabulary' ? labels.saveVocabulary : labels.saveText;
+
     return (
         <>
             <Button type='button' variant='secondary' onClick={show}>

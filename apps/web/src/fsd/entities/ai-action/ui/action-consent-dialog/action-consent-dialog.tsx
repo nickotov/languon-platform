@@ -17,14 +17,19 @@ export function ActionConsentDialog({
     const { locale, href } = useI18n();
     const [now, setNow] = useState(Date.now());
     useEffect(() => {
-        if (!quote) return;
+        if (!quote) {
+            return;
+        }
+
         setNow(Date.now());
         const timer = setTimeout(
             () => setNow(Date.now()),
             Math.max(0, Date.parse(quote.expiresAt) - Date.now()),
         );
+
         return () => clearTimeout(timer);
     }, [quote]);
+
     const expired = quote !== null && Date.parse(quote.expiresAt) <= now;
     const at = Math.max(0, ['en', 'ru', 'fr', 'es'].indexOf(locale));
     const title = [
@@ -71,6 +76,7 @@ export function ActionConsentDialog({
               new Date(quote.expiresAt),
           )
         : '';
+
     return (
         <Dialog
             open={quote !== null}

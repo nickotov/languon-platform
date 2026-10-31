@@ -8,6 +8,7 @@ describe('exact public credit parser', () => {
         expect(parseCreditMilli('9007199254740.991')).toBe(9007199254740991n);
         expect(parseCreditMilli('0')).toBe(0n);
     });
+
     it.each([
         '-1',
         '01',

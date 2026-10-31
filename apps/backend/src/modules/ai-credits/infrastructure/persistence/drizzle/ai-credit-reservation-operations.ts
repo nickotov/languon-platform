@@ -245,12 +245,17 @@ export async function settleReservation(
         input.reservationId,
     );
 
-    if (!reservation) throw new AiCreditReservationStateError();
+    if (!reservation) {
+        throw new AiCreditReservationStateError();
+    }
+
     if (
         (reservation.jobKind === 'speech-generation') !==
         Boolean(input.speechOutcome)
-    )
+    ) {
         throw new AiCreditReservationStateError();
+    }
+
     if (reservation.state === 'released') {
         throw new AiCreditReservationStateError();
     }
@@ -316,7 +321,9 @@ export async function settleReservation(
                 );
 
             remaining -= settled;
-            if (remaining === 0n) break;
+            if (remaining === 0n) {
+                break;
+            }
         }
 
         if (remaining !== 0n) {
@@ -403,8 +410,14 @@ export async function releaseUndispatchedAttempt(
         input.reservationId,
     );
 
-    if (!reservation) throw new AiCreditReservationStateError();
-    if (reservation.state === 'released') return;
+    if (!reservation) {
+        throw new AiCreditReservationStateError();
+    }
+
+    if (reservation.state === 'released') {
+        return;
+    }
+
     if (reservation.state !== 'active' || reservation.dispatchedAt !== null) {
         throw new AiCreditReservationStateError();
     }

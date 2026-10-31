@@ -21,6 +21,7 @@ export function usePortraitState({
 }: PortraitQueryOptions) {
     const queryClient = useQueryClient();
     const queryKey = portraitQueryKey(ownerId);
+
     return useQuery({
         queryKey,
         queryFn: async ({ signal }) => {
@@ -28,7 +29,10 @@ export function usePortraitState({
                 portraitApi.read(token, signal),
             );
             const current = queryClient.getQueryData<PortraitState>(queryKey);
-            if (current && current.version > state.version) return current;
+            if (current && current.version > state.version) {
+                return current;
+            }
+
             return state;
         },
         enabled: enabled && ownerId !== null,

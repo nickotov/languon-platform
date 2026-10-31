@@ -196,8 +196,9 @@ export function SecuritySettings({
             !passkeySupported ||
             !capabilities?.passkeys.registration ||
             !passkeyQuery.isSuccess
-        )
+        ) {
             return;
+        }
 
         setPasskeyError(null);
 
@@ -219,8 +220,9 @@ export function SecuritySettings({
                     number: index,
                 }).toLocaleLowerCase(),
             )
-        )
+        ) {
             index += 1;
+        }
 
         const name = t('security.defaultPasskeyName', { number: index });
 
@@ -249,8 +251,9 @@ export function SecuritySettings({
             if (
                 caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required'
-            )
+            ) {
                 setPasskeyRecentAuthAction('add');
+            }
         } finally {
             setCeremonyPending(false);
         }
@@ -259,7 +262,9 @@ export function SecuritySettings({
     async function renamePasskey(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!renameTarget || renamePending) return;
+        if (!renameTarget || renamePending) {
+            return;
+        }
 
         const parsed = PasskeyNameSchema.safeParse(renameDraft);
 
@@ -299,8 +304,9 @@ export function SecuritySettings({
             if (
                 caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required'
-            )
+            ) {
                 setPasskeyRecentAuthAction('rename');
+            }
         } finally {
             setRenamePending(false);
         }
@@ -335,8 +341,9 @@ export function SecuritySettings({
             if (
                 caught instanceof AuthApiError &&
                 caught.detail.code === 'recent_authentication_required'
-            )
+            ) {
                 setPasskeyRecentAuthAction('revoke');
+            }
         } finally {
             setRevokePending(false);
         }
@@ -348,8 +355,11 @@ export function SecuritySettings({
         setLogoutPending(true);
 
         try {
-            if (scope === 'all') await signOutEverywhere();
-            else await signOutHere();
+            if (scope === 'all') {
+                await signOutEverywhere();
+            } else {
+                await signOutHere();
+            }
 
             router.replace(href('/login'));
         } catch (caught) {
@@ -863,8 +873,9 @@ export function SecuritySettings({
                         <Button
                             disabled={revokePending || !confirmRevoke}
                             onClick={() => {
-                                if (confirmRevoke)
+                                if (confirmRevoke) {
                                     void revokePasskey(confirmRevoke);
+                                }
                             }}
                             type='button'
                             variant='danger'

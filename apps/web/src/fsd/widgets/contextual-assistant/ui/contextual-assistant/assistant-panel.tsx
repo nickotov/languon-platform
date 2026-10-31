@@ -80,11 +80,18 @@ export function AssistantPanel(
     const selectionAction = canSelect ? props.onSelectFromPage : undefined;
     function foldMobileForReview() {
         if (workspace && placement && !placement.detached) {
-            if (placement.mobile) placement.setMobileTab('document');
-            else if (placement.overlay) placement.setMode('focus');
+            if (placement.mobile) {
+                placement.setMobileTab('document');
+            } else if (placement.overlay) {
+                placement.setMode('focus');
+            }
+
             return;
         }
-        if (window.matchMedia('(max-width: 1023px)').matches) props.onFold();
+
+        if (window.matchMedia('(max-width: 1023px)').matches) {
+            props.onFold();
+        }
     }
 
     function askForBlocksAgain(proposal: KnowledgeBlockProposal) {
@@ -92,8 +99,12 @@ export function AssistantPanel(
             (message) =>
                 message.role === 'user' && message.turnId === proposal.turnId,
         )?.content;
-        if (question) chat.setQuestion(question);
+
+        if (question) {
+            chat.setQuestion(question);
+        }
     }
+
     const blockProposalContext =
         workspace?.blockProposalContext && chat.id
             ? {
@@ -151,6 +162,7 @@ export function AssistantPanel(
         ) : (
             libraryPicker
         );
+
     return (
         <TutorShell
             workspace={Boolean(workspace)}

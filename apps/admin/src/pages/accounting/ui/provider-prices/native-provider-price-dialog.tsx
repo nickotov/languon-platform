@@ -13,7 +13,10 @@ export function NativeProviderPriceDialog({
 }) {
     const t = useTranslate();
     const rules = price.nativeRules;
-    if (!rules) return null;
+    if (!rules) {
+        return null;
+    }
+
     const currency = rules.currency?.code ?? 'USD';
     const items = [
         {
@@ -81,6 +84,7 @@ export function NativeProviderPriceDialog({
         label: variant.id,
         children: <NativePriceVariant variant={variant} currency={currency} />,
     }));
+
     return (
         <Modal
             open

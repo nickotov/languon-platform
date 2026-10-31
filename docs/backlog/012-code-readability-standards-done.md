@@ -44,7 +44,7 @@ behavior-preserving refactor of the tutor runner.
 ## Approved rollout
 
 The user authorized starting the staged rollout on 2026-10-31. This task owns
-standards/examples; [BL-018](018-codebase-mechanical-formatting.md) owns broad
+standards/examples; [BL-018](018-codebase-mechanical-formatting-done.md) owns broad
 mechanical normalization, and [BL-019](019-codebase-readability-refactoring.md)
 owns systematic clarity refactoring and final integrated regression checks.
 Delivery record: [code-readability-standards](../../.agent/improvements/code-readability-standards.md).

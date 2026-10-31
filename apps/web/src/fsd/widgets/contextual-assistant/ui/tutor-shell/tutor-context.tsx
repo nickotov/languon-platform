@@ -46,9 +46,11 @@ export function TutorContext({
     function saved() {
         onUseDraft(false);
     }
+
     function draft() {
         onUseDraft(true);
     }
+
     return (
         <Popover>
             <PopoverTrigger

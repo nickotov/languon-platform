@@ -27,6 +27,7 @@ const exercise = {
     generationPolicyVersion: 1,
     createdAt: '2026-10-28T00:00:00.000Z',
 };
+
 describe('independent note vocabulary source', () => {
     it('retains legacy dictionary exercises and accepts explicit note source without fictitious dictionary', () => {
         expect(SentenceExerciseSchema.safeParse(exercise).success).toBe(true);
@@ -38,6 +39,7 @@ describe('independent note vocabulary source', () => {
             }).success,
         ).toBe(true);
     });
+
     it('rejects ambiguous and absent sources and raw sharing secrets in public exercise', () => {
         expect(
             SentenceExerciseSchema.safeParse({
@@ -45,12 +47,14 @@ describe('independent note vocabulary source', () => {
                 knowledgeSource: { noteId: id, blockId },
             }).success,
         ).toBe(false);
+
         expect(
             SentenceExerciseSchema.safeParse({
                 ...exercise,
                 dictionaryId: null,
             }).success,
         ).toBe(false);
+
         expect(
             SentenceExerciseSchema.safeParse({
                 ...exercise,
@@ -59,17 +63,20 @@ describe('independent note vocabulary source', () => {
             }).success,
         ).toBe(false);
     });
+
     it('bounds request-only share capability and rejects caller-provided actor identity', () => {
         const source = { kind: 'knowledge-vocabulary', noteId: id, blockId };
         expect(
             KnowledgeVocabularyPracticeSourceSchema.safeParse(source).success,
         ).toBe(true);
+
         expect(
             KnowledgeVocabularyPracticeSourceSchema.safeParse({
                 ...source,
                 actorId: id,
             }).success,
         ).toBe(false);
+
         expect(
             KnowledgeVocabularyPracticeSourceSchema.safeParse({
                 ...source,

@@ -51,6 +51,7 @@ describe('DictionaryService', () => {
                 ],
             },
         };
+
         await service.deleteDictionaryCards(
             'access.token.value',
             '11111111-1111-4111-8111-111111111111',
@@ -58,16 +59,19 @@ describe('DictionaryService', () => {
             request,
             requestContext,
         );
+
         expect(fingerprint).toHaveBeenCalledWith({
             dictionaryId: '11111111-1111-4111-8111-111111111111',
             operation: 'delete-dictionary-cards',
             request,
         });
+
         expect(requireRecentlyAuthenticatedSession).toHaveBeenCalledWith({
             sessionId: 'session',
             userId: 'owner',
         });
     });
+
     it('rejects permanent deletion before storage when authentication is not recent', async () => {
         const deleteDictionaries = vi.fn();
         const service = new DictionaryService({
@@ -87,6 +91,7 @@ describe('DictionaryService', () => {
             },
             store: { deleteDictionaries } as never,
         });
+
         await expect(
             service.deleteDictionaries(
                 'access.token.value',
@@ -106,8 +111,10 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toBeInstanceOf(RecentAuthenticationRequiredError);
+
         expect(deleteDictionaries).not.toHaveBeenCalled();
     });
+
     it('requires a verified active principal and applies the owner limiter before storage', async () => {
         const authenticate = vi
             .fn()
@@ -136,6 +143,7 @@ describe('DictionaryService', () => {
             scope: 'owner',
             signal,
         });
+
         expect(listDictionaries).toHaveBeenCalledWith(
             expect.objectContaining({ ownerId: 'owner' }),
         );
@@ -159,6 +167,7 @@ describe('DictionaryService', () => {
             },
             store: { listDictionaries: vi.fn() } as never,
         });
+
         await expect(
             service.listDictionaries(
                 'access.token.value',
@@ -166,6 +175,7 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toMatchObject({ retryAfterSeconds: 17 });
+
         await expect(
             service.listDictionaries(
                 'access.token.value',
@@ -225,6 +235,7 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         );
+
         await vi.waitFor(() =>
             expect(authorizeDictionaryImportTarget).toHaveBeenCalledTimes(4),
         );
@@ -236,11 +247,13 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toMatchObject({ retryAfterSeconds: 1 });
+
         expect(consume).toHaveBeenCalledWith({
             key: 'owner',
             scope: 'import-preview-owner',
             signal,
         });
+
         expect(consume).toHaveBeenCalledWith({
             key: 'global',
             scope: 'import-preview-global',
@@ -267,6 +280,7 @@ describe('DictionaryService', () => {
                 findSharedCandidate: vi.fn().mockResolvedValue(null),
             } as never,
         });
+
         await expect(
             service.readShared(
                 'opaque-share-id-1234',
@@ -275,6 +289,7 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toBeInstanceOf(SharedDictionaryNotFoundError);
+
         expect(verifyShare).toHaveBeenCalledWith('wrong-key', null);
     });
 
@@ -292,6 +307,7 @@ describe('DictionaryService', () => {
                 findSharedCandidate: vi.fn().mockResolvedValue(null),
             } as never,
         });
+
         await expect(
             service.readShared(
                 'random-share-id-one',
@@ -300,6 +316,7 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toBeInstanceOf(SharedDictionaryNotFoundError);
+
         await expect(
             service.readShared(
                 'random-share-id-two',
@@ -308,21 +325,25 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toBeInstanceOf(SharedDictionaryNotFoundError);
+
         expect(consume).toHaveBeenNthCalledWith(1, {
             key: '192.0.2.10',
             scope: 'public',
             signal,
         });
+
         expect(consume).toHaveBeenNthCalledWith(2, {
             key: 'share-rate-key',
             scope: 'shared-read',
             signal,
         });
+
         expect(consume).toHaveBeenNthCalledWith(3, {
             key: '192.0.2.10',
             scope: 'public',
             signal,
         });
+
         expect(consume).toHaveBeenNthCalledWith(4, {
             key: 'share-rate-key',
             scope: 'shared-read',
@@ -341,6 +362,7 @@ describe('DictionaryService', () => {
             rateLimiter: {} as never,
             store: {} as never,
         });
+
         await expect(
             service.listDictionaries(
                 'access.token.value',
@@ -348,6 +370,7 @@ describe('DictionaryService', () => {
                 { clientAddress: '192.0.2.10', signal: controller.signal },
             ),
         ).rejects.toThrow('cancelled');
+
         expect(authenticate).not.toHaveBeenCalled();
     });
 
@@ -413,6 +436,7 @@ describe('DictionaryService', () => {
                 target: request.target,
             }),
         );
+
         expect(authorizeDictionaryImportTarget).toHaveBeenCalledWith(
             expect.objectContaining({ requireExpectedVersions: false }),
         );
@@ -468,6 +492,7 @@ describe('DictionaryService', () => {
                 requestContext,
             ),
         ).rejects.toBeInstanceOf(InvalidDictionaryRequestError);
+
         expect(enqueueImportPairs).not.toHaveBeenCalled();
     });
 
@@ -573,6 +598,7 @@ describe('DictionaryService', () => {
         expect(exported.headers['content-disposition']).toContain(
             'dictionary-7ceab60b-7416-4296-91e4-0e4a1cd35dd2.csv',
         );
+
         expect(timeout).toHaveBeenCalledWith(15 * 60_000);
         timeout.mockRestore();
     });

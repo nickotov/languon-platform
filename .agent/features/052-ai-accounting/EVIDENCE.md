@@ -6,17 +6,17 @@ review, final build refresh and remaining feature gates are outstanding.
 
 ## Acceptance coverage
 
-| Criterion | Current proof | Remaining |
-| --- | --- | --- |
-| AC-1 | Exact pricing/parser tests; migrations through0106; published cached-rate propagation and worst-case reservation25 focused tests | Final independent review |
-| AC-2–3 | Actual worker11; conversation action16; preparation21+restricted role1+composed2; legacy sentence1/document2; portrait32; expiry preserves charges | Final independent review |
-| AC-4 | Free portrait browser, policy/quota integration, shared operator controls; actual quota mutation/cleanup denial proof | Final review of exemptions |
-| AC-5 | Capacity14; compact wallet/capacity projections; maintenance expiry9 and both entrypoints pass | Independent completion review |
-| AC-6 | Durable store/source/lease tests; learner browser journeys with quote, Stop, Continue and exact billing; Stop lock regression37/37 | Independent completion review |
-| AC-7 | Financial9; speech49; actual purge coordinator1; seven targeted scheduled-deletion checks; earlier unchanged admin journey | Final financial/privacy review |
-| AC-8 | Real Redis burst/outage proofs; checked worker dispatch, fenced financial recovery and bounded speech quota cleanup | Final security review |
-| AC-9 | Final source-stable real Hono/Redis/SSE load:300/300,100 streams,1m ledger rows, loaded p95 94.457ms | Independent completion review |
-| AC-10 | ADR0045, operations guide,28 guide mappings, learner/admin browser journeys 8/8; web build/typecheck/lint, backend typecheck/lint/build, clean development DB cutover | Local feature squash merge |
+| Criterion | Current proof                                                                                                                                                         | Remaining                      |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| AC-1      | Exact pricing/parser tests; migrations through0106; published cached-rate propagation and worst-case reservation25 focused tests                                      | Final independent review       |
+| AC-2–3    | Actual worker11; conversation action16; preparation21+restricted role1+composed2; legacy sentence1/document2; portrait32; expiry preserves charges                    | Final independent review       |
+| AC-4      | Free portrait browser, policy/quota integration, shared operator controls; actual quota mutation/cleanup denial proof                                                 | Final review of exemptions     |
+| AC-5      | Capacity14; compact wallet/capacity projections; maintenance expiry9 and both entrypoints pass                                                                        | Independent completion review  |
+| AC-6      | Durable store/source/lease tests; learner browser journeys with quote, Stop, Continue and exact billing; Stop lock regression37/37                                    | Independent completion review  |
+| AC-7      | Financial9; speech49; actual purge coordinator1; seven targeted scheduled-deletion checks; earlier unchanged admin journey                                            | Final financial/privacy review |
+| AC-8      | Real Redis burst/outage proofs; checked worker dispatch, fenced financial recovery and bounded speech quota cleanup                                                   | Final security review          |
+| AC-9      | Final source-stable real Hono/Redis/SSE load:300/300,100 streams,1m ledger rows, loaded p95 94.457ms                                                                  | Independent completion review  |
+| AC-10     | ADR0045, operations guide,28 guide mappings, learner/admin browser journeys 8/8; web build/typecheck/lint, backend typecheck/lint/build, clean development DB cutover | Local feature squash merge     |
 
 Final supporting evidence: [records/speech](evidence/accounting-records-speech.md),
 [legacy generation](evidence/legacy-generation.md),
@@ -215,7 +215,6 @@ notice, real202 and SQLoperator-fundedsettledaction charge0 plus independent
 140USDmicro expense. See frontend-followup forsourcehashes; newremediation will
 invalidate relevant admission/response paths andrequires affectedbrowserrerun.
 
-
 ### E-FINAL-REMEDIATION — final functional verification checkpoint
 
 The latest source is identified by the supporting ownership manifests and final
@@ -281,7 +280,6 @@ The accepted 100ms target is not credible for this topology without a safe
 capacity-lock redesign. A 200ms threshold alone would not address the observed
 seconds-long queueing or capacity rejections.
 
-
 ### E-AC9-LOCK-REDESIGN — Final accepted workload
 
 The user explicitly chose to preserve the100ms p95 acceptance target and
@@ -329,10 +327,10 @@ limit; all request paths release the leases.
 Verification passed on the isolated disposable test infrastructure:
 
 - PostgreSQL conversation-store and action-accounting suites: 55/55, including
-deterministic Claim/Stop and operator/projection lock-order regressions.
+  deterministic Claim/Stop and operator/projection lock-order regressions.
 - Redis concurrent-request suite: 6/6 across two clients.
 - Conversation service/route unit suites: 9/9, including concurrent POST
-rejection and lease release on success and failure.
+  rejection and lease release on success and failure.
 - Backend typecheck, scoped ESLint and `git diff --check` passed.
 
 Fresh AC9 performance artifact:

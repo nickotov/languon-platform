@@ -27,6 +27,7 @@ const rules: ProviderNativePricingRules = {
         },
     ],
 };
+
 describe('native audio-duration contract', () => {
     it('accepts integer milliseconds without pretending they are tokens or characters', () => {
         expect(
@@ -35,23 +36,29 @@ describe('native audio-duration contract', () => {
                 requests: 1,
             }),
         ).toEqual({ audioInputMilliseconds: 1234, requests: 1 });
+
         expect(nativeProviderPricingMatchesMeter('audio-duration', rules)).toBe(
             true,
         );
+
         for (const meter of [
             'text-tokens',
             'speech-characters',
             'speech-tokens',
-        ])
+        ]) {
             expect(nativeProviderPricingMatchesMeter(meter, rules)).toBe(false);
-        for (const value of [-1, 0.1, Number.MAX_SAFE_INTEGER + 1, Infinity])
+        }
+
+        for (const value of [-1, 0.1, Number.MAX_SAFE_INTEGER + 1, Infinity]) {
             expect(
                 ProviderNativeUsageSchema.safeParse({
                     audioInputMilliseconds: value,
                     requests: 1,
                 }).success,
             ).toBe(false);
+        }
     });
+
     it('converts provider decimal seconds exactly and never rounds missing precision', () => {
         expect(providerSecondsToAudioMilliseconds(1.001)).toBe(1001);
         expect(providerSecondsToAudioMilliseconds(0)).toBe(0);
@@ -64,6 +71,7 @@ describe('native audio-duration contract', () => {
             providerSecondsToAudioMilliseconds(Number.MAX_SAFE_INTEGER),
         ).toBeNull();
     });
+
     it('keeps reservation media bounds distinct from provider observation evidence', () => {
         expect(
             ProviderAudioDurationBoundSchema.safeParse({
@@ -71,12 +79,14 @@ describe('native audio-duration contract', () => {
                 maximumAudioInputMilliseconds: 60000,
             }).success,
         ).toBe(true);
+
         expect(
             ProviderAudioDurationObservationSchema.safeParse({
                 provenance: 'verified-media-bound',
                 audioInputMilliseconds: 60000,
             }).success,
         ).toBe(false);
+
         expect(
             ProviderAudioDurationObservationSchema.safeParse({
                 provenance: 'provider-reported',
@@ -84,6 +94,7 @@ describe('native audio-duration contract', () => {
             }).success,
         ).toBe(true);
     });
+
     it('allows native duration prices but rejects legacy flattened character rates', () => {
         const publication = {
             providerId: 'fixture-transcription',
@@ -101,9 +112,11 @@ describe('native audio-duration contract', () => {
             reason: 'Deterministic test price',
             expectedVersion: 0,
         };
+
         expect(
             ProviderPricePublishRequestSchema.safeParse(publication).success,
         ).toBe(true);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...publication,
@@ -111,6 +124,7 @@ describe('native audio-duration contract', () => {
                 usdPer1000Characters: '0.0045',
             }).success,
         ).toBe(false);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...publication,

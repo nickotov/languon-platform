@@ -86,7 +86,7 @@ feature-name/
 ## Keep components readable
 
 Apply the shared [readability standards](../../../docs/code-readability.md) for
-grouping, predicates, comments, extraction and staged mechanical lint enrollment.
+grouping, predicates, comments, extraction and mechanical lint enforcement.
 The app-specific component/hook conventions below remain authoritative.
 
 Treat 250 lines as a review threshold for an authored component or hook file,

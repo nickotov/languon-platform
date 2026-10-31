@@ -21,6 +21,7 @@ export function blockFieldTarget(
     const entry = /^entries\.(\d+)\.(translation|exampleTranslation)$/u.exec(
         name,
     );
+
     if (kind === 'vocabulary' && entry) {
         const field = entry[2];
         candidate = {
@@ -33,14 +34,18 @@ export function blockFieldTarget(
             ),
         };
     }
+
     const segment = /^segments\.(\d+)\.translation$/u.exec(name);
-    if (kind === 'bilingual-text' && segment)
+    if (kind === 'bilingual-text' && segment) {
         candidate = {
             ...common,
             kind,
             segmentId: read(`segments.${segment[1]}.id`),
             sourceText: read(`segments.${segment[1]}.text`),
         };
+    }
+
     const parsed = KnowledgeBlockFieldTargetSchema.safeParse(candidate);
+
     return parsed.success ? parsed.data : null;
 }

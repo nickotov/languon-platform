@@ -129,6 +129,7 @@ run('sentence library persistence', () => {
         input: SentenceGenerationInput,
     ): SentenceGeneratedContent {
         const target = input.candidates[0]!;
+
         return {
             sourceText: target.sourceText,
             referenceTranslation: target.targetText,
@@ -163,8 +164,12 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(response.kind).toBe('job');
-        if (response.kind !== 'job') throw new Error('Expected generation job');
+        if (response.kind !== 'job') {
+            throw new Error('Expected generation job');
+        }
+
         const job = await worker.claimNext(
             {
                 workerId: 'sentence-library-test',
@@ -184,11 +189,15 @@ run('sentence library persistence', () => {
             },
             context(),
         );
-        if (!job || job.kind !== 'sentence-generation')
+
+        if (!job || job.kind !== 'sentence-generation') {
             throw new Error('Expected claimed generation job');
+        }
+
         expect(await worker.markDispatched(job.lease, context())).toBe(
             'dispatch',
         );
+
         expect(
             await worker.completeGeneration(
                 job.lease,
@@ -199,13 +208,17 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).toBe('committed');
+
         const result = await practice.getJob(
             ownerAccess(),
             job.lease.jobId,
             context(),
         );
-        if (result.result?.kind !== 'exercise')
+
+        if (result.result?.kind !== 'exercise') {
             throw new Error('Expected generated exercise');
+        }
+
         expect(
             (
                 await db
@@ -219,6 +232,7 @@ run('sentence library persistence', () => {
                     )
             )[0]?.creatorId,
         ).toBe(owner);
+
         return result.result.exercise.id;
     }
 
@@ -249,10 +263,12 @@ run('sentence library persistence', () => {
             { id: reader, status: 'active' },
             { id: administrator, status: 'active' },
         ]);
+
         await db.insert(aiCreditAccountsTable).values([
             { userId: owner, mode: 'unlimited' },
             { userId: reader, mode: 'unlimited' },
         ]);
+
         await db.insert(dictionariesTable).values({
             id: dictionaryId,
             ownerId: owner,
@@ -267,6 +283,7 @@ run('sentence library persistence', () => {
             createdAt: context().now,
             updatedAt: context().now,
         });
+
         await db.insert(dictionarySettingsTable).values({ dictionaryId });
         await db.insert(dictionaryCardsTable).values([
             {
@@ -288,6 +305,7 @@ run('sentence library persistence', () => {
                 sortKey: 2n,
             },
         ]);
+
         const model = textAiModelCatalog[0]!;
         const snapshot: TextAiExecutionSnapshot = {
             adapterRevision: model.adapterRevision,
@@ -315,12 +333,14 @@ run('sentence library persistence', () => {
                 'sentence-check:v1',
             ],
         };
+
         await db.insert(dictionaryAiConfigurationRevisionsTable).values({
             id: executionRevisionId,
             createdByUserId: owner,
             version: 1,
             catalogSnapshot: snapshot,
         });
+
         practice = new DrizzleSentencePracticeStore(db, {
             resolvePreparedBatch: (tx, access, id, ctx) =>
                 preparation.resolvePreparedBatch(tx, access, id, ctx),
@@ -331,11 +351,13 @@ run('sentence library persistence', () => {
                 selectionVersion: 1,
             }),
         });
+
         library = new DrizzleSentenceLibraryStore(db);
         administratorLibrary = new DrizzleSentenceLibraryStore(db, {
             authorizeAdmin: async () => undefined,
             onAdminMutation: async () => undefined,
         });
+
         preparation = new DrizzleSentencePreparationStore(db, {
             authorizeAction: practice.preparePreparationAction.bind(practice),
             admitGeneration: practice.admitPreparationGeneration.bind(practice),
@@ -349,13 +371,16 @@ run('sentence library persistence', () => {
             activeLibraryQuery,
             context(),
         );
+
         expect(ownerList.items.map((item) => item.exerciseId)).toContain(
             exerciseId,
         );
+
         expect(ownerList.items[0]).not.toHaveProperty('creatorArchived');
         const item = ownerList.items.find(
             (entry) => entry.exerciseId === exerciseId,
         )!;
+
         await library.mutate(
             ownerAccess(),
             {
@@ -368,10 +393,12 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(
             (await library.list(ownerAccess(), activeLibraryQuery, context()))
                 .items,
         ).toHaveLength(0);
+
         expect(
             (
                 await library.list(
@@ -381,6 +408,7 @@ run('sentence library persistence', () => {
                 )
             ).items.map((entry) => entry.exerciseId),
         ).toContain(exerciseId);
+
         expect(
             await library.detail(ownerAccess(), exerciseId, context()),
         ).toMatchObject({ item: { exerciseId } });
@@ -396,6 +424,7 @@ run('sentence library persistence', () => {
                 context(),
             )
         ).items.find((entry) => entry.exerciseId === exerciseId)!;
+
         expect(adminItem).toMatchObject({ creatorArchived: true });
         await administratorLibrary.adminMutate(
             adminScope(),
@@ -415,6 +444,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await expect(
             practice.next(
                 readerAccess(),
@@ -429,10 +459,12 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).resolves.toMatchObject({ kind: 'empty' });
+
         const exposureBefore = await db
             .select()
             .from(sentenceExposuresTable)
             .where(eq(sentenceExposuresTable.exerciseId, exerciseId));
+
         expect(exposureBefore).toHaveLength(1);
     });
 
@@ -450,6 +482,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(snapshot.matchingCount).toBe(1);
         const operationId = randomUUID();
         const input = {
@@ -460,18 +493,21 @@ run('sentence library persistence', () => {
                 snapshotToken: snapshot.snapshotToken,
             },
         };
+
         await expect(
             library.mutate(ownerAccess(), input, context()),
         ).resolves.toEqual({
             operationId,
             affectedCount: 1,
         });
+
         await expect(
             library.mutate(ownerAccess(), input, context()),
         ).resolves.toEqual({
             operationId,
             affectedCount: 1,
         });
+
         await expect(
             library.mutate(
                 ownerAccess(),
@@ -479,6 +515,7 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).rejects.toMatchObject({ reason: 'operation_conflict' });
+
         expect(
             (
                 await library.list(
@@ -521,6 +558,7 @@ run('sentence library persistence', () => {
         const ownerItem = (
             await library.list(ownerAccess(), activeLibraryQuery, context())
         ).items.find((item) => item.exerciseId === exerciseId)!;
+
         await library.mutate(
             ownerAccess(),
             {
@@ -533,6 +571,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         const adminItem = (
             await administratorLibrary.adminList(
                 adminScope(),
@@ -547,6 +586,7 @@ run('sentence library persistence', () => {
         const reservationsBefore = await db
             .select()
             .from(aiCreditReservationsTable);
+
         await administratorLibrary.adminMutate(
             adminScope(),
             {
@@ -560,6 +600,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(await db.select().from(sentenceExercisesTable)).toHaveLength(0);
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
         expect(await db.select().from(aiCreditReservationsTable)).toEqual(
@@ -572,6 +613,7 @@ run('sentence library persistence', () => {
         const ownerItem = (
             await library.list(ownerAccess(), activeLibraryQuery, context())
         ).items[0]!;
+
         await practice.enqueueCheck(
             ownerAccess(),
             exerciseId,
@@ -584,6 +626,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await library.mutate(
             ownerAccess(),
             {
@@ -596,6 +639,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         const adminItem = (
             await administratorLibrary.adminList(
                 adminScope(),
@@ -607,6 +651,7 @@ run('sentence library persistence', () => {
                 context(),
             )
         ).items[0]!;
+
         await expect(
             administratorLibrary.adminMutate(
                 adminScope(),
@@ -636,6 +681,7 @@ run('sentence library persistence', () => {
             authorship: 'human' as const,
             sortKey: BigInt(index + 3),
         }));
+
         await db.insert(dictionaryCardsTable).values(extraEntries);
         const started = await preparation.start(
             ownerAccess(),
@@ -650,6 +696,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(started.batchCount).toBe(2);
         expect(started.initialBatch?.entryIds).toEqual([
             firstEntryId,
@@ -662,6 +709,7 @@ run('sentence library persistence', () => {
             started.id,
             context(),
         );
+
         expect(admitted.state).toBe('running');
         expect(admitted.activeJobId).not.toBeNull();
 
@@ -673,6 +721,7 @@ run('sentence library persistence', () => {
             started.id,
             context(),
         );
+
         expect(afterSecondTick.activeJobId).toBe(admitted.activeJobId);
 
         const job = await worker.claimNext(
@@ -694,8 +743,11 @@ run('sentence library persistence', () => {
             },
             context(),
         );
-        if (!job || job.kind !== 'sentence-generation')
+
+        if (!job || job.kind !== 'sentence-generation') {
             throw new Error('Expected preparation generation job');
+        }
+
         expect(job.format).toMatch(/^sentence-preparation:v[12]$/);
         await worker.markDispatched(job.lease, context());
         expect(
@@ -708,15 +760,18 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).toBe('committed');
+
         expect(await preparation.tick(context())).toBe(true);
         const progressed = await preparation.get(
             ownerAccess(),
             started.id,
             context(),
         );
+
         expect(progressed.preparedCount).toBe(1);
         expect(await db.select().from(sentenceExposuresTable)).toHaveLength(0);
     });
+
     it('completed preparation projects stale after a selected word changes', async () => {
         await createSharedExercise();
         const started = await preparation.start(
@@ -729,10 +784,15 @@ run('sentence library persistence', () => {
             },
             context(),
         );
-        for (let i = 0; i < 4; i++) await preparation.tick(context());
+
+        for (let i = 0; i < 4; i++) {
+            await preparation.tick(context());
+        }
+
         expect(
             (await preparation.get(ownerAccess(), started.id, context())).state,
         ).toBe('completed');
+
         await db
             .update(dictionaryCardsTable)
             .set({
@@ -741,16 +801,19 @@ run('sentence library persistence', () => {
                 normalizedSource: 'changed',
             })
             .where(eq(dictionaryCardsTable.id, firstEntryId));
+
         const stale = await preparation.get(
             ownerAccess(),
             started.id,
             context(),
         );
+
         expect(stale).toMatchObject({
             state: 'paused',
             pauseReason: 'stale',
             preparedCount: 0,
         });
+
         await expect(
             preparation.batch(
                 ownerAccess(),
@@ -759,6 +822,7 @@ run('sentence library persistence', () => {
             ),
         ).rejects.toThrow('stale_content');
     });
+
     it('Stop cancels a running child, retains earlier usable coverage, and requires explicit Continue', async () => {
         const started = await preparation.start(
             ownerAccess(),
@@ -787,10 +851,13 @@ run('sentence library persistence', () => {
                 },
                 context(),
             );
+
         await preparation.tick(context());
         const first = await claim();
-        if (!first || first.kind !== 'sentence-generation')
+        if (!first || first.kind !== 'sentence-generation') {
             throw new Error('Expected first usable child');
+        }
+
         await worker.markDispatched(first.lease, context());
         await worker.completeGeneration(
             first.lease,
@@ -800,11 +867,14 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await preparation.tick(context());
         await preparation.tick(context());
         const second = await claim();
-        if (!second || second.kind !== 'sentence-generation')
+        if (!second || second.kind !== 'sentence-generation') {
             throw new Error('Expected next running child');
+        }
+
         await worker.markDispatched(second.lease, context());
         const stopped = await preparation.command(
             ownerAccess(),
@@ -812,6 +882,7 @@ run('sentence library persistence', () => {
             { operationId: randomUUID(), action: 'stop' },
             context(),
         );
+
         expect(stopped.state).toBe('stopping');
         expect(
             (
@@ -821,6 +892,7 @@ run('sentence library persistence', () => {
                     .where(eq(sentenceAiJobsTable.id, second.lease.jobId))
             )[0]!.cancellationRequestedAt,
         ).not.toBeNull();
+
         await expect(
             preparation.command(
                 ownerAccess(),
@@ -829,6 +901,7 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).rejects.toThrow('stale_content');
+
         expect(
             await worker.completeGeneration(
                 second.lease,
@@ -839,12 +912,14 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).toBe('terminalized');
+
         await preparation.tick(context());
         const paused = await preparation.get(
             ownerAccess(),
             started.id,
             context(),
         );
+
         expect(paused).toMatchObject({
             state: 'paused',
             pauseReason: 'user',
@@ -852,6 +927,7 @@ run('sentence library persistence', () => {
             activeJobId: null,
             requiresNewBudget: true,
         });
+
         await expect(
             preparation.command(
                 ownerAccess(),
@@ -860,22 +936,26 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).rejects.toThrow();
+
         await preparation.command(
             ownerAccess(),
             started.id,
             { operationId: randomUUID(), action: 'continue' },
             context(),
         );
+
         await preparation.tick(context());
         const continued = await preparation.get(
             ownerAccess(),
             started.id,
             context(),
         );
+
         expect(continued.preparedCount).toBe(1);
         expect(continued.activeJobId).not.toBe(second.lease.jobId);
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(3);
     });
+
     it('discovers the second bounded preparation round and never generates during partial practice', async () => {
         const extra = Array.from({ length: 99 }, (_, index) => ({
             id: randomUUID(),
@@ -886,6 +966,7 @@ run('sentence library persistence', () => {
             authorship: 'human' as const,
             sortKey: BigInt(index + 3),
         }));
+
         await db.insert(dictionaryCardsTable).values(extra);
         const started = await preparation.start(
             ownerAccess(),
@@ -903,6 +984,7 @@ run('sentence library persistence', () => {
             { offset: 0, limit: 1 },
             context(),
         );
+
         expect(first.items[0]!.entryIds).toHaveLength(100);
         expect(first.nextOffset).toBe(1);
         const second = await preparation.listBatches(
@@ -911,6 +993,7 @@ run('sentence library persistence', () => {
             { offset: first.nextOffset!, limit: 1 },
             context(),
         );
+
         expect(second.items[0]!.entryIds).toHaveLength(1);
         expect(second.nextOffset).toBeNull();
         const result = await practice.next(
@@ -926,9 +1009,11 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(result.kind).toBe('empty');
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
     });
+
     it('bounds retained snapshots and preserves old resumable preparations', async () => {
         for (let i = 0; i < 20; i++) {
             const started = await preparation.start(
@@ -941,6 +1026,7 @@ run('sentence library persistence', () => {
                 },
                 context(),
             );
+
             await db
                 .update(sentencePreparationsTable)
                 .set({
@@ -950,10 +1036,12 @@ run('sentence library persistence', () => {
                 })
                 .where(eq(sentencePreparationsTable.id, started.id));
         }
+
         expect(await preparation.tick(context())).toBe(false);
         expect(
             await db.select().from(sentencePreparationBatchesTable),
         ).toHaveLength(20);
+
         await expect(
             preparation.start(
                 ownerAccess(),
@@ -967,6 +1055,7 @@ run('sentence library persistence', () => {
             ),
         ).rejects.toThrow('temporarily unavailable');
     });
+
     it('expires settled inactive snapshots while preserving operation replay identity', async () => {
         const request = {
             operationId: randomUUID(),
@@ -979,6 +1068,7 @@ run('sentence library persistence', () => {
             request,
             context(),
         );
+
         await db
             .update(sentencePreparationsTable)
             .set({
@@ -986,15 +1076,18 @@ run('sentence library persistence', () => {
                 updatedAt: new Date('2026-09-01T00:00:00Z'),
             })
             .where(eq(sentencePreparationsTable.id, started.id));
+
         expect(await preparation.tick(context())).toBe(true);
         expect(
             await db.select().from(sentencePreparationBatchesTable),
         ).toHaveLength(0);
+
         const replay = await preparation.start(
             ownerAccess(),
             request,
             context(),
         );
+
         expect(replay).toMatchObject({
             id: started.id,
             state: 'paused',
@@ -1002,8 +1095,10 @@ run('sentence library persistence', () => {
             batchCount: 0,
             activeJobId: null,
         });
+
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
     });
+
     it('scans saved examples in bounded durable pages without prematurely generating', async () => {
         const originalId = await createSharedExercise();
         const [original] = await db
@@ -1012,6 +1107,7 @@ run('sentence library persistence', () => {
             .where(eq(sentenceExercisesTable.id, originalId));
         const duplicates = Array.from({ length: 100 }, (_, index) => {
             const id = randomUUID();
+
             return {
                 ...original!,
                 id,
@@ -1019,11 +1115,13 @@ run('sentence library persistence', () => {
                 createdAt: new Date(context().now.getTime() + index + 1),
             };
         });
+
         await db.insert(sentenceExercisesTable).values(duplicates);
         const [originalEntry] = await db
             .select()
             .from(sentenceExerciseEntriesTable)
             .where(eq(sentenceExerciseEntriesTable.exerciseId, originalId));
+
         await db.insert(sentenceExerciseEntriesTable).values(
             duplicates.map((exercise) => ({
                 ...originalEntry!,
@@ -1033,17 +1131,21 @@ run('sentence library persistence', () => {
                 learningVersion: 1,
             })),
         );
+
         const laterId = await createSharedExercise(secondEntryId);
         await db
             .update(sentenceExercisesTable)
             .set({ createdAt: new Date(context().now.getTime() + 1000) })
             .where(eq(sentenceExercisesTable.id, laterId));
+
         expect(
             SentenceExerciseSchema.safeParse(original!.publicContent).success,
         ).toBe(true);
+
         expect(
             await db.transaction((tx) => isSentenceCurrent(tx, originalId)),
         ).toBe(true);
+
         const started = await preparation.start(
             ownerAccess(),
             {
@@ -1054,17 +1156,20 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await preparation.tick(context());
         const first = await preparation.get(
             ownerAccess(),
             started.id,
             context(),
         );
+
         expect(first).toMatchObject({ preparedCount: 1, activeJobId: null });
         expect(
             (await db.select().from(sentencePreparationBatchesTable))[0]!
                 .scanCursor,
         ).not.toBeNull();
+
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(2);
         await preparation.tick(context());
         const second = await preparation.get(
@@ -1072,27 +1177,33 @@ run('sentence library persistence', () => {
             started.id,
             context(),
         );
+
         expect(second).toMatchObject({ preparedCount: 2, activeJobId: null });
         expect(second.initialBatch!.exerciseIds).toContain(laterId);
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(2);
     });
+
     it('rejects an unfunded parent before background work and creates one hold after an explicit funded Start', async () => {
         await db
             .update(aiCreditAccountsTable)
             .set({ mode: 'limited', unlimitedUntil: null })
             .where(eq(aiCreditAccountsTable.userId, owner));
+
         const input = {
             operationId: randomUUID(),
             direction: 'source-to-target' as const,
             mode: 'new-only' as const,
             initialRoundScope: { type: 'all' as const },
         };
+
         await expect(
             preparation.start(ownerAccess(), input, context()),
         ).rejects.toThrow();
+
         expect(await db.select().from(sentencePreparationsTable)).toHaveLength(
             0,
         );
+
         expect(await db.select().from(aiCreditActionsTable)).toHaveLength(0);
         await db.insert(aiCreditGrantsTable).values({
             id: randomUUID(),
@@ -1102,11 +1213,13 @@ run('sentence library persistence', () => {
             sourceReference: 'synthetic-parent-budget',
             createdAt: context().now,
         });
+
         const started = await preparation.start(
             ownerAccess(),
             input,
             context(),
         );
+
         await preparation.tick(context());
         await preparation.tick(context());
         const parent = await db.select().from(aiCreditActionsTable);
@@ -1119,6 +1232,7 @@ run('sentence library persistence', () => {
                 .billing?.state,
         ).toBe('held');
     });
+
     it('closes an idle parent after account lifecycle cancellation before allowing private erasure', async () => {
         await preparation.start(
             ownerAccess(),
@@ -1130,34 +1244,43 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         const scope = {
             learnerId: owner,
             dictionaryIds: [dictionaryId],
             accountPurge: true,
         };
+
         await db.transaction(async (tx) => {
             await tx.execute(
                 sql`select pg_advisory_xact_lock(${textAiCapacityLock})`,
             );
+
             await requestSentenceCancellation(tx, {
                 ...scope,
                 now: context().now,
             });
+
             await tx
                 .update(usersTable)
                 .set({ status: 'deletion_pending' })
                 .where(eq(usersTable.id, owner));
+
             expect(await sentenceDeletionBusy(tx, scope)).toBe(true);
         });
+
         await preparation.tick(context());
         expect((await db.select().from(aiCreditActionsTable))[0]).toMatchObject(
             { state: 'settled', outcome: 'failure', chargedMilli: 0n },
         );
+
         expect(
             await db.transaction((tx) => sentenceDeletionBusy(tx, scope)),
         ).toBe(false);
+
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
     });
+
     it('recovers an expired paused parent without refreshing its authorization', async () => {
         const started = await preparation.start(
             ownerAccess(),
@@ -1169,20 +1292,24 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await db
             .update(sentencePreparationsTable)
             .set({ state: 'paused', pauseReason: 'capacity' })
             .where(eq(sentencePreparationsTable.id, started.id));
+
         await preparation.tick({
             ...context(),
             now: new Date(context().now.getTime() + 16 * 60000),
         });
+
         const [parent] = await db.select().from(aiCreditActionsTable);
         expect(parent).toMatchObject({
             state: 'settled',
             outcome: 'failure',
             chargedMilli: 0n,
         });
+
         expect(
             await preparation.get(ownerAccess(), started.id, context()),
         ).toMatchObject({
@@ -1190,13 +1317,16 @@ run('sentence library persistence', () => {
             pauseReason: 'budget',
             requiresNewBudget: true,
         });
+
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
     });
+
     it('shares the single safe automatic retry across all preparation children', async () => {
         await db
             .update(aiCreditAccountsTable)
             .set({ mode: 'limited', unlimitedUntil: null })
             .where(eq(aiCreditAccountsTable.userId, owner));
+
         await db.insert(aiCreditGrantsTable).values({
             id: randomUUID(),
             ownerId: owner,
@@ -1205,6 +1335,7 @@ run('sentence library persistence', () => {
             sourceReference: 'synthetic-parent-retry',
             createdAt: context().now,
         });
+
         const started = await preparation.start(
             ownerAccess(),
             {
@@ -1232,10 +1363,13 @@ run('sentence library persistence', () => {
                 },
                 context(),
             );
+
         await preparation.tick(context());
         const first = await claim();
-        if (!first || first.kind !== 'sentence-generation')
+        if (!first || first.kind !== 'sentence-generation') {
             throw new Error('Expected first child');
+        }
+
         await worker.markDispatched(first.lease, context());
         await worker.fail(
             first.lease,
@@ -1246,9 +1380,12 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         const retry = await claim();
-        if (!retry || retry.kind !== 'sentence-generation')
+        if (!retry || retry.kind !== 'sentence-generation') {
             throw new Error('Expected single safe retry');
+        }
+
         expect(retry.lease.jobId).toBe(first.lease.jobId);
         expect(retry.lease.attempt).toBe(2);
         await worker.markDispatched(retry.lease, context());
@@ -1260,11 +1397,14 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await preparation.tick(context());
         await preparation.tick(context());
         const next = await claim();
-        if (!next || next.kind !== 'sentence-generation')
+        if (!next || next.kind !== 'sentence-generation') {
             throw new Error('Expected another necessary child');
+        }
+
         expect(
             (
                 await db
@@ -1273,6 +1413,7 @@ run('sentence library persistence', () => {
                     .where(eq(sentenceAiJobsTable.id, next.lease.jobId))
             )[0]!.maxAttempts,
         ).toBe(1);
+
         await worker.markDispatched(next.lease, context());
         await worker.fail(
             next.lease,
@@ -1283,6 +1424,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(await claim()).toBeNull();
         await preparation.tick(context());
         const [settled] = await db.select().from(aiCreditActionsTable);
@@ -1291,14 +1433,17 @@ run('sentence library persistence', () => {
             outcome: 'success',
             chargedMilli: 1n,
         });
+
         expect(
             await db.select().from(aiCreditActionAttemptsTable),
         ).toHaveLength(3);
+
         expect(
             (await preparation.get(ownerAccess(), started.id, context()))
                 .requiresNewBudget,
         ).toBe(true);
     });
+
     it('keeps multiple successful batches within one pinned parent and rejects a stale coordinator fence', async () => {
         const started = await preparation.start(
             ownerAccess(),
@@ -1329,8 +1474,11 @@ run('sentence library persistence', () => {
                 },
                 context(),
             );
-            if (!child || child.kind !== 'sentence-generation')
+
+            if (!child || child.kind !== 'sentence-generation') {
                 throw new Error('Expected another authorized child');
+            }
+
             await worker.markDispatched(child.lease, context());
             await worker.completeGeneration(
                 child.lease,
@@ -1340,16 +1488,20 @@ run('sentence library persistence', () => {
                 },
                 context(),
             );
+
             await preparation.tick(context());
         }
+
         await preparation.tick(context());
         expect(await db.select().from(aiCreditActionsTable)).toHaveLength(1);
         expect((await db.select().from(aiCreditActionsTable))[0]).toMatchObject(
             { state: 'settled', outcome: 'success' },
         );
+
         expect(
             await db.select().from(aiCreditActionAttemptsTable),
         ).toHaveLength(2);
+
         const childRows = await db.select().from(sentenceAiJobsTable);
         expect(childRows).toHaveLength(2);
         expect(
@@ -1362,17 +1514,20 @@ run('sentence library persistence', () => {
                     ).actionParentId === parent!.id,
             ),
         ).toBe(true);
+
         const [batch] = await db.select().from(sentencePreparationBatchesTable);
         await expect(
             db.execute(
                 sql`select languon_admit_sentence_preparation_child(${started.id}::uuid,${batch!.id}::uuid,0::bigint,${context().now.toISOString()}::timestamptz)`,
             ),
         ).rejects.toThrow();
+
         expect(
             (await preparation.get(ownerAccess(), started.id, context()))
                 .preparedCount,
         ).toBe(2);
     });
+
     it('shares one parent across batches, pauses at its total output limit, and requires explicit Continue', async () => {
         const started = await preparation.start(
             ownerAccess(),
@@ -1384,6 +1539,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await preparation.tick(context());
         const [parent] = await db.select().from(aiCreditActionsTable);
         const claimed = await worker.claimNext(
@@ -1402,8 +1558,11 @@ run('sentence library persistence', () => {
             },
             context(),
         );
-        if (!claimed || claimed.kind !== 'sentence-generation')
+
+        if (!claimed || claimed.kind !== 'sentence-generation') {
             throw new Error('Expected pinned preparation child');
+        }
+
         await worker.markDispatched(claimed.lease, context());
         await worker.completeGeneration(
             claimed.lease,
@@ -1413,6 +1572,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await preparation.tick(context());
         await preparation.tick(context());
         const paused = await preparation.get(
@@ -1420,6 +1580,7 @@ run('sentence library persistence', () => {
             started.id,
             context(),
         );
+
         expect(paused).toMatchObject({
             state: 'paused',
             pauseReason: 'budget',
@@ -1427,11 +1588,13 @@ run('sentence library persistence', () => {
             remainingOutputTokens: 0,
             preparedCount: 1,
         });
+
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(1);
         expect(await db.select().from(aiCreditActionsTable)).toHaveLength(1);
         expect(
             await db.select().from(aiCreditActionAttemptsTable),
         ).toHaveLength(1);
+
         await expect(
             preparation.command(
                 ownerAccess(),
@@ -1440,27 +1603,32 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).rejects.toThrow();
+
         const continuation = {
             operationId: randomUUID(),
             action: 'continue' as const,
         };
+
         await preparation.command(
             ownerAccess(),
             started.id,
             continuation,
             context(),
         );
+
         await preparation.command(
             ownerAccess(),
             started.id,
             continuation,
             context(),
         );
+
         await preparation.tick(context());
         expect(await db.select().from(aiCreditActionsTable)).toHaveLength(2);
         expect(
             await db.select().from(sentencePreparationActionsTable),
         ).toHaveLength(2);
+
         const children = await db.select().from(sentenceAiJobsTable);
         expect(children).toHaveLength(2);
         expect(
@@ -1473,12 +1641,14 @@ run('sentence library persistence', () => {
                     ).actionParentId === parent!.id,
             ),
         ).toHaveLength(1);
+
         expect(
             (await db.select().from(aiCreditActionsTable)).find(
                 (action) => action.id === parent!.id,
             )?.state,
         ).toBe('settled');
     });
+
     it('starting preparation cannot monopolize the global AI admission lock', async () => {
         let unblock!: () => void;
         const gate = new Promise<void>((resolve) => {
@@ -1494,9 +1664,11 @@ run('sentence library persistence', () => {
                 .from(usersTable)
                 .where(eq(usersTable.id, owner))
                 .for('update');
+
             const [backend] = await tx.execute<{ pid: number }>(
                 sql`select pg_backend_pid() as pid`,
             );
+
             signalLocked(backend!.pid);
             await gate;
         });
@@ -1511,6 +1683,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         try {
             await expect
                 .poll(
@@ -1520,17 +1693,21 @@ run('sentence library persistence', () => {
                         }>(
                             sql`select exists(select 1 from pg_stat_activity a where ${blockerPid} = any(pg_blocking_pids(a.pid))) as blocked`,
                         );
+
                         return waiting!.blocked;
                     },
                     { timeout: 5000 },
                 )
                 .toBe(true);
+
             const available = await db.transaction(async (tx) => {
                 const [result] = await tx.execute<{ available: boolean }>(
                     sql`select pg_try_advisory_xact_lock(${textAiCapacityLock}) as available`,
                 );
+
                 return result!.available;
             });
+
             expect(available).toBe(true);
         } finally {
             unblock();
@@ -1538,6 +1715,7 @@ run('sentence library persistence', () => {
             await starting;
         }
     });
+
     it('expired content is pruned even while another learner has active work', async () => {
         const old = await preparation.start(
             ownerAccess(),
@@ -1549,6 +1727,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         await db
             .update(sentencePreparationsTable)
             .set({
@@ -1556,6 +1735,7 @@ run('sentence library persistence', () => {
                 updatedAt: new Date('2026-09-01T00:00:00Z'),
             })
             .where(eq(sentencePreparationsTable.id, old.id));
+
         const active = await preparation.start(
             readerAccess(),
             {
@@ -1566,6 +1746,7 @@ run('sentence library persistence', () => {
             },
             context(),
         );
+
         expect(active.state).toBe('queued');
         await preparation.tick(context());
         expect(
@@ -1576,10 +1757,12 @@ run('sentence library persistence', () => {
                     eq(sentencePreparationBatchesTable.preparationId, old.id),
                 ),
         ).toHaveLength(0);
+
         expect(
             (await preparation.get(ownerAccess(), old.id, context()))
                 .pauseReason,
         ).toBe('stale');
+
         expect(
             await db
                 .select()
@@ -1592,6 +1775,7 @@ run('sentence library persistence', () => {
                 ),
         ).toHaveLength(1);
     });
+
     it('returns the explicit stale tombstone for an expired shared preparation', async () => {
         const request = {
             operationId: randomUUID(),
@@ -1604,6 +1788,7 @@ run('sentence library persistence', () => {
             request,
             context(),
         );
+
         await db
             .update(sentencePreparationsTable)
             .set({
@@ -1611,6 +1796,7 @@ run('sentence library persistence', () => {
                 updatedAt: new Date('2026-09-01T00:00:00Z'),
             })
             .where(eq(sentencePreparationsTable.id, started.id));
+
         await preparation.tick(context());
         expect(
             await preparation.get(readerAccess(), started.id, context()),
@@ -1619,6 +1805,7 @@ run('sentence library persistence', () => {
             pauseReason: 'stale',
             batchCount: 0,
         });
+
         expect(
             await preparation.start(readerAccess(), request, context()),
         ).toMatchObject({
@@ -1626,6 +1813,7 @@ run('sentence library persistence', () => {
             state: 'paused',
             pauseReason: 'stale',
         });
+
         await expect(
             preparation.command(
                 readerAccess(),
@@ -1634,6 +1822,7 @@ run('sentence library persistence', () => {
                 context(),
             ),
         ).rejects.toThrow('stale_content');
+
         expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
     });
 });

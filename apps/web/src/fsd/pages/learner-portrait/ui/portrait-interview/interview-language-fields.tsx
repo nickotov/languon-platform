@@ -24,6 +24,7 @@ export function InterviewLanguageFields({
         { value: '', label: interviewText(locale, 'unknown') },
         ...interviewLevelOptions(locale),
     ];
+
     return (
         <ul
             className={styles.languageList}

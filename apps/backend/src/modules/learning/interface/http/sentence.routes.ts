@@ -89,6 +89,7 @@ const errors = {
 } as const;
 const correlation = (context: Context) => {
     const candidate = context.req.header('X-Correlation-ID');
+
     return candidate && /^[0-9a-f-]{36}$/i.test(candidate)
         ? candidate
         : randomUUID();
@@ -100,8 +101,10 @@ const failure = (
     message: string,
     retryAfterSeconds?: number,
 ) => {
-    if (retryAfterSeconds !== undefined)
+    if (retryAfterSeconds !== undefined) {
         context.header('Retry-After', String(retryAfterSeconds));
+    }
+
     return context.json(
         {
             error: {
@@ -135,11 +138,13 @@ export function createSentenceRoutes({
                       'The request is invalid.',
                   ),
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     app.use('*', async (context, next) => {
         context.header('Cache-Control', 'private, no-store');
         context.header('Referrer-Policy', 'no-referrer');
@@ -150,8 +155,10 @@ export function createSentenceRoutes({
             context.header('Access-Control-Allow-Origin', origin);
             context.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.use(
         '*',
         bodyLimit({
@@ -165,32 +172,42 @@ export function createSentenceRoutes({
                 ),
         }),
     );
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
         const allowanceError = actionAllowanceErrorResponse(error, context);
-        if (allowanceError) return allowanceError;
-        if (!service.capabilities().sentencesEnabled)
+        if (allowanceError) {
+            return allowanceError;
+        }
+
+        if (!service.capabilities().sentencesEnabled) {
             return failure(
                 context,
                 'feature_disabled',
                 503,
                 'Sentence practice is disabled.',
             );
-        if (error instanceof HTTPException && error.status === 400)
+        }
+
+        if (error instanceof HTTPException && error.status === 400) {
             return failure(
                 context,
                 'invalid_request',
                 400,
                 'The request is invalid.',
             );
-        if (error instanceof LearningEntryUnavailableError)
+        }
+
+        if (error instanceof LearningEntryUnavailableError) {
             return failure(
                 context,
                 'entry_not_found',
                 404,
                 'The entry is no longer available.',
             );
-        if (error instanceof LearningUnavailableError)
+        }
+
+        if (error instanceof LearningUnavailableError) {
             return failure(
                 context,
                 context.req.path.includes('/shared-dictionaries/')
@@ -199,20 +216,26 @@ export function createSentenceRoutes({
                 404,
                 'The dictionary was not found.',
             );
-        if (error instanceof LearningAuthenticationRequiredError)
+        }
+
+        if (error instanceof LearningAuthenticationRequiredError) {
             return failure(
                 context,
                 'authentication_required',
                 401,
                 'Authentication is required.',
             );
-        if (error instanceof LearningInvalidRequestError)
+        }
+
+        if (error instanceof LearningInvalidRequestError) {
             return failure(
                 context,
                 'invalid_request',
                 400,
                 'The request is invalid.',
             );
+        }
+
         if (error instanceof LearningConflictError) {
             const code = {
                 preferences_conflict: 'version_conflict',
@@ -220,6 +243,7 @@ export function createSentenceRoutes({
                 operation_conflict: 'idempotency_conflict',
                 undo_conflict: 'undo_conflict',
             } as const;
+
             return failure(
                 context,
                 code[error.reason],
@@ -227,7 +251,8 @@ export function createSentenceRoutes({
                 'The learning state changed. Reload or retry the operation.',
             );
         }
-        if (error instanceof SentenceConflictError)
+
+        if (error instanceof SentenceConflictError) {
             return failure(
                 context,
                 error.reason === 'operation_conflict'
@@ -236,7 +261,9 @@ export function createSentenceRoutes({
                 409,
                 'The learning state changed.',
             );
-        if (error instanceof SentenceCapacityUnavailableError)
+        }
+
+        if (error instanceof SentenceCapacityUnavailableError) {
             return failure(
                 context,
                 'capacity_unavailable',
@@ -244,7 +271,9 @@ export function createSentenceRoutes({
                 'Sentence AI capacity is temporarily unavailable. Retry later.',
                 error.retryAfterSeconds,
             );
-        if (error instanceof SentenceUnavailableError)
+        }
+
+        if (error instanceof SentenceUnavailableError) {
             return failure(
                 context,
                 context.req.param('jobId')
@@ -253,22 +282,29 @@ export function createSentenceRoutes({
                 404,
                 'The practice content was not found.',
             );
-        if (error instanceof SentenceModelUnavailableError)
+        }
+
+        if (error instanceof SentenceModelUnavailableError) {
             return failure(
                 context,
                 'model_unavailable',
                 503,
                 'AI is unavailable right now. Try again later.',
             );
-        if (error instanceof SentenceCreditsExhaustedError)
+        }
+
+        if (error instanceof SentenceCreditsExhaustedError) {
             return failure(
                 context,
                 'ai_credits_exhausted',
                 402,
                 'Insufficient AI credits.',
             );
+        }
+
         const mapped = mapDictionaryHttpError(error);
         const code = SentenceErrorCodeSchema.safeParse(mapped.code);
+
         return failure(
             context,
             code.success ? code.data : 'internal_error',
@@ -277,18 +313,23 @@ export function createSentenceRoutes({
             mapped.retryAfterSeconds,
         );
     });
+
     app.options('/learning/*', (context) => {
         context.header(
             'Access-Control-Allow-Methods',
             'GET, POST, PUT, OPTIONS',
         );
+
         context.header(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
         );
+
         context.header('Access-Control-Max-Age', '600');
+
         return context.body(null, 204);
     });
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -315,6 +356,7 @@ export function createSentenceRoutes({
                 authorization === undefined
                     ? undefined
                     : policy.parseBearerAuthorization(authorization);
+
             return shared
                 ? {
                       kind: 'shared',
@@ -355,6 +397,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -382,6 +425,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -409,6 +453,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -436,6 +481,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -463,6 +509,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -490,6 +537,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -519,6 +567,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -548,6 +597,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -575,6 +625,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -602,6 +653,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -626,9 +678,11 @@ export function createSentenceRoutes({
                     SentenceNextRequestSchema.parse(c.req.valid('json')),
                     metadata(c),
                 );
+
                 return c.json(result, result.kind === 'job' ? 202 : 200);
             },
         );
+
         const jobs = { ...request, params: params.extend({ jobId: z.uuid() }) };
         app.openapi(
             createRoute({
@@ -651,6 +705,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -672,6 +727,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -701,6 +757,7 @@ export function createSentenceRoutes({
                     202,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -725,6 +782,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -749,6 +807,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -780,6 +839,7 @@ export function createSentenceRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -810,15 +870,18 @@ export function createSentenceRoutes({
                 ),
         );
     };
+
     register(
         '/learning/dictionaries/{dictionaryId}/sentences',
         DictionaryIdParamsSchema,
         false,
     );
+
     register(
         '/learning/shared-dictionaries/{shareId}/sentences',
         SharedDictionaryParamsSchema,
         true,
     );
+
     return app;
 }

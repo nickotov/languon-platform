@@ -56,6 +56,7 @@ export async function runMastraDevelopmentHarness({
         cwd,
         environment: childEnvironment,
     });
+
     await runToCompletion(mastraDevelopmentCommands.playground, {
         cwd,
         environment: childEnvironment,
@@ -73,7 +74,10 @@ export async function runMastraDevelopmentHarness({
     let shuttingDown = false;
 
     function shutdown(signal = 'SIGTERM') {
-        if (shuttingDown) return;
+        if (shuttingDown) {
+            return;
+        }
+
         shuttingDown = true;
         for (const child of children) {
             if (child.exitCode === null && child.signalCode === null) {
@@ -92,6 +96,7 @@ export async function runMastraDevelopmentHarness({
             promptWatch.completed,
             studio.completed,
         ]);
+
         shutdown();
         await Promise.allSettled([promptWatch.completed, studio.completed]);
 
@@ -124,6 +129,7 @@ function startProcess(command, { cwd, environment }) {
             }),
         );
     });
+
     return { child, completed };
 }
 

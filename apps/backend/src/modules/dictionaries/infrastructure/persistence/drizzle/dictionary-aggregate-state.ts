@@ -45,7 +45,10 @@ export async function lockOwned(
         .limit(1)
         .for('update', { of: dictionariesTable });
 
-    if (!row) throw new DictionaryNotFoundError();
+    if (!row) {
+        throw new DictionaryNotFoundError();
+    }
+
     await tx
         .select({ dictionaryId: dictionarySettingsTable.dictionaryId })
         .from(dictionarySettingsTable)
@@ -80,7 +83,9 @@ export async function readOwnedState(
         .limit(1)
         .for('share', { of: dictionariesTable });
 
-    if (!row) throw new DictionaryNotFoundError();
+    if (!row) {
+        throw new DictionaryNotFoundError();
+    }
 
     return row;
 }
@@ -95,7 +100,9 @@ export async function readSettings(
         .where(eq(dictionarySettingsTable.dictionaryId, dictionaryId))
         .limit(1);
 
-    if (!settings) throw new DictionaryNotFoundError();
+    if (!settings) {
+        throw new DictionaryNotFoundError();
+    }
 
     return settings;
 }
@@ -117,7 +124,9 @@ export async function lockCard(
         .limit(1)
         .for('update');
 
-    if (!row) throw new DictionaryCardNotFoundError();
+    if (!row) {
+        throw new DictionaryCardNotFoundError();
+    }
 
     return row;
 }
@@ -149,7 +158,9 @@ export async function acquireGlobalPermit(
             sql`select pg_try_advisory_xact_lock(1281979471, ${operation * 1000 + slot}) as acquired`,
         );
 
-        if (row?.acquired === true) return;
+        if (row?.acquired === true) {
+            return;
+        }
     }
 
     throw new DictionaryRateLimitError(5);
@@ -164,7 +175,9 @@ export async function acquireOwnerPermit(
         sql`select pg_try_advisory_xact_lock(hashtext(${ownerId}), ${operation}) as acquired`,
     );
 
-    if (row?.acquired !== true) throw new DictionaryRateLimitError(5);
+    if (row?.acquired !== true) {
+        throw new DictionaryRateLimitError(5);
+    }
 }
 
 export async function lockOwnerCapacity(
@@ -178,7 +191,9 @@ export async function lockOwnerCapacity(
         .limit(1)
         .for('update');
 
-    if (!owner) throw new DictionaryNotFoundError();
+    if (!owner) {
+        throw new DictionaryNotFoundError();
+    }
 }
 
 export async function assertOwnerCapacity(
@@ -288,8 +303,10 @@ export async function sourceDuplicate(
         eq(dictionaryCardsTable.normalizedSource, source),
     ];
 
-    if (excludeCardId)
+    if (excludeCardId) {
         conditions.push(ne(dictionaryCardsTable.id, excludeCardId));
+    }
+
     const [match] = await database
         .select({ id: dictionaryCardsTable.id })
         .from(dictionaryCardsTable)
@@ -316,7 +333,9 @@ export async function bumpDictionary(
         )
         .returning({ version: dictionariesTable.version });
 
-    if (!updated) throw new DictionaryVersionConflictError();
+    if (!updated) {
+        throw new DictionaryVersionConflictError();
+    }
 
     return updated.version;
 }

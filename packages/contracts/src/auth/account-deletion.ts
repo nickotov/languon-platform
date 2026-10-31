@@ -12,5 +12,9 @@ export const AccountDeletionScheduleResponseSchema = z
     })
     .strict();
 
-export type AccountDeletionScheduleRequest = z.infer<typeof AccountDeletionScheduleRequestSchema>;
-export type AccountDeletionScheduleResponse = z.infer<typeof AccountDeletionScheduleResponseSchema>;
+export type AccountDeletionScheduleRequest = z.infer<
+    typeof AccountDeletionScheduleRequestSchema
+>;
+export type AccountDeletionScheduleResponse = z.infer<
+    typeof AccountDeletionScheduleResponseSchema
+>;

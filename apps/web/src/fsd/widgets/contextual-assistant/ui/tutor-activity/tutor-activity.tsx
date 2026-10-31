@@ -18,12 +18,20 @@ export function TutorActivity({
     const copy = messagesCopy(locale);
     const [recentText, setRecentText] = useState('');
     useEffect(() => {
-        if (!active || !text) return;
+        if (!active || !text) {
+            return;
+        }
+
         setRecentText(text);
         const timer = setTimeout(() => setRecentText(''), 600);
+
         return () => clearTimeout(timer);
     }, [active, text]);
-    if (!active) return null;
+
+    if (!active) {
+        return null;
+    }
+
     let state:
         | 'waiting'
         | 'working'
@@ -31,10 +39,17 @@ export function TutorActivity({
         | 'reading'
         | 'preparing'
         | 'preparingBlocks' = 'working';
-    if (queued) state = 'waiting';
-    else if (tool) state = tool;
-    else if (text && recentText === text) state = 'writing';
+
+    if (queued) {
+        state = 'waiting';
+    } else if (tool) {
+        state = tool;
+    } else if (text && recentText === text) {
+        state = 'writing';
+    }
+
     const label = copy[state];
+
     return (
         <p
             className={styles.activity}

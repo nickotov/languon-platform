@@ -136,10 +136,15 @@ export const KnowledgeEditor = forwardRef<
                         | 'knowledge.heading1'
                         | 'knowledge.heading2'
                         | 'knowledge.heading3' = 'knowledge.heading2';
-                    if (node.attrs.level === 1)
+
+                    if (node.attrs.level === 1) {
                         headingKey = 'knowledge.heading1';
-                    if (node.attrs.level === 3)
+                    }
+
+                    if (node.attrs.level === 3) {
                         headingKey = 'knowledge.heading3';
+                    }
+
                     const names: Record<string, string> = {
                         paragraph: t('knowledge.paragraph'),
                         horizontalRule: t('knowledge.horizontalRule'),
@@ -149,6 +154,7 @@ export const KnowledgeEditor = forwardRef<
                         blockquote: t('knowledge.blockquote'),
                         table: t('knowledge.table'),
                     };
+
                     return `${blockLabels.field('Select or drag block')}: ${names[node.type.name] ?? node.type.name}`;
                 },
             }),
@@ -169,9 +175,15 @@ export const KnowledgeEditor = forwardRef<
             handleDrop: (_view, _event, slice, moved) =>
                 rejectCopiedLearningBlockDrop(slice, moved),
             handlePaste: (view, event) => {
-                if (disabled) return false;
+                if (disabled) {
+                    return false;
+                }
+
                 const result = pasteLearningBlock(view, event);
-                if (result !== 'none') setInvalid(result === 'invalid');
+                if (result !== 'none') {
+                    setInvalid(result === 'invalid');
+                }
+
                 return result !== 'none';
             },
             attributes: {
@@ -186,7 +198,10 @@ export const KnowledgeEditor = forwardRef<
             try {
                 const body = normalizeEditorDocument(current.getJSON());
                 const serialized = JSON.stringify(body);
-                if (serialized === acceptedValue.current) return;
+                if (serialized === acceptedValue.current) {
+                    return;
+                }
+
                 acceptedValue.current = serialized;
                 setInvalid(false);
                 onChange(body);
@@ -195,7 +210,10 @@ export const KnowledgeEditor = forwardRef<
             }
         },
         onTransaction: ({ transaction }) => {
-            if (!transaction.docChanged) return;
+            if (!transaction.docChanged) {
+                return;
+            }
+
             for (const [id, target] of targets.current) {
                 targets.current.set(
                     id,
@@ -210,31 +228,45 @@ export const KnowledgeEditor = forwardRef<
     useEffect(() => {
         editor?.setEditable(!disabled);
     }, [editor, disabled]);
+
     useEffect(() => {
         onValidityChange?.(!invalid);
     }, [invalid, onValidityChange]);
+
     useEffect(() => {
-        if (!editor) return;
+        if (!editor) {
+            return;
+        }
+
         const serialized = JSON.stringify(
             normalizeEditorDocument(value.document),
         );
-        if (serialized === acceptedValue.current) return;
+
+        if (serialized === acceptedValue.current) {
+            return;
+        }
+
         let cancelled = false;
         // React node views flush synchronously. Apply recovered content after
         // this effect, and discard superseded/unmounted updates before dispatch.
         queueMicrotask(() => {
-            if (cancelled || editor.isDestroyed) return;
+            if (cancelled || editor.isDestroyed) {
+                return;
+            }
+
             try {
                 editor.commands.setContent(toEditorDocument(value.document), {
                     emitUpdate: false,
                     errorOnInvalidContent: true,
                 });
+
                 acceptedValue.current = serialized;
                 setInvalid(false);
             } catch {
                 setInvalid(true);
             }
         });
+
         return () => {
             cancelled = true;
         };
@@ -293,9 +325,10 @@ export const KnowledgeEditor = forwardRef<
             </div>
         );
     }
+
     function blockActions(block: LearningBlock): MenuItem[] {
         const actions = [...(getBlockActions?.(block) ?? [])];
-        if (workspace?.onMentionBlock)
+        if (workspace?.onMentionBlock) {
             actions.push({
                 label: t('knowledge.addBlockToChat'),
                 icon: <MessageSquarePlus size={16} aria-hidden />,
@@ -303,9 +336,13 @@ export const KnowledgeEditor = forwardRef<
                     workspace.onMentionBlock?.(block.id);
                 },
             });
+        }
+
         return actions;
     }
+
     const authoringEnabled = !disabled && toolbarVariant !== 'tutor';
+
     return (
         <BlockAuthoringProvider
             enabled={authoringEnabled}

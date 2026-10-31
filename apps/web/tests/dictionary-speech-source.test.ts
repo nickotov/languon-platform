@@ -18,11 +18,13 @@ describe('dictionary speech snapshot guards', () => {
             visibleCard,
             'example',
         );
+
         expect(source.expectedDictionaryVersion).toBe(2);
         expect(source.expectedSettingsVersion).toBe(1);
         expect(source.expectedVersion).toBe(1);
         expect(source.field).toBe('example');
     });
+
     it('advances the settings guard after the card snapshot refreshes', () => {
         const dictionary = {
             id: '00000000-0000-4000-8000-000000000001',
@@ -39,6 +41,7 @@ describe('dictionary speech snapshot guards', () => {
             card,
             'exampleTranslation',
         );
+
         expect(source.expectedSettingsVersion).toBe(2);
         expect(source.expectedDictionaryVersion).toBe(2);
     });

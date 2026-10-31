@@ -31,9 +31,13 @@ export function WorkspaceProposalModes({
     let insertDetail = copy.insertDetail;
     if (preview?.before) {
         let before = preview.before;
-        if (before.length > 28) before = `…${before.slice(-28)}`;
+        if (before.length > 28) {
+            before = `…${before.slice(-28)}`;
+        }
+
         insertDetail = copy.insertAfter.replace('{before}', before);
     }
+
     const originalText = preview?.original || original;
     const replaceDetail = originalText
         ? copy.replaceDetail.replace(
@@ -41,6 +45,7 @@ export function WorkspaceProposalModes({
               originalText.length.toLocaleString(locale),
           )
         : copy.noSelection;
+
     return (
         <fieldset className={styles.modes} aria-label={copy.heading}>
             <label className={styles.mode}>

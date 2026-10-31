@@ -70,14 +70,14 @@ Base main `5efaafe`; changed tracked and new runtime/test files identified by [b
 
 ## Acceptance coverage
 
-| IDs | Implementation/proof | Status |
-| --- | --- | --- |
-| POR-01 | Dashboard/profile entry, manual/interview routes; E7/E8/E9/E11 | Pass |
-| POR-02/03/04 | Guided/manual partial data, strict proposals, deterministic summary, explicit approval and separate use; E1/E2/E3/E5/E7/E8/E9 | Pass |
-| POR-05/06/07 | Current approved policy, manual/inherited fields, per-chat/global controls, pinned context and erasure; E1/E4/E7/E8/E9 | Pass |
-| POR-08/09 | Transactional versions/fences, cancellation/expiry/erasure, actual two-tab conflict reconciliation; E3/E5/E7/E8 | Pass |
-| POR-10/11/14 | Strict limits, four-locale preference safeguards, independent self-described languages, scope restrictions; E1/E2/E5/E7/E9 | Pass within stated semantic/provider limits |
-| POR-12/13 | Scoped zero-charge accounting, readiness, notice/replay/failure recovery and manual fallback; E3/E5/E7/E8/E9 | Pass |
+| IDs          | Implementation/proof                                                                                                          | Status                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| POR-01       | Dashboard/profile entry, manual/interview routes; E7/E8/E9/E11                                                                | Pass                                        |
+| POR-02/03/04 | Guided/manual partial data, strict proposals, deterministic summary, explicit approval and separate use; E1/E2/E3/E5/E7/E8/E9 | Pass                                        |
+| POR-05/06/07 | Current approved policy, manual/inherited fields, per-chat/global controls, pinned context and erasure; E1/E4/E7/E8/E9        | Pass                                        |
+| POR-08/09    | Transactional versions/fences, cancellation/expiry/erasure, actual two-tab conflict reconciliation; E3/E5/E7/E8               | Pass                                        |
+| POR-10/11/14 | Strict limits, four-locale preference safeguards, independent self-described languages, scope restrictions; E1/E2/E5/E7/E9    | Pass within stated semantic/provider limits |
+| POR-12/13    | Scoped zero-charge accounting, readiness, notice/replay/failure recovery and manual fallback; E3/E5/E7/E8/E9                  | Pass                                        |
 
 ## Check records
 
@@ -127,7 +127,6 @@ Exploratory full `pnpm --filter @languon/backend test` without disposable enviro
 
 Final backend checkpoint: all82 runtime/verification hashes match; canonical prompt exactly matches frozen v001 SHA-256. Backend checkpoint passes; no UI/browser or whole-feature completion is claimed. Local feature checkpoint only; no push, deployment or main integration.
 
-
 ### E7 — Selected-design UI continuation, current author checks
 
 Boundary: tracked/untracked changes from `dc02e53`; the separate final manifest preserves this UI continuation without overwriting the historical backend manifest. Source design is the captured v001 artifact in DESIGN.md, with desktop/mobile rendered reference captures.
@@ -142,7 +141,6 @@ Boundary: tracked/untracked changes from `dc02e53`; the separate final manifest 
 Styling guard limitation: `pnpm styles:check` reports10existing untokenized-length violations in untouched Knowledge workspace-controls.module.css and shared companion-layout.module.css. `git diff` is empty for both files. No new portrait CSS is reported. This existing baseline is recorded rather than waived or opportunistically rewritten.
 
 Exploratory failures and disposition: an initial parallel full-web run timed out the unchanged large Markdown fixture; bounded-worker full run passes. An existing workspace-assistant spy expected3arguments although checkpoint code already supplies optional fourth `undefined`; expectation now reflects that unchanged call contract. Owner-hardening initially invalidated5entry tests that mocked away its newly imported helper; a partial mock preserves the actual guard and all5pass. The standalone interview initially nested `<main>` landmarks; its chrome wrapper is now a div and the real page owns the main landmark. Browser model_unavailable was traced to deterministic fixture policy omission, not loosened production selection guards; the repaired real fixture/browser journeys pass in E8.
-
 
 ### E8 — Real web journeys and independent tester
 
@@ -162,19 +160,18 @@ Author comparisons fixed: manual top padding24, empty-list gap, source placehold
 
 Coverage reconciliation (all rows refer to FEATURE.md; final review remains pending):
 
-| Inventory | Runtime / lower-layer proof | Outcome |
-| --- | --- | --- |
-| MGMT01/05 | Intro-final1440x900, free/cost/expiry/data-use source; four-locale privacy render tests and opening browser path | Implemented, accurate provider/deletion copy adaptation |
-| MGMT02/06/07/08 | Overview-saved-off, home-saved-off, mobiledelete, real enable/globaloff/actualdelete/empty, settings entry observed | Implemented, no silentenable/history-erasure claim |
-| MGMT03 + EDIT01–08 | Final manual empty/populated desktop, mobile populated, all17editor tests,35interview/editor regressions, deterministic API save | Implemented, independent fields/partial summary preserved |
-| MGMT04 + EDIT09 | Final two-tab conflict and review/proposal/save browser cases; domain/PG optimistic concurrency | Implemented; compact per-field final browser recapture passes |
-| INT01–06/08 | Final interview+preview1440x900, mobilelight/dark+Russian sheet, real proposal→review→save,18interview tests | Implemented; no fabricatedtimestamps |
-| INT07 | Real restart/resume, earlier503diagnosis,16then18recovery regressions,27PG lifecycle/erasure cases and billingHTTP proof | Implemented, source-style runtime recovery additions documented |
-| CHAT01–06 | Real Knowledge desktop/mobile settings, globaloffdisabled case,22chat tests + resolver/runner contracts and historical35realPGconversation cases | Implemented; mode/model/default contracts preserved |
-| ALL | Representative wide/narrow/light/dark/translated captures, semantic controls/dialogs, no-overflow assertions, owner-race/security checks | Representative coverage; no exhaustive viewport/locale cross-product claim |
+| Inventory          | Runtime / lower-layer proof                                                                                                                      | Outcome                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| MGMT01/05          | Intro-final1440x900, free/cost/expiry/data-use source; four-locale privacy render tests and opening browser path                                 | Implemented, accurate provider/deletion copy adaptation                    |
+| MGMT02/06/07/08    | Overview-saved-off, home-saved-off, mobiledelete, real enable/globaloff/actualdelete/empty, settings entry observed                              | Implemented, no silentenable/history-erasure claim                         |
+| MGMT03 + EDIT01–08 | Final manual empty/populated desktop, mobile populated, all17editor tests,35interview/editor regressions, deterministic API save                 | Implemented, independent fields/partial summary preserved                  |
+| MGMT04 + EDIT09    | Final two-tab conflict and review/proposal/save browser cases; domain/PG optimistic concurrency                                                  | Implemented; compact per-field final browser recapture passes              |
+| INT01–06/08        | Final interview+preview1440x900, mobilelight/dark+Russian sheet, real proposal→review→save,18interview tests                                     | Implemented; no fabricatedtimestamps                                       |
+| INT07              | Real restart/resume, earlier503diagnosis,16then18recovery regressions,27PG lifecycle/erasure cases and billingHTTP proof                         | Implemented, source-style runtime recovery additions documented            |
+| CHAT01–06          | Real Knowledge desktop/mobile settings, globaloffdisabled case,22chat tests + resolver/runner contracts and historical35realPGconversation cases | Implemented; mode/model/default contracts preserved                        |
+| ALL                | Representative wide/narrow/light/dark/translated captures, semantic controls/dialogs, no-overflow assertions, owner-race/security checks         | Representative coverage; no exhaustive viewport/locale cross-product claim |
 
 Source mobile bottom-sheet PNG/full-PNG captures have a host compositor duplication artifact. Supplemental `reference/interview-preview-mobile-dom.json` and `.txt` record actual390x844 rendered geometry: sheetx0/y415/w390/h429, summaryy488/h156, countsy660/h68, CTAy744/h44, expiryy804/h16. All controls are within the viewport. Comparison uses these actual source DOM measurements, available visible source regions and clean local browser sheet rendering; no full-body pixel-equivalence claim is made from corrupted reference images.
-
 
 ### E10 — Final author preflight
 
@@ -186,11 +183,9 @@ Frozen-source formatting: the retained external capture includes blank lines at 
 
 Final broad web regression before UI-C1 remediation: `pnpm --filter @languon/web exec vitest run --maxWorkers=2` passes130files/955tests on7f0fbbe. The subsequent UI-C1 change will use deferred-owner regressions and affected hook/component checks; unchanged view/layout and backend evidence remains linked above.
 
-
 ### E11 — UI-C1 owner/request mutation remediation
 
 Final scoped command: `pnpm --filter @languon/web exec vitest run tests/portrait-owner-mutation-state.test.tsx tests/learner-portrait-entry.test.tsx tests/learner-portrait-management.test.tsx tests/portrait-owner-scoped-request.test.ts` passes4files/22tests. It uses actual owner transport helper/query hooks and deferred mutations, with only external API responses controlled. New regressions prove A→B usability, no inherited A error, late A rejection/success cannot clear B/newA pending or change its cache, B settlement works, and synchronous duplicate starts are rejected. Full web typecheck and scoped lint pass. No UI layout, backend, public API or design change. Final manifest now221paths; prior219path pre-review version remains in7f0fbbe history. Final web production build and sequential post-build web typecheck pass, with generated next-env restored byte-for-byte. Current real runtime run `portrait-final-owner-scoped` passes backend2/browser2 with no product/test changes during execution; final8captures are bound by `evidence/ui-runtime/final/capture-manifest.json`. Focused independent remediation review passes and closes UI-C1.
-
 
 ### E12 — Final source/evidence validity and completion
 

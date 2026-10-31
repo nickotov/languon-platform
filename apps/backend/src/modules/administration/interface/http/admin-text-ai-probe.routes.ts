@@ -35,19 +35,23 @@ export function registerAdminTextAiProbeRoutes(
         const token = dependencies.policy.parseBearerAuthorization(
             header ?? null,
         );
+
         return sensitive
             ? dependencies.administration.authorizeSensitiveOperation(token, id)
             : dependencies.administration.authorizeOperation(token, id);
     };
     const service = () => {
-        if (!dependencies.textAiProbes)
+        if (!dependencies.textAiProbes) {
             throw new AdministrationHttpError(
                 'probe_route_unavailable',
                 'Model checks are not configured.',
                 503,
             );
+        }
+
         return dependencies.textAiProbes;
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -72,9 +76,11 @@ export function registerAdminTextAiProbeRoutes(
                 randomUUID(),
                 false,
             );
+
             return context.json(await service().list(), 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -103,18 +109,21 @@ export function registerAdminTextAiProbeRoutes(
         }),
         async (context) => {
             const origin = context.req.header('Origin');
-            if (!origin)
+            if (!origin) {
                 throw new AdministrationHttpError(
                     'invalid_request',
                     'A trusted origin is required.',
                     403,
                 );
+            }
+
             dependencies.policy.assertCookieRequestOrigin(origin);
             const principal = await authorize(
                 context.req.header('Authorization'),
                 randomUUID(),
                 true,
             );
+
             return context.json(
                 await service().run(
                     principal.actor.id,
@@ -124,6 +133,7 @@ export function registerAdminTextAiProbeRoutes(
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -154,18 +164,21 @@ export function registerAdminTextAiProbeRoutes(
         }),
         async (context) => {
             const origin = context.req.header('Origin');
-            if (!origin)
+            if (!origin) {
                 throw new AdministrationHttpError(
                     'invalid_request',
                     'A trusted origin is required.',
                     403,
                 );
+            }
+
             dependencies.policy.assertCookieRequestOrigin(origin);
             const principal = await authorize(
                 context.req.header('Authorization'),
                 randomUUID(),
                 true,
             );
+
             return context.json(
                 await service().recover(
                     principal.actor.id,

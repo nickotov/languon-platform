@@ -41,7 +41,10 @@ async function computeAdminTextAiRouting(
 ): Promise<{ snapshot: TextAiExecutionSnapshot; revisionId: string } | null> {
     enableAdmissionPolicyReadCache(tx);
     const revision = await currentTextAiRouting(tx);
-    if (!revision) return null;
+    if (!revision) {
+        return null;
+    }
+
     const flowId = textAiFlowForFormat(input.format);
     const tariff = revision.configuration.flowTariffs[flowId];
     if (!tariff) {
@@ -49,10 +52,11 @@ async function computeAdminTextAiRouting(
             textAiCapabilityForFlow(flowId),
         );
 
-        if (policy.funding === 'customer')
+        if (policy.funding === 'customer') {
             throw new TextAiRoutingUnavailableError(
                 'A reviewed flow tariff is missing.',
             );
+        }
     }
 
     const candidates: TextAiRoutingAuthority['candidates'] = [];
@@ -72,8 +76,9 @@ async function computeAdminTextAiRouting(
             !model.supportedFormats.includes(input.format) ||
             !input.credentialConfigured(model.providerId) ||
             !fingerprint
-        )
+        ) {
             return [];
+        }
 
         return [{ routeId, model, fingerprint }];
     });
@@ -92,12 +97,17 @@ async function computeAdminTextAiRouting(
 
     for (const { routeId, model } of configured) {
         const checked = authority.get(routeId);
-        if (!checked?.allowed) continue;
+        if (!checked?.allowed) {
+            continue;
+        }
+
         const price = checked.price;
-        if (!price)
+        if (!price) {
             throw new TextAiRoutingUnavailableError(
                 'Reviewed provider pricing is missing.',
             );
+        }
+
         const rates = {
             inputCreditsPerMillionTokens:
                 tariff?.inputCreditsPerMillionTokens ?? 0,
@@ -137,10 +147,12 @@ async function computeAdminTextAiRouting(
     }
 
     const selected = candidates[0];
-    if (!selected)
+    if (!selected) {
         throw new TextAiRoutingUnavailableError(
             'No configured compatible route is available.',
         );
+    }
+
     const routingAuthority: TextAiRoutingAuthority = {
         revisionId: revision.id,
         flowId,
@@ -176,7 +188,9 @@ export async function prepareAdminTextAiRouting(
     } catch (error) {
         // Expected configuration failures belong to actual admission, after replay/
         // source authorization. Never turn an idempotent replay into a model error.
-        if (!(error instanceof TextAiRoutingUnavailableError)) throw error;
+        if (!(error instanceof TextAiRoutingUnavailableError)) {
+            throw error;
+        }
     } finally {
         discardAdmissionPolicyReads(tx);
     }
@@ -225,10 +239,12 @@ export async function resolveAdminTextAiRouting(
                     allowed.has(candidate.routeId),
                 );
 
-                if (!currentCandidates.length)
+                if (!currentCandidates.length) {
                     throw new TextAiRoutingUnavailableError(
                         'No configured compatible route is available.',
                     );
+                }
+
                 enableAdmissionPolicyReadCache(tx);
 
                 return {

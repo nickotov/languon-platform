@@ -127,6 +127,7 @@ function setup(options: { denyMembership?: boolean } = {}) {
             refreshTokenTtlSeconds: 14 * 24 * 60 * 60,
         }),
     });
+
     return { administration, app, authentication };
 }
 
@@ -158,9 +159,11 @@ describe('administration routes', () => {
             userId,
             expect.any(String),
         );
+
         expect(response.headers.get('Set-Cookie')).toContain(
             'languon_admin_refresh=refresh-credential',
         );
+
         expect(response.headers.get('Set-Cookie')).not.toContain(
             'languon_refresh=',
         );
@@ -183,6 +186,7 @@ describe('administration routes', () => {
             'refresh-credential',
             expect.objectContaining({ correlationId: expect.any(String) }),
         );
+
         expect(await response.json()).toMatchObject({
             error: { code: 'admin_access_denied' },
         });
@@ -208,6 +212,7 @@ describe('administration routes', () => {
             `/admin/users/${userId}/ai-credits?page=2&pageSize=10`,
             { headers: { Authorization: authorization } },
         );
+
         expect(read.status).toBe(200);
         expect(administration.aiCredits).toHaveBeenCalledWith(
             'header.payload.signature',
@@ -232,6 +237,7 @@ describe('administration routes', () => {
                 method: 'PATCH',
             },
         );
+
         expect(updated.status).toBe(200);
         expect(administration.updateAiCreditPolicy).toHaveBeenCalledWith(
             'header.payload.signature',
@@ -243,6 +249,7 @@ describe('administration routes', () => {
         vi.mocked(administration.adjustAiCredits).mockRejectedValue(
             new AdminAiCreditAccountConflictError(),
         );
+
         const conflict = await app.request(
             `/admin/users/${userId}/ai-credits/adjustments`,
             {
@@ -259,6 +266,7 @@ describe('administration routes', () => {
                 method: 'POST',
             },
         );
+
         expect(conflict.status).toBe(409);
         expect(await conflict.json()).toMatchObject({
             error: { code: 'ai_credit_account_conflict' },
@@ -283,6 +291,7 @@ describe('administration routes', () => {
             },
             method: 'PATCH',
         });
+
         expect(response.status).toBe(200);
         expect(administration.updateAiSettings).toHaveBeenCalledWith(
             'header.payload.signature',
@@ -299,11 +308,13 @@ describe('administration routes', () => {
             },
             method: 'PATCH',
         });
+
         expect(invalid.status).toBe(400);
 
         vi.mocked(administration.updateAiSettings).mockRejectedValue(
             new AdminAiSettingsConflictError(),
         );
+
         const conflict = await app.request('/admin/ai-settings', {
             body: JSON.stringify(body),
             headers: {
@@ -313,6 +324,7 @@ describe('administration routes', () => {
             },
             method: 'PATCH',
         });
+
         expect(conflict.status).toBe(409);
         expect(await conflict.json()).toMatchObject({
             error: { code: 'ai_settings_conflict' },
@@ -324,9 +336,11 @@ describe('administration routes', () => {
         vi.mocked(administration.aiSettings).mockRejectedValue(
             new AdminAccessDeniedError(),
         );
+
         const response = await app.request('/admin/ai-settings', {
             headers: { Authorization: 'Bearer header.payload.signature' },
         });
+
         expect(response.status).toBe(403);
         expect(await response.json()).toMatchObject({
             error: { code: 'admin_access_denied' },
@@ -351,6 +365,7 @@ describe('administration routes', () => {
                 method: 'POST',
             },
         );
+
         expect(response.status).toBe(200);
         expect(administration.cancelUserDeletion).toHaveBeenCalledWith(
             'header.payload.signature',
@@ -358,6 +373,7 @@ describe('administration routes', () => {
             body,
             expect.any(String),
         );
+
         expect(await response.json()).toMatchObject({
             user: { id: userId, status: 'active', version: 3 },
         });
@@ -374,6 +390,7 @@ describe('administration routes', () => {
                 method: 'POST',
             },
         );
+
         expect(invalid.status).toBe(400);
     });
 
@@ -382,6 +399,7 @@ describe('administration routes', () => {
         vi.mocked(administration.cancelUserDeletion).mockRejectedValue(
             new AdminCancellationJournalUnavailableError(),
         );
+
         const response = await app.request(
             `/admin/users/${userId}/deletion/cancel`,
             {
@@ -397,6 +415,7 @@ describe('administration routes', () => {
                 method: 'POST',
             },
         );
+
         expect(response.status).toBe(503);
         expect(await response.json()).toMatchObject({
             error: { code: 'service_unavailable' },
@@ -409,6 +428,7 @@ describe('administration routes', () => {
             `/admin/users/${userId}/sentence-dictionaries?limit=5`,
             { headers: { Authorization: 'Bearer header.payload.signature' } },
         );
+
         expect(response.status).toBe(200);
         expect(administration.sentenceDictionaries).toHaveBeenCalledWith(
             'header.payload.signature',
@@ -416,10 +436,12 @@ describe('administration routes', () => {
             { limit: 5 },
             expect.any(String),
         );
+
         const invalid = await app.request(
             `/admin/users/${userId}/sentence-dictionaries?limit=101`,
             { headers: { Authorization: 'Bearer header.payload.signature' } },
         );
+
         expect(invalid.status).toBe(400);
     });
 
@@ -429,6 +451,7 @@ describe('administration routes', () => {
             `/admin/users/${userId}/dictionaries/${sessionId}/sentences?relation=generated&personalArchive=all`,
             { headers: { Authorization: 'Bearer header.payload.signature' } },
         );
+
         expect(response.status).toBe(200);
         expect(administration.sentenceLibraryList).toHaveBeenCalledWith(
             'header.payload.signature',
@@ -441,6 +464,7 @@ describe('administration routes', () => {
             expect.any(String),
         );
     });
+
     it('rejects unbounded reason and unsafe permanent deletion requests before mutation', async () => {
         const { administration, app } = setup();
         const response = await app.request(
@@ -463,14 +487,17 @@ describe('administration routes', () => {
                 }),
             },
         );
+
         expect(response.status).toBe(400);
         expect(administration.mutateSentenceLibrary).not.toHaveBeenCalled();
     });
+
     it('returns typed retryable busy response for purge', async () => {
         const { administration, app } = setup();
         vi.mocked(administration.mutateSentenceLibrary).mockRejectedValue(
             new SentenceLibraryDeletionBusyError(),
         );
+
         const response = await app.request(
             `/admin/users/${userId}/dictionaries/${sessionId}/sentences/mutations`,
             {
@@ -492,11 +519,13 @@ describe('administration routes', () => {
                 }),
             },
         );
+
         expect(response.status).toBe(409);
         expect(await response.json()).toMatchObject({
             error: { code: 'sentence_library_deletion_busy' },
         });
     });
+
     it('rejects credentialed authentication from an unlisted origin', async () => {
         const { app } = setup();
         const response = await app.request('/admin/auth/login/password', {
@@ -510,6 +539,7 @@ describe('administration routes', () => {
             },
             method: 'POST',
         });
+
         expect(response.status).toBe(403);
     });
 });

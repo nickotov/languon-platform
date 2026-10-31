@@ -14,6 +14,7 @@ export function createAdministrationComposition(
     sentenceLibrary?: AdminSentenceLibrary,
 ): AppAdministrationOptions {
     const dependencies = authentication.administrationDependencies;
+
     return {
         administration: new AdministrationService({
             accessTokens: dependencies.accessTokens,

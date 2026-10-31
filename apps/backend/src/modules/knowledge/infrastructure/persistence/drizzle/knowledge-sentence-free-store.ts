@@ -65,7 +65,10 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
         context.signal.throwIfAborted();
 
         const work = async (tx: KnowledgeTransaction) => {
-            if (financialWrite) await lockTextAiCapacity(tx);
+            if (financialWrite) {
+                await lockTextAiCapacity(tx);
+            }
+
             const material = await readVocabularyPracticeSource(
                 tx,
                 this.crypto,
@@ -95,7 +98,10 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
         input: SentencePrepareRequest | SentenceNextRequest,
         context: SentenceContext,
     ) {
-        if (input.preparedBatchId) throw new LearningInvalidRequestError();
+        if (input.preparedBatchId) {
+            throw new LearningInvalidRequestError();
+        }
+
         const selected = sourceSentenceEntries(
             material,
             input.direction,
@@ -125,8 +131,9 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
                 input.replayExerciseIds?.some(
                     (id) => !pool.saved.some((row) => row.id === id),
                 )
-            )
+            ) {
                 throw new SentenceConflictError('stale_content');
+            }
 
             return {
                 direction: input.direction,
@@ -170,18 +177,23 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
                         prior.requestFingerprint !== hash ||
                         prior.noteId !== source.noteId ||
                         prior.blockId !== source.blockId
-                    )
+                    ) {
                         throw new SentenceConflictError('operation_conflict');
-                    if (!prior.result)
+                    }
+
+                    if (!prior.result) {
                         throw new SentenceConflictError('stale_content');
+                    }
+
                     if (prior.result.kind === 'exercise') {
                         const [row] = await tx
                             .select()
                             .from(exercises)
                             .where(eq(exercises.id, prior.result.exercise.id));
 
-                        if (!row || !currentKnowledgeSentence(row, material))
+                        if (!row || !currentKnowledgeSentence(row, material)) {
                             throw new SentenceConflictError('stale_content');
+                        }
                     }
 
                     if (prior.result.kind === 'job') {
@@ -200,8 +212,10 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
                             !job ||
                             job.sourceKind !== 'knowledge-vocabulary' ||
                             job.knowledgeSource?.blockId !== source.blockId
-                        )
+                        ) {
                             throw new SentenceConflictError('stale_content');
+                        }
+
                         await readPinnedKnowledgeLearningSource(
                             tx,
                             job.knowledgeSource,
@@ -226,8 +240,10 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
                         ),
                     );
 
-                if (conflict)
+                if (conflict) {
                     throw new SentenceConflictError('operation_conflict');
+                }
+
                 const [paidConflict] = await tx
                     .select({ id: jobs.id })
                     .from(jobs)
@@ -238,8 +254,10 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
                         ),
                     );
 
-                if (paidConflict)
+                if (paidConflict) {
                     throw new SentenceConflictError('operation_conflict');
+                }
+
                 const pool = await this.pool(
                     tx,
                     source,
@@ -249,8 +267,10 @@ export class DrizzleKnowledgeSentenceFreeStore implements KnowledgeSentenceFreeS
                 );
                 const saved = pool.saved[0];
 
-                if (input.replayExerciseId && !saved)
+                if (input.replayExerciseId && !saved) {
                     throw new SentenceConflictError('stale_content');
+                }
+
                 let result;
                 if (saved) {
                     await tx

@@ -11,9 +11,11 @@ const transport = vi.hoisted(() => ({
     status: vi.fn(),
     bytes: vi.fn(),
 }));
+
 vi.mock('@/fsd/features/speech-playback', () => ({
     speechApi: () => transport,
 }));
+
 const request: RequestWithSession = (callback) => callback('test-token');
 const noteId = '00000000-0000-4000-8000-000000000001',
     branchId = '00000000-0000-4000-8000-000000000002',
@@ -39,18 +41,22 @@ const ready: SpeechResponse = {
     error: null,
     billingState: 'free',
 };
+
 beforeEach(() => {
     useSessionStore.setState({ status: 'signed-out', user: null });
     transport.prepare.mockReset().mockResolvedValue(ready);
     transport.bytes
         .mockReset()
         .mockResolvedValue(new Blob(['wave'], { type: 'audio/wav' }));
+
     URL.createObjectURL = vi.fn(() => 'blob:private-preview');
     URL.revokeObjectURL = vi.fn();
 });
+
 afterEach(() => {
     vi.unstubAllGlobals();
 });
+
 it('flushes the working draft before generating and applies only after explicit action', async () => {
     let finish:
         | ((value: {
@@ -85,6 +91,7 @@ it('flushes the working draft before generating and applies only after explicit 
             { status: 201 },
         ),
     );
+
     vi.stubGlobal('fetch', fetcher);
     const { result } = renderHook(() =>
         useKnowledgeNarration({
@@ -99,11 +106,13 @@ it('flushes the working draft before generating and applies only after explicit 
     await act(async () => {
         generating = result.current.generate();
     });
+
     expect(transport.prepare).not.toHaveBeenCalled();
     await act(async () => {
         finish!({ branchId, branchVersion: 7, blocks });
         await generating!;
     });
+
     expect(transport.prepare).toHaveBeenCalledWith(
         {
             kind: 'knowledge-block',
@@ -114,11 +123,13 @@ it('flushes the working draft before generating and applies only after explicit 
         },
         expect.any(AbortSignal),
     );
+
     expect(onApply).not.toHaveBeenCalled();
     expect(fetcher).not.toHaveBeenCalled();
     await act(async () => {
         await result.current.apply();
     });
+
     expect(onApply).toHaveBeenCalledWith(
         expect.objectContaining({
             type: 'audio',
@@ -130,8 +141,10 @@ it('flushes the working draft before generating and applies only after explicit 
             },
         }),
     );
+
     expect(result.current.applied).toBe(true);
 });
+
 it('does not reuse a previous note preview after navigation', async () => {
     const onApply = vi.fn(),
         flush = async () => ({ branchId, branchVersion: 1, blocks });
@@ -146,15 +159,18 @@ it('does not reuse a previous note preview after navigation', async () => {
             }),
         { initialProps: { id: noteId } },
     );
+
     await act(async () => {
         await result.current.generate();
     });
+
     expect(result.current.url).toBe('blob:private-preview');
     rerender({ id: assetId });
     expect(result.current.url).toBeNull();
     await act(async () => {
         await result.current.apply();
     });
+
     expect(onApply).not.toHaveBeenCalled();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:private-preview');
 });
@@ -171,13 +187,16 @@ it('clears a private preview and rejects a pending response after session loss',
             onApply,
         }),
     );
+
     await act(async () => {
         await result.current.generate();
     });
+
     expect(result.current.url).toBe('blob:private-preview');
     act(() => {
         useSessionStore.getState().signOut();
     });
+
     expect(result.current.url).toBeNull();
     expect(result.current.response).toBeNull();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:private-preview');
@@ -188,21 +207,26 @@ it('clears a private preview and rejects a pending response after session loss',
                 finish = resolve;
             }),
     );
+
     let pending!: Promise<void>;
     await act(async () => {
         pending = result.current.generate();
     });
+
     act(() => {
         useSessionStore.getState().signOut();
     });
+
     await act(async () => {
         finish(ready);
         await pending;
     });
+
     expect(result.current.response).toBeNull();
     expect(result.current.url).toBeNull();
     await act(async () => {
         await result.current.apply();
     });
+
     expect(onApply).not.toHaveBeenCalled();
 });

@@ -192,7 +192,10 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
         card: PublicDictionary['cards'][number],
         field: 'source' | 'translation',
     ) {
-        if (sessionStatus !== 'authenticated' || !shareKey) return null;
+        if (sessionStatus !== 'authenticated' || !shareKey) {
+            return null;
+        }
+
         const source: SpeechSource = {
             kind: 'dictionary-field',
             access: { kind: 'shared', shareId, shareKey },
@@ -201,6 +204,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
             expectedDictionaryVersion: dictionary.version,
             field,
         };
+
         return (
             <SpeechControl
                 source={source}
@@ -209,6 +213,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
             />
         );
     }
+
     const signedIn = sessionStatus === 'authenticated';
     const assistant = (
         <ContextualAssistant
@@ -222,6 +227,7 @@ export function SharedDictionaryPage({ shareId }: { shareId: string }) {
         />
     );
     const companion = signedIn ? assistant : null;
+
     return (
         <CompanionLayout companion={companion}>
             <main className={styles.main}>

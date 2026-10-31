@@ -34,6 +34,7 @@ export function useSpeechControl(
         retry: false,
         enabled: Boolean(userId),
     });
+
     useEffect(() => () => speechPlayer.resetSelection(selection), [selection]);
     useEffect(
         () =>
@@ -41,20 +42,30 @@ export function useSpeechControl(
                 if (
                     next.status !== 'authenticated' ||
                     next.user?.id !== previous.user?.id
-                )
+                ) {
                     speechPlayer.reset();
+                }
             }),
         [],
     );
+
     useEffect(() => {
-        if (state.selection !== selection || !state.requestId) return;
+        if (state.selection !== selection || !state.requestId) {
+            return;
+        }
+
         if (
             state.billingState !== 'charged_success' &&
             state.billingState !== 'released_no_charge'
-        )
+        ) {
             return;
+        }
+
         const noticeId = `${state.requestId}:${state.billingState}`;
-        if (lastNotice.current === noticeId) return;
+        if (lastNotice.current === noticeId) {
+            return;
+        }
+
         lastNotice.current = noticeId;
         const copy = speechCopy[locale];
         const generated = state.billingState === 'charged_success';
@@ -71,6 +82,7 @@ export function useSpeechControl(
         locale,
         t,
     ]);
+
     return {
         available: availability.data === true,
         selected: state.selection === selection,

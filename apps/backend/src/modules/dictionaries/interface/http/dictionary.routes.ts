@@ -99,6 +99,7 @@ export function createDictionaryRoutes({
         context: Parameters<typeof authenticationRequestMetadata>[0],
     ) => {
         const metadata = authenticationRequestMetadata(context, policy);
+
         return {
             clientAddress: metadata.clientAddress,
             signal: metadata.signal,
@@ -106,7 +107,10 @@ export function createDictionaryRoutes({
     };
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (result.success) return;
+            if (result.success) {
+                return;
+            }
+
             return context.json(
                 new DictionaryHttpError(
                     'invalid_request',
@@ -119,11 +123,13 @@ export function createDictionaryRoutes({
             );
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         bearerFormat: 'JWT',
         scheme: 'bearer',
         type: 'http',
     });
+
     app.use(
         '*',
         bodyLimit({
@@ -141,9 +147,12 @@ export function createDictionaryRoutes({
                 ),
         }),
     );
+
     app.use('*', async (context, next) => {
-        for (const [name, value] of Object.entries(policy.securityHeaders()))
+        for (const [name, value] of Object.entries(policy.securityHeaders())) {
             context.header(name, value);
+        }
+
         context.header('Cache-Control', 'private, no-store');
         context.header('Referrer-Policy', 'no-referrer');
         context.header('X-Robots-Tag', 'noindex, nofollow');
@@ -156,17 +165,25 @@ export function createDictionaryRoutes({
                 'Access-Control-Expose-Headers',
                 'Cache-Control, Content-Disposition, Content-Type, Referrer-Policy, X-Content-Type-Options',
             );
+
             context.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
         const allowanceError = actionAllowanceErrorResponse(error, context);
-        if (allowanceError) return allowanceError;
+        if (allowanceError) {
+            return allowanceError;
+        }
+
         const mapped = mapDictionaryHttpError(error);
-        if (mapped.retryAfterSeconds)
+        if (mapped.retryAfterSeconds) {
             context.header('Retry-After', String(mapped.retryAfterSeconds));
+        }
+
         return context.json(
             mapped.response(
                 correlationId(context.req.header('X-Correlation-ID')),
@@ -374,6 +391,7 @@ export function createDictionaryRoutes({
                 context.req.valid('query').format,
                 requestContext(context),
             );
+
             return context.body(result.body, 200, result.headers);
         },
     );
@@ -393,7 +411,8 @@ export function createDictionaryRoutes({
         '/dictionary-generation-jobs/*',
         '/dictionary-document-uploads/*',
     ];
-    for (const path of preflightPaths)
+
+    for (const path of preflightPaths) {
         app.options(path, (context) => {
             const origin = context.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -403,13 +422,17 @@ export function createDictionaryRoutes({
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, Idempotency-Key, X-Languon-Share-Key',
             );
+
             context.header(
                 'Access-Control-Allow-Methods',
                 'GET, PATCH, POST, OPTIONS',
             );
+
             context.header('Vary', 'Origin');
+
             return context.body(null, 204);
         });
+    }
 
     app.openapi(
         createRoute({
@@ -452,6 +475,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -483,6 +507,7 @@ export function createDictionaryRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -507,6 +532,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -576,6 +602,7 @@ export function createDictionaryRoutes({
                               input,
                               requestContext(context),
                           );
+
                 return context.json({ dictionary }, 200);
             },
         );
@@ -610,6 +637,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -639,6 +667,7 @@ export function createDictionaryRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -662,6 +691,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -734,6 +764,7 @@ export function createDictionaryRoutes({
                               input,
                               requestContext(context),
                           );
+
                 return context.json(response, 200);
             },
         );
@@ -768,6 +799,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -797,6 +829,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -827,6 +860,7 @@ export function createDictionaryRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -864,5 +898,6 @@ export function createDictionaryRoutes({
                 201,
             ),
     );
+
     return app;
 }

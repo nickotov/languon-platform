@@ -25,10 +25,16 @@ export async function sentencePracticeRun<T>(
 
     return withActionQuotePersistence(persistence.database, () =>
         persistence.database.transaction(async (tx) => {
-            if (write) await lockTextAiCapacity(tx);
+            if (write) {
+                await lockTextAiCapacity(tx);
+            }
+
             const owned = await authorizeSentence(tx, access, write);
             const id = sentenceLearner(access);
-            if (write) await lockSentenceLearner(tx, id);
+            if (write) {
+                await lockSentenceLearner(tx, id);
+            }
+
             const result = await work(tx, owned, id);
             context.signal.throwIfAborted();
 

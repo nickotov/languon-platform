@@ -21,6 +21,7 @@ export function useAudioTranscriptionProps(
     function key(value: KnowledgeAudioTranscriptionProps) {
         return JSON.stringify([value.noteId, value.branchId, value.language]);
     }
+
     return {
         noteId: props.noteId,
         blocks: props.block.assetId ? [props.block] : [],
@@ -40,9 +41,12 @@ export function useAudioTranscriptionProps(
                 draft.branchId !== current.branchId ||
                 key(latest.current) !== expected.key ||
                 snapshot(latest.current.block) !== expected.block
-            )
+            ) {
                 throw new Error('The local audio source changed.');
+            }
+
             captured.current = expected;
+
             return { ...draft, blocks: [frozenBlock] };
         },
         onApply(expected, replacement, source) {
@@ -53,9 +57,12 @@ export function useAudioTranscriptionProps(
                 captured.current?.key !== key(current) ||
                 captured.current.block !== snapshot(expected) ||
                 snapshot(current.block) !== snapshot(expected)
-            )
+            ) {
                 return 'changed';
+            }
+
             current.onAccept(replacement);
+
             return 'applied';
         },
     };

@@ -9,8 +9,11 @@ type Story = StoryObj<typeof meta>;
 function Source() {
     const layout = useCompanionLayout();
     function toggleExpanded() {
-        if (layout) layout.setExpanded(!layout.expanded);
+        if (layout) {
+            layout.setExpanded(!layout.expanded);
+        }
     }
+
     return (
         <>
             <h2>Source workspace</h2>
@@ -19,15 +22,25 @@ function Source() {
         </>
     );
 }
+
 function Companion() {
     const layout = useCompanionLayout();
     function toggleDetached() {
-        if (layout) layout.setDetached(!layout.detached);
+        if (layout) {
+            layout.setDetached(!layout.detached);
+        }
     }
+
     function toggleHalfWidth() {
-        if (layout) layout.setHalfWidth(!layout.halfWidth);
+        if (layout) {
+            layout.setHalfWidth(!layout.halfWidth);
+        }
     }
-    if (!layout?.expanded) return null;
+
+    if (!layout?.expanded) {
+        return null;
+    }
+
     return (
         <>
             <Button onClick={toggleDetached}>
@@ -39,6 +52,7 @@ function Companion() {
         </>
     );
 }
+
 function Example() {
     return (
         <CompanionLayout companion={<Companion />}>
@@ -46,6 +60,7 @@ function Example() {
         </CompanionLayout>
     );
 }
+
 export const Slots: Story = { render: Example };
 
 export const ResizableWorkspace: Story = {

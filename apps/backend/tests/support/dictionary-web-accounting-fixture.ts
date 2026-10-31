@@ -13,20 +13,24 @@ if (
     process.env.AUTH_E2E_DICTIONARY_ACCOUNTING_FIXTURE !== 'true' ||
     !url ||
     process.env.DATABASE_URL !== url
-)
+) {
     throw new Error(
         'Explicit matching test-only dictionary accounting database is required.',
     );
+}
+
 const target = new URL(url);
 if (
     !['localhost', '127.0.0.1'].includes(target.hostname) ||
     !/(?:e2e|test)/i.test(target.pathname) ||
     !target.port ||
     target.port === '5432'
-)
+) {
     throw new Error(
         'A disposable loopback E2E database on a nondefault port is required.',
     );
+}
+
 const client = createPostgresClient({ databaseUrl: url, maxConnections: 1 });
 try {
     const database = createDrizzleDatabase(client, databaseSchema);
@@ -36,6 +40,7 @@ try {
         credits = '40',
         capability = 'dictionary-generation',
     ] = process.argv.slice(2);
+
     if (mode === undefined) {
         await seedDictionaryAccountingFixture(database);
         process.stdout.write(
@@ -52,25 +57,31 @@ try {
                 'text-translation',
                 'portrait-interview',
             ].includes(capability)
-        )
+        ) {
             throw new Error(
                 'Expected customer-balance actorUUID credits capability.',
             );
+        }
+
         const available = parseCreditMilli(credits);
-        if (available > 1000000n)
+        if (available > 1000000n) {
             throw new Error(
                 'Synthetic customer fixture is limited to1000credits.',
             );
+        }
+
         await database.transaction(async (tx) => {
             const at = new Date();
             const wallet = new DrizzleAiCreditTransactionParticipant(tx);
             const summary = await wallet.accountSummary(actorId, at);
-            if (summary.reservedCredits !== 0n)
+            if (summary.reservedCredits !== 0n) {
                 throw new Error(
                     'Finish existing synthetic actions before adjusting fixture balance.',
                 );
+            }
+
             const difference = available - summary.availableCredits;
-            if (difference !== 0n)
+            if (difference !== 0n) {
                 await wallet.adjustByAdmin({
                     ownerId: actorId,
                     amount: difference,
@@ -80,6 +91,8 @@ try {
                     reason: 'Synthetic customer allowance confirmation fixture',
                     sourceReference: randomUUID(),
                 });
+            }
+
             const [policy] = await tx
                 .select()
                 .from(capabilityPolicyRevisionsTable)
@@ -91,18 +104,19 @@ try {
                 )
                 .orderBy(desc(capabilityPolicyRevisionsTable.version))
                 .limit(1);
-            if (policy?.funding !== 'customer')
-                await tx
-                    .insert(capabilityPolicyRevisionsTable)
-                    .values({
-                        id: randomUUID(),
-                        capability: capability as 'dictionary-generation',
-                        version: (policy?.version ?? 0) + 1,
-                        funding: 'customer',
-                        createdAt: at,
-                        reason: 'Synthetic explicit paid allowance browser fixture',
-                    });
+
+            if (policy?.funding !== 'customer') {
+                await tx.insert(capabilityPolicyRevisionsTable).values({
+                    id: randomUUID(),
+                    capability: capability as 'dictionary-generation',
+                    version: (policy?.version ?? 0) + 1,
+                    funding: 'customer',
+                    createdAt: at,
+                    reason: 'Synthetic explicit paid allowance browser fixture',
+                });
+            }
         });
+
         process.stdout.write(
             JSON.stringify({ availableCredits: credits, capability }) + '\n',
         );

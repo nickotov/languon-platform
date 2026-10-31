@@ -25,11 +25,13 @@ export async function publishKnowledgeTranscriptionWorkerObservation(
             ? [knowledgeTranscriptionWorkerFormat]
             : [],
     };
+
     await database
         .insert(observations)
         .values(row)
         .onConflictDoUpdate({ target: observations.id, set: row });
 }
+
 export async function knowledgeTranscriptionExecutionReady(
     database: KnowledgeDatabase,
 ) {
@@ -50,5 +52,6 @@ export async function knowledgeTranscriptionExecutionReady(
             ),
         )
         .limit(1);
+
     return !!row;
 }

@@ -15,6 +15,7 @@ export function reconcileExistingPackageCommand(previous, id, script) {
             },
         };
     }
+
     return {
         ...previous,
         source: {

@@ -55,20 +55,26 @@ export function Field({
         ? { id: controlId }
         : { 'aria-labelledby': labelId };
 
-    if (descriptionId)
+    if (descriptionId) {
         controlProps['aria-describedby'] = [
             children.props['aria-describedby'],
             descriptionId,
         ]
             .filter(Boolean)
             .join(' ');
+    }
 
-    if (control && error) controlProps['aria-invalid'] = true;
+    if (control && error) {
+        controlProps['aria-invalid'] = true;
+    }
 
-    if (control && success && !error)
+    if (control && success && !error) {
         controlProps['data-validation'] = 'success';
+    }
 
-    if (control && required) controlProps.required = true;
+    if (control && required) {
+        controlProps.required = true;
+    }
 
     const clonedControl = isValidElement(children)
         ? cloneElement(children, controlProps)

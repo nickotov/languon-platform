@@ -61,8 +61,9 @@ export function enqueue(
                 );
 
             if (replay) {
-                if (replay.fingerprint !== fingerprint)
+                if (replay.fingerprint !== fingerprint) {
                     throw new PortraitConflictError();
+                }
 
                 return withActionBilling(
                     tx,
@@ -76,8 +77,10 @@ export function enqueue(
             if (
                 state.version !== input.expectedVersion ||
                 state.generation !== input.expectedGeneration
-            )
+            ) {
                 throw new PortraitConflictError();
+            }
+
             const [interview] = await tx
                 .select()
                 .from(interviews)
@@ -88,7 +91,10 @@ export function enqueue(
                     ),
                 );
 
-            if (!interview) throw new PortraitDraftUnavailableError();
+            if (!interview) {
+                throw new PortraitDraftUnavailableError();
+            }
+
             const [active] = await tx
                 .select({ id: operations.id })
                 .from(operations)
@@ -99,11 +105,16 @@ export function enqueue(
                     ),
                 );
 
-            if (active) throw new PortraitConflictError();
-            if (interview.context.messages.length >= 40)
+            if (active) {
+                throw new PortraitConflictError();
+            }
+
+            if (interview.context.messages.length >= 40) {
                 throw new PortraitInterviewResourceLimitError(
                     'Interview context limit reached; review the portrait or begin a new interview.',
                 );
+            }
+
             const context = {
                 ...interview.context,
                 locale: input.input.requestedLocale ?? interview.context.locale,
@@ -161,17 +172,19 @@ export function enqueue(
                 })
                 .returning({ admitted: dailyAdmissions.admitted });
 
-            if (!quota)
+            if (!quota) {
                 throw new PortraitInterviewDailyQuotaError(
                     'Daily interview limit reached. Try again tomorrow (UTC).',
                 );
+            }
+
             const expiresAt = new Date(input.now.getTime() + ttl);
             await tx
                 .update(interviews)
                 .set({ context, expiresAt, updatedAt: input.now })
                 .where(eq(interviews.id, interview.id));
 
-            if (state.draft)
+            if (state.draft) {
                 await savePortraitState(
                     tx,
                     input.ownerId,
@@ -184,6 +197,7 @@ export function enqueue(
                     },
                     input.now,
                 );
+            }
 
             return withActionBilling(
                 tx,

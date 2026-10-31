@@ -144,7 +144,9 @@ export async function conversationTextReference(
                 ),
             );
 
-        if (!row) throw conversationUnavailable();
+        if (!row) {
+            throw conversationUnavailable();
+        }
 
         return {
             reference: {

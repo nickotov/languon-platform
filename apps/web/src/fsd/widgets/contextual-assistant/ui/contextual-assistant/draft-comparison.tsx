@@ -31,12 +31,15 @@ export function DraftComparison({
         gcTime: 0,
         retry: false,
     });
+
     function toggle() {
         setOpen((value) => !value);
     }
+
     function retry() {
         void latest.refetch();
     }
+
     return (
         <div>
             <Button

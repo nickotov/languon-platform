@@ -37,15 +37,25 @@ export function WorkbookReader({
         retry: false,
         gcTime: 0,
     });
+
     function previous() {
         const note = notes[index - 1];
-        if (note) onSelect(note.id);
+        if (note) {
+            onSelect(note.id);
+        }
     }
+
     function next() {
         const note = notes[index + 1];
-        if (note) onSelect(note.id);
+        if (note) {
+            onSelect(note.id);
+        }
     }
-    if (!selected) return null;
+
+    if (!selected) {
+        return null;
+    }
+
     return (
         <section className={styles.panel}>
             <nav className={styles.actions}>

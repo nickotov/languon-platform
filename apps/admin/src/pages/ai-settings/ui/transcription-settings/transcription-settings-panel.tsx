@@ -24,12 +24,14 @@ function Configuration({
     config: KnowledgeTranscriptionAdminConfig | null;
 }) {
     const t = useTranslate();
-    if (!config)
+    if (!config) {
         return (
             <Typography.Text>
                 {t('transcription.noConfiguration')}
             </Typography.Text>
         );
+    }
+
     return (
         <Descriptions
             column={1}
@@ -76,6 +78,7 @@ function Configuration({
         />
     );
 }
+
 function Readiness({
     readiness,
 }: {
@@ -86,6 +89,7 @@ function Readiness({
     const description = readiness.reasons
         .map((reason) => t(`transcription.${reason}`))
         .join(' · ');
+
     return (
         <Alert
             type={type}
@@ -99,6 +103,7 @@ function Readiness({
         />
     );
 }
+
 export function TranscriptionSettingsPanel() {
     const t = useTranslate();
     const settings = useTranscriptionSettings();
@@ -106,14 +111,17 @@ export function TranscriptionSettingsPanel() {
     function refresh() {
         settings.refresh();
     }
+
     function signIn() {
         logout.mutate();
     }
+
     const canApply =
         settings.preview !== null &&
         (!settings.preview.request.config.enabled ||
             settings.preview.readiness.ready);
     const revision = settings.state?.version ?? 0;
+
     return (
         <Card
             className={local.root ?? ''}

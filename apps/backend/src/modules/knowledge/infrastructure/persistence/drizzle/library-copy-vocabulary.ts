@@ -17,18 +17,21 @@ export function vocabularyLibraryRows(
     block: LearningBlock,
     entryIds: readonly string[],
 ) {
-    if (block.type !== 'vocabulary')
+    if (block.type !== 'vocabulary') {
         throw new KnowledgeDomainError(
             'invalid_request',
             'Select a vocabulary block.',
         );
+    }
+
     const entries = entryIds.map((id) => {
         const entry = block.entries.find((item) => item.id === id);
-        if (!entry)
+        if (!entry) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'A selected vocabulary entry is unavailable.',
             );
+        }
 
         return entry;
     });

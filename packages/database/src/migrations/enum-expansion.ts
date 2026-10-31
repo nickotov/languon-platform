@@ -14,12 +14,16 @@ export function parseEnumExpansion(statement: string): {
     placement?: { direction: 'before' | 'after'; neighbor: string };
 } | null {
     const match = enumExpansion.exec(statement);
-    if (!match) return null;
+    if (!match) {
+        return null;
+    }
+
     const placement = match[4]
         ?.trim()
         .match(/^(BEFORE|AFTER)\s+('(?:[^']|'')*')$/iu);
     const decode = (value: string): string =>
         value.slice(1, -1).replaceAll("''", "'");
+
     return {
         label: decode(match[3]!),
         ifNotExists: Boolean(match[2]),

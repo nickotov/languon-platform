@@ -47,6 +47,7 @@ export function createKnowledgeSpeechBrowserFixture(input: {
         generationEnabled: true,
         burstLimiter: new RedisGenerationBurstLimiter(input.rateLimiter),
     });
+
     return {
         speechRoutes: createSpeechRoutes({
             service: speech.service,
@@ -63,11 +64,16 @@ export function createKnowledgeSpeechBrowserFixture(input: {
             if (
                 process.env.CONTEXTUAL_ASSISTANT_FIXTURE !== 'true' ||
                 process.env.APP_ENV !== 'test'
-            )
+            ) {
                 throw new Error(
                     'Explicit contextual assistant test fixture opt-in required for tone speech.',
                 );
-            if (loop) return;
+            }
+
+            if (loop) {
+                return;
+            }
+
             const [existing] = await input.database
                 .select({ version: prices.version })
                 .from(prices)
@@ -80,7 +86,8 @@ export function createKnowledgeSpeechBrowserFixture(input: {
                 )
                 .orderBy(desc(prices.version))
                 .limit(1);
-            if (!existing)
+
+            if (!existing) {
                 await new DrizzleProviderPriceStore(input.database).publish(
                     {
                         expectedVersion: 0,
@@ -100,22 +107,27 @@ export function createKnowledgeSpeechBrowserFixture(input: {
                     administratorId,
                     input.clock.now(),
                 );
+            }
+
             loop = (async () => {
                 while (!controller.signal.aborted) {
                     await speech.worker.runOnce(controller.signal);
                     await delay(25, undefined, { signal: controller.signal });
                 }
             })().catch(() => {
-                if (!controller.signal.aborted) workerFailed = true;
+                if (!controller.signal.aborted) {
+                    workerFailed = true;
+                }
             });
         },
         async close() {
             controller.abort();
             await loop;
-            if (workerFailed)
+            if (workerFailed) {
                 throw new Error(
                     'Knowledge speech browser fixture worker failed.',
                 );
+            }
         },
     };
 }

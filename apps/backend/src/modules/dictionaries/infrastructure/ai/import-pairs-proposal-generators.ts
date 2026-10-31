@@ -81,11 +81,13 @@ function proposalMatchesTrustedInput(
             ? (['exampleTranslation'] as const)
             : []),
     ]);
+
     return (
         resolved.length === requested.size &&
         new Set(resolved.map((row) => row.rowIndex)).size === resolved.length &&
         proposal.candidates.every((row) => {
             const baseline = requested.get(row.rowIndex);
+
             return (
                 baseline !== undefined &&
                 row.source === baseline.source &&
@@ -114,6 +116,7 @@ function proposalMatchesTrustedInput(
         }) &&
         proposal.failures.every((row) => {
             const baseline = requested.get(row.rowIndex);
+
             return (
                 baseline !== undefined &&
                 row.input === baseline.source &&
@@ -143,11 +146,16 @@ export function createMastraImportPairsProposalGenerator(options: {
                 const result = new ImportPairsProposalGeneratorExecutionError(
                     reason,
                 );
-                if (meteredUsage) result.usage = meteredUsage;
+
+                if (meteredUsage) {
+                    result.usage = meteredUsage;
+                }
+
                 result.executionOutcome =
                     outputReceived && result.category === 'invalid_model_output'
                         ? 'completed'
                         : 'ambiguous';
+
                 return result;
             };
 
@@ -156,8 +164,11 @@ export function createMastraImportPairsProposalGenerator(options: {
                 DictionaryImportPairsGenerationInputPayloadSchema.parse(
                     request.input,
                 );
-            if (input.rows.length > dictionaryBatchGenerationLimits.chunkRows)
+
+            if (input.rows.length > dictionaryBatchGenerationLimits.chunkRows) {
                 throw failure('invalid_model_output');
+            }
+
             const message = JSON.stringify({
                 effectiveSettings: input.effectiveSettings,
                 instruction: input.instruction,
@@ -179,12 +190,15 @@ export function createMastraImportPairsProposalGenerator(options: {
                         request.providerBudget.maxOutputTokensPerAttempt,
                 },
             });
+
             if (
                 requestLimits.maxOutputTokens < 8_192 ||
                 Buffer.byteLength(message, 'utf8') + 16_384 >
                     requestLimits.maxInputTokens
-            )
+            ) {
                 throw failure('invalid_model_output');
+            }
+
             try {
                 const result = await withQueuedTextAiProviderAttempt(
                     request.providerAttempt,
@@ -211,6 +225,7 @@ export function createMastraImportPairsProposalGenerator(options: {
                             },
                         }),
                 );
+
                 outputReceived = true;
                 if (result.usage) {
                     try {
@@ -223,17 +238,23 @@ export function createMastraImportPairsProposalGenerator(options: {
                         throw failure('invalid_model_output');
                     }
                 }
-                if (result.error || result.tripwire)
+
+                if (result.error || result.tripwire) {
                     throw withProviderExecutionOutcome(
                         failure('provider_unavailable'),
                         result.error,
                         request.providerExecution?.providerId ?? 'unknown',
                     );
+                }
+
                 const proposal = parseDictionaryImportPairsGenerationProposal(
                     result.object,
                 );
-                if (!proposalMatchesTrustedInput(proposal, input))
+
+                if (!proposalMatchesTrustedInput(proposal, input)) {
                     throw failure('invalid_model_output');
+                }
+
                 const usage = result.usage;
                 let measuredUsage;
                 try {
@@ -266,28 +287,43 @@ export function createMastraImportPairsProposalGenerator(options: {
                         /* Invalid/missing provider meters remain unknown. */
                     }
                 }
-                if (error instanceof CardProposalGeneratorError && meteredUsage)
-                    error.usage = meteredUsage;
 
-                if (request.signal.aborted)
+                if (
+                    error instanceof CardProposalGeneratorError &&
+                    meteredUsage
+                ) {
+                    error.usage = meteredUsage;
+                }
+
+                if (request.signal.aborted) {
                     throw (
                         request.signal.reason ??
                         new DOMException('Aborted', 'AbortError')
                     );
+                }
+
                 if (
                     outputReceived &&
                     error instanceof CardProposalGeneratorError &&
                     error.category === 'invalid_model_output'
-                )
+                ) {
                     error.executionOutcome = 'completed';
-                if (error instanceof ImportPairsProposalGeneratorExecutionError)
+                }
+
+                if (
+                    error instanceof ImportPairsProposalGeneratorExecutionError
+                ) {
                     throw error;
+                }
+
                 if (
                     outputReceived &&
                     error instanceof Error &&
                     error.name === 'ZodError'
-                )
+                ) {
                     throw failure('invalid_model_output');
+                }
+
                 throw withProviderExecutionOutcome(
                     failure('invalid_model_output'),
                     error,
@@ -297,12 +333,15 @@ export function createMastraImportPairsProposalGenerator(options: {
         },
         readiness(signal) {
             signal.throwIfAborted();
-            if (!options.providerReadiness)
+            if (!options.providerReadiness) {
                 return Promise.reject(
                     new Error('Import-pairs generation is unavailable.'),
                 );
+            }
+
             return options.providerReadiness(signal).catch(() => {
                 signal.throwIfAborted();
+
                 throw new Error('Import-pairs generation is unavailable.');
             });
         },
@@ -367,16 +406,21 @@ export class DeterministicImportPairsProposalGenerator implements ImportPairsPro
         const proposal = parseDictionaryImportPairsGenerationProposal(
             this.resolve(request),
         );
-        if (!proposalMatchesTrustedInput(proposal, request.input))
+
+        if (!proposalMatchesTrustedInput(proposal, request.input)) {
             throw new ImportPairsProposalGeneratorExecutionError(
                 'invalid_model_output',
             );
+        }
+
         request.signal.throwIfAborted();
+
         return { proposal, usage: { inputTokens: 0, outputTokens: 0 } };
     }
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -386,6 +430,7 @@ export class UnavailableImportPairsProposalGenerator implements ImportPairsPropo
         request: ImportPairsProposalGeneratorRequest,
     ): Promise<never> {
         request.signal.throwIfAborted();
+
         return Promise.reject(
             new Error('Import-pairs generation is unavailable.'),
         );
@@ -393,6 +438,7 @@ export class UnavailableImportPairsProposalGenerator implements ImportPairsPropo
 
     public readiness(signal: AbortSignal): Promise<never> {
         signal.throwIfAborted();
+
         return Promise.reject(
             new Error('Import-pairs generation is unavailable.'),
         );
@@ -420,25 +466,32 @@ export type ImportPairsProposalGeneratorFactoryOptions =
 export function createImportPairsProposalGenerator(
     options: ImportPairsProposalGeneratorFactoryOptions,
 ): ImportPairsProposalGenerator {
-    if (options.mode === 'unavailable')
+    if (options.mode === 'unavailable') {
         return new UnavailableImportPairsProposalGenerator();
-    if (options.mode === 'deterministic')
+    }
+
+    if (options.mode === 'deterministic') {
         return new DeterministicImportPairsProposalGenerator(options.proposal);
+    }
+
     // Accounting may admit fewer than five chunks. Require only a single
     // affordable chunk here; generate() checks its actual input and remaining caps.
     if (
         options.providerBudget.maxInputTokensPerAttempt < 16_384 ||
         options.providerBudget.maxOutputTokensPerAttempt < 8_192
-    )
+    ) {
         throw new Error(
             'Import-pairs generation requires a bounded per-chunk input/output envelope.',
         );
+    }
+
     const agent: DictionaryImportPairsGenerationAgent =
         createDictionaryImportPairsGenerationAgent({ model: options.model });
     const runtime = new Mastra({
         agents: { dictionaryImportPairsGenerationAgent: agent },
         logger: false,
     });
+
     return createMastraImportPairsProposalGenerator({
         agent: runtime.listAgents().dictionaryImportPairsGenerationAgent,
         ...(options.modelRequestLimits

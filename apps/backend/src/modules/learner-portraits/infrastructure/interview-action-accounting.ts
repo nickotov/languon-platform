@@ -37,6 +37,7 @@ export function usesActionAccounting(
         execution.actionAccountingVersion === 1
     );
 }
+
 export function createInterviewActionAccounting(input: {
     withOperation<T>(work: (tx: AiCreditTransaction) => Promise<T>): Promise<T>;
     withTransaction<T>(
@@ -81,9 +82,12 @@ export function createInterviewActionAccounting(input: {
                     : null,
                 at: new Date(),
             });
+
             const snapshot = input.execution.snapshot;
-            if (!snapshot)
+            if (!snapshot) {
                 throw new Error('Action provider snapshot is missing.');
+            }
+
             const [attempt] = await tx
                 .select()
                 .from(attempts)
@@ -100,6 +104,7 @@ export function createInterviewActionAccounting(input: {
                           usage,
                       )
                     : null;
+
             await recordProviderExpense(
                 tx,
                 {
@@ -117,6 +122,7 @@ export function createInterviewActionAccounting(input: {
             );
         });
     }
+
     return {
         admit: (call) =>
             input.withOperation(async (tx) => {
@@ -125,6 +131,7 @@ export function createInterviewActionAccounting(input: {
                     input.operationId,
                     input.ownerId,
                 );
+
                 if (
                     !Number.isSafeInteger(call.inputTokenEstimate) ||
                     call.inputTokenEstimate < 0 ||
@@ -134,34 +141,46 @@ export function createInterviewActionAccounting(input: {
                     call.maxOutputTokens < 1 ||
                     call.maxOutputTokens >
                         readInterviewOutputTokenLimit(input.execution)
-                )
+                ) {
                     throw new Error('Interview request exceeds pinned limits.');
-                if (call.purpose !== 'answer')
+                }
+
+                if (call.purpose !== 'answer') {
                     throw new Error('Interview memory calls are not enabled.');
+                }
+
                 const capacity = await readTextAiCapacity(tx, {
                     actorId: input.ownerId,
                     now: new Date(),
                     budget: input.execution.budget,
                 });
+
                 if (
                     !textAiProviderBudgetAllows(
                         capacity.providerUsage,
                         true,
                         input.execution.budget,
                     )
-                )
+                ) {
                     throw new InterviewAccountingError(
                         'capacity_unavailable',
                         'AI capacity is currently unavailable. Try again later.',
                     );
+                }
+
                 const previous = await tx
                     .select({ id: attempts.id })
                     .from(attempts)
                     .where(eq(attempts.actionId, input.operationId));
-                if (previous.length >= 2)
+
+                if (previous.length >= 2) {
                     throw new Error('Interview automatic retry limit reached.');
-                if (!input.leaseToken)
+                }
+
+                if (!input.leaseToken) {
                     throw new Error('Claimed execution lease is required.');
+                }
+
                 const attempt = await new DrizzleActionAccountingParticipant(
                     tx,
                 ).admitAttempt({
@@ -197,21 +216,32 @@ export async function settleInterviewAction(
     outcome: 'success' | 'stopped' | 'failure',
     at: Date,
 ) {
-    if (!usesActionAccounting(operation.execution)) return;
+    if (!usesActionAccounting(operation.execution)) {
+        return;
+    }
+
     // Cleanup may revisit an expired or erased terminal operation. Preserve its
     // original settlement; the generic participant still rejects mismatched replays.
     await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${operation.ownerId},1920424381))`,
     );
+
     const participant = new DrizzleActionAccountingParticipant(tx);
     const action = await participant.read(operation.id, operation.ownerId);
-    if (action.state !== 'active') return;
+    if (action.state !== 'active') {
+        return;
+    }
+
     const pending = await tx
         .select()
         .from(attempts)
         .where(eq(attempts.actionId, operation.id));
+
     for (const attempt of pending) {
-        if (attempt.state !== 'dispatched') continue;
+        if (attempt.state !== 'dispatched') {
+            continue;
+        }
+
         await participant.recordAttempt({
             actionId: operation.id,
             ownerId: operation.ownerId,
@@ -219,10 +249,14 @@ export async function settleInterviewAction(
             successful: false,
             at,
         });
+
         const execution =
             operation.execution as unknown as ActionInterviewExecution;
-        if (!execution.snapshot)
+
+        if (!execution.snapshot) {
             throw new Error('Pinned interview execution is missing.');
+        }
+
         await recordProviderExpense(
             tx,
             {
@@ -239,6 +273,7 @@ export async function settleInterviewAction(
             { nativePrice: execution.providerPrice },
         );
     }
+
     await participant.settle({
         actionId: operation.id,
         ownerId: operation.ownerId,

@@ -86,10 +86,13 @@ export function RoutingConfigurationForm({
                 flowTariffs,
             },
         });
+
         if (!parsed.success) {
             setValidation(t('routing.invalid'));
+
             return;
         }
+
         setValidation(null);
         await onPublish(parsed.data);
     };

@@ -12,9 +12,11 @@ function delay(signal: AbortSignal) {
             signal.removeEventListener('abort', stop);
             resolve();
         }, 2500);
+
         signal.addEventListener('abort', stop, { once: true });
     });
 }
+
 export async function pollTranscription(
     job: KnowledgeTranscriptionJob,
     read: () => Promise<KnowledgeTranscriptionJob>,
@@ -24,12 +26,15 @@ export async function pollTranscription(
     const deadline = Date.now() + 600_000;
     onJob(job);
     while (job.state === 'queued' || job.state === 'running') {
-        if (Date.now() > deadline)
+        if (Date.now() > deadline) {
             throw new Error('Transcription observation timed out.');
+        }
+
         await delay(signal);
         job = await read();
         signal.throwIfAborted();
         onJob(job);
     }
+
     return job;
 }

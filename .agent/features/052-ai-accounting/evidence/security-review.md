@@ -70,7 +70,6 @@ USD transport, external URLs or logging within this review boundary. Runtime
 role configuration and exploit/remediation behavior need actual-role PostgreSQL
 proof; source review alone is insufficient. AC9 performance remains failed.
 
-
 ## Expanded remediation review — scope checkpoint
 
 The reviewer inspected the newly introduced checked helpers and final role
@@ -117,7 +116,6 @@ its worker grants are removed because checked SECURITY DEFINER paths can invoke
 it themselves. Generic dictionary-role8/8 passed through0104, including denied
 raw mutation and denied direct report invalidation. Final speech/purge/newcall
 proof and full remediation verdict remain pending.
-
 
 ## Final independent security verdict — READY
 

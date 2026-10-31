@@ -22,6 +22,7 @@ describe('SessionIssuer', () => {
             {
                 sign: async (claims) => {
                     signedClaims = claims;
+
                     return 'header.payload.signature';
                 },
                 verify: async () => {
@@ -50,9 +51,11 @@ describe('SessionIssuer', () => {
             sid: 'id-2',
             sub: 'user-1',
         });
+
         expect(prepared.storedSession.absoluteExpiresAt).toEqual(
             new Date(initialTime.getTime() + 14 * dayMs),
         );
+
         expect(prepared.refreshCredential).toBe('opaque');
 
         currentTime = new Date(initialTime.getTime() + 10 * 60 * 1_000);
@@ -66,6 +69,7 @@ describe('SessionIssuer', () => {
             status: 'active',
             userId: 'user-1',
         };
+
         expect(
             issuer.toSuccess(prepared, account).session
                 .recentAuthenticationExpiresAt,
@@ -99,6 +103,7 @@ describe('SessionIssuer', () => {
             method: 'password',
             userId: 'user-1',
         });
+
         currentTime = new Date(initialTime.getTime() + 14 * dayMs - 60_000);
 
         const successor = await issuer.prepareSuccessor(initial.storedSession);
@@ -106,6 +111,7 @@ describe('SessionIssuer', () => {
         expect(successor.storedSession.absoluteExpiresAt).toEqual(
             initial.storedSession.absoluteExpiresAt,
         );
+
         expect(successor.accessTokenExpiresAt).toEqual(
             initial.storedSession.absoluteExpiresAt,
         );

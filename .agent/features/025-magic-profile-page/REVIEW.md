@@ -33,6 +33,6 @@ Verdict: Approved
 - [x] Guides map proportional scenarios to real E2E tests.
 - [x] No debugging/generated artifacts or accidental feature scope remain.
 - [x] Unsupported operations are non-persisting mocks and fabricated account or
-  financial data is absent.
+      financial data is absent.
 
 No critical, high, medium, security, or unresolved material findings remain.

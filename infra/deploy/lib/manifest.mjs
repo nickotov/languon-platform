@@ -53,12 +53,14 @@ function normalizeGenerationBudget(value) {
             'dictionaryJobs.generationBudget compatibility metadata is required.',
         );
     }
+
     const fieldNames = Object.keys(DICTIONARY_GENERATION_BUDGET_BOUNDS);
     if (Object.keys(value).sort().join(',') !== fieldNames.sort().join(',')) {
         throw new Error(
             `dictionaryJobs.generationBudget must contain exactly: ${fieldNames.join(', ')}.`,
         );
     }
+
     const budget = {};
     for (const [name, [minimum, maximum]] of Object.entries(
         DICTIONARY_GENERATION_BUDGET_BOUNDS,
@@ -73,8 +75,10 @@ function normalizeGenerationBudget(value) {
                 `dictionaryJobs.generationBudget.${name} must be an integer between ${minimum} and ${maximum}.`,
             );
         }
+
         budget[name] = fieldValue;
     }
+
     const maximumPricedCost =
         Math.ceil(
             (budget.maxInputTokensPerAttempt *
@@ -86,11 +90,13 @@ function normalizeGenerationBudget(value) {
                 budget.outputCostMicrosPerMillionTokens) /
                 1_000_000,
         );
+
     if (budget.maxCostMicrosPerAttempt < maximumPricedCost) {
         throw new Error(
             'dictionaryJobs.generationBudget.maxCostMicrosPerAttempt must cover the maximum priced input and output tokens.',
         );
     }
+
     return budget;
 }
 
@@ -98,6 +104,7 @@ function normalizeFormats(value, name) {
     if (!Array.isArray(value)) {
         throw new Error(`dictionaryJobs.${name} must be an array.`);
     }
+
     const formats = [...value];
     if (
         formats.some(
@@ -110,9 +117,11 @@ function normalizeFormats(value, name) {
             `dictionaryJobs.${name} contains an invalid composite format.`,
         );
     }
+
     if (new Set(formats).size !== formats.length) {
         throw new Error(`dictionaryJobs.${name} contains duplicate formats.`);
     }
+
     return formats.sort();
 }
 
@@ -131,20 +140,25 @@ function normalizeDictionaryJobs(input) {
             'dictionaryJobs compatibility metadata is required for schemaVersion 2.',
         );
     }
+
     if (!['expand', 'activate'].includes(input.phase)) {
         throw new Error('dictionaryJobs.phase must be expand or activate.');
     }
+
     const capabilities = { phase: input.phase };
     for (const name of DICTIONARY_JOB_CAPABILITY_NAMES) {
         capabilities[name] = normalizeFormats(input[name], name);
     }
+
     capabilities.retireFormats = normalizeFormats(
         input.retireFormats,
         'retireFormats',
     );
+
     capabilities.generationBudget = normalizeGenerationBudget(
         input.generationBudget,
     );
+
     if (
         capabilities.phase === 'activate' &&
         capabilities.apiEnqueued.length === 0
@@ -153,6 +167,7 @@ function normalizeDictionaryJobs(input) {
             'dictionaryJobs activate phase must enqueue at least one format.',
         );
     }
+
     for (const name of DICTIONARY_JOB_CAPABILITY_NAMES.filter(
         (name) => name !== 'apiEnqueued',
     )) {
@@ -162,11 +177,15 @@ function normalizeDictionaryJobs(input) {
             `Candidate ${name}`,
         );
     }
+
     return capabilities;
 }
 
 function assertEnqueuedBudgetClaimable(enqueuing, worker, description) {
-    if (enqueuing.apiEnqueued.length === 0) return;
+    if (enqueuing.apiEnqueued.length === 0) {
+        return;
+    }
+
     const envelope = enqueuing.generationBudget;
     const workerCeilings = worker.generationBudget;
     if (!envelope || !workerCeilings) {
@@ -174,20 +193,27 @@ function assertEnqueuedBudgetClaimable(enqueuing, worker, description) {
             `${description} has no compatible dictionary generation budget metadata.`,
         );
     }
+
     const incompatibilities = [];
     for (const name of [
         'maxInputTokensPerAttempt',
         'maxOutputTokensPerAttempt',
     ]) {
-        if (envelope[name] > workerCeilings[name]) incompatibilities.push(name);
+        if (envelope[name] > workerCeilings[name]) {
+            incompatibilities.push(name);
+        }
     }
+
     for (const name of [
         'inputCostMicrosPerMillionTokens',
         'outputCostMicrosPerMillionTokens',
         'maxCostMicrosPerAttempt',
     ]) {
-        if (envelope[name] < workerCeilings[name]) incompatibilities.push(name);
+        if (envelope[name] < workerCeilings[name]) {
+            incompatibilities.push(name);
+        }
     }
+
     if (incompatibilities.length > 0) {
         throw new Error(
             `${description} cannot claim API-enqueued dictionary job envelopes for ${enqueuing.apiEnqueued.join(', ')} because these generation budget fields are incompatible: ${incompatibilities.join(', ')}.`,
@@ -199,7 +225,11 @@ function assertSharedBudgetStableAcrossWorkerOverlap(candidate, rollbackFloor) {
     const overlappingFormats = candidate.workerProcessable.filter((format) =>
         rollbackFloor.workerProcessable.includes(format),
     );
-    if (overlappingFormats.length === 0) return;
+
+    if (overlappingFormats.length === 0) {
+        return;
+    }
+
     const changedFields = Object.keys(
         DICTIONARY_GENERATION_BUDGET_BOUNDS,
     ).filter(
@@ -207,6 +237,7 @@ function assertSharedBudgetStableAcrossWorkerOverlap(candidate, rollbackFloor) {
             candidate.generationBudget?.[name] !==
             rollbackFloor.generationBudget?.[name],
     );
+
     if (changedFields.length > 0) {
         throw new Error(
             `dictionaryJobs.generationBudget must remain identical while worker formats overlap (${overlappingFormats.join(', ')}); changed fields: ${changedFields.join(', ')}.`,
@@ -235,6 +266,7 @@ export function assertDictionaryJobRollbackCompatibility(
     if (!['forward', 'rollback'].includes(direction)) {
         throw new Error('Dictionary job compatibility direction is invalid.');
     }
+
     const candidateCapabilities =
         candidate.dictionaryJobs ?? EMPTY_DICTIONARY_JOB_CAPABILITIES;
     const rollbackCapabilities =
@@ -260,23 +292,28 @@ export function assertDictionaryJobRollbackCompatibility(
             );
         }
     }
+
     assertEnqueuedBudgetClaimable(
         candidateCapabilities,
         rollbackCapabilities,
         'Rollback-floor worker',
     );
+
     assertEnqueuedBudgetClaimable(
         rollbackCapabilities,
         candidateCapabilities,
         'Candidate worker',
     );
+
     assertSharedBudgetStableAcrossWorkerOverlap(
         candidateCapabilities,
         rollbackCapabilities,
     );
+
     const newlyEnqueued = candidateCapabilities.apiEnqueued.filter(
         (format) => !rollbackCapabilities.apiEnqueued.includes(format),
     );
+
     if (
         direction === 'forward' &&
         candidateCapabilities.phase === 'expand' &&
@@ -286,6 +323,7 @@ export function assertDictionaryJobRollbackCompatibility(
             `dictionaryJobs expand phase cannot add API-enqueued formats: ${newlyEnqueued.join(', ')}.`,
         );
     }
+
     if (
         direction === 'forward' &&
         candidateCapabilities.phase === 'activate' &&
@@ -295,10 +333,12 @@ export function assertDictionaryJobRollbackCompatibility(
             'dictionaryJobs activate phase must add at least one API-enqueued format.',
         );
     }
+
     const removed = removedLifecycleFormats(
         candidateCapabilities,
         rollbackCapabilities,
     );
+
     if (
         direction === 'forward' &&
         removed.join(',') !== candidateCapabilities.retireFormats.join(',')
@@ -307,6 +347,7 @@ export function assertDictionaryJobRollbackCompatibility(
             `dictionaryJobs.retireFormats must exactly declare removed lifecycle formats: ${removed.join(', ') || 'none'}.`,
         );
     }
+
     return removed;
 }
 
@@ -314,30 +355,40 @@ export function validateReleaseManifest(input, expectations = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         throw new Error('Release manifest must be a JSON object.');
     }
+
     if (input.schemaVersion !== 2) {
         throw new Error('schemaVersion must be 2.');
     }
-    if (input.verified !== true)
+
+    if (input.verified !== true) {
         throw new Error('Release manifest is not build-ready.');
+    }
+
     if (!SHA_PATTERN.test(input.sourceSha ?? '')) {
         throw new Error('sourceSha must be 40 lowercase hex characters.');
     }
-    if (!IDENTITY_PATTERN.test(input.identity ?? ''))
+
+    if (!IDENTITY_PATTERN.test(input.identity ?? '')) {
         throw new Error('identity is invalid.');
+    }
+
     if (input.version !== null && !SEMVER_PATTERN.test(input.version ?? '')) {
         throw new Error(
             'version must be null or a stable vMAJOR.MINOR.PATCH version.',
         );
     }
+
     if (!Number.isSafeInteger(input.workflowRun) || input.workflowRun < 1) {
         throw new Error('workflowRun must be a positive integer.');
     }
+
     if (
         typeof input.createdAt !== 'string' ||
         Number.isNaN(Date.parse(input.createdAt))
     ) {
         throw new Error('createdAt must be an ISO timestamp.');
     }
+
     if (
         !input.images ||
         typeof input.images !== 'object' ||
@@ -345,6 +396,7 @@ export function validateReleaseManifest(input, expectations = {}) {
     ) {
         throw new Error('images must be an object.');
     }
+
     if (
         Object.keys(input.images).sort().join(',') !==
         [...IMAGE_NAMES].sort().join(',')
@@ -353,6 +405,7 @@ export function validateReleaseManifest(input, expectations = {}) {
             `images must contain exactly: ${IMAGE_NAMES.join(', ')}.`,
         );
     }
+
     for (const service of IMAGE_NAMES) {
         const image = input.images[service] ?? '';
         if (
@@ -366,6 +419,7 @@ export function validateReleaseManifest(input, expectations = {}) {
                 `${service} image must be a permitted sha256 digest reference.`,
             );
         }
+
         if (
             expectations.imagePrefix &&
             !image.startsWith(expectations.imagePrefix)
@@ -375,32 +429,40 @@ export function validateReleaseManifest(input, expectations = {}) {
             );
         }
     }
+
     if (!input.migration || typeof input.migration !== 'object') {
         throw new Error('migration compatibility metadata is required.');
     }
+
     const compatibility = input.migration.compatibility;
     if (!['none', 'expand', 'migrate'].includes(compatibility)) {
         throw new Error(
             'Contract/destructive migrations cannot run during blue/green deployment.',
         );
     }
+
     if (!/^[A-Za-z0-9._:-]{1,128}$/.test(input.migration.ledger ?? '')) {
         throw new Error('migration ledger identity is invalid.');
     }
+
     if (expectations.sourceSha && input.sourceSha !== expectations.sourceSha) {
         throw new Error(
             `Manifest sourceSha does not match expected commit ${expectations.sourceSha}.`,
         );
     }
+
     if (expectations.version && input.version !== expectations.version) {
         throw new Error(
             `Manifest version does not match expected release ${expectations.version}.`,
         );
     }
-    if (input.pronunciationAudio !== undefined)
+
+    if (input.pronunciationAudio !== undefined) {
         throw new Error(
             'Retired pronunciationAudio release metadata is unsupported; use sharedSpeech.',
         );
+    }
+
     const dictionaryJobs = normalizeDictionaryJobs(input.dictionaryJobs);
     const sharedSpeech =
         input.sharedSpeech === undefined
@@ -410,13 +472,16 @@ export function validateReleaseManifest(input, expectations = {}) {
         input.modelPricing === undefined
             ? undefined
             : normalizeModelPricing(input.modelPricing);
+
     if (
         sharedSpeech?.apiEnqueued.length &&
         !modelPricing?.apiAdmitted.includes(1)
-    )
+    ) {
         throw new Error(
             'Shared speech admission requires revision-aware model pricing admission',
         );
+    }
+
     return {
         schemaVersion: input.schemaVersion,
         identity: input.identity,
@@ -444,5 +509,6 @@ export async function readReleaseManifest(path, expectations) {
             cause: error,
         });
     }
+
     return validateReleaseManifest(parsed, expectations);
 }

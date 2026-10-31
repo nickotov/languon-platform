@@ -25,6 +25,7 @@ export class TextAiSelectionUnavailableError extends Error {
         super(
             'AI generation is temporarily unavailable. Please try again later.',
         );
+
         this.name = 'TextAiSelectionUnavailableError';
     }
 }

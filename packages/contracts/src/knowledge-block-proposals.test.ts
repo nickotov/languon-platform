@@ -10,6 +10,7 @@ const block = {
     language: 'fr',
     rule: 'A rule',
 };
+
 describe('Structured block change proposals', () => {
     it('allows a bounded cursor only when adding an independent copy', () => {
         expect(
@@ -19,6 +20,7 @@ describe('Structured block change proposals', () => {
                 insertionPosition: 12,
             }).insertionPosition,
         ).toBe(12);
+
         for (const candidate of [
             { expectedBranchVersion: 3, insertionPosition: 12 },
             {
@@ -36,12 +38,14 @@ describe('Structured block change proposals', () => {
                 mode: 'add-separately',
                 insertionPosition: 1.5,
             },
-        ])
+        ]) {
             expect(
                 ApplyKnowledgeBlockProposalRequestSchema.safeParse(candidate)
                     .success,
             ).toBe(false);
+        }
     });
+
     it('accepts an explicit single-block update and rejects ambiguous replacement groups', () => {
         const targetBlockId = randomUUID();
         expect(
@@ -50,6 +54,7 @@ describe('Structured block change proposals', () => {
                 targetBlockId,
             }).targetBlockId,
         ).toBe(targetBlockId);
+
         expect(
             LearningBlockProposalInputSchema.safeParse({
                 blocks: [block, { ...block, id: randomUUID() }],
@@ -57,6 +62,7 @@ describe('Structured block change proposals', () => {
             }).success,
         ).toBe(false);
     });
+
     it('makes add-separately an explicit apply mode without accepting foreign destination fields', () => {
         expect(
             ApplyKnowledgeBlockProposalRequestSchema.parse({
@@ -64,12 +70,14 @@ describe('Structured block change proposals', () => {
                 mode: 'add-separately',
             }).mode,
         ).toBe('add-separately');
+
         expect(
             ApplyKnowledgeBlockProposalRequestSchema.safeParse({
                 expectedBranchVersion: 3,
                 mode: 'replace-anything',
             }).success,
         ).toBe(false);
+
         expect(
             ApplyKnowledgeBlockProposalRequestSchema.safeParse({
                 expectedBranchVersion: 3,

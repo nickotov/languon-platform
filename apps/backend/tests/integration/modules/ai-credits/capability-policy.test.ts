@@ -33,6 +33,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: owner, status: 'active' },
                 { id: viewer, status: 'active' },
             ]);
+
             await db.insert(adminMembershipsTable).values({
                 id: randomUUID(),
                 userId: owner,
@@ -41,24 +42,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 grantReason: 'Disposable capability policy test owner',
             });
         }, 120000);
+
         afterAll(async () => {
             await client?.end();
         });
+
         it('reads defaults without inserting or taking exclusive publication locks', async () => {
             const current = await db.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).current(
                     'portrait-interview',
                 ),
             );
+
             expect(current).toMatchObject({
                 version: 0,
                 revisionId: null,
                 funding: 'operator',
             });
+
             expect(
                 await db.select().from(capabilityPolicyRevisionsTable),
             ).toHaveLength(0);
         });
+
         it('denies publication without an active owner membership', async () => {
             await expect(
                 db.transaction((tx) =>
@@ -74,10 +80,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ),
             ).rejects.toBeInstanceOf(AdminAccessDeniedError);
+
             expect(
                 await db.select().from(capabilityPolicyRevisionsTable),
             ).toHaveLength(0);
         });
+
         it('serializes competing publications, preserves pinned snapshots, and appends revisions', async () => {
             const pinned = await db.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).current(
@@ -101,16 +109,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 results.filter((result) => result.status === 'fulfilled'),
             ).toHaveLength(1);
+
             const rejected = results.find(
                 (result) => result.status === 'rejected',
             );
+
             expect(
                 rejected?.status === 'rejected' && rejected.reason,
             ).toBeInstanceOf(CapabilityPolicyConflictError);
+
             expect(pinned).toMatchObject({ version: 0, funding: 'operator' });
             const first = await db
                 .select()
                 .from(capabilityPolicyRevisionsTable);
+
             await db.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).publish(
                     {
@@ -123,18 +135,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             const revisions = await db
                 .select()
                 .from(capabilityPolicyRevisionsTable);
+
             expect(revisions).toHaveLength(2);
             expect(revisions).toContainEqual(first[0]);
         });
+
         it('publishes a calibrated default without rewriting prior settings revisions', async () => {
             expect(
                 await db.transaction((tx) =>
                     new DrizzleCapabilityPolicyParticipant(tx).settings(),
                 ),
             ).toEqual({ version: 0, defaultMaxCreditsPerAction: null });
+
             await expect(
                 db.transaction((tx) =>
                     new DrizzleCapabilityPolicyParticipant(tx).publishSettings(
@@ -148,6 +164,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 ),
             ).rejects.toBeInstanceOf(AdminAccessDeniedError);
+
             const saved = await db.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).publishSettings(
                     {
@@ -159,10 +176,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             expect(saved).toEqual({
                 version: 1,
                 defaultMaxCreditsPerAction: '1.001',
             });
+
             await expect(
                 db.transaction((tx) =>
                     new DrizzleCapabilityPolicyParticipant(tx).publishSettings(

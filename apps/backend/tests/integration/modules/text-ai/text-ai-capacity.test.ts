@@ -56,6 +56,7 @@ const context = (ms = 0) => ({
 });
 const fingerprint = (character: string) =>
     `hmac-sha256:v1:${character.repeat(43)}`;
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'combined text AI capacity and legacy overlap guard',
     () => {
@@ -66,6 +67,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         let dictionaryStore: DrizzleDictionaryStore,
             generationStore: DrizzleDictionaryGenerationStore,
             ownerId: string;
+
         beforeAll(async () => {
             client = createTestPostgresClient();
             other = createTestPostgresClient();
@@ -76,10 +78,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             dictionaryStore = new DrizzleDictionaryStore(database, {
                 generate: randomUUID,
             });
+
             generationStore = new DrizzleDictionaryGenerationStore(database, {
                 generate: randomUUID,
             });
         });
+
         beforeEach(async () => {
             // Isolate compact counters and immutable financial facts as well as feature rows.
             await resetTestDatabase(client);
@@ -89,9 +93,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
         });
+
         afterAll(async () => {
             await Promise.all([client.end(), other.end()]);
         });
+
         it('holds the capacity fence and installs transaction-local guards in the same completed command', async () => {
             let release!: () => void;
             let signalHeld!: () => void;
@@ -110,12 +116,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const guards = await tx.execute(
                     sql`select current_setting('languon.text_ai_capacity_revision',true) as text_guard,current_setting('languon.texts_capacity_revision',true) as texts_guard,current_setting('languon.conversation_capacity_revision',true) as conversation_guard,current_setting('languon.portrait_capacity_revision',true) as portrait_guard`,
                 );
+
                 expect(guards[0]).toMatchObject({
                     text_guard: '1',
                     texts_guard: '1',
                     conversation_guard: '1',
                     portrait_guard: '1',
                 });
+
                 signalHeld();
                 await released;
             });
@@ -127,14 +135,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     const pid = await tx.execute(
                         sql`select pg_backend_pid() as pid`,
                     );
+
                     signalWaiter(Number(pid[0]!.pid));
                     await lockTextAiCapacity(tx);
                     acquired = true;
                     const guard = await tx.execute(
                         sql`select current_setting('languon.text_ai_capacity_revision',true) as value`,
                     );
+
                     expect(guard[0]?.value).toBe('1');
                 });
+
                 const pid = await Promise.race([
                     waiting,
                     waiter.then(() => {
@@ -143,29 +154,35 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         );
                     }),
                 ]);
+
                 await expect
                     .poll(
                         async () => {
                             const locks =
                                 await client`select count(*)::integer as waiting from pg_locks where pid=${pid} and locktype='advisory' and not granted`;
+
                             return Number(locks[0]?.waiting);
                         },
                         { timeout: 2000, interval: 10 },
                     )
                     .toBe(1);
+
                 expect(acquired).toBe(false);
             } finally {
                 release();
                 await holder;
                 await waiter;
             }
+
             const guard = await otherDatabase.transaction((tx) =>
                 tx.execute(
                     sql`select current_setting('languon.text_ai_capacity_revision',true) as value`,
                 ),
             );
+
             expect(guard[0]?.value).not.toBe('1');
         });
+
         async function seedCard(seedOwnerId = ownerId) {
             const dictionary = await dictionaryStore.createDictionary({
                 context: context(),
@@ -207,6 +224,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             return { dictionary, created, ownerId: seedOwnerId };
         }
 
@@ -238,6 +256,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(usersTable)
                 .set({ status: 'deletion_pending', updatedAt: now })
                 .where(eq(usersTable.id, targetOwnerId));
+
             await database.insert(accountDeletionRequestsTable).values({
                 userId: targetOwnerId,
                 scheduledAt: new Date(now.getTime() - 120_000),
@@ -245,11 +264,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 nextAttemptAt: new Date(now.getTime() - 60_000),
                 updatedAt: now,
             });
+
             const claim = await new DrizzleAccountPurgeStore(database).claimDue(
                 { now, workerId },
             );
-            if (!claim || claim.userId !== targetOwnerId)
+
+            if (!claim || claim.userId !== targetOwnerId) {
                 throw new Error('Expected an actively leased deletion claim.');
+            }
+
             await database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                     targetOwnerId,
@@ -281,9 +304,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 version: Math.floor(Math.random() * 2_000_000_000) + 1,
                 catalogSnapshot: snapshot,
             });
+
             await tx.execute(
                 sql`select set_config('languon.text_ai_selection_revision','1',true),set_config('languon.learning_execution_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
             );
+
             const id = randomUUID();
             await tx.insert(sentenceAiJobsTable).values({
                 id,
@@ -314,8 +339,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 providerReservedInputTokens: budget.maxInputTokensPerAttempt,
                 providerReservedOutputTokens: budget.maxOutputTokensPerAttempt,
             });
+
             return id;
         }
+
         async function template() {
             const seeded = await seedCard();
             const job = await enqueue(seeded);
@@ -323,11 +350,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
             await database
                 .delete(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
             return { seeded, row: row! };
         }
+
         function oldRow(
             row: typeof dictionaryGenerationJobsTable.$inferSelect,
         ) {
@@ -338,6 +368,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 requestFingerprint: fingerprint('D'),
             };
         }
+
         it('preserves exact rolling-window boundary, adjusts buckets on rollback, and cleans only expired usage', async () => {
             const now = instant();
             const threshold = new Date(now.getTime() - 86_400_000);
@@ -353,6 +384,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { id: randomUUID(), at: boundary, cost: 31 },
             ];
+
             for (const row of rows) {
                 await database
                     .insert(dictionaryGenerationProviderUsageArchiveTable)
@@ -376,14 +408,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         archivedAt: now,
                     });
             }
+
             const read = () =>
                 database.transaction((tx) =>
                     readTextAiCapacity(tx, { actorId: ownerId, now, budget }),
                 );
+
             expect((await read()).providerUsage).toMatchObject({
                 globalSettledCostMicros: 54,
                 ownerSettledCostMicros: 54,
             });
+
             await expect(
                 database.transaction(async (tx) => {
                     await tx
@@ -395,12 +430,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 rows[1]!.id,
                             ),
                         );
+
                     throw new Error('capacity rollback');
                 }),
             ).rejects.toThrow('capacity rollback');
+
             expect((await read()).providerUsage.globalSettledCostMicros).toBe(
                 54,
             );
+
             await database
                 .update(dictionaryGenerationProviderUsageArchiveTable)
                 .set({ settledAt: threshold })
@@ -410,20 +448,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         rows[1]!.id,
                     ),
                 );
+
             expect((await read()).providerUsage.globalSettledCostMicros).toBe(
                 31,
             );
+
             expect(
                 await database.transaction((tx) =>
                     cleanupTextAiCapacity(tx, now),
                 ),
             ).toBe(2);
+
             expect((await read()).providerUsage.globalSettledCostMicros).toBe(
                 31,
             );
+
             const retainedArchive = await database
                 .select()
                 .from(dictionaryGenerationProviderUsageArchiveTable);
+
             expect(retainedArchive).toHaveLength(3);
             // Direct edits of retained settled state are rejected.
             await expect(
@@ -459,6 +502,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         archivedAt: now,
                     })),
                 );
+
             for (const id of ids) {
                 await database
                     .delete(dictionaryGenerationProviderUsageArchiveTable)
@@ -469,9 +513,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ),
                     );
             }
+
             const result = await database.transaction((tx) =>
                 readTextAiCapacity(tx, { actorId: ownerId, now, budget }),
             );
+
             expect(result.providerUsage.globalSettledCostMicros).toBe(0);
         });
 
@@ -489,11 +535,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     maximumMilli: 0n,
                     funding: 'operator',
                 });
+
                 await settleConversationActionFixture(tx, {
                     ownerId,
                     actionId: bootstrap.id,
                     outcome: 'failure',
                 });
+
                 await tx.insert(portraitOperations).values({
                     id: actionId,
                     ownerId,
@@ -517,6 +565,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     leaseToken: actionId,
                     leaseUntil: new Date(now.getTime() + 60_000),
                 });
+
                 const execution = await createInterviewAdmission({
                     selectionPolicy: {
                         routingEnabled: true,
@@ -548,11 +597,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     true,
                     now,
                 );
+
                 portraitBudget = execution.budget as typeof budget;
                 await tx
                     .update(portraitOperations)
                     .set({ execution })
                     .where(eq(portraitOperations.id, actionId));
+
                 const actions = new DrizzleActionAccountingParticipant(tx);
                 await actions.admitAttempt({
                     actionId,
@@ -568,6 +619,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                     at: now,
                 });
+
                 await actions.recordAttempt({
                     actionId,
                     ownerId,
@@ -577,10 +629,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     operatorCostMicros: null,
                     at: new Date(now.getTime() + 1),
                 });
+
                 // Derive expense from the immutable provider pin and settled meters.
                 await tx.execute(
                     sql`select languon_record_text_provider_expense(${callId}::uuid)`,
                 );
+
                 await tx
                     .update(portraitOperations)
                     .set({
@@ -590,6 +644,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         updatedAt: new Date(now.getTime() + 2),
                     })
                     .where(eq(portraitOperations.id, actionId));
+
                 await actions.settle({
                     actionId,
                     ownerId,
@@ -597,23 +652,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at: new Date(now.getTime() + 2),
                 });
             });
+
             await database.transaction(async (tx) => {
                 const overlap = await tx.execute(
                     sql`select languon_text_ai_has_capacity_overlap(array['portrait-interview']::text[],${now.toISOString()}::timestamptz) as overlap`,
                 );
+
                 expect(overlap[0]?.overlap).toBe(true);
                 expect(await hasConversationCapacityOverlap(tx, now)).toBe(
                     false,
                 );
+
                 const totals = await readTextAiCapacity(tx, {
                     actorId: ownerId,
                     now,
                     budget: portraitBudget,
                 });
+
                 expect(totals.globalQueued).toBe(0);
                 expect(totals.providerUsage.globalSettledInputTokens).toBe(2);
                 expect(totals.providerUsage.globalSettledOutputTokens).toBe(3);
             });
+
             await purgeOwnerForDeletion(ownerId);
             await database
                 .delete(portraitOperations)
@@ -625,6 +685,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await enqueue(seeded);
             const id = await database.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
+
                 return sentence(seeded.dictionary.id, tx);
             });
             let totals = await database.transaction((tx) =>
@@ -634,14 +695,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     budget,
                 }),
             );
+
             expect(totals).toMatchObject({
                 globalQueued: 2,
                 actorQueued: 2,
                 globalRunning: 0,
             });
+
             expect(totals.providerUsage.globalActiveCostMicros).toBe(
                 2 * budget.maxCostMicrosPerAttempt,
             );
+
             await database
                 .update(sentenceAiJobsTable)
                 .set({
@@ -658,6 +722,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     providerReservedOutputTokens: 0,
                 })
                 .where(eq(sentenceAiJobsTable.id, id));
+
             await database.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
                 await archiveSentenceProviderUsage(tx, {
@@ -665,6 +730,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now: instant(),
                 });
             });
+
             totals = await database.transaction((tx) =>
                 readTextAiCapacity(tx, {
                     actorId: ownerId,
@@ -672,10 +738,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     budget,
                 }),
             );
+
             expect(totals.providerUsage.globalSettledCostMicros).toBe(7);
             await database
                 .delete(sentenceAiJobsTable)
                 .where(eq(sentenceAiJobsTable.id, id));
+
             totals = await database.transaction((tx) =>
                 readTextAiCapacity(tx, {
                     actorId: ownerId,
@@ -683,17 +751,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     budget,
                 }),
             );
+
             expect(totals.providerUsage).toMatchObject({
                 globalSettledCostMicros: 7,
                 ownerSettledInputTokens: 11,
                 globalSettledOutputTokens: 13,
             });
+
             expect(
                 await database.transaction((tx) =>
                     hasSentenceCapacityOverlap(tx, instant()),
                 ),
             ).toBe(true);
         });
+
         it('applies the existing per-learner reservation limit across both typed queues', async () => {
             const seeded = await seedCard();
             await enqueue(seeded);
@@ -702,6 +773,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await sentence(seeded.dictionary.id, tx);
                 await sentence(seeded.dictionary.id, tx);
             });
+
             const totals = await database.transaction((tx) =>
                 readTextAiCapacity(tx, {
                     actorId: ownerId,
@@ -709,18 +781,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     budget,
                 }),
             );
+
             expect(totals.actorQueued).toBe(3);
             expect(totals.providerUsage.ownerActiveCostMicros).toBe(
                 3 * budget.maxCostMicrosPerAttempt,
             );
+
             expect(
                 textAiProviderBudgetAllows(totals.providerUsage, true, budget),
             ).toBe(false);
         });
+
         it('rejects legacy admission for active, settled, and erased recent usage and allows expiry', async () => {
             const { seeded, row } = await template();
             const id = await database.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
+
                 return sentence(seeded.dictionary.id, tx);
             });
             const legacy = () =>
@@ -728,13 +804,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await tx.execute(
                         sql`select pg_advisory_xact_lock(4312189072)`,
                     );
+
                     await tx
                         .insert(dictionaryGenerationJobsTable)
                         .values(oldRow(row));
                 });
+
             await expect(legacy()).rejects.toMatchObject({
                 cause: { code: '55000' },
             });
+
             await database
                 .update(sentenceAiJobsTable)
                 .set({
@@ -751,25 +830,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     providerReservedOutputTokens: 0,
                 })
                 .where(eq(sentenceAiJobsTable.id, id));
+
             await expect(legacy()).rejects.toMatchObject({
                 cause: { code: '55000' },
             });
+
             await database.transaction((tx) =>
                 archiveSentenceProviderUsage(tx, {
                     jobIds: [id],
                     now: instant(),
                 }),
             );
+
             await database
                 .delete(sentenceAiJobsTable)
                 .where(eq(sentenceAiJobsTable.id, id));
+
             await expect(legacy()).rejects.toMatchObject({
                 cause: { code: '55000' },
             });
+
             await client`update dictionary_generation_provider_usage_archive set settled_at=now()-interval '24 hours 1 second'`;
             await expect(legacy()).resolves.toBeUndefined();
         });
-        for (const sentenceFirst of [false, true])
+
+        for (const sentenceFirst of [false, true]) {
             it(`serializes two real connections when ${sentenceFirst ? 'sentence' : 'legacy'} admission owns lock first`, async () => {
                 const { seeded, row } = await template();
                 let release!: () => void;
@@ -784,13 +869,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         await tx.execute(
                             sql`select pg_advisory_xact_lock(4312189072)`,
                         );
+
                         await tx
                             .insert(dictionaryGenerationJobsTable)
                             .values(oldRow(row));
                     }
+
                     acquired();
                     await releaseGate;
                 });
+
                 await acquiredGate;
                 let secondSettled = false;
                 const second = otherDatabase
@@ -799,6 +887,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             await tx.execute(
                                 sql`select pg_advisory_xact_lock(4312189072)`,
                             );
+
                             await tx
                                 .insert(dictionaryGenerationJobsTable)
                                 .values(oldRow(row));
@@ -809,6 +898,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 now: instant(),
                                 budget,
                             });
+
                             expect(counts.globalQueued).toBe(1);
                             await sentence(seeded.dictionary.id, tx);
                         }
@@ -816,29 +906,37 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .then(
                         () => {
                             secondSettled = true;
+
                             return null;
                         },
                         (error) => {
                             secondSettled = true;
+
                             return error;
                         },
                     );
+
                 await new Promise((r) => setTimeout(r, 30));
                 expect(secondSettled).toBe(false);
                 release();
                 await first;
                 const result = await second;
-                if (sentenceFirst)
+                if (sentenceFirst) {
                     expect(result).toMatchObject({ cause: { code: '55000' } });
-                else expect(result).toBeNull();
+                } else {
+                    expect(result).toBeNull();
+                }
             });
-        for (const sentenceFirst of [false, true])
+        }
+
+        for (const sentenceFirst of [false, true]) {
             it(`serializes legacy claim and sentence admission when ${sentenceFirst ? 'sentence' : 'claim'} owns lock first`, async () => {
                 const { seeded, row } = await template();
                 const old = oldRow(row);
                 await database
                     .insert(dictionaryGenerationJobsTable)
                     .values(old);
+
                 let release!: () => void;
                 const releaseGate = new Promise<void>((r) => (release = r));
                 let acquired!: () => void;
@@ -851,6 +949,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await tx.execute(
                         sql`select pg_advisory_xact_lock(4312189072)`,
                     );
+
                     await tx
                         .update(dictionaryGenerationJobsTable)
                         .set({
@@ -866,22 +965,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     if (sentenceFirst) {
                         await lockTextAiCapacity(tx);
                         await sentence(seeded.dictionary.id, tx);
-                    } else await claim(tx);
+                    } else {
+                        await claim(tx);
+                    }
+
                     acquired();
                     await releaseGate;
                 });
+
                 await acquiredGate;
                 let settled = false;
                 const second = otherDatabase
                     .transaction(async (tx) => {
-                        if (sentenceFirst) await claim(tx);
-                        else {
+                        if (sentenceFirst) {
+                            await claim(tx);
+                        } else {
                             await lockTextAiCapacity(tx);
                             const counts = await readTextAiCapacity(tx, {
                                 actorId: ownerId,
                                 now: instant(),
                                 budget,
                             });
+
                             expect(counts.globalRunning).toBe(1);
                             await sentence(seeded.dictionary.id, tx);
                         }
@@ -889,22 +994,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .then(
                         () => {
                             settled = true;
+
                             return null;
                         },
                         (error) => {
                             settled = true;
+
                             return error;
                         },
                     );
+
                 await new Promise((r) => setTimeout(r, 30));
                 expect(settled).toBe(false);
                 release();
                 await first;
                 const result = await second;
-                if (sentenceFirst)
+                if (sentenceFirst) {
                     expect(result).toMatchObject({ cause: { code: '55000' } });
-                else expect(result).toBeNull();
+                } else {
+                    expect(result).toBeNull();
+                }
             });
+        }
+
         it.each([
             'text-detection',
             'text-translation',
@@ -935,6 +1047,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         settledAt: now,
                         archivedAt: now,
                     });
+
                 await database.transaction(async (tx) => {
                     expect(await hasTextsCapacityOverlap(tx, now)).toBe(true);
                     const current = await readTextAiCapacity(tx, {
@@ -942,46 +1055,56 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now,
                         budget,
                     });
+
                     expect(current.providerUsage.globalSettledCostMicros).toBe(
                         17,
                     );
+
                     expect(current.providerUsage.ownerSettledInputTokens).toBe(
                         23,
                     );
+
                     expect(
                         current.providerUsage.globalSettledOutputTokens,
                     ).toBe(11);
                 });
+
                 await expect(
                     otherDatabase.transaction(async (tx) => {
                         await tx.execute(
                             sql`select set_config('languon.text_ai_capacity_revision','1',true)`,
                         );
+
                         await tx
                             .insert(dictionaryGenerationJobsTable)
                             .values(oldRow(row));
                     }),
                 ).rejects.toMatchObject({ cause: { code: '55000' } });
+
                 await database.transaction(async (tx) => {
                     await lockTextAiCapacity(tx);
                     await tx
                         .insert(dictionaryGenerationJobsTable)
                         .values(oldRow(row));
                 });
+
                 const expired = new Date(now.getTime() + 86_400_001);
                 await database.transaction(async (tx) => {
                     expect(await hasTextsCapacityOverlap(tx, expired)).toBe(
                         false,
                     );
+
                     const current = await readTextAiCapacity(tx, {
                         actorId: ownerId,
                         now: expired,
                         budget,
                     });
+
                     expect(current.providerUsage.globalSettledCostMicros).toBe(
                         0,
                     );
                 });
+
                 await database
                     .update(dictionaryGenerationProviderUsageArchiveTable)
                     .set({ settledAt: new Date(now.getTime() - 86_400_001) })
@@ -991,11 +1114,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             ownerId,
                         ),
                     );
+
                 await expect(
                     otherDatabase.transaction(async (tx) => {
                         await tx.execute(
                             sql`select set_config('languon.text_ai_capacity_revision','1',true)`,
                         );
+
                         await tx
                             .insert(dictionaryGenerationJobsTable)
                             .values(oldRow(row));
@@ -1003,6 +1128,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).resolves.toBeUndefined();
             },
         );
+
         it('blocks legacy claims and takeover while allowing legacy completion and drain', async () => {
             const { seeded, row } = await template();
             const old = oldRow(row);
@@ -1011,6 +1137,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await lockTextAiCapacity(tx);
                 await sentence(seeded.dictionary.id, tx);
             });
+
             const running = {
                 executionState: 'running' as const,
                 workerId: 'old',
@@ -1018,12 +1145,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 leaseDeadline: instant(60_000),
                 fencingToken: 1n,
             };
+
             await expect(
                 otherDatabase
                     .update(dictionaryGenerationJobsTable)
                     .set(running)
                     .where(eq(dictionaryGenerationJobsTable.id, old.id)),
             ).rejects.toMatchObject({ cause: { code: '55000' } });
+
             await database.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
                 await tx
@@ -1031,12 +1160,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .set(running)
                     .where(eq(dictionaryGenerationJobsTable.id, old.id));
             });
+
             await expect(
                 otherDatabase
                     .update(dictionaryGenerationJobsTable)
                     .set({ workerId: 'takeover', fencingToken: 2n })
                     .where(eq(dictionaryGenerationJobsTable.id, old.id)),
             ).rejects.toMatchObject({ cause: { code: '55000' } });
+
             await expect(
                 otherDatabase
                     .update(dictionaryGenerationJobsTable)
@@ -1046,6 +1177,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                     .where(eq(dictionaryGenerationJobsTable.id, old.id)),
             ).resolves.toBeDefined();
+
             await expect(
                 otherDatabase
                     .update(dictionaryGenerationJobsTable)

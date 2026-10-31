@@ -16,49 +16,59 @@ describe('portrait policy', () => {
         expect(hasMeaningfulPortraitItems(PortraitItemsSchema.parse({}))).toBe(
             false,
         );
+
         expect(
             hasMeaningfulPortraitItems(
                 PortraitItemsSchema.parse({ ageRange: 'prefer-not-to-say' }),
             ),
         ).toBe(false);
+
         expect(
             hasMeaningfulPortraitItems(
                 PortraitItemsSchema.parse({ mixedLanguage: false }),
             ),
         ).toBe(true);
     });
+
     it('retains practical accommodations without accepting common volunteered labels', () => {
         expect(() =>
             validateReusablePortraitItems({
                 accommodations: ['I have ADHD; use short steps'],
             }),
         ).toThrow();
+
         expect(
             validateReusablePortraitItems({ accommodations: ['Short steps'] })
                 .accommodations,
         ).toEqual(['Short steps']);
     });
+
     it('derives localized summaries only from present fields', () => {
         const items = PortraitItemsSchema.parse({
             explanationLanguages: ['en'],
             accommodations: ['Short steps'],
         });
+
         expect(summarizePortrait(items, 'en')).toContain(
             'You prefer explanations in: English.',
         );
+
         expect(summarizePortrait(items, 'en')).toContain(
             'What helps you learn: Short steps.',
         );
+
         expect(summarizePortrait(items, 'fr')).toContain('anglais');
         expect(summarizePortrait(items, 'ru')).toContain('английский');
         expect(summarizePortrait(items, 'es')).toContain('inglés');
         expect(summarizePortrait(items, 'en')).not.toContain('tone');
     });
+
     it('uses exactly fourteen days from learner activity', () => {
         expect(portraitExpiry(new Date('2026-10-20T12:00:00Z'))).toBe(
             '2026-11-03T12:00:00.000Z',
         );
     });
+
     it('keeps maximal valid items intact while selecting bounded complete summary assertions', () => {
         const custom = 'e\u0301👩‍👩‍👧‍👦'.repeat(5) + 'a'.repeat(190);
         const items = PortraitItemsSchema.parse({
@@ -84,9 +94,11 @@ describe('portrait policy', () => {
                     updatedAt: '2026-10-20T12:00:00.000Z',
                 }).success,
             ).toBe(true);
+
             expect(items).toEqual(original);
         }
     });
+
     it('keeps rich word-based summaries concise without cutting an individual answer', () => {
         const statement =
             'Practice travel vocabulary with concrete examples and short review steps';
@@ -99,6 +111,7 @@ describe('portrait policy', () => {
         expect(summary).toContain(statement + '.');
         expect(summary).toContain('More confirmed details');
     });
+
     describe('diagnostic disclosure boundary', () => {
         const labels = [
             'I have depression; use short steps',
@@ -144,6 +157,7 @@ describe('portrait policy', () => {
                 ],
             }),
         ];
+
         it.each(labels)(
             'rejects a label or diagnosis statement in every free-text field: %s',
             (value) => {
@@ -155,6 +169,7 @@ describe('portrait policy', () => {
                 }
             },
         );
+
         it.each([
             'I lose focus during long explanations',
             'Add more examples and short steps',
@@ -167,13 +182,15 @@ describe('portrait policy', () => {
             'keeps concrete functional needs without inferring diagnoses: %s',
             (value) => {
                 expect(containsPortraitDiagnosticDisclosure(value)).toBe(false);
-                for (const field of fields)
+                for (const field of fields) {
                     expect(() =>
                         validateReusablePortraitItems(field(value)),
                     ).not.toThrow();
+                }
             },
         );
     });
+
     it('treats explicit mixed-language choices and confirmed notes as meaningful while unknown stays unknown', () => {
         for (const items of [
             { mixedLanguageFrequency: 'sometimes' },
@@ -192,12 +209,14 @@ describe('portrait policy', () => {
                 hasMeaningfulPortraitItems(PortraitItemsSchema.parse(items)),
             ).toBe(true);
         }
+
         expect(
             hasMeaningfulPortraitItems(
                 PortraitItemsSchema.parse({ notes: [] }),
             ),
         ).toBe(false);
     });
+
     it('summarizes sometimes, mixing notes and confirmed notes faithfully in all locales', () => {
         const items = PortraitItemsSchema.parse({
             mixedLanguageFrequency: 'sometimes',
@@ -218,6 +237,7 @@ describe('portrait policy', () => {
             fr: 'parfois utiles',
             es: 'a veces útiles',
         };
+
         for (const locale of ['en', 'ru', 'fr', 'es'] as const) {
             const summary = summarizePortrait(items, locale);
             expect(summary).toContain(expected[locale]);
@@ -232,6 +252,7 @@ describe('portrait policy', () => {
                 }).success,
             ).toBe(true);
         }
+
         expect(items).toEqual(original);
         expect(
             summarizePortrait(
@@ -239,6 +260,7 @@ describe('portrait policy', () => {
                 'en',
             ),
         ).toContain('not preferred');
+
         expect(
             summarizePortrait(
                 PortraitItemsSchema.parse({
@@ -247,6 +269,7 @@ describe('portrait policy', () => {
                 'en',
             ),
         ).toContain('welcome');
+
         expect(
             summarizePortrait(
                 PortraitItemsSchema.parse({ mixedLanguage: true }),

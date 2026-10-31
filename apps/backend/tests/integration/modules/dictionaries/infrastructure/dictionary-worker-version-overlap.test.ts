@@ -67,6 +67,7 @@ run('dictionary worker version overlap', () => {
         dictionaryStore = new DrizzleDictionaryStore(database, {
             generate: randomUUID,
         });
+
         generationStore = new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         });
@@ -130,6 +131,7 @@ run('dictionary worker version overlap', () => {
                 },
             },
         });
+
         return { dictionary, created, ownerId: seedOwnerId };
     }
 
@@ -166,6 +168,7 @@ run('dictionary worker version overlap', () => {
         const currentInput = persisted!.inputPayload as Record<string, unknown>;
         const { translationContext: _translationContext, ...legacyInput } =
             currentInput;
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -188,6 +191,7 @@ run('dictionary worker version overlap', () => {
             originalSnapshot: { values: { source: 'hello' } },
             state: 'queued',
         });
+
         const claim = await generationStore.claim({
             context: context(4),
             globalConcurrency: 2,
@@ -196,6 +200,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormatV1],
             workerId: 'legacy-v1-worker',
         });
+
         await generationStore.complete({
             context: context(5),
             fencingToken: claim!.fencingToken,
@@ -205,6 +210,7 @@ run('dictionary worker version overlap', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         await expect(
             generationStore.read({
                 context: context(6),
@@ -216,12 +222,14 @@ run('dictionary worker version overlap', () => {
             originalSnapshot: { values: { source: 'hello' } },
             state: 'review',
         });
+
         const [reviewJob] = await database
             .select({
                 inputPayload: dictionaryGenerationJobsTable.inputPayload,
             })
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(reviewJob?.inputPayload).toMatchObject({ instruction: null });
     });
 
@@ -234,11 +242,13 @@ run('dictionary worker version overlap', () => {
             .where(
                 eq(dictionaryCardRevisionsTable.cardId, seeded.created.card.id),
             );
+
         expect(revision).toBeDefined();
         await database
             .update(dictionaryCardsTable)
             .set({ authorship: 'ai-generated' })
             .where(eq(dictionaryCardsTable.id, seeded.created.card.id));
+
         await database
             .update(dictionaryCardRevisionsTable)
             .set({
@@ -272,6 +282,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: `worker-${at}`,
         });
+
         expect(claim?.id).toBe(job.id);
         await expect(
             generationStore.complete({
@@ -284,6 +295,7 @@ run('dictionary worker version overlap', () => {
                 workerId: claim!.workerId,
             }),
         ).resolves.toBe(true);
+
         return job;
     }
 
@@ -304,6 +316,7 @@ run('dictionary worker version overlap', () => {
             .select()
             .from(dictionariesTable)
             .where(eq(dictionariesTable.id, card!.dictionaryId));
+
         return { acceptedProposal, card, dictionary, revisions };
     }
 
@@ -356,10 +369,12 @@ run('dictionary worker version overlap', () => {
                 workerId: 'old-worker',
             }),
         ).resolves.toBeNull();
+
         const [persisted] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(persisted?.executionState).toBe('queued');
         expect(persisted?.attemptCount).toBe(0);
     });
@@ -378,6 +393,7 @@ run('dictionary worker version overlap', () => {
                 workerId: 'release-r',
             }),
         ).resolves.toBeNull();
+
         const oldClaim = await generationStore.claim({
             context: context(4),
             globalConcurrency: 2,
@@ -386,6 +402,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'release-r',
         });
+
         expect(oldClaim?.id).toBe(job.id);
 
         const newClaim = await generationStore.claim({
@@ -396,6 +413,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'release-r-plus-one',
         });
+
         expect(newClaim?.id).toBe(job.id);
         expect(newClaim!.fencingToken).toBeGreaterThan(oldClaim!.fencingToken);
 
@@ -410,6 +428,7 @@ run('dictionary worker version overlap', () => {
                 workerId: oldClaim!.workerId,
             }),
         ).resolves.toBe(false);
+
         await expect(
             generationStore.complete({
                 context: context(1_200),
@@ -479,6 +498,7 @@ run('dictionary worker version overlap', () => {
                 })
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
             expect(persisted).toEqual({
                 state: 'running',
                 workerId: claimed[0]?.workerId,
@@ -495,12 +515,14 @@ run('dictionary worker version overlap', () => {
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(template).toBeDefined();
         const cancellationRequestedAt = instant(3);
         await database
             .update(dictionaryGenerationJobsTable)
             .set({ cancellationRequestedAt })
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         await database.insert(dictionaryGenerationJobsTable).values(
             Array.from({ length: 25 }, (_, index) => ({
                 ...template!,
@@ -520,12 +542,15 @@ run('dictionary worker version overlap', () => {
                 workerId: 'cancel-sweep-worker',
             }),
         ).resolves.toBeNull();
+
         const afterFirstSweep = await database
             .select()
             .from(dictionaryGenerationJobsTable);
+
         expect(
             afterFirstSweep.filter((row) => row.executionState === 'running'),
         ).toHaveLength(0);
+
         expect(
             afterFirstSweep.filter(
                 (row) =>
@@ -544,9 +569,11 @@ run('dictionary worker version overlap', () => {
                 workerId: 'cancel-sweep-worker',
             }),
         ).resolves.toBeNull();
+
         const terminal = await database
             .select()
             .from(dictionaryGenerationJobsTable);
+
         expect(
             terminal.every((row) => row.executionState === 'cancelled'),
         ).toBe(true);
@@ -566,17 +593,20 @@ run('dictionary worker version overlap', () => {
             humanSeeded.created.card.id,
             humanJob.id,
         );
+
         expect(humanAccepted.outcome).toEqual({
             cardId: humanSeeded.created.card.id,
             cardVersion: 2,
             dictionaryVersion: 3,
         });
+
         expect(humanPersistence.card).toMatchObject({
             authorship: 'mixed',
             source: 'the hello',
             translation: 'le bonjour',
             version: 2,
         });
+
         expect(humanPersistence.revisions).toHaveLength(2);
         expect(humanPersistence.revisions[1]).toMatchObject({
             acceptedGenerationJobId: humanJob.id,
@@ -595,6 +625,7 @@ run('dictionary worker version overlap', () => {
                 },
             },
         });
+
         expect(humanPersistence.acceptedProposal).toMatchObject({
             acceptedCardVersion: 2,
             acceptedDictionaryVersion: 3,
@@ -613,14 +644,17 @@ run('dictionary worker version overlap', () => {
             jobId: aiJob.id,
             ownerId,
         });
+
         const aiPersistence = await persistedAcceptance(
             aiSeeded.created.card.id,
             aiJob.id,
         );
+
         expect(aiPersistence.card).toMatchObject({
             authorship: 'ai-generated',
             version: 2,
         });
+
         expect(aiPersistence.revisions[1]).toMatchObject({
             acceptedGenerationJobId: aiJob.id,
             actorUserId: ownerId,
@@ -639,6 +673,7 @@ run('dictionary worker version overlap', () => {
                 translation: 'bonjour humain',
             },
         };
+
         await generationStore.acceptSingleCard({
             candidate: editedCandidate,
             candidateFingerprint: fingerprint('J'),
@@ -646,15 +681,18 @@ run('dictionary worker version overlap', () => {
             jobId: editedJob.id,
             ownerId,
         });
+
         const editedPersistence = await persistedAcceptance(
             editedSeeded.created.card.id,
             editedJob.id,
         );
+
         expect(editedPersistence.card).toMatchObject({
             authorship: 'mixed',
             translation: 'bonjour humain',
             version: 2,
         });
+
         expect(editedPersistence.revisions[1]).toMatchObject({
             acceptedGenerationJobId: editedJob.id,
             actorUserId: ownerId,
@@ -695,11 +733,13 @@ run('dictionary worker version overlap', () => {
             noOpSeeded.created.card.id,
             noOpJob.id,
         );
+
         expect(noOpAccepted.outcome).toEqual({
             cardId: noOpSeeded.created.card.id,
             cardVersion: 1,
             dictionaryVersion: 2,
         });
+
         expect(noOpAfter.card).toEqual(noOpBefore.card);
         expect(noOpAfter.dictionary).toEqual(noOpBefore.dictionary);
         expect(noOpAfter.revisions).toEqual(noOpBefore.revisions);
@@ -710,6 +750,7 @@ run('dictionary worker version overlap', () => {
             payload: null,
             reviewState: 'accepted',
         });
+
         expect(noOpAfter.revisions[0]).toMatchObject({
             acceptedGenerationJobId: null,
             authorship: 'human',
@@ -727,6 +768,7 @@ run('dictionary worker version overlap', () => {
             50,
             instant(53),
         );
+
         await expect(
             generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
@@ -736,6 +778,7 @@ run('dictionary worker version overlap', () => {
                 ownerId,
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationProposalExpiredError);
+
         await expect(
             generationStore.read({
                 context: context(55),
@@ -755,6 +798,7 @@ run('dictionary worker version overlap', () => {
             60,
             instant(63),
         );
+
         await expect(
             generationStore.discard({
                 context: context(64),
@@ -762,6 +806,7 @@ run('dictionary worker version overlap', () => {
                 ownerId,
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationProposalExpiredError);
+
         const [discardedProposal] = await database
             .select()
             .from(dictionaryGenerationProposalsTable)
@@ -772,11 +817,13 @@ run('dictionary worker version overlap', () => {
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, discardingJob.id));
+
         expect(discardedProposal).toMatchObject({
             payload: null,
             reviewState: 'expired',
             terminalAt: instant(64),
         });
+
         expect(discardedJob?.inputPayload).toBeNull();
     });
 
@@ -814,6 +861,7 @@ run('dictionary worker version overlap', () => {
                 workerId: claim!.workerId,
             }),
         ).rejects.toBeInstanceOf(InvalidDictionarySettingsError);
+
         await expect(
             database
                 .select()
@@ -829,6 +877,7 @@ run('dictionary worker version overlap', () => {
         await expect(
             enqueue(seeded, firstKey, fingerprint('M'), 3),
         ).resolves.toMatchObject({ id: first.id });
+
         await enqueue(seeded, undefined, fingerprint('N'), 4);
         await enqueue(seeded, undefined, fingerprint('O'), 5);
         await expect(
@@ -838,6 +887,7 @@ run('dictionary worker version overlap', () => {
         const beforeRelease = await database
             .select()
             .from(dictionaryGenerationJobsTable);
+
         expect(beforeRelease).toHaveLength(3);
         expect(
             beforeRelease.reduce(
@@ -845,6 +895,7 @@ run('dictionary worker version overlap', () => {
                 0,
             ),
         ).toBe(150_000);
+
         expect(
             beforeRelease.every(
                 (job) => job.providerReservationState === 'active',
@@ -856,13 +907,16 @@ run('dictionary worker version overlap', () => {
             jobId: first.id,
             ownerId,
         });
+
         await expect(
             enqueue(seeded, undefined, fingerprint('P'), 8),
         ).resolves.toMatchObject({ state: 'queued' });
+
         const [released] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, first.id));
+
         expect(released).toMatchObject({
             providerActualCostMicros: 0,
             providerActualInputTokens: 0,
@@ -906,6 +960,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'retry-worker',
         });
+
         await expect(
             generationStore.fail({
                 context: context(4),
@@ -917,10 +972,12 @@ run('dictionary worker version overlap', () => {
                 workerId: firstClaim!.workerId,
             }),
         ).resolves.toBe(true);
+
         const [afterRetry] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(afterRetry).toMatchObject({
             providerActualCostMicros: null,
             providerReservationState: 'active',
@@ -944,6 +1001,7 @@ run('dictionary worker version overlap', () => {
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(afterSecondClaim).toMatchObject({
             providerReservationState: 'active',
             providerReservedAttempts: 2,
@@ -955,6 +1013,7 @@ run('dictionary worker version overlap', () => {
                 defaultDictionaryGenerationProviderBudgetPolicy.maxOutputTokensPerAttempt *
                 2,
         });
+
         await expect(
             generationStore.complete({
                 context: context(6),
@@ -967,10 +1026,12 @@ run('dictionary worker version overlap', () => {
                 workerId: secondClaim!.workerId,
             }),
         ).resolves.toBe(true);
+
         const [settled] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(settled).toMatchObject({
             attemptCount: 2,
             providerActualCostMicros: 50_000,
@@ -1014,6 +1075,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'priced-worker',
         });
+
         expect(claim?.providerBudget).toEqual({
             inputCostMicrosPerMillionTokens: 1_000_000,
             maxCostMicrosPerAttempt: 100_000,
@@ -1021,6 +1083,7 @@ run('dictionary worker version overlap', () => {
             maxOutputTokensPerAttempt: 1_024,
             outputCostMicrosPerMillionTokens: 10_000_000,
         });
+
         await expect(
             generationStore.complete({
                 context: context(4),
@@ -1033,10 +1096,12 @@ run('dictionary worker version overlap', () => {
                 workerId: claim!.workerId,
             }),
         ).resolves.toBe(true);
+
         const [settled] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(settled).toMatchObject({
             providerActualCostMicros: 1_551,
             providerActualInputTokens: 321,
@@ -1055,6 +1120,7 @@ run('dictionary worker version overlap', () => {
             5,
             generationStore,
         );
+
         await expect(
             pricedStore.claim({
                 context: context(6),
@@ -1065,10 +1131,12 @@ run('dictionary worker version overlap', () => {
                 workerId: 'incompatible-priced-worker',
             }),
         ).resolves.toBeNull();
+
         const [stillQueued] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, cheapJob.id));
+
         expect(stillQueued).toMatchObject({
             executionState: 'queued',
             providerInputCostMicrosPerMillionTokens: 0,
@@ -1095,6 +1163,7 @@ run('dictionary worker version overlap', () => {
                 supportedFormats: [dictionaryGenerationFormat],
                 workerId: `cancelled-paid-worker-${attempt}`,
             });
+
             await expect(
                 generationStore.cancel({
                     context: context(at + 2),
@@ -1105,14 +1174,17 @@ run('dictionary worker version overlap', () => {
                 cancellationRequested: true,
                 state: 'running',
             });
+
             await generationStore.releaseWorkerLeases({
                 context: context(at + 3),
                 workerId: claim!.workerId,
             });
+
             const [settled] = await database
                 .select()
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
             expect(settled).toMatchObject({
                 attemptCount: 1,
                 executionState: 'cancelled',
@@ -1137,6 +1209,7 @@ run('dictionary worker version overlap', () => {
             .update(dictionaryGenerationJobsTable)
             .set({ maxAttempts: 1 })
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         const claim = await generationStore.claim({
             context: context(3),
             globalConcurrency: 2,
@@ -1145,6 +1218,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'stale-terminal-worker',
         });
+
         expect(claim?.id).toBe(job.id);
         await expect(
             generationStore.claim({
@@ -1156,10 +1230,12 @@ run('dictionary worker version overlap', () => {
                 workerId: 'recovery-worker',
             }),
         ).resolves.toBeNull();
+
         const [settled] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
+
         expect(settled).toMatchObject({
             attemptCount: 1,
             executionState: 'failed',
@@ -1183,6 +1259,7 @@ run('dictionary worker version overlap', () => {
                 updatedAt: instant(),
             })),
         );
+
         const seeded = await Promise.all(
             owners.map((seedOwnerId) => seedCard(seedOwnerId)),
         );
@@ -1200,6 +1277,7 @@ run('dictionary worker version overlap', () => {
                 );
             }
         }
+
         expect(jobs).toHaveLength(10);
         await expect(
             enqueue(seeded[3]!, undefined, fingerprint('Z'), at),
@@ -1210,6 +1288,7 @@ run('dictionary worker version overlap', () => {
             jobId: jobs[0]!.id,
             ownerId: owners[0]!,
         });
+
         await expect(
             enqueue(seeded[3]!, undefined, fingerprint('Z'), at + 2),
         ).resolves.toMatchObject({ state: 'queued' });
@@ -1223,11 +1302,13 @@ run('dictionary worker version overlap', () => {
             fingerprint('V'),
             2,
         );
+
         await generationStore.cancel({
             context: context(3),
             jobId: anchor.id,
             ownerId,
         });
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -1248,6 +1329,7 @@ run('dictionary worker version overlap', () => {
                 updatedAt: instant(),
             })),
         );
+
         const [firstSeeded, secondSeeded] = await Promise.all(
             contenders.map((contender) => seedCard(contender)),
         );
@@ -1256,6 +1338,7 @@ run('dictionary worker version overlap', () => {
             createDrizzleDatabase(competingClient, databaseSchema),
             { generate: randomUUID },
         );
+
         try {
             const results = await Promise.allSettled([
                 enqueue(firstSeeded!, undefined, fingerprint('W'), 4),
@@ -1267,12 +1350,15 @@ run('dictionary worker version overlap', () => {
                     competingStore,
                 ),
             ]);
+
             expect(
                 results.filter((result) => result.status === 'fulfilled'),
             ).toHaveLength(1);
+
             const rejected = results.find(
                 (result) => result.status === 'rejected',
             );
+
             expect(rejected).toMatchObject({
                 reason: expect.any(DictionaryGenerationNotAvailableError),
                 status: 'rejected',
@@ -1287,6 +1373,7 @@ run('dictionary worker version overlap', () => {
         const active = admitted.filter(
             (job) => job.providerReservationState === 'active',
         );
+
         expect(active).toHaveLength(1);
         expect(
             admitted.reduce(
@@ -1298,6 +1385,7 @@ run('dictionary worker version overlap', () => {
                 0,
             ),
         ).toBe(1_000_000);
+
         expect(
             admitted.reduce(
                 (total, job) =>
@@ -1311,6 +1399,7 @@ run('dictionary worker version overlap', () => {
             1_245_184 +
                 defaultDictionaryGenerationProviderBudgetPolicy.maxInputTokensPerAttempt,
         );
+
         expect(
             admitted.reduce(
                 (total, job) =>
@@ -1334,6 +1423,7 @@ run('dictionary worker version overlap', () => {
             jobId: settled.id,
             ownerId,
         });
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -1348,6 +1438,7 @@ run('dictionary worker version overlap', () => {
         await expect(
             enqueue(seeded, undefined, fingerprint('Z'), 4),
         ).resolves.toMatchObject({ state: 'queued' });
+
         await expect(
             enqueue(seeded, undefined, fingerprint('a'), 5),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
@@ -1362,6 +1453,7 @@ run('dictionary worker version overlap', () => {
             status: 'active',
             updatedAt: instant(),
         });
+
         const waitingSeeded = await seedCard(waitingOwnerId);
         const failing = await enqueue(seeded, undefined, fingerprint('Q'), 2);
         const waiting = await enqueue(
@@ -1370,6 +1462,7 @@ run('dictionary worker version overlap', () => {
             fingerprint('R'),
             3,
         );
+
         for (let attempt = 0; attempt < 3; attempt += 1) {
             const at = 4 + attempt * 2;
             const claim = await generationStore.claim({
@@ -1380,6 +1473,7 @@ run('dictionary worker version overlap', () => {
                 supportedFormats: [dictionaryGenerationFormat],
                 workerId: 'circuit-worker',
             });
+
             expect(claim?.id).toBe(failing.id);
             await generationStore.fail({
                 context: context(at + 1),
@@ -1391,6 +1485,7 @@ run('dictionary worker version overlap', () => {
                 workerId: claim!.workerId,
             });
         }
+
         await expect(
             generationStore.claim({
                 context: context(10),
@@ -1401,12 +1496,15 @@ run('dictionary worker version overlap', () => {
                 workerId: 'blocked-worker',
             }),
         ).resolves.toBeNull();
+
         await expect(
             enqueue(waitingSeeded, undefined, fingerprint('S'), 11),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
         const [circuit] = await database
             .select()
             .from(dictionaryGenerationProviderCircuitTable);
+
         expect(circuit).toMatchObject({
             consecutiveFailures: 3,
             openUntil: instant(60_009),
@@ -1416,6 +1514,7 @@ run('dictionary worker version overlap', () => {
             .update(dictionaryGenerationJobsTable)
             .set({ providerActualCostMicros: 1_000_000 })
             .where(eq(dictionaryGenerationJobsTable.id, failing.id));
+
         await expect(
             generationStore.claim({
                 context: context(60_010),
@@ -1426,10 +1525,12 @@ run('dictionary worker version overlap', () => {
                 workerId: 'spend-blocked-worker',
             }),
         ).resolves.toBeNull();
+
         const [waitingRow] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, waiting.id));
+
         expect(waitingRow?.executionState).toBe('queued');
     });
 
@@ -1445,6 +1546,7 @@ run('dictionary worker version overlap', () => {
             jobId: old.id,
             ownerId,
         });
+
         await expect(
             enqueue(seeded, undefined, fingerprint('U'), 300_004),
         ).resolves.toMatchObject({ state: 'queued' });
@@ -1462,6 +1564,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'worker-a',
         });
+
         await generationStore.complete({
             context: context(4),
             fencingToken: claim!.fencingToken,
@@ -1471,6 +1574,7 @@ run('dictionary worker version overlap', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         const accepted = await generationStore.acceptSingleCard({
             candidate: proposal.candidate,
             candidateFingerprint: fingerprint('C'),
@@ -1478,10 +1582,12 @@ run('dictionary worker version overlap', () => {
             jobId: job.id,
             ownerId,
         });
+
         expect(accepted.outcome).toMatchObject({
             cardId: seeded.created.card.id,
             cardVersion: 2,
         });
+
         await expect(
             generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
@@ -1491,6 +1597,7 @@ run('dictionary worker version overlap', () => {
                 ownerId,
             }),
         ).resolves.toEqual(accepted);
+
         await expect(
             generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
@@ -1507,6 +1614,7 @@ run('dictionary worker version overlap', () => {
             id: job.id,
             state: 'accepted',
         });
+
         await expect(
             enqueue(seeded, key, fingerprint('E'), 9),
         ).rejects.toBeInstanceOf(DictionaryIdempotencyConflictError);
@@ -1523,6 +1631,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'worker-a',
         });
+
         await generationStore.complete({
             context: context(4),
             fencingToken: claim!.fencingToken,
@@ -1532,6 +1641,7 @@ run('dictionary worker version overlap', () => {
             reviewExpiresAt: instant(60_000),
             workerId: claim!.workerId,
         });
+
         await dictionaryStore.updateDictionary({
             context: context(5),
             dictionaryId: seeded.dictionary.id,
@@ -1542,6 +1652,7 @@ run('dictionary worker version overlap', () => {
                 settings: { definitionEnabled: true },
             },
         });
+
         await expect(
             generationStore.acceptSingleCard({
                 candidate: proposal.candidate,
@@ -1557,6 +1668,7 @@ run('dictionary worker version overlap', () => {
             jobId: job.id,
             ownerId,
         });
+
         await expect(
             generationStore.discard({
                 context: context(8),
@@ -1564,6 +1676,7 @@ run('dictionary worker version overlap', () => {
                 ownerId,
             }),
         ).resolves.toEqual(discarded);
+
         expect(discarded).toMatchObject({
             originalSnapshot: null,
             proposal: null,
@@ -1579,6 +1692,7 @@ run('dictionary worker version overlap', () => {
             jobId: cancelledJob.id,
             ownerId,
         });
+
         await expect(
             generationStore.cancel({
                 context: context(4),
@@ -1586,16 +1700,19 @@ run('dictionary worker version overlap', () => {
                 ownerId,
             }),
         ).resolves.toEqual(requested);
+
         expect(requested).toMatchObject({
             cancellationRequested: true,
             originalSnapshot: null,
             state: 'cancelled',
         });
+
         const cancelled = await generationStore.cancel({
             context: context(5),
             jobId: cancelledJob.id,
             ownerId,
         });
+
         expect(cancelled).toMatchObject({
             originalSnapshot: null,
             proposal: null,
@@ -1616,6 +1733,7 @@ run('dictionary worker version overlap', () => {
             supportedFormats: [dictionaryGenerationFormat],
             workerId: 'worker-a',
         });
+
         await generationStore.complete({
             context: context(9),
             fencingToken: claim!.fencingToken,
@@ -1625,6 +1743,7 @@ run('dictionary worker version overlap', () => {
             reviewExpiresAt: instant(20),
             workerId: claim!.workerId,
         });
+
         await expect(
             generationStore.read({
                 context: context(21),
@@ -1636,16 +1755,19 @@ run('dictionary worker version overlap', () => {
             proposal: null,
             state: 'expired',
         });
+
         await expect(
             generationStore.expireReviewPayloads({
                 context: context(22),
                 limit: 100,
             }),
         ).resolves.toBe(0);
+
         const [redacted] = await database
             .select({ input: dictionaryGenerationJobsTable.inputPayload })
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, expiringJob.id));
+
         expect(redacted?.input).toBeNull();
     });
 });

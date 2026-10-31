@@ -7,19 +7,33 @@ export function editorProposalPosition(
     editor: Editor | null,
     target: KnowledgeEditorTarget | undefined,
 ) {
-    if (!editor || !target || target.changed) return null;
+    if (!editor || !target || target.changed) {
+        return null;
+    }
+
     const root = editor.view.dom.closest<HTMLElement>(
         '[data-workspace-editor]',
     );
-    if (!root) return null;
-    if (target.to > editor.state.doc.content.size) return null;
+
+    if (!root) {
+        return null;
+    }
+
+    if (target.to > editor.state.doc.content.size) {
+        return null;
+    }
+
     const current = editor.state.doc.textBetween(
         target.from,
         target.to,
         '\n',
         editorLeafText,
     );
-    if (current !== target.selectedText) return null;
+
+    if (current !== target.selectedText) {
+        return null;
+    }
+
     const bounds = root.getBoundingClientRect();
     const range = document.createRange();
     const start = editor.view.domAtPos(target.from);
@@ -33,5 +47,6 @@ export function editorProposalPosition(
         editor.view.coordsAtPos(target.to);
     const fontSize =
         parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
     return inlineProposalPosition(bounds, last, fontSize);
 }

@@ -31,6 +31,7 @@ export function ProviderPrices() {
         },
     ];
     const dialogPrice = pricing.editing === 'new' ? null : pricing.editing;
+
     return (
         <Card
             title={t('accounting.providerPrices')}
@@ -75,6 +76,7 @@ export function ProviderPrices() {
         </Card>
     );
 }
+
 function EditProviderPrice({
     price,
     onEdit,
@@ -84,12 +86,14 @@ function EditProviderPrice({
 }) {
     const t = useTranslate();
     const edit = () => onEdit(price);
+
     return (
         <Button onClick={edit}>
             {t(price.nativeRules ? 'accounting.native.view' : 'actions.edit')}
         </Button>
     );
 }
+
 function ProviderRates({ price }: { price: ProviderPrice }) {
     const t = useTranslate();
     if (price.nativeRules) {
@@ -107,7 +111,8 @@ function ProviderRates({ price }: { price: ProviderPrice }) {
             </>
         );
     }
-    if (price.meter === 'speech-characters')
+
+    if (price.meter === 'speech-characters') {
         return (
             <Typography.Text>
                 {t('accounting.usdCharacterRate', {
@@ -115,6 +120,8 @@ function ProviderRates({ price }: { price: ProviderPrice }) {
                 })}
             </Typography.Text>
         );
+    }
+
     const label = t('accounting.usdTokenRates', {
         input: price.inputUsdPerMillionTokens ?? t('accounting.unknown'),
         output: price.outputUsdPerMillionTokens ?? t('accounting.unknown'),
@@ -123,6 +130,7 @@ function ProviderRates({ price }: { price: ProviderPrice }) {
         read: price.cacheReadUsdPerMillionTokens ?? t('accounting.unknown'),
         write: price.cacheWriteUsdPerMillionTokens ?? t('accounting.unknown'),
     });
+
     return (
         <>
             <Typography.Paragraph>{label}</Typography.Paragraph>

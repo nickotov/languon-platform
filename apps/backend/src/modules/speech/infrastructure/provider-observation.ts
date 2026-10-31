@@ -34,8 +34,10 @@ export async function retainSpeechProviderObservation(
         row.providerOutcome !== null &&
         !row.providerPriceSnapshot?.nativeRules &&
         row.providerUsage === null
-    )
+    ) {
         return;
+    }
+
     const observed = observationSchema.parse(raw ?? {});
     const usage = ProviderNativeUsageSchema.parse({
         ...row.providerUsage,
@@ -54,16 +56,20 @@ export async function retainSpeechProviderObservation(
                   : { serviceTier: observed.execution.serviceTier }),
           }
         : row.providerExecutionFacts;
+
     if (row.providerUsage !== null || row.providerOutcome !== null) {
         if (
             !isDeepStrictEqual(row.providerUsage, usage) ||
             !isDeepStrictEqual(row.providerExecutionFacts, execution)
-        )
+        ) {
             throw new Error(
                 'Speech provider observation differs from its immutable first result.',
             );
+        }
+
         return;
     }
+
     await tx.execute(
         sql`select public.languon_retain_speech_provider_observation(${row.id}::uuid,${job.leaseToken}::uuid,${JSON.stringify(usage)}::jsonb,${execution === null ? null : JSON.stringify(execution)}::jsonb)`,
     );
@@ -76,7 +82,10 @@ export async function retainLiveSpeechProviderObservation(
     raw: SpeechProviderObservation | undefined,
     now: Date,
 ) {
-    if (!raw) return;
+    if (!raw) {
+        return;
+    }
+
     const [row] = await tx
         .select()
         .from(jobs)
@@ -90,5 +99,8 @@ export async function retainLiveSpeechProviderObservation(
         )
         .limit(1)
         .for('update');
-    if (row) await retainSpeechProviderObservation(tx, row, job, raw);
+
+    if (row) {
+        await retainSpeechProviderObservation(tx, row, job, raw);
+    }
 }

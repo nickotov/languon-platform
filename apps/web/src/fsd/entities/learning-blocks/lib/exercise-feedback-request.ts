@@ -16,9 +16,12 @@ function relevantSource(
     exercise: ExerciseLearningBlock,
     source: LearningBlock | undefined,
 ) {
-    if (!source || source.id !== exercise.source?.blockId) return null;
+    if (!source || source.id !== exercise.source?.blockId) {
+        return null;
+    }
+
     const ids = new Set(exercise.source.segmentIds);
-    if (source.type === 'bilingual-text')
+    if (source.type === 'bilingual-text') {
         return {
             type: source.type,
             language: source.language,
@@ -30,7 +33,9 @@ function relevantSource(
                 ),
             })),
         };
-    if (source.type === 'audio' || source.type === 'video')
+    }
+
+    if (source.type === 'audio' || source.type === 'video') {
         return {
             type: source.type,
             transcript: source.transcript
@@ -42,6 +47,8 @@ function relevantSource(
                   }
                 : null,
         };
+    }
+
     return null;
 }
 
@@ -53,16 +60,21 @@ export function buildExerciseFeedbackRequest(
     locale = 'en',
 ) {
     const parsed = LearningBlockSchema.parse(exercise);
-    if (parsed.type !== 'exercise') throw new Error('An exercise is required.');
+    if (parsed.type !== 'exercise') {
+        throw new Error('An exercise is required.');
+    }
+
     const validatedSource = source
         ? LearningBlockSchema.parse(source)
         : undefined;
     const instruction =
         instructions[locale as keyof typeof instructions] ?? instructions.en;
     const prompt = `${instruction}\n\n${JSON.stringify({ exercise: parsed, learnerAnswer: answer, source: relevantSource(parsed, validatedSource) }, null, 2)}`;
-    if (prompt.length > 32_000)
+    if (prompt.length > 32_000) {
         throw new Error(
             'Select a smaller exercise or source passage before requesting feedback.',
         );
+    }
+
     return { id: crypto.randomUUID(), prompt };
 }

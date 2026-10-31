@@ -6,8 +6,10 @@ import {
 
 describe('action budget decimal presentation', () => {
     it('accepts positive exact thousandths and rejects imprecise or ambiguous input', () => {
-        for (const value of ['0.001', '1', '1.000', '9999999999.999'])
+        for (const value of ['0.001', '1', '1.000', '9999999999.999']) {
             expect(validActionBudget(value)).toBe(true);
+        }
+
         for (const value of [
             '',
             '0',
@@ -19,9 +21,11 @@ describe('action budget decimal presentation', () => {
             ' 1',
             '01',
             '999999999999999999.999',
-        ])
+        ]) {
             expect(validActionBudget(value)).toBe(false);
+        }
     });
+
     it('keeps tiny nonzero credits visible and rounds without losing large integer precision', () => {
         expect(compactCredits('0.001')).toBe('<0.01');
         expect(compactCredits('0.009')).toBe('<0.01');

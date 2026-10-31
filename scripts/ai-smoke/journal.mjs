@@ -59,6 +59,7 @@ export async function privateRead(path) {
                 stat.size <= 2_000_000,
             'unsafe-local-file',
         );
+
         return await file.readFile('utf8');
     } finally {
         await file.close();
@@ -73,15 +74,20 @@ async function exclusiveWrite(path, value) {
     } finally {
         await file.close();
     }
+
     await syncDirectory(path);
 }
 
 async function exists(path) {
     try {
         await lstat(path);
+
         return true;
     } catch (error) {
-        if (error.code === 'ENOENT') return false;
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+
         throw error;
     }
 }
@@ -99,15 +105,18 @@ export async function withJournal(root, userId, operation) {
                 (await privateRead(markerPath)).trim() === userId,
                 'journal-marker-mismatch',
             );
+
             const state = StateSchema.parse(
                 JSON.parse(await privateRead(statePath)),
             );
+
             requireSafe(
                 state.userId === userId &&
                     new Set(state.entries.map((entry) => entry.id)).size ===
                         state.entries.length,
                 'journal-identity-mismatch',
             );
+
             return state;
         };
         const write = async (state) => {
@@ -117,9 +126,11 @@ export async function withJournal(root, userId, operation) {
                 temporary,
                 `${JSON.stringify(state, null, 2)}\n`,
             );
+
             await rename(temporary, statePath);
             await syncDirectory(statePath);
         };
+
         return await operation({
             read,
             initialize: async (historicalActions) => {
@@ -127,10 +138,12 @@ export async function withJournal(root, userId, operation) {
                     historicalActions === 0,
                     'used-account-cannot-initialize',
                 );
+
                 requireSafe(
                     !(await exists(markerPath)) && !(await exists(statePath)),
                     'journal-already-initialized',
                 );
+
                 // A crash between these writes leaves a marker and fails closed.
                 await exclusiveWrite(markerPath, `${userId}\n`);
                 await exclusiveWrite(
@@ -146,25 +159,30 @@ export async function withJournal(root, userId, operation) {
                         globalExposureMicros >= 0,
                     'invalid-expense-snapshot',
                 );
+
                 const state = await read();
                 requireSafe(
                     state.entries.filter((entry) => entry.task === task)
                         .length < 2,
                     'task-call-limit',
                 );
+
                 requireSafe(
                     !state.entries.some((entry) => entry.day > day),
                     'clock-moved-backwards',
                 );
+
                 const held =
                     state.entries.filter((entry) => entry.day === day).length *
                     ACTION_MICROS;
+
                 // Deliberately count all application costs as well as full local
                 // reservations, even when they overlap. Never refund on failure.
                 requireSafe(
                     globalExposureMicros + held + ACTION_MICROS <= DAY_MICROS,
                     'daily-call-limit',
                 );
+
                 const entry = {
                     id: randomUUID(),
                     task,
@@ -172,8 +190,10 @@ export async function withJournal(root, userId, operation) {
                     reservedMicros: ACTION_MICROS,
                     status: 'reserved',
                 };
+
                 state.entries.push(entry);
                 await write(state);
+
                 return entry;
             },
             record: async (id, evidence) => {

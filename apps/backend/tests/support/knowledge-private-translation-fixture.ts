@@ -75,29 +75,39 @@ export function createKnowledgePrivateTranslationFixture(input: {
     const http: typeof fetch = async (value, init) => {
         const request = new Request(value, init),
             url = new URL(request.url);
+
         if (
             url.origin !== 'https://api.deepseek.com' ||
             url.pathname !== '/chat/completions' ||
             request.method !== 'POST'
-        )
+        ) {
             throw new Error(
                 'Unexpected private translation fixture HTTP target',
             );
+        }
+
         const body = (await request.json()) as {
             model?: unknown;
             messages?: Array<{ role?: unknown; content?: unknown }>;
         };
         let payload: Record<string, unknown> | undefined;
         for (const message of body.messages ?? []) {
-            if (message.role !== 'user') continue;
+            if (message.role !== 'user') {
+                continue;
+            }
+
             const parts =
                 typeof message.content === 'string'
                     ? [message.content]
                     : Array.isArray(message.content)
                       ? message.content.map((part) => part?.text)
                       : [];
+
             for (const part of parts) {
-                if (typeof part !== 'string') continue;
+                if (typeof part !== 'string') {
+                    continue;
+                }
+
                 try {
                     const parsed: unknown = JSON.parse(part);
                     if (
@@ -106,15 +116,19 @@ export function createKnowledgePrivateTranslationFixture(input: {
                         ('segments' in parsed ||
                             'action' in parsed ||
                             'exercise' in parsed)
-                    )
+                    ) {
                         payload = parsed as Record<string, unknown>;
+                    }
                 } catch {
                     /* Inline schema instructions are not source input. */
                 }
             }
         }
-        if (!payload)
+
+        if (!payload) {
             throw new Error('Missing bounded knowledge-action fixture input');
+        }
+
         let result: unknown;
         if ('action' in payload) {
             const source = String(payload.sourceText ?? '');
@@ -131,6 +145,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
                 target === 'ru' && translations[source]
                     ? translations[source]
                     : `[${target}] ${source}`;
+
             result =
                 payload.action === 'check' && payload.currentValue === expected
                     ? {
@@ -151,12 +166,15 @@ export function createKnowledgePrivateTranslationFixture(input: {
                 typeof learnerAnswer === 'string'
                     ? learnerAnswer
                     : JSON.stringify(learnerAnswer);
+
             if (
                 learnerAnswer &&
                 typeof learnerAnswer === 'object' &&
                 'text' in learnerAnswer
-            )
+            ) {
                 answer = String(learnerAnswer.text);
+            }
+
             const alternative = answer === 'Bonjour.';
             const correct =
                 alternative ||
@@ -165,6 +183,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
                         ?.toLowerCase()
                         .replace(/[.!]/gu, '')
                         .trim();
+
             result = {
                 status: correct ? 'correct' : 'incorrect',
                 feedback: alternative
@@ -178,13 +197,16 @@ export function createKnowledgePrivateTranslationFixture(input: {
             if (
                 !Array.isArray(payload.segments) ||
                 payload.segments.length > 500
-            )
+            ) {
                 throw new Error(
                     'Missing bounded private translation fixture input',
                 );
+            }
+
             const language = TextLanguageSchema.parse(payload.targetLanguage);
             const translation = payload.segments.map((value) => {
                 const segment = TextSourceSegmentSchema.parse(value);
+
                 return {
                     pairId: segment.pairId,
                     text: segment.text.startsWith('\n\n')
@@ -192,9 +214,12 @@ export function createKnowledgePrivateTranslationFixture(input: {
                         : `[${language}] ${segment.text}`,
                 };
             });
+
             result = { translation };
         }
+
         await delay(200, undefined, { signal: request.signal });
+
         return Response.json({
             id: `synthetic-private-${randomUUID()}`,
             object: 'chat.completion',
@@ -241,6 +266,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
             },
         },
     });
+
     return {
         fieldRoutes: createKnowledgeBlockFieldRoutes({
             policy: input.policy,
@@ -285,6 +311,7 @@ export function createKnowledgePrivateTranslationFixture(input: {
                     (item) => item.id === 'deepseek-flash',
                 )!,
                 now = input.clock.now();
+
             await input.database
                 .insert(observations)
                 .values({
@@ -318,17 +345,19 @@ export function createKnowledgePrivateTranslationFixture(input: {
                         expiresAt: new Date(now.getTime() + 3_600_000),
                     },
                 });
+
             loop = (async () => {
                 while (!controller.signal.aborted) {
                     await execution.worker.processNext(controller.signal);
                     await delay(50, undefined, { signal: controller.signal });
                 }
             })().catch((error) => {
-                if (!controller.signal.aborted)
+                if (!controller.signal.aborted) {
                     console.error(
                         'Private translation fixture worker failed.',
                         error instanceof Error ? error.name : 'Unknown',
                     );
+                }
             });
         },
         async close() {

@@ -452,9 +452,11 @@ const DictionaryPastedTermsTextSchema = z
                     'Pasted terms must contain between 1 and 20,200 Unicode code points',
             });
         }
+
         if (
             codePoints.some((character) => {
                 const codePoint = character.codePointAt(0);
+
                 return (
                     codePoint !== undefined &&
                     (codePoint <= 9 ||
@@ -521,11 +523,12 @@ export const RetryDictionaryImportPairsGenerationRequestSchema = z
             .min(1)
             .max(100)
             .superRefine((rowIndexes, context) => {
-                if (new Set(rowIndexes).size !== rowIndexes.length)
+                if (new Set(rowIndexes).size !== rowIndexes.length) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Retry row indexes must be unique',
                     });
+                }
             }),
     })
     .strict();
@@ -575,6 +578,7 @@ const DictionaryDocumentRequiredHeadersSchema = z
                 (value) =>
                     ![...value].some((character) => {
                         const codePoint = character.codePointAt(0)!;
+
                         return (
                             codePoint <= 31 ||
                             (codePoint >= 127 && codePoint <= 159)
@@ -703,11 +707,12 @@ export const AcceptDictionaryImportPairsGenerationJobRequestSchema = z
                 if (
                     new Set(selected.map((row) => row.rowIndex)).size !==
                     selected.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Selected row indexes must be unique',
                     });
+                }
             }),
     })
     .strict();

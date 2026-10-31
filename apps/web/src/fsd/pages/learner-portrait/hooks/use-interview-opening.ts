@@ -6,6 +6,7 @@ const complete = {
     typing: false,
     done: true,
 };
+
 /** Source opening choreography is presentational and never creates AI work. */
 export function useInterviewOpening(
     session: StartPortraitInterviewResponse | null,
@@ -19,14 +20,19 @@ export function useInterviewOpening(
     const messageCount = session?.context.messages.length ?? 0;
     const returning = session?.context.approvedItems !== null;
     useEffect(() => {
-        if (!interviewId) return;
+        if (!interviewId) {
+            return;
+        }
+
         if (
             messageCount > 0 ||
             window.matchMedia('(prefers-reduced-motion: reduce)').matches
         ) {
             setOpening(complete);
+
             return;
         }
+
         setOpening({ revealed: 0, typing: true, done: false });
         const timers: ReturnType<typeof setTimeout>[] = [];
         const total = returning ? 1 : 2;
@@ -40,7 +46,8 @@ export function useInterviewOpening(
                     delay,
                 ),
             );
-            if (i < total)
+
+            if (i < total) {
                 timers.push(
                     setTimeout(
                         () =>
@@ -48,10 +55,17 @@ export function useInterviewOpening(
                         delay + 250,
                     ),
                 );
+            }
         }
+
         timers.push(setTimeout(() => setOpening(complete), delay + 450));
+
         return () => timers.forEach(clearTimeout);
     }, [interviewId, messageCount, returning]);
-    if (messageCount > 0) return complete;
+
+    if (messageCount > 0) {
+        return complete;
+    }
+
     return opening;
 }

@@ -56,17 +56,20 @@ export function createKnowledgeTranscriptionJobRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     error('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
     });
+
     for (const path of [
         '/knowledge/:noteId/transcriptions',
         '/knowledge/:noteId/transcriptions/*',
@@ -82,8 +85,10 @@ export function createKnowledgeTranscriptionJobRoutes({
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -95,6 +100,7 @@ export function createKnowledgeTranscriptionJobRoutes({
                     ),
             }),
         );
+
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -105,9 +111,11 @@ export function createKnowledgeTranscriptionJobRoutes({
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID',
             );
+
             return c.body(null, 204);
         });
     }
+
     app.onError((caught, c) => {
         let code = 'internal_error';
         let message = 'The transcription request could not be completed.';
@@ -115,15 +123,20 @@ export function createKnowledgeTranscriptionJobRoutes({
         if (caught instanceof KnowledgeDomainError) {
             code = caught.code;
             message = caught.message;
-            if (code === 'knowledge_not_found') status = 404;
-            else if (
+            if (code === 'knowledge_not_found') {
+                status = 404;
+            } else if (
                 code === 'version_conflict' ||
                 code === 'idempotency_conflict'
-            )
+            ) {
                 status = 409;
-            else if (code === 'service_unavailable') status = 503;
-            else if (code === 'rate_limited') status = 429;
-            else status = 400;
+            } else if (code === 'service_unavailable') {
+                status = 503;
+            } else if (code === 'rate_limited') {
+                status = 429;
+            } else {
+                status = 400;
+            }
         } else if (caught instanceof AiCreditInsufficientBalanceError) {
             code = 'insufficient_credits';
             message = 'There are not enough credits for this transcription.';
@@ -156,10 +169,13 @@ export function createKnowledgeTranscriptionJobRoutes({
                 status = 503;
             }
         }
+
         return c.json(error(code, message), status);
     });
+
     const auth = (c: Context) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return [
             policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -167,6 +183,7 @@ export function createKnowledgeTranscriptionJobRoutes({
             { signal: metadata.signal, clientAddress: metadata.clientAddress },
         ] as const;
     };
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -200,6 +217,7 @@ export function createKnowledgeTranscriptionJobRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -213,6 +231,7 @@ export function createKnowledgeTranscriptionJobRoutes({
         }),
         async (c) => {
             const params = c.req.valid('param');
+
             return c.json(
                 {
                     job: await service.read(
@@ -225,6 +244,7 @@ export function createKnowledgeTranscriptionJobRoutes({
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -238,6 +258,7 @@ export function createKnowledgeTranscriptionJobRoutes({
         }),
         async (c) => {
             const params = c.req.valid('param');
+
             return c.json(
                 {
                     job: await service.cancel(
@@ -250,5 +271,6 @@ export function createKnowledgeTranscriptionJobRoutes({
             );
         },
     );
+
     return app;
 }

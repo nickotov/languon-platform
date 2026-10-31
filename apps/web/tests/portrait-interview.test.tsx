@@ -30,12 +30,15 @@ import { InterviewPreview } from '@/fsd/pages/learner-portrait/ui/portrait-inter
 import { InterviewComposer } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer';
 const requestWithSession = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test-token');
+
 vi.mock('@/fsd/features/auth', () => ({
     useAuth: () => ({ requestWithSession }),
 }));
+
 vi.mock('@/fsd/shared/i18n', () => ({
     useI18n: () => ({ locale: 'en', href: (path: string) => path }),
 }));
+
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 const items = PortraitItemsSchema.parse({});
 const current: PortraitState = {
@@ -64,10 +67,12 @@ const session: StartPortraitInterviewResponse = {
     },
     creditsBypass: true,
 };
+
 function mount() {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     function wrapper({ children }: { children: ReactNode }) {
         return (
             <QueryClientProvider client={client}>
@@ -75,8 +80,10 @@ function mount() {
             </QueryClientProvider>
         );
     }
+
     return renderHook(() => usePortraitInterview(), { wrapper });
 }
+
 beforeEach(() => {
     useSessionStore.setState({
         status: 'authenticated',
@@ -89,6 +96,7 @@ beforeEach(() => {
             status: 'active',
         },
     });
+
     vi.spyOn(portraitApi, 'read').mockResolvedValue(current);
     vi.spyOn(portraitApi, 'readInterviewStatus').mockResolvedValue({
         interview: {
@@ -98,24 +106,29 @@ beforeEach(() => {
         },
         creditsBypass: true,
     });
+
     vi.spyOn(portraitApi, 'startInterview').mockResolvedValue(session);
 });
+
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
     vi.restoreAllMocks();
     useSessionStore.getState().signOut();
 });
+
 it('never creates a missing or deleted interview from a passive view or reconnect', async () => {
     vi.mocked(portraitApi.readInterviewStatus).mockResolvedValue({
         interview: null,
         creditsBypass: true,
     });
+
     const { result } = mount();
     await waitFor(() => expect(result.current.missing).toBe(true));
     await act(() => result.current.reconnect());
     expect(portraitApi.startInterview).not.toHaveBeenCalled();
 });
+
 it('reconnects to an admitted operation without submitting or charging another request', async () => {
     const operation = {
         id: '00000000-0000-4000-8000-000000000002',
@@ -124,20 +137,24 @@ it('reconnects to an admitted operation without submitting or charging another r
         result: null,
         errorCode: null,
     };
+
     vi.mocked(portraitApi.startInterview)
         .mockResolvedValueOnce({ ...session, activeOperation: operation })
         .mockResolvedValue(session);
+
     vi.spyOn(portraitApi, 'readOperation').mockResolvedValue({
         ...operation,
         state: 'succeeded',
         result: session.initialQuestion,
     });
+
     const submit = vi.spyOn(portraitApi, 'submitInterview');
     const { result } = mount();
     await waitFor(() => expect(portraitApi.readOperation).toHaveBeenCalled());
     await waitFor(() => expect(result.current.busy).toBe(false));
     expect(submit).not.toHaveBeenCalled();
 });
+
 it('retains one idempotency key when an uncertain network submission is explicitly retried', async () => {
     const submit = vi
         .spyOn(portraitApi, 'submitInterview')
@@ -149,6 +166,7 @@ it('retains one idempotency key when an uncertain network submission is explicit
         topic: 'accommodations' as const,
         text: 'Could you explain this question?',
     };
+
     await act(() => result.current.submit(input));
     await act(() => result.current.submit(input));
     expect(submit).toHaveBeenCalledTimes(2);
@@ -156,6 +174,7 @@ it('retains one idempotency key when an uncertain network submission is explicit
         submit.mock.calls[1]![1].idempotencyKey,
     );
 });
+
 it('asks for explicit paid acknowledgement and leaves drafts and use untouched', async () => {
     const submit = vi
         .spyOn(portraitApi, 'submitInterview')
@@ -173,6 +192,7 @@ it('asks for explicit paid acknowledgement and leaves drafts and use untouched',
     expect(approve).not.toHaveBeenCalled();
     expect(setUse).not.toHaveBeenCalled();
 });
+
 it('exposes a paid admission failure outside the closed notice and preserves the answer for retry', async () => {
     const submit = vi
         .spyOn(portraitApi, 'submitInterview')
@@ -181,14 +201,17 @@ it('exposes a paid admission failure outside the closed notice and preserves the
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     render(
         <QueryClientProvider client={client}>
             <PortraitInterviewPage />
         </QueryClientProvider>,
     );
+
     const input = await screen.findByRole('textbox', {
         name: 'Ask a question or answer in your own words…',
     });
+
     fireEvent.change(input, { target: { value: 'I prefer short steps' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
     const dialog = await screen.findByRole('dialog');
@@ -197,15 +220,18 @@ it('exposes a paid admission failure outside the closed notice and preserves the
     await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
+
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(
         'Your available credits cannot cover this response’s maximum credit hold',
     );
+
     expect(
         within(alert).getByRole('link', {
             name: 'Credit settings (opens in a new tab)',
         }),
     ).toHaveAttribute('href', '/profile?tab=credits');
+
     await waitFor(() => expect(alert).toHaveFocus());
     expect(input).toHaveValue('I prefer short steps');
     expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled();
@@ -215,8 +241,10 @@ it('exposes a paid admission failure outside the closed notice and preserves the
     expect(submit.mock.calls[2]![1].idempotencyKey).toBe(
         submit.mock.calls[1]![1].idempotencyKey,
     );
+
     expect(input).toHaveValue('I prefer short steps');
 });
+
 it('refuses an old proposal after another device changed the portrait', async () => {
     vi.mocked(portraitApi.startInterview).mockResolvedValue({
         ...session,
@@ -234,6 +262,7 @@ it('refuses an old proposal after another device changed the portrait', async ()
             stale: false,
         },
     });
+
     const save = vi.spyOn(portraitApi, 'saveDraft');
     const { result } = mount();
     await waitFor(() => expect(result.current.proposal).not.toBeNull());
@@ -242,6 +271,7 @@ it('refuses an old proposal after another device changed the portrait', async ()
     expect(save).not.toHaveBeenCalled();
     expect(result.current.error).toContain('portrait changed');
 });
+
 it('limits custom answers by graphemes without cutting emoji sequences', () => {
     const answer = vi.fn();
     render(
@@ -253,6 +283,7 @@ it('limits custom answers by graphemes without cutting emoji sequences', () => {
             onSkip={vi.fn()}
         />,
     );
+
     const input = screen.getByLabelText('Your own answer (optional)');
     const emoji = '👩🏽‍💻';
     fireEvent.change(input, { target: { value: emoji.repeat(201) } });
@@ -265,11 +296,13 @@ it('limits custom answers by graphemes without cutting emoji sequences', () => {
         text: emoji.repeat(200),
     });
 });
+
 it('keeps a failed chat message in the composer and prevents more than 1000 graphemes', async () => {
     const send = vi.fn().mockResolvedValue(false);
     render(
         <InterviewComposer locale='en' free disabled={false} onSend={send} />,
     );
+
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'a'.repeat(1001) } });
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled();
@@ -291,6 +324,7 @@ it.each(['continue', 'chat'] as const)(
                 ],
             },
         });
+
         const operation = {
             id: '00000000-0000-4000-8000-000000000002',
             interviewId: session.interviewId,
@@ -307,9 +341,11 @@ it.each(['continue', 'chat'] as const)(
                         admit = resolve;
                     }),
             );
+
         vi.spyOn(portraitApi, 'readOperation').mockImplementation(
             () => new Promise(() => {}),
         );
+
         let finishStop!: () => void;
         const stop = vi.spyOn(portraitApi, 'stopOperation').mockImplementation(
             () =>
@@ -321,11 +357,13 @@ it.each(['continue', 'chat'] as const)(
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
+
         render(
             <QueryClientProvider client={client}>
                 <PortraitInterviewPage />
             </QueryClientProvider>,
         );
+
         const composer = await screen.findByRole('form', {
             name: 'Message the interviewer',
         });
@@ -338,23 +376,28 @@ it.each(['continue', 'chat'] as const)(
                     target: { value: 'Short steps' },
                 },
             );
+
             fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
         } else {
             fireEvent.click(
                 within(composer).getByRole('button', { name: 'Send message' }),
             );
         }
+
         await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
         expect(
             within(composer).getByRole('button', { name: 'Stop' }),
         ).toBeDisabled();
+
         expect(
             screen.queryByRole('button', { name: 'Send message' }),
         ).not.toBeInTheDocument();
+
         await act(async () => admit(operation));
         const stopButton = within(composer).getByRole('button', {
             name: 'Stop',
         });
+
         expect(stopButton).toBeEnabled();
         expect(stopButton).toHaveAttribute('type', 'button');
         expect(screen.getAllByRole('button', { name: 'Stop' })).toHaveLength(1);
@@ -369,6 +412,7 @@ it.each(['continue', 'chat'] as const)(
         expect(
             within(composer).getByRole('button', { name: 'Stop' }),
         ).toBeDisabled();
+
         expect(input).toHaveValue('Keep my draft');
         await act(async () => finishStop());
         await waitFor(() =>
@@ -376,6 +420,7 @@ it.each(['continue', 'chat'] as const)(
                 within(composer).getByRole('button', { name: 'Send message' }),
             ).toBeEnabled(),
         );
+
         expect(input).toHaveValue('Keep my draft');
     },
 );
@@ -394,6 +439,7 @@ it('keeps localized Stop usable with an empty or oversized draft', async () => {
             onStop={stop}
         />,
     );
+
     const input = screen.getByRole('textbox');
     const button = screen.getByRole('button', { name: 'Остановить' });
     expect(button).toBeEnabled();
@@ -425,10 +471,12 @@ it('restores a failed answer as private editable work without automatically retr
         baseGeneration: 0,
         stale: false,
     };
+
     vi.mocked(portraitApi.startInterview).mockResolvedValue({
         ...session,
         lastAttempt: attempt,
     });
+
     const submit = vi.spyOn(portraitApi, 'submitInterview');
     const { result } = mount();
     await waitFor(() =>
@@ -436,6 +484,7 @@ it('restores a failed answer as private editable work without automatically retr
             attempt.input,
         ),
     );
+
     expect(submit).not.toHaveBeenCalled();
     const retry = vi.fn().mockResolvedValue(false);
     render(
@@ -447,6 +496,7 @@ it('restores a failed answer as private editable work without automatically retr
             onDismiss={vi.fn()}
         />,
     );
+
     expect(screen.getByRole('checkbox', { name: 'Work' })).toBeChecked();
     const input = screen.getByRole('textbox', { name: 'Your previous answer' });
     expect(input).toHaveValue('Meetings');
@@ -454,6 +504,7 @@ it('restores a failed answer as private editable work without automatically retr
     fireEvent.click(
         screen.getByRole('button', { name: 'Try this answer again' }),
     );
+
     await waitFor(() =>
         expect(retry).toHaveBeenCalledWith({
             kind: 'answer',
@@ -462,8 +513,10 @@ it('restores a failed answer as private editable work without automatically retr
             text: 'Presentations',
         }),
     );
+
     expect(input).toHaveValue('Presentations');
 });
+
 it('does not cancel durable server work when the interview view unmounts', async () => {
     const active = {
         id: '00000000-0000-4000-8000-000000000002',
@@ -472,19 +525,23 @@ it('does not cancel durable server work when the interview view unmounts', async
         result: null,
         errorCode: null,
     };
+
     vi.mocked(portraitApi.startInterview).mockResolvedValue({
         ...session,
         activeOperation: active,
     });
+
     const stop = vi.spyOn(portraitApi, 'stopOperation');
     vi.spyOn(portraitApi, 'readOperation').mockImplementation(
         () => new Promise(() => {}),
     );
+
     const { result, unmount } = mount();
     await waitFor(() => expect(result.current.busy).toBe(true));
     unmount();
     expect(stop).not.toHaveBeenCalled();
 });
+
 it('keeps an admitted chat answer until a successful transcript update confirms it', async () => {
     const send = vi.fn().mockResolvedValue(true);
     const { rerender } = render(
@@ -510,6 +567,7 @@ it('keeps an admitted chat answer until a successful transcript update confirms 
             onSend={send}
         />,
     );
+
     await waitFor(() => expect(input).toHaveValue(''));
 });
 
@@ -526,6 +584,7 @@ it('reveals the source opening greeting and question before the first form', () 
     act(() => vi.advanceTimersByTime(450));
     expect(result.current.done).toBe(true);
 });
+
 it('shows resumed history immediately and skips opening delays with reduced motion', () => {
     const resumed = {
         ...session,
@@ -557,6 +616,7 @@ it('never saves or changes either account cache when identity changes during pro
                 resolveRead = resolve;
             }),
     );
+
     const save = vi.spyOn(portraitApi, 'saveDraft');
     const onProposal = vi.fn();
     const onSession = vi.fn();
@@ -574,6 +634,7 @@ it('never saves or changes either account cache when identity changes during pro
         baseGeneration: current.generation,
         stale: false,
     };
+
     function wrapper({ children }: { children: ReactNode }) {
         return (
             <QueryClientProvider client={client}>
@@ -581,6 +642,7 @@ it('never saves or changes either account cache when identity changes during pro
             </QueryClientProvider>
         );
     }
+
     const { result } = renderHook(
         () =>
             useInterviewProposalDraft({
@@ -598,15 +660,18 @@ it('never saves or changes either account cache when identity changes during pro
     act(() => {
         pending = result.current();
     });
+
     act(() => {
         useSessionStore.setState({
             user: { ...useSessionStore.getState().user!, id: 'learner-two' },
         });
     });
+
     await act(async () => {
         resolveRead(current);
         await pending;
     });
+
     expect(save).not.toHaveBeenCalled();
     expect(onProposal).not.toHaveBeenCalled();
     expect(onSession).not.toHaveBeenCalled();
@@ -614,10 +679,12 @@ it('never saves or changes either account cache when identity changes during pro
     expect(client.getQueryData(portraitQueryKey('learner-one'))).toEqual(
         beforeA,
     );
+
     expect(client.getQueryData(portraitQueryKey('learner-two'))).toEqual(
         beforeB,
     );
 });
+
 it('checks identity again when auth refresh retries an interview callback', async () => {
     const operation = vi.fn().mockResolvedValue('first-account-response');
     const refreshingRequest = async <T,>(
@@ -627,16 +694,19 @@ it('checks identity again when auth refresh retries an interview callback', asyn
         useSessionStore.setState({
             user: { ...useSessionStore.getState().user!, id: 'learner-two' },
         });
+
         return callback('second-account-token');
     };
     const guarded = ownerScopedInterviewRequest(
         'learner-one',
         refreshingRequest,
     );
+
     await expect(guarded(operation)).rejects.toThrow();
     expect(operation).toHaveBeenCalledTimes(1);
     expect(operation).toHaveBeenCalledWith('first-account-token');
 });
+
 it('drops an old account proposal save receipt without updating either cache', async () => {
     const client = new QueryClient();
     client.setQueryData(portraitQueryKey('learner-one'), current);
@@ -644,6 +714,7 @@ it('drops an old account proposal save receipt without updating either cache', a
         ...current,
         version: 9,
     });
+
     let resolveSave!: (value: PortraitState) => void;
     const save = vi.spyOn(portraitApi, 'saveDraft').mockImplementation(
         () =>
@@ -664,6 +735,7 @@ it('drops an old account proposal save receipt without updating either cache', a
         baseGeneration: current.generation,
         stale: false,
     };
+
     function wrapper({ children }: { children: ReactNode }) {
         return (
             <QueryClientProvider client={client}>
@@ -671,6 +743,7 @@ it('drops an old account proposal save receipt without updating either cache', a
             </QueryClientProvider>
         );
     }
+
     const { result } = renderHook(
         () =>
             useInterviewProposalDraft({
@@ -688,22 +761,26 @@ it('drops an old account proposal save receipt without updating either cache', a
     act(() => {
         pending = result.current();
     });
+
     await waitFor(() => expect(save).toHaveBeenCalled());
     act(() => {
         useSessionStore.setState({
             user: { ...useSessionStore.getState().user!, id: 'learner-two' },
         });
     });
+
     await act(async () => {
         resolveSave({ ...current, version: 2 });
         await pending;
     });
+
     expect(onSession).not.toHaveBeenCalled();
     expect(onProposal).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
     expect(client.getQueryData(portraitQueryKey('learner-one'))).toEqual(
         current,
     );
+
     expect(client.getQueryData(portraitQueryKey('learner-two'))).toEqual({
         ...current,
         version: 9,
@@ -719,25 +796,31 @@ it('keeps retry controls usable and explains unavailable interview models after 
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     render(
         <QueryClientProvider client={client}>
             <PortraitInterviewPage />
         </QueryClientProvider>,
     );
+
     const input = await screen.findByRole('textbox', {
         name: 'Ask a question or answer in your own words…',
     });
+
     fireEvent.change(input, {
         target: { value: 'What does this question mean?' },
     });
+
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
     await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
     expect(
         await screen.findByText(/AI is unavailable right now/),
     ).toHaveTextContent('Your answer and draft are kept');
+
     expect(
         screen.queryByRole('link', { name: /Model settings/ }),
     ).not.toBeInTheDocument();
+
     expect(input).toHaveValue('What does this question mean?');
     expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
@@ -746,6 +829,7 @@ it('keeps retry controls usable and explains unavailable interview models after 
             screen.queryByText(/AI is unavailable right now/),
         ).not.toBeInTheDocument(),
     );
+
     expect(input).toHaveValue('What does this question mean?');
     expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled();
 });
@@ -755,9 +839,11 @@ it('keeps the source composer as one input that accepts both questions and long 
     render(
         <InterviewComposer locale='en' free disabled={false} onSend={send} />,
     );
+
     expect(
         screen.queryByRole('combobox', { name: 'Message purpose' }),
     ).not.toBeInTheDocument();
+
     const input = screen.getByRole('textbox');
     const answer = 'a'.repeat(1000);
     fireEvent.change(input, { target: { value: answer } });
@@ -767,12 +853,14 @@ it('keeps the source composer as one input that accepts both questions and long 
         screen.getByText('1,000/1,000 characters · free'),
     ).toBeInTheDocument();
 });
+
 it('shows the source preview title and a readable cross-device resume expiry', () => {
     const match = window.matchMedia('(max-width: 1023px)');
     vi.spyOn(window, 'matchMedia').mockReturnValue({
         ...match,
         matches: false,
     });
+
     render(
         <InterviewPreview
             items={items}
@@ -784,15 +872,19 @@ it('shows the source preview title and a readable cross-device resume expiry', (
             onReview={vi.fn()}
         />,
     );
+
     expect(
         screen.getByRole('heading', { name: 'Your portrait so far' }),
     ).toBeInTheDocument();
+
     expect(
         screen.queryByRole('heading', { name: 'Portrait summary' }),
     ).not.toBeInTheDocument();
+
     expect(
         screen.getByText(/Paused interviews resume on any device until/),
     ).toHaveTextContent('Dec 1, 2026');
+
     expect(screen.getByText('Nothing to save yet')).toBeInTheDocument();
 });
 
@@ -809,13 +901,16 @@ it.each(['languages', 'explanation-languages'] as const)(
                 onSkip={vi.fn()}
             />,
         );
+
         const choices = screen
             .getAllByRole('checkbox')
             .map((choice) => choice.getAttribute('value'));
+
         expect(choices).toEqual(['ru', 'en', 'fr', 'es', 'de', 'sr', 'pl']);
         expect(
             screen.queryByRole('checkbox', { name: 'Turkish' }),
         ).not.toBeInTheDocument();
+
         const more = screen.getByRole('button', { name: 'Show more' });
         expect(more).toHaveAttribute('aria-expanded', 'false');
         fireEvent.click(more);
@@ -825,16 +920,19 @@ it.each(['languages', 'explanation-languages'] as const)(
             const descriptions = screen.getAllByRole('combobox', {
                 name: 'Your description',
             });
+
             fireEvent.change(descriptions[0]!, { target: { value: 'basic' } });
             fireEvent.click(
                 screen.getAllByRole('checkbox', { name: 'Learning now' })[0]!,
             );
         }
+
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
         const turkish =
             topic === 'languages'
                 ? 'Turkish · Basic · Learning now'
                 : 'Turkish';
+
         expect(answer).toHaveBeenCalledWith({
             selected: [turkish, 'Hungarian'],
         });
@@ -850,6 +948,7 @@ it('preserves adaptive language labels and custom options when expanding the cat
             { id: 'custom-regional', label: 'Swiss German' },
         ],
     };
+
     render(
         <InterviewQuestion
             question={question}
@@ -859,6 +958,7 @@ it('preserves adaptive language labels and custom options when expanding the cat
             onSkip={vi.fn()}
         />,
     );
+
     const german = screen.getByRole('checkbox', { name: 'German' });
     expect(german).toHaveAttribute('value', 'custom-german');
     fireEvent.click(german);
@@ -887,10 +987,12 @@ it.each([
                 onSkip={vi.fn()}
             />,
         );
+
         fireEvent.click(screen.getByRole('button', { name: more }));
         expect(
             screen.getByRole('checkbox', { name: turkish }),
         ).toBeInTheDocument();
+
         expect(
             screen.getByRole('checkbox', { name: hungarian }),
         ).toBeInTheDocument();

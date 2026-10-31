@@ -24,6 +24,7 @@ const failed = {
     description: 'Copy failed',
     content: { 'application/json': { schema: KnowledgeErrorResponseSchema } },
 };
+
 export function createKnowledgeBlockCopyRoutes({
     service,
     policy,
@@ -33,13 +34,15 @@ export function createKnowledgeBlockCopyRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     error('invalid_request', 'The copy request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.use(
         '/knowledge/notes/*/blocks/copy',
         bodyLimit({
@@ -51,6 +54,7 @@ export function createKnowledgeBlockCopyRoutes({
                 ),
         }),
     );
+
     app.use('/knowledge/notes/*/blocks/copy', async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('X-Content-Type-Options', 'nosniff');
@@ -62,40 +66,57 @@ export function createKnowledgeBlockCopyRoutes({
             c.header('Access-Control-Allow-Credentials', 'true');
             c.header('Vary', 'Origin');
         }
+
         if (c.req.method === 'OPTIONS') {
             c.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
             c.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type',
             );
+
             return c.body(null, 204);
         }
+
         await next();
     });
+
     app.onError((caught, c) => {
-        if (caught instanceof InvalidBearerAuthorizationError)
+        if (caught instanceof InvalidBearerAuthorizationError) {
             return c.json(
                 error('authentication_required', 'Sign in to copy blocks.'),
                 401,
             );
-        if (caught instanceof InvalidRequestOriginError)
+        }
+
+        if (caught instanceof InvalidRequestOriginError) {
             return c.json(
                 error('invalid_origin', 'The request origin is not allowed.'),
                 403,
             );
+        }
+
         if (caught instanceof KnowledgeDomainError) {
             let status: 400 | 404 | 409 | 429 = 400;
-            if (caught.code === 'knowledge_not_found') status = 404;
+            if (caught.code === 'knowledge_not_found') {
+                status = 404;
+            }
+
             if (
                 ['version_conflict', 'idempotency_conflict'].includes(
                     caught.code,
                 )
-            )
+            ) {
                 status = 409;
-            if (caught.code === 'rate_limited') status = 429;
+            }
+
+            if (caught.code === 'rate_limited') {
+                status = 429;
+            }
+
             return c.json(error(caught.code, caught.message), status);
         }
-        if (caught instanceof z.ZodError)
+
+        if (caught instanceof z.ZodError) {
             return c.json(
                 error(
                     'invalid_request',
@@ -103,12 +124,16 @@ export function createKnowledgeBlockCopyRoutes({
                 ),
                 400,
             );
+        }
+
         const mapped = mapDictionaryHttpError(caught);
-        if (mapped.status === 401)
+        if (mapped.status === 401) {
             return c.json(
                 error('authentication_required', 'Sign in to copy blocks.'),
                 401,
             );
+        }
+
         return c.json(
             error(
                 'service_unavailable',
@@ -117,6 +142,7 @@ export function createKnowledgeBlockCopyRoutes({
             503,
         );
     });
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -165,8 +191,10 @@ export function createKnowledgeBlockCopyRoutes({
                 c.req.valid('param').noteId,
                 c.req.valid('json'),
             );
+
             return c.json(result, 200);
         },
     );
+
     return app;
 }

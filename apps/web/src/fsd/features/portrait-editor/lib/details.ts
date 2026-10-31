@@ -37,9 +37,10 @@ export function portraitDetails(items: PortraitItems, locale: Locale) {
             .map((code) => languageLabel(code, locale))
             .join(', '),
     ];
-    if (items.mixedLanguageFrequency)
+
+    if (items.mixedLanguageFrequency) {
         explanation.push(term(MIXING, items.mixedLanguageFrequency));
-    else if (items.mixedLanguage !== undefined)
+    } else if (items.mixedLanguage !== undefined) {
         explanation.push(
             items.mixedLanguage
                 ? copy(
@@ -57,7 +58,12 @@ export function portraitDetails(items: PortraitItems, locale: Locale) {
                       'Un solo idioma',
                   ),
         );
-    if (items.mixingNote) explanation.push(`“${items.mixingNote}”`);
+    }
+
+    if (items.mixingNote) {
+        explanation.push(`“${items.mixingNote}”`);
+    }
+
     return [
         { key: 'languages', term: text.languages, value: languages },
         {
@@ -102,18 +108,29 @@ export function portraitDetails(items: PortraitItems, locale: Locale) {
         },
     ];
 }
+
 export function portraitDiff(
     before: PortraitItems,
     after: PortraitItems,
     locale: Locale,
 ) {
     const prior = portraitDetails(before, locale);
+
     return portraitDetails(after, locale).flatMap((row, index) => {
         const previous = prior[index]!.value;
-        if (row.value === previous) return [];
+        if (row.value === previous) {
+            return [];
+        }
+
         let kind: 'added' | 'removed' | 'changed' = 'changed';
-        if (!previous) kind = 'added';
-        if (!row.value) kind = 'removed';
+        if (!previous) {
+            kind = 'added';
+        }
+
+        if (!row.value) {
+            kind = 'removed';
+        }
+
         return [
             { ...row, kind, before: previous, text: row.value || previous },
         ];

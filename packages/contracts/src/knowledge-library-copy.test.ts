@@ -21,6 +21,7 @@ describe('knowledge library publication contracts', () => {
             }).text.alignment,
         ).toBeNull();
     });
+
     it('accepts prepared-entry selections but never client content or actor grants', () => {
         const input = {
             ...source,
@@ -32,15 +33,18 @@ describe('knowledge library publication contracts', () => {
                 targetLanguage: 'ru',
             },
         };
+
         expect(
             CopyKnowledgeVocabularyRequestSchema.safeParse(input).success,
         ).toBe(true);
+
         expect(
             CopyKnowledgeVocabularyRequestSchema.safeParse({
                 ...input,
                 entries: [{ term: 'Forged' }],
             }).success,
         ).toBe(false);
+
         expect(
             CopyKnowledgeVocabularyRequestSchema.safeParse({
                 ...input,
@@ -48,6 +52,7 @@ describe('knowledge library publication contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('requires unique entries and explicit source/destination versions', () => {
         const input = {
             ...source,
@@ -59,9 +64,11 @@ describe('knowledge library publication contracts', () => {
                 expectedSettingsVersion: 1,
             },
         };
+
         expect(
             CopyKnowledgeVocabularyRequestSchema.safeParse(input).success,
         ).toBe(false);
+
         expect(
             CopyKnowledgeVocabularyRequestSchema.safeParse({
                 ...input,
@@ -70,12 +77,14 @@ describe('knowledge library publication contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('accepts only server-resolved text and explicit target translation', () => {
         const input = {
             ...source,
             translationLanguage: 'ru',
             destination: { kind: 'existing', textId: id, expectedVersion: 1 },
         };
+
         expect(CopyKnowledgeTextRequestSchema.parse(input)).toEqual(input);
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({
@@ -83,6 +92,7 @@ describe('knowledge library publication contracts', () => {
                 alignment: { source: [] },
             }).success,
         ).toBe(false);
+
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({
                 ...input,
@@ -101,28 +111,33 @@ describe('owned working library source authority', () => {
         translationLanguage: 'ru',
         destination: { kind: 'new', title: 'Working copy' },
     };
+
     it('requires exactly one explicit saved or working snapshot without accepting content', () => {
         expect(CopyKnowledgeTextRequestSchema.safeParse(working).success).toBe(
             true,
         );
+
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({
                 ...working,
                 noteVersion: 1,
             }).success,
         ).toBe(false);
+
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({
                 ...working,
                 workingSource: undefined,
             }).success,
         ).toBe(false);
+
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({
                 ...working,
                 workingSource: { branchId: id, expectedVersion: 0 },
             }).success,
         ).toBe(false);
+
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({
                 ...working,
@@ -130,6 +145,7 @@ describe('owned working library source authority', () => {
             }).success,
         ).toBe(false);
     });
+
     it('keeps private reader translation receipts bound to saved material', () => {
         expect(
             CopyKnowledgeTextRequestSchema.safeParse({

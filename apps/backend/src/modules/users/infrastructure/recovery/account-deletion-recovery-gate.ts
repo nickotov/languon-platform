@@ -35,13 +35,17 @@ export async function runAccountDeletionRecoveryGate(input: {
         string,
         Array<Extract<JournalEvent, { userId: string }>>
     >();
+
     for (const event of events) {
-        if (event.kind === 'sentinel')
+        if (event.kind === 'sentinel') {
             throw new Error('Unexpected deletion journal sentinel.');
+        }
+
         const group = grouped.get(event.userId) ?? [];
         group.push(event);
         grouped.set(event.userId, group);
     }
+
     let blocked = 0;
     for (const [userId, group] of grouped) {
         const intents = group.filter((event) => event.kind === 'blocking');
@@ -59,36 +63,51 @@ export async function runAccountDeletionRecoveryGate(input: {
                 );
             }
         }
+
         const blocking = intents.sort(
             (a, b) => b.userVersion - a.userVersion,
         )[0];
-        if (!blocking)
+
+        if (!blocking) {
             throw new Error('Cancellation without a deletion intent.');
+        }
+
         const cancellation = group
             .filter((event) => event.kind === 'cancellation')
             .sort((a, b) => b.userVersion - a.userVersion)[0];
         const user = await input.store.findUser(userId);
-        if (!user || user.status === 'purged') continue;
+        if (!user || user.status === 'purged') {
+            continue;
+        }
+
         const cancellationCommittedInSnapshot =
             cancellation &&
             cancellation.userVersion > blocking.userVersion &&
             user.version >= cancellation.userVersion &&
             user.deletionState === 'cancelled';
-        if (cancellationCommittedInSnapshot) continue;
+
+        if (cancellationCommittedInSnapshot) {
+            continue;
+        }
+
         if (
             user.status === 'deletion_pending' &&
             user.version >= blocking.userVersion &&
             (user.deletionState === 'pending' ||
                 user.deletionState === 'running' ||
                 user.deletionState === 'complete')
-        )
+        ) {
             continue;
+        }
+
         await input.store.blockAccount({
             scheduledAt: new Date(blocking.occurredAt),
             userId,
             userVersion: blocking.userVersion,
         });
+
         blocked += 1;
     }
+
     return { blocked, inspected: grouped.size };
 }

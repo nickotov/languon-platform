@@ -13,12 +13,20 @@ export function moveEditorBlock(
     if (
         !view.editable ||
         view.state.doc.nodeAt(active.position) !== active.node
-    )
+    ) {
         return;
+    }
+
     const end = active.position + active.node.nodeSize;
-    if (target >= active.position && target <= end) return;
+    if (target >= active.position && target <= end) {
+        return;
+    }
+
     const transaction = closeHistory(view.state.tr);
-    if (!copy) transaction.delete(active.position, end);
+    if (!copy) {
+        transaction.delete(active.position, end);
+    }
+
     const destination = transaction.mapping.map(target);
     transaction.insert(destination, active.node);
     try {
@@ -27,9 +35,11 @@ export function moveEditorBlock(
         // A bounded invalid copy/move never mutates the document.
         return;
     }
+
     transaction.setSelection(
         NodeSelection.create(transaction.doc, destination),
     );
+
     view.dispatch(transaction);
     view.dispatch(closeHistory(view.state.tr));
     view.focus();

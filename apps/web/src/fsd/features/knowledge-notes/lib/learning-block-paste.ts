@@ -17,18 +17,27 @@ export function pasteLearningBlock(
         (plain.startsWith(learningBlockClipboardPrefix)
             ? plain.slice(learningBlockClipboardPrefix.length)
             : '');
-    if (!serialized) return 'none';
+
+    if (!serialized) {
+        return 'none';
+    }
+
     event.preventDefault();
     try {
-        if (serialized.length > 512_000) return 'invalid';
+        if (serialized.length > 512_000) {
+            return 'invalid';
+        }
+
         const block = copyLearningBlock(JSON.parse(serialized));
         const transaction = view.state.tr;
         transaction.insert(
             transaction.doc.content.size,
             view.state.schema.nodes.learningBlock!.create({ block }),
         );
+
         normalizeEditorDocument(transaction.doc.toJSON());
         view.dispatch(transaction);
+
         return 'applied';
     } catch {
         return 'invalid';

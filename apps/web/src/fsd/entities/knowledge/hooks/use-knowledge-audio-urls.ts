@@ -40,6 +40,7 @@ export function useKnowledgeAudioUrls({
         scopeKey: string;
         urls: Record<string, string>;
     }>({ scopeKey, urls: {} });
+
     useEffect(() => {
         const controller = new AbortController();
         const created: string[] = [];
@@ -48,8 +49,11 @@ export function useKnowledgeAudioUrls({
             accessKind && accessLocator && accessKey
                 ? { kind: accessKind, locator: accessLocator, key: accessKey }
                 : undefined;
-        if (!noteId || !assetKey || unavailable || (!actorId && !grant))
+
+        if (!noteId || !assetKey || unavailable || (!actorId && !grant)) {
             return () => controller.abort();
+        }
+
         const assets = assetKey.split(',');
         async function load(assetId: string) {
             try {
@@ -62,7 +66,11 @@ export function useKnowledgeAudioUrls({
                           }),
                       )
                     : await readKnowledgeAudio(noteId!, assetId, options);
-                if (controller.signal.aborted) return;
+
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 const url = URL.createObjectURL(blob);
                 created.push(url);
                 setState((current) =>
@@ -77,18 +85,26 @@ export function useKnowledgeAudioUrls({
                 /* Missing or revoked media remains explicitly unavailable. */
             }
         }
+
         async function drain() {
             while (!controller.signal.aborted) {
                 const asset = assets.shift();
-                if (!asset) return;
+                if (!asset) {
+                    return;
+                }
+
                 await load(asset);
             }
         }
+
         void drain();
         void drain();
+
         return () => {
             controller.abort();
-            for (const url of created) URL.revokeObjectURL(url);
+            for (const url of created) {
+                URL.revokeObjectURL(url);
+            }
         };
     }, [
         noteId,
@@ -101,5 +117,6 @@ export function useKnowledgeAudioUrls({
         unavailable,
         scopeKey,
     ]);
+
     return state.scopeKey === scopeKey && !unavailable ? state.urls : {};
 }

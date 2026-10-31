@@ -57,9 +57,12 @@ export async function sentencePreparationGet(
                 ),
             );
 
-        if (!row) throw new SentenceUnavailableError();
+        if (!row) {
+            throw new SentenceUnavailableError();
+        }
+
         const partitions = await sentencePreparationRows(tx, id);
-        for (const batch of partitions)
+        for (const batch of partitions) {
             await sentencePreparationRefreshManifest(
                 persistence,
                 tx,
@@ -67,6 +70,8 @@ export async function sentencePreparationGet(
                 batch,
                 false,
             );
+        }
+
         const current = await sentencePreparationFresh(tx, row, partitions);
 
         return sentencePreparationPresent(
@@ -104,7 +109,10 @@ export async function sentencePreparationCommand(
             )
             .for('update');
 
-        if (!row) throw new SentenceUnavailableError();
+        if (!row) {
+            throw new SentenceUnavailableError();
+        }
+
         const [receipt] = await tx
             .select()
             .from(commands)
@@ -116,8 +124,12 @@ export async function sentencePreparationCommand(
             );
 
         if (receipt) {
-            if (receipt.preparationId !== id || receipt.action !== input.action)
+            if (
+                receipt.preparationId !== id ||
+                receipt.action !== input.action
+            ) {
                 throw new SentenceConflictError('operation_conflict');
+            }
 
             return sentencePreparationPresent(persistence, tx, row);
         }
@@ -127,16 +139,20 @@ export async function sentencePreparationCommand(
                 row.state !== 'paused' ||
                 row.pauseReason === 'access' ||
                 row.pauseReason === 'stale'
-            )
+            ) {
                 throw new SentenceConflictError('stale_content');
+            }
+
             if (
                 !(await sentencePreparationFresh(
                     tx,
                     row,
                     await sentencePreparationRows(tx, id),
                 ))
-            )
+            ) {
                 throw new SentenceConflictError('stale_content');
+            }
+
             const [otherActive] = await tx
                 .select({ id: preparations.id })
                 .from(preparations)
@@ -155,8 +171,10 @@ export async function sentencePreparationCommand(
                 )
                 .limit(1);
 
-            if (otherActive)
+            if (otherActive) {
                 throw new SentenceConflictError('operation_conflict');
+            }
+
             const available =
                 row.mode === 'review-only' ||
                 (await sentencePreparationParentAvailable(
@@ -165,11 +183,15 @@ export async function sentencePreparationCommand(
                     context.now,
                 ));
 
-            if (input.action === 'resume' && !available)
+            if (input.action === 'resume' && !available) {
                 throw new SentenceConflictError('operation_conflict');
+            }
+
             if (input.action === 'continue') {
-                if (available || row.mode === 'review-only')
+                if (available || row.mode === 'review-only') {
                     throw new SentenceConflictError('operation_conflict');
+                }
+
                 await sentencePreparationSettleParent(tx, row, context.now);
 
                 const [old] = row.currentActionId
@@ -179,8 +201,10 @@ export async function sentencePreparationCommand(
                           .where(eq(accountingActions.id, row.currentActionId))
                     : [];
 
-                if (old?.state === 'active')
+                if (old?.state === 'active') {
                     throw new SentenceConflictError('operation_conflict');
+                }
+
                 await sentencePreparationAuthorizeParent(
                     persistence,
                     tx,
@@ -229,7 +253,7 @@ export async function sentencePreparationCommand(
         });
 
         if (input.action === 'stop') {
-            if (row.activeJobId)
+            if (row.activeJobId) {
                 await tx
                     .update(jobs)
                     .set({
@@ -242,13 +266,14 @@ export async function sentencePreparationCommand(
                             inArray(jobs.executionState, ['queued', 'running']),
                         ),
                     );
-            else
+            } else {
                 await sentencePreparationSettleParent(
                     tx,
                     row,
                     context.now,
                     true,
                 );
+            }
         }
 
         const [updated] = await tx

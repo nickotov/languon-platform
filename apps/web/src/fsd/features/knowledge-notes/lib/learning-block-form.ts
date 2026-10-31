@@ -37,7 +37,7 @@ export function blockForm(
 ): BlockForm {
     const fields = [field('title', 'Title', block?.title)];
     const groups: BlockGroup[] = [];
-    if (kind !== 'exercise')
+    if (kind !== 'exercise') {
         fields.push(
             field(
                 'language',
@@ -47,6 +47,8 @@ export function blockForm(
                     'en',
             ),
         );
+    }
+
     if (kind === 'video') {
         const video = block?.type === 'video' ? block : undefined;
         const source = video?.source;
@@ -59,6 +61,7 @@ export function blockForm(
                     : source?.url,
             ),
         );
+
         fields.push(
             field(
                 'description',
@@ -67,10 +70,13 @@ export function blockForm(
                 true,
             ),
         );
+
         const languageField = fields.find((item) => item.name === 'language');
-        if (languageField)
+        if (languageField) {
             languageField.value =
                 video?.transcript?.language ?? defaults?.content ?? 'en';
+        }
+
         groups.push({
             name: 'transcript',
             label: 'Transcript passages',
@@ -92,12 +98,14 @@ export function blockForm(
                 })) ?? [],
         });
     }
+
     if (kind === 'grammar') {
         const grammar = block?.type === 'grammar' ? block : undefined;
         fields.push(
             field('rule', 'Rule', grammar?.rule, true),
             field('pattern', 'Formation / pattern', grammar?.pattern, true),
         );
+
         groups.push({
             name: 'examples',
             label: 'Examples',
@@ -111,6 +119,7 @@ export function blockForm(
                     translation: row.translation ?? '',
                 })) ?? [],
         });
+
         groups.push({
             name: 'mistakes',
             label: 'Common mistakes',
@@ -126,6 +135,7 @@ export function blockForm(
                 })) ?? [],
         });
     }
+
     if (kind === 'vocabulary') {
         const vocabulary = block?.type === 'vocabulary' ? block : undefined;
         fields.push(
@@ -137,6 +147,7 @@ export function blockForm(
                     'en',
             ),
         );
+
         groups.push({
             name: 'entries',
             label: 'Vocabulary entries',
@@ -157,6 +168,7 @@ export function blockForm(
             })) ?? [{}],
         });
     }
+
     if (kind === 'bilingual-text') {
         const bilingual = block?.type === 'bilingual-text' ? block : undefined;
         const translation = bilingual?.translations[0];
@@ -167,6 +179,7 @@ export function blockForm(
                 translation?.language ?? defaults?.translation ?? 'en',
             ),
         );
+
         groups.push({
             name: 'segments',
             label: 'Aligned passages',
@@ -184,11 +197,13 @@ export function blockForm(
             })) ?? [{}],
         });
     }
+
     if (kind === 'audio') {
         const audio = block?.type === 'audio' ? block : undefined;
         fields.push(
             field('sourceText', 'Speech source text', audio?.sourceText, true),
         );
+
         groups.push({
             name: 'transcript',
             label: 'Transcript passages',
@@ -209,14 +224,17 @@ export function blockForm(
                         : '',
                 })) ?? [],
         });
+
         const languageField = fields.find((item) => item.name === 'language');
-        if (languageField)
+        if (languageField) {
             languageField.value =
                 audio?.language ??
                 audio?.transcript?.language ??
                 defaults?.content ??
                 'en';
+        }
     }
+
     if (kind === 'exercise') {
         const exercise = block?.type === 'exercise' ? block : undefined;
         fields.push(
@@ -241,9 +259,11 @@ export function blockForm(
                 true,
             ),
         );
+
         fields.push(
             field('format', 'Answer format', exercise?.format ?? 'free-text'),
         );
+
         groups.push({
             name: 'choices',
             label: 'Multiple-choice answers',
@@ -253,6 +273,7 @@ export function blockForm(
                     ? exercise.choices
                     : [{}, {}],
         });
+
         fields.push(
             field(
                 'correctChoice',
@@ -267,6 +288,7 @@ export function blockForm(
                     : '1',
             ),
         );
+
         const gapText =
             exercise?.format === 'fill-in-the-blank'
                 ? exercise.parts
@@ -277,6 +299,7 @@ export function blockForm(
                       )
                       .join('')
                 : '';
+
         fields.push(
             field(
                 'gapText',
@@ -285,6 +308,7 @@ export function blockForm(
                 true,
             ),
         );
+
         fields.push(
             field(
                 'acceptedAnswers',
@@ -296,6 +320,7 @@ export function blockForm(
             ),
         );
     }
+
     return { fields, groups };
 }
 
@@ -338,6 +363,7 @@ export function readBlockForm(
             correct: row.correct,
             ...(row.explanation ? { explanation: row.explanation } : {}),
         }));
+
         candidate = {
             ...common,
             type: kind,
@@ -348,6 +374,7 @@ export function readBlockForm(
             ...(mistakes.length ? { commonMistakes: mistakes } : {}),
         };
     }
+
     if (kind === 'video') {
         const url = new URL(LearningMediaUrlSchema.parse(value('video')));
         let videoId: string | null = null;
@@ -355,9 +382,14 @@ export function readBlockForm(
             ['www.youtube.com', 'youtube.com', 'm.youtube.com'].includes(
                 url.hostname,
             )
-        )
+        ) {
             videoId = url.searchParams.get('v');
-        if (url.hostname === 'youtu.be') videoId = url.pathname.slice(1);
+        }
+
+        if (url.hostname === 'youtu.be') {
+            videoId = url.pathname.slice(1);
+        }
+
         if (
             [
                 'www.youtube.com',
@@ -370,8 +402,12 @@ export function readBlockForm(
                 /^\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})\/?$/u.exec(
                     url.pathname,
                 );
-            if (embedded) videoId = embedded[1] ?? null;
+
+            if (embedded) {
+                videoId = embedded[1] ?? null;
+            }
         }
+
         const previousTranscript =
             previous?.type === 'video' ? previous.transcript : undefined;
         const passages = rows('transcript', ['id', 'text', 'start', 'end']);
@@ -408,6 +444,7 @@ export function readBlockForm(
                 : {}),
         };
     }
+
     if (kind === 'vocabulary') {
         const old = previous?.type === kind ? previous : undefined;
         candidate = {
@@ -438,6 +475,7 @@ export function readBlockForm(
             })),
         };
     }
+
     if (kind === 'bilingual-text') {
         const old = previous?.type === kind ? previous : undefined;
         const passages = rows('segments', ['id', 'text', 'translation']);
@@ -471,8 +509,13 @@ export function readBlockForm(
                 text: row.translation ?? '',
             })),
         };
-        if (index >= 0) translations[index] = replacement;
-        else if (translated) translations.push(replacement);
+
+        if (index >= 0) {
+            translations[index] = replacement;
+        } else if (translated) {
+            translations.push(replacement);
+        }
+
         candidate = {
             ...common,
             type: kind,
@@ -481,6 +524,7 @@ export function readBlockForm(
             translations,
         };
     }
+
     if (kind === 'audio') {
         const audio = previous?.type === 'audio' ? previous : undefined;
         const passages = rows('transcript', ['id', 'text', 'start', 'end']);
@@ -521,18 +565,21 @@ export function readBlockForm(
                 : {}),
         };
     }
+
     if (kind === 'exercise') {
         const old = previous?.type === kind ? previous : undefined;
         let source = old?.source;
         if (data.has('sourceBlockId')) {
             source = undefined;
             const blockId = value('sourceBlockId');
-            if (blockId)
+            if (blockId) {
                 source = {
                     blockId,
                     segmentIds: data.getAll('sourceSegmentIds').map(String),
                 };
+            }
         }
+
         const base = {
             ...common,
             type: kind,
@@ -555,6 +602,7 @@ export function readBlockForm(
                         : crypto.randomUUID(),
                 text: row.text,
             }));
+
             candidate = {
                 ...base,
                 format,
@@ -582,8 +630,9 @@ export function readBlockForm(
                           }
                         : { kind: 'text', text: part },
                 );
+
             candidate = { ...base, format, parts };
-        } else
+        } else {
             candidate = {
                 ...base,
                 format,
@@ -595,6 +644,8 @@ export function readBlockForm(
                       }
                     : {}),
             };
+        }
     }
+
     return LearningBlockSchema.parse(candidate);
 }

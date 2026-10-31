@@ -35,12 +35,15 @@ export function useInterviewProposalDraft({
 }) {
     const client = useQueryClient();
     async function accept(editedItems?: PortraitItems) {
-        if (!proposal?.result.proposedItems || !isInterviewOwner(ownerId))
+        if (!proposal?.result.proposedItems || !isInterviewOwner(ownerId)) {
             return;
+        }
+
         const request = ownerScopedInterviewRequest(
             ownerId,
             requestWithSession,
         );
+
         try {
             const current = await request((token) => portraitApi.read(token));
             if (
@@ -50,8 +53,10 @@ export function useInterviewProposalDraft({
                 onError(
                     'Your portrait changed. Review this proposal against the latest portrait before saving.',
                 );
+
                 return;
             }
+
             const updated = await request((token) =>
                 portraitApi.saveDraft(token, {
                     expectedVersion: current.version,
@@ -60,6 +65,7 @@ export function useInterviewProposalDraft({
                     locale,
                 }),
             );
+
             setPortraitStateCache(client, ownerId, updated);
             onProposal(null);
             onSession((previous) =>
@@ -74,11 +80,15 @@ export function useInterviewProposalDraft({
                     : previous,
             );
         } catch {
-            if (!isInterviewOwner(ownerId)) return;
+            if (!isInterviewOwner(ownerId)) {
+                return;
+            }
+
             onError(
                 'Unable to add this proposal. Review the latest portrait; your draft is kept.',
             );
         }
     }
+
     return accept;
 }

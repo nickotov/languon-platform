@@ -7,9 +7,11 @@ describe('Transcription credential configuration', () => {
             loadKnowledgeTranscriptionEnvironment({}, diagnostics)
                 .OPENAI_API_KEY,
         ).toBeUndefined();
+
         expect(diagnostics.warn).not.toHaveBeenCalled();
         expect(diagnostics.error).not.toHaveBeenCalled();
     });
+
     it('rejects malformed credentials without exposing their value', () => {
         const diagnostics = { warn: vi.fn(), error: vi.fn() };
         expect(() =>
@@ -18,6 +20,7 @@ describe('Transcription credential configuration', () => {
                 diagnostics,
             ),
         ).toThrow();
+
         expect(JSON.stringify(diagnostics.error.mock.calls)).not.toContain(
             'private credential value',
         );

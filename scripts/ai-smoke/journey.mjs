@@ -11,6 +11,7 @@ export function createApi(contracts, fetchImpl = fetch) {
             path.startsWith('/') && !path.startsWith('//'),
             'invalid-api-path',
         );
+
         let response;
         try {
             response = await fetchImpl(`${API}${path}`, {
@@ -32,13 +33,18 @@ export function createApi(contracts, fetchImpl = fetch) {
         } catch {
             throw new SmokeError('http-outcome-unknown-no-retry');
         }
+
         requireSafe(response.ok, `http-${response.status}-no-retry`);
-        if (path === '/auth/login/password')
+        if (path === '/auth/login/password') {
             cookie = response.headers.get('set-cookie')?.split(';')[0];
+        }
+
         const parsed = schema.safeParse(await response.json());
         requireSafe(parsed.success, 'api-contract-mismatch');
+
         return parsed.data;
     };
+
     return {
         request,
         login: async (credentials) => {
@@ -50,21 +56,26 @@ export function createApi(contracts, fetchImpl = fetch) {
                     password: credentials.AI_SMOKE_PASSWORD,
                 }),
             );
+
             requireSafe(
                 login.user.id === credentials.AI_SMOKE_USER_ID &&
                     login.user.primaryEmail === EMAIL,
                 'authenticated-user-mismatch',
             );
+
             token = login.accessToken;
+
             return login;
         },
         logout: async () => {
-            if (cookie)
+            if (cookie) {
                 await request(
                     '/auth/logout',
                     contracts.LogoutResponseSchema,
                     {},
                 );
+            }
+
             token = undefined;
             cookie = undefined;
         },
@@ -90,6 +101,7 @@ export async function runJourney({
         '/users/me/ai-credits',
         c.LearnerAiCreditBalanceSchema,
     );
+
     requireSafe(
         preference.maxCreditsPerAction === initial.actionCredits &&
             Number(preference.maxCreditsPerAction) > 0 &&
@@ -99,6 +111,7 @@ export async function runJourney({
                 Number(preference.maxCreditsPerAction),
         'learner-api-budget-mismatch',
     );
+
     const { note } = await api.request(
         '/knowledge',
         c.KnowledgeNoteResponseSchema,
@@ -130,6 +143,7 @@ export async function runJourney({
             },
         }),
     );
+
     await journal.record(reservation.id, { noteId: note.id });
     const { conversation } = await api.request(
         '/conversations',
@@ -144,6 +158,7 @@ export async function runJourney({
             },
         }),
     );
+
     await journal.record(reservation.id, { conversationId: conversation.id });
     const latest = await inspect();
     requireSafe(
@@ -154,6 +169,7 @@ export async function runJourney({
             latest.globalExposureMicros <= initial.globalExposureMicros,
         'preflight-changed-no-dispatch',
     );
+
     const { turn } = await api.request(
         `/conversations/${conversation.id}/turns`,
         z.object({ turn: c.ConversationTurnSchema }).strict(),
@@ -175,6 +191,7 @@ export async function runJourney({
             },
         }),
     );
+
     await journal.record(reservation.id, { turnId: turn.id });
     const deadline = now() + 180000;
     while (now() < deadline) {
@@ -184,8 +201,10 @@ export async function runJourney({
         );
         const current = detail.turns.find((item) => item.id === turn.id);
         requireSafe(Boolean(current), 'persisted-turn-missing');
-        if (['failed', 'cancelled'].includes(current.status))
+        if (['failed', 'cancelled'].includes(current.status)) {
             throw new SmokeError('learner-turn-failed-no-retry');
+        }
+
         if (
             current.status === 'succeeded' &&
             current.billing?.state !== 'held'
@@ -206,15 +225,18 @@ export async function runJourney({
                     ),
                 'persisted-output-or-billing-missing',
             );
+
             const providerExpenseMicros = await verifyExpense(
                 turn.id,
                 initial.funding,
             );
+
             await journal.record(reservation.id, {
                 status: 'succeeded',
                 chargedCredits: current.billing.chargedCredits,
                 providerExpenseMicros,
             });
+
             return {
                 status: 'succeeded',
                 conversationId: conversation.id,
@@ -225,7 +247,9 @@ export async function runJourney({
                 providerExpenseMicros,
             };
         }
+
         await sleep(1000);
     }
+
     throw new SmokeError('poll-timeout-no-retry-reservation-retained');
 }

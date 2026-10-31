@@ -9,10 +9,13 @@ export async function customerBalance(
 ) {
     const databaseUrl =
         process.env.AUTH_E2E_DATABASE_URL ?? process.env.AUTH_TEST_DATABASE_URL;
-    if (!databaseUrl)
+
+    if (!databaseUrl) {
         throw new Error(
             'An explicit disposable accounting database is required.',
         );
+    }
+
     await promisify(execFile)(
         'pnpm',
         [

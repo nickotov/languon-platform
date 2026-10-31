@@ -71,39 +71,51 @@ it.each(['ru', 'fr', 'de'])(
                 sources={[]}
             />,
         );
+
         fireEvent.change(
             screen.getByRole('combobox', { name: 'Prepared translation' }),
             { target: { value: target === 'de' ? '' : target } },
         );
+
         expect(screen.getByLabelText('Translated passage')).toHaveValue(
             target === 'ru' ? 'Привет.' : target === 'fr' ? 'Bonjour.' : '',
         );
+
         fireEvent.change(screen.getByLabelText('Translation language'), {
             target: { value: target },
         });
+
         fireEvent.change(screen.getByLabelText('Translated passage'), {
             target: { value: 'Updated translation.' },
         });
+
         fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         const result = apply.mock.calls[0]?.[0];
-        if (result?.type !== 'bilingual-text')
+        if (result?.type !== 'bilingual-text') {
             throw new Error('Expected a bilingual block.');
-        if (target !== 'ru')
+        }
+
+        if (target !== 'ru') {
             expect(result.translations).toContainEqual({
                 language: 'ru',
                 segments: [{ sourceSegmentId: segmentId, text: 'Привет.' }],
             });
+        }
+
         expect(result.translations).toContainEqual({
             language: target,
             segments: [
                 { sourceSegmentId: segmentId, text: 'Updated translation.' },
             ],
         });
-        if (target !== 'fr')
+
+        if (target !== 'fr') {
             expect(result.translations).toContainEqual({
                 language: 'fr',
                 segments: [{ sourceSegmentId: segmentId, text: 'Bonjour.' }],
             });
+        }
+
         expect(
             result.translations.map((translation) => translation.language),
         ).toEqual(target === 'de' ? ['ru', 'fr', 'de'] : ['ru', 'fr']);
@@ -124,6 +136,7 @@ describe('learning block editor', () => {
                 ],
             }),
         ).toThrow();
+
         expect(() =>
             normalizeEditorDocument({
                 type: 'doc',
@@ -137,6 +150,7 @@ describe('learning block editor', () => {
             }),
         ).toThrow();
     });
+
     it('copies identities without carrying forbidden dependencies', () => {
         const copied = copyLearningBlock(grammar);
         expect(copied.id).not.toBe(grammar.id);
@@ -144,6 +158,7 @@ describe('learning block editor', () => {
         expect(() =>
             copyLearningBlock({ id, type: 'audio', assetId: id }),
         ).toThrow(/authorized/);
+
         expect(() =>
             copyLearningBlock({
                 id,
@@ -156,6 +171,7 @@ describe('learning block editor', () => {
             }),
         ).toThrow(/together/);
     });
+
     it('validates author forms and preserves original bilingual spacing', () => {
         const form = new FormData();
         form.set('language', 'en');
@@ -167,26 +183,32 @@ describe('learning block editor', () => {
             segments: [{ text: '  Original.\n' }],
             translations: [{ segments: [{ text: ' Traduction. ' }] }],
         });
+
         const video = new FormData();
         video.set('video', 'https://user:pass@youtube.com/watch?v=dQw4w9WgXcQ');
         expect(() => readBlockForm('video', video, {})).toThrow();
     });
+
     it('renders literal hostile text and includes block context in chat snapshots', async () => {
         const ref = createRef<KnowledgeEditorHandle>();
         const onChange = vi.fn();
         const { container } = render(
             <KnowledgeEditor ref={ref} value={body} onChange={onChange} />,
         );
+
         await waitFor(() => expect(ref.current).not.toBeNull());
         expect(
             await screen.findByText('<script>alert(1)</script>'),
         ).toBeVisible();
+
         expect(container.querySelector('script')).toBeNull();
         expect(ref.current?.getSnapshot().content).toContain(
             '<script>alert(1)</script>',
         );
+
         expect(onChange).not.toHaveBeenCalled();
     });
+
     it('adds and edits a grammar block only through explicit Apply', async () => {
         const empty = KnowledgeBodySchema.parse({
             schemaVersion: 1,
@@ -200,9 +222,11 @@ describe('learning block editor', () => {
         fireEvent.click(
             await screen.findByRole('menuitem', { name: 'Grammar' }),
         );
+
         fireEvent.change(screen.getByLabelText('Rule'), {
             target: { value: 'Use the past tense.' },
         });
+
         expect(onChange).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         await waitFor(() => expect(onChange).toHaveBeenCalled());
@@ -210,25 +234,31 @@ describe('learning block editor', () => {
         expect(ref.current?.getSnapshot().content).toContain(
             'Use the past tense.',
         );
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Block settings: Grammar' }),
         );
+
         fireEvent.click(
             await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
         );
+
         fireEvent.change(screen.getByLabelText('Rule'), {
             target: { value: 'Use the present tense.' },
         });
+
         fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
         expect(ref.current?.getSnapshot().content).toContain(
             'Use the present tense.',
         );
+
         await act(async () => {
             expect(ref.current?.applyProposal('Replacement', 'replace')).toBe(
                 'missing',
             );
         });
     });
+
     it('allows selecting the same audio again after a failed upload', async () => {
         const upload = vi
             .fn()
@@ -243,6 +273,7 @@ describe('learning block editor', () => {
                 onReady={ready}
             />,
         );
+
         const input = screen.getByLabelText(
             'Upload audio (WAV or MP3, up to 5 MiB)',
         ) as HTMLInputElement;
@@ -252,6 +283,7 @@ describe('learning block editor', () => {
             writable: true,
             value: 'retry.wav',
         });
+
         fireEvent.change(input, { target: { files: [file] } });
         await screen.findByRole('alert');
         expect(input.value).toBe('');
@@ -279,16 +311,19 @@ describe('learning block editor', () => {
                 uploadAudio={uploadAudio}
             />,
         );
+
         await waitFor(() => expect(ref.current).not.toBeNull());
         fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
         fireEvent.click(await screen.findByRole('menuitem', { name: 'Audio' }));
         const file = new File(['synthetic audio'], 'sample.wav', {
             type: 'audio/wav',
         });
+
         fireEvent.change(
             screen.getByLabelText('Upload audio (WAV or MP3, up to 5 MiB)'),
             { target: { files: [file] } },
         );
+
         await screen.findByRole('button', { name: 'Apply changes' });
         expect(uploadAudio).toHaveBeenCalledWith(file);
         expect(onChange).not.toHaveBeenCalled();
@@ -326,24 +361,30 @@ it('authors a manual exercise with selected source passages and retains them on 
     render(
         <KnowledgeEditor ref={editor} value={sourceBody} onChange={onChange} />,
     );
+
     await waitFor(() => expect(editor.current).not.toBeNull());
     fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Exercise' }));
     fireEvent.change(screen.getByLabelText('Question'), {
         target: { value: 'When does the train leave?' },
     });
+
     fireEvent.change(screen.getByLabelText('Reference answer'), {
         target: { value: 'At noon.' },
     });
+
     fireEvent.change(screen.getByLabelText('Why the answer is correct'), {
         target: { value: 'The passage says it leaves at noon.' },
     });
+
     fireEvent.change(screen.getByRole('combobox', { name: 'Hint source' }), {
         target: { value: sourceId },
     });
+
     fireEvent.click(
         screen.getByRole('checkbox', { name: 'The train leaves at noon.' }),
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(JSON.stringify(onChange.mock.lastCall?.[0])).toContain(
@@ -353,15 +394,19 @@ it('authors a manual exercise with selected source passages and retains them on 
             segmentId +
             '"]}',
     );
+
     fireEvent.click(
         screen.getByRole('button', { name: 'Block settings: Exercise' }),
     );
+
     fireEvent.click(
         await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
     );
+
     expect(screen.getByRole('combobox', { name: 'Hint source' })).toHaveValue(
         sourceId,
     );
+
     expect(
         screen.getByRole('checkbox', { name: 'The train leaves at noon.' }),
     ).toBeChecked();
@@ -379,16 +424,22 @@ it('appends a validated generated block as one undoable draft edit', async () =>
     act(() => {
         expect(editor.current?.appendLearningBlock(grammar)).toBe(true);
     });
+
     expect(editor.current?.getSnapshot().content).toContain(
         '<script>alert(1)</script>',
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'Undo', exact: true }));
     expect(editor.current?.getSnapshot().content).toBe('');
     fireEvent.click(screen.getByRole('button', { name: 'Redo', exact: true }));
     expect(editor.current?.getSnapshot().content).toContain(
         '<script>alert(1)</script>',
     );
-    if (grammar.type !== 'grammar') throw new Error('Expected grammar');
+
+    if (grammar.type !== 'grammar') {
+        throw new Error('Expected grammar');
+    }
+
     act(() => {
         expect(
             editor.current?.appendLearningBlock({
@@ -398,6 +449,7 @@ it('appends a validated generated block as one undoable draft edit', async () =>
             }),
         ).toBe(false);
     });
+
     expect(editor.current?.getSnapshot().content).not.toContain(
         'x'.repeat(100),
     );
@@ -410,10 +462,12 @@ it('refreshes block authoring controls after an externally recovered document re
     const { rerender } = render(
         <KnowledgeEditor ref={editor} value={body} onChange={onChange} />,
     );
+
     await waitFor(() => expect(editor.current).not.toBeNull());
     expect(
         screen.getAllByRole('button', { name: /^Block settings:/ }),
     ).toHaveLength(1);
+
     const recovered = KnowledgeBodySchema.parse({
         schemaVersion: 2,
         document: {
@@ -435,6 +489,7 @@ it('refreshes block authoring controls after an externally recovered document re
             ],
         },
     });
+
     rerender(
         <I18nProvider locale='en' messages={en}>
             <KnowledgeEditor
@@ -444,20 +499,24 @@ it('refreshes block authoring controls after an externally recovered document re
             />
         </I18nProvider>,
     );
+
     await waitFor(() =>
         expect(
             screen.getAllByRole('button', { name: /^Block settings:/ }),
         ).toHaveLength(2),
     );
+
     expect(editor.current?.getSnapshot().content).toContain(
         'New content from the saved branch.',
     );
+
     expect(onChange).not.toHaveBeenCalled();
     const renderWarnings = consoleError.mock.calls.filter((args) =>
         args.some(
             (value) => typeof value === 'string' && value.includes('flushSync'),
         ),
     );
+
     consoleError.mockRestore();
     expect(renderWarnings).toEqual([]);
 });
@@ -478,6 +537,7 @@ it('applies a captured audio transcript atomically and rejects stale or retarget
     render(
         <KnowledgeEditor ref={editor} value={sourceBody} onChange={vi.fn()} />,
     );
+
     await waitFor(() => expect(editor.current).not.toBeNull());
     const rule = LearningBlockSchema.parse({
         id: '22222222-2222-4222-8222-222222222222',
@@ -485,10 +545,15 @@ it('applies a captured audio transcript atomically and rejects stale or retarget
         language: 'en',
         rule: 'Unrelated newer material.',
     });
+
     act(() => {
         expect(editor.current?.appendLearningBlock(rule)).toBe(true);
     });
-    if (audio.type !== 'audio') throw new Error('Expected audio');
+
+    if (audio.type !== 'audio') {
+        throw new Error('Expected audio');
+    }
+
     const replacement = {
         ...audio,
         transcript: {
@@ -501,22 +566,27 @@ it('applies a captured audio transcript atomically and rejects stale or retarget
             ],
         },
     };
+
     act(() => {
         expect(editor.current?.replaceLearningBlock(audio, replacement)).toBe(
             'applied',
         );
     });
+
     expect(editor.current?.getSnapshot().content).toContain(
         'A faithful transcript.',
     );
+
     expect(editor.current?.getSnapshot().content).toContain(
         'Unrelated newer material.',
     );
+
     act(() => {
         expect(editor.current?.replaceLearningBlock(audio, replacement)).toBe(
             'changed',
         );
     });
+
     act(() => {
         expect(
             editor.current?.replaceLearningBlock(replacement, {
@@ -525,10 +595,12 @@ it('applies a captured audio transcript atomically and rejects stale or retarget
             }),
         ).toBe('invalid');
     });
+
     fireEvent.click(screen.getByRole('button', { name: 'Undo', exact: true }));
     expect(editor.current?.getSnapshot().content).not.toContain(
         'A faithful transcript.',
     );
+
     expect(editor.current?.getSnapshot().content).toContain(
         'Unrelated newer material.',
     );
@@ -552,16 +624,20 @@ it('edits exactly one video description control and preserves that value on Appl
             sources={[]}
         />,
     );
+
     const descriptions = screen.getAllByLabelText('Author’s description', {
         exact: true,
     });
+
     expect(descriptions).toHaveLength(1);
     fireEvent.change(descriptions[0]!, {
         target: { value: 'A flower opens in the morning.' },
     });
+
     fireEvent.click(
         screen.getByRole('button', { name: 'Apply changes', exact: true }),
     );
+
     expect(onApply).toHaveBeenCalledWith(
         expect.objectContaining({
             id,

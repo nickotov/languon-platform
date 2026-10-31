@@ -75,8 +75,10 @@ export class AdministrationService {
         correlationId: string,
     ) {
         const principal = await this.authorize(accessToken, correlationId);
-        if (principal.actor.role !== 'owner')
+        if (principal.actor.role !== 'owner') {
             throw new AdminAccessDeniedError();
+        }
+
         return principal;
     }
 
@@ -88,7 +90,9 @@ export class AdministrationService {
             accessToken,
             correlationId,
         );
+
         await this.requireRecent(principal);
+
         return principal;
     }
 
@@ -99,28 +103,36 @@ export class AdministrationService {
     public async assertActiveMembership(userId: string, correlationId: string) {
         const membership =
             await this.dependencies.store.findActiveMembership(userId);
-        if (membership) return membership;
+
+        if (membership) {
+            return membership;
+        }
+
         await this.recordRejected({
             action: 'access_denied',
             actorUserId: userId,
             correlationId,
             reason: 'Administrator membership is not active',
         });
+
         throw new AdminAccessDeniedError();
     }
 
     public async dashboard(accessToken: string) {
         await this.authorize(accessToken);
+
         return this.dependencies.store.dashboard();
     }
 
     public async listUsers(accessToken: string, query: AdminUsersQuery) {
         await this.authorize(accessToken);
+
         return this.dependencies.store.listUsers(query);
     }
 
     public async user(accessToken: string, userId: string) {
         await this.authorize(accessToken);
+
         return this.dependencies.store.findUser(userId);
     }
 
@@ -129,11 +141,13 @@ export class AdministrationService {
         query: AdminAuditEventsQuery,
     ) {
         await this.authorize(accessToken);
+
         return this.dependencies.store.listAuditEvents(query);
     }
 
     public async aiSettings(accessToken: string) {
         await this.authorize(accessToken);
+
         return this.dependencies.store.aiSettings();
     }
 
@@ -143,6 +157,7 @@ export class AdministrationService {
         query: AdminAiCreditsQuery,
     ) {
         await this.authorize(accessToken);
+
         return this.dependencies.store.aiCredits(
             targetUserId,
             query,
@@ -203,6 +218,7 @@ export class AdministrationService {
                 },
                 revisionId: this.dependencies.ids.generate(),
             };
+
             return await this.dependencies.store.updateAiSettings(mutation);
         } catch (error) {
             if (!(
@@ -213,6 +229,7 @@ export class AdministrationService {
             )) {
                 throw error;
             }
+
             const current = await this.dependencies.store.aiSettings();
             await this.recordRejected({
                 action: 'ai_settings_updated',
@@ -237,6 +254,7 @@ export class AdministrationService {
                 },
                 reason: input.reason,
             });
+
             throw error;
         }
     }
@@ -251,6 +269,7 @@ export class AdministrationService {
         if (principal.actor.id === targetUserId) {
             const current =
                 await this.dependencies.store.findUser(targetUserId);
+
             await this.recordRejected({
                 action: 'user_disabled',
                 actorUserId: principal.actor.id,
@@ -269,8 +288,10 @@ export class AdministrationService {
                 reason: input.reason,
                 targetUserId,
             });
+
             throw new AdminSelfDisableForbiddenError();
         }
+
         return this.mutateUser(
             'user_disabled',
             principal,
@@ -287,6 +308,7 @@ export class AdministrationService {
         correlationId: string,
     ) {
         const principal = await this.authorize(accessToken, correlationId);
+
         return this.mutateUser(
             'user_restored',
             principal,
@@ -303,6 +325,7 @@ export class AdministrationService {
         correlationId: string,
     ) {
         const principal = await this.authorize(accessToken, correlationId);
+
         return this.mutateUser(
             'user_deletion_cancelled',
             principal,
@@ -326,6 +349,7 @@ export class AdministrationService {
             claims.userId,
             correlationId,
         );
+
         return {
             actor: {
                 id: claims.userId,
@@ -351,17 +375,24 @@ export class AdministrationService {
                 input,
                 correlationId,
             );
+
             if (action === 'user_disabled') {
                 return this.dependencies.store.disableUser(mutation);
             }
+
             if (action === 'user_restored') {
                 return this.dependencies.store.restoreUser(mutation);
             }
+
             return this.dependencies.store.cancelUserDeletion(mutation);
         } catch (error) {
-            if (!isAuditableMutationRejection(error)) throw error;
+            if (!isAuditableMutationRejection(error)) {
+                throw error;
+            }
+
             const current =
                 await this.dependencies.store.findUser(targetUserId);
+
             await this.recordRejected({
                 action,
                 actorUserId: principal.actor.id,
@@ -380,6 +411,7 @@ export class AdministrationService {
                 },
                 reason: input.reason,
             });
+
             throw error;
         }
     }
@@ -399,6 +431,7 @@ export class AdministrationService {
             if (!(error instanceof RecentAuthenticationRequiredError)) {
                 throw error;
             }
+
             const target = await this.dependencies.store.findUser(targetUserId);
             await this.recordRejected({
                 action,
@@ -414,8 +447,10 @@ export class AdministrationService {
                 reason: input.reason,
                 ...(target ? { targetUserId: target.id } : {}),
             });
+
             throw error;
         }
+
         const occurredAt = this.dependencies.clock.now();
         const common = {
             actorSessionId: principal.sessionId,
@@ -440,7 +475,11 @@ export class AdministrationService {
                       ...common,
                       ...(input as AdminAiCreditAdjustmentRequest),
                   });
-        if (result.ok) return result.response;
+
+        if (result.ok) {
+            return result.response;
+        }
+
         throw creditMutationError(result.rejection);
     }
 
@@ -464,6 +503,7 @@ export class AdministrationService {
                 ),
             },
         };
+
         return this.requireSentenceLibrary().adminDictionaries(
             scope,
             query,
@@ -480,6 +520,7 @@ export class AdministrationService {
     ) {
         const principal = await this.authorize(accessToken);
         const library = this.requireSentenceLibrary();
+
         return library.adminList(
             this.sentenceLibraryScope(
                 principal,
@@ -501,6 +542,7 @@ export class AdministrationService {
     ) {
         const principal = await this.authorize(accessToken);
         const library = this.requireSentenceLibrary();
+
         return library.adminDetail(
             this.sentenceLibraryScope(
                 principal,
@@ -522,6 +564,7 @@ export class AdministrationService {
     ) {
         const principal = await this.authorize(accessToken);
         await this.requireRecent(principal);
+
         return this.requireSentenceLibrary().adminSnapshot(
             this.sentenceLibraryScope(
                 principal,
@@ -544,6 +587,7 @@ export class AdministrationService {
         const principal = await this.authorize(accessToken);
         try {
             await this.requireRecent(principal);
+
             return await this.requireSentenceLibrary().adminMutate(
                 this.sentenceLibraryScope(
                     principal,
@@ -569,7 +613,8 @@ export class AdministrationService {
             const target = code
                 ? await this.dependencies.store.findUser(targetUserId)
                 : null;
-            if (code)
+
+            if (code) {
                 await this.recordRejected({
                     action: sentenceLibraryAuditAction(input.operation),
                     actorUserId: principal.actor.id,
@@ -585,13 +630,17 @@ export class AdministrationService {
                         code,
                     },
                 });
+            }
+
             throw error;
         }
     }
 
     private requireSentenceLibrary(): AdminSentenceLibrary {
-        if (!this.dependencies.sentenceLibrary)
+        if (!this.dependencies.sentenceLibrary) {
             throw new AdminSentenceLibraryUnavailableError();
+        }
+
         return this.dependencies.sentenceLibrary;
     }
 
@@ -640,6 +689,7 @@ export class AdministrationService {
         correlationId: string,
     ): AdminUserMutationInput {
         const occurredAt = this.dependencies.clock.now();
+
         return {
             actorSessionId: principal.sessionId,
             actorUserId: principal.actor.id,
@@ -693,20 +743,25 @@ function creditMutationError(rejection: AdminAiCreditMutationRejection): Error {
     if (rejection === 'account_conflict') {
         return new AdminAiCreditAccountConflictError();
     }
+
     if (rejection === 'adjustment_exceeds_available') {
         return new AdminAiCreditAdjustmentExceedsAvailableError();
     }
+
     if (rejection === 'target_unavailable') {
         return new AdminAiCreditTargetUnavailableError();
     }
+
     if (rejection === 'invalid_request') {
         return new AdminAiCreditInvalidRequestError(
             'The AI credit mutation is invalid.',
         );
     }
+
     if (rejection === 'recent_authentication_required') {
         return new RecentAuthenticationRequiredError();
     }
+
     return new AdminAccessDeniedError();
 }
 
@@ -722,14 +777,26 @@ function isAuditableMutationRejection(error: unknown): error is Error {
 }
 
 function rejectionCode(error: Error): string {
-    if (error instanceof AdminAccessDeniedError) return 'admin_access_denied';
-    if (error instanceof AdminLastOwnerForbiddenError)
+    if (error instanceof AdminAccessDeniedError) {
+        return 'admin_access_denied';
+    }
+
+    if (error instanceof AdminLastOwnerForbiddenError) {
         return 'last_owner_forbidden';
-    if (error instanceof AdminUserNotFoundError) return 'user_not_found';
-    if (error instanceof AdminUserStateConflictError)
+    }
+
+    if (error instanceof AdminUserNotFoundError) {
+        return 'user_not_found';
+    }
+
+    if (error instanceof AdminUserStateConflictError) {
         return 'user_state_conflict';
-    if (error instanceof AdminDeletionCancellationUnavailableError)
+    }
+
+    if (error instanceof AdminDeletionCancellationUnavailableError) {
         return 'deletion_cancellation_unavailable';
+    }
+
     return 'recent_authentication_required';
 }
 

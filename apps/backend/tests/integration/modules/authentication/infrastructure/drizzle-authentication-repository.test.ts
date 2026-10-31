@@ -173,6 +173,7 @@ function createAuthStoreSession(input: {
     userId: string;
 }): NewStoredAuthenticationSession {
     const issuedAt = new Date('2026-08-13T12:01:00.000Z');
+
     return {
         absoluteExpiresAt: expiresAt,
         authenticatedAt: issuedAt,
@@ -197,6 +198,7 @@ function createAuthStorePasskey(input: {
     userId: string;
 }): NewStoredAuthenticationPasskey {
     const passkey = createPasskey(input);
+
     return {
         backedUp: passkey.backedUp,
         counter: passkey.counter,
@@ -223,6 +225,7 @@ async function createVerifiedAuthStoreAccount(email: string) {
         method: 'email_verification',
         userId,
     });
+
     await authStore.registerOrReplacePendingSignup({
         account: {
             canonicalEmail: email,
@@ -237,15 +240,18 @@ async function createVerifiedAuthStoreAccount(email: string) {
         },
         credential: createAuthStorePasswordCredential(userId),
     });
+
     const result = await authStore.commitEmailVerification({
         codeMatches: true,
         flowId,
         now: session.createdAt,
         session,
     });
+
     if (result.kind !== 'verified') {
         throw new Error('Test account verification failed.');
     }
+
     return { emailId, session, userId };
 }
 
@@ -258,6 +264,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             authenticationUnitOfWork = new DrizzleAuthenticationUnitOfWork(
                 database,
             );
+
             usersUnitOfWork = new DrizzleUsersUnitOfWork(database);
             reader = DrizzleAuthenticationRepository.readOnly(database);
             authStore = new DrizzleAuthStore(database);
@@ -296,9 +303,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(
                 authenticationUnitOfWork.execute(async ({ authentication }) => {
                     await authentication.savePasswordCredential(credential);
+
                     throw new Error('forced rollback');
                 }),
             ).rejects.toThrow('forced rollback');
+
             await expect(
                 reader.findPasswordCredentialByUserId(identity.userId),
             ).resolves.toBeNull();
@@ -306,6 +315,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await authenticationUnitOfWork.execute(({ authentication }) =>
                 authentication.savePasswordCredential(credential),
             );
+
             await expect(
                 reader.findPasswordCredentialByUserId(identity.userId),
             ).resolves.toEqual(credential);
@@ -317,6 +327,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
           and table_name = 'password_credentials'
           and column_name in ('password', 'password_plaintext', 'plaintext')
       `;
+
             expect(secretColumns).toEqual([]);
         });
 
@@ -355,6 +366,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await authentication.insertVerificationChallenge(
                         verification,
                     );
+
                     await authentication.insertVerificationChallenge(reset);
                 },
             );
@@ -382,6 +394,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             },
                         ),
                     ).toBe(1);
+
                     await authentication.insertVerificationChallenge(
                         createChallenge(identity),
                     );
@@ -391,6 +404,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const persisted = await database
                 .select({ value: count() })
                 .from(authVerificationChallengesTable);
+
             expect(persisted[0]?.value).toBe(3);
         });
 
@@ -429,6 +443,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 refreshDigest: 'r'.repeat(43),
                 userId: identity.userId,
             });
+
             await authenticationUnitOfWork.execute(({ authentication }) =>
                 authentication.insertRefreshSession(initial),
             );
@@ -439,6 +454,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         await authentication.findRefreshSessionByDigestForUpdate(
                             initial.refreshDigest,
                         );
+
                     if (!locked || locked.consumedAt) {
                         return 'replay' as const;
                     }
@@ -458,6 +474,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             updatedAt: consumedAt,
                         },
                     });
+
                     return 'rotated' as const;
                 });
 
@@ -468,6 +485,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.familyId, initial.familyId));
+
             expect(generations).toHaveLength(2);
             expect(
                 generations.find(({ id }) => id === initial.id),
@@ -488,10 +506,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ).toBe(2);
                 },
             );
+
             const revoked = await database
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.familyId, initial.familyId));
+
             expect(revoked).toEqual(
                 expect.arrayContaining([
                     expect.objectContaining({
@@ -501,6 +521,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ]),
             );
+
             expect(revoked.every(({ revokedAt }) => revokedAt !== null)).toBe(
                 true,
             );
@@ -528,6 +549,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     canonicalName: 'ключ и',
                 }),
             );
+
             await expect(
                 authenticationUnitOfWork.execute(({ authentication }) =>
                     authentication.insertPasskey(
@@ -541,6 +563,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).rejects.toMatchObject({
                 kind: 'passkey_credential',
             });
+
             await expect(
                 authenticationUnitOfWork.execute(({ authentication }) =>
                     authentication.insertPasskey(
@@ -576,6 +599,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             ]);
+
             expect(updates.sort()).toEqual([false, true]);
 
             await authenticationUnitOfWork.execute(
@@ -584,6 +608,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         await authentication.findPasskeyByCredentialIdForUpdate(
                             passkey.credentialId,
                         );
+
                     expect(stored?.credentialPublicKey).toEqual(
                         passkey.credentialPublicKey,
                     );
@@ -599,6 +624,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             userId: firstIdentity.userId,
                         }),
                     ).toBe(true);
+
                     await authentication.insertPasskey(
                         createPasskey({
                             name: 'Laptop',
@@ -642,6 +668,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const events = await database
                 .select()
                 .from(authSecurityEventsTable);
+
             expect(events).toHaveLength(1);
             expect(events[0]).toMatchObject({
                 correlationId: 'request-123',
@@ -655,6 +682,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const inputs = (['a', 'b'] as const).map((marker) => {
                 const userId = randomUUID();
                 const emailId = randomUUID();
+
                 return {
                     account: {
                         canonicalEmail,
@@ -684,6 +712,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     authStore.registerOrReplacePendingSignup(input),
                 ),
             );
+
             expect(signupResults).toEqual(
                 expect.arrayContaining([
                     'pending_created',
@@ -701,10 +730,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 : null;
             const marker = challenge?.codeDigest.at(-1) as
                 'a' | 'b' | undefined;
+
             expect(account).toMatchObject({ status: 'pending' });
             expect(marker).toMatch(/^[ab]$/);
-            if (!account || !marker)
+            if (!account || !marker) {
                 throw new Error('Pending signup state is missing.');
+            }
+
             expect(account?.passwordCredential?.encoded).toBe(
                 createAuthStorePasswordCredential(account.userId, marker)
                     .encoded,
@@ -713,6 +745,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const counts = await database
                 .select({ value: count() })
                 .from(usersTable);
+
             expect(counts[0]?.value).toBe(1);
         });
 
@@ -724,6 +757,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 method: 'email_verification',
                 userId,
             });
+
             await authStore.registerOrReplacePendingSignup({
                 account: {
                     canonicalEmail: 'fifth-attempt@example.com',
@@ -749,6 +783,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ).resolves.toEqual({ kind: 'incorrect' });
             }
+
             await expect(
                 authStore.commitEmailVerification({
                     codeMatches: true,
@@ -760,6 +795,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 account: { status: 'active', userId },
                 kind: 'verified',
             });
+
             await expect(
                 authStore.commitEmailVerification({
                     codeMatches: true,
@@ -768,6 +804,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     session,
                 }),
             ).resolves.toEqual({ kind: 'unavailable' });
+
             await expect(
                 authStore.getActiveSession({
                     now: session.createdAt,
@@ -785,6 +822,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 digest: 'i'.repeat(43),
                 userId,
             });
+
             await expect(
                 authStore.issueSessionForActiveUser({
                     session: independent,
@@ -818,6 +856,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.familyId, session.familyId));
+
             expect(replayedFamily).toHaveLength(2);
             expect(
                 replayedFamily.every(
@@ -826,6 +865,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         revokedAt !== null,
                 ),
             ).toBe(true);
+
             await expect(
                 authStore.getActiveSession({
                     now: new Date('2026-08-13T12:02:00.000Z'),
@@ -851,6 +891,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 authenticationMethod: session.authenticationMethod,
                 createdAt: new Date('2026-08-13T12:02:00.000Z'),
             };
+
             await expect(
                 authStore.rotateRefreshSession({
                     digest: session.refreshDigest,
@@ -869,6 +910,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.familyId, session.familyId));
+
             expect(family).toHaveLength(2);
             expect(
                 family.every(
@@ -893,6 +935,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 authenticationMethod: session.authenticationMethod,
                 createdAt: new Date('2026-08-13T12:02:00.000Z'),
             };
+
             await Promise.all([
                 authStore.rotateRefreshSession({
                     digest: session.refreshDigest,
@@ -910,10 +953,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.familyId, session.familyId));
+
             expect(family.length).toBeGreaterThanOrEqual(1);
             expect(family.every(({ revokedAt }) => revokedAt !== null)).toBe(
                 true,
             );
+
             expect(
                 family.every(
                     ({ revocationReason }) => revocationReason === 'logout',
@@ -929,6 +974,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const issuedAt = new Date(
                     `2026-08-13T12:${String(minute).padStart(2, '0')}:00.000Z`,
                 );
+
                 return authStore.issuePasswordResetChallenge({
                     challenge: {
                         ...createChallenge({
@@ -950,10 +996,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     kind: 'issued',
                 });
             }
+
             await expect(issueAt(7)).resolves.toMatchObject({
                 kind: 'limited',
                 retryAfterSeconds: 55 * 60,
             });
+
             await expect(
                 authStore.findActiveChallengeForUser({
                     purpose: 'password_reset',
@@ -969,6 +1017,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const issuedAt = new Date(
                     `2026-08-13T12:${String(minute).padStart(2, '0')}:00.000Z`,
                 );
+
                 return authStore.registerOrReplacePendingSignup({
                     account: {
                         canonicalEmail: 'signup-window@example.com',
@@ -994,6 +1043,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             for (const minute of [0, 1, 2, 3, 4]) {
                 await expect(issueAt(minute)).resolves.toBe('pending_created');
             }
+
             await expect(issueAt(5)).resolves.toEqual({
                 kind: 'limited',
                 retryAfterSeconds: 55 * 60,
@@ -1019,6 +1069,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             for (let index = 0; index < 50; index += 1) {
                 await expect(register(index)).resolves.toBe(true);
             }
+
             await expect(register(50)).resolves.toBe(false);
 
             const rows = await database
@@ -1030,6 +1081,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         isNull(authPasskeysTable.revokedAt),
                     ),
                 );
+
             expect(rows[0]?.value).toBe(50);
         });
 
@@ -1063,6 +1115,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         isNull(authPasskeysTable.revokedAt),
                     ),
                 );
+
             expect(rows[0]?.value).toBe(50);
         });
     },

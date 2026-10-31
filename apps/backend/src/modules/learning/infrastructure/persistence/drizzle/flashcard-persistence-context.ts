@@ -33,7 +33,9 @@ export const cursorSchema = z
     .strict();
 
 export function learner(access: LearningAccess): string {
-    if (!access.learnerId) throw new LearningAuthenticationRequiredError();
+    if (!access.learnerId) {
+        throw new LearningAuthenticationRequiredError();
+    }
 
     return access.learnerId;
 }

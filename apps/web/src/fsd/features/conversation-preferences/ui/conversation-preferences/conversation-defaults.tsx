@@ -48,17 +48,24 @@ export function ConversationDefaults({
         draft &&
         JSON.stringify(draft) !== JSON.stringify(query.data?.preferences),
     );
+
     useEffect(() => {
         onDirtyChange?.(dirty);
+
         return () => onDirtyChange?.(false);
     }, [dirty, onDirtyChange]);
+
     const value = draft ?? query.data?.preferences;
     function save() {
-        if (value) mutation.mutate(value);
+        if (value) {
+            mutation.mutate(value);
+        }
     }
+
     function retry() {
         void query.refetch();
     }
+
     return (
         <Card variant='outlined' className={styles.section}>
             <h2>{copy.defaultsTitle}</h2>

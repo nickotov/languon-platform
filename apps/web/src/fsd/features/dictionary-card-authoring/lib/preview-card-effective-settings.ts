@@ -34,6 +34,7 @@ export function previewCardEffectiveSettings(
     );
     const exampleLanguage =
         overrides.exampleLanguage ?? defaults.exampleLanguage;
+
     return {
         transcriptionEnabled,
         transcriptionNotation:

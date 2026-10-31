@@ -14,6 +14,7 @@ import { accessTokenStore } from '../src/shared/auth/access-token-store';
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 const initial = {
     version: 4,
     defaultMaxCreditsPerAction: null,
@@ -30,6 +31,7 @@ const labels = [
     'Maximum provider expense per account per UTC day (USD)',
     'Maximum provider expense per UTC day, all accounts (USD)',
 ];
+
 beforeEach(() => {
     accessTokenStore.set('admin-token');
     vi.stubGlobal(
@@ -41,28 +43,35 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     accessTokenStore.clear();
 });
+
 function renderSettings() {
     const fetcher = vi
         .fn<typeof fetch>()
         .mockImplementation(async () => response(initial));
+
     vi.stubGlobal('fetch', fetcher);
     render(<AccountingSettings />);
+
     return fetcher;
 }
+
 async function loaded() {
     await waitFor(() =>
         expect(screen.getByLabelText(labels[0]!)).toBeEnabled(),
     );
 }
+
 function set(label: string, value: string) {
     fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
+
 function submit() {
     set('Reason for change', 'Calibrate operator cost limits');
     fireEvent.click(
@@ -74,8 +83,10 @@ describe('admin operator cost limits', () => {
     it('keeps all initial monetary values blank and publishes explicit nulls while uncalibrated', async () => {
         const fetcher = renderSettings();
         await loaded();
-        for (const label of labels)
+        for (const label of labels) {
             expect(screen.getByLabelText(label)).toHaveValue('');
+        }
+
         submit();
         await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3));
         expect(JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body))).toEqual({
@@ -87,6 +98,7 @@ describe('admin operator cost limits', () => {
             reason: 'Calibrate operator cost limits',
         });
     });
+
     it('publishes exact six-decimal USD caps independently of the credit budget', async () => {
         const fetcher = renderSettings();
         await loaded();
@@ -97,6 +109,7 @@ describe('admin operator cost limits', () => {
             'Default maximum credits per action (blank = uncalibrated)',
             '0.125',
         );
+
         submit();
         await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3));
         expect(
@@ -109,6 +122,7 @@ describe('admin operator cost limits', () => {
             maxProviderCostUsdPerDay: '1.234567',
         });
     });
+
     it('blocks inverted limits before publishing and preserves entered values', async () => {
         const fetcher = renderSettings();
         await loaded();
@@ -121,9 +135,11 @@ describe('admin operator cost limits', () => {
                 'Provider expense limits must increase from per action to per account per day to all accounts per day.',
             ),
         ).toBeInTheDocument();
+
         expect(fetcher).toHaveBeenCalledTimes(1);
         expect(screen.getByLabelText(labels[0]!)).toHaveValue('1.000001');
     });
+
     it('compares micro-dollar precision exactly and permits staged null calibration', () => {
         expect(
             operatorBudgetOrderValid({
@@ -132,6 +148,7 @@ describe('admin operator cost limits', () => {
                 maxProviderCostUsdPerDay: '999999999.000001',
             }),
         ).toBe(true);
+
         expect(
             operatorBudgetOrderValid({
                 maxProviderCostUsdPerAction: '0.000002',
@@ -139,6 +156,7 @@ describe('admin operator cost limits', () => {
                 maxProviderCostUsdPerDay: '0.000001',
             }),
         ).toBe(false);
+
         expect(
             operatorBudgetOrderValid({
                 maxProviderCostUsdPerAction: '',

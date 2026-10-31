@@ -27,11 +27,13 @@ describe('learning block content contracts', () => {
                 text: 'a'.repeat(8_000),
             })),
         };
+
         expect(LearningBlockSchema.safeParse(block).success).toBe(false);
         const cycle: { self?: unknown } = {};
         cycle.self = cycle;
         expect(LearningBlockSchema.safeParse(cycle).success).toBe(false);
     });
+
     it('accepts each standalone block without owner or library coupling', () => {
         const blocks = [
             {
@@ -85,17 +87,21 @@ describe('learning block content contracts', () => {
             },
             { ...exercise, format: 'free-text' },
         ];
-        for (const block of blocks)
+
+        for (const block of blocks) {
             expect(LearningBlockSchema.safeParse(block).success).toBe(true);
+        }
     });
 
     it('accepts unprepared audio without granting playback authority', () => {
         const shell = { id, type: 'audio', title: 'Listening exercise' };
         expect(LearningBlockSchema.parse(shell)).toEqual(shell);
-        for (const assetId of [null, '', 'not-an-asset'])
+        for (const assetId of [null, '', 'not-an-asset']) {
             expect(
                 LearningBlockSchema.safeParse({ ...shell, assetId }).success,
             ).toBe(false);
+        }
+
         expect(
             LearningBlockSchema.safeParse({
                 ...shell,
@@ -111,11 +117,13 @@ describe('learning block content contracts', () => {
             language: 'fr-CA',
             sourceText: 'Bonjour.',
         };
+
         expect(LearningBlockSchema.parse(value)).toEqual(value);
-        for (const language of [null, '', 'French!', 'fr_<script>'])
+        for (const language of [null, '', 'French!', 'fr_<script>']) {
             expect(
                 LearningBlockSchema.safeParse({ ...value, language }).success,
             ).toBe(false);
+        }
     });
 
     it('accepts bounded exercise grouping and prepared hints as content only', () => {
@@ -125,6 +133,7 @@ describe('learning block content contracts', () => {
             group: { id: other, title: 'Practice' },
             hint: '<script>literal hint</script>',
         };
+
         expect(LearningBlockSchema.parse(value)).toEqual(value);
         for (const change of [
             { group: { id: 'not-a-group' } },
@@ -132,10 +141,11 @@ describe('learning block content contracts', () => {
             { group: { id: other, onclick: 'alert(1)' } },
             { hint: 'x'.repeat(8001) },
             { hint: '   ' },
-        ])
+        ]) {
             expect(
                 LearningBlockSchema.safeParse({ ...value, ...change }).success,
             ).toBe(false);
+        }
     });
 
     it('preserves literal markup as text but rejects executable fields', () => {
@@ -145,16 +155,19 @@ describe('learning block content contracts', () => {
             language: 'en',
             rule: '<script>alert(1)</script>',
         };
+
         expect(LearningBlockSchema.parse(block)).toEqual(block);
         for (const fields of [
             { html: '<img onerror=alert(1)>' },
             { onclick: 'alert(1)' },
             { ownerId: other },
             { attrs: { style: 'x' } },
-        ])
+        ]) {
             expect(
                 LearningBlockSchema.safeParse({ ...block, ...fields }).success,
             ).toBe(false);
+        }
+
         expect(
             LearningBlockSchema.safeParse({
                 id,
@@ -163,6 +176,7 @@ describe('learning block content contracts', () => {
                 url: 'https://private.example/audio',
             }).success,
         ).toBe(false);
+
         expect(
             LearningBlockSchema.safeParse({
                 id,
@@ -199,6 +213,7 @@ describe('learning block content contracts', () => {
                 correctChoiceId: id,
             }).success,
         ).toBe(false);
+
         expect(
             LearningBlockSchema.safeParse({
                 ...exercise,
@@ -207,6 +222,7 @@ describe('learning block content contracts', () => {
                 correctChoiceId: '33333333-3333-4333-8333-333333333333',
             }).success,
         ).toBe(false);
+
         const gap = { kind: 'gap', id, acceptedAnswers: ['yes'] };
         expect(
             LearningBlockSchema.safeParse({
@@ -215,6 +231,7 @@ describe('learning block content contracts', () => {
                 parts: [gap, gap],
             }).success,
         ).toBe(false);
+
         expect(
             LearningBlockSchema.safeParse({
                 ...exercise,
@@ -234,19 +251,21 @@ describe('learning block content contracts', () => {
                 { id: other, text: 'Bye' },
             ],
         };
+
         for (const segments of [
             [{ sourceSegmentId: id, text: 'Hola' }],
             [
                 { sourceSegmentId: id, text: 'Hola' },
                 { sourceSegmentId: id, text: 'Adios' },
             ],
-        ])
+        ]) {
             expect(
                 LearningBlockSchema.safeParse({
                     ...block,
                     translations: [{ language: 'es', segments }],
                 }).success,
             ).toBe(false);
+        }
     });
 
     it('validates transcript ordering, intervals and segment identity', () => {
@@ -255,6 +274,7 @@ describe('learning block content contracts', () => {
             text: 'Hello',
             timing: { startSeconds: 0, endSeconds: 1 },
         };
+
         expect(
             LearningTranscriptSchema.safeParse({
                 language: 'en',
@@ -268,6 +288,7 @@ describe('learning block content contracts', () => {
                 ],
             }).success,
         ).toBe(true);
+
         for (const segments of [
             [segment, segment],
             [{ ...segment, timing: { startSeconds: 2, endSeconds: 1 } }],
@@ -279,11 +300,12 @@ describe('learning block content contracts', () => {
                     timing: { startSeconds: 0.5, endSeconds: 2 },
                 },
             ],
-        ])
+        ]) {
             expect(
                 LearningTranscriptSchema.safeParse({ language: 'en', segments })
                     .success,
             ).toBe(false);
+        }
     });
 
     it('bounds content and requires meaningful grammar without altering source whitespace', () => {
@@ -295,10 +317,12 @@ describe('learning block content contracts', () => {
             { rule: '\ud800' },
             { rule: 'a'.repeat(8_001) },
             { examples: [] },
-        ])
+        ]) {
             expect(
                 LearningBlockSchema.safeParse({ ...block, ...fields }).success,
             ).toBe(false);
+        }
+
         expect(
             LearningBlockSchema.parse({ ...block, rule: '  rule  ' }),
         ).toMatchObject({ rule: '  rule  ' });
@@ -320,9 +344,11 @@ it('preserves bounded literal definitions in vocabulary entries', () => {
             },
         ],
     };
+
     expect(LearningBlockSchema.parse(value)).toMatchObject({
         entries: [{ definition: '<script>literal</script>' }],
     });
+
     expect(
         LearningBlockSchema.safeParse({
             ...value,

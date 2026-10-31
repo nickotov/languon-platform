@@ -52,23 +52,31 @@ export function BilingualBlock({
     const translations = new Map(
         translation?.segments.map((item) => [item.sourceSegmentId, item.text]),
     );
+
     function handleOriginal() {
         setBilingual(false);
         privateStudy?.onViewChange?.(undefined);
     }
+
     function handleBilingual() {
         setBilingual(true);
         privateStudy?.onViewChange?.(privateSelected ? language : undefined);
     }
+
     function handleLanguage(event: ChangeEvent<HTMLSelectElement>) {
         const value = event.target.value;
         setLanguage(value);
         const personal =
             privateStudy?.targets.some((target) => target.language === value) ??
             false;
-        if (personal) privateStudy?.onSelectLanguage(value);
+
+        if (personal) {
+            privateStudy?.onSelectLanguage(value);
+        }
+
         privateStudy?.onViewChange?.(personal ? value : undefined);
     }
+
     const hasTranslations =
         block.translations.length > 0 || Boolean(privateStudy?.targets.length);
     const showTranslation = bilingual && translation !== undefined;
@@ -85,18 +93,23 @@ export function BilingualBlock({
     const bilingualClass = bilingual ? styles.selectedSegment : styles.segment;
     const showLanguage =
         hasTranslations && (bilingual || variant === undefined);
+
     function removePrivateView() {
         setBilingual(false);
         privateStudy?.onViewChange?.(undefined);
     }
+
     const rowPrivate = showTranslation && privateSelected;
     const translationClass = rowPrivate
         ? styles.privateTranslation
         : styles.translation;
-    if (preview)
+
+    if (preview) {
         return (
             <BilingualPreview block={block} labels={labels} compact={compact} />
         );
+    }
+
     return (
         <div className={styles.root}>
             <div className={styles.controls}>
@@ -181,6 +194,7 @@ export function BilingualBlock({
                     const className = showTranslation
                         ? styles.pair
                         : styles.single;
+
                     return (
                         <li className={className} key={segment.id}>
                             <div className={styles.source}>

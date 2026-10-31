@@ -38,6 +38,7 @@ export const LearningMediaUrlSchema = z
     .refine((value) => {
         try {
             const url = new URL(value);
+
             return (
                 /^https:\/\//iu.test(value) &&
                 !/[\s\\]/u.test(value) &&
@@ -76,13 +77,18 @@ export const LearningTranscriptSchema = z
     .superRefine((value, ctx) => {
         let end = 0;
         for (const segment of value.segments) {
-            if (!segment.timing) continue;
-            if (segment.timing.startSeconds < end)
+            if (!segment.timing) {
+                continue;
+            }
+
+            if (segment.timing.startSeconds < end) {
                 ctx.addIssue({
                     code: 'custom',
                     message:
                         'Timed transcript segments must be ordered and nonoverlapping.',
                 });
+            }
+
             end = segment.timing.endSeconds;
         }
     });
@@ -175,25 +181,29 @@ export const BilingualTextLearningBlockSchema = z
                     translation.language.toLowerCase(),
                 ),
             ).size !== value.translations.length
-        )
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message: 'Translation languages must be unique.',
             });
+        }
+
         for (const translation of value.translations) {
             const translated = translation.segments.map(
                 (segment) => segment.sourceSegmentId,
             );
+
             if (
                 translated.length !== ids.size ||
                 new Set(translated).size !== ids.size ||
                 translated.some((id) => !ids.has(id))
-            )
+            ) {
                 ctx.addIssue({
                     code: 'custom',
                     message:
                         'Translations must align exactly once to every source segment.',
                 });
+            }
         }
     });
 
@@ -284,6 +294,7 @@ const exerciseBase = {
         .strict()
         .optional(),
 };
+
 export const ExerciseLearningBlockSchema = z.discriminatedUnion('format', [
     z
         .object({
@@ -339,6 +350,7 @@ export const ExerciseLearningBlockSchema = z.discriminatedUnion('format', [
         .strict()
         .refine((value) => {
             const gaps = value.parts.filter((part) => part.kind === 'gap');
+
             return gaps.length > 0 && uniqueIds(gaps);
         }, 'A gap exercise needs unique gaps.'),
     z
@@ -358,6 +370,7 @@ const StructuredLearningBlockSchema = z.discriminatedUnion('type', [
     GrammarLearningBlockSchema,
     ExerciseLearningBlockSchema,
 ]);
+
 /** Bound the entire payload before walking typed arrays, including translations. */
 export const LearningBlockSchema = z
     .unknown()
@@ -368,15 +381,19 @@ export const LearningBlockSchema = z
         while (pending.length) {
             const current = pending.pop()!;
             count += 1;
-            if (typeof current.value === 'string')
+            if (typeof current.value === 'string') {
                 characters += current.value.length;
+            }
+
             if (count > 10_000 || characters > 80_000 || current.depth > 12) {
                 ctx.addIssue({
                     code: 'custom',
                     message: 'Learning block exceeds its total payload limit.',
                 });
+
                 return;
             }
+
             if (current.value && typeof current.value === 'object') {
                 const entries = Object.entries(current.value);
                 if (entries.length + pending.length > 10_000) {
@@ -385,8 +402,10 @@ export const LearningBlockSchema = z
                         message:
                             'Learning block exceeds its total structure limit.',
                     });
+
                     return;
                 }
+
                 for (const [key, child] of entries) {
                     characters += key.length;
                     pending.push({ value: child, depth: current.depth + 1 });

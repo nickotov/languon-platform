@@ -20,6 +20,7 @@ vi.mock('next/navigation', () => ({
     usePathname: () => pathname,
     useRouter: () => ({ push, refresh: vi.fn() }),
 }));
+
 vi.mock('@/fsd/features/auth', () => ({
     useAuth: () => ({
         requestWithSession: <T,>(operation: (token: string) => Promise<T>) =>
@@ -27,6 +28,7 @@ vi.mock('@/fsd/features/auth', () => ({
         signOutHere,
     }),
 }));
+
 const user: AuthUser = {
     createdAt: '2026-09-28T10:00:00.000Z',
     emailVerified: true,
@@ -45,10 +47,12 @@ const resource: NavigationResource = {
     pinned: false,
     lastOpenedAt: '2026-10-20T12:00:00.000Z',
 };
+
 function renderChrome() {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     return render(
         <QueryClientProvider client={client}>
             <ThemeProvider preference='light'>
@@ -78,6 +82,7 @@ describe('session-aware contextual sidebar', () => {
                     name: 'Application sidebar',
                 }),
             ).toBeInTheDocument();
+
             expect(
                 screen.getByRole('button', { name: 'Create new', exact: true }),
             ).toBeInTheDocument();
@@ -91,6 +96,7 @@ describe('session-aware contextual sidebar', () => {
             tutorOpen: false,
             companions: new Map(),
         });
+
         push.mockReset();
         signOutHere.mockReset();
         window.localStorage.clear();
@@ -99,6 +105,7 @@ describe('session-aware contextual sidebar', () => {
             configurable: true,
             value: 1440,
         });
+
         Object.defineProperty(window, 'matchMedia', {
             configurable: true,
             value: vi.fn().mockReturnValue({
@@ -107,33 +114,41 @@ describe('session-aware contextual sidebar', () => {
                 removeEventListener: vi.fn(),
             }),
         });
+
         vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue({
             catalogVersion: 1,
             languages: [],
         });
+
         vi.spyOn(dictionaryApi, 'listDictionaries').mockResolvedValue({
             data: [],
             nextCursor: null,
         });
+
         vi.spyOn(navigationApi, 'resources').mockImplementation(
             async (_token, input) => ({
                 resources:
                     input.kind && input.kind !== 'dictionary' ? [] : [resource],
             }),
         );
+
         vi.spyOn(navigationApi, 'recent').mockResolvedValue({
             resources: [resource],
         });
+
         vi.spyOn(navigationApi, 'opened').mockResolvedValue({ resource });
         vi.spyOn(navigationApi, 'pin').mockResolvedValue({
             resource: { ...resource, pinned: true },
         });
+
         HTMLDialogElement.prototype.showModal = function showModal() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function close() {
             this.removeAttribute('open');
         };
+
         useSessionStore.setState({
             accessToken: 'token',
             accessTokenExpiresAt: '2026-10-20T13:00:00.000Z',
@@ -152,9 +167,11 @@ describe('session-aware contextual sidebar', () => {
                 exact: true,
             }),
         ).toHaveAttribute('aria-current', 'page');
+
         expect(
             await screen.findByRole('link', { name: /French A2 Vocabulary/ }),
         ).toBeInTheDocument();
+
         expect(dictionaryApi.listDictionaries).not.toHaveBeenCalled();
         expect(navigationApi.opened).not.toHaveBeenCalled();
         expect(navigationApi.resources).toHaveBeenCalledWith(
@@ -162,12 +179,15 @@ describe('session-aware contextual sidebar', () => {
             { kind: 'dictionary', limit: 5 },
             expect.any(AbortSignal),
         );
+
         await interaction.click(
             screen.getByRole('button', { name: 'Collapse sidebar' }),
         );
+
         expect(
             screen.getByRole('button', { name: 'Expand sidebar' }),
         ).toBeInTheDocument();
+
         expect(
             JSON.parse(
                 window.localStorage.getItem(`languon:sidebar:${user.id}`)!,
@@ -182,19 +202,23 @@ describe('session-aware contextual sidebar', () => {
             title: `Recent dictionary ${index + 1}`,
             href: `/dictionaries/20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
         }));
+
         vi.mocked(navigationApi.resources).mockImplementation(
             async (_token, input) => ({
                 resources: input.kind === 'dictionary' ? resources : [],
                 total: input.kind === 'dictionary' ? 6 : 0,
             }),
         );
+
         renderChrome();
         expect(
             await screen.findByRole('link', { name: /Recent dictionary 5/ }),
         ).toBeInTheDocument();
+
         expect(
             screen.queryByRole('link', { name: /Recent dictionary 6/ }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.getByRole('link', { name: 'View all · 6' }),
         ).toHaveAttribute('href', '/dictionaries');
@@ -206,20 +230,24 @@ describe('session-aware contextual sidebar', () => {
         await interaction.click(
             screen.getByRole('button', { name: 'Collapse sidebar' }),
         );
+
         const home = screen.getByRole('link', { name: 'Home', exact: true });
         act(() => home.focus());
         expect(
             await screen.findByRole('tooltip', { name: 'Home' }),
         ).toBeVisible();
+
         expect(home).not.toHaveAttribute('title');
         const create = screen.getByRole('button', {
             name: 'Create new',
             exact: true,
         });
+
         act(() => create.focus());
         expect(
             await screen.findByRole('tooltip', { name: 'Create new' }),
         ).toBeVisible();
+
         await interaction.keyboard('{Enter}');
         expect(
             await screen.findByRole('menuitem', { name: 'New dictionary' }),
@@ -231,6 +259,7 @@ describe('session-aware contextual sidebar', () => {
         await userEvent
             .setup()
             .click(screen.getByRole('button', { name: 'New dictionary' }));
+
         expect(
             screen.getByRole('dialog', { name: 'Create a dictionary' }),
         ).toBeInTheDocument();
@@ -252,10 +281,12 @@ describe('session-aware contextual sidebar', () => {
                 total: input.kind === 'dictionary' ? 7 : 0,
             }),
         );
+
         renderChrome();
         const dictionaryLink = await screen.findByRole('link', {
             name: 'View all · 7',
         });
+
         expect(dictionaryLink).toHaveAttribute('href', '/dictionaries');
         expect(dictionaryLink).toHaveTextContent('· 7');
     });
@@ -267,15 +298,18 @@ describe('session-aware contextual sidebar', () => {
         await interaction.click(
             screen.getByRole('button', { name: 'Hide recent: Dictionaries' }),
         );
+
         expect(screen.queryByText(resource.title)).not.toBeInTheDocument();
         expect(
             screen.getByRole('button', { name: 'Show recent: Texts' }),
         ).toHaveAttribute('aria-expanded', 'false');
+
         act(() =>
             useSessionStore.setState({
                 user: { ...user, id: '10000000-0000-4000-8000-000000000002' },
             }),
         );
+
         expect(
             await screen.findByRole('button', {
                 name: 'Hide recent: Dictionaries',
@@ -290,6 +324,7 @@ describe('session-aware contextual sidebar', () => {
             title: 'Hidden library title',
             href: '/dictionaries/20000000-0000-4000-8000-000000000002',
         };
+
         vi.mocked(navigationApi.resources).mockImplementation(
             async (_token, input) => ({
                 resources: input.q
@@ -299,6 +334,7 @@ describe('session-aware contextual sidebar', () => {
                       : [],
             }),
         );
+
         const interaction = userEvent.setup();
         renderChrome();
         await interaction.keyboard('{Control>}k{/Control}');
@@ -311,11 +347,13 @@ describe('session-aware contextual sidebar', () => {
                 exact: true,
             }),
         ).toBeInTheDocument();
+
         expect(navigationApi.resources).toHaveBeenCalledWith(
             'token',
             { q: 'hidden', limit: 8 },
             expect.any(AbortSignal),
         );
+
         await interaction.keyboard('{Enter}');
         expect(push).toHaveBeenCalledWith(hidden.href);
         expect(navigationApi.opened).not.toHaveBeenCalled();
@@ -332,6 +370,7 @@ describe('session-aware contextual sidebar', () => {
         const row = await within(grid).findByRole('row', {
             name: resource.title,
         });
+
         expect(row).toHaveAttribute('aria-selected', 'true');
         expect(search).toHaveAttribute('aria-activedescendant', row.id);
         expect(within(row).getAllByRole('gridcell')).toHaveLength(2);
@@ -339,12 +378,14 @@ describe('session-aware contextual sidebar', () => {
         expect(
             within(grid).getByRole('row', { name: 'New dictionary' }),
         ).toHaveAttribute('aria-selected', 'true');
+
         await interaction.keyboard('{ArrowUp}');
         expect(row).toHaveAttribute('aria-selected', 'true');
         await interaction.tab();
         const menu = within(row).getByRole('button', {
             name: `Resource actions: ${resource.title}`,
         });
+
         expect(menu).toHaveFocus();
         await interaction.keyboard('{Enter}');
         expect(
@@ -361,10 +402,12 @@ describe('session-aware contextual sidebar', () => {
             await interaction.click(
                 screen.getByRole('button', { name: 'New dictionary' }),
             );
+
             expect(guard).toHaveBeenCalledOnce();
             expect(
                 screen.queryByRole('dialog', { name: 'Create a dictionary' }),
             ).not.toBeInTheDocument();
+
             await interaction.keyboard('{Control>}k{/Control}');
             const dialog = screen.getByRole('dialog', { name: 'Search' });
             await interaction.click(
@@ -373,6 +416,7 @@ describe('session-aware contextual sidebar', () => {
                     exact: true,
                 }),
             );
+
             expect(guard).toHaveBeenCalledTimes(2);
             expect(push).not.toHaveBeenCalled();
         } finally {
@@ -386,6 +430,7 @@ describe('session-aware contextual sidebar', () => {
         const menu = await screen.findByRole('button', {
             name: `Resource actions: ${resource.title}`,
         });
+
         await interaction.click(menu);
         await interaction.click(screen.getByRole('menuitem', { name: 'Pin' }));
         await waitFor(() =>
@@ -396,6 +441,7 @@ describe('session-aware contextual sidebar', () => {
                 true,
             ),
         );
+
         await waitFor(() =>
             expect(
                 vi
@@ -413,22 +459,27 @@ describe('session-aware contextual sidebar', () => {
         await interaction.click(
             screen.getByRole('button', { name: 'Collapse sidebar' }),
         );
+
         const trigger = screen.getByRole('button', {
             name: 'Dictionaries',
             exact: true,
         });
+
         trigger.focus();
         await interaction.keyboard('{ArrowRight}');
         const flyout = await screen.findByRole('dialog', {
             name: 'Dictionaries',
         });
+
         expect(
             within(flyout).getByRole('textbox', { name: 'Filter' }),
         ).toHaveFocus();
+
         await interaction.type(
             within(flyout).getByRole('textbox', { name: 'Filter' }),
             'French',
         );
+
         await waitFor(() =>
             expect(navigationApi.resources).toHaveBeenCalledWith(
                 'token',
@@ -436,10 +487,12 @@ describe('session-aware contextual sidebar', () => {
                 expect.any(AbortSignal),
             ),
         );
+
         await interaction.keyboard('{Escape}');
         expect(
             screen.queryByRole('dialog', { name: 'Dictionaries' }),
         ).not.toBeInTheDocument();
+
         expect(trigger).toHaveFocus();
     });
 
@@ -448,15 +501,18 @@ describe('session-aware contextual sidebar', () => {
             configurable: true,
             value: 1100,
         });
+
         useNavigationLayout.setState({ editorOpen: true, tutorOpen: true });
         const interaction = userEvent.setup();
         renderChrome();
         await interaction.click(
             screen.getByRole('button', { name: 'Expand sidebar' }),
         );
+
         expect(
             screen.getByRole('button', { name: 'Collapse sidebar' }),
         ).toBeInTheDocument();
+
         act(() => useNavigationLayout.setState({ tutorOpen: false }));
         act(() => useNavigationLayout.setState({ tutorOpen: true }));
         expect(
@@ -469,14 +525,17 @@ describe('session-aware contextual sidebar', () => {
             configurable: true,
             value: 900,
         });
+
         const interaction = userEvent.setup();
         renderChrome();
         await interaction.click(
             screen.getByRole('button', { name: 'Expand sidebar' }),
         );
+
         expect(
             screen.getByRole('dialog', { name: 'Main navigation' }),
         ).toHaveAttribute('open');
+
         expect(
             window.localStorage.getItem(`languon:sidebar:${user.id}`),
         ).toBeNull();
@@ -490,25 +549,31 @@ describe('session-aware contextual sidebar', () => {
                     resolve = done;
                 }),
         );
+
         const interaction = userEvent.setup();
         renderChrome();
         await interaction.click(
             screen.getByRole('button', { name: 'Account menu, @learner' }),
         );
+
         expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute(
             'href',
             '/profile',
         );
+
         expect(
             screen.getByRole('link', { name: 'AI preferences' }),
         ).toHaveAttribute('href', '/profile#ai-preferences');
+
         expect(screen.getByLabelText('Interface language')).toBeInTheDocument();
         await interaction.click(
             screen.getByRole('button', { name: 'Sign out' }),
         );
+
         expect(
             screen.getByRole('button', { name: 'Signing out…' }),
         ).toBeDisabled();
+
         resolve?.();
     });
 
@@ -520,9 +585,11 @@ describe('session-aware contextual sidebar', () => {
         expect(
             screen.getByRole('dialog', { name: 'Main navigation' }),
         ).toHaveAttribute('open');
+
         await interaction.click(
             screen.getByRole('button', { name: 'Close navigation' }),
         );
+
         await waitFor(() => expect(trigger).toHaveFocus());
     });
 
@@ -535,19 +602,24 @@ describe('session-aware contextual sidebar', () => {
                 user: null,
                 accessToken: null,
             });
+
             renderChrome();
             const sidebar = screen.getByRole('complementary', {
                 name: 'Application sidebar',
             });
+
             expect(
                 within(sidebar).getByRole('link', { name: 'Sign in' }),
             ).toHaveAttribute('href', '/login');
+
             expect(
                 within(sidebar).getByRole('button', { name: 'Settings' }),
             ).toBeInTheDocument();
+
             expect(
                 screen.queryByRole('button', { name: 'Create new' }),
             ).not.toBeInTheDocument();
+
             await act(async () => {});
             expect(navigationApi.resources).not.toHaveBeenCalled();
             expect(dictionaryApi.listLanguages).not.toHaveBeenCalled();
@@ -560,11 +632,13 @@ describe('session-aware contextual sidebar', () => {
             user: null,
             accessToken: null,
         });
+
         renderChrome();
         expect(screen.getByText('Restoring your account…')).toBeInTheDocument();
         expect(
             screen.queryByRole('link', { name: 'Sign in' }),
         ).not.toBeInTheDocument();
+
         await act(async () => {});
         expect(navigationApi.resources).not.toHaveBeenCalled();
     });
@@ -583,6 +657,7 @@ describe('session-aware contextual sidebar', () => {
                         : [],
             }),
         );
+
         renderChrome();
         expect(await screen.findByText(resource.title)).toBeInTheDocument();
         act(() =>
@@ -590,6 +665,7 @@ describe('session-aware contextual sidebar', () => {
                 user: { ...user, id: '10000000-0000-4000-8000-000000000002' },
             }),
         );
+
         expect(screen.queryByText(resource.title)).not.toBeInTheDocument();
         expect(await screen.findByText(second.title)).toBeInTheDocument();
         act(() =>
@@ -599,6 +675,7 @@ describe('session-aware contextual sidebar', () => {
                 accessToken: null,
             }),
         );
+
         expect(screen.queryByText(second.title)).not.toBeInTheDocument();
         expect(
             screen.getByRole('link', { name: 'Sign in' }),
@@ -609,14 +686,17 @@ describe('session-aware contextual sidebar', () => {
         vi.spyOn(knowledgeApi, 'createDraft').mockResolvedValue({
             noteId: resource.id,
         } as Awaited<ReturnType<typeof knowledgeApi.createDraft>>);
+
         const interaction = userEvent.setup();
         renderChrome();
         await interaction.click(
             screen.getByRole('button', { name: 'Create new' }),
         );
+
         await interaction.click(
             screen.getByRole('menuitem', { name: 'New knowledge document' }),
         );
+
         await waitFor(() =>
             expect(push).toHaveBeenCalledWith(`/knowledge/${resource.id}`),
         );

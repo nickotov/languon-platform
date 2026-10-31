@@ -41,6 +41,7 @@ const envelope = () => ({
         correlationId: randomUUID(),
     },
 });
+
 export function createTranscriptionAdminRoutes(options: {
     administration: Pick<
         AdministrationService,
@@ -51,13 +52,17 @@ export function createTranscriptionAdminRoutes(options: {
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success) return c.json(envelope(), 400);
+            if (!result.success) {
+                return c.json(envelope(), 400);
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
     });
+
     for (const path of [
         '/admin/ai/transcription',
         '/admin/ai/transcription/*',
@@ -66,9 +71,13 @@ export function createTranscriptionAdminRoutes(options: {
             c.header('Cache-Control', 'private, no-store');
             c.header('Referrer-Policy', 'no-referrer');
             const origin = c.req.header('Origin');
-            if (origin) options.policy.assertCookieRequestOrigin(origin);
+            if (origin) {
+                options.policy.assertCookieRequestOrigin(origin);
+            }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -77,18 +86,27 @@ export function createTranscriptionAdminRoutes(options: {
             }),
         );
     }
+
     app.onError((error, c) => {
-        if (error instanceof z.ZodError) return c.json(envelope(), 400);
+        if (error instanceof z.ZodError) {
+            return c.json(envelope(), 400);
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     async function authorize(
         header: string | undefined,
         origin: string | undefined,
         sensitive: boolean,
     ) {
         const correlationId = randomUUID();
-        if (sensitive) options.policy.assertCookieRequestOrigin(origin ?? null);
+        if (sensitive) {
+            options.policy.assertCookieRequestOrigin(origin ?? null);
+        }
+
         const token = options.policy.parseBearerAuthorization(header ?? null);
         const principal = sensitive
             ? await options.administration.authorizeSensitiveOperation(
@@ -99,12 +117,14 @@ export function createTranscriptionAdminRoutes(options: {
                   token,
                   correlationId,
               );
+
         return {
             userId: principal.actor.id,
             sessionId: principal.sessionId,
             correlationId,
         };
     }
+
     const security = [{ bearerAuth: [] as string[] }];
     app.openapi(
         createRoute({
@@ -122,9 +142,11 @@ export function createTranscriptionAdminRoutes(options: {
                 c.req.header('Origin'),
                 false,
             );
+
             return c.json(await options.service.read(), 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -151,6 +173,7 @@ export function createTranscriptionAdminRoutes(options: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -177,5 +200,6 @@ export function createTranscriptionAdminRoutes(options: {
                 200,
             ),
     );
+
     return app;
 }

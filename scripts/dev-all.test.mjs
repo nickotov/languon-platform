@@ -36,6 +36,7 @@ test('guards reject remote, deployed, mismatched and overridden database targets
             ACCOUNT_PURGE_DATABASE_URL: 'postgres://unused.invalid/other',
         }),
     );
+
     for (const overrides of [
         { APP_ENV: 'production' },
         { NODE_ENV: 'production' },
@@ -47,10 +48,11 @@ test('guards reject remote, deployed, mismatched and overridden database targets
         { DICTIONARY_WORKER_DATABASE_URL: 'postgres://localhost:5433/languon' },
         { REDIS_URL: 'redis://remote.invalid:6379' },
         { REDIS_PORT: '6380' },
-    ])
+    ]) {
         assert.throws(() =>
             validateDevelopmentEnvironment({ ...environment, ...overrides }),
         );
+    }
 });
 
 test('fixed commands wait for infrastructure and preserve Turbo build prerequisites', () => {
@@ -61,6 +63,7 @@ test('fixed commands wait for infrastructure and preserve Turbo build prerequisi
         'redis',
         'minio',
     ]);
+
     // Keep the successful one-shot initializer outside `up --wait`.
     assert.deepEqual(developmentCommands.storageInitialization, [
         'docker',
@@ -74,11 +77,13 @@ test('fixed commands wait for infrastructure and preserve Turbo build prerequisi
         '--no-deps',
         'minio-init',
     ]);
+
     assert.ok(
         developmentCommands.dependencies.includes(
             '--filter=@languon/backend^...',
         ),
     );
+
     assert.ok(!developmentCommands.applications.includes('--parallel'));
     assert.ok(developmentCommands.applications.includes('--env-mode=loose'));
 });
@@ -92,6 +97,7 @@ async function fixture(t, failAt, hangAt) {
             .map(([key, value]) => `${key}=${value}`)
             .join('\n'),
     );
+
     const script = join(cwd, 'fixture.mjs');
     await writeFile(
         script,
@@ -102,6 +108,7 @@ if (name === ${JSON.stringify(failAt)}) process.exit(7);
 if (['applications', 'dictionary', ${JSON.stringify(hangAt)}].includes(name)) setInterval(() => {}, 1000);
 `,
     );
+
     const commands = Object.fromEntries(
         Object.keys(developmentCommands).map((name) => [
             name,
@@ -118,6 +125,7 @@ if (['applications', 'dictionary', ${JSON.stringify(hangAt)}].includes(name)) se
         }
     };
     const signals = new EventEmitter();
+
     return {
         cwd,
         commands,
@@ -131,9 +139,13 @@ if (['applications', 'dictionary', ${JSON.stringify(hangAt)}].includes(name)) se
 
 async function waitFor(predicate) {
     for (let attempt = 0; attempt < 200; attempt++) {
-        if (await predicate()) return;
+        if (await predicate()) {
+            return;
+        }
+
         await new Promise((done) => setTimeout(done, 10));
     }
+
     throw new Error('Synthetic startup timed out');
 }
 
@@ -163,15 +175,19 @@ test('setup runs in order, then all services stop on command stop', async (t) =>
             'readiness',
         ],
     );
+
     assert.ok(
         messages.some((message) =>
             message.includes('PostgreSQL, Redis and MinIO remain running.'),
         ),
     );
-    for (const line of events)
+
+    for (const line of events) {
         assert.throws(() => process.kill(Number(line.split(':')[1]), 0), {
             code: 'ESRCH',
         });
+    }
+
     assert.equal(options.signals.listenerCount('SIGTERM'), 0);
 });
 
@@ -186,6 +202,7 @@ test('missing AI readiness does not prevent configuring the running app', async 
             message.includes('Applications will still start'),
         ),
     );
+
     options.signals.emit('SIGTERM');
     assert.equal(await running, 130);
 });
@@ -202,9 +219,11 @@ for (const name of [
             runDevelopment(options),
             new RegExp(`${name} failed`),
         );
+
         const names = (await options.events()).map(
             (line) => line.split(':')[0],
         );
+
         assert.equal(names.at(-1), name);
         assert.ok(!names.includes('applications'));
     });
@@ -238,15 +257,19 @@ test('bucket initialization timeout stops owned processes without launching late
         runDevelopment(options),
         /storageInitialization timed out; check local MinIO readiness/,
     );
+
     const events = await options.events();
     assert.deepEqual(
         events.map((line) => line.split(':')[0]),
         ['infrastructure', 'storageInitialization'],
     );
-    for (const line of events)
+
+    for (const line of events) {
         assert.throws(() => process.kill(Number(line.split(':')[1]), 0), {
             code: 'ESRCH',
         });
+    }
+
     assert.equal(options.signals.listenerCount('SIGINT'), 0);
     assert.equal(options.signals.listenerCount('SIGTERM'), 0);
 });
@@ -257,10 +280,12 @@ test('unexpected service failure stops its siblings', async (t) => {
         runDevelopment(options),
         /dictionary exited unexpectedly/,
     );
-    for (const line of await options.events())
+
+    for (const line of await options.events()) {
         assert.throws(() => process.kill(Number(line.split(':')[1]), 0), {
             code: 'ESRCH',
         });
+    }
 });
 
 test('runner redacts secrets loaded from its own file across output chunks', async (t) => {
@@ -279,11 +304,13 @@ test('runner redacts secrets loaded from its own file across output chunks', asy
             .map(([key, value]) => `${key}=${value}`)
             .join('\n'),
     );
+
     options.commands.infrastructure = [
         process.execPath,
         '-e',
         `process.stdout.write('@languon/backend http://127.0.0.1:4000 document-terms:v2 ' + ${JSON.stringify(secret.slice(0, 12))}); setTimeout(() => process.stdout.write(${JSON.stringify(secret.slice(12))} + '\\n'), 20);`,
     ];
+
     options.commands.dependencies = [process.execPath, '-e', 'process.exit(1)'];
     let output = '';
     options.stdout = {
@@ -291,6 +318,7 @@ test('runner redacts secrets loaded from its own file across output chunks', asy
             output += text;
         },
     };
+
     await assert.rejects(runDevelopment(options), /dependencies failed/);
     assert.equal(
         output,
@@ -307,31 +335,37 @@ test('quiet startup hides successful output and flushes redacted opaque failure 
             .map(([key, value]) => `${key}=${value}`)
             .join('\n'),
     );
+
     options.commands.infrastructure = [
         process.execPath,
         '-e',
         "console.log('successful build output')",
     ];
+
     options.commands.storageInitialization = [
         process.execPath,
         '-e',
         `process.stderr.write('opaque detail ${secret.slice(0, 10)}'); setTimeout(() => { process.stderr.write('${secret.slice(10)}'); process.exitCode = 7; }, 20);`,
     ];
+
     let output = '';
     options.stdout = {
         write: (text) => {
             output += text;
         },
     };
+
     options.stderr = {
         write: (text) => {
             output += text;
         },
     };
+
     await assert.rejects(
         runDevelopment(options),
         /storageInitialization failed/,
     );
+
     assert.doesNotMatch(output, /successful build output/);
     assert.doesNotMatch(output, new RegExp(secret));
     assert.match(output, /opaque detail \[REDACTED\]/);
@@ -350,6 +384,7 @@ test('stop cleans a synthetic nested service process as well as its launcher', a
         setInterval(() => {}, 1000);
     `,
     ];
+
     const running = runDevelopment(options);
     let pid;
     t.after(() => {
@@ -361,19 +396,23 @@ test('stop cleans a synthetic nested service process as well as its launcher', a
             }
         }
     });
+
     await waitFor(async () => {
         try {
             pid = Number(await readFile(join(options.cwd, 'nested'), 'utf8'));
+
             return true;
         } catch {
             return false;
         }
     });
+
     options.signals.emit('SIGTERM');
     assert.equal(await running, 130);
     await waitFor(() => {
         try {
             process.kill(pid, 0);
+
             return false;
         } catch (error) {
             return error.code === 'ESRCH';
@@ -389,6 +428,7 @@ function outputFixture(verbose = false) {
         stdout: { write: (text) => (stdout += text) },
         stderr: { write: (text) => (stderr += text) },
     });
+
     return { output, stdout: () => stdout, stderr: () => stderr };
 }
 
@@ -399,6 +439,7 @@ test('quiet output suppresses routine logs but preserves readiness and diagnosti
         'stderr',
         'Environment settings absent; using configured fallbacks: OPTIONAL.\n',
     );
+
     f.output.write('stdout', 'backend listening on http://127.0.0.1:4000\n');
     f.output.write('stderr', 'Warning: port unavailable\n');
     f.output.write('stdout', 'BLOCKED flow: Missing price\n');
@@ -429,6 +470,7 @@ test('failed readiness shows blocked checks without dumping successful checks', 
         'stdout',
         'BLOCKED model: configure price\nPASS many other checks\n',
     );
+
     f.output.end();
     f.output.failure({ onlyIfSilent: true });
     assert.equal(f.stderr(), 'BLOCKED model: configure price\n');
@@ -436,11 +478,15 @@ test('failed readiness shows blocked checks without dumping successful checks', 
 
 test('quiet mode retains bounded failure context including incomplete lines and stack traces', () => {
     const f = outputFixture();
-    for (let i = 0; i < 500; i++) f.output.write('stdout', `routine ${i}\n`);
+    for (let i = 0; i < 500; i++) {
+        f.output.write('stdout', `routine ${i}\n`);
+    }
+
     f.output.write(
         'stderr',
         'opaque failure detail\n    at fixture:1\ntrailing',
     );
+
     f.output.end();
     f.output.failure();
     assert.doesNotMatch(f.stderr(), /routine 0\n/);
@@ -449,6 +495,7 @@ test('quiet mode retains bounded failure context including incomplete lines and 
         f.stderr(),
         /opaque failure detail\n {4}at fixture:1\ntrailing/,
     );
+
     assert.ok(f.stderr().length < 65536);
 });
 
@@ -467,26 +514,35 @@ test('launcher exit cannot wait indefinitely for descendant-owned log pipes', as
         child.unref();
     `,
     ];
+
     let pid;
     t.after(() => {
-        if (!pid) return;
+        if (!pid) {
+            return;
+        }
+
         try {
             process.kill(pid, 'SIGTERM');
         } catch (error) {
-            if (error.code !== 'ESRCH') throw error;
+            if (error.code !== 'ESRCH') {
+                throw error;
+            }
         }
     });
+
     let failureOutput = '';
     options.stderr = {
         write: (text) => {
             failureOutput += text;
         },
     };
+
     const started = Date.now();
     await assert.rejects(
         runDevelopment(options),
         /applications exited unexpectedly/,
     );
+
     pid = Number(await readFile(join(options.cwd, 'pipe-owner'), 'utf8'));
     assert.match(failureOutput, /opaque final detail/);
     assert.ok(
@@ -507,10 +563,12 @@ test('quiet services preserve opaque stderr and suppress expected launcher cance
             },
         },
     });
+
     output.write(
         'stderr',
         'Dictionary worker could not confirm lease release before shutdown.\n',
     );
+
     output.write('stderr', 'ELIFECYCLE Command failed with exit code 130.\n');
     output.end();
     assert.match(stderr, /could not confirm lease release/);

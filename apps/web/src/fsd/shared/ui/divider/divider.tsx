@@ -9,12 +9,13 @@ export function Divider({
     children?: ReactNode;
     className?: string;
 }) {
-    if (!children)
+    if (!children) {
         return (
             <hr
                 className={[styles.rule, className].filter(Boolean).join(' ')}
             />
         );
+    }
 
     return (
         <div

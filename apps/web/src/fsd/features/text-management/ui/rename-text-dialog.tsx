@@ -37,8 +37,10 @@ function RenameForm({ document, onClose, onSaved, requestWithSession }: Props) {
         const parsed = TextTitleSchema.safeParse(value);
         if (!parsed.success) {
             setInvalid(true);
+
             return;
         }
+
         void mutation.run(
             (token) =>
                 textsApi.saveText(token, document.id, {

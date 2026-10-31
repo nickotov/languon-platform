@@ -42,6 +42,7 @@ function deferred<T>() {
     const promise = new Promise<T>((done) => {
         resolve = done;
     });
+
     return { promise, resolve };
 }
 
@@ -49,6 +50,7 @@ beforeEach(() => {
     vi.spyOn(adminApi, 'textAiRouting').mockResolvedValue(routing);
     vi.spyOn(adminApi, 'textAiProbes').mockResolvedValue(checks);
 });
+
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -65,10 +67,12 @@ describe('routing refresh and mutation serialization', () => {
         vi.mocked(adminApi.textAiRouting).mockReturnValueOnce(
             delayedRouting.promise,
         );
+
         let refresh!: Promise<void>;
         act(() => {
             refresh = result.current.refresh();
         });
+
         await waitFor(() => expect(result.current.loading).toBe(true));
         await act(() => result.current.runProbe(request));
         expect(run).not.toHaveBeenCalled();
@@ -76,6 +80,7 @@ describe('routing refresh and mutation serialization', () => {
             delayedRouting.resolve(routing);
             await refresh;
         });
+
         await act(() => result.current.runProbe(request));
         expect(run).toHaveBeenCalledOnce();
         expect(result.current.snapshot?.checks.probes).toEqual([probe]);
@@ -90,6 +95,7 @@ describe('routing refresh and mutation serialization', () => {
         act(() => {
             running = result.current.runProbe(request);
         });
+
         await act(() => result.current.refresh());
         expect(adminApi.textAiRouting).toHaveBeenCalledOnce();
         expect(adminApi.textAiProbes).toHaveBeenCalledOnce();
@@ -97,6 +103,7 @@ describe('routing refresh and mutation serialization', () => {
             paid.resolve(probe);
             await running;
         });
+
         expect(result.current.snapshot?.checks.probes).toEqual([probe]);
         expect(result.current.pending).toBe(false);
     });

@@ -18,11 +18,18 @@ export function useWorkspaceAutoSend({
 }) {
     const handled = useRef<string | null>(null);
     useEffect(() => {
-        if (!request?.autoSend || handled.current === request.id || !ready)
+        if (!request?.autoSend || handled.current === request.id || !ready) {
             return;
-        if (!request.prompt?.trim() || question !== request.prompt) return;
-        if (request.passage ? passage?.id !== request.id : passage !== null)
+        }
+
+        if (!request.prompt?.trim() || question !== request.prompt) {
             return;
+        }
+
+        if (request.passage ? passage?.id !== request.id : passage !== null) {
+            return;
+        }
+
         // Mark before invoking Send: StrictMode replay and a synchronous rerender cannot duplicate a turn.
         handled.current = request.id;
         send();

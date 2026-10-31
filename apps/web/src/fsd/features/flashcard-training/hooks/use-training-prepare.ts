@@ -28,16 +28,22 @@ export function useTrainingPrepare(
         const current = ++generation.current;
         if (!enabled) {
             setPrepare({ status: 'idle' });
+
             return;
         }
-        if (retryAt.current && retryAt.current > Date.now()) return;
+
+        if (retryAt.current && retryAt.current > Date.now()) {
+            return;
+        }
+
         setPrepare({ status: 'loading' });
         const timer = setTimeout(() => {
             void api
                 .prepare({ configuration, scope })
                 .then((result) => {
-                    if (generation.current === current)
+                    if (generation.current === current) {
                         setPrepare({ status: 'ready', result });
+                    }
                 })
                 .catch((error) => {
                     if (generation.current === current) {
@@ -50,17 +56,20 @@ export function useTrainingPrepare(
                     }
                 });
         }, 350);
+
         return () => {
             clearTimeout(timer);
             generation.current += 1;
         };
     }, [api, enabled, configuration, scope, attempt]);
+
     return {
         prepare,
         setPrepare,
         retryPrepare: () => {
-            if (!retryAt.current || retryAt.current <= Date.now())
+            if (!retryAt.current || retryAt.current <= Date.now()) {
                 setAttempt((value) => value + 1);
+            }
         },
         canRequest: () => !retryAt.current || retryAt.current <= Date.now(),
     };

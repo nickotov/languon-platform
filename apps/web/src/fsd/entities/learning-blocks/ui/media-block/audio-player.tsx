@@ -34,43 +34,60 @@ export function AudioPlayer({
         audio.current = element;
         mediaRef(element);
     }
+
     function failure() {
         setFailed(true);
         setPlaying(false);
         setPending(false);
         onError();
     }
+
     function start() {
         setPlaying(true);
         setPending(false);
         onStart?.(pausePlayback);
     }
+
     function pausePlayback() {
         audio.current?.pause();
     }
+
     function pause() {
         setPlaying(false);
     }
+
     function metadata() {
         const value = audio.current?.duration;
-        if (value && Number.isFinite(value)) setDuration(value);
+        if (value && Number.isFinite(value)) {
+            setDuration(value);
+        }
     }
+
     function progress() {
         const value = audio.current?.currentTime ?? 0;
         setPosition(value);
         onPosition(value);
     }
+
     function seek(event: ChangeEvent<HTMLInputElement>) {
-        if (audio.current)
+        if (audio.current) {
             audio.current.currentTime = Number(event.target.value);
+        }
+
         progress();
     }
+
     function toggle() {
-        if (!audio.current) return;
-        if (playing) {
-            audio.current.pause();
+        if (!audio.current) {
             return;
         }
+
+        if (playing) {
+            audio.current.pause();
+
+            return;
+        }
+
         setFailed(false);
         setPending(true);
         void audio.current
@@ -78,11 +95,18 @@ export function AudioPlayer({
             .then(() => setPending(false))
             .catch(failure);
     }
+
     const icon = playing ? <Pause size={16} /> : <Play size={16} />;
     const actionIcon = failed ? <RotateCcw size={16} /> : icon;
     let playLabel = `${labels.play ?? labels.replay}: ${title}`;
-    if (playing) playLabel = labels.stop ?? labels.retry;
-    if (failed) playLabel = labels.retry;
+    if (playing) {
+        playLabel = labels.stop ?? labels.retry;
+    }
+
+    if (failed) {
+        playLabel = labels.retry;
+    }
+
     return (
         <div className={styles.audioPlayer}>
             <audio

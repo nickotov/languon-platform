@@ -18,7 +18,10 @@ export function WorkspaceManagement({
     onClose(): void;
     onLeave(): void;
 }) {
-    if (!ws.document) return null;
+    if (!ws.document) {
+        return null;
+    }
+
     return (
         <>
             {kind === 'move' && (

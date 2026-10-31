@@ -38,6 +38,7 @@ export function useAppShellState() {
             const parsed = JSON.parse(
                 window.localStorage.getItem(storageKey) ?? 'null',
             ) as unknown;
+
             if (parsed && typeof parsed === 'object') {
                 const value = parsed as Partial<Preferences>;
                 const sections = { ...initial.sections };
@@ -46,9 +47,11 @@ export function useAppShellState() {
                     'text',
                     'knowledge',
                 ] as const) {
-                    if (typeof value.sections?.[kind] === 'boolean')
+                    if (typeof value.sections?.[kind] === 'boolean') {
                         sections[kind] = value.sections[kind];
+                    }
                 }
+
                 setPreferences({
                     collapsed: value.collapsed === true,
                     sections,
@@ -63,8 +66,10 @@ export function useAppShellState() {
         function resize() {
             setWidth(window.innerWidth);
         }
+
         resize();
         window.addEventListener('resize', resize);
+
         return () => window.removeEventListener('resize', resize);
     }, []);
 
@@ -75,7 +80,9 @@ export function useAppShellState() {
     }, [pathname, userId]);
 
     useEffect(() => {
-        if (width >= 1024) setDrawerOpen(false);
+        if (width >= 1024) {
+            setDrawerOpen(false);
+        }
     }, [width]);
 
     function save(next: Preferences) {
@@ -86,16 +93,23 @@ export function useAppShellState() {
             /* In-memory state remains usable. */
         }
     }
+
     function toggleRail() {
         if (tablet) {
             setDrawerOpen(true);
+
             return;
         }
+
         const collapsed = !railCollapsed;
-        if (!collapsed) setSessionExpanded(true);
+        if (!collapsed) {
+            setSessionExpanded(true);
+        }
+
         save({ ...preferences, collapsed });
         setAccountOpen(false);
     }
+
     function toggleSection(kind: NavigationResourceKind) {
         save({
             ...preferences,
@@ -105,12 +119,15 @@ export function useAppShellState() {
             },
         });
     }
+
     function closeDrawer(restoreFocus = true) {
         setDrawerOpen(false);
         setAccountOpen(false);
-        if (restoreFocus)
+        if (restoreFocus) {
             window.requestAnimationFrame(() => menuButtonRef.current?.focus());
+        }
     }
+
     return {
         accountOpen,
         closeDrawer,
@@ -126,4 +143,5 @@ export function useAppShellState() {
         toggleSection,
     };
 }
+
 export type AppShellState = ReturnType<typeof useAppShellState>;

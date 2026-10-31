@@ -40,17 +40,17 @@ const response = (body: unknown, status = 200) =>
         status,
         headers: { 'Content-Type': 'application/json' },
     });
+
 afterEach(() => vi.unstubAllGlobals());
 describe('sentence transport contracts', () => {
     it('transmits the confirmed next allowance without changing its frozen operation', async () => {
-        const fetchMock = vi
-            .fn()
-            .mockResolvedValue(
-                response({
-                    kind: 'job',
-                    job: { ...job, kind: 'sentence-generation' },
-                }),
-            );
+        const fetchMock = vi.fn().mockResolvedValue(
+            response({
+                kind: 'job',
+                job: { ...job, kind: 'sentence-generation' },
+            }),
+        );
+
         vi.stubGlobal('fetch', fetchMock);
         const input = {
             ...configuration,
@@ -59,6 +59,7 @@ describe('sentence transport contracts', () => {
             visitedExerciseIds: [],
             confirmedQuoteId: '10000000-0000-4000-8000-000000000004',
         };
+
         await createSentenceApi(options).next(input);
         expect(
             JSON.parse(
@@ -66,11 +67,13 @@ describe('sentence transport contracts', () => {
             ),
         ).toEqual(input);
     });
+
     it('uses authenticated plural check and public capability routes without sharing protected credentials', async () => {
         const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(response(job))
             .mockResolvedValueOnce(response({ sentencesEnabled: true }));
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createSentenceApi(options);
         await api.check(id, check);
@@ -78,6 +81,7 @@ describe('sentence transport contracts', () => {
         expect(fetchMock.mock.calls[0]![0]).toBe(
             `http://localhost:4000/learning/dictionaries/${id}/sentences/exercises/${id}/checks`,
         );
+
         const init = fetchMock.mock.calls[0]![1] as RequestInit;
         expect(init).toMatchObject({
             method: 'POST',
@@ -85,35 +89,43 @@ describe('sentence transport contracts', () => {
             credentials: 'include',
             body: JSON.stringify(check),
         });
+
         expect(new Headers(init.headers).get('authorization')).toBe(
             'Bearer access-token',
         );
+
         expect(fetchMock.mock.calls[1]![0]).toBe(
             'http://localhost:4000/learning/sentences/capabilities',
         );
+
         expect(
             new Headers(
                 (fetchMock.mock.calls[1]![1] as RequestInit).headers,
             ).has('authorization'),
         ).toBe(false);
     });
+
     it('uses live shared keys for protected reads without leaking keys into URLs', async () => {
         const fetchMock = vi
             .fn()
             .mockResolvedValue(response({ attempts: [], nextCursor: null }));
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createSentenceApi({
             ...options,
             target: { kind: 'shared', shareId: id, shareKey: 'A'.repeat(43) },
         });
+
         await api.attempts({
             direction: 'target-to-source',
             exerciseId: operation,
         });
+
         const [url, init] = fetchMock.mock.calls[0]!;
         expect(url).toContain(
             `/learning/shared-dictionaries/${id}/sentences/attempts?`,
         );
+
         expect(url).not.toContain('key-that');
         expect(
             new Headers((init as RequestInit).headers).get(
@@ -121,6 +133,7 @@ describe('sentence transport contracts', () => {
             ),
         ).toBe('A'.repeat(43));
     });
+
     it('rejects anonymous personal practice/history/reference requests before transport', async () => {
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
@@ -129,14 +142,17 @@ describe('sentence transport contracts', () => {
             status: 401,
             code: 'authentication_required',
         });
+
         await expect(
             api.revealReference(id, {
                 operationId: operation,
                 sessionId: session,
             }),
         ).rejects.toMatchObject({ status: 401 });
+
         expect(fetchMock).not.toHaveBeenCalled();
     });
+
     it('posts free reveal only when explicitly called, separate from exercise admission', async () => {
         const exercise = {
             id,
@@ -173,6 +189,7 @@ describe('sentence transport contracts', () => {
                     },
                 }),
             );
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createSentenceApi(options);
         await api.next({
@@ -181,20 +198,24 @@ describe('sentence transport contracts', () => {
             sessionId: session,
             visitedExerciseIds: [],
         });
+
         expect(fetchMock).toHaveBeenCalledTimes(1);
         await api.revealReference(id, {
             operationId: operation,
             sessionId: session,
         });
+
         expect(fetchMock.mock.calls[1]![0]).toContain(
             `/exercises/${id}/reference-answer`,
         );
+
         expect(
             JSON.parse(
                 (fetchMock.mock.calls[1]![1] as RequestInit).body as string,
             ),
         ).toEqual({ operationId: operation, sessionId: session });
     });
+
     it('validates bounded Unicode answers and unique scope IDs before issuing paid requests', () => {
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
@@ -202,6 +223,7 @@ describe('sentence transport contracts', () => {
         expect(() =>
             api.check(id, { ...check, answer: '😀'.repeat(4001) }),
         ).toThrow();
+
         expect(() =>
             api.next({
                 ...configuration,
@@ -210,14 +232,17 @@ describe('sentence transport contracts', () => {
                 visitedExerciseIds: [id, id],
             }),
         ).toThrow();
+
         expect(() =>
             api.prepare({
                 ...configuration,
                 scope: { type: 'manual', entryIds: [] },
             }),
         ).toThrow();
+
         expect(fetchMock).not.toHaveBeenCalled();
     });
+
     it('does not accept reference content smuggled into the normal exercise response', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             response({
@@ -225,6 +250,7 @@ describe('sentence transport contracts', () => {
                 exercise: { id, referenceAnswer: 'secret' },
             }),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createSentenceApi(options);
         await expect(
@@ -236,6 +262,7 @@ describe('sentence transport contracts', () => {
             }),
         ).rejects.toMatchObject({ status: 502, code: 'service_unavailable' });
     });
+
     it('preserves explicit Retry-After and classifies ambiguous transport loss distinctly', async () => {
         const fetchMock = vi
             .fn()
@@ -253,17 +280,20 @@ describe('sentence transport contracts', () => {
                 ),
             )
             .mockRejectedValueOnce(new Error('Connection closed'));
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createSentenceApi(options);
         await expect(api.check(id, check)).rejects.toMatchObject({
             code: 'capacity_unavailable',
             retryAfterSeconds: 8,
         });
+
         await expect(api.check(id, check)).rejects.toMatchObject({
             status: 0,
             code: 'network_timeout',
         });
     });
+
     it('rejects malformed path identifiers without fetching', () => {
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);

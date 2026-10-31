@@ -33,6 +33,7 @@ export function useKnowledgePageActions(noteId: string) {
         state.query.isSuccess && !!state.workspace,
         requestWithSession,
     );
+
     const navigation = useDirtyNavigation();
     const editor = useRef<KnowledgeEditorHandle>(null);
     const deleteOperation = useRef(crypto.randomUUID());
@@ -64,8 +65,10 @@ export function useKnowledgePageActions(noteId: string) {
     }, [navigation.setDirty, state.hasLocalChanges]);
 
     function getSnapshot(targetId?: string | null) {
-        if (!editor.current)
+        if (!editor.current) {
             throw new Error('The document editor is still loading');
+        }
+
         return editor.current.getSnapshot(targetId);
     }
 
@@ -105,7 +108,10 @@ export function useKnowledgePageActions(noteId: string) {
     }
 
     async function save() {
-        if (!canPublish) return;
+        if (!canPublish) {
+            return;
+        }
+
         setBusy('save');
         setActionError(false);
         try {
@@ -119,7 +125,10 @@ export function useKnowledgePageActions(noteId: string) {
     }
 
     async function saveCopy() {
-        if (!canSave) return;
+        if (!canSave) {
+            return;
+        }
+
         setBusy('copy');
         setActionError(false);
         try {
@@ -157,7 +166,10 @@ export function useKnowledgePageActions(noteId: string) {
     }
 
     async function remove() {
-        if (!workspace) return;
+        if (!workspace) {
+            return;
+        }
+
         setBusy('delete');
         setActionError(false);
         try {
@@ -167,6 +179,7 @@ export function useKnowledgePageActions(noteId: string) {
                     expectedVersion: workspace.published?.version ?? 0,
                 }),
             );
+
             navigation.setDirty(false);
             router.push(href('/knowledge'));
         } catch {
@@ -181,7 +194,9 @@ export function useKnowledgePageActions(noteId: string) {
     }
 
     function closeDelete() {
-        if (!busy) setDeleting(false);
+        if (!busy) {
+            setDeleting(false);
+        }
     }
 
     function openHistory() {
@@ -202,6 +217,7 @@ export function useKnowledgePageActions(noteId: string) {
                 ? { ...proposalConflict, ...(format ? { format } : {}) }
                 : null,
         );
+
         setProposalConflict(null);
     }
 
@@ -210,7 +226,10 @@ export function useKnowledgePageActions(noteId: string) {
     }
 
     function applyRetarget() {
-        if (!retargetProposal) return;
+        if (!retargetProposal) {
+            return;
+        }
+
         const targetId = editor.current?.getSnapshot().targetId;
         const outcome = editor.current?.applyProposal(
             retargetProposal.text,
@@ -218,14 +237,18 @@ export function useKnowledgePageActions(noteId: string) {
             targetId,
             retargetProposal.format,
         );
+
         if (outcome === 'applied') {
             setRetargetProposal(null);
+
             return;
         }
+
         setProposalConflict({
             ...retargetProposal,
             ...(targetId ? { targetId } : {}),
         });
+
         setRetargetProposal(null);
     }
 
@@ -239,8 +262,10 @@ export function useKnowledgePageActions(noteId: string) {
 
     async function beforeSend() {
         const flushed = await state.flush();
+
         return { id: flushed.branchId, version: flushed.version };
     }
+
     function setProposalApplying(applying: boolean) {
         setBusy(applying ? 'resolve' : null);
     }

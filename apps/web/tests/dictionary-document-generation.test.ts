@@ -38,6 +38,7 @@ describe('dictionary document generation', () => {
         expect(documentGenerationJobForDictionary(job, job.dictionaryId)).toBe(
             job,
         );
+
         expect(
             documentGenerationJobForDictionary(
                 job,
@@ -50,15 +51,18 @@ describe('dictionary document generation', () => {
         expect(documentMediaTypeForFile({ name: 'terms.md', type: '' })).toBe(
             'text/markdown',
         );
+
         expect(
             documentMediaTypeForFile({
                 name: 'terms.docx',
                 type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             }),
         ).toContain('wordprocessingml');
+
         expect(
             documentMediaTypeForFile({ name: 'terms.pdf', type: 'image/png' }),
         ).toBeNull();
+
         expect(
             documentMediaTypeForFile({ name: 'terms.csv', type: 'text/csv' }),
         ).toBeNull();

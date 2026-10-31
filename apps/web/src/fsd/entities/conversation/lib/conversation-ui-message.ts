@@ -40,6 +40,7 @@ export function conversationUIMessages(
         const parts: ConversationUIMessage['parts'] = [
             { type: 'text', text: message.content },
         ];
+
         for (const material of message.attachments) {
             parts.push({
                 type: 'data-material',
@@ -47,6 +48,7 @@ export function conversationUIMessages(
                 data: material,
             });
         }
+
         for (const tool of message.toolCalls) {
             if (tool.state === 'running') {
                 parts.push({
@@ -85,19 +87,22 @@ export function conversationUIMessages(
                 });
             }
         }
+
         if (
             message.role === 'assistant' &&
             message.id ===
                 detail.messages.findLast((item) => item.role === 'assistant')
                     ?.id
         ) {
-            for (const draft of detail.drafts)
+            for (const draft of detail.drafts) {
                 parts.push({
                     type: 'data-knowledgeDraft',
                     id: draft.id,
                     data: draft,
                 });
+            }
         }
+
         return { id: message.id, role: message.role, metadata: message, parts };
     });
 }

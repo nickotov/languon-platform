@@ -14,7 +14,9 @@ interface AdmissionReads {
  * One action pins one view of immutable policies. No value survives its transaction. */
 const reads = new WeakMap<AiCreditTransaction, AdmissionReads>();
 export function enableAdmissionPolicyReadCache(tx: AiCreditTransaction) {
-    if (!reads.has(tx)) reads.set(tx, { policies: new Map() });
+    if (!reads.has(tx)) {
+        reads.set(tx, { policies: new Map() });
+    }
 }
 
 export function admissionPolicyReads(tx: AiCreditTransaction) {

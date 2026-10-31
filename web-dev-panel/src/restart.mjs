@@ -23,6 +23,7 @@ export async function restartExistingPanel({
                 timeout: 2_000,
                 maxBuffer: 64 * 1024,
             });
+
             return stdout.trim();
         } catch (error) {
             // Both tools exit 1 when their selector finds no process.
@@ -30,8 +31,10 @@ export async function restartExistingPanel({
                 error.code === 1 &&
                 !error.stdout?.trim() &&
                 !error.stderr?.trim()
-            )
+            ) {
                 return '';
+            }
+
             throw new Error(
                 `Cannot safely inspect panel processes with ${command}.`,
                 {
@@ -47,23 +50,36 @@ export async function restartExistingPanel({
             '-sTCP:LISTEN',
             '-t',
         ]);
-        if (!output) return [];
+
+        if (!output) {
+            return [];
+        }
+
         const pids = [...new Set(output.split(/\s+/u).map(Number))];
-        if (pids.some((pid) => !Number.isSafeInteger(pid) || pid <= 1))
+        if (pids.some((pid) => !Number.isSafeInteger(pid) || pid <= 1)) {
             throw new Error('Cannot safely identify the panel listener.');
+        }
+
         return pids;
     };
     const identity = (pid) =>
         runTool('ps', ['-p', String(pid), '-o', 'uid=,lstart=,command=']);
 
     const pids = await listeners();
-    if (pids.length === 0) return;
+    if (pids.length === 0) {
+        return;
+    }
+
     const refuse = () => {
         throw new Error(
             `Port ${port} is occupied by a process that is not this checkout's panel; stop it manually.`,
         );
     };
-    if (pids.length !== 1 || !getUid) refuse();
+
+    if (pids.length !== 1 || !getUid) {
+        refuse();
+    }
+
     const [pid] = pids;
     const before = await identity(pid);
     const match = /^(\d+)\s+(.{24})\s+(.+)$/u.exec(before);
@@ -74,8 +90,11 @@ export async function restartExistingPanel({
             `${node} ${entrypoint}`,
         ]),
     );
-    if (!match || Number(match[1]) !== getUid() || !commands.has(match[3]))
+
+    if (!match || Number(match[1]) !== getUid() || !commands.has(match[3])) {
         refuse();
+    }
+
     const cwdOutput = await runTool('lsof', [
         '-a',
         '-p',
@@ -84,28 +103,42 @@ export async function restartExistingPanel({
         'cwd',
         '-Fn',
     ]);
-    if (!cwdOutput.split('\n').includes(`n${directory}`)) refuse();
+
+    if (!cwdOutput.split('\n').includes(`n${directory}`)) {
+        refuse();
+    }
 
     // Revalidate after cwd inspection, so a process that exited/reused its PID
     // during inspection cannot intentionally become a restart target.
-    if (!(await listeners()).includes(pid) || (await identity(pid)) !== before)
+    if (
+        !(await listeners()).includes(pid) ||
+        (await identity(pid)) !== before
+    ) {
         throw new Error(
             'Panel process changed during inspection; retry dev:panel.',
         );
+    }
+
     log(
         'Restarting the existing web dev panel (including its owned commands)...',
     );
+
     try {
         signal(pid);
     } catch (error) {
-        if (error.code !== 'ESRCH') throw error;
+        if (error.code !== 'ESRCH') {
+            throw error;
+        }
     }
+
     const deadline = Date.now() + timeoutMs;
     while ((await identity(pid)) === before) {
-        if (Date.now() >= deadline)
+        if (Date.now() >= deadline) {
             throw new Error(
                 'Panel shutdown timed out; no replacement was started.',
             );
+        }
+
         await delay(100);
     }
 }

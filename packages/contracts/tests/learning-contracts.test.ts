@@ -15,6 +15,7 @@ describe('flashcard boundary contracts', () => {
         expect(
             FlashcardConfigurationSchema.safeParse(configuration).success,
         ).toBe(true);
+
         for (const front of [
             [],
             ['source', 'source'],
@@ -27,6 +28,7 @@ describe('flashcard boundary contracts', () => {
                 }).success,
             ).toBe(false);
         }
+
         expect(
             FlashcardConfigurationSchema.safeParse({
                 ...configuration,
@@ -34,6 +36,7 @@ describe('flashcard boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('permits first preference creation with expectedVersion zero', () => {
         expect(
             FlashcardPreferencesPutRequestSchema.parse({
@@ -42,6 +45,7 @@ describe('flashcard boundary contracts', () => {
                 expectedVersion: 0,
             }).expectedVersion,
         ).toBe(0);
+
         expect(
             FlashcardPreferencesPutRequestSchema.safeParse({
                 configuration,
@@ -50,6 +54,7 @@ describe('flashcard boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('bounds batches and manual selections without allowing duplicate identities', () => {
         expect(
             FlashcardItemsRequestSchema.safeParse({
@@ -57,12 +62,14 @@ describe('flashcard boundary contracts', () => {
                 entryIds: [id],
             }).success,
         ).toBe(true);
+
         expect(
             FlashcardItemsRequestSchema.safeParse({
                 configuration,
                 entryIds: [id, id],
             }).success,
         ).toBe(false);
+
         expect(
             FlashcardItemsRequestSchema.safeParse({
                 configuration,
@@ -73,12 +80,14 @@ describe('flashcard boundary contracts', () => {
                 ),
             }).success,
         ).toBe(false);
+
         expect(
             FlashcardPrepareRequestSchema.safeParse({
                 configuration,
                 scope: { type: 'manual', entryIds: [] },
             }).success,
         ).toBe(false);
+
         expect(
             FlashcardPrepareRequestSchema.safeParse({
                 configuration,
@@ -86,6 +95,7 @@ describe('flashcard boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects caller-controlled learner identity and invalid ratings', () => {
         const body = {
             operationId: id,
@@ -96,13 +106,16 @@ describe('flashcard boundary contracts', () => {
             rating: 'known',
             configuration,
         };
+
         expect(FlashcardAttemptRequestSchema.safeParse(body).success).toBe(
             true,
         );
+
         expect(
             FlashcardAttemptRequestSchema.safeParse({ ...body, userId: id })
                 .success,
         ).toBe(false);
+
         expect(
             FlashcardAttemptRequestSchema.safeParse({
                 ...body,
@@ -110,6 +123,7 @@ describe('flashcard boundary contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('defaults entry page sizes and rejects oversized reads', () => {
         expect(LearningEntriesQuerySchema.parse({}).limit).toBe(25);
         expect(

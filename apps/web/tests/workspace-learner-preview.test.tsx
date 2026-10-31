@@ -36,6 +36,7 @@ it('previews current content with local answers without consuming or writing sav
             },
         },
     };
+
     render(
         <I18nProvider locale='en' messages={en}>
             <WorkspaceLearnerPreview
@@ -55,6 +56,7 @@ it('previews current content with local answers without consuming or writing sav
             />
         </I18nProvider>,
     );
+
     expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
     expect(screen.getByText('Current draft summary')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: /What happened\?/u }));
@@ -64,10 +66,12 @@ it('previews current content with local answers without consuming or writing sav
     expect(
         screen.getByText('The passage describes her departure.'),
     ).toBeVisible();
+
     expect(persist).not.toHaveBeenCalled();
     expect(
         screen.queryByRole('button', { name: 'Check with AI' }),
     ).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Back to editing' }));
     expect(close).toHaveBeenCalledOnce();
 });

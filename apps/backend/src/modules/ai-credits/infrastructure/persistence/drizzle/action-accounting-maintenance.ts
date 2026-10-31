@@ -6,8 +6,9 @@ import {
 } from './action-accounting-schema';
 
 function batchLimit(value: number) {
-    if (!Number.isInteger(value) || value < 1 || value > 100)
+    if (!Number.isInteger(value) || value < 1 || value > 100) {
         throw new Error('Invalid accounting maintenance batch.');
+    }
 
     return value;
 }

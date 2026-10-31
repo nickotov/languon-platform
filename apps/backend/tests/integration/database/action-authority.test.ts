@@ -43,11 +43,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         });
+
         beforeEach(async () => {
             ownerId = randomUUID();
             await database
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
+
             await database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId,
@@ -59,6 +61,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
         });
+
         afterAll(async () => client.end());
         const reserve = () =>
             database.transaction((tx) =>
@@ -74,6 +77,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(usersTable)
                 .set({ status: 'deletion_pending', updatedAt: now })
                 .where(eq(usersTable.id, ownerId));
+
             await database.insert(accountDeletionRequestsTable).values({
                 userId: ownerId,
                 scheduledAt: new Date(now.getTime() - 120_000),
@@ -81,11 +85,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 nextAttemptAt: new Date(now.getTime() - 60_000),
                 updatedAt: now,
             });
+
             const claim = await new DrizzleAccountPurgeStore(database).claimDue(
                 { now, workerId },
             );
-            if (!claim || claim.userId !== ownerId)
+
+            if (!claim || claim.userId !== ownerId) {
                 throw new Error('Expected an actively leased deletion claim.');
+            }
+
             await database.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                     ownerId,
@@ -117,6 +125,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             ).rejects.toThrow();
+
             expect(
                 await database.select().from(actions).where(eq(actions.id, id)),
             ).toEqual([]);
@@ -132,6 +141,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 ownerId,
                                 maximumMilli: 1000n,
                             });
+
                         await new DrizzleActionAccountingParticipant(
                             tx,
                         ).reserve({
@@ -173,6 +183,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             failureCode: 'synthetic_failure',
                         })
                         .where(eq(turns.id, action.id));
+
                     await new DrizzleActionAccountingParticipant(tx).settle({
                         actionId: action.id,
                         ownerId,
@@ -181,12 +192,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     });
                 }),
             ).rejects.toThrow();
+
             expect(
                 await database
                     .select()
                     .from(actions)
                     .where(eq(actions.id, action.id)),
             ).toMatchObject([{ state: 'active' }]);
+
             expect(
                 await database
                     .select()
@@ -214,6 +227,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at: new Date(),
                 }),
             );
+
             await expect(
                 database.transaction(async (tx) => {
                     await tx
@@ -223,6 +237,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             failureCode: 'synthetic_failure',
                         })
                         .where(eq(turns.id, action.id));
+
                     await new DrizzleActionAccountingParticipant(tx).settle({
                         actionId: action.id,
                         ownerId,
@@ -231,12 +246,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     });
                 }),
             ).rejects.toThrow();
+
             expect(
                 await database
                     .select()
                     .from(attempts)
                     .where(eq(attempts.id, callId)),
             ).toMatchObject([{ state: 'dispatched' }]);
+
             await database.transaction((tx) =>
                 settleConversationActionFixture(tx, {
                     ownerId,
@@ -254,6 +271,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     const participant = new DrizzleActionAccountingParticipant(
                         tx,
                     );
+
                     await participant.admitAttempt({
                         actionId: action.id,
                         ownerId,
@@ -268,6 +286,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         },
                         at: new Date(),
                     });
+
                     // Deliberately bypass the checked observation helper, which
                     // now creates its canonical expense atomically.
                     await tx
@@ -283,12 +302,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(attempts.id, callId));
                 }),
             ).rejects.toThrow();
+
             expect(
                 await database
                     .select()
                     .from(attempts)
                     .where(eq(attempts.id, callId)),
             ).toEqual([]);
+
             expect(
                 await database
                     .select()
@@ -310,6 +331,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     attestedAt: new Date(),
                 }),
             ).rejects.toThrow();
+
             await database.transaction((tx) =>
                 settleConversationActionFixture(tx, {
                     ownerId,
@@ -317,17 +339,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     outcome: 'failure',
                 }),
             );
+
             await expect(
                 database
                     .update(authorities)
                     .set({ outcome: 'success' })
                     .where(eq(authorities.actionId, action.id)),
             ).rejects.toThrow();
+
             await expect(
                 database
                     .delete(authorities)
                     .where(eq(authorities.actionId, action.id)),
             ).rejects.toThrow();
+
             expect(
                 await database
                     .select()
@@ -344,14 +369,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     actionId: action.id,
                     outcome: 'failure',
                 });
+
                 await tx.delete(turns).where(eq(turns.id, action.id));
             });
+
             expect(
                 await database
                     .select()
                     .from(turns)
                     .where(eq(turns.id, action.id)),
             ).toEqual([]);
+
             expect(
                 await database
                     .select()
@@ -360,6 +388,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toMatchObject([
                 { outcome: 'failure', jobKind: 'conversation-turn' },
             ]);
+
             await purgeOwnerForDeletion();
             expect(
                 await database

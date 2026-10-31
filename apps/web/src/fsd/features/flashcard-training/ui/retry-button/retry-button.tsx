@@ -21,7 +21,9 @@ export function RetryButton({
     const deadline = retryAt ?? error?.retryAt;
 
     useEffect(() => {
-        if (!deadline) return;
+        if (!deadline) {
+            return;
+        }
 
         const timer = setInterval(() => setNow(Date.now()), 250);
 

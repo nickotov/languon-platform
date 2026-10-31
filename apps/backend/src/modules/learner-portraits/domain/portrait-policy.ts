@@ -22,6 +22,7 @@ export function hasMeaningfulPortraitItems(items: PortraitItems): boolean {
         (items.ageRange !== undefined && items.ageRange !== 'prefer-not-to-say')
     );
 }
+
 /**
  * Defense in depth for common volunteered labels in the four interface locales.
  * This rejects rather than rewrites disclosures: it neither diagnoses the learner
@@ -33,6 +34,7 @@ function normalizePortraitDisclosure(text: string): string {
         .replace(/[\p{M}\p{Cf}]/gu, '')
         .toLowerCase();
 }
+
 const disclosureSeparators = '[\\p{P}\\p{Z}\\p{S}\\s]*';
 function disclosurePattern(
     terms: readonly string[],
@@ -43,11 +45,13 @@ function disclosurePattern(
             disclosureSeparators,
         ),
     );
+
     return new RegExp(
         `(?<![\\p{L}\\p{N}])(?:${alternatives.join('|')})${allowSuffix ? '[\\p{L}]*' : ''}(?![\\p{L}\\p{N}])`,
         'u',
     );
 }
+
 // Longer stems cover grammatical variants; short acronyms require word boundaries.
 // Generic words such as ADD, focus, stress and nervous are intentionally excluded.
 const diagnosticLabel = disclosurePattern(
@@ -146,14 +150,17 @@ const selfDiagnosis = disclosurePattern(
     ],
     true,
 );
+
 export function containsPortraitDiagnosticDisclosure(text: string): boolean {
     const normalized = normalizePortraitDisclosure(text);
+
     return (
         diagnosticLabel.test(normalized) ||
         diagnosticAcronym.test(normalized) ||
         selfDiagnosis.test(normalized)
     );
 }
+
 export function validateReusablePortraitItems(input: unknown): PortraitItems {
     const items = PortraitItemsSchema.parse(input);
     const customText = [
@@ -166,9 +173,12 @@ export function validateReusablePortraitItems(input: unknown): PortraitItems {
         ...(items.mixingNote ? [items.mixingNote] : []),
         ...(items.notes?.map((note) => note.text) ?? []),
     ];
-    if (customText.some(containsPortraitDiagnosticDisclosure))
+
+    if (customText.some(containsPortraitDiagnosticDisclosure)) {
         throw new PortraitSensitiveContentError(
             'Describe what helps you learn or a concrete learning preference. Remove diagnostic labels and diagnosis statements.',
         );
+    }
+
     return items;
 }

@@ -22,15 +22,20 @@ export function blocksInDocument(document: Node): PositionedBlock[] {
                     ? { joinsAfter: previous.block.id }
                     : {}),
             });
+
             emptyGap = true;
-        } else if (node.type.name !== 'paragraph' || node.childCount > 0)
+        } else if (node.type.name !== 'paragraph' || node.childCount > 0) {
             emptyGap = false;
+        }
     });
+
     return result;
 }
+
 export function blocks(editor: Editor): PositionedBlock[] {
     return blocksInDocument(editor.state.doc);
 }
+
 export function joinsPreviousBlock(
     previous: PositionedBlock,
     next: PositionedBlock,

@@ -20,9 +20,14 @@ export function appendLearningBlock(
             { from: end, to: end },
             true,
         );
-        if (!transaction) return false;
+
+        if (!transaction) {
+            return false;
+        }
+
         editor.view.dispatch(closeHistory(transaction));
         editor.view.dispatch(closeHistory(editor.state.tr));
+
         return true;
     } catch {
         return false;

@@ -23,6 +23,7 @@ export function DirectionBadge({
 }) {
     const { direction } = useInterfaceText();
     const label = direction(from, to);
+
     return (
         <Badge
             size='sm'
@@ -43,6 +44,7 @@ export function DirectionBadge({
 /** Independent status reasons — each with icon + text, never colour alone. */
 export function StatusBadges({ sentence }: { sentence: SavedSentence }) {
     const { L } = useInterfaceText();
+
     return (
         <>
             {sentence.outdated ? (
@@ -79,6 +81,7 @@ export function StatusBadges({ sentence }: { sentence: SavedSentence }) {
 export function OwnershipMeta({ sentence }: { sentence: SavedSentence }) {
     const { L, date } = useInterfaceText();
     const Icon = sentence.ownership === 'mine' ? UserIcon : UsersIcon;
+
     return (
         <span className={componentStyles.ownership}>
             <span>{L('savedOn', { date: date(sentence.createdAt) })}</span>

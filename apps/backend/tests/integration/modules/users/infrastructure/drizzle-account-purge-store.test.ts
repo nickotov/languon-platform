@@ -60,6 +60,7 @@ async function scheduledIdentity() {
     await database
         .insert(usersTable)
         .values({ id: userId, status: 'deletion_pending' });
+
     await database.insert(accountDeletionRequestsTable).values({
         nextAttemptAt: now,
         purgeAt: now,
@@ -67,6 +68,7 @@ async function scheduledIdentity() {
         updatedAt: now,
         userId,
     });
+
     return userId;
 }
 
@@ -80,11 +82,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         });
+
         beforeEach(async () => {
             await database.delete(accountDeletionRequestsTable);
             await database.delete(dictionariesTable);
             await database.delete(usersTable);
         });
+
         afterAll(async () => {
             await client.end();
         });
@@ -118,10 +122,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 lastAccessedAt: now,
             });
+
             const claim = await store.claimDue({
                 now,
                 workerId: 'retention-proof',
             });
+
             expect(claim?.userId).toBe(userId);
             expect(
                 await store.inspectOwner({
@@ -132,6 +138,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 activeJobs: 0,
                 objects: [],
             });
+
             expect(
                 await store.finish({
                     ...claim!,
@@ -139,6 +146,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workerId: 'retention-proof',
                 }),
             ).toBe(true);
+
             expect(
                 (
                     await database
@@ -147,12 +155,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(speechRecordingsTable.id, recordingId))
                 )[0]?.text,
             ).toBe('Retained pronunciation');
+
             expect(await storage.read(reference)).toMatchObject({
                 bytes: audio.bytes,
             });
+
             await database
                 .delete(speechRecordingsTable)
                 .where(eq(speechRecordingsTable.id, recordingId));
+
             await database.delete(speechAudioBlobsTable);
         });
 
@@ -163,10 +174,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 await store.claimDue({ now, workerId: 'worker-b' }),
             ).toBeNull();
+
             await store.retry({ ...claim!, now, workerId: 'worker-a' });
             expect(
                 await store.claimDue({ now: new Date(), workerId: 'worker-b' }),
             ).toBeNull();
+
             // Simulate elapsed backoff in persisted due state, rather than
             // bypassing the database's real-clock claim guard with a future now.
             const retryNow = new Date();
@@ -174,10 +187,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(accountDeletionRequestsTable)
                 .set({ nextAttemptAt: new Date(retryNow.getTime() - 1) })
                 .where(eq(accountDeletionRequestsTable.userId, userId));
+
             const next = await store.claimDue({
                 now: retryNow,
                 workerId: 'worker-b',
             });
+
             expect(next?.fencingToken).toBe(2);
             expect(
                 await store.finish({
@@ -196,6 +211,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 email: 'purge@example.test',
                 canonicalEmail: 'purge@example.test',
             });
+
             await database.insert(passwordCredentialsTable).values({
                 userId,
                 algorithmVersion: 19,
@@ -204,6 +220,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 parallelism: 1,
                 timeCost: 2,
             });
+
             const securityEventId = randomUUID();
             await database.insert(authSecurityEventsTable).values({
                 id: securityEventId,
@@ -213,10 +230,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 outcome: 'success',
                 userId,
             });
+
             const otherUserId = randomUUID();
             await database
                 .insert(usersTable)
                 .values({ id: otherUserId, status: 'active' });
+
             await database.insert(textAiPreferencesTable).values([
                 {
                     userId,
@@ -231,6 +250,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     version: 2,
                 },
             ]);
+
             const sourceId = randomUUID();
             const forkId = randomUUID();
             await database.insert(dictionariesTable).values({
@@ -240,6 +260,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguageTag: 'en',
                 targetLanguageTag: 'ru',
             });
+
             await database.insert(dictionariesTable).values({
                 id: forkId,
                 name: 'Independent fork',
@@ -248,15 +269,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguageTag: 'en',
                 targetLanguageTag: 'ru',
             });
+
             const claim = await store.claimDue({ now, workerId: 'worker-a' });
             expect(claim).not.toBeNull();
             expect(
                 await store.finish({ ...claim!, now, workerId: 'worker-a' }),
             ).toBe(true);
+
             const [user] = await database
                 .select()
                 .from(usersTable)
                 .where(eq(usersTable.id, userId));
+
             expect(user?.status).toBe('purged');
             expect(user?.handle).toBeNull();
             expect(
@@ -269,40 +293,48 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     version: 2,
                 },
             ]);
+
             expect(
                 await database
                     .select()
                     .from(userEmailsTable)
                     .where(eq(userEmailsTable.userId, userId)),
             ).toHaveLength(0);
+
             expect(
                 await database
                     .select()
                     .from(passwordCredentialsTable)
                     .where(eq(passwordCredentialsTable.userId, userId)),
             ).toHaveLength(0);
+
             const [event] = await database
                 .select()
                 .from(authSecurityEventsTable)
                 .where(eq(authSecurityEventsTable.id, securityEventId));
+
             expect(event?.metadata).toEqual({});
             const [fork] = await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, forkId));
+
             expect(fork?.sourceDictionaryId).toBeNull();
             const [source] = await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, sourceId));
+
             expect(source).toBeUndefined();
         });
+
         it('purges preferences under the dedicated role without reading preference or learning content', async () => {
             const userId = await scheduledIdentity();
             const otherUserId = randomUUID();
             await database
                 .insert(usersTable)
                 .values({ id: otherUserId, status: 'active' });
+
             await database.insert(textAiPreferencesTable).values([
                 {
                     userId,
@@ -312,6 +344,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { userId: otherUserId, mode: 'auto', version: 3 },
             ]);
+
             const dictionaryId = randomUUID();
             await database.insert(dictionariesTable).values({
                 id: dictionaryId,
@@ -320,6 +353,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguageTag: 'en',
                 targetLanguageTag: 'es',
             });
+
             await database.insert(flashcardPreferencesTable).values([
                 {
                     learnerId: userId,
@@ -334,6 +368,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     configuration: { front: ['translation'], back: ['source'] },
                 },
             ]);
+
             const sharedExerciseId = randomUUID();
             await database.insert(sentenceExercisesTable).values({
                 id: sharedExerciseId,
@@ -367,6 +402,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     hints: [{ id: 'hint-1', text: 'hola', kind: 'dictionary' }],
                 },
             });
+
             await database.insert(sentencePersonalVisibilityTable).values(
                 [userId, otherUserId].map((learnerId) => ({
                     learnerId,
@@ -376,12 +412,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: now,
                 })),
             );
+
             await database.insert(sentenceGlobalVisibilityTable).values({
                 exerciseId: sharedExerciseId,
                 archivedAt: now,
                 actorId: userId,
                 updatedAt: now,
             });
+
             const erasedPreparationId = randomUUID();
             const survivingPreparationId = randomUUID();
             await database.insert(sentencePreparationsTable).values(
@@ -401,6 +439,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: now,
                 })),
             );
+
             await database.insert(sentencePreparationBatchesTable).values(
                 [erasedPreparationId, survivingPreparationId].map(
                     (preparationId) => ({
@@ -419,6 +458,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             );
+
             await database.insert(sentenceLibrarySnapshotsTable).values({
                 id: randomUUID(),
                 actorId: userId,
@@ -429,6 +469,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 items: [],
                 expiresAt: new Date(now.getTime() + 60000),
             });
+
             await database.insert(sentenceLibraryReceiptsTable).values({
                 actorId: userId,
                 operationId: randomUUID(),
@@ -438,6 +479,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 affectedCount: 0,
                 createdAt: now,
             });
+
             const role = `account_purge_test_${randomUUID().replaceAll('-', '')}`;
             const script = await readFile(
                 new URL(
@@ -446,11 +488,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
                 'utf8',
             );
+
             await client.unsafe(`create role ${role}`);
             const connection = createPostgresClient({
                 databaseUrl: getTestDatabaseUrl(),
                 maxConnections: 1,
             });
+
             try {
                 await client.unsafe(
                     script
@@ -459,6 +503,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"account_purge_role"', role),
                 );
+
                 await connection.unsafe(`set role ${role}`);
                 for (const query of [
                     'select model_id from user_text_ai_preferences',
@@ -468,13 +513,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'select handle from users',
                     'select entries from sentence_preparation_batches',
                     'select input_payload from sentence_ai_jobs',
-                ])
+                ]) {
                     await expect(connection.unsafe(query)).rejects.toThrow();
+                }
+
                 await expect(
                     connection.unsafe(
                         "update user_text_ai_preferences set mode='auto' where false",
                     ),
                 ).rejects.toThrow();
+
                 const workerStore = new DrizzleAccountPurgeStore(
                     createDrizzleDatabase(connection, databaseSchema),
                 );
@@ -482,6 +530,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now,
                     workerId: 'narrow-purge-worker',
                 });
+
                 expect(claim).toEqual({ userId, fencingToken: 1 });
                 expect(
                     (
@@ -491,6 +540,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         })
                     ).activeJobs,
                 ).toBe(0);
+
                 await expect(
                     workerStore.finish({
                         ...claim!,
@@ -498,6 +548,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         workerId: 'narrow-purge-worker',
                     }),
                 ).resolves.toBe(true);
+
                 expect(
                     await database
                         .select()
@@ -510,6 +561,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         archivedAt: now,
                     },
                 ]);
+
                 expect(
                     await database.select().from(sentenceGlobalVisibilityTable),
                 ).toMatchObject([
@@ -519,32 +571,39 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         archivedAt: now,
                     },
                 ]);
+
                 expect(
                     await database.select().from(sentencePreparationsTable),
                 ).toMatchObject([
                     { id: survivingPreparationId, learnerId: otherUserId },
                 ]);
+
                 expect(
                     await database
                         .select()
                         .from(sentencePreparationBatchesTable),
                 ).toHaveLength(1);
+
                 expect(
                     await database.select().from(sentenceLibrarySnapshotsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await database.select().from(sentenceLibraryReceiptsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await database.select().from(textAiPreferencesTable),
                 ).toMatchObject([
                     { userId: otherUserId, mode: 'auto', version: 3 },
                 ]);
+
                 expect(
                     await database.select().from(flashcardPreferencesTable),
                 ).toMatchObject([
                     { learnerId: otherUserId, dictionaryId, shuffle: false },
                 ]);
+
                 expect(
                     (
                         await database
@@ -553,6 +612,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             .where(eq(usersTable.id, userId))
                     )[0]?.status,
                 ).toBe('purged');
+
                 expect(
                     (
                         await database

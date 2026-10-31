@@ -103,11 +103,13 @@ run('dictionary document persistence', () => {
         generationStore = new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         });
+
         documentStore = new DrizzleDictionaryDocumentStore(
             database,
             { generate: randomUUID },
             generationStore,
         );
+
         dictionaryStore = new DrizzleDictionaryStore(database, {
             generate: randomUUID,
         });
@@ -181,6 +183,7 @@ run('dictionary document persistence', () => {
             instruction,
             ownerId,
         };
+
         return { authorization: await documentStore.authorize(input), input };
     }
 
@@ -190,6 +193,7 @@ run('dictionary document persistence', () => {
             'Prefer concise examples',
             'Fine-art insurance appraisal terminology',
         );
+
         await documentStore.completeUpload({
             context: operationContext(2),
             detectedFormat: 'txt',
@@ -207,6 +211,7 @@ run('dictionary document persistence', () => {
                 },
             ],
         });
+
         const claim = await generationStore.claim({
             context: operationContext(3),
             globalConcurrency: 2,
@@ -215,6 +220,7 @@ run('dictionary document persistence', () => {
             supportedFormats: [dictionaryDocumentGenerationFormat],
             workerId: 'document-context-worker',
         });
+
         expect(claim?.input).toMatchObject({
             instruction: 'Prefer concise examples',
             translationContext: 'Fine-art insurance appraisal terminology',
@@ -228,9 +234,11 @@ run('dictionary document persistence', () => {
             job: { id: authorization.job.id, state: 'awaiting-upload' },
             uploadId: authorization.uploadId,
         });
+
         const [counts] = await database
             .select({ value: count() })
             .from(dictionaryDocumentUploadsTable);
+
         expect(Number(counts?.value)).toBe(1);
 
         await expect(
@@ -261,6 +269,7 @@ run('dictionary document persistence', () => {
                 },
             ],
         });
+
         expect(queued.state).toBe('queued');
         const claim = await generationStore.claim({
             context: operationContext(4),
@@ -270,6 +279,7 @@ run('dictionary document persistence', () => {
             supportedFormats: [dictionaryDocumentGenerationFormat],
             workerId: 'document-worker',
         });
+
         expect(claim).toMatchObject({ id: authorization.job.id });
 
         await expect(
@@ -293,6 +303,7 @@ run('dictionary document persistence', () => {
                 workerId: claim!.workerId,
             }),
         ).resolves.toBe(true);
+
         await expect(
             generationStore.read({
                 context: operationContext(6),
@@ -306,10 +317,12 @@ run('dictionary document persistence', () => {
             leaseDurationMs: 1_000,
             workerId: 'cleanup-worker',
         });
+
         expect(cleanup).toMatchObject({
             jobId: authorization.job.id,
             phase: 'delete_data',
         });
+
         await expect(
             documentStore.recordCleanupTombstone({
                 context: operationContext(8),
@@ -319,6 +332,7 @@ run('dictionary document persistence', () => {
                 workerId: cleanup!.workerId,
             }),
         ).resolves.toBe(true);
+
         await expect(
             documentStore.recordDataVersionsDeleted({
                 context: operationContext(9),
@@ -330,6 +344,7 @@ run('dictionary document persistence', () => {
                 workerId: cleanup!.workerId,
             }),
         ).resolves.toBe(true);
+
         await expect(
             generationStore.read({
                 context: operationContext(10),
@@ -346,6 +361,7 @@ run('dictionary document persistence', () => {
             leaseDurationMs: 1_000,
             workerId: 'cleanup-worker-2',
         });
+
         expect(tombstoneCleanup).toMatchObject({
             phase: 'delete_tombstone',
             uploadId: authorization.uploadId,
@@ -388,17 +404,20 @@ run('dictionary document persistence', () => {
             .where(
                 eq(dictionaryDocumentUploadsTable.id, authorization.uploadId),
             );
+
         expect(upload).toMatchObject({
             accountedPhysicalBytes: 24,
             cleanupState: 'pending',
             observedPhysicalBytes: 24,
             processingState: 'failed',
         });
+
         const job = await generationStore.read({
             context: operationContext(4),
             jobId: authorization.job.id,
             ownerId,
         });
+
         expect(job).toMatchObject({
             failure: { code: 'invalid_document' },
             state: 'failed',
@@ -420,6 +439,7 @@ run('dictionary document persistence', () => {
                 limit: 1,
             }),
         ).resolves.toBe(1);
+
         await expect(
             generationStore.read({
                 context: operationContext(600_002),
@@ -433,6 +453,7 @@ run('dictionary document persistence', () => {
             leaseDurationMs: 1_000,
             workerId: 'cleanup-after-saturation',
         });
+
         expect(cleanup).toMatchObject({ uploadId: authorization.uploadId });
         const [upload] = await database
             .select()
@@ -440,6 +461,7 @@ run('dictionary document persistence', () => {
             .where(
                 eq(dictionaryDocumentUploadsTable.id, authorization.uploadId),
             );
+
         expect(upload?.cleanupAttemptCount).toBe(100);
         expect(upload?.cleanupState).toBe('running');
     });
@@ -470,15 +492,19 @@ run('dictionary document persistence', () => {
                 }),
             ),
         );
+
         expect(
             results.filter((result) => result.status === 'fulfilled'),
         ).toHaveLength(3);
+
         const [rejected] = results.filter(
             (result) => result.status === 'rejected',
         );
+
         expect(rejected).toMatchObject({
             reason: expect.any(DictionaryGenerationNotAvailableError),
         });
+
         const [active] = await database
             .select({ value: count() })
             .from(dictionaryGenerationJobsTable)
@@ -488,6 +514,7 @@ run('dictionary document persistence', () => {
                     'active',
                 ),
             );
+
         expect(Number(active?.value)).toBe(3);
     });
 
@@ -511,6 +538,7 @@ run('dictionary document persistence', () => {
                 },
             ],
         });
+
         await database
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -550,6 +578,7 @@ run('dictionary document persistence', () => {
             'J',
             'Prefer practical banking vocabulary',
         );
+
         await documentStore.completeUpload({
             context: operationContext(2),
             detectedFormat: 'txt',
@@ -567,6 +596,7 @@ run('dictionary document persistence', () => {
                 },
             ],
         });
+
         const documentClaim = await generationStore.claim({
             context: operationContext(3),
             globalConcurrency: 2,
@@ -575,6 +605,7 @@ run('dictionary document persistence', () => {
             supportedFormats: [dictionaryDocumentGenerationFormat],
             workerId: 'document-retry-source',
         });
+
         await documentStore.stageDocumentProposal({
             context: operationContext(4),
             extractionFingerprint: fingerprint('K'),
@@ -606,11 +637,13 @@ run('dictionary document persistence', () => {
             validUnitCount: 0,
             workerId: documentClaim!.workerId,
         });
+
         const cleanup = await documentStore.claimCleanup({
             context: operationContext(5),
             leaseDurationMs: 1_000,
             workerId: 'cleanup-document-retry-source',
         });
+
         await documentStore.recordCleanupTombstone({
             context: operationContext(6),
             fencingToken: cleanup!.fencingToken,
@@ -618,6 +651,7 @@ run('dictionary document persistence', () => {
             uploadId: cleanup!.uploadId,
             workerId: cleanup!.workerId,
         });
+
         await documentStore.recordDataVersionsDeleted({
             context: operationContext(7),
             deletedVersions: cleanup!.versions.filter(
@@ -639,15 +673,18 @@ run('dictionary document persistence', () => {
             predecessorJobId: authorization.job.id,
             rowIndexes: [7],
         });
+
         expect(successor).toMatchObject({
             format: dictionaryPastedTermsGenerationFormat,
             kind: 'pasted-terms',
             state: 'queued',
         });
+
         const [predecessor] = await database
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, authorization.job.id));
+
         expect(predecessor?.inputPayload).toBeNull();
         const successorClaim = await generationStore.claim({
             context: operationContext(9),
@@ -657,6 +694,7 @@ run('dictionary document persistence', () => {
             supportedFormats: [dictionaryPastedTermsGenerationFormat],
             workerId: 'pasted-document-retry',
         });
+
         expect(successorClaim?.input).toMatchObject({
             format: dictionaryPastedTermsGenerationFormat,
             predecessor: {
@@ -667,6 +705,7 @@ run('dictionary document persistence', () => {
             sharedContext: null,
         });
     });
+
     it.each([false, true])(
         'Feature052 records staged document usage and charges only after cleanup publishes the valid proposal (quoted=%s)',
         async (quoted) => {
@@ -681,6 +720,7 @@ run('dictionary document persistence', () => {
                     sourceReference: randomUUID(),
                 }),
             );
+
             const model = textAiModelCatalog[0]!;
             const revisionId = randomUUID();
             await database.insert(revisions).values({
@@ -695,6 +735,7 @@ run('dictionary document persistence', () => {
                     supportedFormats: [...model.supportedFormats],
                 },
             });
+
             await database
                 .insert(configuration)
                 .values({
@@ -706,6 +747,7 @@ run('dictionary document persistence', () => {
                     target: configuration.id,
                     set: { version: 1000, activeRevisionId: revisionId },
                 });
+
             const creditedGeneration = new DrizzleDictionaryGenerationStore(
                 database,
                 { generate: randomUUID },
@@ -742,24 +784,30 @@ run('dictionary document persistence', () => {
                 } catch (error) {
                     offer = error as ActionAllowanceConfirmationRequired;
                 }
+
                 expect(offer).toBeInstanceOf(
                     ActionAllowanceConfirmationRequired,
                 );
+
                 expect(
                     await database.select().from(dictionaryGenerationJobsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await database
                         .select()
                         .from(actions)
                         .where(eq(actions.ownerId, ownerId)),
                 ).toHaveLength(0);
+
                 consentId = offer!.quote.id;
             }
+
             const authorization = await withActionAllowanceConsent(
                 consentId,
                 () => creditedDocuments.authorize(authorizationInput),
             );
+
             await creditedDocuments.completeUpload({
                 context: operationContext(2),
                 detectedFormat: 'txt',
@@ -777,6 +825,7 @@ run('dictionary document persistence', () => {
                     },
                 ],
             });
+
             const claim = await creditedGeneration.claim({
                 context: operationContext(3),
                 globalConcurrency: 2,
@@ -788,6 +837,7 @@ run('dictionary document persistence', () => {
                 creditSettlementRevision: 1,
                 managedRoutingRevision: 1,
             });
+
             expect(claim?.id).toBe(authorization.job.id);
             await creditedGeneration.markProviderDispatch({
                 context: operationContext(4),
@@ -796,6 +846,7 @@ run('dictionary document persistence', () => {
                 leaseDeadline: claim!.leaseDeadline,
                 workerId: claim!.workerId,
             });
+
             await creditedDocuments.stageDocumentProposal({
                 context: operationContext(5),
                 extractionFingerprint: fingerprint('D'),
@@ -815,20 +866,24 @@ run('dictionary document persistence', () => {
                 validUnitCount: 1,
                 workerId: claim!.workerId,
             });
+
             const [staged] = await database
                 .select()
                 .from(actions)
                 .where(eq(actions.id, claim!.id));
+
             expect(staged).toMatchObject({
                 state: 'active',
                 chargedMilli: null,
             });
+
             expect(staged!.heldMilli).toBeGreaterThan(0n);
             const cleanup = await creditedDocuments.claimCleanup({
                 context: operationContext(7),
                 leaseDurationMs: 1000,
                 workerId: 'document-accounting-cleanup',
             });
+
             expect(cleanup?.jobId).toBe(claim!.id);
             await creditedDocuments.recordCleanupTombstone({
                 context: operationContext(8),
@@ -837,6 +892,7 @@ run('dictionary document persistence', () => {
                 uploadId: cleanup!.uploadId,
                 workerId: cleanup!.workerId,
             });
+
             await creditedDocuments.recordDataVersionsDeleted({
                 context: operationContext(9),
                 deletedVersions: cleanup!.versions.filter(
@@ -846,10 +902,12 @@ run('dictionary document persistence', () => {
                 uploadId: cleanup!.uploadId,
                 workerId: cleanup!.workerId,
             });
+
             const [published] = await database
                 .select()
                 .from(actions)
                 .where(eq(actions.id, claim!.id));
+
             expect(published).toMatchObject({
                 state: 'settled',
                 outcome: 'success',

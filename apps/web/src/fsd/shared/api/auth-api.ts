@@ -79,6 +79,7 @@ const apiUrl = resolveApiUrl(
     process.env.NODE_ENV,
     process.env.NEXT_PUBLIC_API_URL,
 );
+
 export class AuthApiError extends BrowserApiError<AuthError> {
     public override readonly name = 'AuthApiError';
 }
@@ -301,14 +302,18 @@ export function authErrorMessage(error: unknown): string {
         ) {
             return `${error.detail.message} Try again in ${error.detail.retryAfterSeconds} seconds.`;
         }
+
         return error.detail.message;
     }
+
     if (error instanceof DOMException && error.name === 'NotAllowedError') {
         return 'The passkey request was cancelled or timed out.';
     }
+
     if (error instanceof DOMException && error.name === 'InvalidStateError') {
         return 'That passkey is already registered or is unavailable.';
     }
+
     if (
         error instanceof Error &&
         (error.message.startsWith('Passkeys are not supported') ||
@@ -317,5 +322,6 @@ export function authErrorMessage(error: unknown): string {
     ) {
         return error.message;
     }
+
     return 'Something went wrong. Please try again.';
 }

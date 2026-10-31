@@ -36,10 +36,12 @@ export async function conversationUpdateDraft(
             id,
         );
 
-        if (isReadOnlyKnowledgeSource(chat.source))
+        if (isReadOnlyKnowledgeSource(chat.source)) {
             throw conflict(
                 'Shared conversations cannot modify or publish document proposals.',
             );
+        }
+
         const [row] = await tx
             .update(drafts)
             .set({
@@ -57,7 +59,10 @@ export async function conversationUpdateDraft(
             )
             .returning();
 
-        if (!row) throw conflict('The draft changed. Reload it before saving.');
+        if (!row) {
+            throw conflict('The draft changed. Reload it before saving.');
+        }
+
         const result = draftView(row);
         await conversationEvent(persistence, tx, id, 'draft', result);
 
@@ -79,10 +84,12 @@ export async function conversationDiscardDraft(
             id,
         );
 
-        if (isReadOnlyKnowledgeSource(chat.source))
+        if (isReadOnlyKnowledgeSource(chat.source)) {
             throw conflict(
                 'Shared conversations cannot modify or publish document proposals.',
             );
+        }
+
         await tx
             .delete(drafts)
             .where(
@@ -114,29 +121,45 @@ export async function conversationPublishDraft(
             id,
         );
 
-        if (isReadOnlyKnowledgeSource(chat.source))
+        if (isReadOnlyKnowledgeSource(chat.source)) {
             throw conflict(
                 'Shared conversations cannot modify or publish document proposals.',
             );
+        }
+
         const [row] = await tx
             .select()
             .from(drafts)
             .where(and(eq(drafts.id, draftId), eq(drafts.conversationId, id)))
             .for('update');
 
-        if (!row) throw conversationUnavailable();
-        if (row.publishedAt && row.publicationOperationId !== input.operationId)
+        if (!row) {
+            throw conversationUnavailable();
+        }
+
+        if (
+            row.publishedAt &&
+            row.publicationOperationId !== input.operationId
+        ) {
             throw conflict('This draft has already been saved.');
-        if (row.version !== input.expectedVersion)
+        }
+
+        if (row.version !== input.expectedVersion) {
             throw conflict('The draft changed. Reload it before saving.');
+        }
+
         if (
             input.mode === 'update' &&
             (!row.targetNoteId ||
                 row.expectedNoteVersion !== input.expectedNoteVersion)
-        )
+        ) {
             throw conflict('Compare the changed note before updating it.');
-        if (input.mode === 'update')
+        }
+
+        if (input.mode === 'update') {
             await assertLegacyNoteTarget(tx, access.ownerId, row.targetNoteId!);
+        }
+
         const note = await persistence.dependencies.publishNote(
             tx,
             access.ownerId,

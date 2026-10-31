@@ -14,6 +14,7 @@ export class TextAiPreferenceService {
     public models(userId: string, _at = new Date()) {
         return this.store.run(userId, async (session) => {
             await session.read();
+
             return { defaultModelId: null, models: [] };
         });
     }
@@ -34,11 +35,15 @@ export class TextAiPreferenceService {
     ): Promise<TextAiPreferenceResponse> {
         return this.store.run(userId, async (session) => {
             const current = await session.read();
-            if (current.version !== input.expectedVersion)
+            if (current.version !== input.expectedVersion) {
                 throw new TextAiPreferenceConflictError();
+            }
+
             // Learner requests cannot alter the server-owned routing policy.
-            if (input.mode === 'explicit')
+            if (input.mode === 'explicit') {
                 throw new TextAiModelUnavailableError();
+            }
+
             const preference: TextAiPreference = {
                 mode: 'auto',
                 modelId: null,
@@ -48,10 +53,13 @@ export class TextAiPreferenceService {
                     current.maxCreditsPerAction ??
                     null,
             };
+
             await session.save(preference, at);
+
             return this.response(preference);
         });
     }
+
     private response(preference: TextAiPreference): TextAiPreferenceResponse {
         return {
             mode: 'auto',

@@ -38,7 +38,10 @@ import { insertProposalBlocks } from './block-proposal-insertion';
 
 function view(row: typeof proposals.$inferSelect, currentDocument?: unknown) {
     const captured = [...row.dependencySnapshots];
-    if (row.targetSnapshot) captured.push(row.targetSnapshot);
+    if (row.targetSnapshot) {
+        captured.push(row.targetSnapshot);
+    }
+
     const targetStale =
         Boolean(currentDocument) &&
         captured.some((block) => {
@@ -85,8 +88,9 @@ async function ownerContext(
         authorized.chat.source.kind !== 'knowledge' ||
         isReadOnlyKnowledgeSource(authorized.chat.source) ||
         authorized.authority.sourceOwnerId !== access.ownerId
-    )
+    ) {
         throw conflict('Only the document owner can use block proposals.');
+    }
 
     return authorized;
 }
@@ -103,10 +107,12 @@ export async function conversationProposeBlocks(
             isReadOnlyKnowledgeSource(turn.source) ||
             turn.authority.sourceOwnerId !== turn.ownerId ||
             !target
-        )
+        ) {
             throw conflict(
                 'This conversation has no authorized block proposal target.',
             );
+        }
+
         const [branch] = await tx
             .select({ id: branches.id, version: branches.version })
             .from(branches)
@@ -118,10 +124,12 @@ export async function conversationProposeBlocks(
             )
             .for('update');
 
-        if (!branch || branch.version !== target.version)
+        if (!branch || branch.version !== target.version) {
             throw conflict(
                 'The working document changed during generation. Request a new proposal.',
             );
+        }
+
         const parsed = LearningBlockProposalInputSchema.parse(input);
         assertReferencedProposalTarget(
             turn.sourceSnapshot,
@@ -164,8 +172,9 @@ export async function conversationProposeBlocks(
                 );
             });
         const id = result[0]?.['id'];
-        if (typeof id !== 'string')
+        if (typeof id !== 'string') {
             throw conflict('The proposal was not created.');
+        }
 
         return { id };
     });
@@ -215,8 +224,9 @@ export async function conversationApplyBlockProposal(
     mode: 'proposal' | 'add-separately' = 'proposal',
     insertionPosition?: number,
 ) {
-    if (insertionPosition !== undefined && mode !== 'add-separately')
+    if (insertionPosition !== undefined && mode !== 'add-separately') {
         throw conflict('Cursor insertion requires adding an independent copy.');
+    }
 
     return conversationTransaction(persistence, async (tx) => {
         const { chat } = await ownerContext(persistence, tx, access, id);
@@ -232,7 +242,10 @@ export async function conversationApplyBlockProposal(
             )
             .for('update');
 
-        if (!proposal) throw conversationUnavailable();
+        if (!proposal) {
+            throw conversationUnavailable();
+        }
+
         const [note] = await tx
             .select()
             .from(knowledgeNotesTable)
@@ -254,8 +267,11 @@ export async function conversationApplyBlockProposal(
             )
             .for('update');
 
-        if (!note || !branch) throw conversationUnavailable();
-        if (proposal.appliedAt)
+        if (!note || !branch) {
+            throw conversationUnavailable();
+        }
+
+        if (proposal.appliedAt) {
             return {
                 proposal: view(proposal),
                 branch: KnowledgeWorkingBranchSchema.parse({
@@ -263,10 +279,14 @@ export async function conversationApplyBlockProposal(
                     updatedAt: branch.updatedAt.toISOString(),
                 }),
             };
-        if (branch.version !== expectedBranchVersion)
+        }
+
+        if (branch.version !== expectedBranchVersion) {
             throw conflict(
                 'The working document changed. Review it before applying.',
             );
+        }
+
         const isUpdate = Boolean(
             proposal.targetBlockId && proposal.targetSnapshot,
         );
@@ -281,10 +301,11 @@ export async function conversationApplyBlockProposal(
                 if (
                     !current ||
                     blockContentHash(current) !== blockContentHash(captured)
-                )
+                ) {
                     throw conflict(
                         'The source passage changed. Request a new proposal or add it separately with its captured source.',
                     );
+                }
             }
         }
 
@@ -300,16 +321,20 @@ export async function conversationApplyBlockProposal(
                 !current ||
                 blockContentHash(current) !==
                     blockContentHash(proposal.targetSnapshot!)
-            )
+            ) {
                 throw conflict(
                     'The target block changed. Request a new proposal or add it separately.',
                 );
+            }
+
             const replacement = proposal.blocks[0]!;
             if (
                 current.type !== replacement.type ||
                 proposal.blocks.length !== 1
-            )
+            ) {
                 throw conflict('An update must keep the existing block type.');
+            }
+
             document = replaceProposalBlock(
                 branch.content.body.document,
                 current.id,

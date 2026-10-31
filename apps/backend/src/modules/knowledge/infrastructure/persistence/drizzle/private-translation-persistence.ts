@@ -20,23 +20,33 @@ export async function authorizeKnowledgeTranslationJobSource(
     },
 ) {
     if (!input.knowledgeSource && input.externalSourceKind) {
-        if (!input.id) throw knowledgeUnavailable();
+        if (!input.id) {
+            throw knowledgeUnavailable();
+        }
+
         const available = await tx.execute(
             sql`select languon_knowledge_job_source_available(${input.id}::uuid,'text-translation',${input.ownerId}::uuid) as available`,
         );
 
-        if (available[0]?.available !== true) throw knowledgeUnavailable();
+        if (available[0]?.available !== true) {
+            throw knowledgeUnavailable();
+        }
 
         return;
     }
 
     const binding = input.knowledgeSource;
-    if (!binding) return;
+    if (!binding) {
+        return;
+    }
+
     if (
         binding.actorId !== input.ownerId ||
         binding.sourceSnapshot.type !== 'bilingual-text'
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
+
     await readPinnedKnowledgeLearningSource(tx, binding);
 }
 
@@ -50,8 +60,10 @@ export async function attachKnowledgeTranslationJob(
     if (
         binding.actorId !== actorId ||
         binding.sourceSnapshot.type !== 'bilingual-text'
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
+
     const pinned = await readPinnedKnowledgeLearningSource(tx, binding);
     if (
         pinned.block.type !== 'bilingual-text' ||
@@ -60,8 +72,10 @@ export async function attachKnowledgeTranslationJob(
                 translation.language.toLowerCase() ===
                 requestedTargetLanguage.toLowerCase(),
         )
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
+
     await tx.insert(sources).values({
         jobId,
         actorId,
@@ -82,7 +96,9 @@ export async function claimPrivateKnowledgeTranslation(
         sql`select languon_issue_private_translation_lease(${jobId}::uuid,${lease.workerId},${lease.fencingToken}::bigint) as token`,
     );
 
-    if (typeof result[0]?.token !== 'string') throw knowledgeUnavailable();
+    if (typeof result[0]?.token !== 'string') {
+        throw knowledgeUnavailable();
+    }
 
     return result[0].token;
 }
@@ -98,7 +114,10 @@ export async function publishPrivateKnowledgeTranslation(
         privateCompletionToken?: string;
     },
 ) {
-    if (!lease.privateCompletionToken) throw knowledgeUnavailable();
+    if (!lease.privateCompletionToken) {
+        throw knowledgeUnavailable();
+    }
+
     await tx.execute(
         sql`select languon_complete_private_knowledge_translation(${jobId}::uuid,${actorId}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${lease.privateCompletionToken}::uuid,${JSON.stringify(proposal)}::jsonb)`,
     );
@@ -113,7 +132,10 @@ export async function renewPrivateKnowledgeTranslation(
         privateCompletionToken?: string;
     },
 ) {
-    if (!lease.privateCompletionToken) throw knowledgeUnavailable();
+    if (!lease.privateCompletionToken) {
+        throw knowledgeUnavailable();
+    }
+
     await tx.execute(
         sql`select languon_renew_private_translation_lease(${lease.jobId}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${lease.privateCompletionToken}::uuid)`,
     );
@@ -130,7 +152,10 @@ export async function readPrivateKnowledgeTranslationResult(
         sql`select languon_knowledge_job_source_available(${jobId}::uuid,'text-translation',${actorId}::uuid) as available`,
     );
 
-    if (available[0]?.available !== true) throw knowledgeUnavailable();
+    if (available[0]?.available !== true) {
+        throw knowledgeUnavailable();
+    }
+
     const rows = await tx.execute(
         sql`select result_payload from knowledge_translation_publication_receipts r where r.job_id=${jobId}::uuid and r.actor_id=${actorId}::uuid and exists(select 1 from texts_ai_jobs j where j.id=r.job_id and j.owner_id=r.actor_id and j.execution_state='completed' and j.cancellation_requested_at is null and r.retention_deadline>clock_timestamp())`,
     );

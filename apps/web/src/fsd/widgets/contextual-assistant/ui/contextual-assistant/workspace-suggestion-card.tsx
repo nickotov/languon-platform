@@ -31,6 +31,7 @@ export function WorkspaceSuggestionCard({
             ? `${original.slice(0, 140)}…`
             : original;
     const reviewAction = canInline ? onInline : onReview;
+
     return (
         <div
             className={styles.suggestionCard}

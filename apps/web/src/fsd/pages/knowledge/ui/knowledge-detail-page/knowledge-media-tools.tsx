@@ -26,6 +26,7 @@ export function KnowledgeMediaTools({
     transcription: KnowledgeTranscriptionProps;
 }) {
     const { locale } = useI18n();
+
     return (
         <details className={styles.tools}>
             <summary className={styles.trigger}>

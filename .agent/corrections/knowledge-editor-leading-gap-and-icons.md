@@ -38,10 +38,10 @@ Preserve preceding startup correction changes. No commit requested.
   leading affordance and no dirty notification from rendering. Existing grouping,
   drag/drop, selection, initialization and serialization coverage remains green.
   Command: `pnpm --filter @languon/web exec vitest run
-  tests/knowledge-block-groups.test.tsx tests/knowledge-block-controls.test.tsx
-  tests/knowledge-editor-initialization.test.tsx tests/knowledge-document-groups.test.tsx
-  tests/knowledge-block-rerender.test.tsx tests/knowledge-workspace-block-selection.test.tsx
-  tests/knowledge-learning-block-editor.test.tsx`.
+tests/knowledge-block-groups.test.tsx tests/knowledge-block-controls.test.tsx
+tests/knowledge-editor-initialization.test.tsx tests/knowledge-document-groups.test.tsx
+tests/knowledge-block-rerender.test.tsx tests/knowledge-workspace-block-selection.test.tsx
+tests/knowledge-learning-block-editor.test.tsx`.
 - Web typecheck, scoped ESLint, Prettier and web styling contract passed.
   Typecheck initially caught the Button primitive's required children contract;
   supplying null preserves the existing loading/icon behavior without changing
@@ -49,7 +49,7 @@ Preserve preceding startup correction changes. No commit requested.
   StarterKit's existing trailing paragraph after a transaction.
 - Updated interactive-workbooks guide with leading prose and icon controls;
   synchronized its existing scenario revision. `user-flow:e2e -- check
-  interactive-workbooks` and `docs:user-flows:check` pass (33 mapped guides).
+interactive-workbooks` and `docs:user-flows:check` pass (33 mapped guides).
   Existing knowledge-workspace guide uses the same accessible action names and
   expected behavior; its text instructions remain valid without a revision.
 - Browser verification through the registered real-app disposable workflow is
@@ -77,10 +77,10 @@ Preserve preceding startup correction changes. No commit requested.
   Screenshots under `test-results/critical-flows/a9c98b77-9f80-4764-8435-baf19e7a7781/interactive-workbooks-artifacts/`:
   `editor-populated-desktop` and `editor-block-settings-mobile` attachments.
 - Final six-file source/tests/guide fingerprint, sorted path + NUL + file bytes
-  + NUL SHA-256: b4c89c43f6077805a0f27e064e54ec74350c542e9940d77f9895e370beb671cd.
-  Base HEAD 890575a; prior startup correction remains separate and untouched.
-  No production schema/backend/AI execution code changed; no expanded full
-  accounting gate or database-specific check is required for this correction.
+    - NUL SHA-256: b4c89c43f6077805a0f27e064e54ec74350c542e9940d77f9895e370beb671cd.
+      Base HEAD 890575a; prior startup correction remains separate and untouched.
+      No production schema/backend/AI execution code changed; no expanded full
+      accounting gate or database-specific check is required for this correction.
 - Author preflight: cache remains keyed by immutable document; read-only mode
   still bypasses decorations; grouping and hidden internal spacers unchanged;
   no runtime innerHTML or persisted synthetic node added. Header is 269 lines,

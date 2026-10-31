@@ -5,5 +5,6 @@ export default async function Page({
     params: Promise<{ locator: string }>;
 }) {
     const { locator } = await params;
+
     return <SharedWorkbookPage locator={locator} />;
 }

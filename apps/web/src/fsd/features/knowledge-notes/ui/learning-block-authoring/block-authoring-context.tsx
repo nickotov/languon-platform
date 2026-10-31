@@ -99,22 +99,27 @@ export function BlockAuthoringProvider({
     const [attempted, setAttempted] = useState<
         Record<string, { identity: string; attempted: boolean }>
     >({});
+
     function recordAttempt(id: string, value: boolean, identity: string) {
         setAttempted((previous) => {
             if (
                 previous[id]?.attempted === value &&
                 previous[id]?.identity === identity
-            )
+            ) {
                 return previous;
+            }
+
             return { ...previous, [id]: { attempted: value, identity } };
         });
     }
+
     function toggleExpansion(id: string) {
         setExpansions((current) => ({
             ...current,
             [id]: { open: !current[id]?.open, at: (current[id]?.at ?? 0) + 1 },
         }));
     }
+
     const [copyToAnotherNote, setCopyToAnotherNote] = useState(false);
     const [editing, setEditing] = useState<BlockEditingTarget | null>(null);
     const [serverDuplicateMembers, setServerDuplicateMembers] = useState<
@@ -122,6 +127,7 @@ export function BlockAuthoringProvider({
     >([]);
     const [serverDuplicate, setServerDuplicate] =
         useState<LearningBlock | null>(null);
+
     return (
         <BlockAuthoringContext.Provider
             value={{

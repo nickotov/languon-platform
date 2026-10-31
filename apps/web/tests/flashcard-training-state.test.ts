@@ -13,6 +13,7 @@ const configuration = {
     front: ['targetExample' as const],
     back: ['sourceExample' as const],
 };
+
 function item(entryId: string, learningVersion = 1): FlashcardItem {
     return {
         entryId,
@@ -39,6 +40,7 @@ function item(entryId: string, learningVersion = 1): FlashcardItem {
         ],
     };
 }
+
 function deferred<T>() {
     let resolve!: (value: T) => void;
     let reject!: (error: unknown) => void;
@@ -46,8 +48,10 @@ function deferred<T>() {
         resolve = yes;
         reject = no;
     });
+
     return { promise, resolve, reject };
 }
+
 function error(code: ConstructorParameters<typeof ApiError>[1]['code']) {
     return new ApiError(code === 'entry_not_found' ? 404 : 409, {
         code,
@@ -55,6 +59,7 @@ function error(code: ConstructorParameters<typeof ApiError>[1]['code']) {
         message: 'test',
     });
 }
+
 function api(): LearningApi {
     return {
         capabilities: vi.fn().mockResolvedValue({ flashcardsEnabled: true }),
@@ -83,6 +88,7 @@ function api(): LearningApi {
         }),
     };
 }
+
 function session(
     learningApi = api(),
     signedIn = true,
@@ -97,8 +103,11 @@ function session(
         sessionId: '10000000-0000-4000-8000-000000000003',
     });
 }
+
 async function settle() {
-    for (let index = 0; index < 8; index += 1) await Promise.resolve();
+    for (let index = 0; index < 8; index += 1) {
+        await Promise.resolve();
+    }
 }
 
 describe('flashcard training session controller', () => {
@@ -107,6 +116,7 @@ describe('flashcard training session controller', () => {
         vi.mocked(learningApi.rate).mockRejectedValueOnce(
             error('learning_version_conflict'),
         );
+
         const practice = session(learningApi);
         const fade = deferred<void>();
         practice.start();
@@ -119,6 +129,7 @@ describe('flashcard training session controller', () => {
             conflict: 'content',
             reviewEvents: 0,
         });
+
         fade.resolve();
         await settle();
         expect(practice.getState().index).toBe(0);
@@ -141,6 +152,7 @@ describe('flashcard training session controller', () => {
                 pending: { status: 'saving' },
                 reviewEvents: 0,
             });
+
             practice.flip();
             practice.rate('again');
             practice.undo();
@@ -154,6 +166,7 @@ describe('flashcard training session controller', () => {
                 reviewEvents: 1,
                 savedCount: signedIn ? 1 : 0,
             });
+
             practice.dispose();
         },
     );
@@ -198,20 +211,26 @@ describe('flashcard training session controller', () => {
                 reviewEvents: 1,
                 savedCount: 1,
             });
+
             expect(practice.getState().lastAck).toBe(lastAck);
             if (code === 'learning_version_conflict') {
                 vi.mocked(learningApi.getItems).mockResolvedValueOnce({
                     items: [item(second, 2)],
                     unavailableEntryIds: [],
                 });
+
                 await practice.resolveContentConflict();
-            } else practice.dismissConflict();
+            } else {
+                practice.dismissConflict();
+            }
+
             practice.undo();
             await settle();
             expect(learningApi.undo).toHaveBeenCalledWith(
                 attemptId,
                 expect.any(String),
             );
+
             expect(practice.getState()).toMatchObject({
                 index: 0,
                 face: 'back',
@@ -220,11 +239,13 @@ describe('flashcard training session controller', () => {
                 outcomes: {},
                 lastAck: null,
             });
+
             // The rejected second card can change epoch independently; Undo is bound to the first card.
             expect(practice.getState().items[first]?.learningVersion).toBe(1);
             practice.dispose();
         },
     );
+
     it('a preserved Undo still respects a backend conflict on the previously rated card epoch', async () => {
         const learningApi = api();
         const practice = session(learningApi);
@@ -235,12 +256,14 @@ describe('flashcard training session controller', () => {
         vi.mocked(learningApi.rate).mockRejectedValueOnce(
             error('learning_version_conflict'),
         );
+
         practice.rate('again');
         await settle();
         await practice.resolveContentConflict();
         vi.mocked(learningApi.undo).mockRejectedValueOnce(
             error('learning_version_conflict'),
         );
+
         practice.undo();
         await settle();
         expect(practice.getState()).toMatchObject({
@@ -250,17 +273,21 @@ describe('flashcard training session controller', () => {
             lastAck: null,
             conflict: 'undo',
         });
+
         expect(practice.getState().outcomes[first]).toBe('known');
         practice.dispose();
     });
+
     it('does not advance until ACK; retry uses identical operation and payload and retains face', async () => {
         const learningApi = api();
         const firstWrite = deferred<never>();
         const secondWrite =
             deferred<Awaited<ReturnType<LearningApi['rate']>>>();
+
         vi.mocked(learningApi.rate)
             .mockReturnValueOnce(firstWrite.promise)
             .mockReturnValueOnce(secondWrite.promise);
+
         const practice = session(learningApi);
         practice.start();
         await settle();
@@ -273,6 +300,7 @@ describe('flashcard training session controller', () => {
             face: 'back',
             reviewEvents: 0,
         });
+
         const payload = vi.mocked(learningApi.rate).mock.calls[0]![0];
         firstWrite.reject(new TypeError('network lost'));
         await settle();
@@ -283,6 +311,7 @@ describe('flashcard training session controller', () => {
             face: 'back',
             pending: { status: 'error' },
         });
+
         practice.retry();
         practice.retry();
         expect(vi.mocked(learningApi.rate).mock.calls[1]![0]).toEqual(payload);
@@ -293,6 +322,7 @@ describe('flashcard training session controller', () => {
             learningVersion: 1,
             rating: 'again',
         });
+
         await settle();
         expect(practice.getState()).toMatchObject({
             index: 1,
@@ -301,8 +331,10 @@ describe('flashcard training session controller', () => {
             savedCount: 1,
             outcomes: { [first]: 'again' },
         });
+
         practice.dispose();
     });
+
     it('Undo ACK restores exact latest snapshot including card face and outcomes', async () => {
         const learningApi = api();
         const undo = deferred<Awaited<ReturnType<LearningApi['undo']>>>();
@@ -319,12 +351,14 @@ describe('flashcard training session controller', () => {
             attemptId,
             expect.any(String),
         );
+
         undo.resolve({
             attemptId,
             entryId: first,
             learningVersion: 1,
             rating: null,
         });
+
         await settle();
         expect(practice.getState()).toMatchObject({
             index: 0,
@@ -334,8 +368,10 @@ describe('flashcard training session controller', () => {
             outcomes: {},
             lastAck: null,
         });
+
         practice.dispose();
     });
+
     it('Undo retries its own exact operation and never regenerates a rating', async () => {
         const learningApi = api();
         vi.mocked(learningApi.undo).mockRejectedValueOnce(new Error('timeout'));
@@ -351,10 +387,12 @@ describe('flashcard training session controller', () => {
         expect(vi.mocked(learningApi.undo).mock.calls[1]).toEqual(
             vi.mocked(learningApi.undo).mock.calls[0],
         );
+
         expect(learningApi.rate).toHaveBeenCalledTimes(1);
         expect(practice.getState().index).toBe(0);
         practice.dispose();
     });
+
     it('anonymous rounds and Undo are local, and Again requires an explicit new round', async () => {
         const learningApi = api();
         const practice = session(learningApi, false);
@@ -368,6 +406,7 @@ describe('flashcard training session controller', () => {
             reviewEvents: 2,
             savedCount: 0,
         });
+
         expect(learningApi.rate).not.toHaveBeenCalled();
         expect(learningApi.getProgress).not.toHaveBeenCalled();
         practice.undo();
@@ -376,6 +415,7 @@ describe('flashcard training session controller', () => {
             index: 1,
             reviewEvents: 1,
         });
+
         practice.rate('known');
         practice.practiseAgain();
         await settle();
@@ -385,8 +425,10 @@ describe('flashcard training session controller', () => {
             queue: [first],
             roundStats: { reviewed: 0 },
         });
+
         practice.dispose();
     });
+
     it('items are requested in batches at most 25 even with a 10,000 entry manifest', async () => {
         const learningApi = api();
         const ids = Array.from(
@@ -399,23 +441,28 @@ describe('flashcard training session controller', () => {
         expect(
             vi.mocked(learningApi.getItems).mock.calls[0]![0].entryIds,
         ).toHaveLength(25);
+
         for (let count = 0; count < 26; count += 1) {
             practice.rate('known');
             await settle();
         }
+
         expect(
             vi
                 .mocked(learningApi.getItems)
                 .mock.calls.every(([input]) => input.entryIds.length <= 25),
         ).toBe(true);
+
         expect(practice.getState().index).toBe(26);
         practice.dispose();
     });
+
     it('skips removed entries without aborting access to the dictionary', async () => {
         const learningApi = api();
         vi.mocked(learningApi.rate).mockRejectedValueOnce(
             error('entry_not_found'),
         );
+
         const practice = session(learningApi);
         practice.start();
         await settle();
@@ -428,14 +475,17 @@ describe('flashcard training session controller', () => {
             reviewEvents: 0,
             notices: ['entriesSkipped'],
         });
+
         expect(practice.getState().items[first]).toBeUndefined();
         practice.dispose();
     });
+
     it('content conflict reloads updated version and requires a new explicit rating', async () => {
         const learningApi = api();
         vi.mocked(learningApi.rate).mockRejectedValueOnce(
             error('learning_version_conflict'),
         );
+
         const practice = session(learningApi);
         practice.start();
         await settle();
@@ -448,6 +498,7 @@ describe('flashcard training session controller', () => {
             conflict: 'content',
             pending: null,
         });
+
         practice.rate('known');
         practice.dismissConflict();
         expect(learningApi.rate).toHaveBeenCalledTimes(1);
@@ -455,25 +506,30 @@ describe('flashcard training session controller', () => {
             items: [item(first, 2)],
             unavailableEntryIds: [],
         });
+
         await practice.resolveContentConflict();
         await settle();
         expect(practice.getState()).toMatchObject({
             face: 'front',
             conflict: null,
         });
+
         practice.rate('again');
         await settle();
         expect(
             vi.mocked(learningApi.rate).mock.calls[1]![0]
                 .expectedLearningVersion,
         ).toBe(2);
+
         practice.dispose();
     });
+
     it('cross-session Undo conflict cannot overwrite current progress', async () => {
         const learningApi = api();
         vi.mocked(learningApi.undo).mockRejectedValueOnce(
             error('undo_conflict'),
         );
+
         const practice = session(learningApi);
         practice.start();
         await settle();
@@ -487,10 +543,12 @@ describe('flashcard training session controller', () => {
             conflict: 'undo',
             savedCount: 1,
         });
+
         practice.undo();
         expect(learningApi.undo).toHaveBeenCalledTimes(1);
         practice.dispose();
     });
+
     it('revocation purges cached content and late writes/progress cannot resurrect it', async () => {
         const learningApi = api();
         const write = deferred<Awaited<ReturnType<LearningApi['rate']>>>();
@@ -502,6 +560,7 @@ describe('flashcard training session controller', () => {
         vi.mocked(learningApi.getProgress).mockRejectedValueOnce(
             error('shared_dictionary_not_found'),
         );
+
         await practice.refreshProgress();
         write.resolve({
             attemptId,
@@ -509,6 +568,7 @@ describe('flashcard training session controller', () => {
             learningVersion: 1,
             rating: 'known',
         });
+
         await settle();
         expect(practice.getState()).toMatchObject({
             phase: 'unavailable',
@@ -517,8 +577,10 @@ describe('flashcard training session controller', () => {
             progress: null,
             pending: null,
         });
+
         practice.dispose();
     });
+
     it('unmount/disposal cancels asynchronous mutation and clears private content', async () => {
         const learningApi = api();
         const load = deferred<Awaited<ReturnType<LearningApi['getItems']>>>();
@@ -534,12 +596,14 @@ describe('flashcard training session controller', () => {
             queue: [],
         });
     });
+
     it('all missing items complete a skipped round rather than loop or show a blank card', async () => {
         const learningApi = api();
         vi.mocked(learningApi.getItems).mockResolvedValueOnce({
             items: [],
             unavailableEntryIds: [first, second],
         });
+
         const practice = session(learningApi);
         practice.start();
         await settle();
@@ -548,6 +612,7 @@ describe('flashcard training session controller', () => {
             queue: [],
             reviewEvents: 0,
         });
+
         expect(learningApi.getItems).toHaveBeenCalledTimes(1);
         practice.dispose();
     });

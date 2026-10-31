@@ -18,7 +18,10 @@ export function tooltipSize() {
         padding: 16,
         apply({ elements }) {
             const view = elements.floating.ownerDocument.defaultView;
-            if (!view) return;
+            if (!view) {
+                return;
+            }
+
             // A closed native popover first measures zero. A side-specific cap
             // can lock that initial placement into a clipped, tiny tooltip.
             const viewport = tooltipViewportSize(view);
@@ -26,6 +29,7 @@ export function tooltipSize() {
                 '--tooltip-available-height',
                 `${viewport.height}px`,
             );
+
             Object.assign(elements.floating.style, {
                 maxWidth: `${Math.min(280, viewport.width)}px`,
                 maxHeight: `${viewport.height}px`,

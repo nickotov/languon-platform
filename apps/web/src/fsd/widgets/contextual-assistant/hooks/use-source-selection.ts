@@ -6,8 +6,12 @@ export function useSourceSelection(rootId?: string) {
         top: number;
         left: number;
     } | null>(null);
+
     useEffect(() => {
-        if (!rootId) return;
+        if (!rootId) {
+            return;
+        }
+
         let timer: ReturnType<typeof setTimeout>;
         function read() {
             const root = document.getElementById(rootId!);
@@ -23,13 +27,17 @@ export function useSourceSelection(rootId?: string) {
                 !root.contains(selected.focusNode)
             ) {
                 setSelection(null);
+
                 return;
             }
+
             const text = selected.toString().trim();
             if (text.length < 2) {
                 setSelection(null);
+
                 return;
             }
+
             const rect = selected.getRangeAt(0).getBoundingClientRect();
             const mobile = window.matchMedia('(max-width: 1023px)').matches;
             const above = rect.top - 48;
@@ -45,13 +53,16 @@ export function useSourceSelection(rootId?: string) {
                 ),
             });
         }
+
         function schedule() {
             clearTimeout(timer);
             timer = setTimeout(read, 140);
         }
+
         document.addEventListener('selectionchange', schedule);
         window.addEventListener('scroll', schedule, true);
         window.addEventListener('resize', schedule);
+
         return () => {
             clearTimeout(timer);
             document.removeEventListener('selectionchange', schedule);
@@ -59,5 +70,6 @@ export function useSourceSelection(rootId?: string) {
             window.removeEventListener('resize', schedule);
         };
     }, [rootId]);
+
     return selection;
 }

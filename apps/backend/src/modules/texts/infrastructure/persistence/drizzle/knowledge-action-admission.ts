@@ -22,13 +22,19 @@ import { textsAiJobsTable as jobs } from './texts-job-schema';
 /** JSONB normalizes object-key order; identities must survive persisted readback. */
 function canonicalActionJson(value: unknown): string {
     return JSON.stringify(value, (_key, current: unknown) => {
-        if (!current || typeof current !== 'object' || Array.isArray(current))
+        if (!current || typeof current !== 'object' || Array.isArray(current)) {
             return current;
+        }
 
         return Object.fromEntries(
             Object.entries(current).sort(([left], [right]) => {
-                if (left < right) return -1;
-                if (left > right) return 1;
+                if (left < right) {
+                    return -1;
+                }
+
+                if (left > right) {
+                    return 1;
+                }
 
                 return 0;
             }),
@@ -51,7 +57,10 @@ export async function enqueueKnowledgeTextAction(
 ) {
     context.signal.throwIfAborted();
     const policy = persistence.policy;
-    if (!policy) throw new TextsAiError('generation_not_available');
+    if (!policy) {
+        throw new TextsAiError('generation_not_available');
+    }
+
     const fingerprint = createHmac('sha256', policy.fingerprintSecret)
         .update('knowledge-text-action:v1:')
         .update(
@@ -77,10 +86,13 @@ export async function enqueueKnowledgeTextAction(
             .for('update');
 
         if (previous) {
-            if (previous.requestFingerprint !== fingerprint)
+            if (previous.requestFingerprint !== fingerprint) {
                 throw new TextsAiError('idempotency_conflict');
-            if (previous.expiresAt <= context.now)
+            }
+
+            if (previous.expiresAt <= context.now) {
                 throw new TextsAiError('generation_proposal_expired');
+            }
 
             return previous;
         }
@@ -96,8 +108,10 @@ export async function enqueueKnowledgeTextAction(
             !selected.snapshot?.creditPricing ||
             !selected.revisionId ||
             selected.selectionVersion !== 1
-        )
+        ) {
             throw new TextsAiError('generation_not_available');
+        }
+
         const snapshot = await prepareLegacyAction(
             tx,
             ownerId,
@@ -119,8 +133,10 @@ export async function enqueueKnowledgeTextAction(
             capacity.actorQueued + capacity.actorRunning >=
                 (policy.userQueueLimit ?? 5) ||
             !textAiProviderBudgetAllows(capacity.providerUsage, true, budget)
-        )
+        ) {
             throw new TextsAiError('rate_limited');
+        }
+
         const credit = await new DrizzleAiCreditTransactionParticipant(
             tx,
         ).accountSummary(ownerId, context.now);

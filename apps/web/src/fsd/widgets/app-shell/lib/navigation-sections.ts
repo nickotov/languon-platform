@@ -32,9 +32,17 @@ export function currentResourceId(
     pathname: string,
 ): string | undefined {
     const path = pathname.split('/');
-    if (kind === 'dictionary' && path[1] === 'dictionaries') return path[2];
-    if (kind === 'knowledge' && path[1] === 'knowledge') return path[2];
-    if (kind === 'text' && path[1] === 'texts')
+    if (kind === 'dictionary' && path[1] === 'dictionaries') {
+        return path[2];
+    }
+
+    if (kind === 'knowledge' && path[1] === 'knowledge') {
+        return path[2];
+    }
+
+    if (kind === 'text' && path[1] === 'texts') {
         return path[2] === 'folders' ? path[5] : path[2];
+    }
+
     return undefined;
 }

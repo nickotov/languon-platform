@@ -105,6 +105,7 @@ export function NativePriceVariant({
             </div>
         </List.Item>
     );
+
     return (
         <>
             {conditions.length ? (

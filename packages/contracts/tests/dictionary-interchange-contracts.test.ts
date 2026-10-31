@@ -28,9 +28,11 @@ describe('dictionary interchange contracts', () => {
             },
             target: existingTarget,
         };
+
         expect(PreviewDictionaryImportRequestSchema.parse(request)).toEqual(
             request,
         );
+
         expect(() =>
             ImportDictionaryRequestSchema.parse({
                 ...request,
@@ -55,9 +57,11 @@ describe('dictionary interchange contracts', () => {
             },
             warnings: [],
         };
+
         expect(PreviewDictionaryImportResponseSchema.parse(response)).toEqual(
             response,
         );
+
         expect(() =>
             PreviewDictionaryImportResponseSchema.parse({
                 ...response,
@@ -77,6 +81,7 @@ describe('dictionary interchange contracts', () => {
             },
             target: existingTarget,
         };
+
         expect(
             ImportDictionaryRequestSchema.parse({
                 ...base,
@@ -87,11 +92,12 @@ describe('dictionary interchange contracts', () => {
                 },
             }).enrichment.mode,
         ).toBe('ai');
+
         for (const selectedRowIndexes of [
             [],
             [0, 0],
             Array.from({ length: 101 }, (_, index) => index),
-        ])
+        ]) {
             expect(() =>
                 ImportDictionaryRequestSchema.parse({
                     ...base,
@@ -102,6 +108,7 @@ describe('dictionary interchange contracts', () => {
                     },
                 }),
             ).toThrow();
+        }
     });
 
     it('rejects invalid JSON text and measures the UTF-8 byte boundary', () => {
@@ -114,13 +121,16 @@ describe('dictionary interchange contracts', () => {
             },
             target: existingTarget,
         };
-        for (const content of ['safe\0unsafe', 'safe\u0085unsafe', '\ud800'])
+
+        for (const content of ['safe\0unsafe', 'safe\u0085unsafe', '\ud800']) {
             expect(() =>
                 PreviewDictionaryImportRequestSchema.parse({
                     ...base,
                     content,
                 }),
             ).toThrow();
+        }
+
         expect(() =>
             PreviewDictionaryImportRequestSchema.parse({
                 ...base,
@@ -129,6 +139,7 @@ describe('dictionary interchange contracts', () => {
                 ),
             }),
         ).not.toThrow();
+
         expect(() =>
             PreviewDictionaryImportRequestSchema.parse({
                 ...base,
@@ -184,9 +195,11 @@ describe('dictionary interchange contracts', () => {
             failures: [],
             warnings: [],
         };
+
         expect(() =>
             DictionaryImportPairsGenerationProposalSchema.parse(proposal),
         ).toThrow();
+
         proposal.candidates[0]!.candidate.values.source = 'bank';
         expect(() =>
             DictionaryImportPairsGenerationProposalSchema.parse(proposal),
