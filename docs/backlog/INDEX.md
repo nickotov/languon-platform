@@ -32,19 +32,22 @@ BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 | BL-009 | [Practice plans for weak areas](009-practice-plans-for-weak-areas.md)                                    | pending     |
 | BL-010 | [Saved sentence management and full-dictionary preparation](010-sentence-library-management-done.md)     | done        |
 | BL-011 | [Dictionary batch call accounting](011-dictionary-batch-call-accounting.md)                              | pending     |
-| BL-012 | [Enforceable code readability standards](012-code-readability-standards.md)                              | pending     |
+| BL-012 | [Enforceable code readability standards](012-code-readability-standards-done.md)                         | done        |
 | BL-013 | [Dedicated learning-content generation tools](013-dedicated-learning-content-tools.md)                   | pending     |
 | BL-014 | [Tutor and learning-tool playground](014-tutor-playground.md)                                            | pending     |
 | BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing.md) | pending     |
 | BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)           | pending     |
 | BL-017 | [Versioned Langfuse prompt resolution](017-versioned-langfuse-prompts.md)                                | pending     |
+| BL-018 | [Codebase-wide mechanical formatting and lint normalization](018-codebase-mechanical-formatting.md)      | pending     |
+| BL-019 | [Codebase-wide readability review and refactoring](019-codebase-readability-refactoring.md)              | pending     |
 
 The 2026-10-31 tutor/readability discussion is split into BL-012–BL-017.
 Suggested delivery order is **012 → 013 → 014 → 015 → 016 → 017**. Hard
 dependencies are recorded in task frontmatter; this suggested order is not a
 schedule. BL-012 is independently deliverable, BL-015 does not require the
-playground, and BL-017 can be prepared independently. These are pending tasks,
-not authorization to implement the discussed features.
+playground, and BL-017 can be prepared independently. The user subsequently
+authorized starting BL-012 and the staged readability cleanup: **012 → 018 → 019**.
+BL-013–017 remain pending feature work without implementation authorization.
 
 [Feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md) is in
 progress for interactive knowledge workbooks, the associated BL-003 progress

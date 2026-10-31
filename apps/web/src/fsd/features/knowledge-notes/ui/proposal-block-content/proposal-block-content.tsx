@@ -7,30 +7,53 @@ import {
 } from '@/fsd/entities/learning-blocks';
 import styles from './proposal-block-content.module.css';
 
-type Part =
+type ProposalSection =
     | { kind: 'single'; block: LearningBlock }
     | { kind: 'exercises'; blocks: ExerciseLearningBlock[] };
-function parts(blocks: LearningBlock[]): Part[] {
-    const result: Part[] = [];
+
+function buildProposalSections(blocks: LearningBlock[]): ProposalSection[] {
+    const sections: ProposalSection[] = [];
+
     for (const block of blocks) {
-        const previous = result.at(-1);
+        const previousSection = sections.at(-1);
+
         if (block.type === 'exercise' && block.group) {
-            if (
-                previous?.kind === 'exercises' &&
-                previous.blocks[0]?.group?.id === block.group.id
-            )
-                previous.blocks.push(block);
-            else result.push({ kind: 'exercises', blocks: [block] });
-        } else result.push({ kind: 'single', block });
+            // Only adjacent questions share a section; merging across another
+            // block would change the learner's authored content order.
+            const continuesPreviousExerciseGroup =
+                previousSection?.kind === 'exercises' &&
+                previousSection.blocks[0]?.group?.id === block.group.id;
+
+            if (continuesPreviousExerciseGroup) {
+                previousSection.blocks.push(block);
+            } else {
+                sections.push({ kind: 'exercises', blocks: [block] });
+            }
+        } else {
+            sections.push({ kind: 'single', block });
+        }
     }
-    return result;
+
+    return sections;
 }
-function partTitle(part: Part, labels: LearningBlockLabels): string {
-    if (part.kind === 'single')
-        return part.block.title ?? labels.kinds[part.block.type];
-    const first = part.blocks[0];
-    return first?.group?.title ?? first?.title ?? labels.kinds.exercise;
+
+function proposalSectionTitle(
+    section: ProposalSection,
+    labels: LearningBlockLabels,
+): string {
+    if (section.kind === 'single') {
+        return section.block.title ?? labels.kinds[section.block.type];
+    }
+
+    const firstExercise = section.blocks[0];
+
+    return (
+        firstExercise?.group?.title ??
+        firstExercise?.title ??
+        labels.kinds.exercise
+    );
 }
+
 export function ProposalBlockContent({
     blocks,
     variant,
@@ -46,31 +69,35 @@ export function ProposalBlockContent({
     playback?: LearningBlockPlayback | undefined;
     audioUrls?: Record<string, string> | undefined;
 }) {
-    const sections = parts(blocks);
+    const sections = buildProposalSections(blocks);
+
     return (
         <>
-            {sections.map((part) => {
-                const first =
-                    part.kind === 'single' ? part.block : part.blocks[0]!;
-                const title = partTitle(part, labels);
+            {sections.map((section) => {
+                const firstBlock =
+                    section.kind === 'single'
+                        ? section.block
+                        : section.blocks[0]!;
+                const title = proposalSectionTitle(section, labels);
                 const audioUrl =
-                    first.type === 'audio' && first.assetId
-                        ? audioUrls?.[first.assetId]
+                    firstBlock.type === 'audio' && firstBlock.assetId
+                        ? audioUrls?.[firstBlock.assetId]
                         : undefined;
-                const entries =
-                    part.kind === 'exercises'
-                        ? part.blocks.map((block) => ({ block }))
+                const exerciseEntries =
+                    section.kind === 'exercises'
+                        ? section.blocks.map((block) => ({ block }))
                         : [];
+
                 return (
                     <section
-                        key={first.id}
+                        key={firstBlock.id}
                         className={styles.section}
                         data-variant={variant}
                     >
                         <h3 className={styles.title}>{title}</h3>
-                        {part.kind === 'exercises' ? (
+                        {section.kind === 'exercises' ? (
                             <LearningExerciseSet
-                                entries={entries}
+                                entries={exerciseEntries}
                                 labels={labels}
                                 variant={variant}
                                 hideHeading
@@ -78,7 +105,7 @@ export function ProposalBlockContent({
                             />
                         ) : (
                             <LearningBlockView
-                                block={part.block}
+                                block={section.block}
                                 variant={variant}
                                 hideHeading
                                 scope={scope}

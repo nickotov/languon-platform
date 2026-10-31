@@ -2,14 +2,15 @@
 type: backlog-task
 id: BL-012
 title: Enforceable code readability standards
-status: pending
+status: done
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-01
 original_tasks: '2026-10-31 tutor diagnosis and readability discussion'
-evidence: []
+evidence:
+    - .agent/improvements/code-readability-standards.md
 ---
 
-# BL-012 — Enforceable code readability standards
+# BL-012 — Enforceable code readability standards — Done
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
 
@@ -37,7 +38,16 @@ behavior-preserving refactor of the tutor runner.
   resolution/compatibility and cohesive memory construction; preserve important
   observation-order comments, cancellation, accounting, budgets and errors.
 - Keep helpers local unless a cohesive module boundary justifies another file.
-  Apply standards to new/substantively edited code; no repository-wide rewrite.
+  Include a representative frontend renderer and backend/React guide examples.
+  Stage strict lint enrollment in examples until BL-018 normalizes the codebase.
+
+## Approved rollout
+
+The user authorized starting the staged rollout on 2026-10-31. This task owns
+standards/examples; [BL-018](018-codebase-mechanical-formatting.md) owns broad
+mechanical normalization, and [BL-019](019-codebase-readability-refactoring.md)
+owns systematic clarity refactoring and final integrated regression checks.
+Delivery record: [code-readability-standards](../../.agent/improvements/code-readability-standards.md).
 
 ## Verification and delivery preparation
 
@@ -55,5 +65,13 @@ the writing-for-agents workflow. No product behavior change is intended.
 - `AGENTS.md`, `apps/backend/AGENTS.md`, `.agent/DELIVERY.md`
 - `.agents/skills/code-review/SKILL.md`
 
-This task records future work; no implementation or Git operation is authorized
-by its creation. Rules and example code must pass review before completion.
+The bounded standards implementation is authorized; rules and examples must pass
+review before completion. No automatic Git operation is authorized.
+
+## Completion
+
+Standards, staged lint enforcement, reviewer guidance and representative backend/
+frontend refactors are implemented and verified. The delivery record contains
+focused test results, instruction-probe observations, source review and explicit
+readiness limitations. Broad formatting/refactoring remain pending BL-018/019;
+this completion does not claim whole-codebase readability or full regression.

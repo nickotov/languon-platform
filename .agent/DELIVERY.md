@@ -119,6 +119,9 @@ Before source review (or final verification when review is not required):
   reconcile every inventory row, hidden/empty/populated states and material deviations.
 - Check relevant failure, cancellation, permissions, responsive behavior,
   localization and accessibility; select combinations by distinct risks.
+- Apply the [readability author checks](../docs/code-readability.md#author-and-reviewer-checks)
+  to handwritten changes: main flow, named decisions, cohesive extractions and
+  preserved lifecycle/React semantics. Formatting alone is not a clarity check.
 - Verify changed exports/callers/contracts; inspect the final diff for accidental
   scope, secrets, generated output and temporary artifacts.
 - Complete affected documentation/guide checks; verify commands exist.

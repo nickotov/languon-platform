@@ -49,6 +49,10 @@ Trace changed execution paths and verify:
 - Tests exercise the material regression surface at the correct layer.
 - Database and cache changes preserve transactions, invariants, and lifecycle.
 - Performance or resource use has no material unbounded behavior.
+- For handwritten changes, apply the
+  [readability reviewer checks](../../../docs/code-readability.md#author-and-reviewer-checks).
+  Identify concrete comprehension risks and behavior changes hidden in refactors;
+  leave mechanical formatting to lint and avoid preference-only findings.
 
 Use `$testing` to assess the validity and coverage of existing evidence. Run a
 focused read-only check or test when it resolves a concrete gap, not solely to

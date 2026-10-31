@@ -250,6 +250,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm test`                                               | Run all automated tests                                                                |
 | `pnpm test:frontend-architecture`                         | Test web/admin FSD import boundaries                                                   |
 | `pnpm test:persistence-readability`                       | Test backend persistence size and spacing lint rules                                   |
+| `pnpm test:readability`                                   | Test shared readability enforcement, safe fixes and persistence constraints            |
 | `pnpm test:coverage`                                      | Run tests with coverage                                                                |
 | `pnpm test:web-dev-panel`                                 | Test the local command panel                                                           |
 | `pnpm test:e2e:web-dev-panel`                             | Run panel Playwright journeys against fixtures                                         |

@@ -2,7 +2,7 @@
 type: reference
 title: Product backlog context and lifecycle
 created: 2026-10-01
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 # Product backlog
@@ -175,9 +175,9 @@ completed behaviour.
 ## Tutor generation and engineering follow-ups
 
 The 2026-10-31 discussion adds BL-012–BL-017; see the index for the recommended
-sequence. The request authorizes backlog preparation only. The earlier request
-to leave runtime code and agent rules unchanged until implementation approval
-remains applicable.
+sequence. Initial authorization covered backlog preparation only. The user subsequently
+authorized BL-012 and its staged codebase cleanup follow-ups BL-018/019. This
+does not authorize implementing the unrelated generation/playground/Langfuse tasks.
 
 These tasks distinguish a generation brief (validated authoring parameters),
 a generated artifact (typed learning content), a proposal (reviewable intended
