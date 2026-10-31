@@ -29,7 +29,7 @@ import { fixtureRouteFingerprint } from './text-ai-routing-fixture';
 import { createLearnerAiCreditBalanceModule } from '../../src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition';
 import { createLearnerPortraitModule } from '../../src/modules/learner-portraits/infrastructure/learner-portrait-composition';
 import { createLearnerPortraitRoutes } from '../../src/modules/learner-portraits/interface/http/learner-portrait.routes';
-import { seedLegacyActionFixture } from './legacy-action-fixture';
+import { seedContextualAssistantAccountingFixture } from './contextual-assistant-accounting-fixture';
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -377,7 +377,12 @@ function deterministicModel(
             if (fail) text = 'Partial explanation before interruption.';
             else if (question.includes('Markdown grammar mapping fixture'))
                 text =
-                    '# Времена во французском\n\nФранцузская система: **время** и *вид*.\n\n## Настоящее\n\n- Je parle\n- Tu parles\n\n| Temps | Exemple |\n| --- | --- |\n| Présent | Je parle |';
+                    '# Времена во французском\n\nФранцузская система: **время** и *вид*.\n\n## Настоящее\n\n### Наблюдение\n\n- Je parle\n- Tu parles\n\n---\n\n| Temps | Exemple |\n| --- | --- |\n| Présent | Je parle |\n\n' +
+                    Array.from(
+                        { length: 16 },
+                        (_, index) =>
+                            `Короткий пример для прокрутки ${index + 1}.`,
+                    ).join('\n\n');
             else if (question.includes('Unsupported Markdown grammar fixture'))
                 text = '```text\nJe parle français.\n```';
             return {
@@ -584,7 +589,7 @@ export async function createContextualAssistantFixture(
     }
     try {
         const d = authentication.productDependencies;
-        await seedLegacyActionFixture(d.database);
+        await seedContextualAssistantAccountingFixture(d.database);
         const consumeRateLimit = d.rateLimiter.consume.bind(d.rateLimiter);
         // The one guarded browser server shares a loopback client address across
         // its six synthetic journeys (and the share recipient). Keep the real

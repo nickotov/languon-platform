@@ -13,7 +13,12 @@ const invalid = () =>
 
 function nodeSize(node: KnowledgeNode): number {
     if (node.type === 'text') return node.text?.length ?? 0;
-    if (node.type === 'learningBlock' || node.type === 'hardBreak') return 1;
+    if (
+        node.type === 'learningBlock' ||
+        node.type === 'hardBreak' ||
+        node.type === 'horizontalRule'
+    )
+        return 1;
 
     return (
         2 +
@@ -32,7 +37,8 @@ function splitNode(
         offset < 0 ||
         offset > size ||
         node.type === 'learningBlock' ||
-        node.type === 'hardBreak'
+        node.type === 'hardBreak' ||
+        node.type === 'horizontalRule'
     )
         throw invalid();
     if (node.type === 'text') {

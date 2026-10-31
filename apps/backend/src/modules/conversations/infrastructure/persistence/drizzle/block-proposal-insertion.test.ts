@@ -13,6 +13,29 @@ const paragraph = (text: string): KnowledgeNode => ({
     content: [{ type: 'text', text, marks: [{ type: 'bold' }] }],
 });
 describe('Proposal insertion positions', () => {
+    it('counts a horizontal rule as one atomic PM position and preserves H1 at adjacent insertions', () => {
+        const heading: KnowledgeNode = {
+            type: 'heading',
+            attrs: { level: 1 },
+            content: [{ type: 'text', text: 'A' }],
+        };
+        const rule: KnowledgeNode = { type: 'horizontalRule' };
+        const original: KnowledgeNode = {
+            type: 'doc',
+            content: [heading, rule, paragraph('B')],
+        };
+        for (const position of [3, 4]) {
+            const result = insertProposalBlocks(original, [grammar], position);
+            const insertedIndex = position === 3 ? 1 : 2;
+            expect(result.content?.[insertedIndex]?.type).toBe('learningBlock');
+            expect(
+                result.content?.filter((node) => node.type !== 'learningBlock'),
+            ).toEqual(original.content);
+        }
+        expect(
+            insertProposalBlocks(original, [grammar], 7).content?.at(-1)?.type,
+        ).toBe('learningBlock');
+    });
     it('splits prose at the exact PM offset while preserving marks and surrounding nodes', () => {
         const original: KnowledgeNode = {
             type: 'doc',

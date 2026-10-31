@@ -448,7 +448,12 @@ and pinned candidates as other text work; learners do not choose their model.
 Web chat uses Vercel AI SDK UI with a custom transport projecting durable events
 into typed message/tool parts. Disconnecting a subscription leaves worker work
 running; explicit Stop requests cancellation. Knowledge editing uses Tiptap with
-a restricted, versioned ProseMirror contract and fixed safe rendering. Chat
+a restricted, versioned ProseMirror contract and fixed safe rendering. Knowledge
+prose supports H1/H2/H3 and atomic thematic breaks in both existing document body
+versions; editor/Markdown/static-reader paths coordinate that additive allowlist
+and retain explicit apply, undo and Save. Rules have node size1 but no meaningful
+publication text. See [ADR-0053](adr/0053-knowledge-prose-headings-and-thematic-breaks.md).
+Chat
 Markdown remains separate and uses a restricted Streamdown renderer. Active SSE
 delivery and native incremental SDK projections retain durable replay; localized
 work/tool/writing activity stays visible before text and during pauses. See

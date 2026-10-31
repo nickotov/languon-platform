@@ -68,6 +68,7 @@ export function EditorToolbar({
                                 value: 'paragraph',
                                 label: t('knowledge.paragraph'),
                             },
+                            { value: '1', label: t('knowledge.heading1') },
                             { value: '2', label: t('knowledge.heading2') },
                             { value: '3', label: t('knowledge.heading3') },
                         ]}
@@ -163,6 +164,7 @@ const extraKeys = new Set([
     'knowledge.strike',
     'knowledge.link',
     'knowledge.table',
+    'knowledge.horizontalRule',
 ]);
 const groupStarts = new Set([
     'knowledge.bold',

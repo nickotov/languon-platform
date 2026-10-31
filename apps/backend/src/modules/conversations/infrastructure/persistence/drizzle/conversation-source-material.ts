@@ -143,7 +143,7 @@ export function noteSourceMaterial(input: {
 
         const text = (node.content ?? []).map(render).join('');
 
-        return `${text}${['paragraph', 'heading', 'tableCell', 'tableHeader', 'listItem', 'hardBreak'].includes(node.type) ? '\n' : ''}`;
+        return `${text}${['paragraph', 'heading', 'tableCell', 'tableHeader', 'listItem', 'hardBreak', 'horizontalRule'].includes(node.type) ? '\n' : ''}`;
     };
     const text = `${input.title}\n${input.summary}\n\n${render(input.body.document)}`;
 

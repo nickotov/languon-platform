@@ -2,6 +2,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { conversationTurnsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
 import {
     ConversationResponseSchema,
     ConversationDetailSchema,
@@ -212,7 +214,21 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
             ).toBe('succeeded');
             expect(
                 result.turns.find((turn) => turn.id === admitted.id)?.modelId,
-            ).toBe('deepseek-flash');
+            ).toBeNull();
+            // Provider identities are private in the HTTP contract. Prove the
+            // actual selected execution and dispatch through the real ledger row.
+            const [executed] = await fixture.database
+                .select({
+                    execution: conversationTurnsTable.execution,
+                    providerDispatched:
+                        conversationTurnsTable.providerDispatched,
+                })
+                .from(conversationTurnsTable)
+                .where(eq(conversationTurnsTable.id, admitted.id));
+            expect(executed?.execution.snapshot).toMatchObject({
+                modelId: 'deepseek-flash',
+            });
+            expect(executed?.providerDispatched).toBe(true);
             expect(
                 result.turns.find((turn) => turn.id === admitted.id)?.usage
                     .inputTokens,

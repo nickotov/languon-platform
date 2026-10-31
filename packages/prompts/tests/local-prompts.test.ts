@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { getLocalPrompt } from '../src';
 
 describe('local prompts', () => {
+    it('keeps structured Knowledge prose instructions aligned with the allowlisted document format', () => {
+        const prompt = getLocalPrompt('contextual-language-tutor');
+        expect(prompt).toContain('heading levels 1, 2 or 3');
+        expect(prompt).toContain('leaf {"type":"horizontalRule"}');
+        expect(prompt).toContain('no attrs, text, content or marks');
+        expect(prompt).toContain('The learner must explicitly save it');
+        expect(prompt).toContain(
+            'Do not use raw HTML, scripts, embedded media, arbitrary attributes',
+        );
+        expect(prompt).not.toContain('heading level 2 or 3,');
+    });
+
     it('provides a deterministic course builder fallback', () => {
         expect(getLocalPrompt('course-builder')).toContain(
             'language-learning course',

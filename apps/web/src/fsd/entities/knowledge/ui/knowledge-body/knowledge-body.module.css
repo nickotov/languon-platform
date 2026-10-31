@@ -7,13 +7,14 @@
 }
 
 .prose
-    :where(p, ul, ol, blockquote, h2, h3):not(
+    :where(p, ul, ol, blockquote, h1, h2, h3):not(
         :where([data-block-family], [data-block-family] *)
     ) {
     margin: 0 0 var(--space-16);
 }
 
-.prose :where(h2, h3):not(:where([data-block-family], [data-block-family] *)) {
+.prose
+    :where(h1, h2, h3):not(:where([data-block-family], [data-block-family] *)) {
     line-height: 1.35;
     margin-top: var(--space-24);
 }
@@ -84,4 +85,15 @@
 
 .prose > :last-child:not(:where([data-block-family], [data-block-family] *)) {
     margin-bottom: 0;
+}
+
+.prose h1:not(:where([data-block-family], [data-block-family] *)) {
+    font-size: var(--size-28);
+    font-weight: 650;
+}
+
+.prose hr:not(:where([data-block-family], [data-block-family] *)) {
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    margin-block: var(--space-24);
 }

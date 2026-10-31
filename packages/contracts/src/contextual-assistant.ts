@@ -77,6 +77,7 @@ export interface KnowledgeNode {
         | 'doc'
         | 'paragraph'
         | 'heading'
+        | 'horizontalRule'
         | 'bulletList'
         | 'orderedList'
         | 'listItem'
@@ -91,7 +92,7 @@ export interface KnowledgeNode {
     attrs?:
         | {
               block?: LearningBlock | undefined;
-              level?: 2 | 3 | undefined;
+              level?: 1 | 2 | 3 | undefined;
               start?: number | undefined;
               colspan?: 1 | undefined;
               rowspan?: 1 | undefined;
@@ -108,6 +109,7 @@ const RawKnowledgeNodeSchema: z.ZodType<KnowledgeNode> = z.lazy(() =>
                 'doc',
                 'paragraph',
                 'heading',
+                'horizontalRule',
                 'bulletList',
                 'orderedList',
                 'listItem',
@@ -132,7 +134,9 @@ const RawKnowledgeNodeSchema: z.ZodType<KnowledgeNode> = z.lazy(() =>
                 .optional(),
             attrs: z
                 .object({
-                    level: z.union([z.literal(2), z.literal(3)]).optional(),
+                    level: z
+                        .union([z.literal(1), z.literal(2), z.literal(3)])
+                        .optional(),
                     start: z.number().int().min(1).max(10_000).optional(),
                     colspan: z.literal(1).optional(),
                     rowspan: z.literal(1).optional(),
@@ -195,6 +199,7 @@ const BoundedDocumentSchema = z
         const blocks = new Set([
             'paragraph',
             'heading',
+            'horizontalRule',
             'bulletList',
             'orderedList',
             'blockquote',
@@ -237,8 +242,17 @@ const BoundedDocumentSchema = z
                 issue('Text nodes require text and no child nodes.');
             if (node.type === 'hardBreak' && node.content !== undefined)
                 issue('Line breaks cannot contain child nodes.');
+            if (
+                node.type === 'horizontalRule' &&
+                (node.content !== undefined ||
+                    node.attrs !== undefined ||
+                    node.marks !== undefined)
+            )
+                issue(
+                    'Horizontal rules are leaf blocks without attributes or marks.',
+                );
             if (node.type === 'heading' && node.attrs?.level === undefined)
-                issue('A heading requires level 2 or 3.');
+                issue('A heading requires level 1, 2 or 3.');
             if (
                 ['paragraph', 'heading'].includes(node.type) &&
                 children.some(

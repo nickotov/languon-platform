@@ -74,6 +74,7 @@ constraints, while feature-local decisions belong in the feature's
 
 | [ADR-0051](./0051-duration-based-transcription-accounting.md) | Duration-based transcription authority and accounting | Accepted |
 | [ADR-0052](./0052-source-bound-knowledge-ai-actions.md) | Source-bound knowledge AI authoring and evaluation | Accepted |
+| [ADR-0053](./0053-knowledge-prose-headings-and-thematic-breaks.md) | Knowledge prose headings and thematic breaks | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

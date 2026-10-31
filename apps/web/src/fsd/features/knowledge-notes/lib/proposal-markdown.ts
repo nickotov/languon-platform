@@ -21,7 +21,6 @@ const manager = new MarkdownManager({
             // Parse every heading level before mapping to our persisted schema.
             heading: { levels: [1, 2, 3, 4, 5, 6] },
             codeBlock: false,
-            horizontalRule: false,
             link: { autolink: false, linkOnPaste: false },
         }),
         TableKit.configure({ table: { resizable: false } }),
@@ -45,6 +44,7 @@ type Token = {
 
 const supportedTokens = new Set([
     'space',
+    'hr',
     'paragraph',
     'heading',
     'text',
@@ -204,7 +204,7 @@ export function parseProposalMarkdown(text: string): {
             checkVisibleContent(node);
             if (node.type === 'heading') {
                 const original = node.attrs?.level as number;
-                const level = original === 1 ? 2 : original > 3 ? 3 : original;
+                const level = original > 3 ? 3 : original;
                 headingMapped ||= level !== original;
                 node.attrs = { level };
             }

@@ -4,7 +4,7 @@ id: BL-006
 title: 'Grammar conversations and learning documents'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-30
+updated: 2026-10-31
 original_tasks: '9'
 evidence:
     - .agent/features/059-interactive-workbooks/EVIDENCE.md
@@ -582,3 +582,9 @@ checks and product builds pass. Exact source and evidence are recorded in the
 This is partial BL-006 delivery; guided lessons, shared workbook AI context,
 grammar-library saving and unapproved live transcription activation remain
 outside this slice. Status remains in-progress.
+
+## Document formatting and proposal preview follow-up
+
+The F059 DOC follow-up adds native H1/H2/H3 and thematic breaks, preserves them through proposals, recovery, Save, copying and shared readers, and shows formatted proposal cards with a responsive read-only document preview. The complete mapped Knowledge workspace journey file is verified. Scoped implementation, final gate state and review evidence are recorded in [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md).
+
+This partial delivery leaves BL-006 in progress; it does not complete the wider workbook or deferred transcription/course scope.

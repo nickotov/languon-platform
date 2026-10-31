@@ -190,3 +190,33 @@ canonical14-flow/816-case verification and independent correctness/security
 evidence reviews are approved. Exact source and report identities are recorded
 in EVIDENCE.md and REVIEW.md. This does not complete parent F059 or activate a
 new provider/model or live uploaded-audio transcription.
+
+## Follow-up: document formatting and proposal preview — 2026-10-30
+
+The user explicitly authorized the stored-format extension after read-only
+discovery established F049's H2/H3-only/no-HR contract. Continue on this existing
+feature branch with coordinated contracts/backend/web changes, preserving old
+documents and the unrelated grammar CSS edit. No provider/model/key activation.
+
+- DOC-1: The editor supports H1/H2/H3 and horizontal rules through visible,
+  localized formatting controls and existing compatible typing/paste paths.
+- DOC-2: Existing schema versions1/2 accept validated H1 and leaf horizontalRule
+  nodes additively. Existing documents remain unchanged; depth/node/size/topology,
+  strict attributes and unsafe URL/HTML protections remain. HR-only publication
+  is empty content. Save, recovery, revision, sharing and independent copy retain
+  supported nodes; HR positions match the pinned editor's atomic node size1.
+- DOC-3: Markdown proposals preserve H1/H2/H3 and thematic breaks; H4–H6 still
+  map to H3 with an accurate notice. Chat cards show formatted content without
+  cutting Markdown source mid-syntax. Existing unsupported input/plain fallback,
+  target/conflict checks, explicit apply and one-edit undo remain intact.
+- DOC-4: An eye beside WorkspaceSuggestionCard's heading opens complete,
+  read-only proposed content using the same validated document formatting as
+  review/insertion. Preview never accepts content or restores/changes a target.
+- DOC-5: The preview dialog is720px wide at1440px and full-width on mobile;
+  content scrolls while close remains visible. Escape and a cross with localized
+  Close tooltip dismiss and restore opener focus. No automatic draft/save/AI
+  operation occurs on preview. Desktop/mobile and hostile input are verified.
+
+Scoped status: Complete, 2026-10-31. DOC-1–DOC-5 criteria and required verification pass; independent correctness and security reviews Approved.
+Parent F059 remains In progress for separately
+deferred live transcription; this follow-up cannot merge or activate that work.

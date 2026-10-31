@@ -379,6 +379,14 @@ export const flows = [
         prerequisite: 'deterministic-assistant',
     },
     {
+        id: 'knowledge-document-formatting',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'knowledge-workspace.journeys.spec.ts',
+        grep: 'Markdown proposals preserve rich document structure',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'chat-lifecycle',
         minimumTests: 1,
         app: 'assistant',

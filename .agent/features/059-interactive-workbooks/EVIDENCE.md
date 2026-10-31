@@ -2190,3 +2190,200 @@ grammar is not automatically rewritten: reference it and request reformatting,
 then explicitly Update. To load the new code and apply local migrations0160/0161,
 the user restarts `pnpm dev:all`; no new `.env` value is required. Parent F059 and
 BL-006 remain In progress for their separately deferred work.
+
+## DOC follow-up — Complete, approved 2026-10-31
+
+The user explicitly authorized H1/horizontal-rule persisted-contract expansion.
+DOC-1–DOC-5 own this additive format and pure proposal-preview slice. Existing
+completed REF/learner-preview evidence is historical; do not represent it as
+verification of the new patch. Parent transcription activation remains deferred.
+
+Current focused proof:43 contract cases,15 backend units, backend typecheck and
+10-file scoped lint pass. Contracts JS/DTS rebuilt successfully at root
+(`/tmp/languon-document-format-contracts-build.log`). A fresh dedicated
+PostgreSQL17 container bound only to127.0.0.1:55491 applied the full migration
+chain and passed two knowledge-store roundtrips, one each for v1/v2. They prove
+H1/H2/H3/HR working recovery, explicit Save, revision, search, saved/shared reading
+and independent copying after revocation; HR-only publication remains rejected.
+An earlier missing-container ECONNREFUSED attempt is not passing proof. No user
+DB, real credentials or paid model service is used.
+
+Frontend author preflight now passes65 formatter/editor/reader cases in5 files
+and17 proposal/modal/review cases in3 files. Complete contracts28/237, local
+prompts6, full pinned SDK26, affected types/lint/styles pass. Both independent
+source/security reviews approve the corrected prompt and bounded test harness.
+Mapped browser and final combined evidence remain pending; do not reuse prior
+feature reports as final proof of this patch.
+
+Direct wrapper prerequisites exposed stale synthetic setup, not insufficient
+wallet funds: default action cap20 could not reserve the minimum framed tool
+cost36.2. A context-only helper derives finite385.024 from actual published
+tariff/aggregate input/output caps and preserves grant/providerUSD1 limit. Fresh
+deterministic probes use the current prompt fingerprint without republishing the
+route. Public model identity remainsnull; tests inspect private persisted
+execution to retain dispatch proof. All3 calibration units plus4 existing
+prerequisites pass7/7, raw log
+`/tmp/languon-contextual-fixture-prerequisite-passing.log`; DB proof in
+`/tmp/languon-contextual-fixture-calibration-db-proof.log`. No production limits
+or authority were weakened.
+
+Browser failures remain diagnostic: old fuzzy Title locators matched sidebar
+Untitled actions as well as title textbox; exact textbox selectors fix that.
+Then an existing pre-DOC responsive loop showed chat.right1023 beyond source.right1015
+at viewport1023, caused by8px document gutters and overlayright0. One scoped
+workspace-overlay CSS inset now matches the gutter. Subsequent run passes that
+loop and exposes old preferences labels (Reply language/Explanation level vs
+current Explanation language/Explanation length); tester is synchronizing only
+source-proved selectors and current guide terminology, not weakening assertions.
+New DOC scenario is prioritized through the same guarded wrapper before final
+whole8 run. The critical registry now includes it in the future full15-flow gate.
+
+Focused DOC browser proof: the exact Markdown/preview journey passes1/1 with
+all4 backend prerequisites, in21.6s. The real browser verifies720px width at1440,
+full390×844 mobile bounds, scroll with Close still in viewport, tooltip, native
+Escape/cross dismissal with focus restored, editor non-mutation, apply/undo,
+recovery/Save/reload/shared H1/H2/H3/HR and unsupported-format literal fallback.
+No unexpected runtime console/page/network failures are reported by its guards.
+Retained run directory:
+`apps/web/.next/playwright/contextual-assistant-results/assistant-mvv7pfvw`.
+Its `markdown-document-preview-desktop` and `markdown-document-preview-mobile`
+attachments were visually inspected by both root and tester: header/Close remain
+visible over the scrolled document, desktop is centered at half viewport width,
+and mobile fills the viewport without horizontal overflow. This is actual native
+modal evidence, not the separate existing proposal-review region.
+
+The focused browser initially caught Escape also minimizing TutorShell. A red
+unit test proved parent key propagation; a private preview host now stops only
+open-modal Escape propagation and preserves native cancel.17/17 proposal cases
+and scoped lint pass; general reviewer approves the bounded fix, and the passing
+native browser closes that residual risk. Logs:
+`/tmp/languon-document-preview-escape-before.log` and
+`/tmp/languon-document-preview-escape-after.log`.
+
+Current root checks pass: complete lint, styling contract, formatting across all
+task-owned files, all33 user-flow guide checks and the knowledge-workspace mapping.
+Logs use `/tmp/languon-document-format-{lint,styles,format}-final.log`,
+`/tmp/languon-document-format-docs.log` and
+`/tmp/languon-document-format-mapping.log`. Final mapped8, broad suite/types/build
+and one unaggregated canonical affected-three gate remain pending; focused success does not
+replace them. Existing unchanged unit/DB/SDK proof remains valid for its scoped
+source, with latest modal regressions covering the later keyboard-only change.
+
+Full web unit command:
+`pnpm --filter @languon/web exec vitest run --maxWorkers=1 --no-file-parallelism`.
+It completed187 files/1302 cases in290.27s:186 files and1301 cases passed;
+the only failure was the existing node-limit fixture exceeding Vitest's5s
+watchdog (12.628s, almost5000 separate paragraph DOM rows). Raw failed log:
+`/tmp/languon-document-format-web-all.log`.
+
+The fixture now uses one paragraph with alternating marked text nodes, preserving
+the real editor and exact4998→5001 rejected/5000 accepted boundaries, with added
+direct node counts and unchanged rejection/no-callback/no-mutation assertions.
+Complete changed file9/9 passes in690ms test time/2.95s wall time:
+`/tmp/languon-node-limit-fixture-focus.log`. Focused lint, formatter and diff
+checks pass. Independent review approved reuse of the other186 unchanged files'
+results; this combined coverage proves the current1302 cases without claiming
+one raw green full-suite run. No runtime/configuration/dependency changed between
+these checks. Separate API proxy Node tests also pass:
+`/tmp/languon-document-format-proxy-tests.log`.
+
+Root `pnpm typecheck --concurrency=1` passes14/14 tasks in1m42.467s,
+`/tmp/languon-document-format-types-final.log`. Production builds, complete
+mapped8 and canonical affected-three remain pending.
+
+Final gate selection was rechecked against AGENTS/DELIVERY and the execution
+matrix by both independent reviewers. The initial full15 plan was conservative;
+this DOC delta contains no production auth/accounting/routing/worker/configuration
+change. Run one fresh canonical invocation selecting `interactive-workbooks`,
+`knowledge-document-formatting` and the entire `ai-execution-contracts` stage.
+This preserves normal/reduced actual admission/SDK/settlement proof and all
+changed browser consumers. The other12 registry entries cover unchanged product
+seams; they remain registered for full CI. Expected current backend count is791
+(prior789 plus2 DOC DB roundtrips), but actual raw reports and required-scenario
+guards own final counts. The three-flow choice is proportional coverage, not a
+waiver of the complete backend stage or the separate mapped8 requirement.
+
+User requested stop on2026-10-30. No DOC canonical run started. Types14/14,
+nonweb production builds8/8 and isolated web production build passed; build logs
+are `/tmp/languon-document-format-build-other.log` and
+`/tmp/languon-document-format-build-web.log`. Next declarations and tsconfig are
+restored; preservation locks are released. Tester confirms no owned runner is
+active. Latest focused Text failure is preserved under `assistant-mvv8oj1t`;
+its selection-toolbar issue remains uninvestigated, not claimed fixed. The
+current slice is paused/incomplete; EXEC_PLAN.md owns the exact resume checkpoint.
+
+Resumed on2026-10-31. Root audit found only the expected later proposal/test edits;
+dependency, unrelated CSS and generated-file guards match7212a96. All completed
+unchanged checks are reused. Final mapped workspace wrapper passes8/8 in1.6m,
+with4/4 backend prerequisites:
+`/tmp/languon-doc-resume-workspace-eight-final.log`.
+Artifacts: `apps/web/.next/playwright/contextual-assistant-results/assistant-mvvbjkj0`.
+Focused reference boundary/recovery passes1/1, proving specific terminal
+`context_too_large`, unchanged persisted40000 references and an actual successful
+ordinary same-conversation answer with no stale context:
+`/tmp/languon-doc-resume-text-focus.log`.
+Focused target-review passes1/1 in8.3s at guaranteed tablet1023:
+`/tmp/languon-doc-resume-target-tablet.log`. The earlier1024 failure caught a
+transient layout state; its screenshot shows the final valid inline split.
+
+Independent late editor-root regression: a mount-time cached null destination
+misses a root inserted after saved replies render. The new unit failed before
+the fix and now passes; beginReview resolves the current internal root before
+opening/notifying. Five affected test files pass27/27, including shared-reader
+authority, preview and conflict cases:
+`/tmp/languon-doc-portal-{before,after}.log`. Scoped lint/format pass. General and
+security source reviews approve this bounded fix. It is not claimed as the cause
+of the separate1024 test mismatch. There is one new unit case, so current web
+coverage is1303 cases: reuse the unaffected baseline and the complete current
+affected files, not a fabricated single green raw full-suite run.
+
+Current final frontend typecheck passes:
+`/tmp/languon-doc-web-types-current.log`. At that checkpoint, the final isolated web build was running;
+canonical three-flow execution and final source/evidence review are pending.
+
+Final source preflight: current isolated web production build passes
+(`/tmp/languon-doc-web-build-current.log`), and Next declarations/tsconfig are
+restored. All33 guide/mapping validations, both affected guide checks and complete
+task-file formatting pass. Logs:
+`/tmp/languon-doc-docs-final.log`, `/tmp/languon-doc-mapping-knowledge-final.log`,
+`/tmp/languon-doc-mapping-workbooks-final.log`, `/tmp/languon-doc-format-final.log`.
+
+Canonical attempts are not aggregated.17802bc7 failed the workbook's incidental
+mandatory confirmation dialog despite successful private translation. The existing
+budget-aware helper replaces only that assumption; all result/privacy/revocation
+checks remain. General review approves it.277bb280 passes browser4/4 but fails
+backend1/791 (790 pass), with raw reports retained under that exact run directory.
+The sole failure is a legitimate customer reduced-capacity boundary:55099 input
+estimate against55000 after two full six-entry tool results. Numeric-only probe
+log `/tmp/languon-doc-customer-byte-probe.log` proves it; temporary instrumentation
+was removed before passing verification. No source content was logged.
+
+The multi-update test alone now starts with65 synthetic credits (60000 input,
+below the real64000); original single-block60-credit/55000 cases are unchanged.
+No production policy/provider/budget changed or widened after admission. Exact
+default-factory execution/snapshot/native transport, proposals/apply and settlement
+assertions stay. Complete affected file8/8 passes in13.38s with no skipped cases:
+`/tmp/languon-doc-reduced-execution-current.log`. Scoped lint/formatter pass;
+independent review approves source. Owned diagnostic PostgreSQL container
+`adf5804e66ef763a9dea30797d42678aa23da60261ad6439868516fd2f994450`
+and its test volume were removed after that check.
+
+At that checkpoint, fresh canonical attempt3 was running in `/tmp/languon-doc-canonical-final-3.log`.
+Its45-file frozen source manifest is `/tmp/languon-doc-final-source-3.json`, SHA256
+`23469534c25c27e797eb71239512e6525c7254d5b22c4008611820d1d2f4ecbb`.
+Final counts, source audit and evidence approvals are recorded below.
+
+## Final DOC gate and source audit — 2026-10-31
+
+The single clean canonical run `67e4d81f-d780-4aea-b19b-3029c7c10c11` passes all795 checks: interactive-workbooks3, knowledge-document-formatting1 and ai-execution-contracts791 (68 backend files). Both browser reports have zero skipped/unexpected/flaky/errors; backend reports success, zero failed/pending/todo cases and no failed suites. The canonical required-scenario/retry guards pass; no results are borrowed from the failed178/277 attempts. Command exits0. Raw reports reside in `test-results/critical-flows/67e4d81f-d780-4aea-b19b-3029c7c10c11/`; log `/tmp/languon-doc-canonical-final-3.log`.
+
+Report SHA256 identities:
+
+- `summary.json`: `d2c3b0774d81cc8381ddcea02483127aec1d976c04a0eb48d1b84deb8eb69899`.
+- `interactive-workbooks.json`: `c20ec9a04357079a4f70c00868c4f74dd78f6c9269401ec14a78dc80b1275d98`.
+- `knowledge-document-formatting.json`: `da8ea8293e9268ee29e1b3cc82485da90aa73b4f1fd5f6f96552f897795a64e9`.
+- `ai-execution-contracts.json`: `6d46b8af1660ada4d8486bca47291e4467d839b95b872f8ecb2114bb7bda8363`.
+
+Post-run audit `/tmp/languon-doc-final-audit.json` independently checks raw counts, exact selected flow identities, complete current Git source inventory, all45 source hashes and8 guards against `/tmp/languon-doc-final-source-3.json` (SHA23469534c25c27e797eb71239512e6525c7254d5b22c4008611820d1d2f4ecbb). No mismatches; next-env and tsconfig restored byte-for-byte; no preservation locks or unresolved conflicts. The unrelated grammar CSS committed as7212a96 is intact. All changes remain uncommitted. Scoped correctness and security final evidence reviews are Approved; parent F059/BL-006 remain In progress.
+
+Both independent reviewers recomputed the raw report identities, all45 source hashes and8 guards, exact current Git inventory and canonical required-scenario evidence. Both approve DOC-1–DOC-5 completion with no material findings. Live paid-provider quality, new provider/model activation and live transcription were not exercised or activated. These residual parent scopes do not block this document-format/preview delivery.

@@ -14,6 +14,7 @@ import {
     Redo2,
     Link2,
     Table,
+    Minus,
 } from 'lucide-react';
 import type { MessageKey } from '@/fsd/shared/i18n';
 
@@ -107,6 +108,13 @@ export function useKnowledgeEditorToolbar(editor: Editor) {
             },
         },
         {
+            key: 'knowledge.horizontalRule',
+            icon: Minus,
+            action: () => {
+                editor.chain().focus().setHorizontalRule().run();
+            },
+        },
+        {
             key: 'knowledge.undo',
             icon: Undo2,
             unavailable: !editor.can().undo(),
@@ -133,16 +141,17 @@ export function useKnowledgeEditorToolbar(editor: Editor) {
         setLinkOpen(false);
     }
     let paragraph = 'paragraph';
+    if (editor.isActive('heading', { level: 1 })) paragraph = '1';
     if (editor.isActive('heading', { level: 2 })) paragraph = '2';
     if (editor.isActive('heading', { level: 3 })) paragraph = '3';
     function changeParagraph(event: ChangeEvent<HTMLSelectElement>) {
         const value = event.target.value;
         if (value === 'paragraph') editor.chain().focus().setParagraph().run();
-        else
+        else if (value === '1' || value === '2' || value === '3')
             editor
                 .chain()
                 .focus()
-                .setHeading({ level: value === '2' ? 2 : 3 })
+                .setHeading({ level: Number(value) as 1 | 2 | 3 })
                 .run();
     }
     function closeLink() {

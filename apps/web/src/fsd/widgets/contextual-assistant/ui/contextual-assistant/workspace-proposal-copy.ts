@@ -1,5 +1,7 @@
 export const workspaceProposalLabels = {
     en: {
+        preview: 'Preview content',
+        close: 'Close',
         showTarget: 'Show target',
         showInline: 'Show in text',
         inlineFrom: 'Tutor suggestion',
@@ -35,6 +37,8 @@ export const workspaceProposalLabels = {
             'The original cursor or selection is unavailable. Choose a new target in the editor.',
     },
     ru: {
+        preview: 'Предпросмотр содержимого',
+        close: 'Закрыть',
         showTarget: 'Показать место',
         showInline: 'Показать в тексте',
         inlineFrom: 'Предложение репетитора',
@@ -70,6 +74,8 @@ export const workspaceProposalLabels = {
             'Исходный курсор или выделение недоступны. Выберите новое место в редакторе.',
     },
     es: {
+        preview: 'Vista previa del contenido',
+        close: 'Cerrar',
         showTarget: 'Mostrar destino',
         showInline: 'Mostrar en el texto',
         inlineFrom: 'Sugerencia del tutor',
@@ -105,6 +111,8 @@ export const workspaceProposalLabels = {
             'El cursor o la selección original no está disponible. Elige otro destino.',
     },
     fr: {
+        preview: 'Aperçu du contenu',
+        close: 'Fermer',
         showTarget: 'Montrer la cible',
         showInline: 'Afficher dans le texte',
         inlineFrom: 'Proposition du tuteur',

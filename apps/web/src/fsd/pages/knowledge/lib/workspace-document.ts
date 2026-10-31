@@ -12,7 +12,8 @@ export function knowledgePlainText(node: KnowledgeNode): string {
     if (node.type === 'learningBlock' && node.attrs?.block)
         return learningBlockPlainText(node.attrs.block);
     if (node.text) return node.text;
-    if (node.type === 'hardBreak') return '\n';
+    if (node.type === 'hardBreak' || node.type === 'horizontalRule')
+        return '\n';
     const children = node.content?.map(knowledgePlainText) ?? [];
     return children.join(
         ['doc', 'bulletList', 'orderedList', 'table', 'tableRow'].includes(

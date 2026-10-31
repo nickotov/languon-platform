@@ -38,6 +38,83 @@ const paragraph = {
 };
 
 describe('interactive knowledge document compatibility and safety', () => {
+    it.each([1, 2])(
+        'round trips H1/H2/H3 and leaf rules in body version %i',
+        (schemaVersion) => {
+            const value = {
+                schemaVersion,
+                document: {
+                    type: 'doc',
+                    content: [
+                        ...[1, 2, 3].map((level) => ({
+                            type: 'heading',
+                            attrs: { level },
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: `Heading ${level}`,
+                                    marks: [{ type: 'bold' }],
+                                },
+                            ],
+                        })),
+                        { type: 'horizontalRule' },
+                        paragraph,
+                    ],
+                },
+            };
+            expect(KnowledgeBodySchema.parse(value)).toEqual(value);
+        },
+    );
+    it.each([1, 2])(
+        'keeps rule leaves, placement, heading attributes and limits strict in body version %i',
+        (schemaVersion) => {
+            const parse = (content: unknown[]) =>
+                KnowledgeBodySchema.safeParse({
+                    schemaVersion,
+                    document: { type: 'doc', content },
+                }).success;
+            for (const invalid of [
+                { type: 'horizontalRule', attrs: {} },
+                { type: 'horizontalRule', attrs: { style: 'color:red' } },
+                { type: 'horizontalRule', content: [] },
+                {
+                    type: 'horizontalRule',
+                    content: [{ type: 'text', text: 'Hidden' }],
+                },
+                { type: 'horizontalRule', text: 'Hidden' },
+                { type: 'horizontalRule', marks: [] },
+                { type: 'horizontalRule', marks: [{ type: 'bold' }] },
+                { type: 'heading', attrs: { level: 0 } },
+                { type: 'heading', attrs: { level: 4 } },
+                { type: 'heading', attrs: { level: '1' } },
+                { type: 'heading', attrs: { level: 1, id: 'untrusted' } },
+                { type: 'paragraph', content: [{ type: 'horizontalRule' }] },
+                {
+                    type: 'heading',
+                    attrs: { level: 1 },
+                    content: [{ type: 'horizontalRule' }],
+                },
+                { type: 'bulletList', content: [{ type: 'horizontalRule' }] },
+            ])
+                expect(parse([invalid])).toBe(false);
+            expect(
+                parse(
+                    Array.from({ length: 5_001 }, () => ({
+                        type: 'horizontalRule',
+                    })),
+                ),
+            ).toBe(false);
+            expect(
+                parse([
+                    {
+                        type: 'heading',
+                        attrs: { level: 1 },
+                        content: [{ type: 'text', text: 'x'.repeat(80_001) }],
+                    },
+                ]),
+            ).toBe(false);
+        },
+    );
     it('retains v1 round trips unchanged', () => {
         const legacy = {
             schemaVersion: 1,

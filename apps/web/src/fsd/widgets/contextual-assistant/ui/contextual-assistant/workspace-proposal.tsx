@@ -147,13 +147,16 @@ export function WorkspaceProposal({
         beginReview();
     }
     function beginReview() {
+        // Saved replies may mount before the asynchronously loaded editor.
+        const currentRoot = rootId ? document.getElementById(rootId) : null;
+        setPortalRoot(currentRoot);
         const target = workspace?.getProposalPreview?.(previewTargetId, anchor);
         if (target?.original || anchor?.originalText) setAction('replace');
         else if (targetId || anchor) setAction('insert');
         else setAction('append');
         setOpen(true);
         setStatus('');
-        if (portalRoot) onReview?.();
+        if (currentRoot) onReview?.();
         if (!previewTargetId && anchor && workspace?.restoreTarget) {
             const request = ++restoration.current;
             setRestoring(true);
@@ -299,7 +302,7 @@ export function WorkspaceProposal({
     return (
         <div className={styles.proposal}>
             <WorkspaceSuggestionCard
-                content={content}
+                formattedContent={formattedContent}
                 original={anchor?.originalText}
                 open={open}
                 onReview={review}

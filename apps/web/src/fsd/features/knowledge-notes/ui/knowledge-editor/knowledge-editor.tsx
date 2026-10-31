@@ -115,9 +115,8 @@ export const KnowledgeEditor = forwardRef<
     const extensions = useMemo(
         () => [
             StarterKit.configure({
-                heading: { levels: [2, 3] },
+                heading: { levels: [1, 2, 3] },
                 codeBlock: false,
-                horizontalRule: false,
                 link: {
                     openOnClick: false,
                     autolink: false,
@@ -133,13 +132,18 @@ export const KnowledgeEditor = forwardRef<
             ExerciseGroupDrag,
             ProseBlockDrag.configure({
                 label: (node) => {
+                    let headingKey:
+                        | 'knowledge.heading1'
+                        | 'knowledge.heading2'
+                        | 'knowledge.heading3' = 'knowledge.heading2';
+                    if (node.attrs.level === 1)
+                        headingKey = 'knowledge.heading1';
+                    if (node.attrs.level === 3)
+                        headingKey = 'knowledge.heading3';
                     const names: Record<string, string> = {
                         paragraph: t('knowledge.paragraph'),
-                        heading: t(
-                            node.attrs.level === 3
-                                ? 'knowledge.heading3'
-                                : 'knowledge.heading2',
-                        ),
+                        horizontalRule: t('knowledge.horizontalRule'),
+                        heading: t(headingKey),
                         bulletList: t('knowledge.bulletList'),
                         orderedList: t('knowledge.orderedList'),
                         blockquote: t('knowledge.blockquote'),

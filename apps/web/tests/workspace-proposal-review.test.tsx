@@ -53,6 +53,30 @@ afterEach(() =>
     Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView'),
 );
 
+it('opens review in an editor root mounted after the saved reply', async () => {
+    const user = userEvent.setup();
+    const onReview = vi.fn();
+    const { container } = render(
+        <WorkspaceProposal
+            content='Proposed wording'
+            turnId='turn-1'
+            rootId='late-editor-review'
+            onReview={onReview}
+            onAccept={vi.fn(async () => 'applied' as const)}
+        />,
+    );
+    const root = document.createElement('div');
+    root.id = 'late-editor-review';
+    container.append(root);
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    expect(onReview).toHaveBeenCalledOnce();
+    expect(
+        within(root).getByRole('region', {
+            name: 'Use tutor reply in document',
+        }),
+    ).toBeVisible();
+});
+
 it('restores a persisted anchor for its preview and Show target without accepting a proposal', async () => {
     const user = userEvent.setup();
     const restore = vi.fn(async () => 'restored-target');
@@ -279,13 +303,13 @@ it('keeps inline intent while a persisted target is being restored asynchronousl
     expect(accept).not.toHaveBeenCalled();
 });
 
-it('previews supported Markdown as document nodes and explains heading mapping', async () => {
+it('preserves H1 and explains deeper heading mapping in rich proposal review', async () => {
     const user = userEvent.setup();
     const accept = vi.fn(async () => 'applied' as const);
     render(
         <WorkspaceProposal
             content={
-                '# French tenses\n\n**Present** and *past*\n\n- First\n- Second'
+                '# French tenses\n\n**Present** and *past*\n\n- First\n- Second\n\n#### Minor details'
             }
             turnId='formatted'
             onAccept={accept}
@@ -297,8 +321,14 @@ it('previews supported Markdown as document nodes and explains heading mapping',
     });
     expect(
         within(review).getByRole('heading', {
-            level: 2,
+            level: 1,
             name: 'French tenses',
+        }),
+    ).toBeVisible();
+    expect(
+        within(review).getByRole('heading', {
+            level: 3,
+            name: 'Minor details',
         }),
     ).toBeVisible();
     expect(within(review).getByText('Present').tagName).toBe('STRONG');
@@ -307,7 +337,9 @@ it('previews supported Markdown as document nodes and explains heading mapping',
     expect(
         within(review).getByText(/Heading levels are adapted/),
     ).toBeVisible();
-    expect(review.querySelector('p p, p h2, p ul, ins p')).toBeNull();
+    expect(
+        review.querySelector('p p, p h1, p h2, p h3, p ul, ins p'),
+    ).toBeNull();
     await user.click(
         within(review).getByRole('button', { name: 'Append', exact: true }),
     );

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:209ef26f5a2bc963
+// @user-flow-revision knowledge-workspace sha256:ebfb1ea752a93a99
 
 type Share = { locator: string; key: string };
 
@@ -116,7 +116,9 @@ async function capture(page: Page, info: TestInfo, name: string) {
 async function createDraft(page: Page) {
     await page.getByRole('button', { name: 'New note', exact: true }).click();
     await expect(page).toHaveURL(/\/knowledge\/[0-9a-f-]{36}$/u);
-    await expect(page.getByLabel('Title')).toHaveValue('Untitled');
+    await expect(
+        page.getByRole('textbox', { name: 'Title', exact: true }),
+    ).toHaveValue('Untitled');
 }
 
 async function waitForRecovery(page: Page) {
@@ -279,32 +281,88 @@ async function verifyDesktopPaneSizing(page: Page, info: TestInfo) {
     await assertWidth(400);
     for (const viewportWidth of [1023, 1024, 1060]) {
         await page.setViewportSize({ width: viewportWidth, height: 1000 });
-        await expect
-            .poll(async () => {
-                const area = (await layout.boundingBox())!;
-                const source = (await content.boundingBox())!;
-                const chat = (await slot.boundingBox())!;
-                const inline = viewportWidth >= 1024 && area.width >= 820;
-                if (
-                    (await layout.getAttribute('data-inline')) !==
-                        String(inline) ||
-                    (await layout.getAttribute('data-overlay')) !==
-                        String(!inline)
-                )
-                    return false;
-                if (Math.abs(chat.width - (inline ? 340 : 380)) > 0.2)
-                    return false;
-                if (inline)
+        let lastGeometry: unknown = { viewportWidth };
+        try {
+            await expect
+                .poll(async () => {
+                    const area = (await layout.boundingBox())!;
+                    const source = (await content.boundingBox())!;
+                    const chat = (await slot.boundingBox())!;
+                    const inline = viewportWidth >= 1024 && area.width >= 820;
+                    lastGeometry = {
+                        area,
+                        chat,
+                        dataInline: await layout.getAttribute('data-inline'),
+                        dataOverlay: await layout.getAttribute('data-overlay'),
+                        divider: await page
+                            .locator(
+                                '[role="separator"][aria-label="Resize tutor panel"]',
+                            )
+                            .evaluateAll((elements) =>
+                                elements.map((element) => {
+                                    const rect =
+                                        element.getBoundingClientRect();
+                                    return {
+                                        height: rect.height,
+                                        width: rect.width,
+                                        x: rect.x,
+                                        y: rect.y,
+                                    };
+                                }),
+                            ),
+                        inline,
+                        layoutStyle: await layout.evaluate((element) => {
+                            const style = getComputedStyle(element);
+                            return {
+                                gridTemplateColumns: style.gridTemplateColumns,
+                                minWidth: style.minWidth,
+                                width: style.width,
+                            };
+                        }),
+                        rootFontSize: await page.evaluate(
+                            () =>
+                                getComputedStyle(document.documentElement)
+                                    .fontSize,
+                        ),
+                        sidebar: await page
+                            .getByRole('complementary', {
+                                name: 'Application sidebar',
+                                exact: true,
+                            })
+                            .boundingBox(),
+                        source,
+                        tutor: await tutor.boundingBox(),
+                        viewport: await page.evaluate(() => ({
+                            height: window.innerHeight,
+                            width: window.innerWidth,
+                        })),
+                    };
+                    if (
+                        (await layout.getAttribute('data-inline')) !==
+                            String(inline) ||
+                        (await layout.getAttribute('data-overlay')) !==
+                            String(!inline)
+                    )
+                        return false;
+                    if (Math.abs(chat.width - (inline ? 340 : 380)) > 0.2)
+                        return false;
+                    if (inline)
+                        return (
+                            source.width >= 480 &&
+                            chat.x >= source.x + source.width - 1
+                        );
                     return (
-                        source.width >= 480 &&
-                        chat.x >= source.x + source.width - 1
+                        chat.x >= source.x &&
+                        chat.x + chat.width <= source.x + source.width + 1
                     );
-                return (
-                    chat.x >= source.x &&
-                    chat.x + chat.width <= source.x + source.width + 1
-                );
-            })
-            .toBe(true);
+                })
+                .toBe(true);
+        } catch (error) {
+            throw new Error(
+                `Companion layout breakpoint diagnostic: ${JSON.stringify(lastGeometry)}; cause: ${error instanceof Error ? error.message : String(error)}`,
+                { cause: error },
+            );
+        }
         await expect(divider).toBeHidden();
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -317,7 +375,7 @@ async function fillPublishableDocument(
     title: string,
     body: string,
 ) {
-    await page.getByLabel('Title').fill(title);
+    await page.getByRole('textbox', { name: 'Title', exact: true }).fill(title);
     await page
         .getByRole('textbox', { name: 'Document', exact: true })
         .fill(body);
@@ -349,11 +407,7 @@ async function createTextReference(
 }
 
 async function attachFullTextReference(page: Page, title: string) {
-    await page.getByLabel('Add context /').click();
-    const picker = page.getByRole('dialog', {
-        name: 'Search your Texts',
-        exact: true,
-    });
+    const picker = await openTextReferencePicker(page);
     await picker.getByRole('button', { name: title, exact: true }).click();
     await picker
         .getByRole('button', { name: 'Use full text', exact: true })
@@ -361,6 +415,21 @@ async function attachFullTextReference(page: Page, title: string) {
     await picker
         .getByRole('button', { name: 'Attach to message', exact: true })
         .click();
+}
+
+async function openTextReferencePicker(page: Page) {
+    await page.getByLabel('Add context /').click();
+    const blockPicker = page.getByRole('dialog', {
+        name: 'Blocks in this note',
+        exact: true,
+    });
+    await blockPicker
+        .getByRole('button', { name: 'Your Texts', exact: true })
+        .click();
+    return page.getByRole('dialog', {
+        name: 'Search your Texts',
+        exact: true,
+    });
 }
 
 // @user-flow knowledge-workspace/workspace-draft-chat-save-reopen
@@ -388,21 +457,21 @@ test('an empty workspace recovers edits, names itself from the first tutor quest
         settings.getByRole('radio', { name: 'Auto', exact: true }),
     ).toBeChecked();
     await expect(
-        settings.getByRole('combobox', { name: 'Reply language', exact: true }),
+        settings.getByRole('combobox', {
+            name: 'Explanation language',
+            exact: true,
+        }),
     ).toBeVisible();
     await expect(
-        settings.getByRole('group', { name: 'Tone', exact: true }),
+        settings.getByRole('combobox', { name: 'Tone', exact: true }),
     ).toBeVisible();
     await expect(
-        settings.getByRole('group', { name: 'Explanation level', exact: true }),
+        settings.getByRole('combobox', {
+            name: 'Explanation length',
+            exact: true,
+        }),
     ).toBeVisible();
-    await expect(settings.getByText('Model', { exact: true })).toBeVisible();
-    await expect(
-        settings.getByText(
-            'The tutor reads your full current document, including unsaved edits, when you send.',
-            { exact: true },
-        ),
-    ).toBeVisible();
+    await expect(settings.getByText('Model', { exact: true })).toHaveCount(0);
     await expect(
         settings.getByRole('button', {
             name: 'Use as my defaults',
@@ -451,7 +520,9 @@ test('an empty workspace recovers edits, names itself from the first tutor quest
     await expect(
         page.getByText(/A river bank is the land beside a river/u).first(),
     ).toBeVisible();
-    await expect(page.getByLabel('Title')).toHaveValue('Research river banks');
+    await expect(
+        page.getByRole('textbox', { name: 'Title', exact: true }),
+    ).toHaveValue('Research river banks');
 
     await fillPublishableDocument(
         page,
@@ -463,6 +534,9 @@ test('an empty workspace recovers edits, names itself from the first tutor quest
         page.getByRole('textbox', { name: 'Document', exact: true }),
     ).toContainText('A river bank is the land beside a river.');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
     await page
         .getByRole('button', { name: 'Document actions', exact: true })
         .click();
@@ -513,12 +587,16 @@ test('two workspace tabs preserve both recovered versions until the learner reso
     const assertAlternateClean = runtimeErrors(alternate);
     try {
         await alternate.goto(page.url());
-        await expect(alternate.getByLabel('Title')).toHaveValue(
-            'Original workspace title',
-        );
-        await page.getByLabel('Title').fill('First recovered version');
+        await expect(
+            alternate.getByRole('textbox', { name: 'Title', exact: true }),
+        ).toHaveValue('Original workspace title');
+        await page
+            .getByRole('textbox', { name: 'Title', exact: true })
+            .fill('First recovered version');
         await waitForRecovery(page);
-        await alternate.getByLabel('Title').fill('Second recovered version');
+        await alternate
+            .getByRole('textbox', { name: 'Title', exact: true })
+            .fill('Second recovered version');
         await expect(
             alternate.getByRole('region', {
                 name: 'Working versions need your decision',
@@ -541,9 +619,9 @@ test('two workspace tabs preserve both recovered versions until the learner reso
                 exact: true,
             })
             .click();
-        await expect(alternate.getByLabel('Title')).toHaveValue(
-            'First recovered version',
-        );
+        await expect(
+            alternate.getByRole('textbox', { name: 'Title', exact: true }),
+        ).toHaveValue('First recovered version');
         await conflict
             .getByRole('button', {
                 name: 'Resolve working versions',
@@ -578,12 +656,18 @@ test('restoring a saved revision preserves the newer private branch until it is 
         'The first saved wording.',
     );
     await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
     await fillPublishableDocument(
         page,
         'Second saved version',
         'The second saved wording.',
     );
     await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
     await fillPublishableDocument(
         page,
         'Unsaved recovered version',
@@ -685,8 +769,15 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
     await expect(material).toHaveText(/Second exact reference/u);
     await fillPublishableDocument(page, 'Reference study', 'Focus passage');
     const editor = page.getByRole('textbox', { name: 'Document', exact: true });
-    await editor.focus();
+    await editor.click();
+    await expect(editor).toBeFocused();
     await editor.press('ControlOrMeta+A');
+    await editor.press('ArrowLeft');
+    for (let index = 0; index < 'Focus passage'.length; index++)
+        await editor.press('Shift+ArrowRight');
+    await expect
+        .poll(() => page.evaluate(() => window.getSelection()?.toString()))
+        .toBe('Focus passage');
     await page
         .getByRole('toolbar', { name: 'Selection actions', exact: true })
         .getByRole('button', { name: 'Ask tutor', exact: true })
@@ -695,11 +786,7 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
         tutor.getByText('Focus passage', { exact: true }),
     ).toBeVisible();
 
-    await page.getByLabel('Add context /').click();
-    const picker = page.getByRole('dialog', {
-        name: 'Search your Texts',
-        exact: true,
-    });
+    const picker = await openTextReferencePicker(page);
     await picker
         .getByRole('button', { name: 'Rejected extra reference', exact: true })
         .click();
@@ -724,7 +811,8 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
             request.method() === 'POST' && request.url().endsWith('/turns'),
     );
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
-    const sent = (await submitted).postDataJSON() as {
+    const sentRequest = await submitted;
+    const sent = sentRequest.postDataJSON() as {
         attachments: { content: string }[];
         editorContext: { selectedText?: string };
     };
@@ -737,10 +825,62 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
         ),
     ).toBe(40_000);
     await expect(
-        tutor.getByText(/A river bank is the land beside a river/u).first(),
+        tutor.getByText(
+            'This question and its attachments are too large. Shorten the question or remove attachments, then send it again.',
+            { exact: true },
+        ),
     ).toBeVisible();
-    await editor.focus();
+    const conversationId = new URL(sentRequest.url()).pathname.split('/')[3]!;
+    type ConversationDetail = {
+        messages: Array<{
+            attachments: Array<{ content: string }>;
+            role: 'assistant' | 'user';
+            turnId: string;
+        }>;
+        turns: Array<{
+            failureCode: string | null;
+            id: string;
+            status: string;
+        }>;
+    };
+    await expect
+        .poll(async () => {
+            const detail = await api<ConversationDetail>(
+                page,
+                token,
+                `/conversations/${conversationId}`,
+            );
+            return detail.turns.at(-1)?.failureCode ?? null;
+        })
+        .toBe('context_too_large');
+    const failedDetail = await api<ConversationDetail>(
+        page,
+        token,
+        `/conversations/${conversationId}`,
+    );
+    const failedTurn = failedDetail.turns.at(-1)!;
+    expect(failedTurn.status).toBe('failed');
+    expect(failedTurn.failureCode).toBe('context_too_large');
+    const failedUserMessage = failedDetail.messages.find(
+        (message) =>
+            message.turnId === failedTurn.id && message.role === 'user',
+    )!;
+    expect(failedUserMessage.attachments).toHaveLength(2);
+    expect(
+        failedUserMessage.attachments.reduce(
+            (total, attachment) => total + attachment.content.length,
+            0,
+        ),
+    ).toBe(40_000);
+    await editor.click();
+    await expect(editor).toBeFocused();
     await editor.press('ControlOrMeta+A');
+    await editor.press('ArrowLeft');
+    for (let index = 0; index < 'Focus passage'.length; index++)
+        await editor.press('Shift+ArrowRight');
+    await expect
+        .poll(() => page.evaluate(() => window.getSelection()?.toString()))
+        .toBe('Focus passage');
     await page
         .getByRole('toolbar', { name: 'Selection actions', exact: true })
         .getByRole('button', { name: 'Ask tutor', exact: true })
@@ -773,6 +913,19 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
     expect(ordinary.editorContext.editorTarget.originalText).toBe('');
     expect(ordinary.attachments).toEqual([]);
     expect((await ordinaryRequest.response())?.ok()).toBe(true);
+    await expect(
+        tutor.getByText(/A river bank is the land beside a river/u).first(),
+    ).toBeVisible();
+    await expect
+        .poll(async () => {
+            const detail = await api<ConversationDetail>(
+                page,
+                token,
+                `/conversations/${conversationId}`,
+            );
+            return detail.turns.at(-1)?.status ?? null;
+        })
+        .toBe('succeeded');
     await page.reload();
     const ordinaryMessage = tutor
         .getByRole('article')
@@ -910,7 +1063,7 @@ test('a persisted tutor proposal replaces its original target, undoes, and compa
         name: 'Show in text',
         exact: true,
     });
-    await page.setViewportSize({ width: 1024, height: 1000 });
+    await page.setViewportSize({ width: 1023, height: 1000 });
     await expect(page.locator('[data-companion-layout]')).toHaveAttribute(
         'data-overlay',
         'true',
@@ -1037,6 +1190,9 @@ test('a saved workspace shares only its saved version, copies independently, and
         'Private working wording that must never appear in a shared note.';
     await fillPublishableDocument(page, 'River bank research', publishedBody);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
     await openSharing(page);
     await page
         .getByRole('button', { name: 'Enable sharing', exact: true })
@@ -1109,9 +1265,9 @@ test('a saved workspace shares only its saved version, copies independently, and
             .getByRole('button', { name: 'Save my own copy', exact: true })
             .click();
         await expect(recipient).toHaveURL(/\/knowledge\/[0-9a-f-]{36}$/u);
-        await expect(recipient.getByLabel('Title')).toHaveValue(
-            'River bank research',
-        );
+        await expect(
+            recipient.getByRole('textbox', { name: 'Title', exact: true }),
+        ).toHaveValue('River bank research');
         await expect(
             recipient.getByRole('textbox', { name: 'Document', exact: true }),
         ).toContainText(publishedBody);
@@ -1135,9 +1291,9 @@ test('a saved workspace shares only its saved version, copies independently, and
             ),
         ).toBeVisible();
         await recipient.goto(copiedPath);
-        await expect(recipient.getByLabel('Title')).toHaveValue(
-            'River bank research',
-        );
+        await expect(
+            recipient.getByRole('textbox', { name: 'Title', exact: true }),
+        ).toHaveValue('River bank research');
         assertRecipientClean();
     } finally {
         await recipientContext.close();
@@ -1320,7 +1476,7 @@ test('the workspace switches between mobile document and tutor tabs and uses a t
 });
 
 // @user-flow knowledge-workspace/workspace-markdown-insertion
-test('Markdown replies become rich editable drafts, survive save and sharing, and offer literal fallback', async ({
+test('Markdown proposals preserve rich document structure, preview read-only content, and offer literal fallback', async ({
     page,
     browser,
 }, info) => {
@@ -1332,10 +1488,93 @@ test('Markdown replies become rich editable drafts, survive save and sharing, an
         exact: true,
     });
     const editor = page.getByRole('textbox', { name: 'Document', exact: true });
+    const paragraphStyle = page.getByLabel('Paragraph', { exact: true });
+    await expect(paragraphStyle.locator('option')).toHaveText([
+        'Paragraph',
+        'Heading 1',
+        'Heading 2',
+        'Heading 3',
+    ]);
+    await expect(
+        page.getByRole('button', { name: 'Horizontal rule', exact: true }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await tutor
         .getByLabel('Your question')
         .fill('Markdown grammar mapping fixture');
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const proposalCard = tutor.getByRole('region', {
+        name: 'Proposed',
+        exact: true,
+    });
+    await expect(
+        proposalCard.getByRole('heading', {
+            name: 'Времена во французском',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        proposalCard.locator('strong').filter({ hasText: /^время$/u }),
+    ).toBeVisible();
+    await expect(proposalCard.locator('h1')).toHaveText(
+        'Времена во французском',
+    );
+    await expect(proposalCard.locator('h2')).toHaveText('Настоящее');
+    await expect(proposalCard.locator('h3')).toHaveText('Наблюдение');
+    await expect(proposalCard.locator('hr')).toHaveCount(1);
+    const previewButton = proposalCard.getByRole('button', {
+        name: 'Preview content',
+        exact: true,
+    });
+    const editorHtmlBeforePreview = await editor.evaluate(
+        (element) => element.innerHTML,
+    );
+    await previewButton.focus();
+    await previewButton.click();
+    const preview = page.getByRole('dialog', {
+        name: 'Preview content',
+        exact: true,
+    });
+    const previewDocument = preview.getByRole('document', {
+        name: 'Proposed',
+        exact: true,
+    });
+    await expect(previewDocument.locator('h1')).toHaveText(
+        'Времена во французском',
+    );
+    await expect(previewDocument.locator('h2')).toHaveText('Настоящее');
+    await expect(previewDocument.locator('h3')).toHaveText('Наблюдение');
+    await expect(previewDocument.locator('hr')).toHaveCount(1);
+    await expect(preview.getByRole('button', { name: 'Append' })).toHaveCount(
+        0,
+    );
+    await expect(preview.getByRole('radio')).toHaveCount(0);
+    await expect
+        .poll(async () => Math.round((await preview.boundingBox())!.width))
+        .toBe(720);
+    await previewDocument.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+    });
+    await expect
+        .poll(() => previewDocument.evaluate((element) => element.scrollTop))
+        .toBeGreaterThan(0);
+    await expect(
+        preview.getByRole('button', { name: 'Close', exact: true }),
+    ).toBeInViewport();
+    await capture(page, info, 'markdown-document-preview-desktop');
+    await page.keyboard.press('Escape');
+    await expect(preview).toHaveCount(0);
+    await expect(previewButton).toBeFocused();
+    expect(await editor.evaluate((element) => element.innerHTML)).toBe(
+        editorHtmlBeforePreview,
+    );
+    await previewButton.click();
+    await preview.getByRole('button', { name: 'Close', exact: true }).hover();
+    await expect(
+        page.getByRole('tooltip', { name: 'Close', exact: true }),
+    ).toBeVisible();
+    await preview.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(previewButton).toBeFocused();
     await tutor
         .getByRole('button', { name: 'Use in document', exact: true })
         .click();
@@ -1346,21 +1585,15 @@ test('Markdown replies become rich editable drafts, survive save and sharing, an
     await review
         .getByRole('radio', { name: 'Append to end', exact: true })
         .check();
-    await expect(
-        review.getByRole('heading', {
-            name: 'Времена во французском',
-            exact: true,
-        }),
-    ).toBeVisible();
-    await expect(
-        review.locator('strong').filter({ hasText: /^время$/u }),
-    ).toBeVisible();
-    await expect(review).toContainText('H1 → H2');
+    await expect(review).not.toContainText('H1 → H2');
     await capture(page, info, 'markdown-formatted-preview');
     await review.getByRole('button', { name: 'Append', exact: true }).click();
-    await expect(editor.locator('h2').first()).toHaveText(
+    await expect(editor.locator('h1').first()).toHaveText(
         'Времена во французском',
     );
+    await expect(editor.locator('h2')).toHaveText('Настоящее');
+    await expect(editor.locator('h3')).toHaveText('Наблюдение');
+    await expect(editor.locator('hr')).toHaveCount(1);
     await expect(editor.locator('strong')).toHaveText('время');
     await expect(editor.locator('em')).toHaveText('вид');
     await expect(editor.locator('li')).toHaveCount(2);
@@ -1372,13 +1605,19 @@ test('Markdown replies become rich editable drafts, survive save and sharing, an
     await waitForRecovery(page);
     await page.reload();
     await expect(editor.locator('strong')).toHaveText('время');
-    await page.getByLabel('Title').fill('French Markdown grammar');
+    await page
+        .getByRole('textbox', { name: 'Title', exact: true })
+        .fill('French Markdown grammar');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(
-        page.getByRole('button', { name: 'Save', exact: true }),
-    ).toBeDisabled();
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
     await page.reload();
     await expect(editor.locator('table')).toHaveCount(1);
+    await expect(editor.locator('h1')).toHaveText('Времена во французском');
+    await expect(editor.locator('h2')).toHaveText('Настоящее');
+    await expect(editor.locator('h3')).toHaveText('Наблюдение');
+    await expect(editor.locator('hr')).toHaveCount(1);
     await openSharing(page);
     await page
         .getByRole('button', { name: 'Enable sharing', exact: true })
@@ -1406,12 +1645,44 @@ test('Markdown replies become rich editable drafts, survive save and sharing, an
             reader.locator('strong').filter({ hasText: /^время$/u }),
         ).toBeVisible();
         await expect(reader.locator('table')).toHaveCount(1);
+        await expect(
+            reader.getByRole('heading', {
+                name: 'Времена во французском',
+                exact: true,
+            }),
+        ).toBeVisible();
+        await expect(reader.locator('h2')).toHaveText('Настоящее');
+        await expect(reader.locator('h3')).toHaveText('Наблюдение');
+        await expect(reader.locator('hr')).toHaveCount(1);
         readerClean();
     } finally {
         await context.close();
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    await previewButton.click();
+    await expect
+        .poll(async () => {
+            const box = (await preview.boundingBox())!;
+            return {
+                height: Math.round(box.height),
+                width: Math.round(box.width),
+                x: Math.round(box.x),
+            };
+        })
+        .toEqual({ height: 844, width: 390, x: 0 });
+    await expect(
+        previewDocument.locator('[contenteditable="true"]'),
+    ).toHaveCount(0);
+    await previewDocument.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+    });
+    await expect(
+        preview.getByRole('button', { name: 'Close', exact: true }),
+    ).toBeInViewport();
+    await capture(page, info, 'markdown-document-preview-mobile');
+    await page.keyboard.press('Escape');
+    await expect(previewButton).toBeFocused();
     await tutor
         .getByLabel('Your question')
         .fill('Unsupported Markdown grammar fixture');
@@ -1439,7 +1710,7 @@ test('Markdown replies become rich editable drafts, survive save and sharing, an
     await capture(page, info, 'markdown-mobile-literal-fallback');
     await review.getByRole('button', { name: 'Append', exact: true }).click();
     await expect(editor).toContainText('```text');
-    await expect(editor.locator('h2').first()).toHaveText(
+    await expect(editor.locator('h1').first()).toHaveText(
         'Времена во французском',
     );
     assertClean();

@@ -53,7 +53,7 @@ const body = KnowledgeBodySchema.parse({
 
 it.each([
     ['First passage', 'Paragraph', 'paragraph'],
-    ['Section title', 'Heading', 'heading'],
+    ['Section title', 'Heading 2', 'heading'],
     ['Nested entry', 'Bullet list', 'bulletList'],
     ['A quotation', 'Quotation', 'blockquote'],
     ['Cell content', 'Insert table', 'table'],
@@ -264,7 +264,9 @@ it('does not retarget a hovered handle to the caret on unrelated view updates', 
         screen.getByRole('button', { name: 'Select or drag block: Paragraph' }),
     ).toBeVisible();
     expect(
-        screen.queryByRole('button', { name: 'Select or drag block: Heading' }),
+        screen.queryByRole('button', {
+            name: 'Select or drag block: Heading 2',
+        }),
     ).toBeNull();
 });
 

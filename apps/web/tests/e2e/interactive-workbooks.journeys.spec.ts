@@ -452,7 +452,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     });
     for (const [source, kind, destination] of [
         [paragraph, 'Paragraph', heading],
-        [heading, 'Heading', paragraph],
+        [heading, 'Heading 2', paragraph],
     ] as const) {
         await source.hover();
         const handle = page.getByRole('button', {
@@ -1451,17 +1451,14 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
         await greeting
             .getByLabel('Translation language', { exact: true })
             .selectOption('fr');
-        await greeting
-            .getByRole('button', { name: 'Translate privately', exact: true })
-            .click();
-        const consent = reader.getByRole('dialog', {
-            name: 'Review this action’s budget',
-            exact: true,
-        });
-        await expect(consent).toBeVisible();
-        await consent
-            .getByRole('button', { name: 'Send', exact: true })
-            .click();
+        await aiAction(
+            reader,
+            greeting.getByRole('button', {
+                name: 'Translate privately',
+                exact: true,
+            }),
+            /\/private-translations$/u,
+        );
         await expect(
             greeting.getByText('[fr] Hello world.', { exact: true }),
         ).toBeVisible({ timeout: 30_000 });

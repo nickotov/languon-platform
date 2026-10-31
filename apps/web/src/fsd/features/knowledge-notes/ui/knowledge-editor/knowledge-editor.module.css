@@ -68,7 +68,7 @@
 
 .content
     :global(.tiptap)
-    :where(p, ul, ol, blockquote, h2, h3):not(
+    :where(p, ul, ol, blockquote, h1, h2, h3):not(
         :where([data-block-family], [data-block-family] *)
     ) {
     margin: 0 0 var(--space-16);
@@ -82,7 +82,7 @@
 
 .content
     :global(.tiptap)
-    :where(h2, h3):not(:where([data-block-family], [data-block-family] *)) {
+    :where(h1, h2, h3):not(:where([data-block-family], [data-block-family] *)) {
     line-height: 1.35;
 }
 
@@ -271,4 +271,23 @@
     .moreFormatting {
         display: none;
     }
+}
+
+.content
+    :global(.tiptap)
+    h1:not(:where([data-block-family], [data-block-family] *)),
+.workspaceContent
+    :global(.tiptap)
+    h1:not(:where([data-block-family], [data-block-family] *)) {
+    font-size: var(--size-28);
+    line-height: 1.3;
+    font-weight: 650;
+    margin-block: var(--space-24) var(--space-16);
+}
+
+.content :global(.tiptap) hr,
+.workspaceContent :global(.tiptap) hr {
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    margin-block: var(--space-24);
 }

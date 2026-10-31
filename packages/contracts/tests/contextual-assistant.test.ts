@@ -208,7 +208,7 @@ describe('contextual assistant rich content contracts', () => {
     });
     it.each([
         { type: 'image', attrs: { src: 'https://example.test/a.png' } },
-        { type: 'heading', attrs: { level: 1 }, content: [] },
+        { type: 'heading', attrs: { level: 4 }, content: [] },
         { type: 'paragraph', attrs: { onclick: 'x' }, content: [] },
         { type: 'paragraph', content: [{ type: 'doc', content: [paragraph] }] },
         { type: 'paragraph', content: [{ type: 'text', text: 'a\u0000b' }] },

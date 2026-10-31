@@ -1,12 +1,13 @@
 import { FilePenLine, MousePointerClick } from 'lucide-react';
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { workspaceCopy } from '../../lib/workspace-copy';
 import { workspaceProposalLabels } from './workspace-proposal-copy';
 import styles from './workspace-proposal.module.css';
+import { WorkspaceSuggestionPreview } from './workspace-suggestion-preview/workspace-suggestion-preview';
 
 export function WorkspaceSuggestionCard({
-    content,
+    formattedContent,
     original,
     open,
     canInline,
@@ -14,7 +15,7 @@ export function WorkspaceSuggestionCard({
     onInline,
     triggerRef,
 }: {
-    content: string;
+    formattedContent: ReactNode;
     original?: string | undefined;
     open: boolean;
     canInline: boolean;
@@ -25,19 +26,33 @@ export function WorkspaceSuggestionCard({
     const { locale } = useI18n();
     const copy = workspaceProposalLabels[locale];
     const workspace = workspaceCopy(locale);
-    const excerpt =
-        content.length > 180 ? `${content.slice(0, 180)}…` : content;
     const removed =
         original && original.length > 140
             ? `${original.slice(0, 140)}…`
             : original;
     const reviewAction = canInline ? onInline : onReview;
     return (
-        <div className={styles.suggestionCard}>
-            <p className={styles.suggestionCaption}>{workspace.suggestion}</p>
+        <div
+            className={styles.suggestionCard}
+            role='region'
+            aria-label={copy.proposed}
+        >
+            <div className={styles.suggestionHeader}>
+                <p className={styles.suggestionCaption}>
+                    {workspace.suggestion}
+                </p>
+                <WorkspaceSuggestionPreview content={formattedContent} />
+            </div>
             <div className={styles.suggestionExcerpt}>
                 {removed && <del>{removed}</del>}
-                {removed ? <ins>{excerpt}</ins> : <p>{excerpt}</p>}
+                <div
+                    className={styles.suggestionContent}
+                    role='document'
+                    aria-label={copy.proposed}
+                    tabIndex={0}
+                >
+                    {formattedContent}
+                </div>
             </div>
             <div className={styles.suggestionFooter}>
                 <button

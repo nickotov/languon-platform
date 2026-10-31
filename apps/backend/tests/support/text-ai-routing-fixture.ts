@@ -26,6 +26,8 @@ export async function seedTextAiRoutingFixture(
         tariff?: z.infer<typeof TextAiFlowTariffSchema>;
         at?: Date;
         replace?: boolean;
+        /** Refresh only deterministic evidence for the current release; preserve published policy. */
+        refreshProbes?: boolean;
         omittedTariffFlows?: TextAiFlowId[];
     } = {},
 ) {
@@ -35,7 +37,7 @@ export async function seedTextAiRoutingFixture(
         () => true,
     );
     const current = await store.current();
-    if (current && !options.replace) return current;
+    if (current && !options.replace && !options.refreshProbes) return current;
     const at = options.at ?? new Date();
     const actorId = randomUUID();
     await database.insert(usersTable).values({
@@ -53,33 +55,46 @@ export async function seedTextAiRoutingFixture(
         grantedAt: at,
         updatedAt: at,
     });
-    const routeId = options.routeId ?? 'deepseek/deepseek-flash';
+    const routeId =
+        options.routeId ??
+        (!options.replace
+            ? current?.configuration.default.primaryRouteId
+            : undefined) ??
+        'deepseek/deepseek-flash';
     const tariff = options.tariff ?? {
         inputCreditsPerMillionTokens: 1000,
         outputCreditsPerMillionTokens: 3000,
         cachedInputCreditsPerMillionTokens: 1000,
     };
-    const revision = await store.publish(
-        {
-            expectedVersion: current?.version ?? 0,
-            configuration: {
-                default: { primaryRouteId: routeId, fallbackRouteIds: [] },
-                overrides: {},
-                enabledRouteIds: options.enabledRouteIds ?? [routeId],
-                flowTariffs: Object.fromEntries(
-                    TextAiFlowIdSchema.options
-                        .filter(
-                            (flow) =>
-                                !options.omittedTariffFlows?.includes(flow),
-                        )
-                        .map((flow) => [flow, tariff]),
-                ),
-            },
-            reason: 'Synthetic disposable deterministic routing fixture',
-        },
-        actorId,
-        at,
-    );
+    const revision =
+        current && !options.replace
+            ? current
+            : await store.publish(
+                  {
+                      expectedVersion: current?.version ?? 0,
+                      configuration: {
+                          default: {
+                              primaryRouteId: routeId,
+                              fallbackRouteIds: [],
+                          },
+                          overrides: {},
+                          enabledRouteIds: options.enabledRouteIds ?? [routeId],
+                          flowTariffs: Object.fromEntries(
+                              TextAiFlowIdSchema.options
+                                  .filter(
+                                      (flow) =>
+                                          !options.omittedTariffFlows?.includes(
+                                              flow,
+                                          ),
+                                  )
+                                  .map((flow) => [flow, tariff]),
+                          ),
+                      },
+                      reason: 'Synthetic disposable deterministic routing fixture',
+                  },
+                  actorId,
+                  at,
+              );
     await database.transaction(async (tx) => {
         for (const flowId of TextAiFlowIdSchema.options) {
             const identity = textAiProbeIdentity(

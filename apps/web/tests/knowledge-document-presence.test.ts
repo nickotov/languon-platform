@@ -39,3 +39,26 @@ describe('interactive document publication gate', () => {
         ).toBe(false);
     });
 });
+
+it('keeps horizontal-rule fallback offsets aligned with the pinned editor without publishing decorative-only drafts', () => {
+    const body: KnowledgeNode = {
+        type: 'doc',
+        content: [
+            {
+                type: 'heading',
+                attrs: { level: 1 },
+                content: [{ type: 'text', text: 'A' }],
+            },
+            { type: 'horizontalRule' },
+            { type: 'paragraph', content: [{ type: 'text', text: 'B' }] },
+        ],
+    };
+    expect(knowledgePlainText(body)).toBe('A\n\n\nB');
+    expect(hasKnowledgeText(body)).toBe(true);
+    expect(
+        hasKnowledgeText({
+            type: 'doc',
+            content: [{ type: 'horizontalRule' }],
+        }),
+    ).toBe(false);
+});

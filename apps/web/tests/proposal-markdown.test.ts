@@ -44,7 +44,7 @@ describe('chat Markdown proposal import', () => {
             nodes
                 .filter((node) => node.type === 'heading')
                 .map((node) => node.attrs?.level),
-        ).toEqual([2, 2, 3, 3]);
+        ).toEqual([1, 2, 3, 3]);
         expect(
             nodes
                 .flatMap((node) => node.content ?? [])
@@ -144,7 +144,6 @@ describe('chat Markdown proposal import', () => {
     it.each([
         'Before\n\n```js\ncode\n```\n\nAfter',
         '    indented code',
-        'Before\n\n---\n\nAfter',
         '![image](https://example.com/image.png)',
         '- [x] task',
         '<div>HTML</div>',
@@ -231,4 +230,28 @@ describe('chat Markdown proposal import', () => {
             parseProposalMarkdown('>    '.repeat(13) + 'text'),
         ).toThrow(ProposalMarkdownError);
     });
+});
+
+it('preserves H1–H3 and horizontal rules while mapping only H4–H6', () => {
+    const source = '# Title\n\n---\n\n## Section\n\n### Detail';
+    const result = parseProposalMarkdown(source);
+    expect(result.headingMapped).toBe(false);
+    expect(result.document.content?.map((node) => node.type)).toEqual([
+        'heading',
+        'horizontalRule',
+        'heading',
+        'heading',
+    ]);
+    expect(
+        result.document.content
+            ?.filter((node) => node.type === 'heading')
+            .map((node) => node.attrs?.level),
+    ).toEqual([1, 2, 3]);
+    const mapped = parseProposalMarkdown(
+        '#### Four\n\n##### Five\n\n###### Six',
+    );
+    expect(mapped.headingMapped).toBe(true);
+    expect(mapped.document.content?.map((node) => node.attrs?.level)).toEqual([
+        3, 3, 3,
+    ]);
 });

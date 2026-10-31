@@ -46,6 +46,12 @@ function toRenderNode(
     };
 }
 
+function headingTag(level?: number) {
+    if (level === 1) return 'h1';
+    if (level === 3) return 'h3';
+    return 'h2';
+}
+
 // Mapping functions are React component types: retain their identities across updates.
 type DocumentMappings = Parameters<
     typeof renderJSONContentToReactElement<KnowledgeMark, RenderNode>
@@ -58,11 +64,12 @@ const documentMappings: DocumentMappings = {
         paragraph: ({ children }) => <p dir='auto'>{children}</p>,
         heading: ({ node, children }) =>
             createElement(
-                node.attrs?.level === 3 ? 'h3' : 'h2',
+                headingTag(node.attrs?.level),
                 { dir: 'auto' },
                 children,
             ),
         hardBreak: () => <br />,
+        horizontalRule: () => <hr />,
         bulletList: ({ children }) => <ul>{children}</ul>,
         orderedList: ({ node, children }) => (
             <ol start={node.attrs?.start ?? 1}>{children}</ol>

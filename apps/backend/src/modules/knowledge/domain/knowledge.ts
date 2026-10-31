@@ -26,6 +26,7 @@ export function knowledgeBodyPlainText(body: KnowledgeBody): string {
                 'tableCell',
                 'tableHeader',
                 'hardBreak',
+                'horizontalRule',
             ].includes(node.type)
         )
             parts.push('\n');

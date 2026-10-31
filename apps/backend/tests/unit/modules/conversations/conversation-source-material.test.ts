@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CopiedAttachmentSchema } from '@languon/contracts';
+import {
+    CopiedAttachmentSchema,
+    KnowledgeBodySchema,
+} from '@languon/contracts';
 import {
     noteSourceMaterial,
     textSourceMaterial,
@@ -13,6 +16,43 @@ const source = {
     targetLanguage: 'en',
 };
 describe('frozen source passage projection', () => {
+    it.each([1, 2])(
+        'projects H1 and rules as plain source text for body version %i',
+        (schemaVersion) => {
+            const material = noteSourceMaterial({
+                ...source,
+                summary: '',
+                body: KnowledgeBodySchema.parse({
+                    schemaVersion,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'heading',
+                                attrs: { level: 1 },
+                                content: [
+                                    { type: 'text', text: 'First heading' },
+                                ],
+                            },
+                            { type: 'horizontalRule' },
+                            {
+                                type: 'paragraph',
+                                content: [
+                                    { type: 'text', text: 'Following prose' },
+                                ],
+                            },
+                        ],
+                    },
+                }),
+            });
+            expect(material).toHaveLength(1);
+            expect(material[0]?.content).toContain(
+                'First heading\n\nFollowing prose',
+            );
+            expect(material[0]?.content).not.toContain('horizontalRule');
+            CopiedAttachmentSchema.parse(material[0]);
+        },
+    );
     it('keeps a short saved source and its complete translation together', () => {
         const pairId = source.id;
         const alignment = {

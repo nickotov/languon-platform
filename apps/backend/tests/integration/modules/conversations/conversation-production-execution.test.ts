@@ -208,7 +208,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await db.insert(textAiPreferencesTable).values({
                         userId: ownerId,
                         mode: 'auto',
-                        maxCreditsPerAction: '60',
+                        maxCreditsPerAction:
+                            operation === 'multi-update' ? '65' : '60',
                         version: 1,
                     });
                 await db.insert(dictionaryAiWorkerObservationsTable).values({
@@ -370,9 +371,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         model.perCallMaxInputTokens,
                     );
                 else {
-                    // The accepted 60-credit budget covers initial context and
-                    // this six-entry continuation, but not 64k input tokens.
-                    expect(execution.admittedMaxInputTokens).toBe(55_000);
+                    // A 60-credit single-target ceiling admits 55k input.
+                    // Two complete updates use 65 credits to admit 60k,
+                    // still below the model's 64k input cap.
+                    expect(execution.admittedMaxInputTokens).toBe(
+                        operation === 'multi-update' ? 60_000 : 55_000,
+                    );
                 }
                 expect(execution.budget).toMatchObject({
                     inputCostMicrosPerMillionTokens: 125000,
@@ -591,7 +595,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     (item) => item.id === submitted.id,
                 )!;
                 // This is the incident regression: before the fix no HTTP request occurs and the turn fails here.
-                expect(outgoing.length).toBe(outcome === 'success' ? 2 : 1);
+                expect(
+                    outgoing.length,
+                    JSON.stringify({
+                        status: result.status,
+                        failureCode: result.failureCode,
+                        outputLimitReached: result.outputLimitReached,
+                        admittedInput: execution.admittedMaxInputTokens,
+                        requestBytes: outgoing.map((request) =>
+                            Buffer.byteLength(JSON.stringify(request), 'utf8'),
+                        ),
+                    }),
+                ).toBe(outcome === 'success' ? 2 : 1);
                 expect(result.status).toBe(
                     outcome === 'success' ? 'succeeded' : 'failed',
                 );

@@ -1,7 +1,116 @@
 # ExecPlan: Interactive knowledge workbooks
 
 Feature: [FEATURE.md](FEATURE.md)
-Last updated: 2026-10-30
+Last updated: 2026-10-31
+
+Active scope: **DOC-1–DOC-5 Complete — approved 2026-10-31**, authorized
+2026-10-30 after the user approved the persisted-contract extension. This current
+scope supersedes older completed follow-up checkpoints below. Parent F059 remains
+In progress; no live transcription or provider/model activation is authorized.
+
+Final DOC critical selection (independently approved by correctness and security
+review): one fresh invocation of `interactive-workbooks`,
+`knowledge-document-formatting` and `ai-execution-contracts`, plus the complete
+mapped eight workspace journeys. This replaces the initial conservative full15
+plan; the current production delta changes no authentication, accounting, routing,
+worker or configuration behavior. The prompt/schema matrix requires the complete
+registered backend stage, which is retained. All15 remain in the global registry
+for full CI. No required proof is waived or replaced by fixture-only browser work.
+
+Local commit checkpoint, 2026-10-31: the user authorized committing this verified
+DOC continuation after the separate readiness-diagnostics commit `9b9f8ae`.
+All 45 reviewed source hashes, eight guards and raw 795-check canonical reports
+still match; the remaining 57-file inventory contains only this continuation and
+its documentation. Parent F059/BL-006 remain In progress. No merge, push, live
+transcription or provider/model activation is part of this commit.
+
+## Resume checkpoint — user requested stop, 2026-10-30
+
+The user has resumed; this paragraph preserves the historical pause checkpoint.
+Changes remain uncommitted on
+`feature/interactive-workbooks`, above the preserved user commit7212a96.
+No DOC canonical run has started; final evidence approval is pending.
+
+Implementation and independent source/security review are complete for the
+H1/H2/H3/HR and Markdown card/readonly responsive preview slice. Focused DOC
+browser1/1 plus4 prerequisites pass. Root types14/14, nonweb builds8/8 and
+isolated web production build pass; Next declarations/configuration are restored.
+Contracts237, prompts6, SDK26, focused frontend65/proposal17 and real v1/v2 DB2
+proof remain valid. Full web1301/1302 had only a heavy fixture timeout; the current
+whole changed file9/9 passes. Reviewer approves reuse of the other186 files;
+no product limit or watchdog changed. See EVIDENCE.md for raw logs and caveats.
+
+Remaining: clean mapped8, one fresh affected three-flow canonical run retaining
+the entire AI backend stage, final source/report audit and final independent
+evidence approval. Do not reuse completed REF critical reports for this patch.
+
+Latest Text-reference test reaches Blocks in this note → Your Texts and limit
+assertions, then fails because keyboard Ctrl+A does not expose Selection actions.
+No product defect/repair is established. Compare the proposal-target journey's
+pointer/native selection sequence before changing the test; preserve all material
+assertions. Failed artifacts: `apps/web/.next/playwright/contextual-assistant-results/assistant-mvv8oj1t`.
+Tester made no proposed selection repair after stop and confirms no active owned
+runner. Zero-test grep attempts are explicitly not browser proof.
+
+Provisional44-file manifest: `/tmp/languon-document-format-source-final.json`,
+fingerprint `fd92eb2ffcab3adcfd30bab06f1ee33f57cb3203af118478a16dd930b56ce402`.
+Recapture/compare after resumed edits. Read this checkpoint, current Git state,
+latest evidence/reviews and actual source before resuming; reuse valid checks.
+
+Resumed audit: all44 source/test/config hashes and unchanged dependency/build
+guards match the pause checkpoint. Completed lower-layer, static and build
+evidence is reused; no current app source change is needed. The Text selection
+test now uses the existing real pointer/native keyboard interaction and asserts
+the exact selected text. Its next failure is specific `context_too_large`: the
+real64000-input model cannot fit40000 reference bytes plus strict tool framing.
+ADR0042 explicitly defines independent reference/model limits. Independent review
+approves retaining the exact40000 submission/persistence assertions while proving
+the specific terminal model-capacity failure and ordinary same-conversation
+follow-up without stale context. No model/cap/reference-limit override is allowed.
+Tester owns that bounded E2E/guide remediation, then focused Text and clean8;
+canonical three-flow invocation remains pending their release.
+
+Current checkpoint,2026-10-31: root took ownership after the tester stream
+disconnected. Text dual-limit/recovery journey passes1/1, including an actual
+successful follow-up and terminal state. The complete mapped workspace file now
+passes8/8 in1.6m with all4 backend prerequisites. Log:
+`/tmp/languon-doc-resume-workspace-eight-final.log`.
+
+The remaining target-review test had asserted a transient overlay at1024 before
+navigation/ResizeObserver settled; its screenshot shows a valid inline split.
+Using the documented guaranteed tablet boundary1023 preserves all overlay,
+target, acceptance, undo and conflict assertions; focused case passes1/1 in8.3s.
+Do not claim the independently found late-root ordering defect caused that
+viewport mismatch. The late-root fix remains a valid bounded source repair:
+interaction-time root resolution, red-before unit,27/27 affected cases, source
+and security approval. Current web typecheck passes; isolated production web
+build repeats for this final source change. All unchanged package/backend/DB
+and other-app verification is reused. Canonical three-flow gate and final
+source/report identity/evidence approval remain pending.
+
+Final-gate checkpoint: the first canonical attempt17802bc7 failed an incidental
+mandatory budget-dialog assertion after a private action had already succeeded.
+The established budget-aware helper now accepts only valid direct success or
+the specific confirmation-required response; privacy/revocation assertions stay.
+Independent review approves the test-only repair.
+
+Second attempt277bb280 passed all4 browser checks and790/791 backend cases.
+Its sole failure was customer multi-update: actual guard estimates44534 then55099
+against an admitted55000 ceiling. The temporary numeric-only forward probe is
+removed. Only that larger test fixture now starts with65 credits→60000 input,
+still below the real64000 cap; original60-credit single-block cases retain55000.
+Immutable admitted-budget, default worker/SDK, two-call, persistence/apply and
+settlement assertions stay intact. Independent source review approves this
+calibration. The complete affected file passes8/8 in13.38s. Its owned55491 PG
+container/volume were removed by exact ID; normal services were untouched.
+
+The fresh canonical attempt passed via
+`/tmp/languon-doc-canonical-final-3.log` (completed session76188). Required selected
+flows remain workbook3 + formatting1 + complete backend791, with no aggregation
+from failed attempts. Source is frozen at45 files in
+`/tmp/languon-doc-final-source-3.json`, SHA256
+`23469534c25c27e797eb71239512e6525c7254d5b22c4008611820d1d2f4ecbb`.
+No source/config changes during this run; only durable bookkeeping is permitted.
 
 ## Goal and specification
 
@@ -1047,3 +1156,134 @@ REV-REF-03 are closed. REF-1–REF-5 are Complete. No scoped implementation or
 required verification remains. The user restarts `pnpm dev:all` for the new code
 and local migrations; no new environment values are needed. No merge/push or
 user-service restart performed; parent F059 remains In progress.
+
+## Active DOC follow-up — document formatting and proposal preview
+
+User authorization received via the explicit **Authorize the document-format
+extension** choice. The initial improvement record is Escalated/transferred;
+reuse these four F059 artifacts and existing branch rather than create a second
+feature or duplicate plans. FEATURE.md owns DOC-1–DOC-5.
+
+Decision: additive allowlisted prose nodes in versions1/2, no migration/new
+storage version or rewrite of old content. Existing version distinction remains
+prose vs interactive blocks. ADR-0053 records coordinated reader/writer semantics.
+Old H1→H2 mapping is historical F049 behavior; preserve H1 now, map H4–H6 to H3.
+
+AI execution regression matrix (recorded for the changed seams): persisted source
+validation/projection, editor-context serialization, proposal Markdown parsing and
+atomic positions are affected. Tool permissions, worker/model/provider selection,
+deadlines, credits and settlement are not changed. Required proof: strict contracts,
+actual editor HR positions/anchor+undo, disposable saved/recovered/shared/copied
+roundtrips, whole pinned-SDK runner, existing normal/reduced-budget production
+composition and one canonical affected three-flow critical gate including the document
+formatting journey and complete AI backend execution stage. No paid provider calls.
+
+Ownership: block_contracts owns contracts/backend source+focused tests;
+mentions_frontend owns editor/Markdown/reader/i18n+their units; root owns suggestion
+card/modal+units, architecture/ADR/backlog and these records. mentions_e2e owns
+mapped knowledge-workspace guide/test/deterministic fixture. They are not alone
+and preserve unrelated work. A separate tester is warranted by real editor→chat→
+preview→apply→Save→shared-reader behavior, responsive native modal and target
+preservation; it does not replace unit/contract/database checks.
+
+Progress:
+
+- Contract source43 cases pass; contracts JS/DTS build passes. Backend focused15
+  cases/typecheck/lint pass. Two actual disposable PostgreSQL55491 roundtrips pass
+  for both body versions, including recovery/Save/revision/share/copy/revocation/
+  search and HR-only emptiness. Initial no-container refusal is not passing proof.
+- Pinned ProseMirror proof: H1('A')–HR–paragraph('B') has HR nodeSize1,
+  content.size7 and editor plaintext `A\n\n\nB`; frontend regression must use these
+  actual semantics. Backend retrieval text is a different pre-existing projection,
+  not the editor's identity hash. Insertion before/after HR must not split it.
+- Root formatted card and pure read-only dialog implementation is in progress;
+  source preflight, mapped browser and independent correctness/security review
+  remain pending. No heavy runners overlap package cleans/builds.
+
+Next: finish focused frontend/unit preflight, then independent source/security
+review once stabilized. Remediate before broad gates. Execute mapped workspace
+journeys, serial full affected suites/root statics/builds and canonical affected-three; retain
+failed runs separately. Final approval requires unchanged source identity and
+inspected1440px/390px screenshots. No parent merge; no user DB/server changes.
+
+Author preflight now passes formatter/editor/reader65 cases (five files),
+proposal/modal17 cases (three files), contracts43, backend15 plus actual v1/v2
+DB2. Security source review approved. General source review found DOC-REV-01:
+local structured-note prompt still instructed only H2/H3. Root is synchronizing
+H1/H2/H3/leaf-HR instructions and a regression assertion, then rebuilding prompts.
+This includes a production prompt seam and retains the planned whole SDK and
+complete AI backend execution regression gate.
+
+Mapped browser startup is currently held before Playwright: direct reviewed
+wrapper prerequisites fail credit admission in two old composed journeys even
+though synthetic signup grants credits. Backend owner is proving actual hold/
+allowance/balance root cause before any bounded test-fixture calibration. Do not
+raise production budgets, disable credits, invent grants or skip prerequisites.
+The approved inline loopback55444/56444 profile uses only fake credentials; no
+user environment files or services are changed. Tester owns one mapped8-case
+run after fixture/prompt readiness. Other pending gates remain explicit.
+
+Initial source review found only DOC-REV-01; corrected prompt and its six tests
+plus rebuilt package and whole26 SDK cases pass. Both general and security
+source remediation review approve the stabilized application/prompt boundary.
+Contracts complete suite now28 files/237 cases passes; UI styles pass.
+
+Fixture-only blockers proved/resolved before browser: available actor grants
+were ample, but old synthetic per-action cap20 was below minimum framed tool
+cost36.2. Contextual bootstrap now derives385.024 from actual published tariff
+and262144/40960 aggregate bounds, preserving wallet grants and USD1 provider cap.
+Opt-in probe refresh preserves routing revision/config and updates deterministic
+current-release evidence after prompt changes. An obsolete public modelId assert
+now checks publicnull plus private snapshot model/provider-dispatch/usage instead.
+Three new calibration units and four existing prerequisites pass together7/7.
+All changes are strictly test helpers, guarded to exclusive fake test targets.
+
+The first actual eight-case browser run exposed old fuzzy Title selectors matching
+both the sidebar Untitled actions and title textbox before new DOC behavior.
+Tester replaces them with exact textbox/name and reruns the whole mapped file;
+no product guess or timeout weakening. Failed runs remain separate evidence.
+
+Critical registry now adds `knowledge-document-formatting` (one exact mapped
+Markdown/preview/Save/shared/fallback case), using the existing deterministic
+assistant profile. This ensures the new important path is included in future full
+gates, which now select15 flows. Its bounded registry review/check and actual full
+gate execution remain pending; no infrastructure/permission changes.
+
+DOC source remediation now approved by both independent reviewers: prompt
+contract synchronized; test-only finite credit calibration/probe refresh/public
+model privacy assertions all reviewed. Six prompt cases,26 pinned-SDK and28/237
+contract cases pass. Fixture3units+4prerequisites pass7/7. No production
+accounting/readiness/grant bypass; root rebuilt prompts before runtime tests.
+
+Real mapped first-case diagnostics confirmed a pre-existing workspace overlay
+gutter bug (before any DOC proposal): at1023 viewport layout x64/w959, source
+x72/w943 ends1015, chat x643/w380 ends1023. Existing8px content gutter was added
+Oct21 while overlay remained right0 fromOct20. Frontend owner changed exactly
+one scoped workspace-overlay CSS inset to8px. No inline/resize thresholds, other
+variants or geometric assertions changed. Tester reruns all8 mapped cases after
+this atomic repair; source/evidence review must include the tiny CSS delta.
+
+No source/build/test jobs currently overlap tester-owned3336/4006 browser;
+root broad serial suites/statics/builds and canonical affected-three wait mapped source
+stabilization. Retain each failed selector/setup/layout report separately.
+
+Current checkpoint: the focused DOC browser reached the native preview and
+exposed Escape bubbling into TutorShell, minimizing the chat behind the dialog.
+A regression failed before the fix (parent Escape handler called once). A private
+preview host now stops Escape propagation only while open, preserving native
+cancel/default behavior and normal closed-preview keyboard behavior. All17
+proposal/modal cases and scoped lint pass; independent bounded source review
+approves this fix. Tester is rerunning DOC, then the complete mapped8-case file,
+with retained actual modal screenshots at1440/390 and a visible Close control
+after scrolling. Browser confirmation and broad final gates remain pending.
+
+The user independently committed the pre-existing grammar CSS edit as7212a96
+(one unrelated CSS declaration). Preserve that commit. DOC remains the uncommitted
+feature continuation above it; original scope base8f7de62 still identifies the
+requested changes when that unrelated path is excluded.
+
+## Final DOC verification — 2026-10-31
+
+One clean canonical run `67e4d81f-d780-4aea-b19b-3029c7c10c11` passes exactly the three selected flows: workbook3, document-formatting1, complete backend791; total795, no skips/flakes/errors. All45 frozen source files and8 dependency/config/generated/unrelated-CSS guards match after runner cleanup, with no preservation locks or conflicts. Source inventory matches Git exactly. Audit: `/tmp/languon-doc-final-audit.json`. Mapped workspace8, current builds/types, affected units/contracts/prompts/SDK/real-DB and final guide/formatter checks are complete as recorded in EVIDENCE. Independent correctness and security final evidence approvals are complete. Parent F059 remains In progress; no merge, provider activation or live transcription is authorized by this scoped completion.
+
+DOC completion approved by independent correctness and security reviewers on2026-10-31. All scoped criteria and required gates pass; no material finding remains. Parent F059 and BL-006 remain In progress. No source changes followed the frozen final audit; no commit/merge/deployment was performed.

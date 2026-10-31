@@ -95,6 +95,120 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
         });
         afterAll(async () => client?.end(), 120_000);
+        it.each([1, 2])(
+            'round trips H1/H2/H3 and horizontal rules through saved/shared/copied version %i documents',
+            async (schemaVersion) => {
+                const formatted = KnowledgeNoteContentSchema.parse({
+                    ...content,
+                    body: {
+                        schemaVersion,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                ...[1, 2, 3].map((level) => ({
+                                    type: 'heading',
+                                    attrs: { level },
+                                    content: [
+                                        {
+                                            type: 'text',
+                                            text: `Heading ${level}`,
+                                        },
+                                    ],
+                                })),
+                                { type: 'horizontalRule' },
+                                {
+                                    type: 'paragraph',
+                                    content: [
+                                        {
+                                            type: 'text',
+                                            text: 'Preserved prose.',
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
+                });
+                const draft = await store.createDraft(owner, {
+                    operationId: randomUUID(),
+                });
+                const working = await store.updateWorking(owner, draft.noteId, {
+                    operationId: randomUUID(),
+                    branchId: draft.branches[0]!.id,
+                    expectedVersion: draft.branches[0]!.version,
+                    content: formatted,
+                });
+                const recovered = await store.getWorkspace(owner, draft.noteId);
+                expect(recovered.branches[0]?.content.body).toEqual(
+                    formatted.body,
+                );
+                expect(recovered.published).toBeNull();
+                const note = await store.saveWorkspace(owner, draft.noteId, {
+                    operationId: randomUUID(),
+                    branchId: working.branch.id,
+                    expectedVersion: working.branch.version,
+                    expectedPublishedVersion: 0,
+                });
+                expect((await store.get(owner, note.id)).body).toEqual(
+                    formatted.body,
+                );
+                const saved = await store.update(owner, note.id, {
+                    operationId: randomUUID(),
+                    expectedVersion: note.version,
+                    content: { ...formatted, title: 'Updated headings' },
+                });
+                const share = await store.issueShare(owner, note.id);
+                expect(
+                    (await store.readShared(share.locator, share.key)).body,
+                ).toEqual(formatted.body);
+                const copy = await store.copyShared(
+                    other,
+                    share.locator,
+                    share.key,
+                    {
+                        operationId: randomUUID(),
+                        expectedVersion: saved.version,
+                    },
+                );
+                expect((await store.get(other, copy.id)).body).toEqual(
+                    formatted.body,
+                );
+                const revisions = await db
+                    .select()
+                    .from(knowledgeNoteRevisionsTable)
+                    .where(eq(knowledgeNoteRevisionsTable.noteId, note.id));
+                expect(revisions.length).toBeGreaterThan(0);
+                for (const revision of revisions)
+                    expect(revision.content.body).toEqual(formatted.body);
+                expect(
+                    (
+                        await store.list(
+                            owner,
+                            ListKnowledgeQuerySchema.parse({ q: 'Heading 1' }),
+                        )
+                    ).notes.map((item) => item.id),
+                ).toContain(note.id);
+                await store.revokeShare(owner, note.id);
+                expect((await store.get(other, copy.id)).body).toEqual(
+                    formatted.body,
+                );
+                await expect(
+                    store.create(owner, {
+                        operationId: randomUUID(),
+                        content: {
+                            ...formatted,
+                            body: {
+                                schemaVersion: formatted.body.schemaVersion,
+                                document: {
+                                    type: 'doc',
+                                    content: [{ type: 'horizontalRule' }],
+                                },
+                            },
+                        },
+                    }),
+                ).rejects.toBeInstanceOf(KnowledgeDomainError);
+            },
+        );
         it('round-trips interactive content through publication and revisions', async () => {
             const interactive = KnowledgeNoteContentSchema.parse({
                 ...content,

@@ -518,3 +518,134 @@ REF-1–REF-5 are Complete.
 Scope remains REF-1–REF-5 only. No live paid-provider generation was exercised;
 no new provider/model/key/configuration or transcription activation is approved.
 Parent F059 stays In progress; no merge/push or user-service restart performed.
+
+## DOC follow-up review — Complete; general and security Approved
+
+Review boundary will be base8f7de62 plus DOC-1–DOC-5 contracts/backend/web/tests/
+guide/architecture changes. Exclude and preserve the unrelated existing grammar
+CSS edit. Initial source and risk-triggered security review must follow stabilized
+author preflight, with final evidence approval after mapped browser/disposable DB,
+static/build and canonical AI regression gates. No previous approval applies to
+this new patch. Retain exact source/report identities and closed findings here.
+
+Initial DOC security source review: Approved; no material finding. Bounded safe
+nodes/attributes, fixed renderers/URLs, atomic positions and readonly-modal
+authority checked. Final mapped/canonical evidence approval remains pending.
+
+DOC-REV-01 Medium: general reviewer found the local structured-note prompt still
+said H2/H3 only, inconsistent with the widened tool/body contract. Root updated
+`packages/prompts/src/local/contextual-language-tutor.ts` to explicitly permit
+H1/H2/H3 and the attribute/content/text/mark-free horizontalRule shape while
+retaining HTML/media/link prohibitions. A focused prompt contract assertion was
+added; source remediation review and final prompt/production gates are pending.
+
+DOC-REV-01 source remediation: **Approved** by independent general and security
+reviewers. Six prompt tests and rebuilt exports, whole SDK26 and full contracts237
+pass. No material source finding remains in the reviewed application/prompt and
+fixture-calibration boundary; final execution approval remains pending.
+
+Both reviewers also approved test-only prerequisite repairs after exact proof:
+finite385.024 action allowance derived from current tariff and aggregate caps,
+unchanged grants/providerUSD1 cap, opt-in current-release probe refresh preserving
+routing revision/configuration, and public modelIdnull with stronger private
+execution/provider-dispatched/usage assertions. All3 units+4 prerequisites pass.
+
+Additional bounded source review pending: critical registry's new document-format
+entry (same deterministic assistant profile, exact existing mapped test), and one
+workspace-overlay gutter inset CSS correction. The old right0 vs8px content
+gutter mismatch was reproduced numerically before DOC actions at1023; no other
+variant, breakpoint, geometry tolerance or resize preference changes.
+
+Registry and scoped workspace-overlay gutter remediation: independent general
+review **Approved**, no material finding. The new flow uses the existing safe
+deterministic profile and exact mapped DOC case; the inset repair changes only
+the proven8px overlay/content mismatch.
+
+DOC-REV-02 Medium (runtime author preflight): Escape from the native preview
+bubbled into TutorShell and minimized its chat. Root reproduced the propagation
+in a failing unit regression and isolated it with a private preview host. Native
+cancel remains enabled; closed-preview Escape still bubbles normally. Bounded
+independent remediation review **Approved**, with17/17 focused cases and scoped
+lint passing. Native browser confirmation is pending the tester's current run.
+
+DOC-REV-02 native confirmation: focused DOC journey passes1/1, including actual
+Escape/cross dismissal, opener focus and unchanged editor at desktop/mobile.
+Finding closed. The tester's current E2E/guide remediation also received bounded
+general source approval: current exact accessible labels, explicit absence of
+learner model selection, actual sent-snapshot coverage, and serial publication
+waits for the saved lifecycle preserve the original material assertions. Final
+evidence approval still requires the complete mapped8 and canonical affected-three gates.
+
+The user committed the unrelated preserved grammar CSS as7212a96. It remains
+outside DOC review; source identity for final evidence must include the actual
+current base and complete task-owned tracked/untracked files.
+
+DOC-REV-03 Medium (test harness): the full web unit run timed out only in the
+existing nearly5000-paragraph boundary fixture. The test now uses alternating
+marked/unmarked text nodes in one real KnowledgeEditor paragraph, retaining
+the production applyProposal/transaction/plugin/normalization seam. Explicit
+counts prove4998 initial nodes,5001 after actual heading/trailing-paragraph
+plugins (rejected atomically without onChange or document mutation), and5000
+after accepted paragraph append. No product limit or timeout changed.
+Independent remediation review **Approved**; complete changed file9/9 passes.
+
+Independent reviewer approves evidence reuse for the other186 unchanged files
+from the completed full run plus the complete current9-case file. The sole
+intervening unit change is fixture representation; production, dependencies and
+configuration are unchanged. Preserve the original1301/1302 passing raw result
+and its timeout, and report the focused replacement separately. Do not describe
+these as one clean raw full-suite run. The selected canonical critical gate still
+requires one clean run.
+
+Final gate-selection review (both correctness and security): **Approved** for
+one fresh, unaggregated run of `interactive-workbooks`,
+`knowledge-document-formatting` and `ai-execution-contracts`, in addition to
+mapped8 and the recorded lower-layer/static/build proof. This replaces the
+initial conservative full15 plan. Root policy reserves the full suite for
+production shared auth/accounting/routing/worker/configuration changes; DOC has
+none. The prompt/schema regression matrix is covered by the entire registered
+backend stage, including actual factory/SDK, normal/reduced admission, outgoing
+limits, validation, controlled failure, settlement and fences. Context-only
+synthetic allowance/probe setup retains other callers' defaults and is exercised
+through fresh selected assistant environments. Other12 flows cover unchanged
+seams. Actual reports and required-scenario guards own final counts (expected791
+backend plus3 workbook and1 DOC). Any new production shared-policy/default change
+would invalidate this selection and require the full suite. Final evidence
+approval remains pending execution and source identity checks.
+
+Latest bounded source remediations (general/security both Approved):
+reference-limit test now proves unchanged40000 persistence, specific model-budget
+rejection and an actual successful same-chat follow-up; no limit overrides.
+Late-root review destination is resolved at interaction time with a red-before
+ordering regression;27/27 affected unit cases pass. That separate real ordering
+issue did not cause the1024 viewport failure. The original target test caught a
+transient overlay before the final inline split; using the documented guaranteed
+1023 tablet boundary retains all actual overlay behavior assertions. Focused
+target passes1/1 and the entire mapped file now passes8/8. Final approval still
+awaits the selected canonical run, final build and frozen source/report audit.
+
+Final bounded test remediation review: Approved. Private translation uses the
+existing helper to validate either direct2xx or precisely409 confirmation-required,
+then still proves completed output, owner immutability, reader privacy and access
+revocation. The prior mandatory dialog was incidental to an old synthetic cap.
+The1023 viewport correction is also independently Approved against the actual
+documented tablet media query; keep its causal distinction from late-root repair.
+
+Reduced execution regression calibration: independently Approved after exact
+numeric guard reproduction (55099>55000). Only the two-block fixture starts at
+65 credits/60000 input, still reduced from64000. The original60-credit single
+block incident and all immutable admitted-budget/production composition/native
+HTTP/output/persistence/application/settlement assertions remain. Complete file
+8/8 passes; temporary Buffer probe is removed. Stale comment/formatting cleanup
+was performed before the45-file source freeze. This does not approve any production
+limit change or combine failed canonical evidence. Final evidence review is pending
+the fresh selected three-flow result and unchanged-source audit.
+
+Final evidence submitted: clean run67e4d81f passes795/795 across exactly3 selected flows, mapped workspace8 passes, current builds/types and lower-layer checks recorded. Raw report hashes and the post-run45-source/8-guard exact audit are in EVIDENCE.md and `/tmp/languon-doc-final-audit.json`. Next declarations/config restored and locks released. No aggregation; the178/277 attempts remain failed historical evidence. Independent general/security final verdicts pending; no source change after freeze.
+
+## Final scoped DOC verdict — 2026-10-31
+
+- Independent correctness/evidence review: **Approved**, no material findings. Recomputed all raw report SHAs,45 source and8 guards; independently executed strict backend report/scenario validation.
+- Independent security/evidence review: **Approved**, no material security findings. Recomputed the same identities; verified SQL/target fencing, read-only shared tools, bounded untrusted input, actual SDK/admission/accounting/settlement evidence.
+
+Both approve only DOC-1–DOC-5. Clean canonical795/795, mapped workspace8/8 and all recorded affected checks pass. Previous failures remain historical, not aggregated. Parent F059/BL-006 remain In progress; live provider quality/activation, transcription, merge and deployment are outside this verdict. DOC status: **Complete**.

@@ -64,6 +64,9 @@ Use `--list` for current entries. The initial registry covers:
 - Chat reconnection, Stop and explicit retry after failure.
 - Interactive workbook block authoring and uploaded audio, saved private practice,
   ordered shared reading, independent copies, revocation and inert hostile text.
+- Knowledge H1/H2/H3 and thematic-break authoring, formatted proposal cards and
+  pure read-only eye preview, desktop/mobile dismissal/focus, explicit apply/undo,
+  saved/recovered/shared rich content and explicit unsupported-format fallback.
 - Zero-credit rejection for paid work, with a visible error and preserved input.
 - Free interview completion with zero learner credits.
 - Shared speech playback, Free/Paid confirmation and cache reuse. Its browser
