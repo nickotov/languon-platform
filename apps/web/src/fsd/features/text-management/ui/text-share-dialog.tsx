@@ -1,26 +1,13 @@
 'use client';
-import Link from 'next/link';
 import { useRef, useState } from 'react';
-import {
-    CheckIcon,
-    CopyIcon,
-    ExternalLinkIcon,
-    GlobeIcon,
-    Link2Icon,
-    RefreshCwIcon,
-} from 'lucide-react';
+import { GlobeIcon, Link2Icon, RefreshCwIcon } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
-import {
-    Button,
-    Dialog,
-    DialogActions,
-    InlineAlert,
-    Input,
-} from '@/fsd/shared/ui';
+import { Button, Dialog, DialogActions, InlineAlert } from '@/fsd/shared/ui';
 import type { RequestWithTextSession } from '@/fsd/entities/texts';
 import { useTextShare } from '../hooks/use-text-share';
 import type { TextResource } from '../types';
 import styles from './dialogs.module.css';
+import { TextShareCapability } from './text-share-capability';
 
 type Props = {
     open: boolean;
@@ -150,50 +137,14 @@ function ShareContent({
                     </>
                 )}
                 {share.capability && (
-                    <div className={styles.stack}>
-                        <div className={styles.url}>
-                            <Input
-                                label={t('texts.manage.unlistedLink')}
-                                ref={field}
-                                value={share.url}
-                                readOnly
-                            />
-                            <Button
-                                desktopIconOnly
-                                variant='secondary'
-                                onClick={copy}
-                                leadingIcon={
-                                    share.copied ? (
-                                        <CheckIcon size={16} />
-                                    ) : (
-                                        <CopyIcon size={16} />
-                                    )
-                                }
-                            >
-                                {t(
-                                    share.copied
-                                        ? 'texts.manage.copied'
-                                        : 'texts.manage.copyLink',
-                                )}
-                            </Button>
-                        </div>
-                        <span role='status' className={styles.visuallyHidden}>
-                            {share.copied ? t('texts.manage.copied') : ''}
-                        </span>
-                        {copyError && (
-                            <InlineAlert tone='info'>
-                                {t('texts.manage.copyManually')}
-                            </InlineAlert>
-                        )}
-                        <Link
-                            href={share.path}
-                            className={styles.preview}
-                            referrerPolicy='no-referrer'
-                        >
-                            <ExternalLinkIcon aria-hidden />
-                            {t('texts.manage.preview')}
-                        </Link>
-                    </div>
+                    <TextShareCapability
+                        fieldRef={field}
+                        url={share.url}
+                        path={share.path}
+                        copied={share.copied}
+                        copyError={copyError}
+                        onCopy={copy}
+                    />
                 )}
                 {share.step === 'confirm' && (
                     <InlineAlert

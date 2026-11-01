@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "owner": "panel-audit",
+  "baseCommit": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "mode": "read-only source audit; evidence ledger writes only",
+  "instructionsRead": [
+    "web-dev-panel/AGENTS.md",
+    "docs/adr/0014-web-dev-panel-local-quick-access-sections.md",
+    "docs/adr/0013-local-web-dev-command-panel.md",
+    "docs/code-readability.md"
+  ],
+  "files": [
+    {
+      "path": "web-dev-panel/commands.json",
+      "status": "reviewed-acceptable",
+      "reason": "All86 catalog entries reviewed, including exact IDs/source SHA256, per-command safety/disable reasons, symmetric conflicts, individual-only migrations/whole-app and fixed loopback service URLs. Declarative entry catalog length carries reviewed policy rather than hidden orchestration; no trust revision refreshed.",
+      "beforeSha256": "211c979ca78e13df5fc2b1189239473fa0c4bbf8f3eb1140bde09853214b3559",
+      "afterSha256": "211c979ca78e13df5fc2b1189239473fa0c4bbf8f3eb1140bde09853214b3559"
+    },
+    {
+      "path": "web-dev-panel/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "Private dependency-free runtime workspace has explicit native Node commands and development-only Playwright; scripts distinguish catalog check from explicitly confirmed update.",
+      "beforeSha256": "9dafc8cda3a8d4944de0b639c4c24a0026a4b87db83d2dd31411b8d050d320d7",
+      "afterSha256": "9dafc8cda3a8d4944de0b639c4c24a0026a4b87db83d2dd31411b8d050d320d7"
+    },
+    {
+      "path": "web-dev-panel/playwright.config.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Serial browser config targets only loopback4411 synthetic fixture server, never reuses a preexisting service and retains failed traces.",
+      "beforeSha256": "9700f7aa4bdb84781a4da294bf8647f2f09003c54658254e105b9b2232031c47",
+      "afterSha256": "9700f7aa4bdb84781a4da294bf8647f2f09003c54658254e105b9b2232031c47"
+    },
+    {
+      "path": "web-dev-panel/public/app.js",
+      "status": "reviewed-acceptable",
+      "reason": "Imperative browser DOM module is long because each element/property is explicit; named card/custom-section/navigation/log/render helpers separate coherent views. commandActive, sectionStartSelections, membershipUnchanged and runsUnchanged expose lifecycle decisions; browser mutations send only fixed routes and IDs/revisions, SSE owns process truth, logs/imported names use textContent and storage commit precedes memory adoption. Existing pure preference/selection seams avoid introducing a broad controller layer; no execution or rendering refactor justified solely by total length.",
+      "beforeSha256": "4ddafc0f87942b04802312b4c21ab2136a8dc0fd86a0855d41b2b167bd4806c5",
+      "afterSha256": "4ddafc0f87942b04802312b4c21ab2136a8dc0fd86a0855d41b2b167bd4806c5"
+    },
+    {
+      "path": "web-dev-panel/public/custom-sections.js",
+      "status": "reviewed-acceptable",
+      "reason": "Closed preference validator owns exact keys, canonical IDs, name/member/byte bounds, immutable mutations, import reproducibility and storage errors together; validation helpers retain a single coherent trust boundary despite458lines. Preferences contain no executable or process state.",
+      "beforeSha256": "c0397786dd17058f5ee6b90179a57e2893bd07fd493ab8bd7d404b1687679e15",
+      "afterSha256": "c0397786dd17058f5ee6b90179a57e2893bd07fd493ab8bd7d404b1687679e15"
+    },
+    {
+      "path": "web-dev-panel/public/index.html",
+      "status": "reviewed-acceptable",
+      "reason": "Static HTML sections directly map to queried IDs, native dialogs and labelled controls; no dynamic HTML construction or executable command entry.318lines are explicit accessible markup, not a composition function.",
+      "beforeSha256": "8bb034ee02f082ff96121d597c58cd9030f8eeb3182b9e84b3b3eba133170f61",
+      "afterSha256": "8bb034ee02f082ff96121d597c58cd9030f8eeb3182b9e84b3b3eba133170f61"
+    },
+    {
+      "path": "web-dev-panel/public/selection.js",
+      "status": "reviewed-acceptable",
+      "reason": "Selection helpers separately derive active/selectable/compatible IDs, fail an entire section for missing/unavailable/nonbatch members and project exact current run pairs.",
+      "beforeSha256": "1d75682247fa2761dac9cc14c97dc203554d159442ba04a46a657d463b670bf3",
+      "afterSha256": "1d75682247fa2761dac9cc14c97dc203554d159442ba04a46a657d463b670bf3"
+    },
+    {
+      "path": "web-dev-panel/public/styles.css",
+      "status": "reviewed-acceptable",
+      "reason": "All token, component, hidden-state, viewport and reduced-motion rules reviewed; long stylesheet groups simple named selectors and two responsive breakpoints. Keeping cascade order visible is clearer than splitting by arbitrary size; no styling edits or visual change.",
+      "beforeSha256": "b6f6955b286f7c4b23cff66aeadc1168ed0ac3e4633cb40f93fc598e58cdc0d0",
+      "afterSha256": "b6f6955b286f7c4b23cff66aeadc1168ed0ac3e4633cb40f93fc598e58cdc0d0"
+    },
+    {
+      "path": "web-dev-panel/scripts/reconcile-catalog.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Reconciliation script gates writes behind exact --confirm-reviewed, separates initial metadata/category construction from existing-command reconciliation and preserves removed/documented sources.284lines include static descriptions; new/changed safety decisions remain disabled.",
+      "beforeSha256": "c72df9b8ae6addc0bbf83f8b83f6748a39e9da5e94a6f3823f78ce40b5a11728",
+      "afterSha256": "c72df9b8ae6addc0bbf83f8b83f6748a39e9da5e94a6f3823f78ce40b5a11728"
+    },
+    {
+      "path": "web-dev-panel/src/catalog.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Catalog validation, source confinement/resolution and CatalogStore watch/snapshot lifecycle have named functions/classes;749lines keep the native closed validator and reviewed-source model adjacent. Exact-key/string/source helpers expose decisions; package execution uses checked pnpm entrypoint with fixed argv, documented sources reject symlinks/traversal and Windows fails closed.",
+      "beforeSha256": "8a9448fddf9627f1bbdbfd1495b210bb410d11e415e9a20262a11b651863148d",
+      "afterSha256": "8a9448fddf9627f1bbdbfd1495b210bb410d11e415e9a20262a11b651863148d"
+    },
+    {
+      "path": "web-dev-panel/src/process-manager.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "ProcessManager600lines implements one serialized owned-run lifecycle; named createRun/spawn/requestStop/snapshot/stopSelected/conflict helpers keep atomic validation before reservation/spawn and complete stop validation before signals explicit. Redaction precedes bounded logs, codex projection drops content, leader exit kills owned descendants and close drains/finalizes once; splitting mutable run ownership would add coordination.",
+      "beforeSha256": "d51127bae9040dd97708edde895bfe39c5f4311f9248c7b686fb167fa357980e",
+      "afterSha256": "d51127bae9040dd97708edde895bfe39c5f4311f9248c7b686fb167fa357980e"
+    },
+    {
+      "path": "web-dev-panel/src/restart.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Terminal-only restart names inspection/listener/identity seams and rechecks UID, exact entrypoint, checkout cwd and start stamp before one graceful signal; timeout never escalates or starts replacement.",
+      "beforeSha256": "76e66d3ebd9c6bf8f8e46351f373db151e60a957a7f354c09a7be96d7f8a3b53",
+      "afterSha256": "76e66d3ebd9c6bf8f8e46351f373db151e60a957a7f354c09a7be96d7f8a3b53"
+    },
+    {
+      "path": "web-dev-panel/src/server.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Server599lines retains one closure over session, sequence, subscribers and start/close promises; named readJson/security/serveStatic/handleApi and boundary predicates separate trust checks and lifecycle. Exact Host/token/cookie/Origin/header, bounded bodies, snapshot-first SSE and fixed route map remain readable without fragmenting security state.",
+      "beforeSha256": "c7fb55b95e0e9db155d3740ff80bcded6c9a7343ff8c4831f9df6df76c606973",
+      "afterSha256": "c7fb55b95e0e9db155d3740ff80bcded6c9a7343ff8c4831f9df6df76c606973"
+    },
+    {
+      "path": "web-dev-panel/test/catalog-reconciliation.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "ReviewedCommand fixture directly distinguishes changed-script disablement from unchanged trust preservation.",
+      "beforeSha256": "30ade7aa9d73e5cb6834e817ecaf438f7e71f2c9dbc5456f1893739a26fb2786",
+      "afterSha256": "30ade7aa9d73e5cb6834e817ecaf438f7e71f2c9dbc5456f1893739a26fb2786"
+    },
+    {
+      "path": "web-dev-panel/test/catalog.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Catalog command fixture and native temporary sources expose symmetric conflicts, safe loopback URLs, source drift/symlink rejection, checked package entrypoint and Windows fail-closed; named contract cases explain262line catalog.",
+      "beforeSha256": "2666200834801eda8b0adf143c31c5670fceaa6e74b6145e1d94b89adb3783d4",
+      "afterSha256": "2666200834801eda8b0adf143c31c5670fceaa6e74b6145e1d94b89adb3783d4"
+    },
+    {
+      "path": "web-dev-panel/test/codex-events.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Codex event tests use a private sentinel to assert allowlisted metadata only and unknown/malformed event suppression.",
+      "beforeSha256": "52a07a30c640f2c790545168daed78d42f26c42b99e889de9ed30e35eb973b15",
+      "afterSha256": "52a07a30c640f2c790545168daed78d42f26c42b99e889de9ed30e35eb973b15"
+    },
+    {
+      "path": "web-dev-panel/test/custom-sections.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Custom-section document/section/error fixtures name closed serialization, privacy, canonical/count bounds, missing-ID ordinary load versus import rejection, immutable membership and storage failures;413line contract matrix is navigable by scenario.",
+      "beforeSha256": "8bfaab399f35d73eee9cc2b043cefb1f3881cd5d0582a2445b96002eb9a87804",
+      "afterSha256": "8bfaab399f35d73eee9cc2b043cefb1f3881cd5d0582a2445b96002eb9a87804"
+    },
+    {
+      "path": "web-dev-panel/test/dev.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Launcher fixture records restart/spawn/signal order, fixed shell-free argv, failed-restart suppression and handler cleanup independently.",
+      "beforeSha256": "9c1ee8d91861aeaeff3d6dcd973a22fc18fc18aaa7f68d769f2f8fb3eaa8fcd3",
+      "afterSha256": "9c1ee8d91861aeaeff3d6dcd973a22fc18fc18aaa7f68d769f2f8fb3eaa8fcd3"
+    },
+    {
+      "path": "web-dev-panel/test/e2e/panel.spec.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Four user-flow-marked synthetic browser journeys separate command/log atomicity, cross-tab state, portable sections/storage failure/stale stop and whole-app defaults. Explicit catalog/custom locators preserve placement identity;455line scenario catalog uses only fixture commands.",
+      "beforeSha256": "e5e5fc9737d3f29a34d03f28940e26f22a3b731ca134a74e5fb8186a104533ee",
+      "afterSha256": "e5e5fc9737d3f29a34d03f28940e26f22a3b731ca134a74e5fb8186a104533ee"
+    },
+    {
+      "path": "web-dev-panel/test/fixture-commands.json",
+      "status": "reviewed-acceptable",
+      "reason": "Six complete synthetic command entries retain fixed documented argv, source revisions, symmetric alpha/aggregate conflict, disabled fixture and long-lived fake whole-app with display-only loopback URLs.",
+      "beforeSha256": "700883492e46d5d94a3d56cd318e4b9aed6eb02c892ce48bc5a501e878d705f0",
+      "afterSha256": "700883492e46d5d94a3d56cd318e4b9aed6eb02c892ce48bc5a501e878d705f0"
+    },
+    {
+      "path": "web-dev-panel/test/fixture-repository/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "Fixture repository defines only synthetic whole-app Node command and no product/service dependency.",
+      "beforeSha256": "23306127600ca82d56e5ffdb18f2f8592cf3d7f1829d5ec49e4a6d4fd2a3097b",
+      "afterSha256": "23306127600ca82d56e5ffdb18f2f8592cf3d7f1829d5ec49e4a6d4fd2a3097b"
+    },
+    {
+      "path": "web-dev-panel/test/fixture-repository/scripts/command.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Fixture command clearly separates bounded completion/tick timers from SIGINT/SIGTERM cleanup and never invokes application services.",
+      "beforeSha256": "628a10e45ac50ee6568bb66b816a8ea6b339afd90d86149d464962754b664c1f",
+      "afterSha256": "628a10e45ac50ee6568bb66b816a8ea6b339afd90d86149d464962754b664c1f"
+    },
+    {
+      "path": "web-dev-panel/test/fixture-server.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Fixture server pins loopback4411 and known launch token to synthetic catalog/repository; signals close its owned server.",
+      "beforeSha256": "66abc97df75e088cc01984741139b18b40ddd9b27f5b80190cc0a497ba6aa621",
+      "afterSha256": "66abc97df75e088cc01984741139b18b40ddd9b27f5b80190cc0a497ba6aa621"
+    },
+    {
+      "path": "web-dev-panel/test/logs.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Log tests distinguish split-secret streaming redaction, credential variable recognition, public metadata exemptions, real credential collision and bounded-entry truncation.",
+      "beforeSha256": "828de413c91c19dbbed39139a65d5656c36271c0b757565153b7294b2c37a5c7",
+      "afterSha256": "828de413c91c19dbbed39139a65d5656c36271c0b757565153b7294b2c37a5c7"
+    },
+    {
+      "path": "web-dev-panel/test/process-manager.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "FakeCatalog/fixtureCommand/waitForTerminal seams make reservation races, invalid-batch atomicity, individual-only admission, all-or-nothing selected stops, stale run identity, shutdown and inherited-pipe cleanup explicit;302lines are named lifecycle cases.",
+      "beforeSha256": "a1eb25b18ebf9bd654c47ac6f95258bd98d5d32d6fcad7276d125d70aa8ad761",
+      "afterSha256": "a1eb25b18ebf9bd654c47ac6f95258bd98d5d32d6fcad7276d125d70aa8ad761"
+    },
+    {
+      "path": "web-dev-panel/test/restart.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Inspection fixture captures tool calls/signals; cases separate UID/cwd/entrypoint refusal, failed inspection, PID reuse and timeout; native synthetic listener test owns and cleans children/temp directory.",
+      "beforeSha256": "3f915be924c36207152a8b7c061bc6f2c1cf6417720ee8f08bc1f8a79fae03c4",
+      "afterSha256": "3f915be924c36207152a8b7c061bc6f2c1cf6417720ee8f08bc1f8a79fae03c4"
+    },
+    {
+      "path": "web-dev-panel/test/selection.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Selection cases enumerate production conflict-free bulk choice, individual migrations, complete section failures and active-only run targeting.",
+      "beforeSha256": "211a67542de56258efaa9996b995ec99f6f1a502332f2bd873ff1a4e47b85c36",
+      "afterSha256": "211a67542de56258efaa9996b995ec99f6f1a502332f2bd873ff1a4e47b85c36"
+    },
+    {
+      "path": "web-dev-panel/test/server.integration.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Native HTTP test groups bootstrap/security rejection then atomic races/SSE/current-run stops under one owned ephemeral server and finally cleanup; separate startup/shutdown race proves no leaked listener.392lines preserve one server-session journey rather than opaque setup state.",
+      "beforeSha256": "77877e20bd575f73d0fe431a8232bfb29fa5a5079353383c229b88e19761c444",
+      "afterSha256": "77877e20bd575f73d0fe431a8232bfb29fa5a5079353383c229b88e19761c444"
+    },
+    {
+      "path": "web-dev-panel/test/validation.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Validation cases align64member preferences with stop bound and assert closed start/stop/empty bodies, maximum counts and refusal of browser-provided signal/invalid IDs.",
+      "beforeSha256": "d5378a0c0dd484302657d82f9783ed26e7deb33162f1a9a241f5a474d103058d",
+      "afterSha256": "d5378a0c0dd484302657d82f9783ed26e7deb33162f1a9a241f5a474d103058d"
+    }
+  ],
+  "auditProgress": {
+    "fullyReviewedOriginalFiles": 29,
+    "remainingOriginalPaths": []
+  },
+  "checks": {
+    "executed": [],
+    "reason": "Read-only audit; root schedules integration checks. No source/test/catalog changes and no commands, tests, services or browser journeys executed.",
+    "coverageAndHashes": "All29 assigned bodies reviewed in full including catalog86entries; base hashes from root inventory and current SHA256 recorded."
+  }
+}

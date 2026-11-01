@@ -1,7 +1,9 @@
 'use client';
 import styles from './sentence-setup.module.css';
 import { SENTENCE_LIMITS } from '@languon/contracts';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
+import { SentenceEntrySelection } from './sentence-entry-selection';
+import { SentenceSetupEstimate } from './sentence-setup-estimate';
 import { MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
 import { usePreparationCopy } from '../sentence-preparation-copy';
 import { SentencePreparationOption } from '../sentence-preparation-option/sentence-preparation-option';
@@ -11,9 +13,7 @@ import { useSentenceCopy } from '../sentence-copy';
 
 import {
     Button,
-    Checkbox,
     Dialog,
-    Input,
     LoadingState,
     RadioGroup,
     Select,
@@ -119,6 +119,46 @@ export function SentenceSetup({
         onStart(c.configuration, request);
     }
 
+    function startDialog() {
+        start(false);
+    }
+
+    function startFullscreen() {
+        start(true);
+    }
+
+    function changeDirection(value: string) {
+        c.setConfiguration({
+            ...c.configuration,
+            direction: value as Configuration['direction'],
+        });
+    }
+
+    function changeExplanation(event: ChangeEvent<HTMLSelectElement>) {
+        c.setConfiguration({
+            ...c.configuration,
+            explanationLanguage: event.target
+                .value as Configuration['explanationLanguage'],
+        });
+    }
+
+    function changeScope(value: string) {
+        c.setConfiguration({
+            ...c.configuration,
+            scope:
+                value === 'all'
+                    ? { type: 'all' }
+                    : { type: 'manual', entryIds: c.selectedEntryIds },
+        });
+    }
+
+    function changeMode(value: string) {
+        c.setConfiguration({
+            ...c.configuration,
+            mode: value as Configuration['mode'],
+        });
+    }
+
     return (
         <Dialog
             variant={compact ? 'sheet' : 'dialog'}
@@ -156,12 +196,12 @@ export function SentenceSetup({
                             <Button
                                 variant='secondary'
                                 disabled={invalid}
-                                onClick={() => start(false)}
+                                onClick={startDialog}
                             >
                                 {t('Start in a dialog')}
                             </Button>
                         )}
-                        <Button disabled={invalid} onClick={() => start(true)}>
+                        <Button disabled={invalid} onClick={startFullscreen}>
                             {t('Start in full screen')}
                         </Button>
                     </div>
@@ -190,12 +230,7 @@ export function SentenceSetup({
                 <RadioGroup
                     label={t('Direction')}
                     value={c.configuration.direction}
-                    onChange={(value) =>
-                        c.setConfiguration({
-                            ...c.configuration,
-                            direction: value as Configuration['direction'],
-                        })
-                    }
+                    onChange={changeDirection}
                     orientation='horizontal'
                     variant='card'
                     options={[
@@ -214,13 +249,7 @@ export function SentenceSetup({
                     value={
                         c.configuration.explanationLanguage ?? sourceLanguage
                     }
-                    onChange={(event) =>
-                        c.setConfiguration({
-                            ...c.configuration,
-                            explanationLanguage: event.target
-                                .value as Configuration['explanationLanguage'],
-                        })
-                    }
+                    onChange={changeExplanation}
                     options={[
                         ...new Set([
                             sourceLanguage,
@@ -238,18 +267,7 @@ export function SentenceSetup({
                 <RadioGroup
                     label={t('Vocabulary')}
                     value={c.configuration.scope.type}
-                    onChange={(value) =>
-                        c.setConfiguration({
-                            ...c.configuration,
-                            scope:
-                                value === 'all'
-                                    ? { type: 'all' }
-                                    : {
-                                          type: 'manual',
-                                          entryIds: c.selectedEntryIds,
-                                      },
-                        })
-                    }
+                    onChange={changeScope}
                     orientation='horizontal'
                     options={[
                         {
@@ -263,115 +281,17 @@ export function SentenceSetup({
                 />
                 <p className={styles.setupNote}>{batchDescription}</p>
                 {c.configuration.scope.type === 'manual' ? (
-                    <div className={styles.selectionPanel}>
-                        <Input
-                            label={t('Search entries')}
-                            value={c.search}
-                            onChange={(event) =>
-                                c.setSearch(event.target.value)
-                            }
-                        />
-                        <div className={styles.selectionHeader}>
-                            <p className={styles.setupNote}>
-                                {c.selectedEntryIds.length} /{' '}
-                                {SENTENCE_LIMITS.selectedEntries}{' '}
-                                {t('selected')}
-                            </p>
-                            <Button
-                                size='compact'
-                                variant='secondary'
-                                disabled={!canSelectShown}
-                                onClick={selectShown}
-                            >
-                                {t('Select all shown')}
-                            </Button>
-                            <Button
-                                size='compact'
-                                variant='ghost'
-                                onClick={() => c.setSelectedEntryIds([])}
-                            >
-                                {t('Clear')}
-                            </Button>
-                        </div>
-                        {c.selectedEntryIds.length === 0 ? (
-                            <p className={styles.setupNote}>
-                                {t('Choose at least one entry to start.')}
-                            </p>
-                        ) : null}
-                        {selectionFull ? (
-                            <p role='status' className={styles.setupNote}>
-                                {t(
-                                    'Batch limit reached. Deselect a word to choose another.',
-                                )}
-                            </p>
-                        ) : null}
-                        {c.entriesError ? (
-                            <SentenceErrorNotice
-                                error={c.entriesError}
-                                onRetry={c.refresh}
-                            />
-                        ) : null}
-                        <ul className={styles.selectionList}>
-                            {c.entries.map((entry) => (
-                                <li key={entry.entryId}>
-                                    <Checkbox
-                                        disabled={
-                                            selectionFull &&
-                                            !c.selectedEntryIds.includes(
-                                                entry.entryId,
-                                            )
-                                        }
-                                        checked={c.selectedEntryIds.includes(
-                                            entry.entryId,
-                                        )}
-                                        onChange={(event) =>
-                                            c.setSelectedEntryIds(
-                                                event.target.checked
-                                                    ? [
-                                                          ...c.selectedEntryIds,
-                                                          entry.entryId,
-                                                      ]
-                                                    : c.selectedEntryIds.filter(
-                                                          (id) =>
-                                                              id !==
-                                                              entry.entryId,
-                                                      ),
-                                            )
-                                        }
-                                    >
-                                        {entry.source} → {entry.translation}
-                                    </Checkbox>
-                                </li>
-                            ))}
-                        </ul>
-                        {c.entriesLoading ? (
-                            <LoadingState>{t('Loading entries')}</LoadingState>
-                        ) : c.entries.length === 0 ? (
-                            <p className={styles.setupNote}>
-                                {t('No entries match your search.')}
-                            </p>
-                        ) : null}
-                        {c.hasMore ? (
-                            <Button
-                                variant='secondary'
-                                size='compact'
-                                loading={c.entriesLoading}
-                                onClick={() => void c.loadMore()}
-                            >
-                                {t('Load more entries')}
-                            </Button>
-                        ) : null}
-                    </div>
+                    <SentenceEntrySelection
+                        c={c}
+                        selectionFull={selectionFull}
+                        canSelectShown={canSelectShown}
+                        selectShown={selectShown}
+                    />
                 ) : null}
                 <RadioGroup
                     label={t('Sentences')}
                     value={c.configuration.mode}
-                    onChange={(value) =>
-                        c.setConfiguration({
-                            ...c.configuration,
-                            mode: value as Configuration['mode'],
-                        })
-                    }
+                    onChange={changeMode}
                     variant='card'
                     options={[
                         {
@@ -424,62 +344,10 @@ export function SentenceSetup({
                     <SentenceErrorNotice error={c.error} onRetry={c.refresh} />
                 ) : null}
                 {prepared ? (
-                    <div className={styles.estimatePanel}>
-                        <div className={styles.estimateMetrics}>
-                            <p>
-                                <strong>{prepared.eligibleCount}</strong>{' '}
-                                {t('eligible entries')}
-                            </p>
-                            <p>
-                                <strong>{prepared.skippedCount}</strong>{' '}
-                                {t('skipped')}
-                            </p>
-                            <p>
-                                <strong>{prepared.usedCount}</strong>{' '}
-                                {t('seen in sentences')}
-                            </p>
-                            <p>
-                                <strong>{prepared.remainingCount}</strong>{' '}
-                                {t('not seen yet')}
-                            </p>
-                            <p>
-                                <strong>{prepared.savedReviewCount}</strong>{' '}
-                                {t('saved sentences')}
-                            </p>
-                        </div>
-                        {prepared.skippedCount ? (
-                            <details className={styles.costDetails}>
-                                <summary className={styles.costAction}>
-                                    {t('Why entries are skipped')}
-                                </summary>
-                                <p className={styles.costDescription}>
-                                    {t(
-                                        'Entries without a complete source and translation are skipped.',
-                                    )}
-                                </p>
-                            </details>
-                        ) : null}
-                        <p className={styles.costNote}>
-                            {t(
-                                'Exposure counts are not mastery scores. Generating sentences and checking with AI use credits. Showing a saved reference answer is free.',
-                            )}
-                        </p>
-                        {prepared.eligibleCount === 0 ? (
-                            <p className={styles.estimateNote}>
-                                {t(
-                                    'No eligible entries. Add complete translations to your dictionary first.',
-                                )}
-                            </p>
-                        ) : null}
-                        {c.configuration.mode === 'review-only' &&
-                        prepared.savedReviewCount === 0 ? (
-                            <p className={styles.estimateNote}>
-                                {t(
-                                    'No saved sentences yet. Choose Saved first or Generate new sentences to create them.',
-                                )}
-                            </p>
-                        ) : null}
-                    </div>
+                    <SentenceSetupEstimate
+                        prepared={prepared}
+                        mode={c.configuration.mode}
+                    />
                 ) : null}
                 {preparation ? (
                     <div className={styles.preparationOption}>

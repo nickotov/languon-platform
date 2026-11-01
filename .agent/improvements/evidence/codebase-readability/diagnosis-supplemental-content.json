@@ -1,0 +1,181 @@
+{
+  "baseCommit": "252de64",
+  "mode": "Read-only diagnosis; no source/test changes, runtime execution or services by this worker. Evidence-only write explicitly requested by root.",
+  "status": "Source and failure-log diagnosis complete; actual base mirror execution pending root.",
+  "run": "b6cfd56e-75a4-41dd-9a94-c2f473257d08",
+  "logs": {
+    "text": "/private/tmp/languon-bl019-supplemental-b6cfd56e-75a4-41dd-9a94-c2f473257d08/backend.log",
+    "json": "/private/tmp/languon-bl019-supplemental-b6cfd56e-75a4-41dd-9a94-c2f473257d08/backend-vitest.json"
+  },
+  "failures": [
+    {
+      "suite": "apps/backend/tests/integration/modules/learning/sentence-library-preparation.integration.test.ts",
+      "cases": 21,
+      "phase": "beforeEach at line 337; assertion bodies not executed",
+      "observedSqlState": "23505",
+      "observedConstraint": "dictionary_ai_configuration_revisions_version_unique",
+      "observedDetail": "Key (version)=(1) already exists.",
+      "logLines": [
+        412,
+        424,
+        430
+      ],
+      "cause": "beforeEach invokes seedLegacyActionFixture \u2192 seedInterviewAccountingFixture \u2192 seedTextAiRoutingFixture. Routing publication inserts legacy immutable FK bridge version 1 in drizzle-text-ai-routing-store.ts. Test then manually inserts a second revision version 1. Entire fixture and relevant bridge/helpers/schema are byte-identical to base. This is a revision collision, not observed snapshot validation rejection.",
+      "confidence": "High from exact SQL error and unchanged causal source chain; standalone base execution is root-owned and pending.",
+      "gap": "All 21 preparation assertions remain missing runtime evidence. Modern critical passing cases do not replace these assertions."
+    },
+    {
+      "suite": "apps/backend/tests/integration/modules/text-ai/text-ai-provider-circuit.test.ts",
+      "cases": 1,
+      "phase": "First store.enqueue at line 196 before circuit assertions",
+      "observedError": "DictionaryGenerationNotAvailableError at generation-admission.ts:190",
+      "logLines": [
+        853,
+        854,
+        855,
+        867
+      ],
+      "cause": "Test resets/migrates DB, inserts legacy configuration/preference/one worker observation, but no active published routing revision or routing probes. Unchanged resolveAdminTextAiRouting returns null without current routing; unchanged admission maps this to TextAiSelectionUnavailableError, then DictionaryGenerationNotAvailableError. Positional selected catalog[1] additionally targets unchanged retired Kie Gemini 2.5 Pro.",
+      "diffAssessment": "Only current/base test diff restores DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED in afterAll. Removing that exact line makes current bytes identical to base; it cannot cause first enqueue failure.",
+      "confidence": "High source-level baseline fixture drift; exact internal swallowed selection reason inferred from missing routing state, not separately instrumented.",
+      "gap": "Model-specific circuit integration assertion remains unexecuted."
+    }
+  ],
+  "baselineHashes": [
+    {
+      "path": "apps/backend/tests/integration/modules/learning/sentence-library-preparation.integration.test.ts",
+      "beforeSha256": "cb2a3a1abc8baaeac7af89d916f2be8e2de467a83a1e88b3af42b24c1deee2e6",
+      "afterSha256": "cb2a3a1abc8baaeac7af89d916f2be8e2de467a83a1e88b3af42b24c1deee2e6",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-provider-circuit.test.ts",
+      "beforeSha256": "0626a63a4fbe94497b3201891a95af121a04e957d12fe10997232e43ef8d99ec",
+      "afterSha256": "ebe7d7f675211b2f122a53deca17831689d080be31c7f8b99d53fd0cf5a683a7",
+      "identical": false
+    },
+    {
+      "path": "apps/backend/tests/support/legacy-action-fixture.ts",
+      "beforeSha256": "ae984262af9f37a8a2b5eb8227908325d089d5ea4117249a54168407f514ef5d",
+      "afterSha256": "ae984262af9f37a8a2b5eb8227908325d089d5ea4117249a54168407f514ef5d",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/tests/support/ai-accounting-fixture.ts",
+      "beforeSha256": "1e263f1690473c4aa3a7776070ceb7a646455ed00ffef9d1bc3fd13ee24b407c",
+      "afterSha256": "1e263f1690473c4aa3a7776070ceb7a646455ed00ffef9d1bc3fd13ee24b407c",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/tests/support/text-ai-routing-fixture.ts",
+      "beforeSha256": "69c088606989ee959a46e7302011936e66c485e2f96c3b38dfc3f7dcfd97744c",
+      "afterSha256": "69c088606989ee959a46e7302011936e66c485e2f96c3b38dfc3f7dcfd97744c",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store.ts",
+      "beforeSha256": "685780fe16ab176f27506230ad85df5e66d60a95cc6a83d383310ddf9fee3473",
+      "afterSha256": "685780fe16ab176f27506230ad85df5e66d60a95cc6a83d383310ddf9fee3473",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+      "beforeSha256": "09ddff2284007651c24d9eb490902aca200505160e8dc98ef5a68135f3a49356",
+      "afterSha256": "09ddff2284007651c24d9eb490902aca200505160e8dc98ef5a68135f3a49356",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts",
+      "beforeSha256": "ee49e9cff1927bcba98bee4679a9687853f2b40c483de1de387bb11aec78b09e",
+      "afterSha256": "ee49e9cff1927bcba98bee4679a9687853f2b40c483de1de387bb11aec78b09e",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+      "beforeSha256": "8f3d07f6fb77aec3b6e20e4597b7e315a01e335b378cf640d00b57ba55710a49",
+      "afterSha256": "8f3d07f6fb77aec3b6e20e4597b7e315a01e335b378cf640d00b57ba55710a49",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema.ts",
+      "beforeSha256": "4c64da54d87146df7417953d5bdf31ab2225aef3d04c66997ce16a80f4551911",
+      "afterSha256": "4c64da54d87146df7417953d5bdf31ab2225aef3d04c66997ce16a80f4551911",
+      "identical": true
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-admission.ts",
+      "beforeSha256": "6f02e06065a19f822322ca09d71a12285208f3096bc02bd63a58f6d80f973eb9",
+      "afterSha256": "6f02e06065a19f822322ca09d71a12285208f3096bc02bd63a58f6d80f973eb9",
+      "identical": true
+    }
+  ],
+  "existingPassingCoverage": {
+    "criticalRun": "afeaba9a-e36c-44c1-8704-357f7e1ff153",
+    "criticalReport": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/ai-execution-contracts.json",
+    "passingSuites": [
+      {
+        "path": "apps/backend/tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts",
+        "cases": 35,
+        "includes": "Generation v1/v2 and preparation-child compositions; dispatched fallback expense, cancellation/fencing, retry reservation and provider-circuit failure classification."
+      },
+      {
+        "path": "apps/backend/tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts",
+        "cases": 8
+      },
+      {
+        "path": "apps/backend/tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts",
+        "cases": 1
+      },
+      {
+        "path": "apps/backend/tests/integration/modules/text-ai/text-ai-routing.test.ts",
+        "cases": 4
+      }
+    ],
+    "browser": [
+      {
+        "report": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/sentence-practice.json",
+        "cases": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "titles": [
+          "unavailable provider model keeps the answer and opens AI preferences",
+          "checks owner practice and gives a zero-credit reader a free personal saved reference"
+        ]
+      },
+      {
+        "report": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/admin-text-ai-routing.json",
+        "cases": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "titles": [
+          "admin inspects route evidence and explicitly approves synthetic check costs",
+          "owner reviews disabled audio transcription configuration without provider execution"
+        ]
+      }
+    ],
+    "supplementalPassing": [
+      {
+        "path": "apps/backend/tests/integration/modules/learning/sentence-library-safety.integration.test.ts",
+        "cases": 6
+      },
+      {
+        "path": "apps/backend/tests/integration/modules/speech/shared-speech-sources.test.ts",
+        "cases": 7
+      }
+    ],
+    "limits": "These are existing parsed passing report entries, not new execution by diagnosis worker. Comprehensive critical invocation failed overall on separate accounting case. Passing modern selections support bounded affected seams but do not replace the 21 preparation assertions or failed circuit assertion; root must validate evidence freshness against final hashes."
+  },
+  "recommendedFutureFixtureActualization": [
+    {
+      "scope": "Preparation fixture only",
+      "change": "Reuse seeded routing/legacy bridge identity where compatible or allocate a noncolliding revision using existing immutable bridge semantics; preserve custom snapshot and all 21 scenario assertions. Recheck downstream admission assumptions after removing the collision.",
+      "verification": "Rerun complete sentence-library-preparation.integration.test.ts on guarded disposable PostgreSQL, no skips/retries/paid providers."
+    },
+    {
+      "scope": "Provider circuit fixture only",
+      "change": "Choose named current active routes instead of positional retired model; use existing deterministic routing/pricing/probe/fingerprint/readiness helpers. Preserve model isolation and Auto/explicit circuit assertions at actual selected route identities.",
+      "verification": "Rerun full text-ai-provider-circuit.test.ts and focused existing routing tests, no production guard weakening or broad harness changes."
+    }
+  ],
+  "pendingRootEvidence": "Root is executing actual 252de64 mirror four-file batch to confirm baseline failures; this report does not claim that execution result."
+}

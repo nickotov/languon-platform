@@ -211,6 +211,30 @@ export class SentenceWorkerService {
                             ? 'provider_timeout'
                             : 'provider_unavailable';
 
+                const resolveRetryAt = (): Date | null => {
+                    // Managed routing permits only a conclusive first-attempt
+                    // fallback; legacy jobs retain their category/attempt policy.
+                    if (job.execution.routingAuthority) {
+                        if (
+                            !hasConclusiveTextAiFailure(error) ||
+                            combined.aborted ||
+                            job.lease.attempt !== 1
+                        ) {
+                            return null;
+                        }
+                    } else if (
+                        code === 'model_unavailable' ||
+                        (code === 'invalid_model_output' &&
+                            job.kind !== 'sentence-generation') ||
+                        controller.signal.aborted ||
+                        job.lease.attempt >= d.maxAttempts
+                    ) {
+                        return null;
+                    }
+
+                    return new Date(d.clock.now().getTime() + d.retryDelayMs);
+                };
+
                 await d.store.fail(
                     job.lease,
                     {
@@ -223,23 +247,7 @@ export class SentenceWorkerService {
                                       'conclusive-provider-failure' as const,
                               }
                             : {}),
-                        retryAt: job.execution.routingAuthority
-                            ? hasConclusiveTextAiFailure(error) &&
-                              !combined.aborted &&
-                              job.lease.attempt === 1
-                                ? new Date(
-                                      d.clock.now().getTime() + d.retryDelayMs,
-                                  )
-                                : null
-                            : code === 'model_unavailable' ||
-                                (code === 'invalid_model_output' &&
-                                    job.kind !== 'sentence-generation') ||
-                                controller.signal.aborted ||
-                                job.lease.attempt >= d.maxAttempts
-                              ? null
-                              : new Date(
-                                    d.clock.now().getTime() + d.retryDelayMs,
-                                ),
+                        retryAt: resolveRetryAt(),
                     },
                     context(),
                 );

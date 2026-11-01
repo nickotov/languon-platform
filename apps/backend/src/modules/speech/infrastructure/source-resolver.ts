@@ -149,20 +149,24 @@ export class DrizzleSpeechSourceResolver {
             }
 
             const settings = learningCardSettings(owned.settings, card);
-            const field =
+            let field:
+                'source' | 'translation' | 'example' | 'exampleTranslation';
+
+            if (
                 source.kind === 'flashcard-field' &&
                 (source.field === 'sourceExample' ||
                     source.field === 'targetExample')
-                    ? (source.field === 'sourceExample'
-                          ? 'source'
-                          : 'target') === settings.exampleLanguageRole
+            ) {
+                const exampleRole =
+                    source.field === 'sourceExample' ? 'source' : 'target';
+
+                field =
+                    exampleRole === settings.exampleLanguageRole
                         ? 'example'
-                        : 'exampleTranslation'
-                    : (source.field as
-                          | 'source'
-                          | 'translation'
-                          | 'example'
-                          | 'exampleTranslation');
+                        : 'exampleTranslation';
+            } else {
+                field = source.field as typeof field;
+            }
 
             if (field === 'example' && !settings.exampleEnabled) {
                 throw new SpeechError('speech_source_unavailable', 404);
@@ -180,14 +184,16 @@ export class DrizzleSpeechSourceResolver {
                 throw new SpeechError('speech_source_unavailable', 404);
             }
 
-            const role =
-                field === 'source'
-                    ? 'source'
-                    : field === 'translation'
-                      ? 'target'
-                      : field === 'example'
-                        ? settings.exampleLanguageRole
-                        : settings.exampleTranslationLanguageRole;
+            let role: 'source' | 'target';
+            if (field === 'source') {
+                role = 'source';
+            } else if (field === 'translation') {
+                role = 'target';
+            } else if (field === 'example') {
+                role = settings.exampleLanguageRole;
+            } else {
+                role = settings.exampleTranslationLanguageRole;
+            }
 
             return {
                 authority,

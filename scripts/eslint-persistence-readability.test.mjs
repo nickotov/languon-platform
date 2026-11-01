@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ESLint } from 'eslint';
-import { persistenceFormattingAllowances } from './eslint-persistence-readability.mjs';
 
 const eslint = new ESLint();
 const storePath =
@@ -112,24 +111,16 @@ test('normal autofix introduces whitespace without changing expressions', async 
     assert.deepEqual(await messages(result.output), []);
 });
 
-test('formatting allowances are exact-file ceilings without exempting siblings', async () => {
-    for (const allowance of persistenceFormattingAllowances) {
-        const [filePath] = allowance.files;
-        const limit = allowance.rules['max-lines'][1].max;
-        const atLimit = Array(limit).fill('void 0;').join('\n');
-        const beyondLimit = `${atLimit}\nvoid 0;`;
+test('formerly oversized implementations follow the ordinary persistence limit', async () => {
+    const source = Array(501).fill('void 0;').join('\n');
 
-        assert.deepEqual(await messages(atLimit, filePath), []);
+    for (const filePath of [
+        'apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts',
+        'apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts',
+        'apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts',
+    ]) {
         assert.ok(
-            (await messages(beyondLimit, filePath)).some(
-                ({ ruleId }) => ruleId === 'max-lines',
-            ),
-        );
-
-        const sibling = filePath.replace(/[^/]+$/, 'another-implementation.ts');
-
-        assert.ok(
-            (await messages(atLimit, sibling)).some(
+            (await messages(source, filePath)).some(
                 ({ ruleId }) => ruleId === 'max-lines',
             ),
         );

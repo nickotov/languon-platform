@@ -1,4 +1,3 @@
-import { LearningNarrative } from '../learning-narrative/learning-narrative';
 import { useRef, type FormEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { ExerciseLearningBlock } from '@languon/contracts';
@@ -8,7 +7,7 @@ import { useExercisePractice } from '../../hooks/use-exercise-practice';
 import { checkPreparedAnswer } from '../../lib/check-prepared-answer';
 import { learningAnswerEquals } from '../../lib/learning-answer-equals';
 import { ExerciseAnswerFields } from './exercise-answer-fields';
-import { ExerciseHint } from './exercise-hint';
+import { ExerciseResults } from './exercise-results';
 import { ExercisePreview } from './exercise-preview';
 import { ExerciseActions } from './exercise-actions';
 import styles from './exercise-block.module.css';
@@ -217,55 +216,17 @@ export function ExerciseBlock(
                         onReveal={handleReveal}
                         onRetry={handleRetry}
                     />
-                    <div aria-live='polite' className={styles.results}>
-                        {preparedResult !== undefined ? (
-                            <div
-                                className={styles.feedback}
-                                data-correct={preparedResult}
-                                role='status'
-                            >
-                                <strong>
-                                    {preparedResult
-                                        ? labels.correct
-                                        : labels.incorrect}
-                                </strong>
-                                <LearningNarrative
-                                    content={block.explanation}
-                                />
-                            </div>
-                        ) : null}
-                        {visibleFeedback ? (
-                            <div role='status' className={styles.feedback}>
-                                <p className={styles.feedbackTitle}>
-                                    {feedbackTitle}
-                                </p>
-                                <p dir='auto'>{visibleFeedback}</p>
-                            </div>
-                        ) : null}
-                        {hintVisible ? (
-                            <ExerciseHint {...props} hint={block.hint} />
-                        ) : null}
-                        {revealed ? (
-                            <div
-                                className={styles.referencePanel}
-                                role='status'
-                            >
-                                <p className={styles.feedbackTitle}>
-                                    {labels.answer}
-                                </p>
-                                <p dir='auto'>{block.referenceAnswer}</p>
-                                <LearningNarrative
-                                    className={styles.secondary}
-                                    content={block.explanation}
-                                />
-                            </div>
-                        ) : null}
-                        {props.error ? (
-                            <p role='alert' className={styles.error}>
-                                {props.error}
-                            </p>
-                        ) : null}
-                    </div>
+                    <ExerciseResults
+                        block={block}
+                        labels={labels}
+                        preparedResult={preparedResult}
+                        visibleFeedback={visibleFeedback}
+                        feedbackTitle={feedbackTitle}
+                        hintVisible={hintVisible}
+                        revealed={revealed}
+                        hintOptions={props}
+                        error={props.error}
+                    />
                 </form>
             </div>
         </div>

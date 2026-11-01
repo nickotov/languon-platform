@@ -1011,16 +1011,17 @@ export class DrizzleSpeechStore implements SpeechStore {
             };
         }
 
-        const state =
-            recording.state === 'ready'
-                ? 'ready'
-                : job?.state === 'submission_unknown'
-                  ? 'submission_unknown'
-                  : job?.state === 'queued'
-                    ? 'queued'
-                    : job?.state === 'failed'
-                      ? 'failed'
-                      : 'processing';
+        let state: SpeechResponse['state'] = 'processing';
+        if (recording.state === 'ready') {
+            state = 'ready';
+        } else if (job?.state === 'submission_unknown') {
+            state = 'submission_unknown';
+        } else if (job?.state === 'queued') {
+            state = 'queued';
+        } else if (job?.state === 'failed') {
+            state = 'failed';
+        }
+
         // The billing state of a joining actor must never expose the initiator's payment.
         const billingState =
             job?.payerId === binding.actorId
@@ -1709,14 +1710,14 @@ export class DrizzleSpeechStore implements SpeechStore {
                     billingState = 'released_no_charge';
                 }
 
-                const state =
-                    row.state === 'queued'
-                        ? 'failed'
-                        : row.state === 'submitting'
-                          ? 'submission_unknown'
-                          : row.recoveryDeadline <= now
-                            ? 'submission_unknown'
-                            : row.state;
+                let state = row.state;
+                if (row.state === 'queued') {
+                    state = 'failed';
+                } else if (row.state === 'submitting') {
+                    state = 'submission_unknown';
+                } else if (row.recoveryDeadline <= now) {
+                    state = 'submission_unknown';
+                }
 
                 if (state === 'failed' || state === 'submission_unknown') {
                     await settleSpeechProviderExpense(

@@ -256,6 +256,65 @@ export const DictionaryCardAuthoringAcceptedOutcomeSchema = z
     })
     .strict();
 
+function validateAuthoringActiveStage(
+    job: { state: string; progress: { stage: string } },
+    context: z.RefinementCtx,
+) {
+    if (job.state === 'queued' && job.progress.stage !== 'queued') {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Queued jobs must report the queued stage',
+        });
+    }
+
+    if (
+        job.state === 'running' &&
+        !['generating', 'validating'].includes(job.progress.stage)
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Running jobs must report a running stage',
+        });
+    }
+}
+
+function validateAuthoringTerminalOutcome(
+    job: {
+        state: string;
+        failure: { code: string; retryable: boolean } | null;
+        outcome: z.infer<
+            typeof DictionaryCardAuthoringAcceptedOutcomeSchema
+        > | null;
+    },
+    context: z.RefinementCtx,
+) {
+    if ((job.state === 'failed') !== (job.failure !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['failure'],
+            message: 'Only failed jobs expose a sanitized failure',
+        });
+    }
+
+    if ((job.state === 'accepted') !== (job.outcome !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['outcome'],
+            message: 'Only accepted jobs expose an accepted outcome',
+        });
+    }
+
+    if (job.failure?.code === 'generation_conflict' && job.failure.retryable) {
+        context.addIssue({
+            code: 'custom',
+            path: ['failure', 'retryable'],
+            message: 'Generation conflicts are not retryable',
+        });
+    }
+}
+
 const authoringJobBase = {
     billing: ActionBillingSchema.optional(),
     id: DictionaryIdSchema,
@@ -289,26 +348,7 @@ export const DictionaryCardAuthoringGenerationJobSchema = z.discriminatedUnion(
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if (job.state === 'queued' && job.progress.stage !== 'queued') {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Queued jobs must report the queued stage',
-                    });
-                }
-
-                if (
-                    job.state === 'running' &&
-                    !['generating', 'validating'].includes(job.progress.stage)
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Running jobs must report a running stage',
-                    });
-                }
-            }),
+            .superRefine(validateAuthoringActiveStage),
         z
             .object({
                 ...authoringJobBase,
@@ -362,35 +402,7 @@ export const DictionaryCardAuthoringGenerationJobSchema = z.discriminatedUnion(
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if ((job.state === 'failed') !== (job.failure !== null)) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure'],
-                        message: 'Only failed jobs expose a sanitized failure',
-                    });
-                }
-
-                if ((job.state === 'accepted') !== (job.outcome !== null)) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['outcome'],
-                        message:
-                            'Only accepted jobs expose an accepted outcome',
-                    });
-                }
-
-                if (
-                    job.failure?.code === 'generation_conflict' &&
-                    job.failure.retryable
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure', 'retryable'],
-                        message: 'Generation conflicts are not retryable',
-                    });
-                }
-            }),
+            .superRefine(validateAuthoringTerminalOutcome),
     ],
 );
 
@@ -426,26 +438,7 @@ export const DictionaryCardAuthoringV2GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if (job.state === 'queued' && job.progress.stage !== 'queued') {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Queued jobs must report the queued stage',
-                    });
-                }
-
-                if (
-                    job.state === 'running' &&
-                    !['generating', 'validating'].includes(job.progress.stage)
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Running jobs must report a running stage',
-                    });
-                }
-            }),
+            .superRefine(validateAuthoringActiveStage),
         z
             .object({
                 ...authoringV2JobBase,
@@ -499,35 +492,7 @@ export const DictionaryCardAuthoringV2GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if ((job.state === 'failed') !== (job.failure !== null)) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure'],
-                        message: 'Only failed jobs expose a sanitized failure',
-                    });
-                }
-
-                if ((job.state === 'accepted') !== (job.outcome !== null)) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['outcome'],
-                        message:
-                            'Only accepted jobs expose an accepted outcome',
-                    });
-                }
-
-                if (
-                    job.failure?.code === 'generation_conflict' &&
-                    job.failure.retryable
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure', 'retryable'],
-                        message: 'Generation conflicts are not retryable',
-                    });
-                }
-            }),
+            .superRefine(validateAuthoringTerminalOutcome),
     ]);
 
 const authoringV3JobBase = {
@@ -552,26 +517,7 @@ export const DictionaryCardAuthoringV3GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if (job.state === 'queued' && job.progress.stage !== 'queued') {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Queued jobs must report the queued stage',
-                    });
-                }
-
-                if (
-                    job.state === 'running' &&
-                    !['generating', 'validating'].includes(job.progress.stage)
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Running jobs must report a running stage',
-                    });
-                }
-            }),
+            .superRefine(validateAuthoringActiveStage),
         z
             .object({
                 ...authoringV3JobBase,
@@ -625,35 +571,7 @@ export const DictionaryCardAuthoringV3GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if ((job.state === 'failed') !== (job.failure !== null)) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure'],
-                        message: 'Only failed jobs expose a sanitized failure',
-                    });
-                }
-
-                if ((job.state === 'accepted') !== (job.outcome !== null)) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['outcome'],
-                        message:
-                            'Only accepted jobs expose an accepted outcome',
-                    });
-                }
-
-                if (
-                    job.failure?.code === 'generation_conflict' &&
-                    job.failure.retryable
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure', 'retryable'],
-                        message: 'Generation conflicts are not retryable',
-                    });
-                }
-            }),
+            .superRefine(validateAuthoringTerminalOutcome),
     ]);
 
 export const DictionaryCardAuthoringAnyGenerationJobSchema = z.union([

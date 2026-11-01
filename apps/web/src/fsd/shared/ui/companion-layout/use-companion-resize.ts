@@ -3,11 +3,15 @@ import {
     useEffect,
     useRef,
     useState,
-    type CSSProperties,
     type RefObject,
     type KeyboardEvent,
     type PointerEvent,
 } from 'react';
+import {
+    companionSizing,
+    readCompanionDragBounds,
+    useCompanionMeasurements,
+} from './use-companion-measurements';
 
 /** Workspace width is a browser preference in pixels; floating geometry is independent. */
 export function useCompanionResize(
@@ -73,47 +77,7 @@ export function useCompanionResize(
         }
     }, [preferenceReady, customWidth]);
 
-    useEffect(() => {
-        const element = root.current;
-        if (!element || !resizable) {
-            return;
-        }
-
-        const query = window.matchMedia('(min-width: 1280px)');
-        function measure() {
-            const width = element!.getBoundingClientRect().width;
-            const font = Number.parseFloat(
-                getComputedStyle(document.documentElement).fontSize,
-            );
-
-            // 340 reference pixels = 21.25rem, matching the canonical geometry scale.
-            setGeometry({
-                width,
-                minimum: Math.min(font * 21.25, width / 2),
-                maximum: Math.max(
-                    Math.min(font * 21.25, width / 2),
-                    Math.min(font * 35, width - font * 30),
-                ),
-                slotWidth: slot.current?.getBoundingClientRect().width ?? 0,
-            });
-
-            setDesktop(query.matches);
-        }
-
-        const observer = new ResizeObserver(measure);
-        observer.observe(element);
-        if (slot.current) {
-            observer.observe(slot.current);
-        }
-
-        query.addEventListener('change', measure);
-        measure();
-
-        return () => {
-            observer.disconnect();
-            query.removeEventListener('change', measure);
-        };
-    }, [resizable]);
+    useCompanionMeasurements(resizable, root, slot, setGeometry, setDesktop);
 
     useEffect(() => {
         if (enabled) {
@@ -137,30 +101,8 @@ export function useCompanionResize(
         setHalfWidthState(value);
     }, []);
 
-    function bounds() {
-        const element = root.current;
-        if (!element) {
-            return null;
-        }
-
-        const rect = element.getBoundingClientRect();
-        const font = Number.parseFloat(
-            getComputedStyle(document.documentElement).fontSize,
-        );
-
-        return {
-            rect,
-            minimum: Math.min(font * 21.25, rect.width / 2),
-            maximum: Math.max(
-                Math.min(font * 21.25, rect.width / 2),
-                Math.min(font * 35, rect.width - font * 30),
-            ),
-            rtl: getComputedStyle(element).direction === 'rtl',
-        };
-    }
-
     function resize(width: number) {
-        const area = bounds();
+        const area = readCompanionDragBounds(root);
         if (!area || area.rect.width <= 0) {
             return;
         }
@@ -199,7 +141,7 @@ export function useCompanionResize(
             return;
         }
 
-        const area = bounds();
+        const area = readCompanionDragBounds(root);
         if (!area) {
             return;
         }
@@ -251,7 +193,7 @@ export function useCompanionResize(
             return;
         }
 
-        const area = bounds();
+        const area = readCompanionDragBounds(root);
         if (!enabled || !area) {
             return;
         }
@@ -276,30 +218,8 @@ export function useCompanionResize(
         resize(width);
     }
 
-    const minimumPercent =
-        geometry.width > 0 ? (geometry.minimum / geometry.width) * 100 : 0;
-    let percent = halfWidth
-        ? 50
-        : customWidth !== null && geometry.width > 0
-          ? (customWidth / geometry.width) * 100
-          : null;
-
-    if (percent === null && geometry.width > 0) {
-        percent = (geometry.slotWidth / geometry.width) * 100;
-    }
-
-    const maximumPercent =
-        geometry.width > 0 ? (geometry.maximum / geometry.width) * 100 : 50;
-    const currentPercent = Math.min(
-        halfWidth ? 50 : maximumPercent,
-        Math.max(minimumPercent, percent ?? minimumPercent),
-    );
-    const style =
-        customWidth === null
-            ? undefined
-            : ({
-                  '--companion-width': `${currentPercent}%`,
-              } as CSSProperties);
+    const { minimumPercent, maximumPercent, currentPercent, style } =
+        companionSizing(geometry, halfWidth, customWidth);
 
     return {
         root,

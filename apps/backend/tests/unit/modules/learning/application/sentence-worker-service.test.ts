@@ -69,6 +69,46 @@ function setup(timeoutMs = 2000) {
 }
 
 describe('sentence worker fencing and failure publication', () => {
+    it.each([
+        { executionOutcome: 'rejected', attempt: 1, retries: true },
+        { executionOutcome: 'completed', attempt: 1, retries: true },
+        { executionOutcome: 'ambiguous', attempt: 1, retries: false },
+        { executionOutcome: 'rejected', attempt: 2, retries: false },
+    ])(
+        'uses admitted routing retry policy for $executionOutcome attempt $attempt',
+        async ({ executionOutcome, attempt, retries }) => {
+            const f = setup();
+            f.job.lease.attempt = attempt;
+            f.job.execution.routingAuthority = {
+                revisionId: 'admitted-routing-revision',
+                flowId: 'sentence-generation',
+                candidates: [],
+                automaticReattemptLimit: 1,
+                tariffPublished: false,
+            };
+
+            f.provider.generate.mockRejectedValue(
+                Object.assign(new Error('Synthetic provider failure'), {
+                    executionOutcome,
+                }),
+            );
+
+            await f.service.processNext(new AbortController().signal);
+
+            expect(f.store.fail).toHaveBeenCalledWith(
+                f.job.lease,
+                expect.objectContaining({
+                    code: 'provider_unavailable',
+                    retryAt: retries ? new Date(now.getTime() + 1000) : null,
+                }),
+                { now, signal: expect.any(AbortSignal) },
+            );
+
+            expect(f.store.completeGeneration).not.toHaveBeenCalled();
+            expect(f.provider.generate).toHaveBeenCalledOnce();
+        },
+    );
+
     it.each(['rejected', 'ambiguous'])(
         'forwards only conclusive provider retry evidence (%s)',
         async (executionOutcome) => {

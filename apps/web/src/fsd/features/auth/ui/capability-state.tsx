@@ -10,6 +10,10 @@ export function CapabilityState() {
 
     const { capabilities, capabilitiesError, refreshCapabilities } = useAuth();
 
+    function retryCapabilities() {
+        void refreshCapabilities();
+    }
+
     if (!capabilities && !capabilitiesError) {
         return <LoadingState>{t('auth.capabilitiesChecking')}</LoadingState>;
     }
@@ -21,11 +25,7 @@ export function CapabilityState() {
     return (
         <FormMessage>
             <p>{capabilitiesError}</p>
-            <Button
-                onClick={() => void refreshCapabilities()}
-                type='button'
-                variant='ghost'
-            >
+            <Button onClick={retryCapabilities} type='button' variant='ghost'>
                 {t('common.retry')}
             </Button>
         </FormMessage>

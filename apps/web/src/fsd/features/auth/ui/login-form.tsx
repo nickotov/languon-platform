@@ -145,6 +145,10 @@ export function LoginForm({
         }
     }
 
+    function startPasskeyAuthentication() {
+        void submitPasskey();
+    }
+
     return (
         <>
             {passwordReset === 'complete' ? (
@@ -163,7 +167,7 @@ export function LoginForm({
                             sessionStatus === 'bootstrapping' ||
                             !passkeySupported
                         }
-                        onClick={() => void submitPasskey()}
+                        onClick={startPasskeyAuthentication}
                         loading={pending === 'passkey'}
                         type='button'
                         variant='secondary'

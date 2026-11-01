@@ -34,24 +34,23 @@ export function SentencePreparationProgress({
     const first = controller.batches[0];
     const hideDetails =
         !run || run.pauseReason === 'stale' || run.pauseReason === 'access';
-    const mode =
-        run?.mode === 'new-only'
-            ? P('nameNew')
-            : run?.mode === 'review-only'
-              ? P('nameReview')
-              : P('nameSavedFirst');
-    const activity =
-        !run && controller.busy
-            ? P('submittingTitle')
-            : run?.state === 'queued'
-              ? P('queued')
-              : run?.state === 'running'
-                ? run.activeJobId
-                    ? P('generating')
-                    : P('reusing')
-                : run?.state === 'stopping'
-                  ? P('stopping')
-                  : null;
+    let mode = P('nameSavedFirst');
+    if (run?.mode === 'new-only') {
+        mode = P('nameNew');
+    } else if (run?.mode === 'review-only') {
+        mode = P('nameReview');
+    }
+
+    let activity: string | null = null;
+    if (!run && controller.busy) {
+        activity = P('submittingTitle');
+    } else if (run?.state === 'queued') {
+        activity = P('queued');
+    } else if (run?.state === 'running') {
+        activity = run.activeJobId ? P('generating') : P('reusing');
+    } else if (run?.state === 'stopping') {
+        activity = P('stopping');
+    }
 
     return (
         <div className={styles.progressContent}>

@@ -1,0 +1,8 @@
+{
+  "status": "source frozen after bounded pre-existing fixture corrections",
+  "baseCommit": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "originalFiles": 3155,
+  "totalAuditedFiles": 3220,
+  "allowedUpdates": "evidence and delivery metadata only; source fixes coordinated by root",
+  "remediation": "Accounting real clock period, browser proxy faults/refreshed tokens and isolated pause snapshots, flashcard synthetic prices, admin setup/relative selection/real quote confirmation/API-aligned synthetic worker identity. No production runtime behavior changes."
+}

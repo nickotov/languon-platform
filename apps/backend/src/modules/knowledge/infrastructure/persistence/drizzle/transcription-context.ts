@@ -123,41 +123,42 @@ export async function transcriptionConfiguration(
         throw transcriptionUnavailable();
     }
 
-    const c = current.configuration;
-    const p = current.price;
+    const configuration = current.configuration;
+    const storedPrice = current.price;
     if (
         !isApprovedTranscriptionProcessingRevision(
-            c.processingControlsRevision,
+            configuration.processingControlsRevision,
         ) ||
         !credentialFingerprint ||
-        c.processingCredentialFingerprint !== credentialFingerprint ||
-        !c.dataSharingDisabled ||
-        !c.dataSharingEvidence ||
-        !c.dataSharingAttestedAt ||
-        c.dataSharingAttestedAt.getTime() +
+        configuration.processingCredentialFingerprint !==
+            credentialFingerprint ||
+        !configuration.dataSharingDisabled ||
+        !configuration.dataSharingEvidence ||
+        !configuration.dataSharingAttestedAt ||
+        configuration.dataSharingAttestedAt.getTime() +
             TRANSCRIPTION_DATA_SHARING_ATTESTATION_MS <=
             deadlineAt.getTime() ||
-        !c.enabled ||
-        !c.billingRulesVerified ||
-        !c.billingEvidence ||
-        c.creditsPerMinute === null ||
-        c.maximumDurationMs < sourceDurationMs ||
-        c.maximumBytes < byteLength ||
-        p.providerId !== 'openai' ||
-        p.modelId !== 'gpt-transcribe' ||
-        p.meter !== 'audio-duration' ||
-        p.effectiveAt > at
+        !configuration.enabled ||
+        !configuration.billingRulesVerified ||
+        !configuration.billingEvidence ||
+        configuration.creditsPerMinute === null ||
+        configuration.maximumDurationMs < sourceDurationMs ||
+        configuration.maximumBytes < byteLength ||
+        storedPrice.providerId !== 'openai' ||
+        storedPrice.modelId !== 'gpt-transcribe' ||
+        storedPrice.meter !== 'audio-duration' ||
+        storedPrice.effectiveAt > at
     ) {
         throw transcriptionUnavailable();
     }
 
     const price = ProviderPriceSchema.parse({
-        ...p.data,
-        id: p.id,
-        version: p.version,
-        createdAt: p.createdAt.toISOString(),
-        createdBy: p.createdBy,
-        effectiveAt: p.effectiveAt.toISOString(),
+        ...storedPrice.data,
+        id: storedPrice.id,
+        version: storedPrice.version,
+        createdAt: storedPrice.createdAt.toISOString(),
+        createdBy: storedPrice.createdBy,
+        effectiveAt: storedPrice.effectiveAt.toISOString(),
     });
 
     if (
@@ -180,14 +181,14 @@ export async function transcriptionConfiguration(
 
     if (
         cost.status !== 'calculated' ||
-        cost.micros > BigInt(c.maximumProviderCostMicros)
+        cost.micros > BigInt(configuration.maximumProviderCostMicros)
     ) {
         throw transcriptionUnavailable(
             'A reviewed finite transcription spending bound is required.',
         );
     }
 
-    return { configuration: c, price, providerMaximumMicros: cost.micros };
+    return { configuration, price, providerMaximumMicros: cost.micros };
 }
 
 export async function ownedTranscriptionJob(

@@ -56,6 +56,7 @@ run('model-scoped text AI outage circuits', () => {
         for (const [key, value] of [
             ['DICTIONARY_AI_MANAGED_ROUTING_ENABLED', prior.routing],
             ['DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED', prior.credential],
+            ['DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', prior.deepseek],
         ]) {
             if (value === undefined) {
                 delete process.env[key!];

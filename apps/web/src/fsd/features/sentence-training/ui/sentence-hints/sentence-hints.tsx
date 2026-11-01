@@ -1,15 +1,19 @@
 'use client';
 import styles from './sentence-hints.module.css';
+import { HintWord, type HintWordActions } from './hint-word';
+import { HintPopoverContent } from './hint-popover-content';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { SentenceExercise } from '@languon/contracts';
-import { Bookmark, Lightbulb, X } from 'lucide-react';
 import {
-    Button,
-    Popover,
-    PopoverAnchor,
-    PopoverContent,
-} from '@/fsd/shared/ui';
+    useEffect,
+    useId,
+    useMemo,
+    useRef,
+    useState,
+    type KeyboardEvent,
+} from 'react';
+import type { SentenceExercise } from '@languon/contracts';
+import { Bookmark, Lightbulb } from 'lucide-react';
+import { Popover, PopoverAnchor } from '@/fsd/shared/ui';
 import { useSentenceCopy } from '../sentence-copy';
 
 export function SentenceWithHints({
@@ -97,15 +101,82 @@ export function SentenceWithHints({
         };
     }, [open]);
 
+    function registerTrigger(index: number, node: HTMLSpanElement | null) {
+        if (node) {
+            triggers.current.set(index, node);
+        } else {
+            triggers.current.delete(index);
+        }
+    }
+
+    function toggleHint(index: number) {
+        if (open?.index === index && !open.hover) {
+            close();
+        } else {
+            activate(index);
+        }
+    }
+
+    function handleWordKey(
+        index: number,
+        event: KeyboardEvent<HTMLSpanElement>,
+    ) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            activate(index);
+        }
+
+        if (event.key === 'Escape' && open) {
+            event.preventDefault();
+            event.stopPropagation();
+            close(true);
+        }
+    }
+
+    function hoverHint(index: number) {
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
+
+        timer.current = setTimeout(() => activate(index, true), 350);
+    }
+
+    function leaveHint() {
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
+
+        setOpen((previous) => (previous?.hover ? null : previous));
+    }
+
+    function handleOpenChange(next: boolean) {
+        if (!next) {
+            close(false);
+        }
+    }
+
+    function closeHint() {
+        close(true);
+    }
+
+    function handlePopoverKey(event: KeyboardEvent<HTMLDivElement>) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            close(true);
+        }
+    }
+
+    const hintActions: HintWordActions = {
+        register: registerTrigger,
+        toggle: toggleHint,
+        keyDown: handleWordKey,
+        hover: hoverHint,
+        leave: leaveHint,
+    };
+
     return (
-        <Popover
-            open={Boolean(open)}
-            onOpenChange={(next) => {
-                if (!next) {
-                    close(false);
-                }
-            }}
-        >
+        <Popover open={Boolean(open)} onOpenChange={handleOpenChange}>
             <div className={styles.hintRoot}>
                 <PopoverAnchor asChild virtualRef={virtualReference}>
                     <p
@@ -123,173 +194,33 @@ export function SentenceWithHints({
                                 return <span key={item.id}>{item.text}</span>;
                             }
 
-                            const dictionary = itemHint.kind !== 'contextual';
-                            const wordClasses = [styles.hintWord];
-                            wordClasses.push(
-                                dictionary
-                                    ? styles.dictionaryWord
-                                    : styles.contextualWord,
-                            );
-
-                            if (revealedHintIds.includes(itemHint.id)) {
-                                wordClasses.push(
-                                    dictionary
-                                        ? styles.dictionaryRevealed
-                                        : styles.contextualRevealed,
-                                );
-                            }
-
-                            if (open?.index === index) {
-                                wordClasses.push(styles.wordOpen);
-                            }
-
-                            const wordClassName = wordClasses.join(' ');
-
                             return (
-                                <span
+                                <HintWord
                                     key={item.id}
-                                    ref={(node) => {
-                                        if (node) {
-                                            triggers.current.set(index, node);
-                                        } else {
-                                            triggers.current.delete(index);
-                                        }
-                                    }}
-                                    role='button'
-                                    tabIndex={0}
-                                    aria-label={`${item.text}: ${t('show hint')} · ${t(dictionary ? 'Required word' : 'Extra help')}`}
-                                    aria-haspopup='dialog'
-                                    aria-expanded={open?.index === index}
-                                    aria-controls={
-                                        open?.index === index
-                                            ? popoverId
-                                            : undefined
-                                    }
-                                    onClick={() =>
-                                        open?.index === index && !open.hover
-                                            ? close()
-                                            : activate(index)
-                                    }
-                                    onKeyDown={(event) => {
-                                        if (
-                                            event.key === 'Enter' ||
-                                            event.key === ' '
-                                        ) {
-                                            event.preventDefault();
-                                            activate(index);
-                                        }
-
-                                        if (event.key === 'Escape' && open) {
-                                            event.preventDefault();
-                                            event.stopPropagation();
-                                            close(true);
-                                        }
-                                    }}
-                                    onMouseEnter={() => {
-                                        if (timer.current) {
-                                            clearTimeout(timer.current);
-                                        }
-
-                                        timer.current = setTimeout(
-                                            () => activate(index, true),
-                                            350,
-                                        );
-                                    }}
-                                    onMouseLeave={() => {
-                                        if (timer.current) {
-                                            clearTimeout(timer.current);
-                                        }
-
-                                        setOpen((previous) =>
-                                            previous?.hover ? null : previous,
-                                        );
-                                    }}
-                                    className={wordClassName}
-                                >
-                                    {item.text}
-                                </span>
+                                    segment={item}
+                                    index={index}
+                                    dictionary={itemHint.kind !== 'contextual'}
+                                    revealed={revealedHintIds.includes(
+                                        itemHint.id,
+                                    )}
+                                    opened={open?.index === index}
+                                    popoverId={popoverId}
+                                    actions={hintActions}
+                                />
                             );
                         })}
                     </p>
                 </PopoverAnchor>
                 {open && hint && segment ? (
-                    <PopoverContent
-                        autoFocus={false}
-                        closeOnFocusOut={false}
-                        side='bottom'
-                        align='start'
-                        id={popoverId}
-                        ref={panel}
-                        role='dialog'
-                        aria-label={`${t('Hint')}: ${segment.text}`}
-                        onKeyDown={(event) => {
-                            if (event.key === 'Escape') {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                close(true);
-                            }
-                        }}
-                        className={styles.hintPopover}
-                    >
-                        <div className={styles.popoverHeader}>
-                            <span
-                                className={`${styles.hintKind} ${hint.kind === 'contextual' ? styles.contextualKind : styles.dictionaryKind}`}
-                            >
-                                {hint.kind === 'contextual' ? (
-                                    <Lightbulb
-                                        aria-hidden
-                                        className={styles.icon}
-                                    />
-                                ) : (
-                                    <Bookmark
-                                        aria-hidden
-                                        className={styles.icon}
-                                    />
-                                )}
-                                {t(
-                                    hint.kind === 'contextual'
-                                        ? 'Extra help'
-                                        : 'Required word',
-                                )}
-                            </span>
-                            <Button
-                                variant='ghost'
-                                size='compact'
-                                aria-label={t('Close hint')}
-                                onClick={() => close(true)}
-                            >
-                                <X aria-hidden className={styles.icon2} />
-                            </Button>
-                        </div>
-                        <p className={styles.hintTranslation}>
-                            <span lang={exercise.sourceLanguage}>
-                                {segment.text}
-                            </span>
-                            <span aria-hidden> → </span>
-                            <strong
-                                lang={exercise.targetLanguage}
-                                dir={
-                                    /^(ar|he|fa|ur)(-|$)/i.test(
-                                        exercise.targetLanguage,
-                                    )
-                                        ? 'rtl'
-                                        : 'ltr'
-                                }
-                            >
-                                {hint.text}
-                            </strong>
-                        </p>
-                        <p className={styles.hintNote}>
-                            {t(
-                                hint.kind === 'contextual'
-                                    ? 'Support only — not required and not added to your dictionary.'
-                                    : 'Use this dictionary word. Inflected forms are fine.',
-                            )}
-                        </p>
-                        <p className={styles.hintDisclaimer}>
-                            {t('Hints are free and never lower your score.')}
-                        </p>
-                    </PopoverContent>
+                    <HintPopoverContent
+                        exercise={exercise}
+                        hint={hint}
+                        segment={segment}
+                        popoverId={popoverId}
+                        panelRef={panel}
+                        onClose={closeHint}
+                        onKeyDown={handlePopoverKey}
+                    />
                 ) : null}
                 <ul aria-label={t('Hint legend')} className={styles.legend}>
                     <li className={styles.legendItem}>

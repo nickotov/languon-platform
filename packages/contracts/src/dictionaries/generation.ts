@@ -661,6 +661,97 @@ export const DictionaryPastedTermsGenerationAcceptedOutcomeSchema = z
     })
     .strict();
 
+function validateBatchGenerationOutcome(
+    job: {
+        state: string;
+        progress: { stage: string };
+        proposal: object | null;
+        failure: object | null;
+        outcome: object | null;
+        expiresAt: string | null;
+        completedAt: string | null;
+    },
+    context: z.RefinementCtx,
+) {
+    const activeState = ['queued', 'running', 'review'].includes(job.state);
+    const terminalState = !activeState;
+
+    if ((job.state === 'review') !== (job.proposal !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['proposal'],
+            message: 'Only review jobs expose a proposal',
+        });
+    }
+
+    if ((job.state === 'failed') !== (job.failure !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['failure'],
+            message: 'Only failed jobs expose a sanitized failure',
+        });
+    }
+
+    if ((job.state === 'accepted') !== (job.outcome !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['outcome'],
+            message: 'Only accepted jobs expose an accepted outcome',
+        });
+    }
+
+    if (job.state === 'queued' && job.progress.stage !== 'queued') {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Queued jobs must report the queued stage',
+        });
+    }
+
+    if (
+        job.state === 'running' &&
+        !['generating', 'validating'].includes(job.progress.stage)
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Running jobs must report a running stage',
+        });
+    }
+
+    if (job.state === 'review' && job.progress.stage !== 'review_ready') {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Review jobs must report the review-ready stage',
+        });
+    }
+
+    if (terminalState && job.progress.stage !== 'terminal') {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Terminal jobs must report the terminal stage',
+        });
+    }
+
+    if ((job.state === 'review') !== (job.expiresAt !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['expiresAt'],
+            message: 'Only review jobs expose proposal expiry',
+        });
+    }
+
+    if (terminalState !== (job.completedAt !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['completedAt'],
+            message: 'Terminal jobs require a completion timestamp',
+        });
+    }
+}
+
 export const DictionaryPastedTermsGenerationJobSchema = z
     .object({
         billing: ActionBillingSchema.optional(),
@@ -685,85 +776,7 @@ export const DictionaryPastedTermsGenerationJobSchema = z
         expiresAt: DictionaryTimestampSchema.nullable(),
     })
     .strict()
-    .superRefine((job, context) => {
-        const activeState = ['queued', 'running', 'review'].includes(job.state);
-        const terminalState = !activeState;
-
-        if ((job.state === 'review') !== (job.proposal !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['proposal'],
-                message: 'Only review jobs expose a proposal',
-            });
-        }
-
-        if ((job.state === 'failed') !== (job.failure !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['failure'],
-                message: 'Only failed jobs expose a sanitized failure',
-            });
-        }
-
-        if ((job.state === 'accepted') !== (job.outcome !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['outcome'],
-                message: 'Only accepted jobs expose an accepted outcome',
-            });
-        }
-
-        if (job.state === 'queued' && job.progress.stage !== 'queued') {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Queued jobs must report the queued stage',
-            });
-        }
-
-        if (
-            job.state === 'running' &&
-            !['generating', 'validating'].includes(job.progress.stage)
-        ) {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Running jobs must report a running stage',
-            });
-        }
-
-        if (job.state === 'review' && job.progress.stage !== 'review_ready') {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Review jobs must report the review-ready stage',
-            });
-        }
-
-        if (terminalState && job.progress.stage !== 'terminal') {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Terminal jobs must report the terminal stage',
-            });
-        }
-
-        if ((job.state === 'review') !== (job.expiresAt !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['expiresAt'],
-                message: 'Only review jobs expose proposal expiry',
-            });
-        }
-
-        if (terminalState !== (job.completedAt !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['completedAt'],
-                message: 'Terminal jobs require a completion timestamp',
-            });
-        }
-    });
+    .superRefine(validateBatchGenerationOutcome);
 
 export const DictionaryImportPairsGenerationJobSchema = z
     .object({
@@ -775,83 +788,7 @@ export const DictionaryImportPairsGenerationJobSchema = z
             DictionaryImportPairsGenerationAcceptedOutcomeSchema.nullable(),
     })
     .strict()
-    .superRefine((job, context) => {
-        const terminal = !['queued', 'running', 'review'].includes(job.state);
-        if ((job.state === 'review') !== (job.proposal !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['proposal'],
-                message: 'Only review jobs expose a proposal',
-            });
-        }
-
-        if ((job.state === 'failed') !== (job.failure !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['failure'],
-                message: 'Only failed jobs expose a sanitized failure',
-            });
-        }
-
-        if ((job.state === 'accepted') !== (job.outcome !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['outcome'],
-                message: 'Only accepted jobs expose an accepted outcome',
-            });
-        }
-
-        if (job.state === 'queued' && job.progress.stage !== 'queued') {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Queued jobs must report the queued stage',
-            });
-        }
-
-        if (
-            job.state === 'running' &&
-            !['generating', 'validating'].includes(job.progress.stage)
-        ) {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Running jobs must report a running stage',
-            });
-        }
-
-        if (job.state === 'review' && job.progress.stage !== 'review_ready') {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Review jobs must report the review-ready stage',
-            });
-        }
-
-        if (terminal && job.progress.stage !== 'terminal') {
-            context.addIssue({
-                code: 'custom',
-                path: ['progress', 'stage'],
-                message: 'Terminal jobs must report the terminal stage',
-            });
-        }
-
-        if ((job.state === 'review') !== (job.expiresAt !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['expiresAt'],
-                message: 'Only review jobs expose proposal expiry',
-            });
-        }
-
-        if (terminal !== (job.completedAt !== null)) {
-            context.addIssue({
-                code: 'custom',
-                path: ['completedAt'],
-                message: 'Terminal jobs require a completion timestamp',
-            });
-        }
-    });
+    .superRefine(validateBatchGenerationOutcome);
 
 export const DictionaryDocumentTermsGenerationJobSchema = z
     .object({

@@ -161,7 +161,7 @@ export class LearningService {
         await this.limit(
             `${scope}.${principal ? 'learner' : 'visitor'}`,
             subject,
-            scope === 'prepare' ? 20 : scope === 'write' ? 180 : 180,
+            scope === 'prepare' ? 20 : 180,
             context,
         );
 

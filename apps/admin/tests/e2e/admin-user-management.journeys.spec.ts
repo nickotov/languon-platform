@@ -14,7 +14,13 @@ import {
     type Page,
 } from '@playwright/test';
 import postgres from 'postgres';
-import { configureModel } from './support/setup-admin';
+import {
+    ActionAllowanceQuoteSchema,
+    AccountingReportSchema,
+    AdminErrorResponseSchema,
+    DictionaryErrorResponseSchema,
+} from '@languon/contracts';
+import { calibrateAccounting, configureModel } from './support/setup-admin';
 
 // @user-flow-revision admin-user-management sha256:4329a23dfacbe067
 // @user-flow-revision ai-provider-management sha256:71297ff216a3dad3
@@ -93,6 +99,89 @@ function captureBrowserErrors(
     });
 
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
+}
+
+const accountingReportPath = '/api/admin/ai/accounting/report';
+
+/** Validate pending reporting and observe real materialization before leaving Accounting. */
+async function calibrateAccountingAndWaitForReport(page: Page) {
+    const reportChecks: Promise<void>[] = [];
+    const reportErrors: string[] = [];
+    const pendingReportPeriods = new Set<string>();
+    page.on('response', (response) => {
+        const url = new URL(response.url());
+        if (
+            url.pathname !== accountingReportPath ||
+            response.status() !== 503
+        ) {
+            return;
+        }
+
+        // A cold report is an explicit pending protocol, not an arbitrary
+        // server error. Every pending response must validate and recover.
+        const validation = (async () => {
+            expect(url.origin).toBe(new URL(adminOrigin).origin);
+            expect(response.request().method()).toBe('GET');
+            expect(response.headers()['retry-after']).toBe('2');
+            const body = AdminErrorResponseSchema.parse(await response.json());
+
+            expect(body.error.code).toBe('service_unavailable');
+            expect(body.error.message).toBe(
+                'The report is being prepared. Retry shortly.',
+            );
+
+            expect(url.searchParams.get('from')).toBeTruthy();
+            expect(url.searchParams.get('to')).toBeTruthy();
+            pendingReportPeriods.add(
+                `${url.searchParams.get('from')}/${url.searchParams.get('to')}`,
+            );
+        })().catch((error: unknown) => {
+            reportErrors.push(
+                error instanceof Error ? error.message : String(error),
+            );
+        });
+
+        reportChecks.push(validation);
+    });
+
+    const reportReady = page.waitForResponse(
+        (response) => {
+            const url = new URL(response.url());
+
+            return (
+                url.origin === new URL(adminOrigin).origin &&
+                url.pathname === accountingReportPath &&
+                response.request().method() === 'GET' &&
+                response.status() === 200
+            );
+        },
+        { timeout: 30_000 },
+    );
+    const [reportResponse] = await Promise.all([
+        reportReady,
+        calibrateAccounting(page),
+    ]);
+    const report = AccountingReportSchema.parse(await reportResponse.json());
+    const readyReportUrl = new URL(reportResponse.url());
+    expect(report.from).toBe(readyReportUrl.searchParams.get('from'));
+    expect(report.to).toBe(readyReportUrl.searchParams.get('to'));
+    const readyReportPeriod = `${report.from}/${report.to}`;
+
+    return {
+        async assertRecovered() {
+            await Promise.all(reportChecks);
+            expect(
+                reportErrors,
+                'invalid accounting pending responses',
+            ).toEqual([]);
+
+            for (const period of pendingReportPeriods) {
+                expect(period, 'pending report must materialize').toBe(
+                    readyReportPeriod,
+                );
+            }
+        },
+    };
 }
 
 async function provisionVerifiedUser(
@@ -218,7 +307,8 @@ async function startDictionaryWorker() {
             env: {
                 ...membershipEnvironment(),
                 APP_ENV: 'test',
-                DEEPSEEK_API_KEY: 'admin-e2e-deepseek-worker-key',
+                // Match the API fixture so pinned route fingerprints remain valid.
+                DEEPSEEK_API_KEY: 'synthetic-test-key',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
                 DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v2',
@@ -227,7 +317,7 @@ async function startDictionaryWorker() {
                 DICTIONARY_WORKER_DATABASE_URL: databaseUrl,
                 DICTIONARY_WORKER_POLL_INTERVAL_MS: '50',
                 DICTIONARY_WORKER_READINESS_TIMEOUT_MS: '1000',
-                KIE_API_KEY: 'admin-e2e-kie-worker-key',
+                KIE_API_KEY: '',
                 RELEASE_SHA: 'development',
             },
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -1769,6 +1859,7 @@ test.describe.serial('admin user management journeys', () => {
         test.setTimeout(120_000);
         const assertNoBrowserErrors = captureBrowserErrors(page, {
             '/api/admin/auth/refresh': 401,
+            [accountingReportPath]: 503,
         });
         const failedRequests: string[] = [];
         page.on('requestfailed', (request) => {
@@ -1781,6 +1872,12 @@ test.describe.serial('admin user management journeys', () => {
                 (path === '/api/admin/ai/model-prices' ||
                     path === '/api/admin/ai/routing' ||
                     path === '/api/admin/ai-settings/probes' ||
+                    path === '/api/admin/ai/accounting/report' ||
+                    path === '/api/admin/ai/accounting/records' ||
+                    path === '/api/admin/ai/accounting/provider-prices' ||
+                    path === '/api/admin/ai/capability-policies' ||
+                    path === '/api/admin/ai/accounting-settings' ||
+                    path === '/api/admin/ai/transcription' ||
                     /^\/api\/admin\/users\/[^/]+\/ai-credits$/.test(path))
             ) {
                 return;
@@ -1792,6 +1889,8 @@ test.describe.serial('admin user management journeys', () => {
         });
 
         await passwordLogin(page);
+        const accountingReport =
+            await calibrateAccountingAndWaitForReport(page);
         const firstRouting = await configureModel(page, {
             inputRate: '100',
             outputRate: '300',
@@ -1916,21 +2015,36 @@ test.describe.serial('admin user management journeys', () => {
         const nextTariffCard = await createCard('studio', 'atelier');
 
         const enqueue = async (card: { id: string; version: number }) => {
-            const response = await request.post(
-                `${backendOrigin}/dictionaries/${dictionaryId}/cards/${card.id}/generations`,
-                {
-                    data: {
-                        expectedCardVersion: card.version,
-                        expectedDictionaryVersion: dictionaryVersion,
-                        expectedSettingsVersion: settingsVersion,
-                        instruction: 'Keep the translation concise.',
-                    },
-                    headers: {
-                        ...apiHeaders,
-                        'Idempotency-Key': `generation-${card.id}-${runId}`,
-                    },
-                },
-            );
+            const url = `${backendOrigin}/dictionaries/${dictionaryId}/cards/${card.id}/generations`;
+            const data = {
+                expectedCardVersion: card.version,
+                expectedDictionaryVersion: dictionaryVersion,
+                expectedSettingsVersion: settingsVersion,
+                instruction: 'Keep the translation concise.',
+            };
+            const headers = {
+                ...apiHeaders,
+                'Idempotency-Key': `generation-${card.id}-${runId}`,
+            };
+            let response = await request.post(url, { data, headers });
+
+            if (response.status() === 409) {
+                const { error } = DictionaryErrorResponseSchema.parse(
+                    await response.json(),
+                );
+
+                expect(error.code).toBe('action_confirmation_required');
+
+                const quote = ActionAllowanceQuoteSchema.parse(
+                    error.details?.quote,
+                );
+
+                // Confirm the server's reduced allowance with the same action identity.
+                response = await request.post(url, {
+                    data: { ...data, confirmedQuoteId: quote.id },
+                    headers,
+                });
+            }
 
             expect(response.status()).toBe(202);
 
@@ -2043,6 +2157,8 @@ test.describe.serial('admin user management journeys', () => {
         expect(failedRequests, 'unexpected failed browser requests').toEqual(
             [],
         );
+
+        await accountingReport.assertRecovered();
 
         assertNoBrowserErrors();
     });

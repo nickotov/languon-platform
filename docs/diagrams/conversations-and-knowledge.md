@@ -48,8 +48,21 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
     - apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts
-source_fingerprint: sha256:02910cd38224bef7b1e25ec2c225bdd94b007fa2dbb4cb8ed1d9eca33b526784
-reviewed: 2026-10-22
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts
+    - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts
+    - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts
+    - docs/adr/0046-admin-owned-text-ai-routing.md
+    - apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
+source_fingerprint: sha256:83e3c96e55e21289e667c4f421ce9b6db322df976c9730441b022ae20ec4a939
+reviewed: 2026-11-01
 ---
 
 # Conversations and Knowledge workspace
@@ -77,7 +90,7 @@ full request budget after compaction"]
 no silent excerpting"]
     Limit --> Admission
     Send --> Admission["One active durable turn
-Flash Auto / compatible explicit model
+Admin-owned model routing
 model, funding and independent rate snapshots
 bounded credit + operator USD allowance"]
     Admission --> Worker["Existing worker slot claims turn
@@ -186,6 +199,17 @@ precedence over older compacted snapshots. The note-to-workspace edge means
 reopening a note can resume its latest private conversation, without a stored
 origin back-reference to another source.
 
+## Implementation reconciliation
+
+The source resolver projects only effective learner-visible dictionary fields through
+`projectConversationDictionaryCards`; prepared turn reuse still checks the locked
+chat and source snapshot through `assertPreparedConversationCurrent`. Knowledge
+store methods allocate a fresh persistence context per call. The authoring form
+facade delegates to typed readers and validates the completed candidate once;
+this does not publish a working draft. Model selection follows the admin-owned
+routing revision under ADR-0046, rather than a learner-selected model. These
+internal extractions preserve the graph's ownership, Apply and explicit Save edges.
+
 ## Sources
 
 - [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
@@ -239,3 +263,17 @@ authority and data-flow relationships remain unchanged.
 - [apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts)
 
 - [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts)
+- [apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts](../../apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts)
+- [apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts](../../apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts)
+- [docs/adr/0046-admin-owned-text-ai-routing.md](../../docs/adr/0046-admin-owned-text-ai-routing.md)
+- [apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts)

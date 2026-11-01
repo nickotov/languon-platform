@@ -132,32 +132,33 @@ export function verifyKnowledgeAudio(
     }
 
     let offset = start,
-        duration = 0,
-        frames = 0;
+        durationMs = 0,
+        frameCount = 0;
 
     while (offset + 4 <= end) {
-        const a = bytes[offset]!,
-            b = bytes[offset + 1]!,
-            c = bytes[offset + 2]!;
-        const version = (b >> 3) & 3,
-            layer = (b >> 1) & 3,
-            bitIndex = c >> 4,
-            rateIndex = (c >> 2) & 3;
+        const headerSyncByte = bytes[offset]!,
+            headerVersionByte = bytes[offset + 1]!,
+            headerRateByte = bytes[offset + 2]!;
+        // Version bits 11, 10 and 00 select MPEG 1, 2 and 2.5; 01 is reserved.
+        const versionBits = (headerVersionByte >> 3) & 3,
+            layerBits = (headerVersionByte >> 1) & 3,
+            bitrateIndex = headerRateByte >> 4,
+            sampleRateIndex = (headerRateByte >> 2) & 3;
 
         if (
-            a !== 255 ||
-            (b & 0xe0) !== 0xe0 ||
-            version === 1 ||
-            layer !== 1 ||
-            bitIndex === 0 ||
-            bitIndex === 15 ||
-            rateIndex === 3
+            headerSyncByte !== 255 ||
+            (headerVersionByte & 0xe0) !== 0xe0 ||
+            versionBits === 1 ||
+            layerBits !== 1 ||
+            bitrateIndex === 0 ||
+            bitrateIndex === 15 ||
+            sampleRateIndex === 3
         ) {
             invalid();
         }
 
-        const bitrate =
-            (version === 3
+        const bitrateBitsPerSecond =
+            (versionBits === 3
                 ? [
                       0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224,
                       256, 320,
@@ -165,33 +166,36 @@ export function verifyKnowledgeAudio(
                 : [
                       0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144,
                       160,
-                  ])[bitIndex]! * 1000;
-        const rate =
-            [44100, 48000, 32000][rateIndex]! /
-            (version === 3 ? 1 : version === 2 ? 2 : 4);
-        const size =
-            Math.floor(((version === 3 ? 144 : 72) * bitrate) / rate) +
-            ((c >> 1) & 1);
+                  ])[bitrateIndex]! * 1000;
+        const sampleRateHz =
+            [44100, 48000, 32000][sampleRateIndex]! /
+            (versionBits === 3 ? 1 : versionBits === 2 ? 2 : 4);
+        const frameByteLength =
+            Math.floor(
+                ((versionBits === 3 ? 144 : 72) * bitrateBitsPerSecond) /
+                    sampleRateHz,
+            ) +
+            ((headerRateByte >> 1) & 1);
 
-        if (size < 4 || offset + size > end) {
+        if (frameByteLength < 4 || offset + frameByteLength > end) {
             invalid();
         }
 
-        offset += size;
-        duration += ((version === 3 ? 1152 : 576) / rate) * 1000;
-        frames++;
-        if (duration > 1_800_000) {
+        offset += frameByteLength;
+        durationMs += ((versionBits === 3 ? 1152 : 576) / sampleRateHz) * 1000;
+        frameCount++;
+        if (durationMs > 1_800_000) {
             invalid();
         }
     }
 
-    if (!frames || offset !== end) {
+    if (!frameCount || offset !== end) {
         invalid();
     }
 
     return {
         bytes: bytes.subarray(start, end),
         mimeType: 'audio/mpeg',
-        durationMs: Math.ceil(duration),
+        durationMs: Math.ceil(durationMs),
     };
 }

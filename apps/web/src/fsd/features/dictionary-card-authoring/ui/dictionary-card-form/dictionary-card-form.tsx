@@ -2,7 +2,7 @@
 
 import type { DictionaryCardAuthoringField } from '../../types';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Badge, Button, Card, InlineAlert } from '@/fsd/shared/ui';
+import { Button, Card, InlineAlert } from '@/fsd/shared/ui';
 import { useCardAuthoring } from '../../hooks/use-card-authoring';
 import type {
     DictionaryCardFormProps,
@@ -16,6 +16,8 @@ import { CardTranslationContext } from '../card-translation-context/card-transla
 import { FormVersionNavigation } from './form-version-navigation';
 import { AutoSaveFeedback } from './auto-save-feedback';
 import styles from '../dictionary-card-form-common.module.css';
+import { optionalAuthoringFields } from '../../lib/authoring-fields';
+import { OptionalCardFields } from './optional-card-fields';
 
 export type {
     DictionaryCardDraft,
@@ -102,23 +104,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
         generateField: authoring.generateField,
     };
 
-    const optionalFields: DictionaryCardAuthoringField[] = [];
-
-    if (effective.transcriptionEnabled) {
-        optionalFields.push('transcription');
-    }
-
-    if (effective.definitionEnabled) {
-        optionalFields.push('definition');
-    }
-
-    if (effective.exampleEnabled) {
-        optionalFields.push('example');
-    }
-
-    if (effective.exampleTranslationEnabled) {
-        optionalFields.push('exampleTranslation');
-    }
+    const optionalFields = optionalAuthoringFields(effective);
 
     const fullWidthFields = optionalFields.filter(
         (field) => field !== 'example' && field !== 'exampleTranslation',
@@ -205,23 +191,11 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                         />
                     ) : null}
                     {optionalFields.length ? (
-                        <div className={styles.optionalFields}>
-                            <p className={styles.optionalHeading}>
-                                {t('dictionary.authoring.optionalContent')}
-                                <Badge
-                                    className={styles.optionalBadge}
-                                    size='sm'
-                                >
-                                    {t('dictionary.authoring.mayStayEmpty')}
-                                </Badge>
-                            </p>
-                            {fullWidthFields.map(renderField)}
-                            {exampleFields.length ? (
-                                <div className={styles.wordPair}>
-                                    {exampleFields.map(renderField)}
-                                </div>
-                            ) : null}
-                        </div>
+                        <OptionalCardFields
+                            fullWidthFields={fullWidthFields}
+                            exampleFields={exampleFields}
+                            renderField={renderField}
+                        />
                     ) : null}
                     <CardFieldOverrides
                         dictionary={dictionary}

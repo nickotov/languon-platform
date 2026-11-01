@@ -1960,8 +1960,9 @@ test('previews saved hints and archives or restores an example without a review'
     );
     const token = await signup(page, email(info, 'library-owner'));
     const headers = { Authorization: `Bearer ${token}` };
+    const browserApiOrigin = new URL('/api/', page.url()).href;
     page.on('request', (request) => {
-        if (!request.url().startsWith(apiOrigin)) {
+        if (!request.url().startsWith(browserApiOrigin)) {
             return;
         }
 
@@ -2033,9 +2034,14 @@ test('previews saved hints and archives or restores an example without a review'
         .getByRole('button', { name: 'Close practice', exact: true })
         .click();
 
+    // Intercept the browser proxy request; direct fixture API calls use apiOrigin.
     // The first statistics read is deliberately interrupted; retry uses the real API.
     expectedHistoryFault = true;
-    const statisticsPattern = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/progress?direction=source-to-target`;
+    const statisticsPattern = new URL(
+        `/api/learning/dictionaries/${dictionaryId}/sentences/progress?direction=source-to-target`,
+        page.url(),
+    ).href;
+
     await page.route(statisticsPattern, (route) =>
         route.abort('blockedbyclient'),
     );
@@ -2257,7 +2263,10 @@ test('previews saved hints and archives or restores an example without a review'
         page.getByText('book is useful.', { exact: true }),
     ).toBeVisible();
 
-    const libraryPattern = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/library?*`;
+    const libraryPattern = new URL(
+        `/api/learning/dictionaries/${dictionaryId}/sentences/library?*`,
+        page.url(),
+    ).href;
     let intercepted = 0;
     expectedLibraryFault = true;
     await page.route(
@@ -2678,7 +2687,10 @@ test('reconnects to background preparation and practises the saved batch without
     // The real preparation, reconnect and prepared practice above prove the business flow;
     // backend integration coverage proves the actual pause/stop/expiration transitions.
     const baseline = SentencePreparationResponseSchema.parse(completedSnapshot);
-    const statusUrl = `${apiOrigin}/learning/dictionaries/${dictionaryId}/sentences/preparations/${baseline.preparation.id}`;
+    const statusUrl = new URL(
+        `/api/learning/dictionaries/${dictionaryId}/sentences/preparations/${baseline.preparation.id}`,
+        page.url(),
+    ).href;
     const states = [
         {
             key: 'credits',
@@ -2737,6 +2749,9 @@ test('reconnects to background preparation and practises the saved batch without
                 ...baseline.preparation,
                 state: state.state,
                 pauseReason: state.pauseReason,
+                // Each injected state isolates its own reason from the completed
+                // run's exhausted-budget flag.
+                requiresNewBudget: false,
                 eligibleCount:
                     'eligibleCount' in state
                         ? state.eligibleCount

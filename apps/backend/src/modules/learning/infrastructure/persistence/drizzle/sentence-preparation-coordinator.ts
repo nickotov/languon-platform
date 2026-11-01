@@ -217,18 +217,22 @@ export async function sentencePreparationTick(
                 );
             }
 
+            let pauseReason: Preparation['pauseReason'] = null;
+            if (stopping) {
+                pauseReason = current!.pauseReason;
+            } else if (failed) {
+                pauseReason =
+                    job?.failureCategory === 'credits_exhausted'
+                        ? 'credits'
+                        : 'provider';
+            }
+
             await tx
                 .update(preparations)
                 .set({
                     activeJobId: null,
                     state: stopping || failed ? 'paused' : 'running',
-                    pauseReason: stopping
-                        ? current!.pauseReason
-                        : failed
-                          ? job?.failureCategory === 'credits_exhausted'
-                              ? 'credits'
-                              : 'provider'
-                          : null,
+                    pauseReason,
                     updatedAt: context.now,
                 })
                 .where(eq(preparations.id, row.id));

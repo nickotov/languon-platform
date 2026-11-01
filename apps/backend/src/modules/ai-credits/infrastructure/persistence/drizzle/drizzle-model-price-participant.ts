@@ -279,7 +279,7 @@ export class DrizzleModelPriceParticipant {
             provisional: input.provisional,
         };
 
-        if (
+        const invalidRatesForMeter =
             input.meter === 'speech-characters'
                 ? rates.creditsPer1000Characters === null ||
                   rates.creditsPer1000Characters <= 0 ||
@@ -293,8 +293,9 @@ export class DrizzleModelPriceParticipant {
                   (rates.inputCreditsPerMillionTokens === 0 &&
                       rates.outputCreditsPerMillionTokens === 0) ||
                   rates.minimumCredits !== null ||
-                  rates.creditsPer1000Characters !== null
-        ) {
+                  rates.creditsPer1000Characters !== null;
+
+        if (invalidRatesForMeter) {
             throw new ModelPriceUnavailableError('Invalid rates for meter.');
         }
 

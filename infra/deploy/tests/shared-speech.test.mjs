@@ -255,7 +255,12 @@ test('speech deployment grants and preflight name the authoritative schema table
         'utf8',
     );
 
-    for (const source of [worker, purge, deployment]) {
+    const privilegePolicy = await readFile(
+        'infra/deploy/lib/worker-database-privileges.mjs',
+        'utf8',
+    );
+
+    for (const source of [worker, purge, deployment + privilegePolicy]) {
         assert.ok(source.includes(jobTable));
         assert.ok(!source.includes('speech_generation_jobs'));
     }

@@ -263,19 +263,24 @@ run('manual AI accounting persisted facts', () => {
         );
     }
 
-    async function payment() {
+    async function payment(recordedAt = at) {
         const request = AccountingRecordRequestSchema.parse({
             ...base(),
+            occurredAt: recordedAt.toISOString(),
             kind: 'payment',
             ownerId,
             credits: '10.001',
             amountUsd: '2.123456',
             feeUsd: '0.123456',
         });
-        const first = await store.record(request, ownerId, at);
-        expect(await store.record(request, ownerId, at)).toEqual(first);
+        const first = await store.record(request, ownerId, recordedAt);
+        expect(await store.record(request, ownerId, recordedAt)).toEqual(first);
         await expect(
-            store.record({ ...request, reference: 'different' }, ownerId, at),
+            store.record(
+                { ...request, reference: 'different' },
+                ownerId,
+                recordedAt,
+            ),
         ).rejects.toThrow('Idempotency');
 
         return first;
@@ -465,57 +470,62 @@ run('manual AI accounting persisted facts', () => {
     });
 
     it('reports measured, estimated and unknown costs independently of manual deposits and bill adjustment', async () => {
-        await payment();
+        // Provider dispatch uses the database clock. Align manual facts and the
+        // report period with it so calendar changes cannot exclude fixture costs.
+        const clock = await client<{ now: string }[]>`
+            select clock_timestamp() as now
+        `;
+        const reference = new Date(clock[0]!.now);
+        const dayMs = 24 * 60 * 60 * 1000;
+        const from = new Date(reference.getTime() - dayMs);
+        const to = new Date(reference.getTime() + dayMs);
+
+        await payment(reference);
         await actualTextExpense(200001n);
         await actualEstimatedSpeechExpense();
         await actualTextExpense(null);
         await store.record(
             AccountingRecordRequestSchema.parse({
                 ...base(),
+                occurredAt: reference.toISOString(),
                 kind: 'provider_deposit',
                 providerId: 'test-provider',
                 amountUsd: '10',
             }),
             ownerId,
-            at,
+            reference,
         );
 
         await store.record(
             AccountingRecordRequestSchema.parse({
                 ...base(),
+                occurredAt: reference.toISOString(),
                 kind: 'provider_balance',
                 providerId: 'test-provider',
                 amountUsd: '9.1',
             }),
             ownerId,
-            at,
+            reference,
         );
 
         await store.record(
             AccountingRecordRequestSchema.parse({
                 ...base(),
+                occurredAt: reference.toISOString(),
                 kind: 'provider_bill',
                 providerId: 'test-provider',
                 amountUsd: '0.4',
-                periodStart: '2026-10-01T00:00:00Z',
-                periodEnd: '2026-11-01T00:00:00Z',
+                periodStart: from.toISOString(),
+                periodEnd: to.toISOString(),
             }),
             ownerId,
-            at,
+            reference,
         );
 
-        await expect(
-            store.report(
-                new Date('2026-10-01T00:00:00Z'),
-                new Date('2026-11-01T00:00:00Z'),
-            ),
-        ).rejects.toThrow('prepared');
+        await expect(store.report(from, to)).rejects.toThrow('prepared');
 
         expect(await store.refreshNextReport()).toBe(true);
-        const report = await store.report(
-            new Date('2026-10-01T00:00:00Z'),
-            new Date('2026-11-01T00:00:00Z'),
-        );
+        const report = await store.report(from, to);
 
         expect(report.cash).toEqual({
             paymentsUsd: '2.123456',
@@ -535,12 +545,7 @@ run('manual AI accounting persisted facts', () => {
 
         // HTTP-facing reads use the saved snapshot; adding a fact does not trigger a history aggregate.
         await actualTextExpense(999999n);
-        expect(
-            await store.report(
-                new Date('2026-10-01T00:00:00Z'),
-                new Date('2026-11-01T00:00:00Z'),
-            ),
-        ).toEqual(report);
+        expect(await store.report(from, to)).toEqual(report);
 
         expect(report.providers[0]).toMatchObject({
             depositsUsd: '10.000000',

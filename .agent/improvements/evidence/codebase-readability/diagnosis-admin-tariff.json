@@ -1,0 +1,123 @@
+{
+  "owner": "frontend-foundation",
+  "mode": "read-only diagnosis; evidence-only write",
+  "run": "5398c6ab-ac04-4d84-8a36-18f344368eb9",
+  "artifacts": [
+    {
+      "path": "/private/tmp/languon-bl019-supplemental-5398c6ab-ac04-4d84-8a36-18f344368eb9/admin-playwright.log",
+      "sha256": "5316ee4c41a3fefc33ff8d56514083d1a205cc9047059827e38fbde265a1d317"
+    },
+    {
+      "path": "/private/tmp/languon-bl019-supplemental-5398c6ab-ac04-4d84-8a36-18f344368eb9/admin-artifacts/admin-user-management.jour-0d1a0-in-their-selected-revisions-chromium/error-context.md",
+      "sha256": "7a7d57b2f7f9611a8a185099b7392b355b0741c2aaa6c1245a22b82cc192a1a8"
+    },
+    {
+      "path": "/private/tmp/languon-bl019-supplemental-5398c6ab-ac04-4d84-8a36-18f344368eb9/admin-artifacts/admin-user-management.jour-0d1a0-in-their-selected-revisions-chromium/trace.zip",
+      "sha256": "75b27c37da806be4ab9d5a3d85b5f6df2d35286269a3a8ceda472331cd1a31fa"
+    }
+  ],
+  "failureLocation": "admin-user-management.journeys.spec.ts:1948 -> setup-admin.ts:187, second configureModel(checkFlows:false) primary popup No data",
+  "known": [
+    "Last routing GET200 still declares DeepSeek configured=true, retired=false, processingEligible=true; enabledRouteIds contains deepseek/deepseek-flash. All12 fresh flow probes passed.",
+    "reviewedRouteOptions only disables unconfigured/retired/unapproved routes. Primary choices filter by Form.useWatch(enabledRouteIds); worker credential/format identity is not this UI filter.",
+    "Trace shows second helper takes absent-tag branch, clicks DeepSeek under Enabled routes; after@call@592 shows aria-selected=false and selection placeholder. Primary options then empty, previous primary label retained.",
+    "Existing selected-tag detector nests full ancestor-scoped enabled locator inside each .ant-select via has; it misses existing tag and toggles an enabled option off.",
+    "Trace DOM: enabled INPUT role=combobox id=text-ai-routing_enabledRouteIds is inside DIV.ant-select.ant-select-multiple; tags remain under that select .ant-select-selection-overflow.",
+    "First calibration controls (root execution context), first routing publish and first enqueue202 completed; second publication, admission and two-revision/pinned-outcome assertions were not reached."
+  ],
+  "cause": "Existing test-helper selected-tag lookup toggles off already-enabled route; no observed backend route ineligibility.",
+  "proposedFixReviewed": "Retain .ant-select-selection-item lookup, replacing filter({has: enabled}) with filter({has: page.getByRole('combobox',{name:'Enabled routes',exact:true})}); relative inner role selector matches observed control without requiring ancestor .ant-card inside .ant-select.",
+  "uncertain": [
+    "Reviewer did not run baseline browser; byte identity proves helper predates BL019, not an independently executed baseline outcome.",
+    "Temporary calibration import/call used in failed run were reverted by root; current source hashes identify restored state, not exact augmented executed body.",
+    "Worker single-card:v2-only capability and distinct synthetic API/worker keys may affect later job execution but do not explain primary option disappearance; downstream effect remains unverified."
+  ],
+  "coverageLimits": [
+    "Critical admin-session-refresh excludes tariff scenario.",
+    "Critical setup-to-generation covers calibration, one routing publication/readiness/generation, not repeated configureModel and two immutable tariff jobs.",
+    "Critical admin-text-ai-routing successes do not substitute for this full scenario; root will rerun affected2 after fix.",
+    "Completed calibration observations support changed price fields only; full tariff-pinning scenario remains a gap until rerun."
+  ],
+  "sourceIdentities": [
+    {
+      "path": "apps/admin/src/pages/ai-settings/lib/text-ai-routing-form.ts",
+      "beforeHash": "42338982964d6eff01a0f65c44909e5539fab2bd808359558ce24a2618e5fd64",
+      "afterHash": "42338982964d6eff01a0f65c44909e5539fab2bd808359558ce24a2618e5fd64",
+      "identicalToBaseline": true
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/routing-configuration-form.tsx",
+      "beforeHash": "f8ae43747d31873b603b253e2152ddae44d4b3e08bd20a0bab9dc2d97c2f7ae6",
+      "afterHash": "f8ae43747d31873b603b253e2152ddae44d4b3e08bd20a0bab9dc2d97c2f7ae6",
+      "identicalToBaseline": true
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/text-ai-routing-panel.tsx",
+      "beforeHash": "04bda6dee26a186fffcb6bb3ea01eb879e0117d9e2519791a2c1a3fe84964e5e",
+      "afterHash": "04bda6dee26a186fffcb6bb3ea01eb879e0117d9e2519791a2c1a3fe84964e5e",
+      "identicalToBaseline": true
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/route-policy-fields.tsx",
+      "beforeHash": "748670861bc868e3b9fa1cca7d9d26a9f19fc70ad2fb4a489ecdccb3682e4044",
+      "afterHash": "748670861bc868e3b9fa1cca7d9d26a9f19fc70ad2fb4a489ecdccb3682e4044",
+      "identicalToBaseline": true
+    },
+    {
+      "path": "apps/admin/tests/e2e/support/setup-admin.ts",
+      "beforeHash": "809b9a209085fb7653d437b7124555369fd2ae711eda86b37ab648d5da5f1916",
+      "afterHash": "5fbc6e01fe87ee5ae2b4a4bb2d0ec6398434cb573bac68d8511049fe6abaaf0c",
+      "identicalToBaseline": false
+    },
+    {
+      "path": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+      "beforeHash": "d8fa4985b15eb1623f4bc4a1840289bd435b3cbd5a1cc68415bc0cb8b168d30d",
+      "afterHash": "7eaf8fb5e4bad2e5ae1edb8367f20b250f6051691962116275d80b93e2799d9c",
+      "identicalToBaseline": false
+    },
+    {
+      "path": "apps/admin/playwright.config.ts",
+      "beforeHash": "4b75a93b8d50b76f2aece837545941f5bb9c4f5c56b0b8e29924229795957863",
+      "afterHash": "4b75a93b8d50b76f2aece837545941f5bb9c4f5c56b0b8e29924229795957863",
+      "identicalToBaseline": true
+    },
+    {
+      "path": "scripts/critical-flows/registry.mjs",
+      "beforeHash": "31ef8cf2687f82491c2de5a53bf1b12028347fc2180507133006bbb6f3dd9f84",
+      "afterHash": "da99b63aba88727305cc6819b0a8f94a683155eacf3a389d6f511721df6d50b0",
+      "identicalToBaseline": false
+    }
+  ],
+  "checks": "Source/diff, trace network/DOM and hash inspection only; no source/test edits, services or test execution.",
+  "runtimeIdentityFollowup": {
+    "run": "502c4d6b-f220-432f-9ef6-a1e51f8d9f4f",
+    "observed": "Root reports both routing publications, confirmed second enqueue and all pinning SQL assertions passed. waitForGenerationReview then observed provider_unavailable.",
+    "causalGuardProof": [
+      {
+        "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-probe-identity.ts",
+        "symbol": "textAiProbeIdentity",
+        "claim": "Hashes key into credentialRevision and includes that revision in admitted flow fingerprint."
+      },
+      {
+        "path": "apps/backend/src/infrastructure/text-ai/provider-runtime.ts",
+        "symbol": "createTextAiProviderRuntime",
+        "claim": "Binds currentFingerprint from process credentials."
+      },
+      {
+        "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-resolver.ts",
+        "symbol": "validateTextAiRouteRuntimeIdentity",
+        "claim": "Before executing admitted work, resolves current route/flow identity and rejects expected !== candidate.fingerprint. Native provider price rules normalize fingerprint through nativeTextPolicyFingerprint first."
+      }
+    ],
+    "fixtureMismatch": "API Playwright config has DeepSeek synthetic-test-key and empty Kie; helper worker previously had different nonempty test keys. Thus identical route/flow with different credentials yields a different fingerprint, even with deterministic provider execution.",
+    "fix": "Aligned only helper worker keys to actual API literals; retained deterministic provider fixture and all financial/pinning assertions. No override or production change.",
+    "sourcePath": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+    "frozenAfterHash": "083262b2d57bd9ea4de8675cc7a5ef02b4d12882d66a7df672f85c3e084bfe42",
+    "checks": [
+      "pnpm exec prettier --check apps/admin/tests/e2e/admin-user-management.journeys.spec.ts: passed",
+      "pnpm --filter @languon/admin exec eslint tests/e2e/admin-user-management.journeys.spec.ts: passed",
+      "git diff --check -- apps/admin/tests/e2e/admin-user-management.journeys.spec.ts: passed"
+    ],
+    "limit": "Source proof establishes mismatch and deterministic guard rejection; no guard exception stack captured from worker. Root-scheduled browser rerun required to establish successful end-to-end completion."
+  }
+}

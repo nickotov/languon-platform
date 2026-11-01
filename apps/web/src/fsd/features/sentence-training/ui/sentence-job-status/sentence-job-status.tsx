@@ -17,13 +17,14 @@ export function SentenceJobStatus({ job, onCancel }: Props) {
 
     const checking = job.kind === 'sentence-check';
     const stopping = job.cancellationRequested;
-    const title = t(
-        stopping
-            ? 'Stopping…'
-            : checking
-              ? 'Checking your answer'
-              : 'Preparing a sentence',
-    );
+    let titleKey = 'Preparing a sentence';
+    if (stopping) {
+        titleKey = 'Stopping…';
+    } else if (checking) {
+        titleKey = 'Checking your answer';
+    }
+
+    const title = t(titleKey);
 
     return (
         <div role='status' aria-live='polite' className={styles.statusPanel}>

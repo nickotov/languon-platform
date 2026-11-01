@@ -22,8 +22,8 @@ source_paths:
     - apps/backend/src/modules/knowledge/interface/http/workbook.routes.ts
     - apps/backend/src/modules/knowledge/interface/http/transcription-job-routes.ts
     - apps/backend/src/modules/knowledge/application/private-translation-service.ts
-source_fingerprint: sha256:da03b0aa733277bce28c341eb977f77d0e7dc8c85f6f3051ac1d2fc7aac41a37
-reviewed: 2026-10-22
+source_fingerprint: sha256:1e520f027a4af27194beafb9bbc5ebb21023f23557502bf8d583a518aa024914
+reviewed: 2026-11-01
 ---
 
 # System context
@@ -84,6 +84,12 @@ journeys shown here.
 The admin also exposes accounting: manual payment/refund and provider funding records,
 versioned prices/policies and USD reports. These use the same backend and PostgreSQL;
 Feature052 introduces no external billing service, checkout or message broker.
+
+The worker document-adapter helper retains the configured deterministic or
+production adapter selection; it adds no process, storage service or external
+provider. Knowledge HTTP error mapping remains within the same authenticated
+and capability-aware router. These local readability changes leave the system
+relationships shown above unchanged.
 
 ## Sources
 

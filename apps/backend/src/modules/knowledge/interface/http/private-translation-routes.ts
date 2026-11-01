@@ -136,17 +136,23 @@ export function createKnowledgePrivateTranslationRoutes({
         if (caught instanceof KnowledgeDomainError) {
             code = caught.code;
             message = caught.message;
-            status =
-                code === 'knowledge_not_found'
-                    ? 404
-                    : code === 'version_conflict' ||
-                        code === 'idempotency_conflict'
-                      ? 409
-                      : code === 'rate_limited'
-                        ? 429
-                        : code === 'service_unavailable'
-                          ? 503
-                          : 400;
+            switch (code) {
+                case 'knowledge_not_found':
+                    status = 404;
+                    break;
+                case 'version_conflict':
+                case 'idempotency_conflict':
+                    status = 409;
+                    break;
+                case 'rate_limited':
+                    status = 429;
+                    break;
+                case 'service_unavailable':
+                    status = 503;
+                    break;
+                default:
+                    status = 400;
+            }
         } else if (caught instanceof TextsAiError) {
             code = caught.code;
             message =
@@ -156,20 +162,28 @@ export function createKnowledgePrivateTranslationRoutes({
                       ? 'This learning material is unavailable.'
                       : 'The translation action is unavailable or changed.';
 
-            status =
-                code === 'access_revoked' || code === 'generation_job_not_found'
-                    ? 404
-                    : code === 'idempotency_conflict' ||
-                        code === 'version_conflict'
-                      ? 409
-                      : code === 'rate_limited'
-                        ? 429
-                        : code === 'ai_credits_exhausted'
-                          ? 402
-                          : code === 'model_capacity_exceeded' ||
-                              code === 'invalid_request'
-                            ? 400
-                            : 503;
+            switch (code) {
+                case 'access_revoked':
+                case 'generation_job_not_found':
+                    status = 404;
+                    break;
+                case 'idempotency_conflict':
+                case 'version_conflict':
+                    status = 409;
+                    break;
+                case 'rate_limited':
+                    status = 429;
+                    break;
+                case 'ai_credits_exhausted':
+                    status = 402;
+                    break;
+                case 'model_capacity_exceeded':
+                case 'invalid_request':
+                    status = 400;
+                    break;
+                default:
+                    status = 503;
+            }
         } else if (caught instanceof InvalidBearerAuthorizationError) {
             code = 'authentication_required';
             message = 'Sign in to continue.';

@@ -19,6 +19,7 @@ import {
     cardFieldLimit,
     limitCardFieldValue,
 } from '../../lib/card-field-limits';
+import { authoringFieldRole } from '../../lib/authoring-fields';
 import { isFieldAffectedByGeneration } from '../../lib/affected-generation-fields';
 import styles from '../dictionary-card-form-common.module.css';
 
@@ -43,27 +44,7 @@ export function AuthoringField({
 
     const { ai } = suggestions;
 
-    function resolveRole() {
-        if (field === 'translation') {
-            return 'target' as const;
-        }
-
-        if (field === 'definition') {
-            return effective.definitionLanguage;
-        }
-
-        if (field === 'example') {
-            return effective.exampleLanguage;
-        }
-
-        if (field === 'exampleTranslation') {
-            return effective.exampleTranslationLanguage;
-        }
-
-        return 'source' as const;
-    }
-
-    const role = resolveRole();
+    const role = authoringFieldRole(field, effective);
 
     const language = languageForRole(
         role,

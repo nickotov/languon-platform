@@ -186,6 +186,49 @@ export function publishWorkerTextAiObservations(
     );
 }
 
+function createWorkerDocumentAdapters(
+    storage: S3PrivateDocumentStorage | undefined,
+    environment: DictionaryWorkerEnvironment['document'],
+): Parameters<typeof createDictionaryWorkerComposition>[0]['document'] {
+    if (!storage) {
+        return undefined;
+    }
+
+    if (environment.mode === 'deterministic') {
+        return {
+            extractor: new DeterministicSandboxedDocumentExtractor(),
+            fingerprint: new HmacDictionaryCryptography({
+                entropy: { randomBytes },
+                secret: environment.fingerprintSecret,
+            }),
+            ocr: new DeterministicDocumentOcrProvider(),
+            ocrEnabled: true,
+            scanner: new DeterministicDocumentMalwareScanner(),
+            storage,
+        };
+    }
+
+    if (environment.mode === 'production') {
+        return {
+            extractor: new BubblewrapSandboxedDocumentExtractor({
+                applicationRoot: environment.sandbox.applicationRoot,
+                bubblewrapPath: environment.sandbox.bubblewrapPath,
+                parserEntryPath: environment.sandbox.parserEntryPath,
+            }),
+            fingerprint: new HmacDictionaryCryptography({
+                entropy: { randomBytes },
+                secret: environment.fingerprintSecret,
+            }),
+            ocr: new UnavailableDocumentOcrProvider(),
+            ocrEnabled: false,
+            scanner: new ClamAvDocumentMalwareScanner(environment.scanner),
+            storage,
+        };
+    }
+
+    return undefined;
+}
+
 class DictionaryWorkerConfigurationError extends Error {}
 
 function createWorkerId(releaseSha: string): string {
@@ -366,41 +409,10 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                   client: documentS3Client,
               })
             : undefined;
-    const document =
-        documentStorage && environment.document.mode === 'deterministic'
-            ? {
-                  extractor: new DeterministicSandboxedDocumentExtractor(),
-                  fingerprint: new HmacDictionaryCryptography({
-                      entropy: { randomBytes },
-                      secret: environment.document.fingerprintSecret,
-                  }),
-                  ocr: new DeterministicDocumentOcrProvider(),
-                  ocrEnabled: true,
-                  scanner: new DeterministicDocumentMalwareScanner(),
-                  storage: documentStorage,
-              }
-            : documentStorage && environment.document.mode === 'production'
-              ? {
-                    extractor: new BubblewrapSandboxedDocumentExtractor({
-                        applicationRoot:
-                            environment.document.sandbox.applicationRoot,
-                        bubblewrapPath:
-                            environment.document.sandbox.bubblewrapPath,
-                        parserEntryPath:
-                            environment.document.sandbox.parserEntryPath,
-                    }),
-                    fingerprint: new HmacDictionaryCryptography({
-                        entropy: { randomBytes },
-                        secret: environment.document.fingerprintSecret,
-                    }),
-                    ocr: new UnavailableDocumentOcrProvider(),
-                    ocrEnabled: false,
-                    scanner: new ClamAvDocumentMalwareScanner(
-                        environment.document.scanner,
-                    ),
-                    storage: documentStorage,
-                }
-              : undefined;
+    const document = createWorkerDocumentAdapters(
+        documentStorage,
+        environment.document,
+    );
     const { service } = createDictionaryWorkerComposition({
         cardAuthoringProvider: routedProviders.cardAuthoring,
         clock: { now: () => new Date() },

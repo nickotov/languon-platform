@@ -75,19 +75,7 @@ export function useAuthoringAutoSave(
                 return;
             }
 
-            setStatus(
-                error &&
-                    typeof error === 'object' &&
-                    'reloadRequired' in error &&
-                    error.reloadRequired
-                    ? 'conflict'
-                    : error &&
-                        typeof error === 'object' &&
-                        'saved' in error &&
-                        error.saved
-                      ? 'refreshFailed'
-                      : 'failed',
-            );
+            setStatus(autoSaveFailureStatus(error));
 
             setFreezeDraft(
                 Boolean(
@@ -157,4 +145,22 @@ export function useAuthoringAutoSave(
         autoSaveLocked: freezeDraft || status === 'saving',
         retryAutoSave,
     };
+}
+
+function autoSaveFailureStatus(
+    error: unknown,
+): 'conflict' | 'refreshFailed' | 'failed' {
+    if (!error || typeof error !== 'object') {
+        return 'failed';
+    }
+
+    if ('reloadRequired' in error && error.reloadRequired) {
+        return 'conflict';
+    }
+
+    if ('saved' in error && error.saved) {
+        return 'refreshFailed';
+    }
+
+    return 'failed';
 }

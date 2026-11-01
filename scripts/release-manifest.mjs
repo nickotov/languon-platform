@@ -30,14 +30,13 @@ function parseOptions(values) {
 
         const name = flag.slice(2);
         const existing = options.get(name);
-        options.set(
-            name,
-            existing
-                ? Array.isArray(existing)
-                    ? [...existing, value]
-                    : [existing, value]
-                : value,
-        );
+        if (!existing) {
+            options.set(name, value);
+        } else if (Array.isArray(existing)) {
+            options.set(name, [...existing, value]);
+        } else {
+            options.set(name, [existing, value]);
+        }
 
         index += 1;
     }
@@ -90,11 +89,14 @@ function createManifest(options) {
     const imageValues = options.get('image');
     const images = {};
 
-    for (const item of Array.isArray(imageValues)
-        ? imageValues
-        : imageValues
-          ? [imageValues]
-          : []) {
+    let imageEntries = [];
+    if (Array.isArray(imageValues)) {
+        imageEntries = imageValues;
+    } else if (imageValues) {
+        imageEntries = [imageValues];
+    }
+
+    for (const item of imageEntries) {
         const separator = item.indexOf('=');
         if (separator < 1) {
             fail(`Invalid --image value: ${item}`);

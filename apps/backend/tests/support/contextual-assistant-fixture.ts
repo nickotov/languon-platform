@@ -434,37 +434,60 @@ function deterministicModel(
                                 readMentioned ||
                                 mentionedProposals
                             ) {
-                                const inputs = mentionedProposals
-                                    ? mentionedBlockProposals(options.prompt)
-                                    : [
-                                          readMentioned
-                                              ? {
-                                                    query: 'mentioned blocks',
-                                                    limit: 8,
-                                                    blockIds: mentionedBlockIds(
-                                                        options.prompt,
-                                                    ),
-                                                }
-                                              : readUpdate
-                                                ? {
-                                                      query: audioProposal
-                                                          ? 'Prepare recording later'
-                                                          : 'travail',
-                                                      limit: 5,
-                                                  }
-                                                : blockProposal
-                                                  ? audioProposal
-                                                      ? preparedAudioProposal(
-                                                            options.prompt,
-                                                        )
-                                                      : markdownGrammarRequested
-                                                        ? markdownGrammarProposal()
-                                                        : vocabularyProposal(
-                                                              options.prompt,
-                                                              updating,
-                                                          )
-                                                  : proposedContent,
-                                      ];
+                                const toolInputs = () => {
+                                    if (mentionedProposals) {
+                                        return mentionedBlockProposals(
+                                            options.prompt,
+                                        );
+                                    }
+
+                                    if (readMentioned) {
+                                        return [
+                                            {
+                                                query: 'mentioned blocks',
+                                                limit: 8,
+                                                blockIds: mentionedBlockIds(
+                                                    options.prompt,
+                                                ),
+                                            },
+                                        ];
+                                    }
+
+                                    if (readUpdate) {
+                                        return [
+                                            {
+                                                query: audioProposal
+                                                    ? 'Prepare recording later'
+                                                    : 'travail',
+                                                limit: 5,
+                                            },
+                                        ];
+                                    }
+
+                                    if (!blockProposal) {
+                                        return [proposedContent];
+                                    }
+
+                                    if (audioProposal) {
+                                        return [
+                                            preparedAudioProposal(
+                                                options.prompt,
+                                            ),
+                                        ];
+                                    }
+
+                                    if (markdownGrammarRequested) {
+                                        return [markdownGrammarProposal()];
+                                    }
+
+                                    return [
+                                        vocabularyProposal(
+                                            options.prompt,
+                                            updating,
+                                        ),
+                                    ];
+                                };
+                                const inputs = toolInputs();
 
                                 for (const input of inputs) {
                                     controller.enqueue({

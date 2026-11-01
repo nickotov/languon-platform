@@ -103,36 +103,32 @@ const app = createAdminMcpServer({
     credentials,
     administration,
     actualizePrices: (actor, input, secret, signal) =>
-        new AdminMcpPriceActualizationService({
-            sources: priceSources,
-            targets: async () =>
-                modelPriceCatalog(providerKeys, transcriptionCredentials).map(
-                    (entry) => entry.target,
-                ),
-            catalog: async () =>
-                modelPriceCatalog(providerKeys, transcriptionCredentials),
-            prices: () => new DrizzleProviderPriceStore(database).list(),
-            administration,
-            audit: administrationAdapter,
-            reauthenticate: () => credentials.authenticate(secret),
-        }).actualize(actor, input, signal),
+        createPriceActualizationService(secret).actualize(actor, input, signal),
     verifyPrices: (actor, input, secret, signal) =>
-        new AdminMcpPriceActualizationService({
-            sources: priceSources,
-            targets: async () =>
-                modelPriceCatalog(providerKeys, transcriptionCredentials).map(
-                    (entry) => entry.target,
-                ),
-            catalog: async () =>
-                modelPriceCatalog(providerKeys, transcriptionCredentials),
-            prices: () => new DrizzleProviderPriceStore(database).list(),
-            administration,
-            audit: administrationAdapter,
-            reauthenticate: () => credentials.authenticate(secret),
-        }).verify(actor, input, signal),
+        createPriceActualizationService(secret).verify(actor, input, signal),
     checks,
     port: env.ADMIN_MCP_PORT,
 });
+
+// Each operation needs a fresh reauthentication closure bound to its request credential.
+function createPriceActualizationService(
+    secret: string,
+): AdminMcpPriceActualizationService {
+    return new AdminMcpPriceActualizationService({
+        sources: priceSources,
+        targets: async () =>
+            modelPriceCatalog(providerKeys, transcriptionCredentials).map(
+                (entry) => entry.target,
+            ),
+        catalog: async () =>
+            modelPriceCatalog(providerKeys, transcriptionCredentials),
+        prices: () => new DrizzleProviderPriceStore(database).list(),
+        administration,
+        audit: administrationAdapter,
+        reauthenticate: () => credentials.authenticate(secret),
+    });
+}
+
 const server = serve({
     fetch: app.fetch,
     hostname: '127.0.0.1',

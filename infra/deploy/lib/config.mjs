@@ -123,6 +123,216 @@ export function normalizeRetainedSpeechFingerprintSecrets(value) {
     }
 }
 
+function assertDictionaryGenerationConfig(config, dictionaryProviderMode) {
+    const dictionaryModelKeys = [
+        'DICTIONARY_GENERATION_MODEL_ID',
+        'DICTIONARY_GENERATION_MODEL_BASE_URL',
+        'DICTIONARY_GENERATION_MODEL_API_KEY',
+    ];
+    const dictionaryBudgetBounds = {
+        DICTIONARY_GENERATION_MAX_INPUT_TOKENS: [32_768, 262_144],
+        DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: [128, 40_960],
+        DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: [
+            1, 1_000_000_000,
+        ],
+        DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS: [
+            1, 1_000_000_000,
+        ],
+        DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: [1, 10_000_000],
+    };
+    const dictionaryBudgetKeys = Object.keys(dictionaryBudgetBounds);
+    const configuredDictionaryBudgetKeys = dictionaryBudgetKeys.filter(
+        (key) => config[key] !== undefined && config[key] !== '',
+    );
+
+    if (
+        configuredDictionaryBudgetKeys.length > 0 &&
+        configuredDictionaryBudgetKeys.length !== dictionaryBudgetKeys.length
+    ) {
+        throw new Error(
+            'Dictionary generation budget settings must be provided together.',
+        );
+    }
+
+    if (
+        dictionaryProviderMode === 'mastra' &&
+        configuredDictionaryBudgetKeys.length !== dictionaryBudgetKeys.length
+    ) {
+        throw new Error(
+            `Live dictionary generation is missing required budget keys: ${dictionaryBudgetKeys.filter((key) => !configuredDictionaryBudgetKeys.includes(key)).join(', ')}.`,
+        );
+    }
+
+    const dictionaryBudget = {};
+    if (configuredDictionaryBudgetKeys.length === dictionaryBudgetKeys.length) {
+        for (const key of dictionaryBudgetKeys) {
+            const [minimum, maximum] = dictionaryBudgetBounds[key];
+            const value = Number(config[key]);
+            if (
+                typeof config[key] !== 'string' ||
+                !/^\d+$/.test(config[key]) ||
+                !Number.isSafeInteger(value) ||
+                value < minimum ||
+                value > maximum
+            ) {
+                throw new Error(
+                    `${key} must be an integer between ${minimum} and ${maximum}.`,
+                );
+            }
+
+            dictionaryBudget[key] = value;
+        }
+
+        const maximumCalculatedCost =
+            Math.ceil(
+                (dictionaryBudget.DICTIONARY_GENERATION_MAX_INPUT_TOKENS *
+                    dictionaryBudget.DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS) /
+                    1_000_000,
+            ) +
+            Math.ceil(
+                (dictionaryBudget.DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS *
+                    dictionaryBudget.DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS) /
+                    1_000_000,
+            );
+
+        if (
+            dictionaryBudget.DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT <
+            maximumCalculatedCost
+        ) {
+            throw new Error(
+                'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT must cover the configured input and output token ceilings and rates.',
+            );
+        }
+    }
+
+    if (dictionaryProviderMode === 'mastra') {
+        const modelId = config.DICTIONARY_GENERATION_MODEL_ID;
+        const curatedCredentialKey =
+            modelId === 'deepseek/deepseek-flash'
+                ? 'DEEPSEEK_API_KEY'
+                : modelId === 'kie/gemini-2.5-pro'
+                  ? 'KIE_API_KEY'
+                  : null;
+
+        if (!curatedCredentialKey) {
+            throw new Error(
+                'Dictionary generation model is unsupported; select a curated model.',
+            );
+        }
+
+        const missingModelKeys = !config[curatedCredentialKey]
+            ? [curatedCredentialKey]
+            : [];
+
+        if (missingModelKeys.length) {
+            throw new Error(
+                `Mastra dictionary generation is missing required keys: ${missingModelKeys.join(', ')}.`,
+            );
+        }
+
+        if (!/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(modelId)) {
+            throw new Error(
+                'DICTIONARY_GENERATION_MODEL_ID must use provider/model format.',
+            );
+        }
+
+        if (
+            curatedCredentialKey &&
+            (config.DICTIONARY_GENERATION_MODEL_BASE_URL ||
+                config.DICTIONARY_GENERATION_MODEL_API_KEY)
+        ) {
+            throw new Error(
+                'Curated dictionary models must use their fixed endpoint and provider credential.',
+            );
+        }
+    } else if (dictionaryModelKeys.some((key) => config[key])) {
+        throw new Error(
+            'Dictionary generation model settings require DICTIONARY_GENERATION_PROVIDER_MODE=mastra.',
+        );
+    }
+}
+
+function assertProductionDataConfig(config) {
+    if (!config.BACKUP_MANIFEST_PATH) {
+        throw new Error('Production deployment requires BACKUP_MANIFEST_PATH.');
+    }
+
+    if (!config.DATA_TLS_CA_PATH) {
+        throw new Error('Production deployment requires DATA_TLS_CA_PATH.');
+    }
+
+    for (const key of [
+        'ACCOUNT_PURGE_DATABASE_URL',
+        'DATABASE_URL',
+        'DICTIONARY_WORKER_DATABASE_URL',
+        'MIGRATION_DATABASE_URL',
+    ]) {
+        if (
+            new URL(config[key]).searchParams.get('sslmode') !== 'verify-full'
+        ) {
+            throw new Error(
+                `${key} must use sslmode=verify-full in production.`,
+            );
+        }
+    }
+
+    const applicationDatabaseUser = new URL(config.DATABASE_URL).username;
+    const purgeDatabaseUser = new URL(config.ACCOUNT_PURGE_DATABASE_URL)
+        .username;
+    const workerDatabaseUser = new URL(config.DICTIONARY_WORKER_DATABASE_URL)
+        .username;
+    const migrationDatabaseUser = new URL(config.MIGRATION_DATABASE_URL)
+        .username;
+
+    if (
+        !workerDatabaseUser ||
+        workerDatabaseUser === applicationDatabaseUser ||
+        workerDatabaseUser === migrationDatabaseUser
+    ) {
+        throw new Error(
+            'DICTIONARY_WORKER_DATABASE_URL must use a dedicated production database user.',
+        );
+    }
+
+    if (
+        !purgeDatabaseUser ||
+        [
+            applicationDatabaseUser,
+            workerDatabaseUser,
+            migrationDatabaseUser,
+        ].includes(purgeDatabaseUser)
+    ) {
+        throw new Error(
+            'ACCOUNT_PURGE_DATABASE_URL must use a dedicated production database user.',
+        );
+    }
+
+    const redis = new URL(config.REDIS_URL);
+    if (redis.protocol !== 'rediss:') {
+        throw new Error('REDIS_URL must use rediss:// in production.');
+    }
+
+    if (!redis.username || redis.username === 'default') {
+        throw new Error('REDIS_URL must use a restricted named Redis user.');
+    }
+
+    for (const key of [
+        'ACCOUNT_PURGE_DATABASE_URL',
+        'DATABASE_URL',
+        'DICTIONARY_WORKER_DATABASE_URL',
+        'REDIS_URL',
+    ]) {
+        const hostname = new URL(config[key]).hostname;
+        if (
+            ['localhost', '127.0.0.1', 'postgres', 'redis'].includes(hostname)
+        ) {
+            throw new Error(
+                `${key} must use the production data VPS private address.`,
+            );
+        }
+    }
+}
+
 export function assertDeployConfig(environment, config) {
     for (const key of [
         'DICTIONARY_AUDIO_PLAYBACK_ENABLED',
@@ -321,220 +531,10 @@ export function assertDeployConfig(environment, config) {
         );
     }
 
-    const dictionaryModelKeys = [
-        'DICTIONARY_GENERATION_MODEL_ID',
-        'DICTIONARY_GENERATION_MODEL_BASE_URL',
-        'DICTIONARY_GENERATION_MODEL_API_KEY',
-    ];
-    const dictionaryBudgetBounds = {
-        DICTIONARY_GENERATION_MAX_INPUT_TOKENS: [32_768, 262_144],
-        DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: [128, 40_960],
-        DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS: [
-            1, 1_000_000_000,
-        ],
-        DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS: [
-            1, 1_000_000_000,
-        ],
-        DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: [1, 10_000_000],
-    };
-    const dictionaryBudgetKeys = Object.keys(dictionaryBudgetBounds);
-    const configuredDictionaryBudgetKeys = dictionaryBudgetKeys.filter(
-        (key) => config[key] !== undefined && config[key] !== '',
-    );
-
-    if (
-        configuredDictionaryBudgetKeys.length > 0 &&
-        configuredDictionaryBudgetKeys.length !== dictionaryBudgetKeys.length
-    ) {
-        throw new Error(
-            'Dictionary generation budget settings must be provided together.',
-        );
-    }
-
-    if (
-        dictionaryProviderMode === 'mastra' &&
-        configuredDictionaryBudgetKeys.length !== dictionaryBudgetKeys.length
-    ) {
-        throw new Error(
-            `Live dictionary generation is missing required budget keys: ${dictionaryBudgetKeys.filter((key) => !configuredDictionaryBudgetKeys.includes(key)).join(', ')}.`,
-        );
-    }
-
-    const dictionaryBudget = {};
-    if (configuredDictionaryBudgetKeys.length === dictionaryBudgetKeys.length) {
-        for (const key of dictionaryBudgetKeys) {
-            const [minimum, maximum] = dictionaryBudgetBounds[key];
-            const value = Number(config[key]);
-            if (
-                typeof config[key] !== 'string' ||
-                !/^\d+$/.test(config[key]) ||
-                !Number.isSafeInteger(value) ||
-                value < minimum ||
-                value > maximum
-            ) {
-                throw new Error(
-                    `${key} must be an integer between ${minimum} and ${maximum}.`,
-                );
-            }
-
-            dictionaryBudget[key] = value;
-        }
-
-        const maximumCalculatedCost =
-            Math.ceil(
-                (dictionaryBudget.DICTIONARY_GENERATION_MAX_INPUT_TOKENS *
-                    dictionaryBudget.DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS) /
-                    1_000_000,
-            ) +
-            Math.ceil(
-                (dictionaryBudget.DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS *
-                    dictionaryBudget.DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS) /
-                    1_000_000,
-            );
-
-        if (
-            dictionaryBudget.DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT <
-            maximumCalculatedCost
-        ) {
-            throw new Error(
-                'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT must cover the configured input and output token ceilings and rates.',
-            );
-        }
-    }
-
-    if (dictionaryProviderMode === 'mastra') {
-        const modelId = config.DICTIONARY_GENERATION_MODEL_ID;
-        const curatedCredentialKey =
-            modelId === 'deepseek/deepseek-flash'
-                ? 'DEEPSEEK_API_KEY'
-                : modelId === 'kie/gemini-2.5-pro'
-                  ? 'KIE_API_KEY'
-                  : null;
-
-        if (!curatedCredentialKey) {
-            throw new Error(
-                'Dictionary generation model is unsupported; select a curated model.',
-            );
-        }
-
-        const missingModelKeys = !config[curatedCredentialKey]
-            ? [curatedCredentialKey]
-            : [];
-
-        if (missingModelKeys.length) {
-            throw new Error(
-                `Mastra dictionary generation is missing required keys: ${missingModelKeys.join(', ')}.`,
-            );
-        }
-
-        if (!/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(modelId)) {
-            throw new Error(
-                'DICTIONARY_GENERATION_MODEL_ID must use provider/model format.',
-            );
-        }
-
-        if (
-            curatedCredentialKey &&
-            (config.DICTIONARY_GENERATION_MODEL_BASE_URL ||
-                config.DICTIONARY_GENERATION_MODEL_API_KEY)
-        ) {
-            throw new Error(
-                'Curated dictionary models must use their fixed endpoint and provider credential.',
-            );
-        }
-    } else if (dictionaryModelKeys.some((key) => config[key])) {
-        throw new Error(
-            'Dictionary generation model settings require DICTIONARY_GENERATION_PROVIDER_MODE=mastra.',
-        );
-    }
+    assertDictionaryGenerationConfig(config, dictionaryProviderMode);
 
     if (environment === 'production') {
-        if (!config.BACKUP_MANIFEST_PATH) {
-            throw new Error(
-                'Production deployment requires BACKUP_MANIFEST_PATH.',
-            );
-        }
-
-        if (!config.DATA_TLS_CA_PATH) {
-            throw new Error('Production deployment requires DATA_TLS_CA_PATH.');
-        }
-
-        for (const key of [
-            'ACCOUNT_PURGE_DATABASE_URL',
-            'DATABASE_URL',
-            'DICTIONARY_WORKER_DATABASE_URL',
-            'MIGRATION_DATABASE_URL',
-        ]) {
-            if (
-                new URL(config[key]).searchParams.get('sslmode') !==
-                'verify-full'
-            ) {
-                throw new Error(
-                    `${key} must use sslmode=verify-full in production.`,
-                );
-            }
-        }
-
-        const applicationDatabaseUser = new URL(config.DATABASE_URL).username;
-        const purgeDatabaseUser = new URL(config.ACCOUNT_PURGE_DATABASE_URL)
-            .username;
-        const workerDatabaseUser = new URL(
-            config.DICTIONARY_WORKER_DATABASE_URL,
-        ).username;
-        const migrationDatabaseUser = new URL(config.MIGRATION_DATABASE_URL)
-            .username;
-
-        if (
-            !workerDatabaseUser ||
-            workerDatabaseUser === applicationDatabaseUser ||
-            workerDatabaseUser === migrationDatabaseUser
-        ) {
-            throw new Error(
-                'DICTIONARY_WORKER_DATABASE_URL must use a dedicated production database user.',
-            );
-        }
-
-        if (
-            !purgeDatabaseUser ||
-            [
-                applicationDatabaseUser,
-                workerDatabaseUser,
-                migrationDatabaseUser,
-            ].includes(purgeDatabaseUser)
-        ) {
-            throw new Error(
-                'ACCOUNT_PURGE_DATABASE_URL must use a dedicated production database user.',
-            );
-        }
-
-        const redis = new URL(config.REDIS_URL);
-        if (redis.protocol !== 'rediss:') {
-            throw new Error('REDIS_URL must use rediss:// in production.');
-        }
-
-        if (!redis.username || redis.username === 'default') {
-            throw new Error(
-                'REDIS_URL must use a restricted named Redis user.',
-            );
-        }
-
-        for (const key of [
-            'ACCOUNT_PURGE_DATABASE_URL',
-            'DATABASE_URL',
-            'DICTIONARY_WORKER_DATABASE_URL',
-            'REDIS_URL',
-        ]) {
-            const hostname = new URL(config[key]).hostname;
-            if (
-                ['localhost', '127.0.0.1', 'postgres', 'redis'].includes(
-                    hostname,
-                )
-            ) {
-                throw new Error(
-                    `${key} must use the production data VPS private address.`,
-                );
-            }
-        }
+        assertProductionDataConfig(config);
     }
 
     return {

@@ -22,7 +22,10 @@ import {
     textLifecycle,
     updateFolder,
 } from './text-content-mutations';
-import { type TextProposalLoader } from './text-content-persistence-support';
+import type {
+    TextContentContext,
+    TextProposalLoader,
+} from './text-content-persistence-support';
 import {
     copyShared,
     issueShare,
@@ -39,32 +42,22 @@ export class DrizzleTextContentStore implements TextContentStore {
         private readonly proposal?: TextProposalLoader,
     ) {}
 
+    private createPersistenceContext(): TextContentContext {
+        return {
+            db: this.db,
+            ids: this.ids,
+            clock: this.clock,
+            crypto: this.crypto,
+            proposal: this.proposal,
+        };
+    }
+
     async listFolders(ownerId: string, page: TextPage) {
-        return listFolders(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            page,
-        );
+        return listFolders(this.createPersistenceContext(), ownerId, page);
     }
 
     async createFolder(ownerId: string, request: CreateTextFolderRequest) {
-        return createFolder(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            request,
-        );
+        return createFolder(this.createPersistenceContext(), ownerId, request);
     }
 
     async updateFolder(
@@ -73,13 +66,7 @@ export class DrizzleTextContentStore implements TextContentStore {
         request: UpdateTextFolderRequest,
     ) {
         return updateFolder(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             id,
             request,
@@ -93,13 +80,7 @@ export class DrizzleTextContentStore implements TextContentStore {
         lifecycle: 'active' | 'archived',
     ) {
         return folderLifecycle(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             id,
             expectedVersion,
@@ -109,13 +90,7 @@ export class DrizzleTextContentStore implements TextContentStore {
 
     async listTexts(ownerId: string, folderId: string | null, page: TextPage) {
         return listTexts(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             folderId,
             page,
@@ -123,75 +98,23 @@ export class DrizzleTextContentStore implements TextContentStore {
     }
 
     async pendingJob(ownerId: string, id: string) {
-        return pendingJob(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            id,
-        );
+        return pendingJob(this.createPersistenceContext(), ownerId, id);
     }
 
     async moveText(ownerId: string, id: string, request: MoveTextRequest) {
-        return moveText(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            id,
-            request,
-        );
+        return moveText(this.createPersistenceContext(), ownerId, id, request);
     }
 
     async createText(ownerId: string, request: CreateTextRequest) {
-        return createText(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            request,
-        );
+        return createText(this.createPersistenceContext(), ownerId, request);
     }
 
     async getText(ownerId: string, id: string) {
-        return getText(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            id,
-        );
+        return getText(this.createPersistenceContext(), ownerId, id);
     }
 
     async saveText(ownerId: string, id: string, request: SaveTextRequest) {
-        return saveText(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            ownerId,
-            id,
-            request,
-        );
+        return saveText(this.createPersistenceContext(), ownerId, id, request);
     }
 
     async textLifecycle(
@@ -201,13 +124,7 @@ export class DrizzleTextContentStore implements TextContentStore {
         lifecycle: 'active' | 'archived',
     ) {
         return textLifecycle(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             id,
             expectedVersion,
@@ -222,13 +139,7 @@ export class DrizzleTextContentStore implements TextContentStore {
         expectedVersion: number,
     ) {
         return issueShare(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             kind,
             id,
@@ -243,13 +154,7 @@ export class DrizzleTextContentStore implements TextContentStore {
         expectedVersion: number,
     ) {
         return revokeShare(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             kind,
             id,
@@ -258,17 +163,7 @@ export class DrizzleTextContentStore implements TextContentStore {
     }
 
     async readShared(access: TextShareAccess, page: TextPage) {
-        return readShared(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
-            access,
-            page,
-        );
+        return readShared(this.createPersistenceContext(), access, page);
     }
 
     async copyShared(
@@ -288,13 +183,7 @@ export class DrizzleTextContentStore implements TextContentStore {
         },
     ) {
         return copyShared(
-            {
-                db: this.db,
-                ids: this.ids,
-                clock: this.clock,
-                crypto: this.crypto,
-                proposal: this.proposal,
-            },
+            this.createPersistenceContext(),
             ownerId,
             access,
             request,

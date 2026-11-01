@@ -1,0 +1,2634 @@
+{
+  "schemaVersion": 1,
+  "owner": "frontend-foundation",
+  "baseCommit": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "batches": [
+    {
+      "id": "provider-price-fields",
+      "status": "implemented",
+      "problem": "Three meter field branches nested into publication orchestration; planned cohesive provider-price-fields extraction preserves field order and validation.",
+      "seam": "Private rendering-only ProviderPriceFields; alternative leaving nested meter JSX rejected because it hides publication flow. No new state/controller abstraction.",
+      "invariants": [
+        "Form.useWatch remains in owner; duration branch precedes speech branch; exact field names/rules/order and same DOM preserved",
+        "Schema validation and onSubmit payload remain in existing owner"
+      ],
+      "callers": [
+        "ProviderPrices",
+        "admin transcription-provider-price and provider-prices tests"
+      ],
+      "checks": [
+        {
+          "command": "pnpm --filter @languon/admin test tests/transcription-provider-price.test.tsx src/pages/accounting/ui/provider-prices/provider-prices.test.tsx src/pages/accounting/ui/provider-prices/native-provider-price-dialog.test.tsx",
+          "setup": "Root schedules Vitest; jsdom matchMedia fixtures already present",
+          "estimate": "under one minute"
+        },
+        {
+          "command": "pnpm --filter @languon/admin typecheck",
+          "setup": "Root schedules shared-package builds",
+          "estimate": "under one minute"
+        }
+      ],
+      "checksRun": [
+        "prettier on provider-price-dialog.tsx/provider-price-fields.tsx passed",
+        "admin eslint on provider-price-dialog.tsx/provider-price-fields.tsx passed"
+      ]
+    },
+    {
+      "id": "cohesive-ui-sections",
+      "status": "implemented",
+      "problem": "Mapped answer state/icon decisions, global toast hosting, account overview and companion geometry hide separate responsibilities in files above review threshold.",
+      "seam": "Private account/availability and answer UI sections, toast view/types and cohesive companion measurement helpers; owner state/forms, CSS and public exports retained. Controller monolith rejected. AudioPlayer retained after complete audit because playback source/event effects share one native element and callback lifetime.",
+      "invariants": [
+        "Same DOM/view order and keys; all source hook ordering/deps retained in extracted cohesive responsibility",
+        "Same state identities, native focus/capture, timer pause, cancellation rollback and exact geometry formulas",
+        "No strings, CSS values, auth transports, provider settings or contract changes"
+      ],
+      "checks": [
+        {
+          "command": "pnpm --filter @languon/web test tests/ui-kit.test.tsx tests/ui-kit-public-contract.test.tsx",
+          "setup": "Root schedules Vitest and shared packages",
+          "estimate": "1 minute"
+        },
+        {
+          "command": "pnpm --filter @languon/admin test tests/admin-api.test.ts tests/ai-credits.test.tsx tests/accounting.test.tsx tests/transcription-provider-price.test.tsx",
+          "setup": "Root schedules jsdom suite",
+          "estimate": "1 minute"
+        },
+        {
+          "command": "pnpm --filter @languon/web typecheck; pnpm --filter @languon/admin typecheck",
+          "setup": "Root schedules types/builds serially",
+          "estimate": "1 minute"
+        }
+      ],
+      "renderedEvidence": "Pending root scheduling: knowledge-workspace workspace-draft-chat-save-reopen exercises pointer/keyboard sizing, cancellation and responsive layout; UI-kit catalog ExerciseCard answer states and Toast dismissal/pause; admin user/accounting rendered sections. No native source changes.",
+      "checksRun": [
+        "Scoped admin/web ESLint passed on changed originals and seven helpers",
+        "git diff --check on owned admin/shared source passed"
+      ],
+      "callers": [
+        "Admin UserDetailPage account/availability cards and provider publication dialogs",
+        "Shared ExerciseCard stories and public UI barrel",
+        "Toast public barrel and ToastHost consumers",
+        "CompanionLayout workspace consumers (knowledge/text/dictionary)"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/admin/index.html",
+      "status": "reviewed-acceptable",
+      "reason": "HTML entry explicitly sets language, metadata and root bootstrap.",
+      "beforeSha256": "5d93e4ec3102961e1c7b210054ac524f3707813bb2e7a12d01dc106dc17d1fe7",
+      "afterSha256": "5d93e4ec3102961e1c7b210054ac524f3707813bb2e7a12d01dc106dc17d1fe7"
+    },
+    {
+      "path": "apps/admin/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "Package scripts and app dependencies have explicit workspace ownership.",
+      "beforeSha256": "a49b479004ff505d0df070e00c88962be0c13061b8b385cee81c745cc4a50623",
+      "afterSha256": "a49b479004ff505d0df070e00c88962be0c13061b8b385cee81c745cc4a50623"
+    },
+    {
+      "path": "apps/admin/playwright.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Loopback/disposable database guards precede serial browser services; synthetic service configuration remains explicit.",
+      "beforeSha256": "4b75a93b8d50b76f2aece837545941f5bb9c4f5c56b0b8e29924229795957863",
+      "afterSha256": "4b75a93b8d50b76f2aece837545941f5bb9c4f5c56b0b8e29924229795957863"
+    },
+    {
+      "path": "apps/admin/public/favicon.svg",
+      "status": "reviewed-acceptable",
+      "reason": "Single SVG brand mark has accessible name and bounded static geometry.",
+      "beforeSha256": "0fce8de57142931ffd18e28e2f5f047f243a751029b4c2509e80c070503a236e",
+      "afterSha256": "0fce8de57142931ffd18e28e2f5f047f243a751029b4c2509e80c070503a236e"
+    },
+    {
+      "path": "apps/admin/src/app/admin-app.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Lazy route declarations and Refine provider/resource composition are independently named.",
+      "beforeSha256": "620fbde252699a34e76d193233fb62130562535391b62eec33ca515355ac96a7",
+      "afterSha256": "620fbde252699a34e76d193233fb62130562535391b62eec33ca515355ac96a7"
+    },
+    {
+      "path": "apps/admin/src/main.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Root existence validation precedes StrictMode mount.",
+      "beforeSha256": "ca8e1a10dbf272cc358648932cbffb92f0ec8e52f9e269b0ce03faf66e7057cd",
+      "afterSha256": "ca8e1a10dbf272cc358648932cbffb92f0ec8e52f9e269b0ce03faf66e7057cd"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/hooks/use-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Abort-aware polling owns report/record snapshots and preserves mutation refresh ordering.",
+      "beforeSha256": "f15cabe85efccb681614efb1a1ff492572d43af67e6f954c03ba107564965e2b",
+      "afterSha256": "f15cabe85efccb681614efb1a1ff492572d43af67e6f954c03ba107564965e2b"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/hooks/use-provider-prices.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider-price load/publish states isolate load cancellation from explicit publish errors.",
+      "beforeSha256": "907bdee43c8ee9d0ce34bab409f5adda83b084b47d08e40523eb346192aa86d3",
+      "afterSha256": "907bdee43c8ee9d0ce34bab409f5adda83b084b47d08e40523eb346192aa86d3"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Single public accounting page export.",
+      "beforeSha256": "8737b5205238072d81c01b6063df5fb8eb3bbcf3c78c1758aea6746df2c6dd3a",
+      "afterSha256": "8737b5205238072d81c01b6063df5fb8eb3bbcf3c78c1758aea6746df2c6dd3a"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/lib/operator-budgets.ts",
+      "status": "reviewed-acceptable",
+      "reason": "operatorBudgetOrderValid compares exact bigint micro amounts with nullable limits; usdMicros validates before parsing.",
+      "beforeSha256": "8ecb185c63e9f269f29bbbb65d89ca63bf9a9407f4193913d703d5ac29575e5e",
+      "afterSha256": "8ecb185c63e9f269f29bbbb65d89ca63bf9a9407f4193913d703d5ac29575e5e"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/lib/report-when-ready.ts",
+      "status": "reviewed-acceptable",
+      "reason": "reportWhenReady bounds cold-snapshot retries and abort-aware pause removes its listener after timeout.",
+      "beforeSha256": "47cd48c77ce2c88e7f66fb948a2d0aadb31011bd30b9f7a85fc2ad9a80df2986",
+      "afterSha256": "47cd48c77ce2c88e7f66fb948a2d0aadb31011bd30b9f7a85fc2ad9a80df2986"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-page/accounting-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "UTC date validation, table columns and dialog selection are clear separate derivations.",
+      "beforeSha256": "0ad30e7235000242552067b95c983b0ec74534d4f2b511da99a048bd96ffed23",
+      "afterSha256": "0ad30e7235000242552067b95c983b0ec74534d4f2b511da99a048bd96ffed23"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-record-dialog/accounting-record-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "251-line single idempotent submission form: payment/refund sections already delegated; further split would obscure retryBody freeze and shared Form instance, so retain cohesive form.",
+      "beforeSha256": "8cebec7b6acc5f3ce2cd4e6c8ead95569d5ef4c6e35e911a3cf62ea48548fe25",
+      "afterSha256": "8cebec7b6acc5f3ce2cd4e6c8ead95569d5ef4c6e35e911a3cf62ea48548fe25"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-record-dialog/payment-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "PaymentFields groups the payment-only native form fields.",
+      "beforeSha256": "906c7c98047101c8f5c481c0a583cfa566ae45e9ac327700bd55108117b102d7",
+      "afterSha256": "906c7c98047101c8f5c481c0a583cfa566ae45e9ac327700bd55108117b102d7"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-record-dialog/refund-context.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RefundContext resets readiness before abort-aware fetch and exposes retry while preserving removed-lot distinctions.",
+      "beforeSha256": "26c05a71764b413d4251ca62a366a29f143208985a77fa242c3ca781739b8a4e",
+      "afterSha256": "26c05a71764b413d4251ca62a366a29f143208985a77fa242c3ca781739b8a4e"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-report/accounting-report.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Amount CSS preserves tabular numeric alignment and no wrapping.",
+      "beforeSha256": "24fd60b91576232d0bc83ca34c3cbb13f90c06f0a613a41bb9e880f738f8d596",
+      "afterSha256": "24fd60b91576232d0bc83ca34c3cbb13f90c06f0a613a41bb9e880f738f8d596"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-report/accounting-report.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Report freshness, cash/usage descriptions and ProviderBills are distinct named render units.",
+      "beforeSha256": "fb498197317a043a35b431e1ce9c997257198318450dbb75b5a00de63317a879",
+      "afterSha256": "fb498197317a043a35b431e1ce9c997257198318450dbb75b5a00de63317a879"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-settings/accounting-settings.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting settings validates budget ordering before versioned publish and reloads canonical values.",
+      "beforeSha256": "572d73be92f09716894ae53bed2bf8ee98c1219d447eb5ddc1ee638e97abea54",
+      "afterSha256": "572d73be92f09716894ae53bed2bf8ee98c1219d447eb5ddc1ee638e97abea54"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/accounting-settings/operator-budget-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "OperatorBudgetFields shares one optional exact-USD validator across three hierarchical limits.",
+      "beforeSha256": "05f04ff3fc7cd036b5d0fcabbf066378642f5466fb9e1cc88cee691097e907dc",
+      "afterSha256": "05f04ff3fc7cd036b5d0fcabbf066378642f5466fb9e1cc88cee691097e907dc"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/capability-policies/capability-policies.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "CapabilityPolicies clearly separates abortable listing, versioned mutation and named row edit button.",
+      "beforeSha256": "94f1839252733ac259e6f61dadd06d372a78e52a0bd108c21a01ff66d9a8d053",
+      "afterSha256": "94f1839252733ac259e6f61dadd06d372a78e52a0bd108c21a01ff66d9a8d053"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/native-price-variant.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "NativePriceVariant explicitly preserves endpoint/tier/token/window applicability and exact native rounding text.",
+      "beforeSha256": "2921400eb2bf489fd5b233c9c64b6b13f0c2d99d4218fe1dc64aeb5e56ad1c07",
+      "afterSha256": "2921400eb2bf489fd5b233c9c64b6b13f0c2d99d4218fe1dc64aeb5e56ad1c07"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/native-pricing.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Native pricing dialog styles constrain only overflow/width.",
+      "beforeSha256": "a6f3192b931a0719b0888e662b1a8b640203dc8aaa543ab34758f242514f5dcf",
+      "afterSha256": "a6f3192b931a0719b0888e662b1a8b640203dc8aaa543ab34758f242514f5dcf"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/native-provider-price-dialog.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Native speech-token fixture verifies exact amount/currency/rounding and absence of flat editor.",
+      "beforeSha256": "657a1bed1e387a05d95a70624802d7a2481b3763ce3ee9ba0c74a29c7b30f61b",
+      "afterSha256": "657a1bed1e387a05d95a70624802d7a2481b3763ce3ee9ba0c74a29c7b30f61b"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/native-provider-price-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "NativeProviderPriceDialog presents immutable source/currency validity and variants without mutation controls.",
+      "beforeSha256": "2289e5132bb132bee391ff8640de4698d04fa66f5836b2a0acb5aee268bbd71e",
+      "afterSha256": "2289e5132bb132bee391ff8640de4698d04fa66f5836b2a0acb5aee268bbd71e"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-price-dialog.tsx",
+      "status": "refactored",
+      "reason": "LegacyProviderPriceDialog retains schema parsing, Form.useWatch and publish lifecycle; ProviderPriceFields isolates ordered meter-specific fields without changing labels, rules or payloads.",
+      "beforeSha256": "aa16b4b2a802534351628cd28658350ba04df2696659d6b2dd3fa46ae14d5401",
+      "afterSha256": "779741bdb99759dbe7d49d29c0b5b79088ff4ae6209bf88cf333846c0db0c67d"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-prices.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Native and legacy row fixtures assert exact currency, token cache/minimum and native-only controls.",
+      "beforeSha256": "6ff23613b880240cba422aa63491040d7cfbce5f8ffbc1a37d7ae627ae75aff4",
+      "afterSha256": "6ff23613b880240cba422aa63491040d7cfbce5f8ffbc1a37d7ae627ae75aff4"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-prices.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProviderRates has native/character/token early returns; named row edit preserves identity.",
+      "beforeSha256": "4440c66582bf84117a7127a2cf1b8434c3060c02f71f61f6daec754b245cf46f",
+      "afterSha256": "4440c66582bf84117a7127a2cf1b8434c3060c02f71f61f6daec754b245cf46f"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/hooks/use-admin-mcp-audit.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useAdminMcpAudit owns abortable reads and page/reload actions.",
+      "beforeSha256": "aaa7212dd0d54a72ee7fb8e51b13234ce9dec751d0632f42c55d7d387d0023dc",
+      "afterSha256": "aaa7212dd0d54a72ee7fb8e51b13234ce9dec751d0632f42c55d7d387d0023dc"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/hooks/use-admin-mcp.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useAdminMcp separates issue/revoke/read and one-time secret dismissal with canonical errors.",
+      "beforeSha256": "6efe0ffcaff99a6fc3b271730285a604d5bc00faa997799f4fb5fbc2a4680f05",
+      "afterSha256": "6efe0ffcaff99a6fc3b271730285a604d5bc00faa997799f4fb5fbc2a4680f05"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Single public MCP page export.",
+      "beforeSha256": "2d75a180e5738c34f39537ffa5343aca12fbb6b764158c5f0f2e6659578ec2e4",
+      "afterSha256": "2d75a180e5738c34f39537ffa5343aca12fbb6b764158c5f0f2e6659578ec2e4"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/lib/client-configurations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "buildClientConfigurations validates loopback port and references secret environment variable rather than inserting a value.",
+      "beforeSha256": "d2d8b3033a165f78fcb57127a355acfea965d8ff6a0d9ab761b10784763bb4c2",
+      "afterSha256": "d2d8b3033a165f78fcb57127a355acfea965d8ff6a0d9ab761b10784763bb4c2"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/lib/issue-token-values.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseIssueTokenValues retains only selected permission limits before schema validation.",
+      "beforeSha256": "bc6e84d3009833e3a1285e646c1ece9846aa12de71bb700c509194bb97670525",
+      "afterSha256": "bc6e84d3009833e3a1285e646c1ece9846aa12de71bb700c509194bb97670525"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/admin-mcp-page/admin-mcp-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AdminMcpPage gates issuing on one-time secret visibility and separates inventory/audit/configuration.",
+      "beforeSha256": "08c2fa6205a015eb5672c62f2a10b1bd1b90a8baa153c2cc2e88383efa440ea3",
+      "afterSha256": "08c2fa6205a015eb5672c62f2a10b1bd1b90a8baa153c2cc2e88383efa440ea3"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/connection-guide/connection-guide.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Code style preserves whitespace and wraps long local configuration.",
+      "beforeSha256": "54075525f0ea13995a78ef3e3852f597f8ac51bf4f182760b200579822aa0bc9",
+      "afterSha256": "54075525f0ea13995a78ef3e3852f597f8ac51bf4f182760b200579822aa0bc9"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/connection-guide/connection-guide.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ConnectionGuide validates port before tabs and isolates ClientConfiguration/CodeBlock.",
+      "beforeSha256": "af9b6b4a1048540819d8771a2527f532189bac24729172baee03472632045454",
+      "afterSha256": "af9b6b4a1048540819d8771a2527f532189bac24729172baee03472632045454"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-audit/token-audit.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Metadata CSS preserves JSON indentation while wrapping long values.",
+      "beforeSha256": "3894378b8c303c5032aca9a4adfae1801d2cd1037048edb3ed33c9c459ac06fc",
+      "afterSha256": "3894378b8c303c5032aca9a4adfae1801d2cd1037048edb3ed33c9c459ac06fc"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-audit/token-audit.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TokenAudit uses named row/detail renderers and stable pagination; AuditDetails formats metadata.",
+      "beforeSha256": "defe18e387b5d514c680b45489d85667d07c6ddeb74edcfca84ae59aa3ec5495",
+      "afterSha256": "defe18e387b5d514c680b45489d85667d07c6ddeb74edcfca84ae59aa3ec5495"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-expiry-field/token-expiry-field.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TokenExpiryField distinguishes custom value from presets without rewriting custom entry.",
+      "beforeSha256": "d4c991f1b39bd60ee9f18d3ce4064369897f88c563c66e30f765877354244e10",
+      "afterSha256": "d4c991f1b39bd60ee9f18d3ce4064369897f88c563c66e30f765877354244e10"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-issue-form/token-issue-form.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TokenIssueForm validates conditional limits and resets only after issue success.",
+      "beforeSha256": "43b1d297a20282b014f4f3055bc843eab0548ed572cbe08bb7356f27d28d2c1d",
+      "afterSha256": "43b1d297a20282b014f4f3055bc843eab0548ed572cbe08bb7356f27d28d2c1d"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-limits-fields/token-limits-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TokenLimitsFields explicitly pushes permission-dependent limit groups.",
+      "beforeSha256": "9b9b76dcfc2bacc634a73f1e7eb302f04624378729cbb7de05c4567185babb8b",
+      "afterSha256": "9b9b76dcfc2bacc634a73f1e7eb302f04624378729cbb7de05c4567185babb8b"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-list/token-limit-summary.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TokenLimitSummary enumerates each optional group and explicit no-limits state.",
+      "beforeSha256": "362d90680ed284e17b336d623e273946829221ae1f653dee5021a07f467bc163",
+      "afterSha256": "362d90680ed284e17b336d623e273946829221ae1f653dee5021a07f467bc163"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-list/token-list.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Permission tag CSS wraps narrow content without overflow.",
+      "beforeSha256": "d4f2cbd807f062c094be85453534144a0541e2963988945bbcad46c56a42ba70",
+      "afterSha256": "d4f2cbd807f062c094be85453534144a0541e2963988945bbcad46c56a42ba70"
+    },
+    {
+      "path": "apps/admin/src/pages/admin-mcp/ui/token-list/token-list.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TokenCard prioritizes revoked over expired and closes only after successful reasoned revoke.",
+      "beforeSha256": "0cc485e64c66062fc035146357be7b29ce9dafee0aec807a9b819e23d89db6b2",
+      "afterSha256": "0cc485e64c66062fc035146357be7b29ce9dafee0aec807a9b819e23d89db6b2"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ai-settings-page.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Configuration/provider/form grids preserve min-width and responsive column collapse.",
+      "beforeSha256": "68f2cae0319bd411cbb79d9adbd452071ca99977fc84ce66132efbc38fc22f4c",
+      "afterSha256": "68f2cae0319bd411cbb79d9adbd452071ca99977fc84ce66132efbc38fc22f4c"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ai-settings-page.module.css.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Declaration enumerates configuration/provider/form/actions/reason CSS exports.",
+      "beforeSha256": "3e37d72e8d27780ab13781d762312f2471450579403ff35087ec08bf0eae39d3",
+      "afterSha256": "3e37d72e8d27780ab13781d762312f2471450579403ff35087ec08bf0eae39d3"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ai-settings-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AiSettingsPage separates request failure, catalog empty state, routing, pricing and transcription.",
+      "beforeSha256": "763ecbd474eb1bd7280b94e6dcadec19ae651a748209177df2f12e64446be9c2",
+      "afterSha256": "763ecbd474eb1bd7280b94e6dcadec19ae651a748209177df2f12e64446be9c2"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/hooks/use-model-prices.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useModelPrices locks publication and blocks ambiguous failure until canonical refresh.",
+      "beforeSha256": "99d91401ba89f301a919b687810ef9b16f33ad136de194e2d82474bd1da3f36d",
+      "afterSha256": "99d91401ba89f301a919b687810ef9b16f33ad136de194e2d82474bd1da3f36d"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/hooks/use-text-ai-routing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useTextAiRouting separates abortable paired snapshots from serialized mutation operations.",
+      "beforeSha256": "ffaee04ece7120763a3349d8a345bdedef38af63fea3661f0895f11f1e4b8e33",
+      "afterSha256": "ffaee04ece7120763a3349d8a345bdedef38af63fea3661f0895f11f1e4b8e33"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/hooks/use-transcription-settings.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useTranscriptionSettings keeps signed preview/apply workflow and lock local.",
+      "beforeSha256": "3aa47f906b3a6f951f347e94281232411481dc1bd55feea93b2318e8abb70a1d",
+      "afterSha256": "3aa47f906b3a6f951f347e94281232411481dc1bd55feea93b2318e8abb70a1d"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/lib/ai-settings-form.ts",
+      "status": "reviewed-acceptable",
+      "reason": "settingsToFormValues/enabledDefaultModels/toMutationRequest separate read defaults, eligibility and publish mapping.",
+      "beforeSha256": "c4b43b3c21ce3ed1915ad6b9e3595b3ed13218737ac5d627bdb69c853c284ff6",
+      "afterSha256": "c4b43b3c21ce3ed1915ad6b9e3595b3ed13218737ac5d627bdb69c853c284ff6"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/lib/text-ai-routing-form.ts",
+      "status": "reviewed-acceptable",
+      "reason": "reviewedRouteOptions/routingInitialValues/probeEvidenceAge/latestRouteProbe separate route eligibility, revision defaults and fresh matching evidence.",
+      "beforeSha256": "42338982964d6eff01a0f65c44909e5539fab2bd808359558ce24a2618e5fd64",
+      "afterSha256": "42338982964d6eff01a0f65c44909e5539fab2bd808359558ce24a2618e5fd64"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/types.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AI form aliases derive provider/model contracts; editable shape remains local.",
+      "beforeSha256": "b60873593de3aaf5d2a5d4ee8a4ab1cf721167fcfd0048ecddaad61246ae7d8a",
+      "afterSha256": "b60873593de3aaf5d2a5d4ee8a4ab1cf721167fcfd0048ecddaad61246ae7d8a"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/ai-settings-form/ai-settings-form.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AiSettingsForm keeps provider eligibility and dirty state beside submit orchestration; short direct callbacks expose exactly the selected value without additional branching.",
+      "beforeSha256": "6586611cebbeff99d2a44c27bcd2af38ef284888faa5bfe5ff6e19d009a17332",
+      "afterSha256": "6586611cebbeff99d2a44c27bcd2af38ef284888faa5bfe5ff6e19d009a17332"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/ai-settings-form/enabled-models-field.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "EnabledModelsField clears default only when changed selection omits it.",
+      "beforeSha256": "26e109c59891a3b039c35c04b7cfa278bd570fec85cbc499b4c194d16bdd78b1",
+      "afterSha256": "26e109c59891a3b039c35c04b7cfa278bd570fec85cbc499b4c194d16bdd78b1"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/ai-settings-form/form-sections.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SavedConfiguration and ProviderField separate canonical summary from editing; direct radio callback is bounded and preserves the selected provider/model contract.",
+      "beforeSha256": "f71b39eaf35016a903dc1337e346004116d4545c8e077baacd734ea3409dca2a",
+      "afterSha256": "f71b39eaf35016a903dc1337e346004116d4545c8e077baacd734ea3409dca2a"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/model-prices/model-price-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ModelPriceDialog keeps distinct speech/token rate rules and blocked publication controls.",
+      "beforeSha256": "825976a12fbe31517bce52f644454115b769872f64a81d2811c8493a25dae783",
+      "afterSha256": "825976a12fbe31517bce52f644454115b769872f64a81d2811c8493a25dae783"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/model-prices/model-prices-panel.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "PriceRates retains cache fallback and historical text restriction with stable row identity.",
+      "beforeSha256": "01d45ffb23c14dea6b216cb47bd0ac96158efa4ade070faebd8efe276267e041",
+      "afterSha256": "01d45ffb23c14dea6b216cb47bd0ac96158efa4ade070faebd8efe276267e041"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/provider-card/provider-card.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Provider-card styles separate model grid/labels and narrow breakpoint.",
+      "beforeSha256": "fa405229e7f2746cde9e8900c07f3da5f6a0f491ebef52645dbaa9f615d49bb6",
+      "afterSha256": "fa405229e7f2746cde9e8900c07f3da5f6a0f491ebef52645dbaa9f615d49bb6"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/provider-card/provider-card.module.css.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider card declaration enumerates owned selectors.",
+      "beforeSha256": "265ece18814c4ba816cc8ade60c96123d0e06705403b0462b6d5a09a3ddd5b04",
+      "afterSha256": "265ece18814c4ba816cc8ade60c96123d0e06705403b0462b6d5a09a3ddd5b04"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/provider-card/provider-card.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProviderCard keeps model membership and provider health presentation within one small card; local health color choice is visible beside the status label.",
+      "beforeSha256": "7d8a3f82128cfcd6b829b1e059f1159324872ff07336a6eec075f4c0750af554",
+      "afterSha256": "7d8a3f82128cfcd6b829b1e059f1159324872ff07336a6eec075f4c0750af554"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/emergency-disable-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "EmergencyDisableDialog uses revision/reason and pending close guards without replay.",
+      "beforeSha256": "0a298605b576fc96c42b9e916cbb9b189e0dd3e1aab5c8109af9d83045be861b",
+      "afterSha256": "0a298605b576fc96c42b9e916cbb9b189e0dd3e1aab5c8109af9d83045be861b"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/flow-routing-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "FlowRoutingFields scopes supported routes and distinguishes free interview from paid tariffs.",
+      "beforeSha256": "85e5d9c8f1ecaabdaa1690c820c022d16357b979ce728dfd7f94074ea9679dc5",
+      "afterSha256": "85e5d9c8f1ecaabdaa1690c820c022d16357b979ce728dfd7f94074ea9679dc5"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/probe-controls.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProbeControls binds approval to route/kind/flow/cost; local probe-result fallback is a bounded presentation decision beside the result label.",
+      "beforeSha256": "1a37e09e2fe5802cc47c625ba4c84cdfeb4ee4f87f8547760a2c8e1bfa78e0e7",
+      "afterSha256": "1a37e09e2fe5802cc47c625ba4c84cdfeb4ee4f87f8547760a2c8e1bfa78e0e7"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/probe-recovery.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProbeRecovery requires operator confirmation/reason before declaring upstream stopped.",
+      "beforeSha256": "118a717ffa2305f9aca410ae73d8001235aa193c9697acc3e465daefe84bd3d9",
+      "afterSha256": "118a717ffa2305f9aca410ae73d8001235aa193c9697acc3e465daefe84bd3d9"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/probe-result.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProbeResult derives exact cost/timing/evidence and appends optional recovered time.",
+      "beforeSha256": "71bc51f3aa218ffd27a4138c653c4bbd16320812fec4aa7d564d1435132a71e2",
+      "afterSha256": "71bc51f3aa218ffd27a4138c653c4bbd16320812fec4aa7d564d1435132a71e2"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/provider-route-table.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProviderRouteTable separately presents eligibility, configuration, runtime observations and flow proof.",
+      "beforeSha256": "b8ed87924a82ff1525182da8ec74bfdd0189802cbbe8a290f7b80a49c26d71cf",
+      "afterSha256": "b8ed87924a82ff1525182da8ec74bfdd0189802cbbe8a290f7b80a49c26d71cf"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/route-policy-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RoutePolicyFields owns primary/fallback form paths and ordered fallback selection.",
+      "beforeSha256": "748670861bc868e3b9fa1cca7d9d26a9f19fc70ad2fb4a489ecdccb3682e4044",
+      "afterSha256": "748670861bc868e3b9fa1cca7d9d26a9f19fc70ad2fb4a489ecdccb3682e4044"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/routing-configuration-form.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RoutingConfigurationForm documents empty collapsed fields and removes them before validation.",
+      "beforeSha256": "f8ae43747d31873b603b253e2152ddae44d4b3e08bd20a0bab9dc2d97c2f7ae6",
+      "afterSha256": "f8ae43747d31873b603b253e2152ddae44d4b3e08bd20a0bab9dc2d97c2f7ae6"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/routing-readiness-notice.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RoutingReadinessNotice presents separate doctor readiness and recovery guidance.",
+      "beforeSha256": "eedd189373311551b476a3782608a1d2b5ddd9c5cd4b26223f19dcf9dd8f3e64",
+      "afterSha256": "eedd189373311551b476a3782608a1d2b5ddd9c5cd4b26223f19dcf9dd8f3e64"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/text-ai-routing/text-ai-routing-panel.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TextAiRoutingPanel owns version-scoped disable dialog and derives canonical busy/failure.",
+      "beforeSha256": "04bda6dee26a186fffcb6bb3ea01eb879e0117d9e2519791a2c1a3fe84964e5e",
+      "afterSha256": "04bda6dee26a186fffcb6bb3ea01eb879e0117d9e2519791a2c1a3fe84964e5e"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/transcription-settings/transcription-settings-form.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TranscriptionSettingsForm resets fresh data-sharing approval and validates numeric inputs before preview.",
+      "beforeSha256": "2290d4464777c61659ab757b26f775237da296e87c72b7a687942aa3598eaa8a",
+      "afterSha256": "2290d4464777c61659ab757b26f775237da296e87c72b7a687942aa3598eaa8a"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/transcription-settings/transcription-settings-panel.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TranscriptionSettingsPanel separates Configuration/Readiness and gates apply on disabled-or-ready preview.",
+      "beforeSha256": "61950811233f59e54a9c367c385d6e608bda0ee3077a8eddf37c690cbb2f98d4",
+      "afterSha256": "61950811233f59e54a9c367c385d6e608bda0ee3077a8eddf37c690cbb2f98d4"
+    },
+    {
+      "path": "apps/admin/src/pages/ai-settings/ui/transcription-settings/transcription-settings.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription CSS groups containment, native rule editor and control layout selectors; semantic tokens and responsive behavior are explicit.",
+      "beforeSha256": "9be2b234ce41d9b22714ff4a6ac26c020c9acdfbb4abc06a64b7303e4d418757",
+      "afterSha256": "9be2b234ce41d9b22714ff4a6ac26c020c9acdfbb4abc06a64b7303e4d418757"
+    },
+    {
+      "path": "apps/admin/src/pages/audit/audit-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AuditPage keeps actor/target display, outcome filter and retry next to their controls; callbacks contain one direct state/query action.",
+      "beforeSha256": "0b95ebb19e8b0fb55395e8597471a1ba716d4bc1b428165a6bb8cbbdc234d148",
+      "afterSha256": "0b95ebb19e8b0fb55395e8597471a1ba716d4bc1b428165a6bb8cbbdc234d148"
+    },
+    {
+      "path": "apps/admin/src/pages/dashboard/dashboard-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Dashboard metrics and audit activity compose independently; retry is a direct query action with no concealed decision path.",
+      "beforeSha256": "1c3010ddfbdc451f1992a9b2521199cb304e8455c71589f49f7881be00758665",
+      "afterSha256": "1c3010ddfbdc451f1992a9b2521199cb304e8455c71589f49f7881be00758665"
+    },
+    {
+      "path": "apps/admin/src/pages/login/login-page.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Login CSS groups intro, card and responsive selectors with semantic tokens; no hidden cascade branch requires extraction.",
+      "beforeSha256": "43c3dea4df2caf4bf55c3569ccd21e3d4b40afbe56b38e16d86f76f32e2e3f1d",
+      "afterSha256": "43c3dea4df2caf4bf55c3569ccd21e3d4b40afbe56b38e16d86f76f32e2e3f1d"
+    },
+    {
+      "path": "apps/admin/src/pages/login/login-page.module.css.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Login declaration lists card/eyebrow/intro/page selectors.",
+      "beforeSha256": "5ad32640fb8dcd5457d469a45f21135582a3930ac420c1043fb5558bc74ca05b",
+      "afterSha256": "5ad32640fb8dcd5457d469a45f21135582a3930ac420c1043fb5558bc74ca05b"
+    },
+    {
+      "path": "apps/admin/src/pages/login/login-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LoginPage shares bounded password/passkey submit behavior; direct dismiss and passkey callbacks retain clear local ownership without extra helpers.",
+      "beforeSha256": "f9d4d7681701e00a6a0a2411d34359b35cee2fb29685659d34c0bb8933d6a6f2",
+      "afterSha256": "f9d4d7681701e00a6a0a2411d34359b35cee2fb29685659d34c0bb8933d6a6f2"
+    },
+    {
+      "path": "apps/admin/src/pages/shared/page.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Shared page CSS groups toolbar, heading, details and danger section geometry; existing token and responsive relationships are explicit.",
+      "beforeSha256": "e0beadb9cc310c726fd10d2571b14b038950be20dd32f2725b221eea2ce0c1e8",
+      "afterSha256": "e0beadb9cc310c726fd10d2571b14b038950be20dd32f2725b221eea2ce0c1e8"
+    },
+    {
+      "path": "apps/admin/src/pages/shared/page.module.css.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Shared page declaration matches owned layout/status selectors.",
+      "beforeSha256": "fd681f64694cc3e744078811efb323a4ca24e0f30cc6f1abb36ccbcf7d82cc18",
+      "afterSha256": "fd681f64694cc3e744078811efb323a4ca24e0f30cc6f1abb36ccbcf7d82cc18"
+    },
+    {
+      "path": "apps/admin/src/pages/speech-recordings/hooks/use-recordings.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useRecordings freezes deletion impact and blocks any failure until refreshed review; abortable inventory clears selections on scope/page changes.",
+      "beforeSha256": "55e8c4cec83f74cf734a8771620d57e64fcc72ed7759c379182ca110870831c3",
+      "afterSha256": "55e8c4cec83f74cf734a8771620d57e64fcc72ed7759c379182ca110870831c3"
+    },
+    {
+      "path": "apps/admin/src/pages/speech-recordings/speech-recordings-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SpeechRecordingsPage composes filtering, table, preview and impact-confirmed removal with explicit deletionDisabled.",
+      "beforeSha256": "eb11f57ee5b8e7ca8c5e365904504c6b0222ae4b208bab954eab57daa3046a67",
+      "afterSha256": "eb11f57ee5b8e7ca8c5e365904504c6b0222ae4b208bab954eab57daa3046a67"
+    },
+    {
+      "path": "apps/admin/src/pages/speech-recordings/ui/recording-delete-dialog/recording-delete-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RecordingDeleteDialog totals affected bindings and retains reason/blocked/pending controls.",
+      "beforeSha256": "1500afbe58b28df42670543adcbf88e9e726ac8fe4b56e6e62513ab6a9c5b358",
+      "afterSha256": "1500afbe58b28df42670543adcbf88e9e726ac8fe4b56e6e62513ab6a9c5b358"
+    },
+    {
+      "path": "apps/admin/src/pages/speech-recordings/ui/recording-filters/recording-filters.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RecordingFiltersForm explicitly trims known filters and converts UTC date bounds.",
+      "beforeSha256": "22c0d5d56691a5cee484e9e7381ca376b12bdd182855a5798e431d306ecc0aee",
+      "afterSha256": "22c0d5d56691a5cee484e9e7381ca376b12bdd182855a5798e431d306ecc0aee"
+    },
+    {
+      "path": "apps/admin/src/pages/speech-recordings/ui/recording-preview/recording-preview.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RecordingPreview requests private bytes only after explicit action and revokes the object URL in cleanup.",
+      "beforeSha256": "9ddf0ed8044bc6a39664a05c815ff86e2d7ddb31f5df52cc9bc590831604c008",
+      "afterSha256": "9ddf0ed8044bc6a39664a05c815ff86e2d7ddb31f5df52cc9bc590831604c008"
+    },
+    {
+      "path": "apps/admin/src/pages/speech-recordings/ui/recording-table/recording-table.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RecordingTable keeps column mappings separate and binds row preview in PreviewButton.",
+      "beforeSha256": "c6f77b66adcab4b7bf91c0cfeaad3cc51a69b574093ea899b8c4413a12681f14",
+      "afterSha256": "c6f77b66adcab4b7bf91c0cfeaad3cc51a69b574093ea899b8c4413a12681f14"
+    },
+    {
+      "path": "apps/admin/src/pages/users/hooks/use-ai-credits.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useAiCredits separates cancellable reads from policy/adjustment mutations; errors remain normalized for dialog consumers.",
+      "beforeSha256": "1ecc7dc6e7070537c0b40aca3a25edf576392cd835781bb67d00a78d5143ec04",
+      "afterSha256": "1ecc7dc6e7070537c0b40aca3a25edf576392cd835781bb67d00a78d5143ec04"
+    },
+    {
+      "path": "apps/admin/src/pages/users/hooks/use-sentence-library.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useSentenceLibrary separates dictionary discovery from filtered cursor listing and resets selections on scope changes.",
+      "beforeSha256": "f777ec3912105b132c0bbd956fd864678cb2ea291fe4dba3370e5d0a9cb6db2c",
+      "afterSha256": "f777ec3912105b132c0bbd956fd864678cb2ea291fe4dba3370e5d0a9cb6db2c"
+    },
+    {
+      "path": "apps/admin/src/pages/users/hooks/use-sentence-mutation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useSentenceMutation generation-fences snapshots and preserves exact retryBody/operationId until success or close.",
+      "beforeSha256": "31cbc72857d416dca36a55e18785c39de3063f645d06824f18cfbe5c17fe358a",
+      "afterSha256": "31cbc72857d416dca36a55e18785c39de3063f645d06824f18cfbe5c17fe358a"
+    },
+    {
+      "path": "apps/admin/src/pages/users/lib/sentence-selection.ts",
+      "status": "reviewed-acceptable",
+      "reason": "sentenceSelection rejects stale/partial selection and canDeleteSentences requires creator archival on every selected item.",
+      "beforeSha256": "6039930eb49b1b7451707da29e18c1c9f9b951a239f9e11bb17d0f2a55fb887b",
+      "afterSha256": "6039930eb49b1b7451707da29e18c1c9f9b951a239f9e11bb17d0f2a55fb887b"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/ai-credits-panel/ai-credit-adjustment-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AiCreditAdjustmentDialog derives signed amount and optional expiry while retaining managementVersion.",
+      "beforeSha256": "2aed4463cfb21d3e6ccbead03ea5b30e909233b266a805ef71bcd1406d1b96aa",
+      "afterSha256": "2aed4463cfb21d3e6ccbead03ea5b30e909233b266a805ef71bcd1406d1b96aa"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/ai-credits-panel/ai-credit-history.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "createColumns preserves signed precision and prioritizes sourceKind over measurementSource.",
+      "beforeSha256": "6db63ddeee8320a49ca5f2746b89d509b0ed0ece3f52a8ef40b60534e0656a44",
+      "afterSha256": "6db63ddeee8320a49ca5f2746b89d509b0ed0ece3f52a8ef40b60534e0656a44"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/ai-credits-panel/ai-credit-policy-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AiCreditPolicyDialog initializes explicit expiry and toLocalDateTime offsets local controls without changing server ISO values.",
+      "beforeSha256": "fa9fb8dd647c1a22e0b973c98d05552425fccda3ca89b251303a2ebf3356eaef",
+      "afterSha256": "fa9fb8dd647c1a22e0b973c98d05552425fccda3ca89b251303a2ebf3356eaef"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/ai-credits-panel/ai-credits-panel.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AiCreditsPanel258 retains one wallet/version and mutation-error lifetime beside summary/actions; existing dialogs and transaction history already form cohesive sections. The bounded auth/conflict action choice remains near its Alert and splitting it would add error/version coordination props.",
+      "beforeSha256": "74db87b6b0a9929fca77c959373e2063af78f4b289cda81884f17f8486a981bd",
+      "afterSha256": "74db87b6b0a9929fca77c959373e2063af78f4b289cda81884f17f8486a981bd"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-actions.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceActions binds explicit per-selection operations and allmatching menu; deletion eligibility remains separate.",
+      "beforeSha256": "4924c598da37369e38a15bbbfb11a2baf9f85236a782bf31ceaecbb0fdfd71a1",
+      "afterSha256": "4924c598da37369e38a15bbbfb11a2baf9f85236a782bf31ceaecbb0fdfd71a1"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-detail.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceDetail aborts stale preview loads and groups each hint with mapped segments without changing content.",
+      "beforeSha256": "66ccb7105280478414fe4c4c47435712ccb3579104b346f8fa537ef976b13fda",
+      "afterSha256": "66ccb7105280478414fe4c4c47435712ccb3579104b346f8fa537ef976b13fda"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-filters.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceFilters removes optional all filters and validates UUID before creator filtering.",
+      "beforeSha256": "9dbc18d8b03e3c7c8f0b06c37d22e4b8a2091fbcbae18f64d1aabcdc1c04d833",
+      "afterSha256": "9dbc18d8b03e3c7c8f0b06c37d22e4b8a2091fbcbae18f64d1aabcdc1c04d833"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-library-panel.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence library CSS clearly groups dictionary/filter/actions/rows/preview and adapts at900/560px.",
+      "beforeSha256": "900a41b14119321ce0e458aa0fd3911d48355ed64d1f1dd9c649aa7373b710da",
+      "afterSha256": "900a41b14119321ce0e458aa0fd3911d48355ed64d1f1dd9c649aa7373b710da"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-library-panel.module.css.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Declaration preserves all sentence library CSS module selectors.",
+      "beforeSha256": "bf7155515c7c0c31a34ecdc0388cbc1029de413ebea6f6bec58195e3f90d8847",
+      "afterSha256": "bf7155515c7c0c31a34ecdc0388cbc1029de413ebea6f6bec58195e3f90d8847"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-library-panel.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceLibraryPanel lazily enables discovery, owns dictionary selection and keys workspace by dictionary ID.",
+      "beforeSha256": "b7650bbe25995128a3fda0d4de0aedfa049bbd4ca812979457fcf94278d754e7",
+      "afterSha256": "b7650bbe25995128a3fda0d4de0aedfa049bbd4ca812979457fcf94278d754e7"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-list.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceList isolates keyed SentenceRow, preserving page selection and independent preview callbacks.",
+      "beforeSha256": "0068add74893c55e864cfe84f8f8cdf0225b1131b62826ce975748a5cd68abf6",
+      "afterSha256": "0068add74893c55e864cfe84f8f8cdf0225b1131b62826ce975748a5cd68abf6"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-mutation-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceMutationDialog retains operation identity, attempt freeze, confirmation and auth/conflict/expiry blocking.",
+      "beforeSha256": "7b4564677b23b9f39031816de64acd07d3d1d5c0cd23dd52037d113a3e7104e1",
+      "afterSha256": "7b4564677b23b9f39031816de64acd07d3d1d5c0cd23dd52037d113a3e7104e1"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/sentence-library-panel/sentence-workspace.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceWorkspace coordinates selection/snapshot/mutation and refreshes discovery after success; preview remains separate.",
+      "beforeSha256": "91db56c1e295ec3b780ae7c5669318b5c571547b922d61742fa6afecb1b6404b",
+      "afterSha256": "91db56c1e295ec3b780ae7c5669318b5c571547b922d61742fa6afecb1b6404b"
+    },
+    {
+      "path": "apps/admin/src/pages/users/user-detail-page.tsx",
+      "status": "refactored",
+      "reason": "UserDetailPage retains Refine hooks, form state/version and mutation ownership; private account and availability sections expose page orchestration, operation label map and explicit auth/conflict action branches.",
+      "beforeSha256": "943a26853393a61fec13484e0ca18e01f509cd8b9ea6b953f27023dc98ff762c",
+      "afterSha256": "f59e073ddac1f2ee6a4e0490cda3cb90c95b83c3a82ba7e445f0376308196846"
+    },
+    {
+      "path": "apps/admin/src/pages/users/users-page.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "UsersPage filters/pagination are explicit; StatusTag nested color choice is a small bounded presentation decision, no behavior change justified.",
+      "beforeSha256": "19c210ea49fcb3bf9f10220ed7936d6e892b46b173c7d51b842d8eb9892a9859",
+      "afterSha256": "19c210ea49fcb3bf9f10220ed7936d6e892b46b173c7d51b842d8eb9892a9859"
+    },
+    {
+      "path": "apps/admin/src/shared/access/admin-access-provider.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminAccessProvider lists allowed resources/actions and gates local MCP visibility; backend remains authority.",
+      "beforeSha256": "30dc603462428c1f770162338886f41e5732cb97077594ac59d516520223cd1a",
+      "afterSha256": "30dc603462428c1f770162338886f41e5732cb97077594ac59d516520223cd1a"
+    },
+    {
+      "path": "apps/admin/src/shared/api/admin-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminApi702 is explicit contract-to-route catalog; authorized/authorizedRequest retry only authentication_required, authorizedSingleRequest deliberately never replays writes; authorizedAudio validates no-store audio bytes. Keep established transport seams intact.",
+      "beforeSha256": "b63f416e42b02877775046daa7bf0ff0592695e13320598c1235abf7bb59af3b",
+      "afterSha256": "b63f416e42b02877775046daa7bf0ff0592695e13320598c1235abf7bb59af3b"
+    },
+    {
+      "path": "apps/admin/src/shared/api/admin-data-provider.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminDataProvider has explicit Refine resource dispatch, validated mutation fields and accepted filter whitelists.",
+      "beforeSha256": "e9c3fb5189c89e7dfe5e72a8c5bb408159ece845c9c5f83ff76c332d3d9a9509",
+      "afterSha256": "e9c3fb5189c89e7dfe5e72a8c5bb408159ece845c9c5f83ff76c332d3d9a9509"
+    },
+    {
+      "path": "apps/admin/src/shared/api/admin-mcp-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminMcpApi delegates reads to authorized and issuance/revoke to nonreplaying single-write transport.",
+      "beforeSha256": "883d9d85d5ac6130cf0322498e19e7dc941044b9ba39af8cc7a5bd7edbb30c4a",
+      "afterSha256": "883d9d85d5ac6130cf0322498e19e7dc941044b9ba39af8cc7a5bd7edbb30c4a"
+    },
+    {
+      "path": "apps/admin/src/shared/api/transcription-admin-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "transcriptionAdminApi names read/preview/apply and supplies matching request/response schemas.",
+      "beforeSha256": "22e46a06b412a53426cb1c14e1d732dc3228957e6d3217a6fa39ed2e11304ec0",
+      "afterSha256": "22e46a06b412a53426cb1c14e1d732dc3228957e6d3217a6fa39ed2e11304ec0"
+    },
+    {
+      "path": "apps/admin/src/shared/auth/access-token-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "accessTokenStore remains memory-only and getUsable preflights expiry30s before sensitive writes.",
+      "beforeSha256": "5f04a32cf17f4443b39cd445bd2c6211bc3e40c88bca35e029cb899b9f9467a7",
+      "afterSha256": "5f04a32cf17f4443b39cd445bd2c6211bc3e40c88bca35e029cb899b9f9467a7"
+    },
+    {
+      "path": "apps/admin/src/shared/auth/admin-auth-provider.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminAuthProvider coordinates login/logout, preserves active in-memory session only for network failure and clears on auth/member denial.",
+      "beforeSha256": "d5c50056f93a36b720ca3bd0c2c0049b2b47defc7966e22439417db527563bb1",
+      "afterSha256": "d5c50056f93a36b720ca3bd0c2c0049b2b47defc7966e22439417db527563bb1"
+    },
+    {
+      "path": "apps/admin/src/shared/auth/admin-refresh-coordinator.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin refresh namespace remains dedicated languon-admin-auth.",
+      "beforeSha256": "1ae44848d697b7deb46253afd79c8b577a3d77642bc3652390ae64c02f737c1d",
+      "afterSha256": "1ae44848d697b7deb46253afd79c8b577a3d77642bc3652390ae64c02f737c1d"
+    },
+    {
+      "path": "apps/admin/src/shared/config/admin-capabilities.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminMcpEnabled explicitly requires DEV and not PROD; comment states build-policy invariant.",
+      "beforeSha256": "073533be6ff0b0f026f1d83aeca1eb20d13a28274fc1712b472aa217d3a967f4",
+      "afterSha256": "073533be6ff0b0f026f1d83aeca1eb20d13a28274fc1712b472aa217d3a967f4"
+    },
+    {
+      "path": "apps/admin/src/shared/i18n/admin-i18n-provider.ts",
+      "status": "reviewed-acceptable",
+      "reason": "English admin catalog groups routing/sentence/accounting/security copy by namespaced keys; interpolate retains unknown placeholders and English-only locale policy.",
+      "beforeSha256": "73df642d5ec1c9465f00ae2c440efbfcea5af3370a32c61f911d9338959a43c3",
+      "afterSha256": "73df642d5ec1c9465f00ae2c440efbfcea5af3370a32c61f911d9338959a43c3"
+    },
+    {
+      "path": "apps/admin/src/shared/i18n/admin-mcp-messages.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminMcpMessages groups delegated limits, one-time secret and client-configuration help with explicit interpolation names.",
+      "beforeSha256": "f12e8211cd0901e4cb6b258d9dd079a5c3c05a26de7469c5b99784ade0a97285",
+      "afterSha256": "f12e8211cd0901e4cb6b258d9dd079a5c3c05a26de7469c5b99784ade0a97285"
+    },
+    {
+      "path": "apps/admin/src/shared/i18n/native-price-messages.ts",
+      "status": "reviewed-acceptable",
+      "reason": "nativePriceMessages separately names currency/meter/range/rounding concepts and preserves exact amount placeholders.",
+      "beforeSha256": "11aa0bfcc0b34849847a8f844acfb058347926b6147d668ebd77f9cb132a7ebe",
+      "afterSha256": "11aa0bfcc0b34849847a8f844acfb058347926b6147d668ebd77f9cb132a7ebe"
+    },
+    {
+      "path": "apps/admin/src/shared/i18n/transcription-messages.ts",
+      "status": "reviewed-acceptable",
+      "reason": "transcriptionMessages distinguishes engineering review, actual organization attestation and economic prerequisites; no logic in catalog.",
+      "beforeSha256": "cd55c4e85cd73777897151098ca09fbc65358d612ba96bbf2dd74ee56735066c",
+      "afterSha256": "cd55c4e85cd73777897151098ca09fbc65358d612ba96bbf2dd74ee56735066c"
+    },
+    {
+      "path": "apps/admin/src/shared/styles/global.css",
+      "status": "reviewed-acceptable",
+      "reason": "Admin global tokens define separate themes, native font inheritance and reduced-motion reset.",
+      "beforeSha256": "089cd75842ed0e487456406f752ec2698baea9c69e56e2f7390f9454b77c4072",
+      "afterSha256": "089cd75842ed0e487456406f752ec2698baea9c69e56e2f7390f9454b77c4072"
+    },
+    {
+      "path": "apps/admin/src/shared/theme/admin-theme-provider.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AdminThemeProvider persists only presentation preference and synchronizes resolved Ant Design algorithm/CSS; context memo preserves value identity.",
+      "beforeSha256": "e186c513649c87b1b4f928d8c682ba7cb4f6c7d87d4ac53dbe3535aea944affb",
+      "afterSha256": "e186c513649c87b1b4f928d8c682ba7cb4f6c7d87d4ac53dbe3535aea944affb"
+    },
+    {
+      "path": "apps/admin/src/shared/ui/load-error-alert.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LoadErrorAlert centralizes retry/offline distinction; isOfflineFailure accepts only navigator offline or object statusCode0.",
+      "beforeSha256": "039f4ca14b5b6da3c641893de36b6819a5929f7a7a9ba226bd8091919464ae34",
+      "afterSha256": "039f4ca14b5b6da3c641893de36b6819a5929f7a7a9ba226bd8091919464ae34"
+    },
+    {
+      "path": "apps/admin/src/vite-env.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Vite client and release identity declaration are explicit.",
+      "beforeSha256": "691ed3a65da7393809852e3f2ab3128e5db49d7ff9cc03ad4f3093ce9bb401fc",
+      "afterSha256": "691ed3a65da7393809852e3f2ab3128e5db49d7ff9cc03ad4f3093ce9bb401fc"
+    },
+    {
+      "path": "apps/admin/src/widgets/admin-layout/admin-layout.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Admin layout CSS owns sticky shell/sider/drawer identity and two responsive breakpoints.",
+      "beforeSha256": "d4c504369b9a73f152ef7a2840250c4858cb5857a6c4f41c61e37055650d9a22",
+      "afterSha256": "d4c504369b9a73f152ef7a2840250c4858cb5857a6c4f41c61e37055650d9a22"
+    },
+    {
+      "path": "apps/admin/src/widgets/admin-layout/admin-layout.module.css.d.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Layout declaration exactly lists owned brand/content/navigation selectors.",
+      "beforeSha256": "bb9a83398015eccdfe791cce792e9b9771566011443b0e5bd6ed1735a81558a3",
+      "afterSha256": "bb9a83398015eccdfe791cce792e9b9771566011443b0e5bd6ed1735a81558a3"
+    },
+    {
+      "path": "apps/admin/src/widgets/admin-layout/admin-layout.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AdminLayout separates route matching, menu item construction and desktop/mobile navigation; closure intentionally closes only mobile navigation.",
+      "beforeSha256": "29cb1b91c1fa60bb484bb6b22fc9ac74378afa0b1422f0026a33c43686bf219e",
+      "afterSha256": "29cb1b91c1fa60bb484bb6b22fc9ac74378afa0b1422f0026a33c43686bf219e"
+    },
+    {
+      "path": "apps/admin/tests/accounting-refund.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: shows unavailable credit balances, prevents revocation and confirms cash refund without an account ID; External refund; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "facae4b65891106c4961c8235f2503b418b4a7dc30a5f18dd51013ac8302072d",
+      "afterSha256": "facae4b65891106c4961c8235f2503b418b4a7dc30a5f18dd51013ac8302072d"
+    },
+    {
+      "path": "apps/admin/tests/accounting-settings.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: keeps all initial monetary values blank and publishes explicit nulls while uncalibrated; publishes exact six-decimal USD caps independently of the credit budget; blocks inverted limits before publishing and preserves entered values; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "1f8783e1b951ec8fc6896096f1e3b7f0785a87ccc3240cfcfdf3bfe93a6d8bc2",
+      "afterSha256": "1f8783e1b951ec8fc6896096f1e3b7f0785a87ccc3240cfcfdf3bfe93a6d8bc2"
+    },
+    {
+      "path": "apps/admin/tests/accounting.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: starts provider tariffs blank and publishes exact six-decimal USD independently of credit pricing; waits for the background reporting snapshot and stops immediately when aborted; publishes an uncalibrated action budget explicitly without inventing a number; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "cb3bbcf5fd5d257f6ef6f0c3b748f7b51977cdd4ae5ca0c3e8c7caaf35f7de04",
+      "afterSha256": "cb3bbcf5fd5d257f6ef6f0c3b748f7b51977cdd4ae5ca0c3e8c7caaf35f7de04"
+    },
+    {
+      "path": "apps/admin/tests/admin-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: retains expiry in memory and refreshes before its safety window; coordinates preflight refresh for concurrent reads and audio previews; /admin/auth/refresh; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "e7bfc809db1cc01c37a263b46125d748040dc037feeed0787e63c064e8b01233",
+      "afterSha256": "e7bfc809db1cc01c37a263b46125d748040dc037feeed0787e63c064e8b01233"
+    },
+    {
+      "path": "apps/admin/tests/admin-capabilities.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: allows local development builds; ../src/shared/config/admin-capabilities; denies production resource access even if development is also asserted; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "23543a55f3a6457d00ca838f40a28093aeb60207ddc39dca1a96b21385455686",
+      "afterSha256": "23543a55f3a6457d00ca838f40a28093aeb60207ddc39dca1a96b21385455686"
+    },
+    {
+      "path": "apps/admin/tests/admin-mcp-audit.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: ../src/pages/admin-mcp/ui/token-audit/token-audit; shows attributed audit activity and retrieves subsequent pages; application-route; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "cf8e94c2c7027e14888103b19f5f2584d2ef9b94c6931ddb14bf3ff28d1529a6",
+      "afterSha256": "cf8e94c2c7027e14888103b19f5f2584d2ef9b94c6931ddb14bf3ff28d1529a6"
+    },
+    {
+      "path": "apps/admin/tests/admin-mcp-page.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: creates a read-only credential and clears its one-time secret on dismissal; synthetic-once-secret; shows paid-check ceilings only after explicitly enabling that permission; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "cbcedbcb97c145cc064984af3cf1666482db11046ef66c69a95b6c43660d5c1c",
+      "afterSha256": "cbcedbcb97c145cc064984af3cf1666482db11046ef66c69a95b6c43660d5c1c"
+    },
+    {
+      "path": "apps/admin/tests/admin-mcp.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: loads only own-token metadata through the authorized admin API; requests bounded audit pages and validates safe metadata; does not refresh or replay token creation after authentication rejection; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "5cf64cd1b523b2cab856b66ce82a95ff65315d3b5836fd38889b572919d5c61f",
+      "afterSha256": "5cf64cd1b523b2cab856b66ce82a95ff65315d3b5836fd38889b572919d5c61f"
+    },
+    {
+      "path": "apps/admin/tests/ai-credits.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: @testing-library/react; ../src/pages/users/ui/ai-credits-panel/ai-credit-history; ../src/pages/users/ui/ai-credits-panel/ai-credits-panel; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "0a29cc6c5f7c06a86a4f1d798795a3f08ebeba3e5301e9a7306f0d8b1cd6ea3b",
+      "afterSha256": "0a29cc6c5f7c06a86a4f1d798795a3f08ebeba3e5301e9a7306f0d8b1cd6ea3b"
+    },
+    {
+      "path": "apps/admin/tests/ai-settings.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: keeps default choices limited to enabled available models; builds a versioned mutation without carrying an old reason; shows credential and readiness states and preserves other provider selections; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "ce4ae96d8198a9a60a0c4f858e3065d3b620cc76ec89ef5f5ecfc461306234d5",
+      "afterSha256": "ce4ae96d8198a9a60a0c4f858e3065d3b620cc76ec89ef5f5ecfc461306234d5"
+    },
+    {
+      "path": "apps/admin/tests/e2e/admin-mcp.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: , screenshot: ; /admin/mcp/tokens; ).find((line) => line.startsWith(; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "b342e8ab0fa58de71285cdce1167746c5f521f2c7d9551044a2065c707643cee",
+      "afterSha256": "b342e8ab0fa58de71285cdce1167746c5f521f2c7d9551044a2065c707643cee"
+    },
+    {
+      "path": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+      "status": "refactored",
+      "reason": "Actualize isolated tariff fixture: reviewed calibration, strict pending-report validation and mandatory same-period ready200, real quote confirmation, exact API/worker synthetic identity and evidenced GET-navigation cancellations; preserve all tariff and financial assertions.",
+      "beforeSha256": "d8fa4985b15eb1623f4bc4a1840289bd435b3cbd5a1cc68415bc0cb8b168d30d",
+      "afterSha256": "8de4f0c4774a2aa5ea667998e233477445f666be002db6004c499d8ee37c8b02"
+    },
+    {
+      "path": "apps/admin/tests/e2e/setup-to-generation.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: @playwright/test; Failed to load resource:; empty database admin setup enables paid learner text generation and durable save; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "e8b3da643775afd7cee074b933bdeebbc77617a165e16b0d3b40029ce7ccaf2c",
+      "afterSha256": "e8b3da643775afd7cee074b933bdeebbc77617a165e16b0d3b40029ce7ccaf2c"
+    },
+    {
+      "path": "apps/admin/tests/e2e/support/setup-admin.ts",
+      "status": "refactored",
+      "reason": "Actualize existing isolated tariff fixture: calibrate reviewed prices, keep enabled-route tag lookup relative, and explicitly validate/confirm real allowance quotes with unchanged request identity and financial assertions.",
+      "beforeSha256": "809b9a209085fb7653d437b7124555369fd2ae711eda86b37ab648d5da5f1916",
+      "afterSha256": "5fbc6e01fe87ee5ae2b4a4bb2d0ec6398434cb573bac68d8511049fe6abaaf0c"
+    },
+    {
+      "path": "apps/admin/tests/e2e/support/setup-runtime.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: node:fs/promises; languon-doctor-e2e-; languon-setup-e2e-; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "afe296d7ee8c7d66709b11e415f5a43d4784e6ede7338b1455de4752aec1e8b7",
+      "afterSha256": "afe296d7ee8c7d66709b11e415f5a43d4784e6ede7338b1455de4752aec1e8b7"
+    },
+    {
+      "path": "apps/admin/tests/e2e/text-ai-routing.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: @playwright/test; admin inspects route evidence and explicitly approves synthetic check costs; Failed to load resource:; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "9b900beca80ccab3e0d15f1fbeb298fd88b85c3309f4de020217f8202491f893",
+      "afterSha256": "9b900beca80ccab3e0d15f1fbeb298fd88b85c3309f4de020217f8202491f893"
+    },
+    {
+      "path": "apps/admin/tests/load-error-alert.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: renders an accessible retry button and invokes the retry action; distinguishes a status-zero network failure; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "7afea3d0799763db0ce2c5fd677f73377c9d6033c32bdc9f78f06bf2d426a3b2",
+      "afterSha256": "7afea3d0799763db0ce2c5fd677f73377c9d6033c32bdc9f78f06bf2d426a3b2"
+    },
+    {
+      "path": "apps/admin/tests/sentence-library.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: discovers dictionaries only after management is enabled; validates the API list boundary and keeps user/dictionary scope in the request; requires deletion confirmation before sending a request; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "beb9b3c565c4f2c509bf50bdcb178a5fda1acb5c43ebbc222e8a8293e00dd475",
+      "afterSha256": "beb9b3c565c4f2c509bf50bdcb178a5fda1acb5c43ebbc222e8a8293e00dd475"
+    },
+    {
+      "path": "apps/admin/tests/setup.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: setup; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "91a3c8962a0edcb956206a501d943fe99e1c78c6d4d8b5c9a948a3362c75978c",
+      "afterSha256": "91a3c8962a0edcb956206a501d943fe99e1c78c6d4d8b5c9a948a3362c75978c"
+    },
+    {
+      "path": "apps/admin/tests/speech-admin-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: encodes inventory filters and validates results; does not refresh and replay a destructive request after an auth failure; rejects oversized selections before sending the mutation; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "f260ae1dcacaa06d59602d5997da1742267689f58d6fb45fef95c4f4831409dd",
+      "afterSha256": "f260ae1dcacaa06d59602d5997da1742267689f58d6fb45fef95c4f4831409dd"
+    },
+    {
+      "path": "apps/admin/tests/speech-administration.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: requires a fresh review after changed impact and sends no automatic retry; Bad pronunciation; Bad pronunciation; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "42f0e0019246011d4487509550e56f30c6e18200ea9a88d0633165a7dbb61fea",
+      "afterSha256": "42f0e0019246011d4487509550e56f30c6e18200ea9a88d0633165a7dbb61fea"
+    },
+    {
+      "path": "apps/admin/tests/text-ai-routing-state.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: @testing-library/react; prevents paid checks while a slow history refresh is in progress; does not start a refresh that could overwrite an in-flight paid result; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "f8d27c53bc4dfd822b6c5852adf53bda827a99963c1b4251cd137ed2ddb771a6",
+      "afterSha256": "f8d27c53bc4dfd822b6c5852adf53bda827a99963c1b4251cd137ed2ddb771a6"
+    },
+    {
+      "path": "apps/admin/tests/text-ai-routing.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: identifies history as insufficient for current readiness and keeps rechecks explicitly paid; selects the latest check for exactly the requested kind and flow; another/route; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "668c83c1344e9ec6d81a6c20ef71e88174490869c72c5e11d55ae96c8740d92f",
+      "afterSha256": "668c83c1344e9ec6d81a6c20ef71e88174490869c72c5e11d55ae96c8740d92f"
+    },
+    {
+      "path": "apps/admin/tests/transcription-provider-price.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: Audio duration (native rules only); requires reviewed native rules without prefilling rates or legacy fields; publishes only operator-entered native rules with null legacy dimensions; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "e4e8d3f7d7a7faea9c35cdb89bb37f404294a1eb36d0ead03d4443d6bc71f279",
+      "afterSha256": "e4e8d3f7d7a7faea9c35cdb89bb37f404294a1eb36d0ead03d4443d6bc71f279"
+    },
+    {
+      "path": "apps/admin/tests/transcription-settings.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed full test/fixture bodies: leaves a new customer tariff blank and makes no automatic publication; shows the distinct processor review gate without an administrator approval checkbox; requires a fresh operator check rather than silently renewing a previous account attestation; setup, request ordering, assertions and cleanup remain explicit. No test weakening or extraction justified.",
+      "beforeSha256": "c2bca519b620460d6ecc667c97c59b3346ddf8db85e0983098610872ebfef574",
+      "afterSha256": "c2bca519b620460d6ecc667c97c59b3346ddf8db85e0983098610872ebfef574"
+    },
+    {
+      "path": "apps/admin/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "Admin TS config scopes Vite/Vitest types and app/test aliases.",
+      "beforeSha256": "5cfda349f51072fd9127eb565ce51af36e54903b5d1b1f5df408107f85b1ca49",
+      "afterSha256": "5cfda349f51072fd9127eb565ce51af36e54903b5d1b1f5df408107f85b1ca49"
+    },
+    {
+      "path": "apps/admin/vite.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Vite config separates build identity/health asset, same-origin proxy and jsdom/E2E exclusion.",
+      "beforeSha256": "4fd81d89748cf5609698cdea301f0a07f738495e3c00765b250ec12b61fb2626",
+      "afterSha256": "4fd81d89748cf5609698cdea301f0a07f738495e3c00765b250ec12b61fb2626"
+    },
+    {
+      "path": "apps/mobile/App.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Mobile App composes status bar and one HomeScreen with no shared state.",
+      "beforeSha256": "70cff40d03238dfc9aba7f71f48db513d14aee42028c5c83e505b6486929f47d",
+      "afterSha256": "70cff40d03238dfc9aba7f71f48db513d14aee42028c5c83e505b6486929f47d"
+    },
+    {
+      "path": "apps/mobile/app.json",
+      "status": "reviewed-acceptable",
+      "reason": "Expo app config explicitly defines portrait, platform and web export behavior.",
+      "beforeSha256": "223030aad07b395e1c5f647be3fadd758361e63f9cf03b9c0febf306882325dc",
+      "afterSha256": "223030aad07b395e1c5f647be3fadd758361e63f9cf03b9c0febf306882325dc"
+    },
+    {
+      "path": "apps/mobile/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "Mobile package scripts/dependencies remain importing-workspace owned.",
+      "beforeSha256": "29c5b6ffb8768c7f6d2deca4803a9187ec8b398a9fa0ed49c91a24e512ef64d1",
+      "afterSha256": "29c5b6ffb8768c7f6d2deca4803a9187ec8b398a9fa0ed49c91a24e512ef64d1"
+    },
+    {
+      "path": "apps/mobile/src/screens/home-screen.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "HomeScreen is one static native welcome surface; styles are cohesive and no extraction justified.",
+      "beforeSha256": "81a2c8b1a6634795f6725a540891b3b3ebc465fffafbc6484dc9dedffb89a95c",
+      "afterSha256": "81a2c8b1a6634795f6725a540891b3b3ebc465fffafbc6484dc9dedffb89a95c"
+    },
+    {
+      "path": "apps/mobile/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "Expo TS config preserves strict and unchecked-index checks.",
+      "beforeSha256": "f5053c4e5e6e03b569ed0242cdb5b62d5d7a1aa38574cd95f246df2462091500",
+      "afterSha256": "f5053c4e5e6e03b569ed0242cdb5b62d5d7a1aa38574cd95f246df2462091500"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/api/api-url.ts",
+      "status": "reviewed-acceptable",
+      "reason": "resolveApiUrl uses same-origin default and removes one trailing slash.",
+      "beforeSha256": "5c308d6cac04ceff622636e5f6f7419fd7b1ed2b233daecdb17380ddebb8f189",
+      "afterSha256": "5c308d6cac04ceff622636e5f6f7419fd7b1ed2b233daecdb17380ddebb8f189"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/api/auth-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "authApi327 is explicit request/response route map; authErrorMessage distinguishes rate limit and platform passkey failures without leaking raw exceptions.",
+      "beforeSha256": "122538254bf500d05760f6bae3712cb45dc8647a1ef9fb7ede5c5da791f10d68",
+      "afterSha256": "122538254bf500d05760f6bae3712cb45dc8647a1ef9fb7ede5c5da791f10d68"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "preferredLocale honors cookie, quality-sort with stable input order and exact/base locale fallback.",
+      "beforeSha256": "81cde24dfc2b3b8678b768a13d64d9aad2f00678f306080148c4fd5032c83432",
+      "afterSha256": "81cde24dfc2b3b8678b768a13d64d9aad2f00678f306080148c4fd5032c83432"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/i18n-provider.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "I18nProvider memoizes translator/context and locale-sensitive setter rejects stale-locale updates.",
+      "beforeSha256": "65e069bac03ccfd3290a39b1195f9c534073c897e94d6208730496aa53eaf3a1",
+      "afterSha256": "65e069bac03ccfd3290a39b1195f9c534073c897e94d6208730496aa53eaf3a1"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "i18n public barrel exports runtime provider, locale config and translation contract only.",
+      "beforeSha256": "f845ac94eec0018d8c7edd140212fa3410dc4c4feb307cc2e72fa3392144eb52",
+      "afterSha256": "f845ac94eec0018d8c7edd140212fa3410dc4c4feb307cc2e72fa3392144eb52"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/en.ts",
+      "status": "reviewed-acceptable",
+      "reason": "English message bodies read in full: namespaces and catalog spread order keep message ownership explicit; MessageKey derives canonical catalog.",
+      "beforeSha256": "e1cd4fb42bc85653d8f6f11b68dbd9da236db2dc3236be2dba78260a17707490",
+      "afterSha256": "e1cd4fb42bc85653d8f6f11b68dbd9da236db2dc3236be2dba78260a17707490"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/es.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Spanish message bodies read in full: explicit per-domain spreads precede overrides; satisfies Messages preserves complete keys and placeholders.",
+      "beforeSha256": "9e108fa59fcd4587ca397a1ea9a5bc16d28173932f2e213128cb2c5d7c8a1af1",
+      "afterSha256": "9e108fa59fcd4587ca397a1ea9a5bc16d28173932f2e213128cb2c5d7c8a1af1"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/fr.ts",
+      "status": "reviewed-acceptable",
+      "reason": "French locale map preserves translation keys, plural forms and interpolation placeholders; literal sections mirror the English contract without executable decisions.",
+      "beforeSha256": "333241ad2f21c73c98640f4ea0e8ef6d9063c37f6d9129bcf048e0b0586931b0",
+      "afterSha256": "333241ad2f21c73c98640f4ea0e8ef6d9063c37f6d9129bcf048e0b0586931b0"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/knowledge.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge locale extensions group document recovery, sharing, tutor and proposal states by language; exact placeholder names and user-facing copy remain unchanged.",
+      "beforeSha256": "5d15e2246100f042be08d67877956e40d3d7a8dff8f24c13ede337cac61cfd16",
+      "afterSha256": "5d15e2246100f042be08d67877956e40d3d7a8dff8f24c13ede337cac61cfd16"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/navigation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Navigation locale extensions are flat per-language menus and account labels; no condition or helper would improve the literal lookup contract.",
+      "beforeSha256": "4d2c4bb38464ec416df640d82edaae292aafdb185441d9dfde9e3610a80827ef",
+      "afterSha256": "4d2c4bb38464ec416df640d82edaae292aafdb185441d9dfde9e3610a80827ef"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/ru.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Russian locale map preserves interpolation names and ICU plural branches for account, learning and sharing states; data-only groups remain navigable by key.",
+      "beforeSha256": "d7c4e5daf17fb9f066f08b2e387e082f4a256d7e8cab78ae048caac9e784d7d7",
+      "afterSha256": "d7c4e5daf17fb9f066f08b2e387e082f4a256d7e8cab78ae048caac9e784d7d7"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/texts-library.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library locale maps distinguish owned/shared library actions, collection and copy states with exact count placeholders.",
+      "beforeSha256": "42c0949828c4060dea054c2c94e99afaecc713353919a3d6e72b30023db55c3c",
+      "afterSha256": "42c0949828c4060dea054c2c94e99afaecc713353919a3d6e72b30023db55c3c"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/texts-management.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Management locale maps retain folder selection, rename/delete and confirmation wording grouped by language.",
+      "beforeSha256": "884eb8fee720814ed27e1af55399e56f5bb0968593d70830168ed363f54c016b",
+      "afterSha256": "884eb8fee720814ed27e1af55399e56f5bb0968593d70830168ed363f54c016b"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/texts-public.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Public Text locale maps retain signed-out reading, sharing and copy failure labels with exact placeholders.",
+      "beforeSha256": "72eeaa6255f770a84605ede7da6fa817c741223533987aa2177dacd7d4547028",
+      "afterSha256": "72eeaa6255f770a84605ede7da6fa817c741223533987aa2177dacd7d4547028"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/texts-reading.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reading locale maps retain narration, translation and contextual tutor labels grouped by language.",
+      "beforeSha256": "d24d47e7caddef4e8754059e8ed51b52861a2018cdfbb2c63c044a2d5484bd8e",
+      "afterSha256": "d24d47e7caddef4e8754059e8ed51b52861a2018cdfbb2c63c044a2d5484bd8e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/texts-workspace.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Text workspace locale maps retain editor, upload/transcription, status and tutor controls with exact interpolation tokens.",
+      "beforeSha256": "d6e0e4ce7b40fa70f010bcd2a6edf1c186198c817ba735b31f3a054b95c69eae",
+      "afterSha256": "d6e0e4ce7b40fa70f010bcd2a6edf1c186198c817ba735b31f3a054b95c69eae"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/messages/training.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Training locale maps retain review modes, grading, generation and quota messages grouped by language and learning state.",
+      "beforeSha256": "38b025e711238e1de0d6940487c656ccbbb5162cf85b84d398e1a79c63f52adf",
+      "afterSha256": "38b025e711238e1de0d6940487c656ccbbb5162cf85b84d398e1a79c63f52adf"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/metadata.ts",
+      "status": "reviewed-acceptable",
+      "reason": "localizedMetadata only obtains request translator and returns translated title.",
+      "beforeSha256": "c5c02751ea7ae8625608d31502e3c15758b115e1b11dd5c63b67a9d656da41c0",
+      "afterSha256": "c5c02751ea7ae8625608d31502e3c15758b115e1b11dd5c63b67a9d656da41c0"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/server.ts",
+      "status": "reviewed-acceptable",
+      "reason": "getRequestI18n composes parallel request cookie/header resolution with explicit locale loader map.",
+      "beforeSha256": "0d1cf7f3e396f2baa069fd13420ddbe83c09a4c91d48824e39f7e249bdbc5f7d",
+      "afterSha256": "0d1cf7f3e396f2baa069fd13420ddbe83c09a4c91d48824e39f7e249bdbc5f7d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/i18n/translator.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTranslator explains stale serialized catalog fallback and interpolates own properties only.",
+      "beforeSha256": "37c352addc563498ad1b62014c39319fcbed1251bd925a0eb88c51c2f3ac4d3f",
+      "afterSha256": "37c352addc563498ad1b62014c39319fcbed1251bd925a0eb88c51c2f3ac4d3f"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/capability-return.ts",
+      "status": "reviewed-acceptable",
+      "reason": "capabilityReturnFragment validates exact allowed shared path and bounded fragment before preserving secret across auth return.",
+      "beforeSha256": "d39159157af4ddc42f7fd14b5dd7addf5007aa018a780ad43e443c3e7cb4ea5d",
+      "afterSha256": "d39159157af4ddc42f7fd14b5dd7addf5007aa018a780ad43e443c3e7cb4ea5d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/credit-amount.ts",
+      "status": "reviewed-acceptable",
+      "reason": "compactCreditAmount rounds only display via bigint hundredths; exact admission stays separate.",
+      "beforeSha256": "fd7555c0f951872b300916de85dc9f39abc8f31b129a7ab4fa81d1c2169a6a11",
+      "afterSha256": "fd7555c0f951872b300916de85dc9f39abc8f31b129a7ab4fa81d1c2169a6a11"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/guarded-navigation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "registerNavigationGuard owns symbol cleanup and requestGuardedNavigation selects latest mounted guard.",
+      "beforeSha256": "583c68e52580088d4ab9e47e17c0b8f05ba9c00307315894ec6bdfd9671b3689",
+      "afterSha256": "583c68e52580088d4ab9e47e17c0b8f05ba9c00307315894ec6bdfd9671b3689"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/history-position.ts",
+      "status": "reviewed-acceptable",
+      "reason": "History position tracking preserves framework state/wrapper cleanup and installs traversal listener before Next passive registration.",
+      "beforeSha256": "6e1df0b5a14e1210572a049bfc95d8e95b21f5f41d01d822dddebe7b6891ed5d",
+      "afterSha256": "6e1df0b5a14e1210572a049bfc95d8e95b21f5f41d01d822dddebe7b6891ed5d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/use-dirty-navigation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useDirtyNavigation handles link/native navigation/popstate restoration together; comments document ordering and no-extra-history-entry invariant.",
+      "beforeSha256": "c3e63996db448be522768f7e48ddc5b0f90e5402f16f0a7e56a6c5059cee2724",
+      "afterSha256": "c3e63996db448be522768f7e48ddc5b0f90e5402f16f0a7e56a6c5059cee2724"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/navigation/use-navigation-layout.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useNavigationLayout publishes mounted companions with copied Map and derives aggregate editor/tutor flags.",
+      "beforeSha256": "4637f02a1e9df8a8eff1988da80ac0b42adcfe7b305a6101d27e247e289c72a0",
+      "afterSha256": "4637f02a1e9df8a8eff1988da80ac0b42adcfe7b305a6101d27e247e289c72a0"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/overlay-container.ts",
+      "status": "reviewed-acceptable",
+      "reason": "overlayContainer keeps panels inside open native dialog to avoid inert body siblings.",
+      "beforeSha256": "29cbe2213746e1ee9d4ade06e6badb8398d1690e5eb385462dce05c729aa587d",
+      "afterSha256": "29cbe2213746e1ee9d4ade06e6badb8398d1690e5eb385462dce05c729aa587d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/lib/return-path.ts",
+      "status": "reviewed-acceptable",
+      "reason": "safeReturnPath rejects protocol-relative/backslash/control chars and enforces synthetic-base same origin.",
+      "beforeSha256": "7ac6f13d7ad20f31b02d8f2b1704faedd35ebb8c016771df4fa347965ee6f5f9",
+      "afterSha256": "7ac6f13d7ad20f31b02d8f2b1704faedd35ebb8c016771df4fa347965ee6f5f9"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/theme/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Theme public barrel exposes provider/preference contract.",
+      "beforeSha256": "c66fc1be3527dce78ba5a1953ef2dd8ede60d7aa4ca754fe0cdc4fcfb8062009",
+      "afterSha256": "c66fc1be3527dce78ba5a1953ef2dd8ede60d7aa4ca754fe0cdc4fcfb8062009"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/theme/server.ts",
+      "status": "reviewed-acceptable",
+      "reason": "getRequestTheme reads the cookie through established preferredTheme parser.",
+      "beforeSha256": "4340b2eb6c199e94f66e89f60df623efceed9683e5c1937357bb62abc3033fcb",
+      "afterSha256": "4340b2eb6c199e94f66e89f60df623efceed9683e5c1937357bb62abc3033fcb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/theme/theme-provider.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ThemeProvider retains local preference and memo context then synchronizes html data-theme.",
+      "beforeSha256": "b492016317cba285f7a1abecf5b9a627a4ea9dec2b41304f65cceb800b334c32",
+      "afterSha256": "b492016317cba285f7a1abecf5b9a627a4ea9dec2b41304f65cceb800b334c32"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/theme/theme.ts",
+      "status": "reviewed-acceptable",
+      "reason": "preferredTheme validates explicit light/dark/system list and falls back to system.",
+      "beforeSha256": "56cae30a2900a4e0ae8a554a750f3e8d9c6835a911c71b6f951f7d224e4a8c90",
+      "afterSha256": "56cae30a2900a4e0ae8a554a750f3e8d9c6835a911c71b6f951f7d224e4a8c90"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/ai-tutor-message/ai-tutor-message.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for ai-tutor-message: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "af0e5e09bdd669baf954a3163ae57a7d71a8051ac3004be81911046316dbc8ab",
+      "afterSha256": "af0e5e09bdd669baf954a3163ae57a7d71a8051ac3004be81911046316dbc8ab"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/ai-tutor-message/ai-tutor-message.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for ai-tutor-message: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "ac97e0f1bfe97933d8875301e99c85797cfc950e77c56b345747b11c755239f4",
+      "afterSha256": "ac97e0f1bfe97933d8875301e99c85797cfc950e77c56b345747b11c755239f4"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/ai-tutor-message/ai-tutor-message.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed ai-tutor-message story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "4fff69af7431ecb7ba899eec03cd8087497caad0894759bd183787ad185301ab",
+      "afterSha256": "4fff69af7431ecb7ba899eec03cd8087497caad0894759bd183787ad185301ab"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/ai-tutor-message/ai-tutor-message.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AiTutorMessage prioritizes typing/error/idle and keeps translation/actions separate; typing live region and retry preserved.",
+      "beforeSha256": "c25fbcfd3e664c92f39d7c39dc0c493ebdc3a6a069c7e7d39127a3dd62cd96b4",
+      "afterSha256": "c25fbcfd3e664c92f39d7c39dc0c493ebdc3a6a069c7e7d39127a3dd62cd96b4"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/audio-player/audio-player.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for audio-player: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "18415856e2f1af601a741c292d46e1918fc06b92257a562a3cadd2c4cc1b7ddd",
+      "afterSha256": "18415856e2f1af601a741c292d46e1918fc06b92257a562a3cadd2c4cc1b7ddd"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/audio-player/audio-player.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed audio-player story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "175637be8855f253f85c6d2645ac913373a561c22cabcceffb8a0719b970519f",
+      "afterSha256": "175637be8855f253f85c6d2645ac913373a561c22cabcceffb8a0719b970519f"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/audio-player/audio-player.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AudioPlayer289 keeps one native media element and tightly coupled source-reset, playback-rate and callback effects beside its compact controls. Splitting playback into a many-callback controller would obscure event/source ownership; timeline helpers already isolate calculations.",
+      "beforeSha256": "8f007e82c2a7d5b1671f782a2d9225ae1b374052b20cf3c63dec039751589857",
+      "afterSha256": "8f007e82c2a7d5b1671f782a2d9225ae1b374052b20cf3c63dec039751589857"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/avatar/avatar.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for avatar: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "df10fa63689dda77cd8b5c255eef46958b6501d460b56a23aca943b557d136ba",
+      "afterSha256": "df10fa63689dda77cd8b5c255eef46958b6501d460b56a23aca943b557d136ba"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/avatar/avatar.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for avatar: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "18345c82ca427f9ea3f4c6f76943753f198b4aa13e468cc61e380c58dd7464b8",
+      "afterSha256": "18345c82ca427f9ea3f4c6f76943753f198b4aa13e468cc61e380c58dd7464b8"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/avatar/avatar.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed avatar story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "013670bfca62398b3d760f645045139f67ef355ec59c610ac920d8af3a5580a4",
+      "afterSha256": "013670bfca62398b3d760f645045139f67ef355ec59c610ac920d8af3a5580a4"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/avatar/avatar.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Avatar handles source failure then explicit initials/name/icon fallback with accessible role.",
+      "beforeSha256": "05c9513a879ec147cc38e5e3cd70a11f118b964ba61d0e90fa93d2d7d21b16b9",
+      "afterSha256": "05c9513a879ec147cc38e5e3cd70a11f118b964ba61d0e90fa93d2d7d21b16b9"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/badge/badge.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for badge: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "daf03ecc8e9108b6d0f9c8e0224726ddf9b86ece3576fb150de78c30f7518fb6",
+      "afterSha256": "daf03ecc8e9108b6d0f9c8e0224726ddf9b86ece3576fb150de78c30f7518fb6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/badge/badge.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for badge: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "909968541bd83a8c5bd838da73e5fd30e042cd3850092f4112e90424820d1917",
+      "afterSha256": "909968541bd83a8c5bd838da73e5fd30e042cd3850092f4112e90424820d1917"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/badge/badge.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed badge story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "6bdcad09ff2fb4e646f4f29856327221d2c07a947f397ea4a82c97476323c497",
+      "afterSha256": "6bdcad09ff2fb4e646f4f29856327221d2c07a947f397ea4a82c97476323c497"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/badge/badge.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Badge prioritizes dot over provided icon; Chip remains static independent visual primitive.",
+      "beforeSha256": "0f5572dbf268535e7179ffce365811344c0e7e0e7bd62938a0029c148cacbdb1",
+      "afterSha256": "0f5572dbf268535e7179ffce365811344c0e7e0e7bd62938a0029c148cacbdb1"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/breadcrumb/breadcrumb.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for breadcrumb: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "bc76fdaea122c66907bbe4709b1be246bd0eeef06f9b767cdcc1538722e84c54",
+      "afterSha256": "bc76fdaea122c66907bbe4709b1be246bd0eeef06f9b767cdcc1538722e84c54"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/breadcrumb/breadcrumb.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed breadcrumb story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "a0c28fcad964bd2ed700bd555b8b4f706e5e9275a1d61a25daca6b21f0e2d2b3",
+      "afterSha256": "a0c28fcad964bd2ed700bd555b8b4f706e5e9275a1d61a25daca6b21f0e2d2b3"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/breadcrumb/breadcrumb.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Breadcrumb computes collapsed entries and preserves original index/current-page semantics.",
+      "beforeSha256": "40c70b96340272005f3fcab5535e0659790bca037df2057934a446eff8358e93",
+      "afterSha256": "40c70b96340272005f3fcab5535e0659790bca037df2057934a446eff8358e93"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/button/button.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for button: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "f1344f6904948f4c3e0e8d6bb4a16b1c6f24855283bee07ed8709afac33d0baa",
+      "afterSha256": "f1344f6904948f4c3e0e8d6bb4a16b1c6f24855283bee07ed8709afac33d0baa"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/button/button.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for button: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "74b68c8e2a4269d38d16c22021d89d6f1b6eb6596a33a98cbb7b1816c948dc61",
+      "afterSha256": "74b68c8e2a4269d38d16c22021d89d6f1b6eb6596a33a98cbb7b1816c948dc61"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/button/button.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed button story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "e81a8ce7f7421de131661590cf075c19c8bb1dc267f6232b2702faf3be07e1df",
+      "afterSha256": "e81a8ce7f7421de131661590cf075c19c8bb1dc267f6232b2702faf3be07e1df"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/button/button.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Button/ButtonLink derive responsive icon-only tooltip and preserve native props/loading disabled behavior.",
+      "beforeSha256": "922d44154fc958001d188c7ef6d1f7bd6a3130302e780a103f404ce004a545ee",
+      "afterSha256": "922d44154fc958001d188c7ef6d1f7bd6a3130302e780a103f404ce004a545ee"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/card/card.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for card: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "4b9f92097955e78f73efe981151c4df83b8303ec801ccd80993c64566a2a696e",
+      "afterSha256": "4b9f92097955e78f73efe981151c4df83b8303ec801ccd80993c64566a2a696e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/card/card.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed card story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "ff3face5c31ebdb2c6881a2cbcc54fd252348b6abc32cc580584ff18c57cf456",
+      "afterSha256": "ff3face5c31ebdb2c6881a2cbcc54fd252348b6abc32cc580584ff18c57cf456"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/card/card.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Card uses native element selection and interactive tabindex; named sections retain shared style ownership.",
+      "beforeSha256": "32ebad3b5bef6c047fd6f1234a69a3a4917058fd36be718651ffee297b0d0328",
+      "afterSha256": "32ebad3b5bef6c047fd6f1234a69a3a4917058fd36be718651ffee297b0d0328"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/checkbox/checkbox.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for checkbox: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "de6ac81c6904c81e485d090c49a17e4ef39d5ef6df67ffebd33fd20d78ec3780",
+      "afterSha256": "de6ac81c6904c81e485d090c49a17e4ef39d5ef6df67ffebd33fd20d78ec3780"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/checkbox/checkbox.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed checkbox story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "8d5edc62a434ffc13c2eceb6c705e8cca48027f5ad0bee9ef1a1b525f0292bfc",
+      "afterSha256": "8d5edc62a434ffc13c2eceb6c705e8cca48027f5ad0bee9ef1a1b525f0292bfc"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/checkbox/checkbox.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Checkbox preserves indeterminate native property/ref forwarding and description/error associations.",
+      "beforeSha256": "a524d53ca0799fad2c85db60179e75746474ecd87c019c1b145ebd341e14e906",
+      "afterSha256": "a524d53ca0799fad2c85db60179e75746474ecd87c019c1b145ebd341e14e906"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/combobox/combobox.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for combobox: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "efc17ca6e80e74027ec4bd1bd2884326da45359b6953c181454d630ba3b237c6",
+      "afterSha256": "efc17ca6e80e74027ec4bd1bd2884326da45359b6953c181454d630ba3b237c6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/combobox/combobox.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed combobox story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "d2915ec4bb1d3b0b2ad97d3f331c15a405cdfda2bed20612419107a01cdd7bcf",
+      "afterSha256": "d2915ec4bb1d3b0b2ad97d3f331c15a405cdfda2bed20612419107a01cdd7bcf"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/combobox/combobox.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Combobox separates controlled input update, keyboard active-index handling and loading/empty options.",
+      "beforeSha256": "bd3fb3dea6e610e2ab61f485a633872bbef6669d1845b08c0fb11f65c2e34642",
+      "afterSha256": "bd3fb3dea6e610e2ab61f485a633872bbef6669d1845b08c0fb11f65c2e34642"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/companion-layout.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for companion-layout: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "d6a0b4b94ff02d6a05ee50fafec9aa0e8ab2e1842060d1a790f67765019e2fe2",
+      "afterSha256": "d6a0b4b94ff02d6a05ee50fafec9aa0e8ab2e1842060d1a790f67765019e2fe2"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/companion-layout.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed companion-layout story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "4ed700aaf7c6aceb7d0947db3f4c99d833c73774f8ccdf16de29563c46a7b1dc",
+      "afterSha256": "4ed700aaf7c6aceb7d0947db3f4c99d833c73774f8ccdf16de29563c46a7b1dc"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/companion-layout.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "CompanionLayout publishes mounted visibility and composes workspace/resize behavior; useWorkspaceLayout keeps layout preference separate from server content.",
+      "beforeSha256": "8e5c0cedd65215af0132968d91c636999269acceceeea66977401d4eb24ea421",
+      "afterSha256": "8e5c0cedd65215af0132968d91c636999269acceceeea66977401d4eb24ea421"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/use-companion-resize.ts",
+      "status": "refactored",
+      "reason": "useCompanionResize retains preference state/effects, pointer capture, RTL drag/keyboard handling and cancellation rollback. Measurement observer lifecycle and shared pixel/rem/clamping formulas now have one cohesive private measurement seam at the same hook position.",
+      "beforeSha256": "b5e2d20d04b58cd08b5547112e49d33c2e49cb93aff6fb95509ead63ddf92f1b",
+      "afterSha256": "694f8845a418527b5c931c1c7c49e99e404d94d2f59f2a28afd1b477276a6996"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/use-workspace-layout.ts",
+      "status": "reviewed-acceptable",
+      "reason": "CompanionLayout publishes mounted visibility and composes workspace/resize behavior; useWorkspaceLayout keeps layout preference separate from server content.",
+      "beforeSha256": "e5914a99d1202fa3bac48dfc2d1296127d58b4824214151dc9508b5c8564e9ae",
+      "afterSha256": "e5914a99d1202fa3bac48dfc2d1296127d58b4824214151dc9508b5c8564e9ae"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/dialog/dialog.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for dialog: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "c3ee081ff8618e6dc6d31846c9df6edb23a4c76391e6e1bc088b119830d933c8",
+      "afterSha256": "c3ee081ff8618e6dc6d31846c9df6edb23a4c76391e6e1bc088b119830d933c8"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/dialog/dialog.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed dialog story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "215e180fb6784aa811267e7fe6748e7eee1f2f5a42b54047af27420691bb0b17",
+      "afterSha256": "215e180fb6784aa811267e7fe6748e7eee1f2f5a42b54047af27420691bb0b17"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/dialog/dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Dialog289 native showModal/close cleanup and opener restoration remain one controlled lifecycle; header/body/footer are named visual regions.",
+      "beforeSha256": "ca71a854102bc1ee8815e25d615f8b3e15b7fa3e896dd4494846471704059456",
+      "afterSha256": "ca71a854102bc1ee8815e25d615f8b3e15b7fa3e896dd4494846471704059456"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/divider/divider.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for divider: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "866cacd8f59b018a45b62771c7cc3845dfa0362a1a9b6848a1de2205c8a9e5d9",
+      "afterSha256": "866cacd8f59b018a45b62771c7cc3845dfa0362a1a9b6848a1de2205c8a9e5d9"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/divider/divider.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed divider story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "ba2811d9e236987736ab7f7dd70f24e1c8432ac1258a7cbe0acf312b6af6fc62",
+      "afterSha256": "ba2811d9e236987736ab7f7dd70f24e1c8432ac1258a7cbe0acf312b6af6fc62"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/divider/divider.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Divider explicitly switches native hr to named separator when label exists.",
+      "beforeSha256": "30f6558aa544bbe7e6e9a0807d4f744fed550664d43b65f3cc62ed2a474c62c5",
+      "afterSha256": "30f6558aa544bbe7e6e9a0807d4f744fed550664d43b65f3cc62ed2a474c62c5"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/empty-state/empty-state.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for empty-state: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "896efe9e3f6444cd75ee4b9fc4982f3b7c79ec9ea6b2f2067daffa39bf1026b6",
+      "afterSha256": "896efe9e3f6444cd75ee4b9fc4982f3b7c79ec9ea6b2f2067daffa39bf1026b6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/empty-state/empty-state.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed empty-state story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "277e918e7b0937cf6c7f5848bdde779295243fc88db6a76d5bcbafcee0cc1d7e",
+      "afterSha256": "277e918e7b0937cf6c7f5848bdde779295243fc88db6a76d5bcbafcee0cc1d7e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/empty-state/empty-state.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "EmptyState/ErrorState provide explicit title/action and alert distinction.",
+      "beforeSha256": "999df7f2e6d7ebf3729e2d1a5a058db2a5c826305e6775957e35480c5f12e535",
+      "afterSha256": "999df7f2e6d7ebf3729e2d1a5a058db2a5c826305e6775957e35480c5f12e535"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-card/exercise-card.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for exercise-card: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "e56fbdb97dd68c8ee97a5c584903e35fde7bd81f42adb1f5ed89783cce3b7f12",
+      "afterSha256": "e56fbdb97dd68c8ee97a5c584903e35fde7bd81f42adb1f5ed89783cce3b7f12"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-card/exercise-card.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed exercise-card story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "2335bf0b78b98bbb124b093a191d946bdc99416b49bf0e754937aec500a0e1bb",
+      "afterSha256": "2335bf0b78b98bbb124b093a191d946bdc99416b49bf0e754937aec500a0e1bb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-card/exercise-card.tsx",
+      "status": "refactored",
+      "reason": "ExerciseCard delegates each keyed radio answer to ExerciseAnswerOption; correct > incorrect > selected priority, lock/disabled behavior, accessible labels and selected callback remain exact while question/hint/feedback composition is visible.",
+      "beforeSha256": "63fffad07e7fc71be61d5222ba230641001c2a3228d22c45fcdf31122919729a",
+      "afterSha256": "80004be3360acaf67b46510e47aacd882a0ea1e69913bb519ed68bdf1ff47dae"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-option/exercise-option.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for exercise-option: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "de38e3e86e342970e3d03da1dbe2be40c60c89157ab8edcefed1d65de09ec281",
+      "afterSha256": "de38e3e86e342970e3d03da1dbe2be40c60c89157ab8edcefed1d65de09ec281"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-option/exercise-option.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for exercise-option: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "bbbd7836eaa13c1d77d36ffe6c831dccbefd643de93b6f4fc7c34f6459a92cad",
+      "afterSha256": "bbbd7836eaa13c1d77d36ffe6c831dccbefd643de93b6f4fc7c34f6459a92cad"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-option/exercise-option.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed exercise-option story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "82c373ca2741d4aca3aeca6aafdd78b973054b6c526307688a5776921ef36cd8",
+      "afterSha256": "82c373ca2741d4aca3aeca6aafdd78b973054b6c526307688a5776921ef36cd8"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-option/exercise-option.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ExerciseOption maps state to icon/label while preserving native disabled and radio attributes.",
+      "beforeSha256": "3e0b8a70d50f26d4f13663d411f1dc6c17047f71aa4d412a7dd8f9456a783860",
+      "afterSha256": "3e0b8a70d50f26d4f13663d411f1dc6c17047f71aa4d412a7dd8f9456a783860"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/field/field.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for field: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "c7bb31683131f24266f3b6ad00eff7d8ab9c146db38c8b606ffc52cc8c7651a7",
+      "afterSha256": "c7bb31683131f24266f3b6ad00eff7d8ab9c146db38c8b606ffc52cc8c7651a7"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/field/field.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed field story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "733e2b6a01c852edefe8249be3a29a544e2cd6019a87a6a3ab298aa79ea4aa5a",
+      "afterSha256": "733e2b6a01c852edefe8249be3a29a544e2cd6019a87a6a3ab298aa79ea4aa5a"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/field/field.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Field preserves control ID, merged description IDs and error-success-hint priority before cloning child.",
+      "beforeSha256": "12e8036fbfcc7ff20a8ae5ee094f0b008785678bbd797e0378963351cdd67dde",
+      "afterSha256": "12e8036fbfcc7ff20a8ae5ee094f0b008785678bbd797e0378963351cdd67dde"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/grammar-callout/grammar-callout.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for grammar-callout: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "acdefd673357e99feab3a679c0a0ff2999e76485ce1f441804ad9fe40019e3d7",
+      "afterSha256": "acdefd673357e99feab3a679c0a0ff2999e76485ce1f441804ad9fe40019e3d7"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/grammar-callout/grammar-callout.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for grammar-callout: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "b1165504b27c47c7e7a04641ed69187da017752934684f3328b0ad4bfb6d4249",
+      "afterSha256": "b1165504b27c47c7e7a04641ed69187da017752934684f3328b0ad4bfb6d4249"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/grammar-callout/grammar-callout.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed grammar-callout story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "1700eb4ab909335204504341546e4e9845f27a23eb209a4a19bce66d8ecb4cc6",
+      "afterSha256": "1700eb4ab909335204504341546e4e9845f27a23eb209a4a19bce66d8ecb4cc6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/grammar-callout/grammar-callout.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "GrammarCallout uses explicit variant icon/label metadata and local content sections.",
+      "beforeSha256": "3ca88f5ecc7341d6d26f7f92ed8f7c704efb32cb34be741b039d38c6e15aa8c2",
+      "afterSha256": "3ca88f5ecc7341d6d26f7f92ed8f7c704efb32cb34be741b039d38c6e15aa8c2"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/heading/heading.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for heading: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "c66175878dbaeb4a8329349f9a6fa7b6ed59d4ae0043ad626da68b1dc147b650",
+      "afterSha256": "c66175878dbaeb4a8329349f9a6fa7b6ed59d4ae0043ad626da68b1dc147b650"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/heading/heading.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed heading story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "7c04914720ffe41b45c8b703f98974db77c0e17799c49b0f35942b0983c7e710",
+      "afterSha256": "7c04914720ffe41b45c8b703f98974db77c0e17799c49b0f35942b0983c7e710"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/heading/heading.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Heading preserves allowed native heading levels and CSS ownership.",
+      "beforeSha256": "8e52a8c68d5193cbfc5981749ee523c677e9e72f96fc1a4e885ece782878b66d",
+      "afterSha256": "8e52a8c68d5193cbfc5981749ee523c677e9e72f96fc1a4e885ece782878b66d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon-button/icon-button.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for icon-button: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "50423d0d8e8e3f740c5738cdf6daea5b4afe759de3aeea4b44d421417130c3f5",
+      "afterSha256": "50423d0d8e8e3f740c5738cdf6daea5b4afe759de3aeea4b44d421417130c3f5"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon-button/icon-button.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for icon-button: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "2d97ef2c44d2c79e047ffab921c51025c8bcd537b336f254d01bbf8f2144a812",
+      "afterSha256": "2d97ef2c44d2c79e047ffab921c51025c8bcd537b336f254d01bbf8f2144a812"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon-button/icon-button.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed icon-button story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "e1f51330139b1faea7a74a272e03da102275c35b6b266ec49da896a94718e9ee",
+      "afterSha256": "e1f51330139b1faea7a74a272e03da102275c35b6b266ec49da896a94718e9ee"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon-button/icon-button.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "IconButton normalizes aliases, derives disabled/loading and tooltip eligibility before forwarding native props/ref.",
+      "beforeSha256": "96a3130f4b834d9013bdb4b5706c747bd86df25d41bd311f71bb1f7fe7599b0d",
+      "afterSha256": "96a3130f4b834d9013bdb4b5706c747bd86df25d41bd311f71bb1f7fe7599b0d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon/icon.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for icon: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "19772e760593b3695f21fcdf36d57b01307337c19f12af80d9dd92f3e54a60c2",
+      "afterSha256": "19772e760593b3695f21fcdf36d57b01307337c19f12af80d9dd92f3e54a60c2"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon/icon.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed icon story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "8c60edfb1e16135032a1970775cb5984fd5348f5b5563d0a6e6bbe5d0bab8ea1",
+      "afterSha256": "8c60edfb1e16135032a1970775cb5984fd5348f5b5563d0a6e6bbe5d0bab8ea1"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/icon/icon.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Icon distinguishes decorative versus labelled role with proportional native wrapper.",
+      "beforeSha256": "5dc4674ff4a0b666e1ec229de809ab1d48c0da6de0f7d54013a67893fa5dafab",
+      "afterSha256": "5dc4674ff4a0b666e1ec229de809ab1d48c0da6de0f7d54013a67893fa5dafab"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Public UI barrel preserves explicit value/type exports and stable import surface.",
+      "beforeSha256": "0a70b64faf1f05c9acc8761d11c2e6a18da2cd954a27e11c99ebfb67d575a4ea",
+      "afterSha256": "0a70b64faf1f05c9acc8761d11c2e6a18da2cd954a27e11c99ebfb67d575a4ea"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/inline-alert/inline-alert.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for inline-alert: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "9cda627374e55e2f0b747230f8c9e2405fbc3e41e9a71fb931270ead91902241",
+      "afterSha256": "9cda627374e55e2f0b747230f8c9e2405fbc3e41e9a71fb931270ead91902241"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/inline-alert/inline-alert.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed inline-alert story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "7ace3b9a2e2c74441261a74dac7a3ff2baf96d8a48788acdba0882c249220b0e",
+      "afterSha256": "7ace3b9a2e2c74441261a74dac7a3ff2baf96d8a48788acdba0882c249220b0e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/inline-alert/inline-alert.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "InlineAlert normalizes danger/error and derives urgent live-region semantics before content/actions.",
+      "beforeSha256": "3fc4dd5b7ee946c51ceb3cf9de4c553e1439c61a85f9b295c328f90598181a88",
+      "afterSha256": "3fc4dd5b7ee946c51ceb3cf9de4c553e1439c61a85f9b295c328f90598181a88"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/input/input.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for input: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "f29e38fc7cb4c68a9fcab0af0b569bafb1a5cc66d8acd5bd9f0e60db4e560b49",
+      "afterSha256": "f29e38fc7cb4c68a9fcab0af0b569bafb1a5cc66d8acd5bd9f0e60db4e560b49"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/input/input.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for input: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "39fd96b1e14fe2209930115f99fe28128ea8f77b2607563a1252fc52985f9d5f",
+      "afterSha256": "39fd96b1e14fe2209930115f99fe28128ea8f77b2607563a1252fc52985f9d5f"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/input/input.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed input story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "598b3b029ab22a421d0f5df14b94e4cf1e2a86eef27702f452d303525695bcd8",
+      "afterSha256": "598b3b029ab22a421d0f5df14b94e4cf1e2a86eef27702f452d303525695bcd8"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/input/input.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Input normalizes sizes and keeps ID/descriptions/error priority with native ref forwarding.",
+      "beforeSha256": "963551adfc283e9ff26b019c2800eae4ef715239a1c538741326c59f8e926dbe",
+      "afterSha256": "963551adfc283e9ff26b019c2800eae4ef715239a1c538741326c59f8e926dbe"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/lesson-content-block/lesson-content-block.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for lesson-content-block: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "71225038f258ad9b3a90cc0cc737ebf7c91bf76bc48cc9c6489d5a37b2da62bf",
+      "afterSha256": "71225038f258ad9b3a90cc0cc737ebf7c91bf76bc48cc9c6489d5a37b2da62bf"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/lesson-content-block/lesson-content-block.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed lesson-content-block story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "9af6068c49f35d00c002423c88cb8b80ae512773aed5f49ca944a2305fcaaa1e",
+      "afterSha256": "9af6068c49f35d00c002423c88cb8b80ae512773aed5f49ca944a2305fcaaa1e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/lesson-content-block/lesson-content-block.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LessonContentBlock composes optional heading/summary and native content measure without business state.",
+      "beforeSha256": "38336db5c3f1f38f58ea47969b1ac0d9727efb4a5284d37e6886d6a6220c5b05",
+      "afterSha256": "38336db5c3f1f38f58ea47969b1ac0d9727efb4a5284d37e6886d6a6220c5b05"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/loading-state/loading-state.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for loading-state: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "06d746862f8874a74f6d74508816f53b2f637c4cdd4441d10b671efe3f71f196",
+      "afterSha256": "06d746862f8874a74f6d74508816f53b2f637c4cdd4441d10b671efe3f71f196"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/loading-state/loading-state.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed loading-state story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "f9d4670f45f0e865e953c0fe3ee80258129a03bbbdef9feeed6f6066fcda168f",
+      "afterSha256": "f9d4670f45f0e865e953c0fe3ee80258129a03bbbdef9feeed6f6066fcda168f"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/loading-state/loading-state.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LoadingState explicitly exposes busy status around caller content.",
+      "beforeSha256": "9e5914baf2686bde2a4759b403d48add99f3007c5273901b0f012308b616835c",
+      "afterSha256": "9e5914baf2686bde2a4759b403d48add99f3007c5273901b0f012308b616835c"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/locked-content-state/locked-content-state.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for locked-content-state: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "c7fc35ec78049dc4e9f4a33b0631a143e9320325dff6560efb3eef904825a39c",
+      "afterSha256": "c7fc35ec78049dc4e9f4a33b0631a143e9320325dff6560efb3eef904825a39c"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/locked-content-state/locked-content-state.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for locked-content-state: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "fc8cbd25495394e128284b1a697510693ff9960cacd09bbc5ac45d179f38ffeb",
+      "afterSha256": "fc8cbd25495394e128284b1a697510693ff9960cacd09bbc5ac45d179f38ffeb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/locked-content-state/locked-content-state.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed locked-content-state story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "a7da4b38ac8ccad22a080261852cf2fa5493ccb5847ccb26d2941d272310b274",
+      "afterSha256": "a7da4b38ac8ccad22a080261852cf2fa5493ccb5847ccb26d2941d272310b274"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/locked-content-state/locked-content-state.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LockedContentState shares one action body while distinguishing aria-hidden preview overlay from placeholder.",
+      "beforeSha256": "6fd7deb8b76c697d029b357913edeefae23262087119a077d2e5f4995eb9e0e6",
+      "afterSha256": "6fd7deb8b76c697d029b357913edeefae23262087119a077d2e5f4995eb9e0e6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/logo/logo.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for logo: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "41a8408cc94d89a2b31d5ae8bdaa4b10f484147f6d3e6cceab9f8bf17ce68a40",
+      "afterSha256": "41a8408cc94d89a2b31d5ae8bdaa4b10f484147f6d3e6cceab9f8bf17ce68a40"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/logo/logo.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed logo story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "ae52ca7aa97c14909233f115f37c285fd226b611338997ec8131cbc7579a11ce",
+      "afterSha256": "ae52ca7aa97c14909233f115f37c285fd226b611338997ec8131cbc7579a11ce"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/logo/logo.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Logo shares monogram/wordmark content and explicitly chooses accessible link or image wrapper.",
+      "beforeSha256": "219d6921ea09c894b5d0a4d0a69d977a33ef6aa5b81eb1dce935b3c1401ae4f8",
+      "afterSha256": "219d6921ea09c894b5d0a4d0a69d977a33ef6aa5b81eb1dce935b3c1401ae4f8"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/menu-common.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for menu: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "a93b93248b9fb9ecaadb73c5014dddb8ae488695b35d71542c16bbb96bca3275",
+      "afterSha256": "a93b93248b9fb9ecaadb73c5014dddb8ae488695b35d71542c16bbb96bca3275"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/menu-item.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Menu258 owns keyed focus movement and trigger restoration; MenuItemButton already isolates row selection/registration. Keep one focus controller; further splitting would distribute order-sensitive focus refs.",
+      "beforeSha256": "3c2e54a12bcc238743c87bb06cb8eee0c53d34300b221fe1db595831bb48e38a",
+      "afterSha256": "3c2e54a12bcc238743c87bb06cb8eee0c53d34300b221fe1db595831bb48e38a"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/menu.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for menu: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "271e9947d129b64463a180af44ebd5580a2d4ddc17b2498f16fdbbca5df52939",
+      "afterSha256": "271e9947d129b64463a180af44ebd5580a2d4ddc17b2498f16fdbbca5df52939"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/menu.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed menu story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "b5b17d78d20157c74523f21d2653f2f51722b2feda5c00f02e0b18b0a4ed3abb",
+      "afterSha256": "b5b17d78d20157c74523f21d2653f2f51722b2feda5c00f02e0b18b0a4ed3abb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/menu.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Menu258 owns keyed focus movement and trigger restoration; MenuItemButton already isolates row selection/registration. Keep one focus controller; further splitting would distribute order-sensitive focus refs.",
+      "beforeSha256": "30cde07396404123a9b8e02209cca2236901db725c222527940f0fec688360dd",
+      "afterSha256": "30cde07396404123a9b8e02209cca2236901db725c222527940f0fec688360dd"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/menu/types.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Menu258 owns keyed focus movement and trigger restoration; MenuItemButton already isolates row selection/registration. Keep one focus controller; further splitting would distribute order-sensitive focus refs.",
+      "beforeSha256": "0a0ea51d3c3d1755ca48961ed638678597741727ebc4688922ee701fb8097fe1",
+      "afterSha256": "0a0ea51d3c3d1755ca48961ed638678597741727ebc4688922ee701fb8097fe1"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/nav-item/nav-item.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for nav-item: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "a5fda09c1465fa6dc5caf17c2b320053992457f948f323e5528bcf181b4927ec",
+      "afterSha256": "a5fda09c1465fa6dc5caf17c2b320053992457f948f323e5528bcf181b4927ec"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/nav-item/nav-item.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for nav-item: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "062399c68932697b10bf23d86f52447b26d406bed05ef4470ece209ce4ce3202",
+      "afterSha256": "062399c68932697b10bf23d86f52447b26d406bed05ef4470ece209ce4ce3202"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/nav-item/nav-item.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed nav-item story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "526396dd899dcb61044466a6b0cfe0cf3fe40eb5aa35172cb65a9e496610d421",
+      "afterSha256": "526396dd899dcb61044466a6b0cfe0cf3fe40eb5aa35172cb65a9e496610d421"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/nav-item/nav-item.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "NavItem keeps disabled link prevention, active semantics and collapsed label/badge visibility explicit.",
+      "beforeSha256": "6e1ebe346cc5b26325f860a8809807f040a18cb20a106b45848ddc79524b1b46",
+      "afterSha256": "6e1ebe346cc5b26325f860a8809807f040a18cb20a106b45848ddc79524b1b46"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-accessories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Popover context isolates floating geometry/nested registration; content effect owns native dismissal/focus listener cleanup together.270-line content retained because splitting listener closure would distribute nested panel guards and exact dependency lifecycle.",
+      "beforeSha256": "acee56b53bf303b1b617da6644cf5b35ef22fe8fe456b5a1db2ed2ade7409853",
+      "afterSha256": "acee56b53bf303b1b617da6644cf5b35ef22fe8fe456b5a1db2ed2ade7409853"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-content.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Popover context isolates floating geometry/nested registration; content effect owns native dismissal/focus listener cleanup together.270-line content retained because splitting listener closure would distribute nested panel guards and exact dependency lifecycle.",
+      "beforeSha256": "08b1a187808fa53d84efda8b6b1ef3e696e3b8c9f128dd8507c1c97e52f30622",
+      "afterSha256": "08b1a187808fa53d84efda8b6b1ef3e696e3b8c9f128dd8507c1c97e52f30622"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Popover context isolates floating geometry/nested registration; content effect owns native dismissal/focus listener cleanup together.270-line content retained because splitting listener closure would distribute nested panel guards and exact dependency lifecycle.",
+      "beforeSha256": "db5eb22bb8f50c5935054dbf60942735320b9102dc80ce5fb0dc60397ed386e6",
+      "afterSha256": "db5eb22bb8f50c5935054dbf60942735320b9102dc80ce5fb0dc60397ed386e6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-helpers.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Popover context isolates floating geometry/nested registration; content effect owns native dismissal/focus listener cleanup together.270-line content retained because splitting listener closure would distribute nested panel guards and exact dependency lifecycle.",
+      "beforeSha256": "c1f791678a484b755a33aefa28bbce66c250e352dce7795096b1b67128fe1a95",
+      "afterSha256": "c1f791678a484b755a33aefa28bbce66c250e352dce7795096b1b67128fe1a95"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover-parts.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Popover context isolates floating geometry/nested registration; content effect owns native dismissal/focus listener cleanup together.270-line content retained because splitting listener closure would distribute nested panel guards and exact dependency lifecycle.",
+      "beforeSha256": "05c5d67942f26d8ce30921e6d5befe0986ed5790a6d582137efcc126c03b58da",
+      "afterSha256": "05c5d67942f26d8ce30921e6d5befe0986ed5790a6d582137efcc126c03b58da"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for popover: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "12e53029e4c12e63ba2e1124462363c6fb681919ad6c5c6caf735ecbff0a50b2",
+      "afterSha256": "12e53029e4c12e63ba2e1124462363c6fb681919ad6c5c6caf735ecbff0a50b2"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for popover: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "97e884195e77b658461a2403152d59c2443fd280b1140df37499fbc8448c1f61",
+      "afterSha256": "97e884195e77b658461a2403152d59c2443fd280b1140df37499fbc8448c1f61"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed popover story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "f5ae20b1497e1817e6b27e685218d8e6d0c9a393c891d923ecf2d86f6d5fba49",
+      "afterSha256": "f5ae20b1497e1817e6b27e685218d8e6d0c9a393c891d923ecf2d86f6d5fba49"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/popover/popover.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Popover context isolates floating geometry/nested registration; content effect owns native dismissal/focus listener cleanup together.270-line content retained because splitting listener closure would distribute nested panel guards and exact dependency lifecycle.",
+      "beforeSha256": "ccebe55260827497f6830572d3e50a1f1ab87c27decaa2c32d8d7f4158246944",
+      "afterSha256": "ccebe55260827497f6830572d3e50a1f1ab87c27decaa2c32d8d7f4158246944"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/progress/progress.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for progress: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "724a5c31984f65d04bda22a0f36fb224bb2f6fcdc84777b9e33c27af90ab715b",
+      "afterSha256": "724a5c31984f65d04bda22a0f36fb224bb2f6fcdc84777b9e33c27af90ab715b"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/progress/progress.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed progress story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "1590f15afa5ca527895267c930c2cc91901f106ca47d59c0d1970145d48aa076",
+      "afterSha256": "1590f15afa5ca527895267c930c2cc91901f106ca47d59c0d1970145d48aa076"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/progress/progress.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Progress clamps finite values against safe maximum and omits aria-valuenow for indeterminate state.",
+      "beforeSha256": "307eff6cb44b1db8f303ce0078f38a240b51d79b715d14a5ea4e98f5e52ef8de",
+      "afterSha256": "307eff6cb44b1db8f303ce0078f38a240b51d79b715d14a5ea4e98f5e52ef8de"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/radio-group/radio-group.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for radio-group: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "688ea9881d3b0da2ade5ec5c38c0b29a3214d177aea97412fdc8e769929c8c00",
+      "afterSha256": "688ea9881d3b0da2ade5ec5c38c0b29a3214d177aea97412fdc8e769929c8c00"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/radio-group/radio-group.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed radio-group story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "035aa27e6502daefe3c7fc8efa9d25b74c3ccc86aec52b565924077c1feee13e",
+      "afterSha256": "035aa27e6502daefe3c7fc8efa9d25b74c3ccc86aec52b565924077c1feee13e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/radio-group/radio-group.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "RadioGroup/Radio distinguish context-controlled and native uncontrolled checked state with one shared change decision.",
+      "beforeSha256": "4c408e253ae288ebe3eac44ecdf9d27245e8fc2f6a058523378b40dbe0c4c9eb",
+      "afterSha256": "4c408e253ae288ebe3eac44ecdf9d27245e8fc2f6a058523378b40dbe0c4c9eb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/review-badge/review-badge.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for review-badge: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "63e7622e6511fab049e4076307fc952a5f1b22f89b7c5f48e2fc59d70b94e504",
+      "afterSha256": "63e7622e6511fab049e4076307fc952a5f1b22f89b7c5f48e2fc59d70b94e504"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/review-badge/review-badge.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for review-badge: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "673edf26acfc3ba68d4d3bd1119dac5674a3a0f831ec9a34ed44d6f590a9eae9",
+      "afterSha256": "673edf26acfc3ba68d4d3bd1119dac5674a3a0f831ec9a34ed44d6f590a9eae9"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/review-badge/review-badge.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed review-badge story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "9fa08a3e7be86cf9cdee0ce9ac5af5c8be71a5f9535ca950d616c0cf35c568dd",
+      "afterSha256": "9fa08a3e7be86cf9cdee0ce9ac5af5c8be71a5f9535ca950d616c0cf35c568dd"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/review-badge/review-badge.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ReviewBadge uses explicit metadata and chooses native button only when clickable.",
+      "beforeSha256": "91b4f13417bfe5c73485491265d49928b185f3351f248019e1c8e0e91b91a6cd",
+      "afterSha256": "91b4f13417bfe5c73485491265d49928b185f3351f248019e1c8e0e91b91a6cd"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/select/select.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for select: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "a735afbf36269b1e1e6b447a0c79bb237c0432dc44abccb7ef8c482cb56aaee4",
+      "afterSha256": "a735afbf36269b1e1e6b447a0c79bb237c0432dc44abccb7ef8c482cb56aaee4"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/select/select.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed select story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "63f365bc07cf5b6fb6204924e6151a57b4c05e6d7b5ffbba8698a4506f5029f4",
+      "afterSha256": "63f365bc07cf5b6fb6204924e6151a57b4c05e6d7b5ffbba8698a4506f5029f4"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/select/select.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Select keeps native option/group semantics and error-hint/disabled-loading priorities.",
+      "beforeSha256": "68b648fc1cc18c6035c211b30a7b9adabae8055033c3371c72719c94b2ce6148",
+      "afterSha256": "68b648fc1cc18c6035c211b30a7b9adabae8055033c3371c72719c94b2ce6148"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/skeleton/skeleton.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for skeleton: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "70c6aa5a1eb7d0d0867eacc6dbd1d01abd6756c96a63ebbbe57f8daf867539ed",
+      "afterSha256": "70c6aa5a1eb7d0d0867eacc6dbd1d01abd6756c96a63ebbbe57f8daf867539ed"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/skeleton/skeleton.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed skeleton story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "f28543a36c9ada18ac35ab9423dd2a58d5b3aed007a5eb816eb51f6c7720b1d6",
+      "afterSha256": "f28543a36c9ada18ac35ab9423dd2a58d5b3aed007a5eb816eb51f6c7720b1d6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/skeleton/skeleton.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Skeleton distinguishes multi-line status from single geometry block; SkeletonCard composes same primitive.",
+      "beforeSha256": "6ec9f97173698321f494814810a586e7eefe45a3f828d6a82309af4539a3ddb9",
+      "afterSha256": "6ec9f97173698321f494814810a586e7eefe45a3f828d6a82309af4539a3ddb9"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/spinner/spinner.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for spinner: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "24a054ea3866a823d34f7d75b678c2df061e0c1faffbedf6236cc5c70e333651",
+      "afterSha256": "24a054ea3866a823d34f7d75b678c2df061e0c1faffbedf6236cc5c70e333651"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/spinner/spinner.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed spinner story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "6ce88829319a161f75ba8cc9de3a6737733c4863400a8d15f7d18ef9ae9bdacf",
+      "afterSha256": "6ce88829319a161f75ba8cc9de3a6737733c4863400a8d15f7d18ef9ae9bdacf"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/spinner/spinner.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Spinner conditionally labels status and uses motion-aware CSS.",
+      "beforeSha256": "e627242eb5ab8a3ee033a00c085e8300aabf0626c973ae0b91ad91f31bd97866",
+      "afterSha256": "e627242eb5ab8a3ee033a00c085e8300aabf0626c973ae0b91ad91f31bd97866"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/streak-indicator/streak-indicator.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for streak-indicator: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "03f147a7f64a5c3f196d0bec3f217f1be0f35012f4c07f7f5a24ea0068d117ef",
+      "afterSha256": "03f147a7f64a5c3f196d0bec3f217f1be0f35012f4c07f7f5a24ea0068d117ef"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/streak-indicator/streak-indicator.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for streak-indicator: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "909968541bd83a8c5bd838da73e5fd30e042cd3850092f4112e90424820d1917",
+      "afterSha256": "909968541bd83a8c5bd838da73e5fd30e042cd3850092f4112e90424820d1917"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/streak-indicator/streak-indicator.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed streak-indicator story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "cd44a87015158505a0371b9bb88e78f387faba0d945f6daecf857e849aca3e28",
+      "afterSha256": "cd44a87015158505a0371b9bb88e78f387faba0d945f6daecf857e849aca3e28"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/streak-indicator/streak-indicator.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "StreakIndicator separates loading/empty/today and inline/pill/card rendering; WeekTrack limits decorative days to7.",
+      "beforeSha256": "51724be35637122515f1f85d9462dbb66a9bf11869f0d139c202855b6218d6b6",
+      "afterSha256": "51724be35637122515f1f85d9462dbb66a9bf11869f0d139c202855b6218d6b6"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/switch/switch.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for switch: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "cb1603d8803a43036c01649d05f79ee40226ca493bad1606455d4b491b6d0fc3",
+      "afterSha256": "cb1603d8803a43036c01649d05f79ee40226ca493bad1606455d4b491b6d0fc3"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/switch/switch.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed switch story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "3909d92756d0f56de5cc1757b339d10247dfd953fe95d45d78a9b8326b1e6211",
+      "afterSha256": "3909d92756d0f56de5cc1757b339d10247dfd953fe95d45d78a9b8326b1e6211"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/switch/switch.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Switch merges accessible descriptions and preserves onChange then onCheckedChange event order.",
+      "beforeSha256": "80bf576915eed05da75e2d23d88f70d0c1462c834cae630820b825c34fabf4f7",
+      "afterSha256": "80bf576915eed05da75e2d23d88f70d0c1462c834cae630820b825c34fabf4f7"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tabs/tabs.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for tabs: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "98fbaa186574192b92a8e7565ce11c39d03155bd09e8fe8778f22eaa10b34b83",
+      "afterSha256": "98fbaa186574192b92a8e7565ce11c39d03155bd09e8fe8778f22eaa10b34b83"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tabs/tabs.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed tabs story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "7bdf30b7fc74418636f069ebf2404a026b5d857bcaf5d70095ad00542533b1ef",
+      "afterSha256": "7bdf30b7fc74418636f069ebf2404a026b5d857bcaf5d70095ad00542533b1ef"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tabs/tabs.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Tabs preserves normalized values, controlled state and enabled-only keyboard focus traversal with keyed native tab buttons.",
+      "beforeSha256": "abf9a6a35cdbd948364a5f4f135eb6dee6df0a878c9e3812999ef4a9e18120bb",
+      "afterSha256": "abf9a6a35cdbd948364a5f4f135eb6dee6df0a878c9e3812999ef4a9e18120bb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/text-link/text-link.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for text-link: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "d0719f0febd7e228fe212a3d40cebae4ca8783cf2bd98edf8c094c405aecd222",
+      "afterSha256": "d0719f0febd7e228fe212a3d40cebae4ca8783cf2bd98edf8c094c405aecd222"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/text-link/text-link.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed text-link story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "d169c820f6ded0c4974940d671dd45b568c05854e219035344dbf9142710341c",
+      "afterSha256": "d169c820f6ded0c4974940d671dd45b568c05854e219035344dbf9142710341c"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/text-link/text-link.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "TextLink only adds owned typography to native anchor props.",
+      "beforeSha256": "6382b3453b029387f5f950c8bf5761d4906e5ee8a83af7a39f98150a98da28c2",
+      "afterSha256": "6382b3453b029387f5f950c8bf5761d4906e5ee8a83af7a39f98150a98da28c2"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/text/text.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for text: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "c48e54b5e19bf1c9878d24ac6418a1a403bc7ae31f6e7c29aff03c915d2fd727",
+      "afterSha256": "c48e54b5e19bf1c9878d24ac6418a1a403bc7ae31f6e7c29aff03c915d2fd727"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/text/text.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed text story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "c6057d405e0946c7c81e27d931b0f33349f02c7e445b4800a37ad39d34819781",
+      "afterSha256": "c6057d405e0946c7c81e27d931b0f33349f02c7e445b4800a37ad39d34819781"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/text/text.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Text only adds owned typography to native paragraph props.",
+      "beforeSha256": "300b0eb11dc4f93628ab385d6b418508ccb31c693f25d25a818f3dcd3d38e067",
+      "afterSha256": "300b0eb11dc4f93628ab385d6b418508ccb31c693f25d25a818f3dcd3d38e067"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/textarea/textarea.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for textarea: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "a264d2857609c738fef66975fc1540ebcc2c9dd11af24081a689332eddae3b58",
+      "afterSha256": "a264d2857609c738fef66975fc1540ebcc2c9dd11af24081a689332eddae3b58"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/textarea/textarea.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed textarea story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "b461d7ce5c8313b2173b69bf091eab4bf2a5aef35aaed5de1d5731dd8ae1d265",
+      "afterSha256": "b461d7ce5c8313b2173b69bf091eab4bf2a5aef35aaed5de1d5731dd8ae1d265"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/textarea/textarea.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Textarea distinguishes controlled/uncontrolled count and error-description priority without changing native value behavior.",
+      "beforeSha256": "149ed31d7e725b19e33a287b2c6c0555f376db33c49e19bfcc23f9670db45d21",
+      "afterSha256": "149ed31d7e725b19e33a287b2c6c0555f376db33c49e19bfcc23f9670db45d21"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for toast: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "0ff22960ad909b8671bb3d313fd57877992a39d1addb0a0e65529e1b9ac20a66",
+      "afterSha256": "0ff22960ad909b8671bb3d313fd57877992a39d1addb0a0e65529e1b9ac20a66"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for toast: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "284e1b5fc13e0286ec0e0e821b929b6c4dbefd8759b106b4a33e91fc2b7033d7",
+      "afterSha256": "284e1b5fc13e0286ec0e0e821b929b6c4dbefd8759b106b4a33e91fc2b7033d7"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed toast story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "02efce2aaf776c5950bd46d090f5716e7a991b0904b26e22524552978dee6853",
+      "afterSha256": "02efce2aaf776c5950bd46d090f5716e7a991b0904b26e22524552978dee6853"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast.tsx",
+      "status": "refactored",
+      "reason": "Toast module retains the single global Zustand queue, monotonic IDs, host subscription and stable dismiss callback; private toast view owns unchanged timer/pause and controlled dismissal lifecycle. Public exports preserved.",
+      "beforeSha256": "d56b36d0efc0576e39c667f4840169518cd988973a9169d029cfec71d4132c45",
+      "afterSha256": "ebc88bf2f6c33f0aad1ebe63a69f809540270e8f70bf07edaa4c1d58492b46ed"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/tooltip-arrow.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Tooltip268 coordinates floating placement, delayed visibility, cloned trigger and native top-layer cleanup; helpers already own arrow/viewport/top-layer behavior, retain coupled lifecycle to avoid distributing forced-open focus contracts.",
+      "beforeSha256": "e93419628fab4ac22479760dc51902dc4f0ed0936a2806a4be5384b72bbe1a73",
+      "afterSha256": "e93419628fab4ac22479760dc51902dc4f0ed0936a2806a4be5384b72bbe1a73"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/tooltip-size.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Tooltip268 coordinates floating placement, delayed visibility, cloned trigger and native top-layer cleanup; helpers already own arrow/viewport/top-layer behavior, retain coupled lifecycle to avoid distributing forced-open focus contracts.",
+      "beforeSha256": "ac785342c6f40045fb5376b02f6ef1a1c049cab73ed1d1e87c6442db4c108a75",
+      "afterSha256": "ac785342c6f40045fb5376b02f6ef1a1c049cab73ed1d1e87c6442db4c108a75"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/tooltip.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for tooltip: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "9875032510935a4ce2f4da45443cd7243bba412ce9b4d56a29c2498094e2a806",
+      "afterSha256": "9875032510935a4ce2f4da45443cd7243bba412ce9b4d56a29c2498094e2a806"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/tooltip.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for tooltip: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "a000b9f628357c5149747acfb2af30ad2d55ca2aacfb4aa1494125ccfdca782f",
+      "afterSha256": "a000b9f628357c5149747acfb2af30ad2d55ca2aacfb4aa1494125ccfdca782f"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/tooltip.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed tooltip story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "b754a938141ea409edb0104a496cbb04a97a9405c53fb81262eb6580c733cceb",
+      "afterSha256": "b754a938141ea409edb0104a496cbb04a97a9405c53fb81262eb6580c733cceb"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/tooltip.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Tooltip268 coordinates floating placement, delayed visibility, cloned trigger and native top-layer cleanup; helpers already own arrow/viewport/top-layer behavior, retain coupled lifecycle to avoid distributing forced-open focus contracts.",
+      "beforeSha256": "d170abbe9204ea134cf9d25964979f4d2869bcf8fcbe414edde8a528a847ff2e",
+      "afterSha256": "d170abbe9204ea134cf9d25964979f4d2869bcf8fcbe414edde8a528a847ff2e"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/tooltip/use-tooltip-top-layer.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Tooltip268 coordinates floating placement, delayed visibility, cloned trigger and native top-layer cleanup; helpers already own arrow/viewport/top-layer behavior, retain coupled lifecycle to avoid distributing forced-open focus contracts.",
+      "beforeSha256": "bd8c4d0ba6681772cf581eac770db018a0d0b024a44c61a4d3d840952f6136dc",
+      "afterSha256": "bd8c4d0ba6681772cf581eac770db018a0d0b024a44c61a4d3d840952f6136dc"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/user-message/user-message.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for user-message: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "1c1324ddf9ef781462791294fc6c7e1fab6cbae204c6c7da1894b63f35292cff",
+      "afterSha256": "1c1324ddf9ef781462791294fc6c7e1fab6cbae204c6c7da1894b63f35292cff"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/user-message/user-message.stories.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for user-message: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "fca4ef8b1f3d24c1229772dc9872bc0bd851246fd3356f8cad6e7aa5e770897b",
+      "afterSha256": "fca4ef8b1f3d24c1229772dc9872bc0bd851246fd3356f8cad6e7aa5e770897b"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/user-message/user-message.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed user-message story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "d24616e4b60982ef3a5b047da6caf12ce316880e330f443edf9ffb548c861628",
+      "afterSha256": "d24616e4b60982ef3a5b047da6caf12ce316880e330f443edf9ffb548c861628"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/user-message/user-message.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "UserMessage maps sending/sent/error to status icon and preserves translation/retry layout.",
+      "beforeSha256": "4c9a1eeee3859638f16eb9862ff7a7c73c95539d114232ec83a77654ef330e51",
+      "afterSha256": "4c9a1eeee3859638f16eb9862ff7a7c73c95539d114232ec83a77654ef330e51"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/vocabulary-term-card/vocabulary-term-card.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed all rules for vocabulary-term-card: named selectors own element/variant states, semantic/geometry tokens and existing responsive/motion behavior; no presentation change justified.",
+      "beforeSha256": "65da41084ec10c47a8a7cad1141a46ad9f4221d32c7878108a3eb737cd3f3056",
+      "afterSha256": "65da41084ec10c47a8a7cad1141a46ad9f4221d32c7878108a3eb737cd3f3056"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/vocabulary-term-card/vocabulary-term-card.stories.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reviewed vocabulary-term-card story bodies: explicit props/fixtures cover the declared interactive or visual variants; preserve synthetic content and catalog render ownership.",
+      "beforeSha256": "b98f7d95b0de54353655fe6403fd509c12c10eff030f2957ae03b846b07e9f79",
+      "afterSha256": "b98f7d95b0de54353655fe6403fd509c12c10eff030f2957ae03b846b07e9f79"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/vocabulary-term-card/vocabulary-term-card.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "VocabularyTermCard distinguishes native article/button and stops inner audio/save action propagation; rendering remains declarative.",
+      "beforeSha256": "cbbcbef7e69bf18c4acfcce5ef463550df84276d755d5eab0851fd755418d38b",
+      "afterSha256": "cbbcbef7e69bf18c4acfcce5ef463550df84276d755d5eab0851fd755418d38b"
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-price-fields.tsx",
+      "status": "refactored",
+      "reason": "ProviderPriceFields renders audio-duration, speech-characters or token fields in original order with unchanged native JSON limits, decimal regex and required rules.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "ac07a7da49b2fcb5cca77bb868264cacc8100ea9f66d3c8600c645374f2e27dc"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/user-account-summary/user-account-summary.tsx",
+      "status": "refactored",
+      "reason": "UserAccountSummary owns the unchanged account Card/Descriptions field sequence, stable item keys, dates, copyable ID and loading state.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "8b8f1fefd58d4cac17d63bc179c7082e557a5bcf5065cd30a4b043da08476ec1"
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/user-availability/user-availability.tsx",
+      "status": "refactored",
+      "reason": "UserAvailability explicitly prioritizes pending deletion, purged absence and disabled/active actions; preserves undefined-detail disabled button and operation callback values.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "0116fc865ccdfecdcb33d007799db5849bd1e79a5ab252abf78080d82c090741"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/use-companion-measurements.ts",
+      "status": "refactored",
+      "reason": "Measurement seam owns observer/query cleanup and exact root-font geometry; pure sizing retains half/custom/slot priority and CSS/ARIA clamps. Drag bounds adds RTL only where originally read.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "2dbebf8f698fa164ac155f16fdf516c227f02041837c9dd00054e5b8768dfa7c"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-card/exercise-answer-option.tsx",
+      "status": "refactored",
+      "reason": "ExerciseAnswerOption owns one native radio button and reveal-state/icon priority; same disabled rule, class, copy, accessibility and optional ID callback.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "92be7c32825dfe42427d0fc4f088e60770019a3a204db9d6844b6286600fe84d"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast-view.tsx",
+      "status": "refactored",
+      "reason": "Toast view retains hook order/dependencies, controlled/uncontrolled close, duration/action policy, focus/hover pause, live role and action-before-dismiss order.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "a1ae18fab7adf360e3d93eaa885a9a10d9b862d7c6406b04d5178b9e7c5edb0b"
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/types.ts",
+      "status": "refactored",
+      "reason": "Private Toast types preserve prior public component/input/position/tone contracts; internal ToastAction is shared with view without runtime dependency.",
+      "beforeSha256": null,
+      "newHelper": true,
+      "afterSha256": "24f94255f6484b743c48e877c31e209061e23fbe93f861ed56321a367d04caf6"
+    }
+  ],
+  "auditProgress": {
+    "fullyReviewedOriginalFiles": 354,
+    "remainingOriginalPaths": [],
+    "newHelperFiles": 7,
+    "statusCounts": {
+      "reviewed-acceptable": 349,
+      "refactored": 12
+    },
+    "note": "All original bodies, styles, configuration, stories, test data and locale catalog spans read. No source edits in mobile, locale catalogs or styles. Source hold was respected; final hashes reflect completed owned patch. Heavy checks and rendered verification remain root-scheduled."
+  },
+  "traceability": {
+    "guides": [
+      "admin-user-management",
+      "web-ui-kit",
+      "knowledge-workspace"
+    ],
+    "change": "Behavior/commands/source glob mappings unchanged; existing guide mappings include all private helpers. No guide revision needed.",
+    "verificationGaps": [
+      "Root-scheduled web/admin typecheck and selected tests",
+      "Real browser workspace resize and catalog/admin observations; native evidence inapplicable because no mobile source changed"
+    ]
+  }
+}

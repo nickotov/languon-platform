@@ -1,0 +1,151 @@
+{
+  "owner": "backend-conversations-texts",
+  "mode": "read-only diagnosis; no implementation edits or test execution",
+  "baseCommit": "252de64",
+  "run": "b6cfd56e-75a4-41dd-9a94-c2f473257d08",
+  "evidence": {
+    "log": "/private/tmp/languon-bl019-supplemental-b6cfd56e-75a4-41dd-9a94-c2f473257d08/backend.log",
+    "json": "/private/tmp/languon-bl019-supplemental-b6cfd56e-75a4-41dd-9a94-c2f473257d08/backend-vitest.json"
+  },
+  "identities": [
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-lifecycle-capacity.test.ts",
+      "baseSha256": "96b3892454e50a4e5bbc2458edcbcf9b3110e6985fcfaffbb27faa7ddd4f50f4",
+      "currentSha256": "96b3892454e50a4e5bbc2458edcbcf9b3110e6985fcfaffbb27faa7ddd4f50f4",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/tests/integration/database/administration-store.test.ts",
+      "baseSha256": "e5162588a2857d7c190845b9a71cfd3f95c9c6c55dc61b1bd2e279062b44a30c",
+      "currentSha256": "e5162588a2857d7c190845b9a71cfd3f95c9c6c55dc61b1bd2e279062b44a30c",
+      "unchanged": true
+    },
+    {
+      "path": "infra/deploy/sql/account-purge-worker-role.sql",
+      "baseSha256": "4975c71a987eef131ea5ee55df011fafe98262417f80e9bab6b0f16c148ef182",
+      "currentSha256": "4975c71a987eef131ea5ee55df011fafe98262417f80e9bab6b0f16c148ef182",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-deletion-participant.ts",
+      "baseSha256": "7fc940fdd64cea280f4860cb71d4baa2d5ebd835a43f4887370d5f3df9deb611",
+      "currentSha256": "7fc940fdd64cea280f4860cb71d4baa2d5ebd835a43f4887370d5f3df9deb611",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/account-purge-completion.ts",
+      "baseSha256": "f5add23c4de3bbf1992649c65afd686881214212e0cff2e9f294f8b0db9ba8e6",
+      "currentSha256": "f5add23c4de3bbf1992649c65afd686881214212e0cff2e9f294f8b0db9ba8e6",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-worker-observations.ts",
+      "baseSha256": "cc4673fa3293b73f2af67fc1805a5c293df1c9c8f9d2cad556825cdfd986e440",
+      "currentSha256": "cc4673fa3293b73f2af67fc1805a5c293df1c9c8f9d2cad556825cdfd986e440",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+      "baseSha256": "8f3d07f6fb77aec3b6e20e4597b7e315a01e335b378cf640d00b57ba55710a49",
+      "currentSha256": "8f3d07f6fb77aec3b6e20e4597b7e315a01e335b378cf640d00b57ba55710a49",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-ai-settings.ts",
+      "baseSha256": "07ef08172127acf679c258cac568f2aeecea159d515395d5c590d1b6f1eba936",
+      "currentSha256": "6662d92f1f73e6922340893b00d22f001eb1b4abab7f14bc2768c2b6b882f359",
+      "unchanged": false
+    }
+  ],
+  "findings": [
+    {
+      "id": "SUPPLEMENTAL-PURGE-1",
+      "classification": "pre-existing stale restricted-role fixture; source-evidenced, no baseline rerun performed",
+      "location": "apps/backend/tests/integration/modules/conversations/conversation-lifecycle-capacity.test.ts:523",
+      "observed": "42501 permission denied deleting knowledge_private_translations through eraseOwnerKnowledge without authorization",
+      "cause": "The test installs exact deployment grants but invokes eraseOwnerKnowledge(tx, owner) with no due deletion worker/fence. That selects privileged direct SQL fallback. Current production account-purge-completion passes workerId/fencingToken, selects languon_purge_knowledge_owner, and deployment grants EXECUTE on that function rather than raw private translation deletion. All implicated test/role/helper/completion files are byte-identical to252de64.",
+      "boundedFix": "In a separate bounded harness correction, establish due claimed owner deletion and pass real worker/fence authorization (or exercise full DrizzleAccountPurgeStore.finish as modern coverage does). Retain denied private SELECT assertions, erasure/retention assertions and stale-fence checks. Do not add broad role grants or alter runtime policy.",
+      "disposition": "No source edit authorized; recommend track dedicated harness actualization."
+    },
+    {
+      "id": "SUPPLEMENTAL-ADMIN-1",
+      "classification": "pre-existing retired-model/catalog expectations; source-evidenced, no baseline rerun performed",
+      "location": "apps/backend/tests/integration/database/administration-store.test.ts:359",
+      "observed": "DeepSeek available as expected; Kie unavailable with Provider model is retired and cannot execute, while fixture expects unverified.",
+      "cause": "Catalog gemini-2.5-pro has retired:true. Publisher sets unavailable for retired models before attempting the mocked HTTP405 HEAD response. The original test also expects2 persisted observations; current publisher iterates6 catalog routes and publishes one for each compatible single-card:v1 route, including explicit unavailable evidence. Test, catalog and publisher are unchanged from252de64. BL019 only extracts modelUnavailableReason below provider-health construction; provider selection/health code is text-identical to base.",
+      "boundedFix": "A separate focused fixture correction should assert retired Kie unavailable and credential redaction, assert exact catalog route observations rather than historical2 count, and preserve active DeepSeek readiness. If HEAD reachability is needed, use an executable OpenRouter route as existing worker-observation tests do; never re-enable retired Kie merely for this test.",
+      "disposition": "No source edit authorized; keep failure visible until bounded harness follow-up."
+    }
+  ],
+  "comparisons": {
+    "administrationProviderHealthBlockByteEqualToBase": true,
+    "introducedBehaviorChangeFound": false
+  },
+  "passingAlternatives": {
+    "report": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/ai-execution-contracts.json",
+    "runOverall": "Failed790/791; individual listed passing cases only, not a passing comprehensive invocation.",
+    "results": [
+      {
+        "path": "apps/backend/tests/integration/modules/knowledge/knowledge-account-purge.test.ts",
+        "cases": [
+          {
+            "name": "erases owner content and foreign-source learner state under a due lease while preserving independent copies",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "apps/backend/tests/integration/modules/knowledge/knowledge-learning-purge.test.ts",
+        "cases": [
+          {
+            "name": "fences and refunds foreign-reader work on deleted sources, removes actor work, and preserves independent copies",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "apps/backend/tests/integration/modules/text-ai/text-ai-routing.test.ts",
+        "cases": [
+          {
+            "name": "publishes exact per-flow tariffs with immutable legacy FK bridge and readiness evidence",
+            "status": "passed"
+          },
+          {
+            "name": "serializes concurrent publications without overwriting a newer revision",
+            "status": "passed"
+          },
+          {
+            "name": "emergency disables the sole active route without fresh probes and preserves history",
+            "status": "passed"
+          },
+          {
+            "name": "rejects missing paid tariffs, retired routes and unreviewed processing without changing active state",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "apps/backend/tests/integration/modules/users/infrastructure/drizzle-account-purge-store.test.ts",
+        "cases": [
+          {
+            "name": "retains current shared recording text and PostgreSQL bytes after full account purge",
+            "status": "passed"
+          },
+          {
+            "name": "claims only a due pending account and fences a stale worker",
+            "status": "passed"
+          },
+          {
+            "name": "leaves an ID-only tombstone and preserves independent forks",
+            "status": "passed"
+          },
+          {
+            "name": "purges preferences under the dedicated role without reading preference or learning content",
+            "status": "passed"
+          }
+        ]
+      }
+    ],
+    "limits": "Passing current critical coverage establishes related current production paths; it does not turn either failed supplemental case green or prove the exact obsolete harness assertions."
+  }
+}

@@ -31,8 +31,13 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts
     - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
-source_fingerprint: sha256:4989eb6a1160490c30d0d6feecab5146c6605a99ff20615019fc89bfe930c9c1
-reviewed: 2026-10-22
+    - apps/backend/src/modules/speech/infrastructure/source-resolver.ts
+    - apps/backend/src/modules/speech/infrastructure/audio/safe-audio-download.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts
+    - docs/adr/0049-native-provider-pricing-and-accounting.md
+    - docs/adr/0051-duration-based-transcription-accounting.md
+source_fingerprint: sha256:8bacdea083e3357c87f7a0b15b10a75f77b24b544a18ca55a9da15eb4720aa3e
+reviewed: 2026-11-01
 ---
 
 # Speech reuse, generation and pricing
@@ -163,3 +168,8 @@ enabled, transcription.
 - [apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts)
 - [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+- [apps/backend/src/modules/speech/infrastructure/source-resolver.ts](../../apps/backend/src/modules/speech/infrastructure/source-resolver.ts)
+- [apps/backend/src/modules/speech/infrastructure/audio/safe-audio-download.ts](../../apps/backend/src/modules/speech/infrastructure/audio/safe-audio-download.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts)
+- [docs/adr/0049-native-provider-pricing-and-accounting.md](../../docs/adr/0049-native-provider-pricing-and-accounting.md)
+- [docs/adr/0051-duration-based-transcription-accounting.md](../../docs/adr/0051-duration-based-transcription-accounting.md)

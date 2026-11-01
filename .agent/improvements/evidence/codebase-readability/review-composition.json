@@ -1,0 +1,530 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "web-composition",
+  "mode": "initial-independent-source-and-security",
+  "baseCommit": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "reviewedAt": "2026-10-31T23:54:27.033691+00:00",
+  "files": [
+    {
+      "path": "apps/backend/src/infrastructure/admin-mcp/admin-mcp-command.ts",
+      "owner": "backend-platform",
+      "baseSha256": "10919b74cdced28868989e70aea9f38b4ccb75429948e5160ce8045545c654a0",
+      "reviewedSha256": "c3f861ea5c308e006067c5adae385e7aba5f2898a891a872e7cc852cff7e605b",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+      "owner": "backend-platform",
+      "baseSha256": "7fc0f3c49b81edd5df85f43e3e32a45f978b8fdd435339b1878bde16ca5fc5be",
+      "reviewedSha256": "1e58bb709fd822b7a933769e08fde9bb4b534582ac745c4ea30f71ac6cb1c113",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-owner-purge.sql",
+      "owner": "backend-platform",
+      "baseSha256": "134c821bbb45efcde384be78c7766ec5d62e5c13ca0d078f66936372941da6e7",
+      "reviewedSha256": "0b034f365d780a2e6fff0ca87534bb5d4ee23f5fc12beebba874fb65f5815731",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-ai-settings.ts",
+      "owner": "backend-platform",
+      "baseSha256": "07ef08172127acf679c258cac568f2aeecea159d515395d5c590d1b6f1eba936",
+      "reviewedSha256": "6662d92f1f73e6922340893b00d22f001eb1b4abab7f14bc2768c2b6b882f359",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-owner-purge.sql",
+      "owner": "backend-platform",
+      "baseSha256": "b34403d4155e82155e01091a90128522d0146feaea8f3886b7b179cb4c472176",
+      "reviewedSha256": "097491a8899fa19fb1bf194278678abce71961e22594128b25613b49242a0c56",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts",
+      "owner": "backend-platform",
+      "baseSha256": "1cb1d632ee89840b0d6217d61896f7cf40443d7044efee2ca20829e3cbbf50a6",
+      "reviewedSha256": "69cf7ff676214c580a770d3b244c0568f578348d0446712f115feda7647e5edf",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant.ts",
+      "owner": "backend-platform",
+      "baseSha256": "48277b2ede314130a653237bb519963c33f6616d7828eff2792787b34fc4bcef",
+      "reviewedSha256": "70fdeb185ff1e414425e12a47e4a64e36009b03384233c7abb0fdfc953ba6569",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts",
+      "owner": "backend-platform",
+      "baseSha256": "50bc4595b606322e7c99c263d160eeed3c7b0f73f5a3b8df79974aa45bca4e5b",
+      "reviewedSha256": "e0bffcd085a93a65e194bc182277b6abaf19f94ad122cf07e936d9e1509f5fa0",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/users/interface/http/user-profile.routes.ts",
+      "owner": "backend-platform",
+      "baseSha256": "87e83b350fa242a7698ab258d354c8241196a0d2e5455de86ed75f085cf71563",
+      "reviewedSha256": "63c63f4bf93203d8c0c58b252b0c8033e14b51c92254e56f6174940d56bcaa96",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Followup mapper parameter unknown-to-Error matches original Hono Error callback and mapAuthenticationHttpError(Error) fallback; all ordered instanceof mappings/messages/statuses retain baseline semantics."
+    },
+    {
+      "path": "apps/backend/src/modules/learning/domain/flashcard-projection.ts",
+      "owner": "backend-content",
+      "baseSha256": "3cca3a27d673a28d97296558204e158a9b5b1e4f83876bcde9f15570e5022eda",
+      "reviewedSha256": "7dfe625cfb44e46bef82f68c4af20a342812406e84e007c4ece9cae34484e63e",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/index.ts",
+      "owner": "backend-content",
+      "baseSha256": "a5a764a541862ac78bd3485458c16174097549de6514402cbbf7b92892120b28",
+      "reviewedSha256": "c59f4b1b08b21c023bb9f630ef8254211aca3d070dbde01ee9751cb723ebb8cd",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/application/knowledge-service.ts",
+      "owner": "backend-content",
+      "baseSha256": "b6deb734342db75bf6be1b825ac81e3ec3454df21509022b9d6c679c4e053446",
+      "reviewedSha256": "6a9e8b25b39372783aa7a6874bf10ca4dc5e819c38c4594340a82166b298425a",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/application/library-copy-service.ts",
+      "owner": "backend-content",
+      "baseSha256": "d40ee8dab46114d2e927d5c8fd7f4920d69bc34c736f85ec1330f3e0c559482e",
+      "reviewedSha256": "1c0fc2f6ee56a339f628c18b213afa8c4ed7075aafbcc5f85d1afd95aeb08977",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/learning/application/learning-service.ts",
+      "owner": "backend-content",
+      "baseSha256": "2a5d425eb92ef4ed9fc3ac2830bcc235c131238e4d1ad1835263b2c1b25c9efa",
+      "reviewedSha256": "7213262187be9e17c6c28295beff2a399d5259cfd62d569c525bbcbb6a7f2a3e",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/learning/application/sentence-practice-service.ts",
+      "owner": "backend-content",
+      "baseSha256": "0b5ef6e5636cfe8c69fbbcf5735a6103f0485f3b925fdcccf4235bc232218deb",
+      "reviewedSha256": "272c800673fda9bc339c294b9858e5eaf95d143c5d5c4ee164b3bd938b3ec9b5",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-cursors.ts",
+      "owner": "backend-content",
+      "baseSha256": "877e186cdb0a362fc7c635bb5893d3847377c1d01c25bd6ae8077ad8360f074f",
+      "reviewedSha256": "5022e12343aac2306558458c5cdd47471c4e16db36bc461ead381c433c6e98c4",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle.sql",
+      "owner": "backend-content",
+      "baseSha256": "0d8364dd124a45bb1d4cfa90e491dade7210bd3e94ba2ae8537badad56a2b831",
+      "reviewedSha256": "d29dfdf4f17a81c58b9fa34d8237ffaa7874e8fd785fc95c2e4a22697a4d7eb5",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-retained-publication.sql",
+      "owner": "backend-content",
+      "baseSha256": "c20e1b851d0efe03df978b9567d8eb71895b1afa5186b3e530ba386c12ed31a7",
+      "reviewedSha256": "faa6ae069402fac9b00e5038d64d3f3ff7bc7fd4d9ab3ecb3b994d0ad6e8bf75",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-purge.sql",
+      "owner": "backend-content",
+      "baseSha256": "415a4d2edca82c97ba893bbf91d13a37baf9495de029622b7de302866328f2a3",
+      "reviewedSha256": "3aed5449926eca58777f367f3c266e8f2c212ceb375e0dcb05b765da653e55cc",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-source.sql",
+      "owner": "backend-content",
+      "baseSha256": "f44c15ccb2ad2dc09baac9cef5a831fd4f7a50ce7e0b8eda3c2b54959e8fe26b",
+      "reviewedSha256": "3044fef5fd758b48426afff58f57ba5f4fcc9e77a7ade4abc221f6d6d2443e7a",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.sql",
+      "owner": "backend-content",
+      "baseSha256": "0e7959da098be0fc672c84e3cb3161f8fb9fdb32f71e4c7ce20587f553ea8e01",
+      "reviewedSha256": "da7fcc83b97b8faedac5aa957fefe87061771fa3e65b986ea637938ac8848b92",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-worker-authority.sql",
+      "owner": "backend-content",
+      "baseSha256": "7ecb5fb014fafbfa53d551c49526ad8d6dad73ae12a0c8fa83ee04bcbb2d452d",
+      "reviewedSha256": "9a15ddb47cefef04b09fe41e7129c88a8663cef8add808157cf3371a0240dab5",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-worker-output.sql",
+      "owner": "backend-content",
+      "baseSha256": "698fc8f0623691c670da5242e119735936c6742042558b0b9017897f9c07e739",
+      "reviewedSha256": "f1030f4b65caf32488ba22bef85face32374b75232b975a4f30c235d6df1f43a",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/learning/application/sentence-worker-service.ts",
+      "owner": "backend-content",
+      "baseSha256": "b2ab004eb6a567f2f4c4941388ccd12ece4d00e213e704f8e6deded179c8476a",
+      "reviewedSha256": "8016b6675ab2cdbf89e6e7739a6f3310f01e2f081046c60d9f21de2362fba8cc",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/application/sentence-worker-service.test.ts",
+      "owner": "backend-content",
+      "baseSha256": "9a0a5652bd1953b8719bc37e534dc89ddbdc432a623b8309162963663cb7fb78",
+      "reviewedSha256": "417a2e537a558b92a1233caf22b4adfc591ff3d8ab9ccc994f1446b9bb6d9ef7",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-snapshots.ts",
+      "owner": "backend-content",
+      "baseSha256": "93a05d145fc43c928b86f4444a642a989ec7efad3c17dede77f9b8cbcdbf6732",
+      "reviewedSha256": "17f226d20474d9c52223c24b9c2fbe69dd58da272c8b46d2e6d72840cc23f2c4",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-publication.sql",
+      "owner": "backend-content",
+      "baseSha256": "9048ce18383c2bd7bfb2338cc7b36009e10c64fb65891d5bf2536c3cd9f0ebf4",
+      "reviewedSha256": "4a32c7cbe882d3c36892cd57dcc637fb72e08c1005a64a218570e1ec803c0755",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts",
+      "owner": "backend-content",
+      "baseSha256": "6a9865ec684bf7808568fcfca147593fe62f0ca6b6417e7c2ebb72b5eeeb2eb8",
+      "reviewedSha256": "62155ddbd3b832c98d64bb5ce12b39d4921661b7029b7330120d806009fcaa8d",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-projection.ts",
+      "owner": "backend-content",
+      "baseSha256": "ed75c2f3de4e72a70d824bd49d2b47b8a7e7018749d365c7dfae220a9cead84d",
+      "reviewedSha256": "208477e78a807546a1fe9ddac1923eb7d5cfefd2c7f9dbee2843f927e5d59717",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.sql",
+      "owner": "backend-content",
+      "baseSha256": "e383f9655653b2415d944c0f438f7b328d86b5dc763508811de13e1f3c7a9466",
+      "reviewedSha256": "2d2790204ba4511c53ced93b618667011cb06d2ece12cf2e0797493900281678",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/media-audio-validation.ts",
+      "owner": "backend-content",
+      "baseSha256": "792e33c406030bdd9964ab405d2b71934fad6369c58967c04a897237d1fd7a4a",
+      "reviewedSha256": "9077c387f4f181bf82de04d81d6e4e354b0ff6699ef8dfb363d7ed70c2ea6989",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts",
+      "owner": "backend-content",
+      "baseSha256": "78cce69160b72e9fe555393d08413e03ef6637d5d5da6c82fd7d9028a42264df",
+      "reviewedSha256": "89167baf78ca05c2fdc06ee084bcfeeca2dd423cd6ca0d6e65b83855256f93b3",
+      "scope": "complete base-to-current diff and relevant surrounding execution/security path"
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/source-resolver.ts",
+      "owner": "backend-content",
+      "baseSha256": "31658802c882c5d8055f77510f4f6d055538a85497527c2ca6eeb19b25c5ae51",
+      "reviewedSha256": "637eebe8c2b35595197602e77e3870b32f7f4ae2dc533d3a7ef71fdf8fba09d1",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Expanded sourceExample/targetExample and source/translation/example role ternaries preserve exact conditions, effective-settings roles and field enable/text/language authority; no lookup/await changed."
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/audio/safe-audio-download.ts",
+      "owner": "backend-content",
+      "baseSha256": "ba6ef3ab26659ec29894b9cbfbf64247cec14102836b72f923c541da75c9756a",
+      "reviewedSha256": "a544d039485710d085b482c6f3c621296142c09010f4222b01d92f9514fbb7ed",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "MP3 frame locals renamed to explicit bits/rateHz/durationSeconds/frameCount; ID3 handling, bitrate tables, frame offset/rounding,120s/byte/truncation guards and literals identical."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/block-field-routes.ts",
+      "owner": "backend-content",
+      "baseSha256": "5ff75765939a5b68a4cef81dfd9a8a836825993840538ee1d20a54b115b29f19",
+      "reviewedSha256": "f0e18005f322347257534370d522bd56ca926ab2eba0bbbc53dd682e6d8e2987",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Status chain retains first-match not-found/conflict/rate/credit/invalid fallback503 precedence; allowance error branch and domain/auth/origin ordering unchanged."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/exercise-evaluation-routes.ts",
+      "owner": "backend-content",
+      "baseSha256": "7e0196bb1fbba559a2b336b94ee741f4032d9f36318ec3d51b2b47462e4fc9c3",
+      "reviewedSha256": "a32dc944cef6f6a13dde3a34fe517c2c07335ed818317ab8a374c3cfe18578d2",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Expanded status chain preserves source_changed conflict alongside version/idempotency,404 concealment and distinct402 credit/default503; surrounding middleware and response unchanged."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/private-translation-routes.ts",
+      "owner": "backend-content",
+      "baseSha256": "e16070d23d4439ec3534a9b80bf13b3f0aad86fd473ce36a20a34e47660d556e",
+      "reviewedSha256": "e602b4d2a933955073e7cea198d5c1e917be5003fbf5ba568a912c97e1cbc03f",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "KnowledgeDomainError switch defaults400 and TextsAiError switch defaults503 exactly as original; separate messages and allowance/auth/origin priority untouched."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/drizzle-knowledge-store.ts",
+      "owner": "backend-content",
+      "baseSha256": "0d125b20b2023ce8d955010e779fae63ddaef48eecf449c93507675afa7c5281",
+      "reviewedSha256": "1d1834e87a809b1c3a4c8908d73a674cc111b3bb1e1b97c60be0fc139bc2f9e1",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Private persistence getter returns fresh object on every method invocation with same database,lifecycle,shareCrypto,limits property read order and same arguments; no constructor snapshot,cache,binding or await change."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-worker.sql",
+      "owner": "backend-content",
+      "baseSha256": "63eefd42cfa73d1e67ec349e3bca59fe81518a9f5077040507a27d6375c2b263",
+      "reviewedSha256": "a876f5e0f7f8e3646b422f6cb6f5f8b9fdffc5608e153be3c475b755b871db35",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Full current body and layout diff reviewed: secret capability,PID/txid worker context,live lease/fence,source/financial dispatch,immutable accounting,settled synchronization,source-private queue view and grants unchanged; independent ordered tokens/exact quoted content identical."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-source-accounting.sql",
+      "owner": "backend-content",
+      "baseSha256": "335d298f0402f4dfc70a5dae24afcfbe67520d91955838d092cdce8ee23106b9",
+      "reviewedSha256": "60e37642d5a18ea9e8f2f4c54170c5c05d885294aa4a406c5d4406d8b0b3e45c",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Full current body reviewed: owner/live note/workbook grant and membership locks,exact source snapshots/vocabulary epochs,job payload identity,private retained source,prepared target prohibition and source-deletion settlement unchanged; independent ordered tokens/exact quoted content identical."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-accounting.sql",
+      "owner": "backend-content",
+      "baseSha256": "c8ef5f5e8702f4b8dc52896ee11062fce0a8d05f315d9e6ae1617fb4e2a4324a",
+      "reviewedSha256": "de2627bac220aca80d24471c56b3054c3e6f06370ddd05f0e2e19a564cbafee6",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Full current body reviewed: typed duration allowance,immutable tariff/native price,credential-bound attestation/release approval,dispatch/receipt witnesses,late observation replay and settlement/purge/admission guards retain exact SQL tokens/literals/lock order."
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/speech-accounting-guards.sql",
+      "owner": "backend-content",
+      "baseSha256": "56c43d29942b0ff87a788d8035fcd42c317917ff343f866604fb3c79fe273295",
+      "reviewedSha256": "d13c8eafc4b150acdd2670c3d051c218c0e539be20ce9dd5a290f74522912dae",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Full current body reviewed: first usage/outcome immutability,lease-gated observations,provider provenance/expense/funding,terminal settlement,purge fencing and deadline customer charging retain exact SQL tokens/literals/order."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-working-content.ts",
+      "owner": "backend-content",
+      "baseSha256": "cd04554be8b84c63c8dc6b10d157b58547edb82f9d0973ce207cedd87bdcf221",
+      "reviewedSha256": "d036efb3b552b402570e19796d6180d6dd95fcf638a0bc6f18cc2587868098eb",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Conflict branch chooses exactly original insert versus update, first returned row and current/id/version/content/basePublishedVersion/timestamp. Media-grant check,lock,replay,preferred branch update/receipt await ordering unchanged."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts",
+      "owner": "backend-content",
+      "baseSha256": "c6933c71a852202e6412d56254022d3c8fb847f6a7c1284e7c947bea0a17eec9",
+      "reviewedSha256": "a595a0edc016690e7dc11adce3624f367c0ce40fee1281bffe4c2d4043ab1a6e",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Expanded DomainError status mapping retains knowledge404,version/idempotency/deletion_busy409,rate429/default400; same message and later auth/origin/Zod fallback priority."
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-coordinator.ts",
+      "owner": "backend-content",
+      "baseSha256": "af64d8b41616048a85b805f594ffb35b1579d4899ba19432d81153d616ec36b7",
+      "reviewedSha256": "3b01ae8c5f7e59a82d8d241c28ae68edbb3c2226a7f46b1f214fa31cf4ee32d7",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "pauseReason evaluated after same awaited parent settlement and before update; stopping wins over failure,credits_exhausted maps credits,other failed provider,otherwise null. No added clock/source reads or transaction change."
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts",
+      "owner": "backend-content",
+      "baseSha256": "3b6799b67879cd34270b7f88b5574c5b94baf6c04778b718a4c1de6afaa8964c",
+      "reviewedSha256": "ce6635b4dfd788642fe52109dac0228c51c949eb99ca2582ee4740df7cac6050",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Only existing permanent-deletion invariant comment moved from scrubPreparationContent to correct eraseSentenceDerivedContent declaration; executable tokens unchanged."
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts",
+      "owner": "backend-content",
+      "baseSha256": "a0bcf897aca81395fb790e9aac5985028051efb8e39a700ae48bc7c383bc2394",
+      "reviewedSha256": "4830c9476c4f5b555edb390afa9eb44c2ccdb0f50fea0f1d6c3dbb917e4ad409",
+      "scope": "complete newly changed base-to-current diff and relevant surrounding execution/security path",
+      "followupReview": "Response state preserves ready/submission_unknown/queued/failed/processing precedence after existing failed-job handling; deadline state preserves queued failure before submitting/recovery unknown. Financial settlement precedes job update and recording deletion unchanged."
+    }
+  ],
+  "findings": [],
+  "verdict": "No material source or security findings across47 current captured paths after bounded remediation. Source review passes; final evidence approval remains pending.",
+  "securityAssessment": {
+    "requestCredentials": "Admin price service remains newly constructed for each actualize/verify call, with the same request-secret reauthentication closure. No singleton credential capture or new secret logging.",
+    "workerComposition": "S3 construction/gates unchanged; deterministic versus production adapter choices retain HMAC entropy/secret, fail-closed ClamAV config, sandbox paths, unavailable production OCR and same composition lifetime.",
+    "financialAuthority": "Provider observations retain usage/execution/calls shape and endpoint/tier truthiness. Meter validation is exactly same lazy condition at same transaction point. Locks, immutable pricing and SQL settlement calls unchanged.",
+    "redis": "Direct HMAC key before try unchanged; alias lookup remains exactly one awaited bounded operation only when requested, with same abort/timeout/error mapping and nullish fallback before consume script.",
+    "sql": "Independently compared all11 SQL files against base with quoted string/identifier/dollar-marker-aware lexical tokenization excluding comments. Every noncomment token identical, including guards, arithmetic, literals, lock/write ordering, SECURITY DEFINER/search_path and REVOKE/trigger declarations. Actual publication/purge/source bodies reviewed.",
+    "workerDispatch": "Dictionary startGeneration is synchronous and returns original Promise chains; no added async continuation/await. Format order, availability rejection, provider-input derivation before dispatch marking, then parsing, heartbeat/deadline race and fenced completion preserved.",
+    "retryPolicy": "Sentence resolveRetryAt retains managed conclusive+not-aborted+first-attempt precedence and legacy exclusions, clock read only in retryable branch and evaluation after retryDisposition. Added four table cases assert failure DTO and no completion/duplicate provider call.",
+    "projectionsAndIsolation": "Flashcard projection keeps lazy enabled-field reads/fallback/dedup order. Snapshot eligibility retains creator-delete/global/personal predicates under same authorization/advisory-lock transaction. Source field/exercise/private translation and speech publication SQL retain exact actor/source/lease/fence/settlement checks.",
+    "transcriptionContext": "Followup reviewed before handoff: c/p renamed configuration/storedPrice only. Processing revision/credential fingerprint, data-sharing evidence/expiry, size/duration/model/meter/effective price and finite native cost guards retain exact evaluation/lock order and returned fields.",
+    "remediation": "HTTP status and concealment priority, fresh Knowledge context lifetime,working branch CAS/identity,preparation pause and speech field/state/deadline semantics preserved.13 content SQL files independently token/literal-identical; four new SQL bodies inspected in full. User profile Error parameter matches original Hono callback/fallback."
+  },
+  "checks": {
+    "executedByReviewer": [
+      "Independent read-only full scoped diff inspection",
+      "Independent exact noncomment SQL token comparison:11/11 identical",
+      "Captured current hashes match author after-hashes for every reviewed file",
+      "Bounded remediation:15 new content paths plus1 captured user mapper followup;31 unchanged captures reused;13/13 content SQL ordered token/exact-quoted-content comparisons identical."
+    ],
+    "reusedAuthorEvidence": [
+      "Root reports105 backend unit cases and61 worker/parser/user/Redis cases passing; no reviewer rerun",
+      "Scoped author lint/Prettier results in the two ledgers"
+    ],
+    "pending": [
+      "Root-scheduled disposable PostgreSQL/Redis role/financial/source-isolation tests",
+      "Affected production-composition critical execution matrix and cancellation/timing proof",
+      "Final static/build/full requested regression gates and source-hash stability check"
+    ]
+  },
+  "unreviewedFollowupHashes": [],
+  "limitations": [
+    "Review covers captured patch state, not production deployment/readiness or live provider execution.",
+    "Any subsequent scoped source/test change requires hash-specific remediation review; final evidence is not approved until required gates pass."
+  ],
+  "followupsReviewed": [
+    "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts added to author ledger during review; complete diff/body reviewed before initial verdict handoff"
+  ],
+  "remediationReview": {
+    "reviewedAt": "2026-11-01T00:09:45.938265+00:00",
+    "newContentPaths": [
+      "apps/backend/src/modules/speech/infrastructure/source-resolver.ts",
+      "apps/backend/src/modules/speech/infrastructure/audio/safe-audio-download.ts",
+      "apps/backend/src/modules/knowledge/interface/http/block-field-routes.ts",
+      "apps/backend/src/modules/knowledge/interface/http/exercise-evaluation-routes.ts",
+      "apps/backend/src/modules/knowledge/interface/http/private-translation-routes.ts",
+      "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/drizzle-knowledge-store.ts",
+      "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-worker.sql",
+      "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-source-accounting.sql",
+      "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-accounting.sql",
+      "apps/backend/src/modules/speech/infrastructure/speech-accounting-guards.sql",
+      "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-working-content.ts",
+      "apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts",
+      "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-coordinator.ts",
+      "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts",
+      "apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts"
+    ],
+    "changedCapturedPaths": [
+      {
+        "path": "apps/backend/src/modules/users/interface/http/user-profile.routes.ts",
+        "previousReviewedSha256": "c2554a2690136f779dbe755d77754cab7f1580a8cb30941ae79fd3f192cca69c",
+        "currentReviewedSha256": "63c63f4bf93203d8c0c58b252b0c8033e14b51c92254e56f6174940d56bcaa96"
+      }
+    ],
+    "unchangedCapturedPathsReused": 31,
+    "findings": [],
+    "sqlProof": [
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle.sql",
+        "tokens": 286,
+        "exactQuotedTokens": 11,
+        "baseSha256": "0d8364dd124a45bb1d4cfa90e491dade7210bd3e94ba2ae8537badad56a2b831",
+        "currentSha256": "d29dfdf4f17a81c58b9fa34d8237ffaa7874e8fd785fc95c2e4a22697a4d7eb5",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-retained-publication.sql",
+        "tokens": 337,
+        "exactQuotedTokens": 10,
+        "baseSha256": "c20e1b851d0efe03df978b9567d8eb71895b1afa5186b3e530ba386c12ed31a7",
+        "currentSha256": "faa6ae069402fac9b00e5038d64d3f3ff7bc7fd4d9ab3ecb3b994d0ad6e8bf75",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-purge.sql",
+        "tokens": 355,
+        "exactQuotedTokens": 18,
+        "baseSha256": "415a4d2edca82c97ba893bbf91d13a37baf9495de029622b7de302866328f2a3",
+        "currentSha256": "3aed5449926eca58777f367f3c266e8f2c212ceb375e0dcb05b765da653e55cc",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-source.sql",
+        "tokens": 724,
+        "exactQuotedTokens": 46,
+        "baseSha256": "f44c15ccb2ad2dc09baac9cef5a831fd4f7a50ce7e0b8eda3c2b54959e8fe26b",
+        "currentSha256": "3044fef5fd758b48426afff58f57ba5f4fcc9e77a7ade4abc221f6d6d2443e7a",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.sql",
+        "tokens": 1617,
+        "exactQuotedTokens": 116,
+        "baseSha256": "0e7959da098be0fc672c84e3cb3161f8fb9fdb32f71e4c7ce20587f553ea8e01",
+        "currentSha256": "da7fcc83b97b8faedac5aa957fefe87061771fa3e65b986ea637938ac8848b92",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-worker-authority.sql",
+        "tokens": 1597,
+        "exactQuotedTokens": 100,
+        "baseSha256": "7ecb5fb014fafbfa53d551c49526ad8d6dad73ae12a0c8fa83ee04bcbb2d452d",
+        "currentSha256": "9a15ddb47cefef04b09fe41e7129c88a8663cef8add808157cf3371a0240dab5",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-worker-output.sql",
+        "tokens": 2202,
+        "exactQuotedTokens": 207,
+        "baseSha256": "698fc8f0623691c670da5242e119735936c6742042558b0b9017897f9c07e739",
+        "currentSha256": "f1030f4b65caf32488ba22bef85face32374b75232b975a4f30c235d6df1f43a",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-publication.sql",
+        "tokens": 2380,
+        "exactQuotedTokens": 171,
+        "baseSha256": "9048ce18383c2bd7bfb2338cc7b36009e10c64fb65891d5bf2536c3cd9f0ebf4",
+        "currentSha256": "4a32c7cbe882d3c36892cd57dcc637fb72e08c1005a64a218570e1ec803c0755",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.sql",
+        "tokens": 2530,
+        "exactQuotedTokens": 172,
+        "baseSha256": "e383f9655653b2415d944c0f438f7b328d86b5dc763508811de13e1f3c7a9466",
+        "currentSha256": "2d2790204ba4511c53ced93b618667011cb06d2ece12cf2e0797493900281678",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-worker.sql",
+        "tokens": 4083,
+        "exactQuotedTokens": 251,
+        "baseSha256": "63eefd42cfa73d1e67ec349e3bca59fe81518a9f5077040507a27d6375c2b263",
+        "currentSha256": "a876f5e0f7f8e3646b422f6cb6f5f8b9fdffc5608e153be3c475b755b871db35",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-source-accounting.sql",
+        "tokens": 4717,
+        "exactQuotedTokens": 555,
+        "baseSha256": "335d298f0402f4dfc70a5dae24afcfbe67520d91955838d092cdce8ee23106b9",
+        "currentSha256": "60e37642d5a18ea9e8f2f4c54170c5c05d885294aa4a406c5d4406d8b0b3e45c",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-accounting.sql",
+        "tokens": 6664,
+        "exactQuotedTokens": 448,
+        "baseSha256": "c8ef5f5e8702f4b8dc52896ee11062fce0a8d05f315d9e6ae1617fb4e2a4324a",
+        "currentSha256": "de2627bac220aca80d24471c56b3054c3e6f06370ddd05f0e2e19a564cbafee6",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      },
+      {
+        "path": "apps/backend/src/modules/speech/infrastructure/speech-accounting-guards.sql",
+        "tokens": 4239,
+        "exactQuotedTokens": 299,
+        "baseSha256": "56c43d29942b0ff87a788d8035fcd42c317917ff343f866604fb3c79fe273295",
+        "currentSha256": "d13c8eafc4b150acdd2670c3d051c218c0e539be20ce9dd5a290f74522912dae",
+        "result": "identical ordered noncomment SQL/PLpgSQL tokens and exact quoted content"
+      }
+    ],
+    "sourceVerdict": "No material source or security findings. Bounded remediation source review passes for47 captured paths; final evidence approval pending.",
+    "verification": "Read-only diff/body/hash/lexical comparisons only; no implementation/test edits or heavy gates."
+  }
+}

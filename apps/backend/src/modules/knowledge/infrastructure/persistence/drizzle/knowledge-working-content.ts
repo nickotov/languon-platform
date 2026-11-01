@@ -108,31 +108,34 @@ export async function updateWorking(
         await assertKnowledgeMediaGrants(tx, noteId, content.body);
         const conflict = current.version !== input.expectedVersion;
         const id = conflict ? randomUUID() : current.id;
-        const branch = conflict
-            ? (
-                  await tx
-                      .insert(knowledgeWorkingBranchesTable)
-                      .values({
-                          id,
-                          noteId,
-                          version: 1,
-                          basePublishedVersion: current.basePublishedVersion,
-                          content,
-                          updatedAt: now,
-                      })
-                      .returning()
-              )[0]!
-            : (
-                  await tx
-                      .update(knowledgeWorkingBranchesTable)
-                      .set({
-                          version: current.version + 1,
-                          content,
-                          updatedAt: now,
-                      })
-                      .where(eq(knowledgeWorkingBranchesTable.id, id))
-                      .returning()
-              )[0]!;
+        let branch: typeof knowledgeWorkingBranchesTable.$inferSelect;
+        if (conflict) {
+            const [created] = await tx
+                .insert(knowledgeWorkingBranchesTable)
+                .values({
+                    id,
+                    noteId,
+                    version: 1,
+                    basePublishedVersion: current.basePublishedVersion,
+                    content,
+                    updatedAt: now,
+                })
+                .returning();
+
+            branch = created!;
+        } else {
+            const [updated] = await tx
+                .update(knowledgeWorkingBranchesTable)
+                .set({
+                    version: current.version + 1,
+                    content,
+                    updatedAt: now,
+                })
+                .where(eq(knowledgeWorkingBranchesTable.id, id))
+                .returning();
+
+            branch = updated!;
+        }
 
         await tx
             .update(knowledgeNotesTable)

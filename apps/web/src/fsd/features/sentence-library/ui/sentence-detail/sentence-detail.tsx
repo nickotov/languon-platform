@@ -1,11 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
-import {
-    ArrowLeftIcon,
-    XIcon,
-    ChevronUpIcon,
-    ChevronDownIcon,
-} from 'lucide-react';
+import { ArrowLeftIcon, XIcon } from 'lucide-react';
 import {
     Button,
     Dialog,
@@ -18,14 +13,8 @@ import { useIsCompact } from '../../hooks/use-is-compact';
 import { LibraryApiError } from '../../api/library-api';
 import { displayDetail } from '../../lib/sentence-display';
 import type { LibraryApi, SavedSentence } from '../../types';
-import {
-    DirectionBadge,
-    OwnershipMeta,
-    StatusBadges,
-} from '../sentence-badges/sentence-badges';
-import { HintGroups } from '../hint-groups/hint-groups';
 import styles from './sentence-detail.module.css';
-import { SentenceStatus } from './sentence-status';
+import { SentenceDetailContent } from './sentence-detail-content';
 export function SentenceDetail({
     api,
     id,
@@ -45,7 +34,7 @@ export function SentenceDetail({
         | ((exerciseId: string, field: 'prompt' | 'reference') => ReactNode)
         | undefined;
 }) {
-    const { L, lang } = useInterfaceText();
+    const { L } = useInterfaceText();
     const compact = useIsCompact();
     const [expanded, setExpanded] = useState(false);
     const query = useQuery({
@@ -128,81 +117,15 @@ export function SentenceDetail({
         );
     } else if (sentence) {
         content = (
-            <div className={styles.content}>
-                <section
-                    aria-label={L('sentenceLabel')}
-                    className={styles.sentenceSection}
-                >
-                    <p
-                        lang={sentence.sentenceLanguage}
-                        dir='auto'
-                        className={styles.sentence}
-                    >
-                        {sentence.sentence}
-                    </p>
-                    {renderAudio?.(id, 'prompt')}
-                    <p className={styles.help}>
-                        {L('langLine', {
-                            from: lang(sentence.sentenceLanguage),
-                            to: lang(sentence.answerLanguage),
-                        })}
-                    </p>
-                    <div className={styles.metadata}>
-                        <DirectionBadge
-                            from={sentence.sentenceLanguage}
-                            to={sentence.answerLanguage}
-                        />
-                        <StatusBadges sentence={sentence} />
-                    </div>
-                    <OwnershipMeta sentence={sentence} />
-                </section>
-                <section className={styles.translationSection}>
-                    <button
-                        type='button'
-                        aria-expanded={expanded}
-                        aria-controls={`${id}-reference`}
-                        onClick={toggle}
-                        className={styles.translationToggle}
-                    >
-                        {L('referenceToggle')}
-                        {expanded ? (
-                            <ChevronUpIcon
-                                aria-hidden
-                                className={styles.icon}
-                            />
-                        ) : (
-                            <ChevronDownIcon
-                                aria-hidden
-                                className={styles.icon}
-                            />
-                        )}
-                    </button>
-                    {expanded ? (
-                        <div
-                            id={`${id}-reference`}
-                            className={styles.translationContent}
-                        >
-                            <p
-                                lang={sentence.answerLanguage}
-                                dir='auto'
-                                className={styles.translation}
-                            >
-                                {sentence.reference}
-                            </p>
-                            {renderAudio?.(id, 'reference')}
-                            <p className={styles.secondaryHelp}>
-                                {L('referenceNote')}
-                            </p>
-                        </div>
-                    ) : null}
-                </section>
-                <HintGroups sentence={sentence} />
-                <SentenceStatus
-                    sentence={sentence}
-                    locked={locked}
-                    onArchive={archive}
-                />
-            </div>
+            <SentenceDetailContent
+                sentence={sentence}
+                id={id}
+                expanded={expanded}
+                onToggle={toggle}
+                onArchive={archive}
+                locked={locked}
+                renderAudio={renderAudio}
+            />
         );
     }
 

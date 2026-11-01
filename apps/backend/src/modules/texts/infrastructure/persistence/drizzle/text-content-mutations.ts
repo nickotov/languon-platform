@@ -1,9 +1,7 @@
 import type {
-    CreateTextFolderRequest,
     CreateTextRequest,
     MoveTextRequest,
     SaveTextRequest,
-    UpdateTextFolderRequest,
 } from '@languon/contracts';
 import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
 import { withActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
@@ -13,17 +11,11 @@ import {
     resolveTextTitle,
     TextDomainError,
 } from '../../../domain/text';
-import {
-    textFoldersTable,
-    textIdempotencyTable,
-    textSharesTable,
-    textsTable,
-} from './schema';
+import { textIdempotencyTable, textSharesTable, textsTable } from './schema';
 import { activeOwner, folder, revision, text } from './text-content-access';
 import { type TextContentContext } from './text-content-persistence-support';
 import {
     textDocument,
-    textFolder,
     type TextRow,
     type TextsContentTransaction,
 } from './text-content-support';
@@ -31,107 +23,11 @@ import { textNotFound } from './text-source-resolver';
 import { textsAiJobsTable } from './texts-job-schema';
 import { exposeTextsJob } from './texts-job-support';
 
-export async function createFolder(
-    persistence: TextContentContext,
-    ownerId: string,
-    request: CreateTextFolderRequest,
-) {
-    return persistence.db.transaction(async (tx) => {
-        await activeOwner(persistence, tx, ownerId);
-        const now = persistence.clock.now();
-        const [row] = await tx
-            .insert(textFoldersTable)
-            .values({
-                id: persistence.ids.generate(),
-                ownerId,
-                name: request.name,
-                description: request.description,
-                createdAt: now,
-                updatedAt: now,
-            })
-            .returning();
-
-        return textFolder(row!);
-    });
-}
-
-export async function updateFolder(
-    persistence: TextContentContext,
-    ownerId: string,
-    id: string,
-    request: UpdateTextFolderRequest,
-) {
-    return persistence.db.transaction(async (tx) => {
-        const row = await folder(persistence, tx, ownerId, id);
-        assertTextVersion(row.version, request.expectedVersion);
-        const [updated] = await tx
-            .update(textFoldersTable)
-            .set({
-                ...(request.name !== undefined ? { name: request.name } : {}),
-                ...(request.description !== undefined
-                    ? { description: request.description }
-                    : {}),
-                version: row.version + 1,
-                updatedAt: persistence.clock.now(),
-            })
-            .where(eq(textFoldersTable.id, id))
-            .returning();
-
-        return textFolder(updated!);
-    });
-}
-
-export async function folderLifecycle(
-    persistence: TextContentContext,
-    ownerId: string,
-    id: string,
-    expectedVersion: number,
-    lifecycle: 'active' | 'archived',
-) {
-    return persistence.db.transaction(async (tx) => {
-        const row = await folder(persistence, tx, ownerId, id, false);
-        assertTextVersion(row.version, expectedVersion);
-        if (row.lifecycle === lifecycle) {
-            return textFolder(row);
-        }
-
-        const [updated] = await tx
-            .update(textFoldersTable)
-            .set({
-                lifecycle,
-                version: row.version + 1,
-                updatedAt: persistence.clock.now(),
-            })
-            .where(eq(textFoldersTable.id, id))
-            .returning();
-
-        await tx
-            .delete(textSharesTable)
-            .where(
-                and(
-                    eq(textSharesTable.ownerId, ownerId),
-                    or(
-                        and(
-                            eq(textSharesTable.kind, 'folder'),
-                            eq(textSharesTable.resourceId, id),
-                        ),
-                        and(
-                            eq(textSharesTable.kind, 'text'),
-                            inArray(
-                                textSharesTable.resourceId,
-                                tx
-                                    .select({ id: textsTable.id })
-                                    .from(textsTable)
-                                    .where(eq(textsTable.folderId, id)),
-                            ),
-                        ),
-                    ),
-                ),
-            );
-
-        return textFolder(updated!);
-    });
-}
+export {
+    createFolder,
+    updateFolder,
+    folderLifecycle,
+} from './text-folder-mutations';
 
 export async function confirmDestination(
     persistence: TextContentContext,

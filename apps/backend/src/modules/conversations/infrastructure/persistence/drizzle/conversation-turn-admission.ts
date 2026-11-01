@@ -1,3 +1,4 @@
+import { assertPreparedConversationCurrent } from './conversation-admission-snapshot';
 import {
     captureConversationBlockTarget,
     assertConversationEditorAuthority,
@@ -41,7 +42,6 @@ import type { MessageRow } from './conversation-persistence-context';
 import {
     conflict,
     messageView,
-    sameConversationSourceRevision,
     turnView,
     type ConversationPersistenceContext,
 } from './conversation-persistence-context';
@@ -123,27 +123,11 @@ export async function conversationSubmit(
             }
 
             if (prepared) {
-                if (
-                    prepared.chat.version !== chat.version ||
-                    prepared.chat.title !== chat.title ||
-                    JSON.stringify(prepared.chat.preferences) !==
-                        JSON.stringify(chat.preferences) ||
-                    JSON.stringify(prepared.chat.source) !==
-                        JSON.stringify(chat.source) ||
-                    prepared.chat.sourceKind !== chat.sourceKind ||
-                    !sameConversationSourceRevision(
-                        chat.sourceKind,
-                        prepared.snapshot.version,
-                        currentSnapshot.version,
-                    ) ||
-                    prepared.snapshot.title !== currentSnapshot.title ||
-                    prepared.snapshot.studiedLanguage !==
-                        currentSnapshot.studiedLanguage
-                ) {
-                    throw conflict(
-                        'The conversation or its source changed while preparing your message. Review it and send again.',
-                    );
-                }
+                assertPreparedConversationCurrent(
+                    prepared,
+                    chat,
+                    currentSnapshot,
+                );
             }
 
             const snapshot = prepared?.snapshot ?? currentSnapshot;

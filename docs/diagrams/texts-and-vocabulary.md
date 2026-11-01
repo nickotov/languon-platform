@@ -23,8 +23,13 @@ source_paths:
     - apps/backend/src/modules/knowledge/application/private-translation-service.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-store.ts
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
-source_fingerprint: sha256:cece3fd4b09ca3c02648b83c5569965549dc6e7be05ec92645f840be18a4d5f1
-reviewed: 2026-10-22
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts
+source_fingerprint: sha256:e2fc7c46c3e92c8c9695ce78274b2d20df6d683bd5f39e9904e9ad748b84c10e
+reviewed: 2026-11-01
 ---
 
 # Texts and contextual vocabulary
@@ -91,6 +96,15 @@ changes. A learner may explicitly publish its current overlay as an independent 
 the shared note and other readers' overlays remain unchanged. Source deletion cancels or
 fences pending work and erases attached overlays, while independent Text copies survive.
 
+## Implementation reconciliation
+
+The content-store facade allocates a fresh persistence context for each operation;
+folder mutations retain their existing owner/version checks and share revocation.
+Texts job admission and lifecycle operations share `texts-job-transaction`, which
+keeps model-price, capacity and execution-revision guards in the same transaction.
+The worker retry decision retains the pinned-routing and legacy attempt rules.
+These internal boundaries preserve the explicit Save and Add publication edges.
+
 ## Sources
 
 - [apps/backend/src/modules/texts/infrastructure/texts-composition.ts](../../apps/backend/src/modules/texts/infrastructure/texts-composition.ts)
@@ -117,3 +131,9 @@ fences pending work and erases attached overlays, while independent Text copies 
 - [apps/backend/src/modules/knowledge/application/private-translation-service.ts](../../apps/backend/src/modules/knowledge/application/private-translation-service.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-store.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-store.ts)
 - [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts)

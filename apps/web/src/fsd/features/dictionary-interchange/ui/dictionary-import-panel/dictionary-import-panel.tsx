@@ -9,11 +9,9 @@ import type {
 import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 
 import { useI18n } from '@/fsd/shared/i18n';
-import { languageDirection } from '@/fsd/entities/dictionary';
 import type { LanguageCatalogEntry } from '@languon/contracts';
 import {
     Button,
-    Card,
     Checkbox,
     Field,
     InlineAlert,
@@ -28,6 +26,7 @@ import {
     readDictionaryImportFile,
 } from '../../lib/read-import-file';
 import styles from './dictionary-import-panel.module.css';
+import { ImportPreviewRows } from './import-preview-rows';
 
 export function DictionaryImportPanel({
     aiAvailable,
@@ -174,7 +173,52 @@ export function DictionaryImportPanel({
         void onCommit({ ...request, enrichment }).catch(() => undefined);
     }
 
-    function resolveDictionaryImportPanelContent() {
+    function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+        void loadFile(event);
+    }
+
+    function changeContent(event: ChangeEvent<HTMLTextAreaElement>) {
+        setContent(event.currentTarget.value);
+    }
+
+    function changeDelimiter(event: ChangeEvent<HTMLSelectElement>) {
+        setDelimiter(event.currentTarget.value as 'comma' | 'tab');
+    }
+
+    function changeHeader(event: ChangeEvent<HTMLInputElement>) {
+        setHasHeader(event.currentTarget.checked);
+    }
+
+    function changeSourceColumn(event: ChangeEvent<HTMLSelectElement>) {
+        setSourceColumnIndex(Number(event.currentTarget.value));
+    }
+
+    function changeTargetColumn(event: ChangeEvent<HTMLSelectElement>) {
+        setTargetColumnIndex(Number(event.currentTarget.value));
+    }
+
+    function changeEnrichment(event: ChangeEvent<HTMLInputElement>) {
+        setEnrich(event.currentTarget.checked);
+    }
+
+    function changeInstruction(event: ChangeEvent<HTMLTextAreaElement>) {
+        setInstruction(event.currentTarget.value);
+    }
+
+    function togglePreviewRow(rowIndex: number, checked: boolean) {
+        setSelected((current) => {
+            const next = new Set(current);
+            if (checked) {
+                next.add(rowIndex);
+            } else {
+                next.delete(rowIndex);
+            }
+
+            return next;
+        });
+    }
+
+    function resolveAiAvailabilityNotice() {
         if (!aiAvailable) {
             return (
                 <p className={styles.paragraph}>
@@ -194,8 +238,7 @@ export function DictionaryImportPanel({
         return null;
     }
 
-    const resolvedDictionaryImportPanelContent =
-        resolveDictionaryImportPanelContent();
+    const aiAvailabilityNotice = resolveAiAvailabilityNotice();
 
     return (
         <section className={styles.section}>
@@ -222,7 +265,7 @@ export function DictionaryImportPanel({
                         className={styles.fileInput}
                         accept='.txt,.csv,.tsv,text/plain,text/csv'
                         disabled={pending}
-                        onChange={(event) => void loadFile(event)}
+                        onChange={handleFileChange}
                         type='file'
                     />
                 </Field>
@@ -232,24 +275,14 @@ export function DictionaryImportPanel({
                     required
                 >
                     <Textarea
-                        onChange={(event) =>
-                            setContent(event.currentTarget.value)
-                        }
+                        onChange={changeContent}
                         rows={6}
                         value={content}
                     />
                 </Field>
                 <div className={styles.mapping}>
                     <Field label={t('dictionary.interchange.delimiter')}>
-                        <Select
-                            onChange={(event) =>
-                                setDelimiter(
-                                    event.currentTarget.value as
-                                        'comma' | 'tab',
-                                )
-                            }
-                            value={delimiter}
-                        >
+                        <Select onChange={changeDelimiter} value={delimiter}>
                             <option value='tab'>
                                 {t('dictionary.interchange.tab')}
                             </option>
@@ -258,21 +291,12 @@ export function DictionaryImportPanel({
                             </option>
                         </Select>
                     </Field>
-                    <Checkbox
-                        checked={hasHeader}
-                        onChange={(event) =>
-                            setHasHeader(event.currentTarget.checked)
-                        }
-                    >
+                    <Checkbox checked={hasHeader} onChange={changeHeader}>
                         {t('dictionary.interchange.header')}
                     </Checkbox>
                     <Field label={t('dictionary.interchange.sourceColumn')}>
                         <Select
-                            onChange={(event) =>
-                                setSourceColumnIndex(
-                                    Number(event.currentTarget.value),
-                                )
-                            }
+                            onChange={changeSourceColumn}
                             value={sourceColumnIndex}
                         >
                             {(
@@ -292,11 +316,7 @@ export function DictionaryImportPanel({
                     </Field>
                     <Field label={t('dictionary.interchange.targetColumn')}>
                         <Select
-                            onChange={(event) =>
-                                setTargetColumnIndex(
-                                    Number(event.currentTarget.value),
-                                )
-                            }
+                            onChange={changeTargetColumn}
                             value={targetColumnIndex}
                         >
                             {(
@@ -356,72 +376,15 @@ export function DictionaryImportPanel({
                             })}
                         </InlineAlert>
                     ) : null}
-                    <div className={styles.rows}>
-                        {visiblePreview.rows.map((row) => (
-                            <Card
-                                className={styles.row}
-                                key={row.rowIndex}
-                                padding='sm'
-                                variant='outlined'
-                            >
-                                {canUseAi ? (
-                                    <Checkbox
-                                        className={styles.rowSelection}
-                                        checked={selected.has(row.rowIndex)}
-                                        onChange={(event) => {
-                                            const checked =
-                                                event.currentTarget.checked;
-
-                                            setSelected((current) => {
-                                                const next = new Set(current);
-
-                                                if (checked) {
-                                                    next.add(row.rowIndex);
-                                                } else {
-                                                    next.delete(row.rowIndex);
-                                                }
-
-                                                return next;
-                                            });
-                                        }}
-                                    >
-                                        {t(
-                                            'dictionary.interchange.includeRow',
-                                            {
-                                                position: row.rowIndex + 1,
-                                            },
-                                        )}
-                                    </Checkbox>
-                                ) : null}
-                                <span
-                                    className={styles.rowValue}
-                                    dir={languageDirection(
-                                        languages,
-                                        sourceLanguage,
-                                    )}
-                                    lang={sourceLanguage}
-                                >
-                                    {row.source}
-                                </span>
-                                <span
-                                    aria-hidden='true'
-                                    className={styles.rowArrow}
-                                >
-                                    →
-                                </span>
-                                <span
-                                    className={styles.rowValue}
-                                    dir={languageDirection(
-                                        languages,
-                                        targetLanguage,
-                                    )}
-                                    lang={targetLanguage}
-                                >
-                                    {row.translation}
-                                </span>
-                            </Card>
-                        ))}
-                    </div>
+                    <ImportPreviewRows
+                        rows={visiblePreview.rows}
+                        canUseAi={canUseAi}
+                        selected={selected}
+                        onToggle={togglePreviewRow}
+                        languages={languages}
+                        sourceLanguage={sourceLanguage}
+                        targetLanguage={targetLanguage}
+                    />
                     {visiblePreview.failures.length ? (
                         <div className={styles.failures}>
                             <h4 className={styles.heading}>
@@ -448,13 +411,11 @@ export function DictionaryImportPanel({
                         <Switch
                             checked={useAi}
                             disabled={!canUseAi || pending}
-                            onChange={(event) =>
-                                setEnrich(event.currentTarget.checked)
-                            }
+                            onChange={changeEnrichment}
                         >
                             {t('dictionary.interchange.enrich')}
                         </Switch>
-                        {resolvedDictionaryImportPanelContent}
+                        {aiAvailabilityNotice}
                         {canUseAi && visiblePreview.summary.readyRows > 100 ? (
                             <p className={styles.paragraph}>
                                 {t('dictionary.interchange.aiLimit')}
@@ -464,9 +425,7 @@ export function DictionaryImportPanel({
                     {useAi ? (
                         <Field label={t('dictionary.interchange.instruction')}>
                             <Textarea
-                                onChange={(event) =>
-                                    setInstruction(event.currentTarget.value)
-                                }
+                                onChange={changeInstruction}
                                 value={instruction}
                             />
                         </Field>

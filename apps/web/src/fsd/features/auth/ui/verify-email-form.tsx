@@ -157,13 +157,17 @@ export function VerifyEmailForm({
         }
     }
 
+    function resendVerification() {
+        void resend();
+    }
+
     if (capabilities && !capabilities.email.verification) {
         return <FormMessage>{t('verify.unavailable')}</FormMessage>;
     }
 
     const waitSeconds = Math.max(0, Math.ceil((nextResendAt - now) / 1_000));
 
-    function resolveVerifyEmailFormContent() {
+    function resolveResendLabel() {
         if (pending === 'resend') {
             return t('verify.sending');
         }
@@ -175,7 +179,7 @@ export function VerifyEmailForm({
         return t('verify.resend');
     }
 
-    const resolvedVerifyEmailFormContent = resolveVerifyEmailFormContent();
+    const resendLabel = resolveResendLabel();
 
     return (
         <>
@@ -227,11 +231,11 @@ export function VerifyEmailForm({
                     waitSeconds > 0
                 }
                 loading={pending === 'resend'}
-                onClick={() => void resend()}
+                onClick={resendVerification}
                 type='button'
                 variant='secondary'
             >
-                {resolvedVerifyEmailFormContent}
+                {resendLabel}
             </Button>
         </>
     );

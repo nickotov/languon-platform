@@ -10,8 +10,9 @@ source_paths:
     - apps/web/src/fsd/entities/session/model/session-store.ts
     - packages/browser-auth/src/refresh-coordinator.ts
     - docs/adr/0001-user-authentication-and-session-strategy.md
-source_fingerprint: sha256:f4b71748222606e68f29eda716500cbb8972c2768168eca7397e5c1986305ede
-reviewed: 2026-10-22
+    - apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts
+source_fingerprint: sha256:88a203c3a004336d45ca9064c108a5a1eff9620d2a2e3cfadaa5c81d44729779
+reviewed: 2026-11-01
 ---
 
 # Authentication and session refresh
@@ -72,3 +73,4 @@ not the future native secure-storage transport.
 - [apps/web/src/fsd/entities/session/model/session-store.ts](../../apps/web/src/fsd/entities/session/model/session-store.ts)
 - [packages/browser-auth/src/refresh-coordinator.ts](../../packages/browser-auth/src/refresh-coordinator.ts)
 - [docs/adr/0001-user-authentication-and-session-strategy.md](../../docs/adr/0001-user-authentication-and-session-strategy.md)
+- [apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts](../../apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts)

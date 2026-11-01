@@ -10,6 +10,7 @@ import { useTranslate } from '@refinedev/core';
 import { Alert, Button, Form, Input, Modal, Select, Typography } from 'antd';
 
 import { NativeProviderPriceDialog } from './native-provider-price-dialog';
+import { ProviderPriceFields } from './provider-price-fields';
 
 type Request = (typeof ProviderPricePublishRequestSchema)['_input'];
 type Fields = Omit<Request, 'expectedVersion' | 'nativeRules'> & {
@@ -186,54 +187,7 @@ function LegacyProviderPriceDialog({
                 >
                     <Select disabled={editExisting} options={options} />
                 </Form.Item>
-                {duration ? (
-                    <>
-                        <Typography.Paragraph>
-                            {t('transcription.nativeRulesHelp')}
-                        </Typography.Paragraph>
-                        <Form.Item
-                            name='nativeRulesJson'
-                            label={t('transcription.nativeRules')}
-                            rules={[{ required: true }]}
-                        >
-                            <Input.TextArea rows={8} maxLength={80_000} />
-                        </Form.Item>
-                    </>
-                ) : speech ? (
-                    <UsdRateField
-                        name='usdPer1000Characters'
-                        label={t('accounting.usdCharacterField')}
-                        required
-                    />
-                ) : (
-                    <>
-                        <UsdRateField
-                            name='inputUsdPerMillionTokens'
-                            label={t('accounting.usdInputField')}
-                            required
-                        />
-                        <UsdRateField
-                            name='outputUsdPerMillionTokens'
-                            label={t('accounting.usdOutputField')}
-                            required
-                        />
-                        <UsdRateField
-                            name='minimumUsdPerRequest'
-                            label={t('accounting.usdMinimumRequestField')}
-                        />
-                        <Typography.Paragraph type='secondary'>
-                            {t('accounting.usdMinimumRequestHelp')}
-                        </Typography.Paragraph>
-                        <UsdRateField
-                            name='cacheReadUsdPerMillionTokens'
-                            label={t('accounting.usdCacheReadField')}
-                        />
-                        <UsdRateField
-                            name='cacheWriteUsdPerMillionTokens'
-                            label={t('accounting.usdCacheWriteField')}
-                        />
-                    </>
-                )}
+                <ProviderPriceFields meter={meter} />
                 <Form.Item
                     name='effectiveAt'
                     label={t('accounting.effectiveAt')}
@@ -271,23 +225,5 @@ function LegacyProviderPriceDialog({
                 </Button>
             </Form>
         </Modal>
-    );
-}
-
-function UsdRateField({
-    name,
-    label,
-    required = false,
-}: {
-    name: keyof Fields;
-    label: string;
-    required?: boolean;
-}) {
-    const rules = [{ required, pattern: /^(0|[1-9]\d{0,11})(\.\d{1,6})?$/ }];
-
-    return (
-        <Form.Item name={name} label={label} rules={rules}>
-            <Input inputMode='decimal' />
-        </Form.Item>
     );
 }

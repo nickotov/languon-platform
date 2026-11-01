@@ -107,45 +107,7 @@ export function createUserProfileRoutes(
     });
 
     app.onError((error, context) => {
-        const mapped =
-            error instanceof UserHandleAlreadyExistsError
-                ? new AuthHttpError(
-                      'conflict',
-                      'This handle is already taken.',
-                      409,
-                  )
-                : error instanceof UserProfileConflictError
-                  ? new AuthHttpError(
-                        'conflict',
-                        'The account changed concurrently. Try again.',
-                        409,
-                    )
-                  : error instanceof UserProfileUnavailableError
-                    ? new AuthHttpError(
-                          'authentication_required',
-                          'Authentication is required.',
-                          401,
-                      )
-                    : error instanceof AccountDeletionOwnerTransferRequiredError
-                      ? new AuthHttpError(
-                            'owner_transfer_required',
-                            'Transfer and revoke administrator ownership before removing this account.',
-                            409,
-                        )
-                      : error instanceof AccountDeletionConflictError
-                        ? new AuthHttpError(
-                              'conflict',
-                              'The account changed or removal is already pending.',
-                              409,
-                          )
-                        : error instanceof
-                            AccountDeletionJournalUnavailableError
-                          ? new AuthHttpError(
-                                'service_unavailable',
-                                'Account removal is temporarily unavailable.',
-                                503,
-                            )
-                          : mapAuthenticationHttpError(error);
+        const mapped = mapUserProfileHttpError(error);
 
         return context.json(
             mapped.response(context.req.header('X-Correlation-ID')),
@@ -336,4 +298,56 @@ export function createUserProfileRoutes(
     }
 
     return app;
+}
+
+function mapUserProfileHttpError(error: Error): AuthHttpError {
+    if (error instanceof UserHandleAlreadyExistsError) {
+        return new AuthHttpError(
+            'conflict',
+            'This handle is already taken.',
+            409,
+        );
+    }
+
+    if (error instanceof UserProfileConflictError) {
+        return new AuthHttpError(
+            'conflict',
+            'The account changed concurrently. Try again.',
+            409,
+        );
+    }
+
+    if (error instanceof UserProfileUnavailableError) {
+        return new AuthHttpError(
+            'authentication_required',
+            'Authentication is required.',
+            401,
+        );
+    }
+
+    if (error instanceof AccountDeletionOwnerTransferRequiredError) {
+        return new AuthHttpError(
+            'owner_transfer_required',
+            'Transfer and revoke administrator ownership before removing this account.',
+            409,
+        );
+    }
+
+    if (error instanceof AccountDeletionConflictError) {
+        return new AuthHttpError(
+            'conflict',
+            'The account changed or removal is already pending.',
+            409,
+        );
+    }
+
+    if (error instanceof AccountDeletionJournalUnavailableError) {
+        return new AuthHttpError(
+            'service_unavailable',
+            'Account removal is temporarily unavailable.',
+            503,
+        );
+    }
+
+    return mapAuthenticationHttpError(error);
 }

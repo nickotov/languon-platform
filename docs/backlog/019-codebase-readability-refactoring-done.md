@@ -2,7 +2,7 @@
 type: backlog-task
 id: BL-019
 title: Codebase-wide readability review and refactoring
-status: pending
+status: done
 created: 2026-10-31
 updated: 2026-11-01
 original_tasks: '2026-10-31 approved readability rollout split'
@@ -12,7 +12,7 @@ depends_on:
     - BL-018
 ---
 
-# BL-019 — Codebase-wide readability review and refactoring
+# BL-019 — Codebase-wide readability review and refactoring — Done
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
 
@@ -55,3 +55,31 @@ improvement records per batch or one cohesive record with explicit batch evidenc
 No authorization for new capabilities, framework/database replacement, production
 migration, paid AI evaluation or deployment. Determine final breadth by inventory,
 not arbitrary file/line targets. Keep this separate from BL-018's mechanical diff.
+
+Active delivery: [codebase readability record](../../.agent/improvements/codebase-readability-refactoring.md).
+
+## Completion
+
+Completed on 2026-11-01 under the
+[improvement record](../../.agent/improvements/codebase-readability-refactoring.md).
+All 3,155 maintained original files and 65 new helpers were reviewed; 128 original
+files were refactored, 3,025 accepted, and two specific source issues deferred
+with rationale. All 193 changed maintained paths have independent review coverage.
+
+The full workspace suites and `pnpm check` pass with a documented single-worker
+environment; default parallel attempts exhausted local test-worker resources.
+Targeted browser verification, diagram rendering, user-flow mappings, critical
+coverage reconciliation and the 119-check readiness doctor are complete. All 881
+frozen historical files and the tracked Next declaration remain unchanged.
+
+Expanded integration verification found 24 pre-existing failures, reproduced
+against the pre-refactor source; 22 intended assertions remain blocked by fixture
+setup. These remain explicit follow-up gaps. The failed comprehensive critical
+invocation is retained as failed; passing accounting rerun evidence supplies its
+exact ten-case replacement for unique coverage, without fabricating a green run.
+No paid-provider execution or deployment was performed.
+
+[Final verification](../../.agent/improvements/evidence/codebase-readability/final-verification.json),
+[runtime coverage and gaps](../../.agent/improvements/evidence/codebase-readability/final-runtime-coverage.json),
+and [independent approval](../../.agent/improvements/evidence/codebase-readability/final-evidence-approval.json)
+record the exact results and limits.

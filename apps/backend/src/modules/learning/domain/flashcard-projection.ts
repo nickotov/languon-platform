@@ -41,7 +41,7 @@ export function projectFlashcard(
 ): FlashcardItem | null {
     const languageFor = (role: 'source' | 'target') =>
         role === 'source' ? input.sourceLanguage : input.targetLanguage;
-    const valueFor = (
+    const projectField = (
         requested: FlashcardField,
     ): FlashcardPresentationField | null => {
         let text: string | null;
@@ -72,14 +72,15 @@ export function projectFlashcard(
             case 'sourceExample':
             case 'targetExample': {
                 role = requested === 'sourceExample' ? 'source' : 'target';
-                text =
-                    input.settings.exampleLanguageRole === role
-                        ? input.settings.exampleEnabled
-                            ? input.values.example
-                            : null
-                        : input.settings.exampleTranslationEnabled
-                          ? input.values.exampleTranslation
-                          : null;
+                if (input.settings.exampleLanguageRole === role) {
+                    text = input.settings.exampleEnabled
+                        ? input.values.example
+                        : null;
+                } else {
+                    text = input.settings.exampleTranslationEnabled
+                        ? input.values.exampleTranslation
+                        : null;
+                }
 
                 if (!text?.trim()) {
                     field = role === 'source' ? 'source' : 'translation';
@@ -106,14 +107,16 @@ export function projectFlashcard(
             fallback,
         };
     };
-    const side = (selected: FlashcardField[]): FlashcardPresentationField[] => {
+    const projectSide = (
+        selected: FlashcardField[],
+    ): FlashcardPresentationField[] => {
         const result: FlashcardPresentationField[] = [];
         for (const field of flashcardFieldOrder) {
             if (!selected.includes(field)) {
                 continue;
             }
 
-            const projected = valueFor(field);
+            const projected = projectField(field);
             if (!projected) {
                 continue;
             }
@@ -132,8 +135,8 @@ export function projectFlashcard(
 
         return result;
     };
-    const front = side(input.configuration.front);
-    const back = side(input.configuration.back);
+    const front = projectSide(input.configuration.front);
+    const back = projectSide(input.configuration.back);
 
     return front.length && back.length
         ? {

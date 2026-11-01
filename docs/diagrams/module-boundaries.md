@@ -29,8 +29,10 @@ source_paths:
     - apps/backend/src/modules/knowledge/application/transcription-job-service.ts
     - apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
-source_fingerprint: sha256:e584bc9c34366bf54cfedbb70344c4d808607e8179cc83d2f01c77d81dd0b0c9
-reviewed: 2026-10-22
+    - infra/deploy/lib/deployment.mjs
+    - infra/deploy/lib/worker-database-privileges.mjs
+source_fingerprint: sha256:b4886cfdec4516adde7fff3c241bbfff1b3e2e1ead39e1fd39b7412efd9614ff
+reviewed: 2026-11-01
 ---
 
 # Module and layer boundaries
@@ -92,6 +94,13 @@ attribution is preserved before personal wallet links are removed. This describe
 financial boundary, not a redesign of all pre-existing domain purge permissions. Admin adds an accounting page through the existing
 app/pages/shared boundaries; public contract exports remain framework-neutral.
 
+Deployment tooling keeps worker privilege queries and assertions in a focused
+local module, called by the deployment controller; those checks do not grant
+application services SQL or deployment authority. The accounting participant
+keeps observation construction private to its existing transaction boundary.
+Frontend panel, field-policy and presentation extractions remain inside their
+owning slices; they introduce no new app, layer or cross-slice relationship.
+
 ## Sources
 
 - [apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts](../../apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts)
@@ -128,3 +137,7 @@ app/pages/shared boundaries; public contract exports remain framework-neutral.
 - [apps/backend/src/modules/knowledge/application/transcription-job-service.ts](../../apps/backend/src/modules/knowledge/application/transcription-job-service.ts)
 - [apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts](../../apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts)
 - [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+
+- [infra/deploy/lib/deployment.mjs](../../infra/deploy/lib/deployment.mjs)
+
+- [infra/deploy/lib/worker-database-privileges.mjs](../../infra/deploy/lib/worker-database-privileges.mjs)

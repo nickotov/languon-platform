@@ -61,17 +61,19 @@ export function analyzeReadingSelection(
     );
     const bounds = range.getBoundingClientRect();
 
+    let kind: ReadingSelection['kind'] = 'valid';
+    if (startElement !== endElement || !sentence) {
+        kind = 'cross';
+    } else if (Array.from(text).length > 200) {
+        kind = 'long';
+    }
+
     return {
         anchor: {
             contextElement: startElement,
             getBoundingClientRect: () => range.getBoundingClientRect(),
         },
-        kind:
-            startElement !== endElement || !sentence
-                ? 'cross'
-                : Array.from(text).length > 200
-                  ? 'long'
-                  : 'valid',
+        kind,
         text,
         sentence: sentence?.segment ?? pairText,
         sentenceStart: (sentence?.index ?? 0) + offsetOrigin,

@@ -107,9 +107,7 @@ export function filterConditions(
         eq(exercises.dictionaryId, scope.dictionaryId),
         q.relation === 'generated'
             ? eq(exercises.creatorId, scope.learnerId)
-            : q.relation === 'available'
-              ? available
-              : available,
+            : available,
     ];
 
     if (q.direction) {

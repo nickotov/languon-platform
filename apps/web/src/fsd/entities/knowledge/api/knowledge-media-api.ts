@@ -70,18 +70,25 @@ export async function readKnowledgeAudio(
     return blob;
 }
 
+function normalizeAudioMime(mime: string): string {
+    if (mime === 'audio/x-wav') {
+        return 'audio/wav';
+    }
+
+    if (mime === 'audio/mp3') {
+        return 'audio/mpeg';
+    }
+
+    return mime;
+}
+
 export async function uploadKnowledgeAudio(
     token: string,
     noteId: string,
     file: File,
 ) {
     z.uuid().parse(noteId);
-    const mime =
-        file.type === 'audio/x-wav'
-            ? 'audio/wav'
-            : file.type === 'audio/mp3'
-              ? 'audio/mpeg'
-              : file.type;
+    const mime = normalizeAudioMime(file.type);
 
     if (
         !['audio/wav', 'audio/mpeg'].includes(mime) ||

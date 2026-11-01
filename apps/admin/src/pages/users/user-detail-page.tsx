@@ -1,15 +1,10 @@
-import {
-    ArrowLeftOutlined,
-    CheckCircleOutlined,
-    StopOutlined,
-} from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import type { AdminUserDetail } from '@languon/contracts';
 import { useLogout, useOne, useTranslate, useUpdate } from '@refinedev/core';
 import {
     Alert,
     Button,
     Card,
-    Descriptions,
     Form,
     Input,
     Modal,
@@ -25,8 +20,19 @@ import styles from '../shared/page.module.css';
 import { AiCreditsPanel } from './ui/ai-credits-panel/ai-credits-panel';
 import { StatusTag } from './users-page';
 import { SentenceLibraryPanel } from './ui/sentence-library-panel/sentence-library-panel';
+import { UserAccountSummary } from './ui/user-account-summary/user-account-summary';
+import { UserAvailability } from './ui/user-availability/user-availability';
 
 type Operation = 'disable' | 'restore' | 'deletion/cancel';
+
+const operationLabels = {
+    disable: { title: 'user.disableTitle', confirm: 'user.confirmDisable' },
+    restore: { title: 'user.restoreTitle', confirm: 'user.confirmRestore' },
+    'deletion/cancel': {
+        title: 'user.cancelDeletionTitle',
+        confirm: 'user.confirmCancelDeletion',
+    },
+};
 
 export function UserDetailPage() {
     const translate = useTranslate();
@@ -71,6 +77,28 @@ export function UserDetailPage() {
         }
     };
 
+    const operationText = operationLabels[operation ?? 'deletion/cancel'];
+    const handleSignIn = () => logout.mutate();
+    const handleConflictRefresh = () => {
+        void user.query.refetch().then(() => setError(null));
+    };
+    let errorAction;
+    if (error instanceof AdminApiError) {
+        if (error.detail.code === 'recent_authentication_required') {
+            errorAction = (
+                <Button onClick={handleSignIn}>
+                    {translate('user.signInAgain')}
+                </Button>
+            );
+        } else if (error.detail.code === 'user_state_conflict') {
+            errorAction = (
+                <Button onClick={handleConflictRefresh}>
+                    {translate('user.refreshConflict')}
+                </Button>
+            );
+        }
+    }
+
     if (user.query.isError) {
         return (
             <Alert
@@ -103,67 +131,10 @@ export function UserDetailPage() {
                 {detail ? <StatusTag status={detail.status} /> : null}
             </header>
             <div className={styles.details}>
-                <Card
+                <UserAccountSummary
+                    detail={detail}
                     loading={user.query.isLoading}
-                    title={translate('user.account')}
-                >
-                    {detail ? (
-                        <Descriptions
-                            column={1}
-                            items={[
-                                {
-                                    key: 'id',
-                                    label: translate('user.id'),
-                                    children: (
-                                        <Typography.Text copyable>
-                                            {detail.id}
-                                        </Typography.Text>
-                                    ),
-                                },
-                                {
-                                    key: 'status',
-                                    label: translate('users.column.status'),
-                                    children: (
-                                        <StatusTag status={detail.status} />
-                                    ),
-                                },
-                                {
-                                    key: 'verified',
-                                    label: translate('user.email'),
-                                    children: detail.emailVerified
-                                        ? translate('users.verified')
-                                        : translate('users.unverified'),
-                                },
-                                {
-                                    key: 'access',
-                                    label: translate('user.administration'),
-                                    children: detail.isOwner
-                                        ? translate('access.owner')
-                                        : translate('user.noMembership'),
-                                },
-                                {
-                                    key: 'created',
-                                    label: translate('user.created'),
-                                    children: new Date(
-                                        detail.createdAt,
-                                    ).toLocaleString(),
-                                },
-                                {
-                                    key: 'updated',
-                                    label: translate('user.changed'),
-                                    children: new Date(
-                                        detail.updatedAt,
-                                    ).toLocaleString(),
-                                },
-                                {
-                                    key: 'version',
-                                    label: translate('user.version'),
-                                    children: detail.version,
-                                },
-                            ]}
-                        />
-                    ) : null}
-                </Card>
+                />
                 <Space
                     direction='vertical'
                     size='middle'
@@ -181,55 +152,10 @@ export function UserDetailPage() {
                             />
                         </Space>
                     </Card>
-                    <Card
-                        className={styles.danger}
-                        title={translate('user.availability')}
-                    >
-                        <Typography.Paragraph type='secondary'>
-                            {translate(
-                                detail?.status === 'deletion_pending'
-                                    ? 'user.deletionPendingDescription'
-                                    : 'user.availabilityDescription',
-                            )}
-                        </Typography.Paragraph>
-                        {detail?.status === 'deletion_pending' ? (
-                            <Button
-                                icon={<CheckCircleOutlined />}
-                                onClick={() => setOperation('deletion/cancel')}
-                                type='primary'
-                            >
-                                {translate('user.cancelDeletion')}
-                            </Button>
-                        ) : detail?.status !== 'purged' ? (
-                            <Button
-                                danger={detail?.status !== 'disabled'}
-                                disabled={!detail}
-                                icon={
-                                    detail?.status === 'disabled' ? (
-                                        <CheckCircleOutlined />
-                                    ) : (
-                                        <StopOutlined />
-                                    )
-                                }
-                                onClick={() =>
-                                    setOperation(
-                                        detail?.status === 'disabled'
-                                            ? 'restore'
-                                            : 'disable',
-                                    )
-                                }
-                                type={
-                                    detail?.status === 'disabled'
-                                        ? 'primary'
-                                        : 'default'
-                                }
-                            >
-                                {detail?.status === 'disabled'
-                                    ? translate('user.restore')
-                                    : translate('user.disable')}
-                            </Button>
-                        ) : null}
-                    </Card>
+                    <UserAvailability
+                        detail={detail}
+                        onOperation={setOperation}
+                    />
                 </Space>
             </div>
             {detail ? (
@@ -256,13 +182,7 @@ export function UserDetailPage() {
                 footer={null}
                 onCancel={closeOperation}
                 open={operation !== null}
-                title={
-                    operation === 'disable'
-                        ? translate('user.disableTitle')
-                        : operation === 'restore'
-                          ? translate('user.restoreTitle')
-                          : translate('user.cancelDeletionTitle')
-                }
+                title={translate(operationText.title)}
             >
                 <Typography.Paragraph>
                     {translate(
@@ -273,26 +193,7 @@ export function UserDetailPage() {
                 </Typography.Paragraph>
                 {error ? (
                     <Alert
-                        action={
-                            error instanceof AdminApiError &&
-                            error.detail.code ===
-                                'recent_authentication_required' ? (
-                                <Button onClick={() => logout.mutate()}>
-                                    {translate('user.signInAgain')}
-                                </Button>
-                            ) : error instanceof AdminApiError &&
-                              error.detail.code === 'user_state_conflict' ? (
-                                <Button
-                                    onClick={() =>
-                                        void user.query
-                                            .refetch()
-                                            .then(() => setError(null))
-                                    }
-                                >
-                                    {translate('user.refreshConflict')}
-                                </Button>
-                            ) : undefined
-                        }
+                        action={errorAction}
                         message={error.message}
                         showIcon
                         type='error'
@@ -326,11 +227,7 @@ export function UserDetailPage() {
                             loading={update.mutation.isPending}
                             type='primary'
                         >
-                            {operation === 'disable'
-                                ? translate('user.confirmDisable')
-                                : operation === 'restore'
-                                  ? translate('user.confirmRestore')
-                                  : translate('user.confirmCancelDeletion')}
+                            {translate(operationText.confirm)}
                         </Button>
                     </Space>
                 </Form>

@@ -679,148 +679,161 @@ export class DictionaryGenerationWorkerService {
 
                 return operation();
             };
-            const generation = hasFormat(
-                claim.input,
-                dictionaryCardAuthoringGenerationFormats,
-            )
-                ? this.dependencies.cardAuthoringProvider
-                    ? (() => {
-                          const providerInput =
-                              dictionaryCardAuthoringProviderInput(claim.input);
+            const startGeneration = () => {
+                if (
+                    hasFormat(
+                        claim.input,
+                        dictionaryCardAuthoringGenerationFormats,
+                    )
+                ) {
+                    if (!this.dependencies.cardAuthoringProvider) {
+                        return Promise.reject(
+                            new CardAuthoringProposalGeneratorError(
+                                'provider_unavailable',
+                            ),
+                        );
+                    }
 
-                          return afterDispatchMarked(() =>
-                              this.dependencies.cardAuthoringProvider!.generate(
-                                  {
-                                      idempotencyKey: `${claim.id}/generate`,
-                                      input: providerInput,
-                                      providerBudget: claim.providerBudget,
-                                      providerAttempt: {
-                                          jobId: claim.id,
-                                          attempt: claim.attempt,
-                                          workerId: claim.workerId,
-                                          fencingToken: String(
-                                              claim.fencingToken,
-                                          ),
-                                      },
-                                      providerExecution:
-                                          claim.providerExecution ?? null,
-                                      signal: providerAbort.signal,
-                                  },
-                              ),
-                          ).then((response) =>
-                              parseCardAuthoringGeneratorResponse(
-                                  response,
-                                  claim.providerBudget,
-                                  providerInput,
-                                  (usage) => {
-                                      returnedProviderUsage = usage;
-                                  },
-                              ),
-                          );
-                      })()
-                    : Promise.reject(
-                          new CardAuthoringProposalGeneratorError(
-                              'provider_unavailable',
-                          ),
-                      )
-                : hasFormat(claim.input, dictionaryImportPairsGenerationFormats)
-                  ? this.dependencies.importPairsProvider
-                      ? afterDispatchMarked(() =>
-                            generateImportPairsProposal({
-                                claim,
-                                provider:
-                                    this.dependencies.importPairsProvider!,
-                                signal: providerAbort.signal,
-                                onUsage: (usage) => {
-                                    returnedProviderUsage = usage;
-                                },
-                            }),
-                        )
-                      : Promise.reject(
+                    const providerInput = dictionaryCardAuthoringProviderInput(
+                        claim.input,
+                    );
+
+                    return afterDispatchMarked(() =>
+                        this.dependencies.cardAuthoringProvider!.generate({
+                            idempotencyKey: `${claim.id}/generate`,
+                            input: providerInput,
+                            providerBudget: claim.providerBudget,
+                            providerAttempt: {
+                                jobId: claim.id,
+                                attempt: claim.attempt,
+                                workerId: claim.workerId,
+                                fencingToken: String(claim.fencingToken),
+                            },
+                            providerExecution: claim.providerExecution ?? null,
+                            signal: providerAbort.signal,
+                        }),
+                    ).then((response) =>
+                        parseCardAuthoringGeneratorResponse(
+                            response,
+                            claim.providerBudget,
+                            providerInput,
+                            (usage) => {
+                                returnedProviderUsage = usage;
+                            },
+                        ),
+                    );
+                }
+
+                if (
+                    hasFormat(
+                        claim.input,
+                        dictionaryImportPairsGenerationFormats,
+                    )
+                ) {
+                    if (!this.dependencies.importPairsProvider) {
+                        return Promise.reject(
                             new CardProposalGeneratorError(
                                 'provider_unavailable',
                             ),
-                        )
-                  : hasFormat(
-                          claim.input,
-                          dictionaryPastedTermsGenerationFormats,
-                      )
-                    ? this.dependencies.pastedTermsProvider
-                        ? afterDispatchMarked(() =>
-                              generatePastedTermsProposal({
-                                  claim,
-                                  provider:
-                                      this.dependencies.pastedTermsProvider!,
-                                  signal: providerAbort.signal,
-                                  onUsage: (usage) => {
-                                      returnedProviderUsage = usage;
-                                  },
-                              }),
-                          )
-                        : Promise.reject(
-                              new CardProposalGeneratorError(
-                                  'provider_unavailable',
-                              ),
-                          )
-                    : hasFormat(
-                            claim.input,
-                            dictionarySingleCardGenerationFormats,
-                        )
-                      ? (() => {
-                            const providerInput = claim.input;
+                        );
+                    }
 
-                            return afterDispatchMarked(() =>
-                                this.dependencies.provider.generate({
-                                    idempotencyKey: `${claim.id}/generate`,
-                                    input: providerInput,
-                                    providerBudget: claim.providerBudget,
-                                    providerAttempt: {
-                                        jobId: claim.id,
-                                        attempt: claim.attempt,
-                                        workerId: claim.workerId,
-                                        fencingToken: String(
-                                            claim.fencingToken,
-                                        ),
-                                    },
-                                    providerExecution:
-                                        claim.providerExecution ?? null,
-                                    signal: providerAbort.signal,
-                                }),
-                            );
-                        })().then((response) =>
-                            parseGeneratorResponse(
-                                response,
-                                claim.providerBudget,
+                    return afterDispatchMarked(() =>
+                        generateImportPairsProposal({
+                            claim,
+                            provider: this.dependencies.importPairsProvider!,
+                            signal: providerAbort.signal,
+                            onUsage: (usage) => {
+                                returnedProviderUsage = usage;
+                            },
+                        }),
+                    );
+                }
+
+                if (
+                    hasFormat(
+                        claim.input,
+                        dictionaryPastedTermsGenerationFormats,
+                    )
+                ) {
+                    if (!this.dependencies.pastedTermsProvider) {
+                        return Promise.reject(
+                            new CardProposalGeneratorError(
+                                'provider_unavailable',
                             ),
-                        )
-                      : hasFormat(
-                              claim.input,
-                              dictionaryDocumentGenerationFormats,
-                          ) && this.dependencies.documentExecutor
-                        ? this.dependencies.documentExecutor.execute({
-                              attempt: claim.attempt,
-                              fencingToken: claim.fencingToken,
-                              input: claim.input,
-                              jobId: claim.id,
-                              leaseDeadline: claim.leaseDeadline,
-                              markProviderDispatch,
-                              providerBudget: claim.providerBudget,
+                        );
+                    }
 
-                              providerExecution:
-                                  claim.providerExecution ?? null,
-                              reportStage: (stage, percent) => {
-                                  currentProgress = { percent, stage };
+                    return afterDispatchMarked(() =>
+                        generatePastedTermsProposal({
+                            claim,
+                            provider: this.dependencies.pastedTermsProvider!,
+                            signal: providerAbort.signal,
+                            onUsage: (usage) => {
+                                returnedProviderUsage = usage;
+                            },
+                        }),
+                    );
+                }
 
-                                  return Promise.resolve();
-                              },
-                              signal: providerAbort.signal,
-                              workerId: claim.workerId,
-                          })
-                        : Promise.reject(
-                              new CardProposalGeneratorError(
-                                  'provider_unavailable',
-                              ),
-                          );
+                if (
+                    hasFormat(
+                        claim.input,
+                        dictionarySingleCardGenerationFormats,
+                    )
+                ) {
+                    const providerInput = claim.input;
+
+                    return afterDispatchMarked(() =>
+                        this.dependencies.provider.generate({
+                            idempotencyKey: `${claim.id}/generate`,
+                            input: providerInput,
+                            providerBudget: claim.providerBudget,
+                            providerAttempt: {
+                                jobId: claim.id,
+                                attempt: claim.attempt,
+                                workerId: claim.workerId,
+                                fencingToken: String(claim.fencingToken),
+                            },
+                            providerExecution: claim.providerExecution ?? null,
+                            signal: providerAbort.signal,
+                        }),
+                    ).then((response) =>
+                        parseGeneratorResponse(response, claim.providerBudget),
+                    );
+                }
+
+                if (
+                    hasFormat(
+                        claim.input,
+                        dictionaryDocumentGenerationFormats,
+                    ) &&
+                    this.dependencies.documentExecutor
+                ) {
+                    return this.dependencies.documentExecutor.execute({
+                        attempt: claim.attempt,
+                        fencingToken: claim.fencingToken,
+                        input: claim.input,
+                        jobId: claim.id,
+                        leaseDeadline: claim.leaseDeadline,
+                        markProviderDispatch,
+                        providerBudget: claim.providerBudget,
+                        providerExecution: claim.providerExecution ?? null,
+                        reportStage: (stage, percent) => {
+                            currentProgress = { percent, stage };
+
+                            return Promise.resolve();
+                        },
+                        signal: providerAbort.signal,
+                        workerId: claim.workerId,
+                    });
+                }
+
+                return Promise.reject(
+                    new CardProposalGeneratorError('provider_unavailable'),
+                );
+            };
+            const generation = startGeneration();
             const generated = await Promise.race([
                 generation,
                 deadline,

@@ -126,28 +126,32 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
         );
 
         try {
-            const key = request.resolveSubjectAlias
-                ? ((await runBoundedRedisOperation(
-                      this.redis,
-                      () =>
-                          this.redis.get(
-                              deriveOpaqueRedisKey(
-                                  this.namespace,
-                                  'rate-limit-alias',
-                                  `${request.scope}\0${request.subject}`,
-                                  this.hmacSecret,
-                              ),
-                          ),
-                      {
-                          ...(this.requestTimeoutMs === undefined
-                              ? {}
-                              : { requestTimeoutMs: this.requestTimeoutMs }),
-                          ...(request.signal === undefined
-                              ? {}
-                              : { signal: request.signal }),
-                      },
-                  )) ?? directKey)
-                : directKey;
+            let key = directKey;
+            if (request.resolveSubjectAlias) {
+                const resolvedKey = await runBoundedRedisOperation(
+                    this.redis,
+                    () =>
+                        this.redis.get(
+                            deriveOpaqueRedisKey(
+                                this.namespace,
+                                'rate-limit-alias',
+                                `${request.scope}\0${request.subject}`,
+                                this.hmacSecret,
+                            ),
+                        ),
+                    {
+                        ...(this.requestTimeoutMs === undefined
+                            ? {}
+                            : { requestTimeoutMs: this.requestTimeoutMs }),
+                        ...(request.signal === undefined
+                            ? {}
+                            : { signal: request.signal }),
+                    },
+                );
+
+                key = resolvedKey ?? directKey;
+            }
+
             const result = await runBoundedRedisOperation(
                 this.redis,
                 () =>

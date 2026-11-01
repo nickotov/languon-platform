@@ -1,0 +1,223 @@
+{
+  "owner": "backend-conversations-texts",
+  "date": "2026-11-01",
+  "scope": "Only three owned diagram Markdown views; source mapping and factual review reconciliation, no source implementation, services or test execution.",
+  "plan": {
+    "problem": "Freshness inputs changed during BL019 and material helper extractions were absent from exact-file source mappings. Conversation model-selection label also predates admin-owned routing.",
+    "chosenSeam": "Retain existing Mermaid relationships and publication/ownership boundaries, add exact material helper inputs and concise reconciliation notes. Replace only obsolete conversation routing label. No graph redesign.",
+    "invariants": "Explicit Save/Add/Accept, live actor/source checks, transaction and lease fences, private progress and accounting boundaries remain unchanged.",
+    "checks": "Root centrally runs diagrams:check stamping and maintained diagram viewer browser tests after exclusive integration checks; this worker validates source existence and exact Mermaid diff only.",
+    "reason": "Source analysis can reconcile semantic claims; diagram fingerprint and rendered proof remain root-owned final gates."
+  },
+  "views": [
+    {
+      "path": "docs/diagrams/conversations-and-knowledge.md",
+      "beforeSha256": "ae5c7012a090c261fd0c233235afc3fc1c9e4e95207f8d4a83590062054a1724",
+      "addedSourcePaths": [
+        "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+        "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts",
+        "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts",
+        "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+        "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts",
+        "docs/adr/0046-admin-owned-text-ai-routing.md",
+        "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts",
+        "apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts",
+        "apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts",
+        "apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts",
+        "apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts",
+        "apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts",
+        "apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts"
+      ],
+      "afterSha256": "53ebcaa818fae7622df7a12e3db52d467da4cd9f546423db972e2180d30967fe",
+      "claimReview": "The source resolver projects only effective learner-visible dictionary fields through `projectConversationDictionaryCards`; prepared turn reuse still checks the locked chat and source snapshot through `assertPreparedConversationCurrent`. Knowledge store methods allocate a fresh persistence context per call. The authoring form facade delegates to typed readers and validates the completed candidate once; this does not publish a working draft. Model selection follows the admin-owned routing revision under ADR-0046, rather than a learner-selected model. These internal extractions preserve the graph's ownership, Apply and explicit Save edges.",
+      "mermaidChange": "Only Admission label Flash Auto / compatible explicit model -> Admin-owned model routing; node edges unchanged.",
+      "fingerprintStamped": false,
+      "reviewedInputs": [
+        {
+          "path": "apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts",
+          "sha256": "a595a0edc016690e7dc11adce3624f367c0ce40fee1281bffe4c2d4043ab1a6e"
+        },
+        {
+          "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/drizzle-knowledge-store.ts",
+          "sha256": "1d1834e87a809b1c3a4c8908d73a674cc111b3bb1e1b97c60be0fc139bc2f9e1"
+        },
+        {
+          "path": "apps/backend/src/modules/knowledge/application/knowledge-service.ts",
+          "sha256": "6a9e8b25b39372783aa7a6874bf10ca4dc5e819c38c4594340a82166b298425a"
+        },
+        {
+          "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts",
+          "sha256": "58f32f8a78c5c5630b8c16823af7fd23ad1d91ec1fa5f33afa6467c6e45ee62b"
+        },
+        {
+          "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+          "sha256": "0fb9087192d4d87a1425af42b38e4a84243c6d535af6fd9fdb8db0b7a809712c"
+        },
+        {
+          "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts",
+          "sha256": "16713eb4e915d6f5e8095b710f421a9169a9ccf71a41b40a07ee15d57f6582be"
+        },
+        {
+          "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts",
+          "sha256": "5b408f53ceaff84615b29e59367621122f816c5072ccab04ffe7a323a92224fa"
+        },
+        {
+          "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+          "sha256": "09ddff2284007651c24d9eb490902aca200505160e8dc98ef5a68135f3a49356"
+        },
+        {
+          "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts",
+          "sha256": "ee49e9cff1927bcba98bee4679a9687853f2b40c483de1de387bb11aec78b09e"
+        },
+        {
+          "path": "docs/adr/0046-admin-owned-text-ai-routing.md",
+          "sha256": "e313b1c72429e2cffdccc6ddf2f8c9ca8e26461e8f89fabb73af329eb838bf84"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts",
+          "sha256": "09dc0283f9a4e934e43fcf4338b005f90dd794d8ef0d937bd25f63eaf1d30a7c"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts",
+          "sha256": "213ab52a82ba147adc242664407e8092a4a7d2fde19e38b0cfb051265149d673"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts",
+          "sha256": "968d307c457908c20fce39b6335c41b75c28f251f77e74442498739fc8bbbb6c"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts",
+          "sha256": "183f42ee4165a2034c2a7378ce5548f8d0895b37c2d4435debcdaa04fef5f83a"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts",
+          "sha256": "96b357a238a4f6ec24f2505d13bf1c093cd49863eacd1fb7922881fc0909e9f6"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts",
+          "sha256": "29458aa58c6ecd64e60e06f37eca82b0343ebc54e6dd3ab8df48896c2cadc9e2"
+        },
+        {
+          "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts",
+          "sha256": "b8b5ec3b8bde443c76690616c930ef4ca045d10871ec04b8cf15cb231ad905b5"
+        }
+      ],
+      "checks": {
+        "sourcePathsExist": true,
+        "sourcePathsUnique": true,
+        "mermaidMatchesDeclaredChange": true,
+        "fingerprintUntouched": true,
+        "rootFinalStampAndRenderedChecks": "pending"
+      }
+    },
+    {
+      "path": "docs/diagrams/texts-and-vocabulary.md",
+      "beforeSha256": "afaa119b9407ce9016a42b83d3ba37bbac7961b24daf2eea346c18e99860597b",
+      "addedSourcePaths": [
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts",
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts",
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts",
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts"
+      ],
+      "afterSha256": "a4a3a5a94cd8a804d3802618d6c68ceda9689cfae8ff6a07c92013fa4448f010",
+      "claimReview": "The content-store facade allocates a fresh persistence context for each operation; folder mutations retain their existing owner/version checks and share revocation. Texts job admission and lifecycle operations share `texts-job-transaction`, which keeps model-price, capacity and execution-revision guards in the same transaction. The worker retry decision retains the pinned-routing and legacy attempt rules. These internal boundaries preserve the explicit Save and Add publication edges.",
+      "mermaidChange": "Mermaid bytes unchanged.",
+      "fingerprintStamped": false,
+      "reviewedInputs": [
+        {
+          "path": "apps/backend/src/modules/texts/application/texts-worker-service.ts",
+          "sha256": "e5aa9b8c5cb287c847f2bd2252e47415c9e9b19b4ecd66aad09ab64c30890b93"
+        },
+        {
+          "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-text-content-store.ts",
+          "sha256": "e1f8f2d499710fba6b60f9fde49011505f323f25fdbacd7699299cef6cba5aa5"
+        },
+        {
+          "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts",
+          "sha256": "7fee112e4472c2d5789f0eedeae967d1ad93490ca9bcbba8f0dfa27815ede647"
+        },
+        {
+          "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts",
+          "sha256": "d79e598c40746506ff87469296b6abf9e6880bc2d5ef4c2a71ceb9307355af6a"
+        },
+        {
+          "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+          "sha256": "a96846909de1836dea40152131bbbae1bf0c39f163dfbb74015687d4e602f5d8"
+        },
+        {
+          "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts",
+          "sha256": "39a6b3a83c0ca7766d32749d27ea3a4707504ed040ed73ca191a3c94d88670b8"
+        },
+        {
+          "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts",
+          "sha256": "5a84aecc9808a757cb06dc69136c94aad09cd2bbc96e8b6689f61b2803bf9ee4"
+        }
+      ],
+      "checks": {
+        "sourcePathsExist": true,
+        "sourcePathsUnique": true,
+        "mermaidMatchesDeclaredChange": true,
+        "fingerprintUntouched": true,
+        "rootFinalStampAndRenderedChecks": "pending"
+      }
+    },
+    {
+      "path": "docs/diagrams/dictionaries-and-learning.md",
+      "beforeSha256": "04dc8413661575a1d67cedaa33abb522ef8c0726b6b618e7783f2d8869ee6dee",
+      "addedSourcePaths": [
+        "apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts",
+        "apps/backend/src/modules/learning/application/sentence-practice-service.ts",
+        "apps/web/src/fsd/features/sentence-training/model/sentence-session.ts",
+        "apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts",
+        "apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts",
+        "apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts"
+      ],
+      "afterSha256": "e8ff4774c4f94c99d668781eeb675ea4d158053775995b5a9e01b11771b70497",
+      "claimReview": "Dictionary worker provider dispatch remains format-specific and records dispatch before provider execution. Sentence worker retry eligibility still distinguishes pinned routing from legacy attempt policy. On the client, preparation recovery parses stored operation identities before reuse, and sentence round projection updates synchronously before notifying subscribers. These helpers preserve private client session queues, durable preparation authorization and the explicit Accept and reference-review boundaries shown above.",
+      "mermaidChange": "Mermaid bytes unchanged.",
+      "fingerprintStamped": false,
+      "reviewedInputs": [
+        {
+          "path": "apps/backend/src/modules/learning/application/learning-service.ts",
+          "sha256": "7213262187be9e17c6c28295beff2a399d5259cfd62d569c525bbcbb6a7f2a3e"
+        },
+        {
+          "path": "apps/backend/src/modules/learning/application/sentence-worker-service.ts",
+          "sha256": "8016b6675ab2cdbf89e6e7739a6f3310f01e2f081046c60d9f21de2362fba8cc"
+        },
+        {
+          "path": "apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts",
+          "sha256": "62155ddbd3b832c98d64bb5ce12b39d4921661b7029b7330120d806009fcaa8d"
+        },
+        {
+          "path": "apps/backend/src/modules/learning/application/sentence-practice-service.ts",
+          "sha256": "272c800673fda9bc339c294b9858e5eaf95d143c5d5c4ee164b3bd938b3ec9b5"
+        },
+        {
+          "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session.ts",
+          "sha256": "408e843ae4764c2fd098894f5d695ea292ca12a53c5f785f237d68329657e28d"
+        },
+        {
+          "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts",
+          "sha256": "94493c74bd8845c054d07f7cf96688e743f4f9209de5600bee07bcae3916b85c"
+        },
+        {
+          "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts",
+          "sha256": "ab59fb8152d573cf79bbe6feb9e1ff54c4e8daf3739c027d8bf33c5f1ff9cd40"
+        },
+        {
+          "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts",
+          "sha256": "c7a8abd3fd1cfe3e5b71641489ab3d443ae8b99d78791d4ac08dd0a2716d6536"
+        }
+      ],
+      "checks": {
+        "sourcePathsExist": true,
+        "sourcePathsUnique": true,
+        "mermaidMatchesDeclaredChange": true,
+        "fingerprintUntouched": true,
+        "rootFinalStampAndRenderedChecks": "pending"
+      }
+    }
+  ]
+}

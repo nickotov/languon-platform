@@ -153,22 +153,28 @@ export function createKnowledgeBlockFieldRoutes({
             caught instanceof KnowledgeDomainError
         ) {
             const code = caught.code;
-            const status =
+            let status: 400 | 402 | 404 | 409 | 429 | 503 = 503;
+            if (
                 code === 'access_revoked' ||
                 code === 'generation_job_not_found' ||
                 code === 'knowledge_not_found'
-                    ? 404
-                    : code === 'idempotency_conflict' ||
-                        code === 'version_conflict'
-                      ? 409
-                      : code === 'rate_limited'
-                        ? 429
-                        : code === 'ai_credits_exhausted'
-                          ? 402
-                          : code === 'invalid_request' ||
-                              code === 'model_capacity_exceeded'
-                            ? 400
-                            : 503;
+            ) {
+                status = 404;
+            } else if (
+                code === 'idempotency_conflict' ||
+                code === 'version_conflict'
+            ) {
+                status = 409;
+            } else if (code === 'rate_limited') {
+                status = 429;
+            } else if (code === 'ai_credits_exhausted') {
+                status = 402;
+            } else if (
+                code === 'invalid_request' ||
+                code === 'model_capacity_exceeded'
+            ) {
+                status = 400;
+            }
 
             return context.json(
                 error(

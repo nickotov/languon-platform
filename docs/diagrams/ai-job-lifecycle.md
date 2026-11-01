@@ -40,8 +40,15 @@ source_paths:
     - apps/backend/src/modules/knowledge/application/private-translation-service.ts
     - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
-source_fingerprint: sha256:fec8569689ca090296a62e3b56dae10daef04ebeaa976c7b1fb9f8d14e74b52e
-reviewed: 2026-10-22
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts
+    - docs/adr/0049-native-provider-pricing-and-accounting.md
+    - docs/adr/0051-duration-based-transcription-accounting.md
+source_fingerprint: sha256:ceb1b69d9732813140a90839086c3a20d6408162882a325c53982267f0f9f055
+reviewed: 2026-11-01
 ---
 
 # AI job lifecycle and accounting
@@ -203,3 +210,10 @@ performance or production activation claim.
 - [apps/backend/src/modules/knowledge/application/private-translation-service.ts](../../apps/backend/src/modules/knowledge/application/private-translation-service.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts)
 - [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts)
+- [docs/adr/0049-native-provider-pricing-and-accounting.md](../../docs/adr/0049-native-provider-pricing-and-accounting.md)
+- [docs/adr/0051-duration-based-transcription-accounting.md](../../docs/adr/0051-duration-based-transcription-accounting.md)

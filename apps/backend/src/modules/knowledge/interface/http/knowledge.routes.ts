@@ -150,18 +150,21 @@ export function createKnowledgeRoutes({
         if (error instanceof KnowledgeDomainError) {
             code = error.code;
             message = error.message;
-            status =
-                code === 'knowledge_not_found'
-                    ? 404
-                    : [
-                            'version_conflict',
-                            'idempotency_conflict',
-                            'deletion_busy',
-                        ].includes(code)
-                      ? 409
-                      : code === 'rate_limited'
-                        ? 429
-                        : 400;
+            if (code === 'knowledge_not_found') {
+                status = 404;
+            } else if (
+                [
+                    'version_conflict',
+                    'idempotency_conflict',
+                    'deletion_busy',
+                ].includes(code)
+            ) {
+                status = 409;
+            } else if (code === 'rate_limited') {
+                status = 429;
+            } else {
+                status = 400;
+            }
         } else if (error instanceof InvalidBearerAuthorizationError) {
             code = 'authentication_required';
             message = 'Sign in to continue.';

@@ -1,0 +1,427 @@
+{
+  "owner": "tooling-remainder",
+  "base": "252de64",
+  "entries": [
+    {
+      "path": "package.json",
+      "beforeHash": "120c8a276740ce18070b89b7ddba52eae11fd32deacb5aac125908a0efd95680",
+      "afterHash": "120c8a276740ce18070b89b7ddba52eae11fd32deacb5aac125908a0efd95680",
+      "reason": "Root package scripts explicitly sequence setup/style/catalog/docs/static/tests/build gates; pinned browser/AST dependencies and Node24 engine retain execution authority.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/admin-membership-remote.mjs",
+      "beforeHash": "08c5552759179f030a5e9ed037e19183994c3d8869ebd5ebcf1718cbaf067393",
+      "afterHash": "08c5552759179f030a5e9ed037e19183994c3d8869ebd5ebcf1718cbaf067393",
+      "reason": "parseRemoteAdminArguments validates allowlisted flags and operator request before manifest/SSH inputs; normalized absolute remote paths and strict known-host identity precede temporary0600 request transfer/cleanup. One remote orchestration remains clear despite293 lines.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/agent-browser.integration.test.mjs",
+      "beforeHash": "1b337f61ecc053f7343686172e9e03a1ba99740353a93d295f475106f841bdf1",
+      "afterHash": "1b337f61ecc053f7343686172e9e03a1ba99740353a93d295f475106f841bdf1",
+      "reason": "Real loopback browser containment fixture records IPv6 sink traffic and asserts sendBeacon/navigation blocked; owned session and both servers close in finally.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/agent-browser.mjs",
+      "beforeHash": "5cda94ba67a33349d595678d86629efffac140cbeb0b24b21cb07e1981677adc",
+      "afterHash": "5cda94ba67a33349d595678d86629efffac140cbeb0b24b21cb07e1981677adc",
+      "reason": "Browser wrapper separates command allowlist, URL/argument validation, random owned-session markers and proxy/environment stripping before pinned CLI launch;536-line file remains one enforcement catalogue with named validators, no edit proposed.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/agent-browser.test.mjs",
+      "beforeHash": "a902bd520709c6f13386d69db552496bf383381833fdcaa3495943c3f859ab99",
+      "afterHash": "a902bd520709c6f13386d69db552496bf383381833fdcaa3495943c3f859ab99",
+      "reason": "Browser unit tests assert local-origin/session/flag restrictions, marker exclusive creation, environment stripping and successful-close ownership release.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/ai-smoke/journal.mjs",
+      "beforeHash": "c33b484edc2c31e1d182668a40d857191d7b4acd0a376343d0d5d642a0860258",
+      "afterHash": "c33b484edc2c31e1d182668a40d857191d7b4acd0a376343d0d5d642a0860258",
+      "reason": "Journal privateRead rejects symlinks/public mode/oversize; exclusive fsynced lock spans reservation/journey, fail-closed initialization and atomic rename preserve quota even uncertain outcomes.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/ai-smoke/journey.mjs",
+      "beforeHash": "5b6155bc63ef1a943a9e1dfc29d8294619394f31f2c4cc0d8e844c13667f4b5f",
+      "afterHash": "5b6155bc63ef1a943a9e1dfc29d8294619394f31f2c4cc0d8e844c13667f4b5f",
+      "reason": "runJourney uses fixed synthetic source, validates preference/wallet, rechecks exact routing/budget/exposure before single dispatch, then requires persisted output/terminal billing/provider expense; retains timeout reservation.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/ai-smoke/smoke.test.mjs",
+      "beforeHash": "00c0539d23e0931bbc1bae2ccc6f3a3cdd15a26d2985389b9e00f18b50ed8092",
+      "afterHash": "00c0539d23e0931bbc1bae2ccc6f3a3cdd15a26d2985389b9e00f18b50ed8092",
+      "reason": "Smoke deterministic fixtures validate real contracts and injected clock/API without paid calls; coverage includes lost outcomes quotas, lock/corrupt/private files, changed readiness, billing/output/expense and one-dispatch timeout.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/catalog.mjs",
+      "beforeHash": "6d7a7528c87a2e472831340f4579148a0393fce8fef048288c9074ed315dee4d",
+      "afterHash": "6d7a7528c87a2e472831340f4579148a0393fce8fef048288c9074ed315dee4d",
+      "reason": "Diagram catalogue confines realpaths, validates narrow frontmatter/Mermaid forms and fingerprints sorted source bytes; stamping is explicit author-only branch.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/check.mjs",
+      "beforeHash": "b5b0c991c77e320a1fac3f7416d3599f9b56043c258d9f0c31f3fcf709d3566b",
+      "afterHash": "b5b0c991c77e320a1fac3f7416d3599f9b56043c258d9f0c31f3fcf709d3566b",
+      "reason": "Checker initializes strict Mermaid in inert jsdom, validates all syntax before optional stamping, and exits nonzero on missing/invalid/stale catalog.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/playwright.config.mjs",
+      "beforeHash": "f427c3b107e11771ddd26827f07c727cb00ab173e8ad2cc20ecc4e13b0d732be",
+      "afterHash": "f427c3b107e11771ddd26827f07c727cb00ab173e8ad2cc20ecc4e13b0d732be",
+      "reason": "Diagram Playwright config starts isolated loopback server with no reuse, deterministic Chromium and failure traces.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/public/app.mjs",
+      "beforeHash": "d014a8c087a34264c4698eb4c46f27d299ef985ab93364e68cafe9eb4f2117eb",
+      "afterHash": "d014a8c087a34264c4698eb4c46f27d299ef985ab93364e68cafe9eb4f2117eb",
+      "reason": "Viewer inserts metadata as text, imports only strict Mermaid SVG and renderGeneration fences stale async output; fit/zoom/search/navigation are named bounded operations.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/public/index.html",
+      "beforeHash": "5d785dd8e960d899be4b4cf7d4e945025445c04b2a7f23cde6ea5f14a89ddfc4",
+      "afterHash": "5d785dd8e960d899be4b4cf7d4e945025445c04b2a7f23cde6ea5f14a89ddfc4",
+      "reason": "Viewer HTML uses native navigation/search/disclosures/buttons and live status/canvas region; static assets only, no embedded executable input.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/public/styles.css",
+      "beforeHash": "239779d9519eb68965a2a209113858153279b4e356a784b0505e9802ba630458",
+      "afterHash": "239779d9519eb68965a2a209113858153279b4e356a784b0505e9802ba630458",
+      "reason": "Viewer CSS groups desktop/mobile sidebar, diagram canvas, zoom/source/freshness states; authored standalone tool styles remain cohesive with no semantic styling issue.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/server.mjs",
+      "beforeHash": "ead62d89e001291f08ee136eb4cc1abb00f60e73c66df7a246da9a34040b27be",
+      "afterHash": "ead62d89e001291f08ee136eb4cc1abb00f60e73c66df7a246da9a34040b27be",
+      "reason": "HTTP viewer rejects hostile Host/Origin/cross-site and mutations before confined asset/catalog reads; static/vendor allowlists, CSP, no-store and bounded timeouts expose read-only boundary.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/test/e2e/diagrams.spec.mjs",
+      "beforeHash": "c8a266d5c35547790b729ef367778d655ec3b77e873fedfeae488b912e287d54",
+      "afterHash": "c8a266d5c35547790b729ef367778d655ec3b77e873fedfeae488b912e287d54",
+      "reason": "Diagram E2E covers all real diagrams/navigation/zoom/search/mobile and synthetic source drift, inert notes, renderer failure and network recovery; cleanup isolated server/temp paths.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/architecture-viewer/test/viewer.test.mjs",
+      "beforeHash": "825e064a5f95a5e648386cdffc0a547cff4c3ce376f2ce6f32596da296fce08e",
+      "afterHash": "825e064a5f95a5e648386cdffc0a547cff4c3ce376f2ce6f32596da296fce08e",
+      "reason": "Viewer tests cover fingerprint drift/explicit stamp, metadata/directive/link rejection, symlink escape and real loopback hostile Host/Origin/path/method requests.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/check-agent-skills.mjs",
+      "beforeHash": "4ebe2db9a55d3fd9aafe6d6907f1280f0c7aa1fd54ebcef555870c455027c503",
+      "afterHash": "4ebe2db9a55d3fd9aafe6d6907f1280f0c7aa1fd54ebcef555870c455027c503",
+      "reason": "Skill checker narrow frontmatter/UI metadata parsers enforce exact names/fields/descriptions/prompt references and explicit-only skill policy; sorted repository iteration names every error source.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/check-agent-skills.test.mjs",
+      "beforeHash": "128b8daeeba774f5b6457a75fbee1da3a24772d45c9752ac3bed13cdbb1d9435",
+      "afterHash": "128b8daeeba774f5b6457a75fbee1da3a24772d45c9752ac3bed13cdbb1d9435",
+      "reason": "Skill fixture tests cover invocation policy, missing/extra UI metadata, default prompt references and name/description/line limits without filesystem writes.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/check-user-flow-guides.mjs",
+      "beforeHash": "fb884f3742cab2a51078aa368be2fc5799f0c56ee1d99c0f0415fecb23d385b1",
+      "afterHash": "fb884f3742cab2a51078aa368be2fc5799f0c56ee1d99c0f0415fecb23d385b1",
+      "reason": "Guide checker names frontmatter/section/E2E metadata/revision/marker/filesystem phases; exact registered commands and confined bounded regular test reads prevent untrusted guide execution. Large file is one validation grammar with named helpers, no controller extraction required.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/check-user-flow-guides.test.mjs",
+      "beforeHash": "4d71567a19742a1c5dda8edd2a66d73f95a351c436a0e00086bb1596534fe755",
+      "afterHash": "4d71567a19742a1c5dda8edd2a66d73f95a351c436a0e00086bb1596534fe755",
+      "reason": "Guide tests cover substantive required sections, index comments/fences, exact safe paths, token-safe diagnostics, revisions, unique/orphan/stale markers and symlink confinement; CLI inspect/check prove no run entrypoint.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/code-search.test.mjs",
+      "beforeHash": "6c57d442ee7fa6f9f3a481b1d9ea3eb7ec37152a693063b6473aa3918eb5086e",
+      "afterHash": "6c57d442ee7fa6f9f3a481b1d9ea3eb7ec37152a693063b6473aa3918eb5086e",
+      "reason": "Code-search tests use pinned resolved AST executable, synthetic TS/TSX/import fixtures and distinguish no-match1 from unsupported-language failure while asserting source unchanged.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/critical-flows/registry.mjs",
+      "beforeHash": "31ef8cf2687f82491c2de5a53bf1b12028347fc2180507133006bbb6f3dd9f84",
+      "afterHash": "da99b63aba88727305cc6819b0a8f94a683155eacf3a389d6f511721df6d50b0",
+      "reason": "Independently inspected root fix: hasValidBackendSelection preserves exact backend identity/file order/env/grep/file/minimum short-circuit checks; hasValidBrowserSelection names allowed app/file/grep contract. validateRegistry retains duplicate-ID-before-selection and shared completeness/error/dependency ordering; declarations and exports unchanged.",
+      "status": "refactored"
+    },
+    {
+      "path": "scripts/critical-flows/registry.test.mjs",
+      "beforeHash": "2320d7615f6e7d1a48f1c5c20e377a4c7dc9b4a305690187e2ff051b079030df",
+      "afterHash": "2320d7615f6e7d1a48f1c5c20e377a4c7dc9b4a305690187e2ff051b079030df",
+      "reason": "Registry fixtures derive suites by identity/required titles, mutate report/env/selection inputs to prove strict rejection and inject fake runners for timings/cleanup; loopback port conflict tests never borrow services.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/deploy-remote.mjs",
+      "beforeHash": "1ffc968e64cb0e25d991530553c99e7cdc29c7f9df902853c22a973c370e6e75",
+      "afterHash": "1ffc968e64cb0e25d991530553c99e7cdc29c7f9df902853c22a973c370e6e75",
+      "reason": "Baseline scpBase reuses SSH lowercase-p port switch; TR-2 explicitly deferred by root because production/deployment correction is outside this readability improvement authority. No remote action or source change authorized/performed.",
+      "status": "deferred"
+    },
+    {
+      "path": "scripts/dev-all.mjs",
+      "beforeHash": "bf6b1e74a3094cddb38861400076996e79373aef5ec9d2fcaa554c080f198134",
+      "afterHash": "bf6b1e74a3094cddb38861400076996e79373aef5ec9d2fcaa554c080f198134",
+      "reason": "runDevelopment separates local target validation, redacted child output, ordered infra/build/migrations/readiness and owned descendant shutdown; same-process group retained for panel force-kill and exit stream drain bounded. Large orchestration already delegates output handling.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-all.test.mjs",
+      "beforeHash": "f07074c939e814d2136f3136f6a21fda23b81fe8dcdd870a10a11ea789a4fd28",
+      "afterHash": "f07074c939e814d2136f3136f6a21fda23b81fe8dcdd870a10a11ea789a4fd28",
+      "reason": "Development tests spawn only synthetic child scripts and cover local target guards, setup ordering/failure/interrupt, initializer timeout, nested cleanup, secret chunk redaction and bounded opaque log draining.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-readiness/checks.mjs",
+      "beforeHash": "8764ebdc7518116689a607cab7640ff0ee2295deda2c3ef9d16e5b354f2627b9",
+      "afterHash": "8764ebdc7518116689a607cab7640ff0ee2295deda2c3ef9d16e5b354f2627b9",
+      "reason": "Readiness selects enabled/requested capabilities, groups format routes and evaluates explicit prerequisite checks; funding determines tariff/balance requirements and runtime alone requires matching fresh worker. Large check catalogue preserves actionable remedies and never claims generation success.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-readiness/checks.test.mjs",
+      "beforeHash": "810218bbdb65c8961c9bf066869508c6109b54cdc7b238bf4e58bdb0d012bc53",
+      "afterHash": "810218bbdb65c8961c9bf066869508c6109b54cdc7b238bf4e58bdb0d012bc53",
+      "reason": "Readiness tests use synthetic snapshots/real fingerprint helper, cover routing/fallback, prices/cache, exact worker revisions, free versus paid wallet, credential evidence and database-authorized recovery; never dispatch providers.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-readiness/cli.test.mjs",
+      "beforeHash": "58bf0abb1df1c9fade24cce19472217a187bd2ccdc1af04cdc3aae7f2eb86c83",
+      "afterHash": "58bf0abb1df1c9fade24cce19472217a187bd2ccdc1af04cdc3aae7f2eb86c83",
+      "reason": "CLI help smoke asserts pnpm separator support under PATH-only environment and no secret reads.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-readiness/fixtures/multilingual-v1.json",
+      "beforeHash": "fbf621938b78eb772390925c78b302c39edf847f76bd4844115f6177ab4545bd",
+      "afterHash": "fbf621938b78eb772390925c78b302c39edf847f76bd4844115f6177ab4545bd",
+      "reason": "Multilingual-v1 stores12 engineering-authored correction/semantic translation/explanation references, explicit non-certification scope and no live-quality claim; all cases retain first-person meaning/no invented facts.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-readiness/multilingual-fixtures.test.mjs",
+      "beforeHash": "f43e124c1c93196d97cb20e372ebd6ea606d87619e2e1bbd0beee55869adf244",
+      "afterHash": "f43e124c1c93196d97cb20e372ebd6ea606d87619e2e1bbd0beee55869adf244",
+      "reason": "Fixture tests assert agreed language/version/unique IDs and correction/translation/explanation consistency without asserting model performance.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-setup/configure.mjs",
+      "beforeHash": "e92b919a43186d153c50e6bc891c51028ee013f2a625e90bb08af32322e14a59",
+      "afterHash": "e92b919a43186d153c50e6bc891c51028ee013f2a625e90bb08af32322e14a59",
+      "reason": "Configure validates reviewed profile and isolated deterministic server target, computes expected-version operations, validates all bodies before apply, defaults dry-run and never publishes routing/runs probes; nested log label is small status presentation.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-setup/configure.test.mjs",
+      "beforeHash": "e4a1a88b0003369518b353b0e4f4e8db6314d19b656e20702c55c5ff8516445a",
+      "afterHash": "e4a1a88b0003369518b353b0e4f4e8db6314d19b656e20702c55c5ff8516445a",
+      "reason": "Configure fixtures assert dry-run/no writes, idempotent normalized decimals, future-price rejection, synthetic-runtime precheck and stop-after-first conflict; client loopback/redaction and finite synthetic learner grant covered.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/dev-setup/target-binding.test.mjs",
+      "beforeHash": "e25fb3c727f5ad2028ce8a88bba1797f6a3daab4fdf122b84e6a696b56ede11e",
+      "afterHash": "e25fb3c727f5ad2028ce8a88bba1797f6a3daab4fdf122b84e6a696b56ede11e",
+      "reason": "Target-binding tests independently reject deployed/remote/mismatched DB, actor identity mismatch and API/database revision differences before apply.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/eslint-fsd-boundaries.test.mjs",
+      "beforeHash": "669b2268ad0edd86c3c70d0c08a6d21e9cd406d31ff1679498c0ef9d6d6d216f",
+      "afterHash": "669b2268ad0edd86c3c70d0c08a6d21e9cd406d31ff1679498c0ef9d6d6d216f",
+      "reason": "FSD tests lint synthetic aliases under real ESLint config, assert downward/same-app allowed and upward/sibling/cross-app/unclassified source forbidden including Next instrumentation.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/eslint-readability.test.mjs",
+      "beforeHash": "73273ced84c044e8a0b23f60be5db0ca112fbc18449a8aa42ff14b8cdd66f339",
+      "afterHash": "73273ced84c044e8a0b23f60be5db0ca112fbc18449a8aa42ff14b8cdd66f339",
+      "reason": "Readability tests inspect real ESLint enrollment and braces/spacing, execute autofixed dangling-else/loop cases to prove behavior and check Prettier/idempotence; generated/history exclusions intentional.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/migration-classification.test.mjs",
+      "beforeHash": "f2aba30c3a16c03c003a5879a3a07e6d9daf05c77f20951759498e2c32bb5db6",
+      "afterHash": "f2aba30c3a16c03c003a5879a3a07e6d9daf05c77f20951759498e2c32bb5db6",
+      "reason": "Migration-classification tests require reviewed latest tag/content hash and reject contract-before-rollout or stale classification.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/release-manifest.test.mjs",
+      "beforeHash": "ec33b5773f0e186fe96c4d174f34334e57f598de33e84fcb8bcb7c0208924d17",
+      "afterHash": "ec33b5773f0e186fe96c4d174f34334e57f598de33e84fcb8bcb7c0208924d17",
+      "reason": "Manifest tests use disposable git ancestry and synthetic digest manifests; verify stable versions/exact images/migration identity, retired speech rejection and exclusive canonical CLI write.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/release-workflow-contract.test.mjs",
+      "beforeHash": "b458320e1f0a7b90cb78f9333bc59f8c35020af44c5a0651a91941511a7b1cb1",
+      "afterHash": "b458320e1f0a7b90cb78f9333bc59f8c35020af44c5a0651a91941511a7b1cb1",
+      "reason": "Workflow tests read reviewed YAML as data, check manual/release-only triggers, pinned action SHAs, safe env interpolation, full preflight/build digests and protected serialized promotion without rebuilding.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/resources/profile.mjs",
+      "beforeHash": "c1268c9ad287bba2f9c3a3ac7ad4d51d8e0738bb96d19d5ddb03cdcba3ae0f29",
+      "afterHash": "c1268c9ad287bba2f9c3a3ac7ad4d51d8e0738bb96d19d5ddb03cdcba3ae0f29",
+      "reason": "Resource profiler separates local Docker guard, owned builder/build samples, steady/load/overlap phases and validated observation/history; record refuses dirty/incomplete builds and finally cleans builder/runtime ownership.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/resources/runtime.mjs",
+      "beforeHash": "5aa7d7898a7d1a253b2e88b9a2ba25352156962dff343ae9e8252763da1e2670",
+      "afterHash": "5aa7d7898a7d1a253b2e88b9a2ba25352156962dff343ae9e8252763da1e2670",
+      "reason": "Resource runtime uses synthetic test-only secrets, loopback TLS edge and unique owned Compose projects; prepare/overlap/cleanup phases preserve blue/green/data/network order and best-effort teardown.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-ai-accounting-e2e.mjs",
+      "beforeHash": "d3726587e5663c70bdaa4dc3721839ca0fdc74068a2722f94d6861456592d771",
+      "afterHash": "d3726587e5663c70bdaa4dc3721839ca0fdc74068a2722f94d6861456592d771",
+      "reason": "Accounting runner validates learner/admin disposable env first, preserves generated Next bytes and runs bounded serial accounting/legacy budgets/portrait/admin selections with signal forwarding; no default infra.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-contextual-assistant-e2e.test.mjs",
+      "beforeHash": "3736a72818dffa2211e92ce67e7744d3e94366ecfc14a80669b8f6f44819a5c0",
+      "afterHash": "3736a72818dffa2211e92ce67e7744d3e94366ecfc14a80669b8f6f44819a5c0",
+      "reason": "Contextual runner tests reject unsafe env, prove HTTP-before-browser selection/stop-on-failure, restore exact generated bytes/missing-file state and exclusive preservation lock cleanup.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-flashcard-training-e2e.mjs",
+      "beforeHash": "ad761ac339bf2eeb5e3487905d0dd6b5a9cacf0136dc04d2d7a8c98c20d5a7f3",
+      "afterHash": "ad761ac339bf2eeb5e3487905d0dd6b5a9cacf0136dc04d2d7a8c98c20d5a7f3",
+      "reason": "Flashcard runner refuses preexisting named containers, tracks only created resources, waits bounded readiness, injects confirmed disposable targets and cleans reverse order.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-flashcard-training-e2e.test.mjs",
+      "beforeHash": "21e33e4c58a7a983cd8391d7575ce5bab19f40ffb372c49f464d6d91584fa673",
+      "afterHash": "21e33e4c58a7a983cd8391d7575ce5bab19f40ffb372c49f464d6d91584fa673",
+      "reason": "Flashcard fake-runner tests verify exact target overrides, no reuse/no foreign cleanup, partial startup cleanup and failure propagation without Docker.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-learner-portrait-e2e.test.mjs",
+      "beforeHash": "9c02a0e204f45d4a286eef982bf0131b39c0164f327e63161a2f3f47ce21ca6e",
+      "afterHash": "9c02a0e204f45d4a286eef982bf0131b39c0164f327e63161a2f3f47ce21ca6e",
+      "reason": "Portrait fake-runner tests require explicit confirmed dedicated targets, assert exact serial HTTP/browser commands and restore original env in finally.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-mastra-playground-e2e.mjs",
+      "beforeHash": "29fe886c9649d68fc2b7f674f4aa79f7e1b4b563bf4c535ab1ff6a9b81ec854f",
+      "afterHash": "29fe886c9649d68fc2b7f674f4aa79f7e1b4b563bf4c535ab1ff6a9b81ec854f",
+      "reason": "Mastra runner refuses preexisting container, starts single loopback disposable PostgreSQL, polls bounded readiness and cleans only successfully started owned container.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-sentence-practice-e2e.mjs",
+      "beforeHash": "18f6bdbcb7d183a6771232d3b2fb669452d6da50093cd9f47241f02213dc4fe1",
+      "afterHash": "18f6bdbcb7d183a6771232d3b2fb669452d6da50093cd9f47241f02213dc4fe1",
+      "reason": "Sentence runner validates explicit allow/confirm, dedicated name/nondefault loopback ports and Redis DB1..15 before exact journey; no fallback infrastructure.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-sentence-practice-e2e.test.mjs",
+      "beforeHash": "e646283233e3882735ed28bacb0956cdc6a41ee1e5154f793bc778ad6cfd113f",
+      "afterHash": "e646283233e3882735ed28bacb0956cdc6a41ee1e5154f793bc778ad6cfd113f",
+      "reason": "Sentence fake-runner tests verify exact selected test file and reject defaults/mismatched DB/Redis before command dispatch with env restoration.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-texts-all-e2e.mjs",
+      "beforeHash": "10a7e33e0445db4b220448d1447f67b5b0a183a3e42eaba32a729b27a28084fd",
+      "afterHash": "10a7e33e0445db4b220448d1447f67b5b0a183a3e42eaba32a729b27a28084fd",
+      "reason": "Combined Texts runner enforces exact dedicated DB/ports/Redis, forbids server reuse, probes app ports and executes backend then web with signal listener cleanup.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-texts-all-e2e.test.mjs",
+      "beforeHash": "4cbb8d328770db9b8b2ea6b80f8dcf6c15e69afa6f5171095f09e37e83d21179",
+      "afterHash": "4cbb8d328770db9b8b2ea6b80f8dcf6c15e69afa6f5171095f09e37e83d21179",
+      "reason": "Combined Texts environment tests reject alternate test DB, remote host, server reuse and unexpected DB/Redis port/database before reset.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-texts-e2e.mjs",
+      "beforeHash": "8ca47c383ca5b6e3fe28f7957774133245979a6cc798dba8c2b4beed61990903",
+      "afterHash": "8ca47c383ca5b6e3fe28f7957774133245979a6cc798dba8c2b4beed61990903",
+      "reason": "Texts runner validates confirmed explicit loopback dedicated name and nondefault PG/Redis pair before one exact API/system journey; container lifecycle remains caller-owned.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-texts-e2e.test.mjs",
+      "beforeHash": "5ed3deaa20ff7171645a2ae811e0d403d4587524250a5097f05b2c18cd1c4467",
+      "afterHash": "5ed3deaa20ff7171645a2ae811e0d403d4587524250a5097f05b2c18cd1c4467",
+      "reason": "Texts fake-runner tests assert exact mapped journey and reject foreign/default/unconfirmed targets, restoring env after injected execution.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/run-user-ai-model-preferences-e2e.test.mjs",
+      "beforeHash": "a291a680397b696e49f6e6d4f4759709fceaa4546a6fb9578f1c3805511e4ba5",
+      "afterHash": "a291a680397b696e49f6e6d4f4759709fceaa4546a6fb9578f1c3805511e4ba5",
+      "reason": "Preference fake-runner tests require dedicated confirmed DB/Redis and exact mapped journey, with process env restored even failure.",
+      "status": "reviewed-acceptable"
+    },
+    {
+      "path": "scripts/user-flow-e2e.mjs",
+      "beforeHash": "9fe406f93e4b6877abd82e535eaf282c17e435369ab49bd39cda7d08aeb23c71",
+      "afterHash": "9fe406f93e4b6877abd82e535eaf282c17e435369ab49bd39cda7d08aeb23c71",
+      "reason": "inspectUserFlowE2e separately validates guide/test/global markers then maps scenarios for safe output; CLI allowlists inspect/check only and never executes registered guide text.",
+      "status": "reviewed-acceptable"
+    }
+  ],
+  "progress": "All56 original bodies audited:54 reviewed-acceptable,1 root-refactored and independently source-reviewed,1 explicit baseline deployment deferral. Worker changed evidence only; no source/config/test execution.",
+  "findings": [
+    {
+      "id": "TR-1",
+      "severity": "medium-readability",
+      "path": "scripts/critical-flows/registry.mjs",
+      "symbol": "validateRegistry",
+      "problem": "Negated ternary combines exact backend selection equality/order/env/minimum invariants with browser app/file/grep checks, obscuring separate contracts.",
+      "suggestion": "Use named private backend/browser selection predicates or explicit branches, preserving short-circuit/first-error semantics.",
+      "state": "resolved-refactored-independent-source-review",
+      "resolution": "Root extracted ordered backend/browser predicates and named validSelection. Independent diff review finds all original checks and first-error/read ordering retained. Root-reported existing23 tests and1782 differential invalid-flow cases passed; reviewer did not rerun tests."
+    },
+    {
+      "id": "TR-2",
+      "severity": "medium-correctness-baseline",
+      "path": "scripts/deploy-remote.mjs",
+      "symbol": "scpBase = [...optionsForSsh]",
+      "problem": "SSH lowercase -p port flag is reused for scp, whose port flag is uppercase -P; lowercase -p preserves times and the numeric port is misparsed as source operand.",
+      "suggestion": "Separate scp argument builder with uppercase -P, following admin-membership-remote pattern; prove via synthetic command capture without remote execution.",
+      "state": "deferred-outside-improvement-authority",
+      "resolution": "Root explicitly deferred baseline production/deployment correction; no remote actions authorized or performed."
+    }
+  ],
+  "checks": [
+    {
+      "command": "Read-only body audit; no executable verification",
+      "result": "not-run-per-parent-scheduling"
+    }
+  ]
+}

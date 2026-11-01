@@ -73,15 +73,10 @@ export function fieldLanguage(
     const exampleRole =
         overrides.exampleLanguage ?? original.effectiveSettings.exampleLanguage;
 
-    return languageForRole(
-        field === 'example'
-            ? exampleRole
-            : exampleRole === 'source'
-              ? 'target'
-              : 'source',
-        job.sourceLanguage,
-        job.targetLanguage,
-    );
+    const translationRole = exampleRole === 'source' ? 'target' : 'source';
+    const role = field === 'example' ? exampleRole : translationRole;
+
+    return languageForRole(role, job.sourceLanguage, job.targetLanguage);
 }
 
 export function originalFieldLanguage(

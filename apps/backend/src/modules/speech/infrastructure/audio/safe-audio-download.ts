@@ -240,8 +240,8 @@ export function validateWav(input: Uint8Array): number {
 /** Walk complete MPEG Layer III frames; reject non-audio, truncation, and >120s. */
 export function validateMp3(bytes: Uint8Array): number {
     let offset = 0;
-    let duration = 0;
-    let frames = 0;
+    let durationSeconds = 0;
+    let frameCount = 0;
     if (Buffer.from(bytes.subarray(0, 3)).toString() === 'ID3') {
         if (bytes.length < 10 || [6, 7, 8, 9].some((i) => bytes[i]! > 127)) {
             throw new Error('Invalid MP3.');
@@ -265,30 +265,30 @@ export function validateMp3(bytes: Uint8Array): number {
             break;
         }
 
-        const a = bytes[offset]!;
-        const b = bytes[offset + 1]!;
-        const c = bytes[offset + 2]!;
-        const version = (b >> 3) & 3;
-        const layer = (b >> 1) & 3;
-        const rateIndex = (c >> 2) & 3;
-        const bitrateIndex = c >> 4;
+        const headerSyncByte = bytes[offset]!;
+        const headerVersionByte = bytes[offset + 1]!;
+        const headerRateByte = bytes[offset + 2]!;
+        const versionBits = (headerVersionByte >> 3) & 3;
+        const layerBits = (headerVersionByte >> 1) & 3;
+        const sampleRateIndex = (headerRateByte >> 2) & 3;
+        const bitrateIndex = headerRateByte >> 4;
         if (
-            a !== 255 ||
-            (b & 224) !== 224 ||
-            version === 1 ||
-            layer !== 1 ||
-            rateIndex === 3 ||
+            headerSyncByte !== 255 ||
+            (headerVersionByte & 224) !== 224 ||
+            versionBits === 1 ||
+            layerBits !== 1 ||
+            sampleRateIndex === 3 ||
             bitrateIndex === 0 ||
             bitrateIndex === 15
         ) {
             throw new Error('Invalid MP3.');
         }
 
-        const rate =
-            [44100, 48000, 32000][rateIndex]! /
-            (version === 3 ? 1 : version === 2 ? 2 : 4);
+        const sampleRateHz =
+            [44100, 48000, 32000][sampleRateIndex]! /
+            (versionBits === 3 ? 1 : versionBits === 2 ? 2 : 4);
         const bitrates =
-            version === 3
+            versionBits === 3
                 ? [
                       0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224,
                       256, 320,
@@ -300,25 +300,27 @@ export function validateMp3(bytes: Uint8Array): number {
 
         offset +=
             Math.floor(
-                ((version === 3 ? 144 : 72) * bitrates[bitrateIndex]! * 1000) /
-                    rate,
+                ((versionBits === 3 ? 144 : 72) *
+                    bitrates[bitrateIndex]! *
+                    1000) /
+                    sampleRateHz,
             ) +
-            ((c >> 1) & 1);
+            ((headerRateByte >> 1) & 1);
 
-        duration += (version === 3 ? 1152 : 576) / rate;
-        frames++;
-        if (duration > 120 || offset > bytes.length) {
+        durationSeconds += (versionBits === 3 ? 1152 : 576) / sampleRateHz;
+        frameCount++;
+        if (durationSeconds > 120 || offset > bytes.length) {
             throw new Error('Audio duration or frame exceeds limit.');
         }
     }
 
     if (
-        !frames ||
+        !frameCount ||
         offset !== bytes.length ||
         bytes.length > maximumAudioBytes
     ) {
         throw new Error('Invalid MP3.');
     }
 
-    return Math.round(duration * 1000);
+    return Math.round(durationSeconds * 1000);
 }

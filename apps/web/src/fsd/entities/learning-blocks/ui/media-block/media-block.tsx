@@ -109,8 +109,16 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
 
     let media;
     if (block.type === 'audio') {
-        media =
-            audioUrl && props.variant !== undefined ? (
+        if (!audioUrl) {
+            media = (
+                <p role='status' className={mediaStyles.unprepared}>
+                    {block.assetId
+                        ? labels.mediaUnavailable
+                        : (labels.noRecording ?? labels.mediaUnavailable)}
+                </p>
+            );
+        } else if (props.variant !== undefined) {
+            media = (
                 <AudioPlayer
                     src={audioUrl}
                     title={mediaTitle}
@@ -120,7 +128,9 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
                     onPosition={handlePosition}
                     onStart={handlePlaybackStart}
                 />
-            ) : audioUrl ? (
+            );
+        } else {
+            media = (
                 <audio
                     aria-label={mediaTitle}
                     ref={handlePlayer}
@@ -130,13 +140,8 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
                     src={audioUrl}
                     onError={handleFailure}
                 />
-            ) : (
-                <p role='status' className={mediaStyles.unprepared}>
-                    {block.assetId
-                        ? labels.mediaUnavailable
-                        : (labels.noRecording ?? labels.mediaUnavailable)}
-                </p>
             );
+        }
     } else {
         media = (
             <VideoPlayer

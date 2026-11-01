@@ -1,3 +1,9 @@
+import {
+    initialSentenceState,
+    synchronizeRoundItems,
+    type SentenceSessionState as State,
+} from './sentence-session-state';
+export { initialSentenceState } from './sentence-session-state';
 import type {
     SentenceCheckRequest,
     SentenceJob,
@@ -11,11 +17,7 @@ import {
     SentencePrepareRequestSchema,
     SENTENCE_LIMITS,
 } from '@languon/contracts';
-import type {
-    Configuration,
-    SentenceApi,
-    SentenceSessionController,
-} from '../types';
+import type { Configuration, SentenceApi } from '../types';
 import {
     ApiError,
     isAccessLoss,
@@ -24,73 +26,11 @@ import {
 } from '../lib/api-error';
 import { compareReferenceAnswer } from '../lib/reference-comparison';
 
-type State = Omit<
-    SentenceSessionController,
-    | 'start'
-    | 'changeMode'
-    | 'restartReview'
-    | 'next'
-    | 'check'
-    | 'revealReference'
-    | 'retry'
-    | 'cancel'
-    | 'setDraft'
-    | 'toggleHint'
-    | 'reset'
-    | 'retryProgress'
-    | 'recompare'
-    | 'skip'
-    | 'repeatExact'
-    | 'generateNew'
->;
 type Pending =
     | { kind: 'next'; payload: SentenceNextRequest }
     | { kind: 'check'; exerciseId: string; payload: SentenceCheckRequest };
 const activeJob = (job: SentenceJob | null) =>
     job?.state === 'queued' || job?.state === 'running';
-
-export const initialSentenceState = (): State => ({
-    phase: 'idle',
-    configuration: null,
-    sessionId: null,
-    exercise: null,
-    draft: '',
-    submittedAnswer: null,
-    acknowledgedAnswer: null,
-    revealedHintIds: [],
-    job: null,
-    attempt: null,
-    reference: null,
-    comparison: null,
-    roundItems: [],
-    replaying: false,
-    replayPosition: null,
-    replayLoading: false,
-    replayError: null,
-    referenceLoading: false,
-    referenceUncertain: false,
-    error: null,
-    referenceError: null,
-    progress: null,
-    progressLoading: false,
-    progressError: null,
-    counts: {
-        presented: 0,
-        checked: 0,
-        assisted: 0,
-        manuallyReviewed: 0,
-        skipped: 0,
-        ratings: { perfect: 0, good: 0, notBad: 0, practiseAgainLater: 0 },
-    },
-    busy: false,
-    uncertain: false,
-    canRetry: false,
-    emptyReason: null,
-    visitedExerciseIds: [],
-    roundEntryCount: 0,
-    roundEligibleCount: null,
-    roundComplete: false,
-});
 
 /** Owns one in-memory session. API admission/polling is serialized independently of React renders. */
 export class SentenceSession {
@@ -146,33 +86,7 @@ export class SentenceSession {
         this.state.uncertain =
             this.operationUncertain || this.state.referenceUncertain;
 
-        const exercise = this.state.exercise;
-        if (exercise) {
-            this.state.roundItems = this.state.roundItems.map((item) => {
-                if (item.exercise.id !== exercise.id) {
-                    return item;
-                }
-
-                const attempt = this.state.attempt ?? item.attempt;
-                const reference = this.state.reference ?? item.reference;
-                let outcome = item.outcome;
-                if (attempt) {
-                    outcome = 'ai-checked';
-                } else if (reference) {
-                    outcome = 'manual-reviewed';
-                }
-
-                return {
-                    ...item,
-                    answer: this.state.draft,
-                    attempt,
-                    reference,
-                    comparison: this.state.comparison ?? item.comparison,
-                    revealedHintIds: [...this.state.revealedHintIds],
-                    outcome,
-                };
-            });
-        }
+        this.state.roundItems = synchronizeRoundItems(this.state);
 
         for (const listener of this.listeners) {
             listener();

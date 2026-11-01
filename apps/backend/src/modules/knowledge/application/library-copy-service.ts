@@ -19,27 +19,23 @@ export class KnowledgeLibraryCopyService {
 
     private async actor(token: string, context: KnowledgeRequestContext) {
         context.signal.throwIfAborted();
-        for (const [scope, subject] of [
-            ['knowledge-library-http', context.clientAddress],
-        ] as const) {
-            const limit = await this.dependencies.rateLimiter.consume({
-                scope,
-                subject,
-                limit: 60,
-                windowMs: 60_000,
-                signal: context.signal,
-            });
+        const addressDecision = await this.dependencies.rateLimiter.consume({
+            scope: 'knowledge-library-http',
+            subject: context.clientAddress,
+            limit: 60,
+            windowMs: 60_000,
+            signal: context.signal,
+        });
 
-            if (!limit.allowed) {
-                throw new KnowledgeDomainError(
-                    'rate_limited',
-                    'Too many requests. Please try again shortly.',
-                );
-            }
+        if (!addressDecision.allowed) {
+            throw new KnowledgeDomainError(
+                'rate_limited',
+                'Too many requests. Please try again shortly.',
+            );
         }
 
         const principal = await this.dependencies.authenticate(token);
-        const limit = await this.dependencies.rateLimiter.consume({
+        const ownerDecision = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-library-owner',
             subject: principal.userId,
             limit: 60,
@@ -47,7 +43,7 @@ export class KnowledgeLibraryCopyService {
             signal: context.signal,
         });
 
-        if (!limit.allowed) {
+        if (!ownerDecision.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',

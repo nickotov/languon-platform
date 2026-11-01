@@ -218,8 +218,6 @@ export async function requestSentenceCancellation(
         where (${preparationScope(scope)}) and exists(select 1 from ai_credit_actions a where a.id=p.current_action_id and a.state='active')`);
 }
 
-/** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
- * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */
 /** Remove copied preparation content without broadening selected-exercise erasure. */
 async function scrubPreparationContent(
     tx: SentenceTransaction,
@@ -299,6 +297,8 @@ async function scrubPreparationContent(
     );
 }
 
+/** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
+ * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */
 export async function eraseSentenceDerivedContent(
     tx: SentenceTransaction,
     scope: SentenceDeletionScope & { now: Date },

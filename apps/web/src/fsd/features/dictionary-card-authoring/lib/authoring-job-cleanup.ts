@@ -29,12 +29,13 @@ export function planCardAuthoringCleanup(
     latestReviewJob: DictionaryCardAuthoringGenerationJob | null | undefined,
     currentJobId?: string | null,
 ): CardAuthoringCleanupPlan {
-    const cancelJobIds =
-        currentJob?.state === 'queued' || currentJob?.state === 'running'
-            ? [currentJob.id]
-            : !currentJob && currentJobId
-              ? [currentJobId]
-              : [];
+    let cancelJobIds: string[] = [];
+    if (currentJob?.state === 'queued' || currentJob?.state === 'running') {
+        cancelJobIds = [currentJob.id];
+    } else if (!currentJob && currentJobId) {
+        cancelJobIds = [currentJobId];
+    }
+
     const discardJobIds = [
         ...new Set(
             [currentJob, latestReviewJob]

@@ -172,6 +172,32 @@ export class TextsWorkerService {
                             ? 'provider_timeout'
                             : 'provider_unavailable';
 
+                const nextRetryAt = () => {
+                    if (job.execution.routingAuthority) {
+                        const canUsePinnedFallback =
+                            hasConclusiveTextAiFailure(error) &&
+                            !combined.aborted &&
+                            job.lease.attempt === 1;
+
+                        return canUsePinnedFallback
+                            ? new Date(d.clock.now().getTime() + d.retryDelayMs)
+                            : null;
+                    }
+
+                    const legacyRetryExhausted =
+                        controller.signal.aborted ||
+                        job.lease.attempt >= d.maxAttempts ||
+                        ![
+                            'provider_timeout',
+                            'provider_unavailable',
+                            'invalid_model_output',
+                        ].includes(code);
+
+                    return legacyRetryExhausted
+                        ? null
+                        : new Date(d.clock.now().getTime() + d.retryDelayMs);
+                };
+
                 await d.store.fail(
                     job.lease,
                     {
@@ -184,25 +210,7 @@ export class TextsWorkerService {
                                       'conclusive-provider-failure' as const,
                               }
                             : {}),
-                        retryAt: job.execution.routingAuthority
-                            ? hasConclusiveTextAiFailure(error) &&
-                              !combined.aborted &&
-                              job.lease.attempt === 1
-                                ? new Date(
-                                      d.clock.now().getTime() + d.retryDelayMs,
-                                  )
-                                : null
-                            : controller.signal.aborted ||
-                                job.lease.attempt >= d.maxAttempts ||
-                                ![
-                                    'provider_timeout',
-                                    'provider_unavailable',
-                                    'invalid_model_output',
-                                ].includes(code)
-                              ? null
-                              : new Date(
-                                    d.clock.now().getTime() + d.retryDelayMs,
-                                ),
+                        retryAt: nextRetryAt(),
                     },
                     context(),
                 );

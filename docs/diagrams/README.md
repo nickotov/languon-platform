@@ -8,7 +8,7 @@ summary: Source-backed views of implemented behavior, with explicit scope and fr
 
 Open the local viewer with `pnpm diagrams`; validate the maintained catalog with
 `pnpm diagrams:check`. These diagrams describe repository implementation as reviewed
-on 2026-10-19. They do not assert that optional providers, flags or deployment hosts
+on 2026-11-01. They do not assert that optional providers, flags or deployment hosts
 are active. Start with the system view and follow a narrower flow.
 
 | View                                                                    | Question                                                                                                                              |

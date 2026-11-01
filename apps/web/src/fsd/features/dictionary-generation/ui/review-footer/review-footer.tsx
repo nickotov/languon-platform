@@ -38,7 +38,7 @@ export function ReviewFooter({
 
     const cancelLabel = resolveCancelLabel();
 
-    function resolveReviewFooterContent() {
+    function resolveReviewActions() {
         if (state.ready) {
             return (
                 <>
@@ -102,7 +102,7 @@ export function ReviewFooter({
         return null;
     }
 
-    const resolvedReviewFooterContent = resolveReviewFooterContent();
+    const reviewActions = resolveReviewActions();
 
     return (
         <div className={styles.footer}>
@@ -114,9 +114,7 @@ export function ReviewFooter({
             >
                 {closeLabel}
             </Button>
-            <div className={styles.footerActions}>
-                {resolvedReviewFooterContent}
-            </div>
+            <div className={styles.footerActions}>{reviewActions}</div>
         </div>
     );
 }

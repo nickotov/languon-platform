@@ -560,6 +560,29 @@ export function selectFlows(args, registry = flows) {
     return ordered;
 }
 
+function hasValidBackendSelection(flow) {
+    return (
+        Object.hasOwn(backendSelections, flow.id) &&
+        Array.isArray(flow.files) &&
+        flow.files.length === backendSelections[flow.id].files.length &&
+        backendSelections[flow.id].files.every(
+            (file, index) => flow.files[index] === file,
+        ) &&
+        flow.env === undefined &&
+        flow.grep === undefined &&
+        flow.file === undefined &&
+        flow.minimumTests === backendSelections[flow.id].minimumTests
+    );
+}
+
+function hasValidBrowserSelection(flow) {
+    return (
+        ['web', 'admin', 'texts', 'assistant', 'portrait'].includes(flow.app) &&
+        /^[a-z-]+\.journeys\.spec\.ts$/.test(flow.file) &&
+        Boolean(flow.grep)
+    );
+}
+
 export function validateRegistry(registry = flows) {
     const ids = new Set();
     for (const flow of registry) {
@@ -568,24 +591,14 @@ export function validateRegistry(registry = flows) {
         }
 
         ids.add(flow.id);
+
+        const validSelection =
+            flow.app === 'backend'
+                ? hasValidBackendSelection(flow)
+                : hasValidBrowserSelection(flow);
+
         if (
-            !(flow.app === 'backend'
-                ? Object.hasOwn(backendSelections, flow.id) &&
-                  Array.isArray(flow.files) &&
-                  flow.files.length ===
-                      backendSelections[flow.id].files.length &&
-                  backendSelections[flow.id].files.every(
-                      (file, index) => flow.files[index] === file,
-                  ) &&
-                  flow.env === undefined &&
-                  flow.grep === undefined &&
-                  flow.file === undefined &&
-                  flow.minimumTests === backendSelections[flow.id].minimumTests
-                : ['web', 'admin', 'texts', 'assistant', 'portrait'].includes(
-                      flow.app,
-                  ) &&
-                  /^[a-z-]+\.journeys\.spec\.ts$/.test(flow.file) &&
-                  Boolean(flow.grep)) ||
+            !validSelection ||
             !flow.prerequisite ||
             !Number.isSafeInteger(flow.minimumTests) ||
             flow.minimumTests < 1

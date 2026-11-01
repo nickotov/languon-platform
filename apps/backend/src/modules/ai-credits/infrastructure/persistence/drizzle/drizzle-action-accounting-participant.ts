@@ -364,40 +364,7 @@ export class DrizzleActionAccountingParticipant {
             ) &&
             cacheRead + cacheWrite <= input.usage.inputTokens;
 
-        const observations =
-            input.usage &&
-            (input.usage.nativeUsage ||
-                input.usage.executionFacts ||
-                input.usage.calls)
-                ? {
-                      ...(input.usage.nativeUsage
-                          ? { usage: input.usage.nativeUsage }
-                          : {}),
-                      ...(input.usage.executionFacts
-                          ? {
-                                execution: {
-                                    ...(input.usage.executionFacts.endpointId
-                                        ? {
-                                              endpointId:
-                                                  input.usage.executionFacts
-                                                      .endpointId,
-                                          }
-                                        : {}),
-                                    ...(input.usage.executionFacts.serviceTier
-                                        ? {
-                                              serviceTier:
-                                                  input.usage.executionFacts
-                                                      .serviceTier,
-                                          }
-                                        : {}),
-                                },
-                            }
-                          : {}),
-                      ...(input.usage.calls
-                          ? { calls: input.usage.calls }
-                          : {}),
-                  }
-                : null;
+        const observations = buildProviderObservations(input.usage);
 
         await this.tx.execute(sql`select languon_settle_text_provider_attempt(
             ${attempt.id}::uuid, ${Boolean(input.successful && valid)},
@@ -421,4 +388,31 @@ export class DrizzleActionAccountingParticipant {
 
         return this.read(input.actionId, input.ownerId);
     }
+}
+
+function buildProviderObservations(usage: TextAiProviderUsage | undefined) {
+    if (!usage || !(usage.nativeUsage || usage.executionFacts || usage.calls)) {
+        return null;
+    }
+
+    return {
+        ...(usage.nativeUsage ? { usage: usage.nativeUsage } : {}),
+        ...(usage.executionFacts
+            ? {
+                  execution: {
+                      ...(usage.executionFacts.endpointId
+                          ? {
+                                endpointId: usage.executionFacts.endpointId,
+                            }
+                          : {}),
+                      ...(usage.executionFacts.serviceTier
+                          ? {
+                                serviceTier: usage.executionFacts.serviceTier,
+                            }
+                          : {}),
+                  },
+              }
+            : {}),
+        ...(usage.calls ? { calls: usage.calls } : {}),
+    };
 }

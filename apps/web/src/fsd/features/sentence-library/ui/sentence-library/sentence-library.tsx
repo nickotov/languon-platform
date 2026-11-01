@@ -1,17 +1,13 @@
 'use client';
 import { useRef, useEffect } from 'react';
 import componentStyles from './sentence-library.module.css';
+import { SentenceLibraryHeader } from './sentence-library-header';
 import {
     rememberPreviewTrigger,
     restorePreviewTrigger,
 } from '../../lib/preview-focus';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-    ArrowRightIcon,
-    MessageSquareTextIcon,
-    SparklesIcon,
-} from 'lucide-react';
-import { Breadcrumb, Button, Card, InlineAlert } from '@/fsd/shared/ui';
+import { Breadcrumb, Button, InlineAlert } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useSentenceLibrary } from '../../hooks/use-sentence-library';
 import { useInterfaceText } from '../../hooks/use-interface-text';
@@ -22,7 +18,7 @@ import { SentenceDetail } from '../sentence-detail/sentence-detail';
 import type { LibraryProps, SavedSentence } from '../../types';
 export function SentenceLibrary(props: LibraryProps) {
     const c = useSentenceLibrary(props);
-    const { L, lang } = useInterfaceText();
+    const { L } = useInterfaceText();
     const { href, t } = useI18n();
     const router = useRouter();
     const search = useSearchParams();
@@ -127,82 +123,12 @@ export function SentenceLibrary(props: LibraryProps) {
                     className={componentStyles.breadcrumbs}
                     items={breadcrumb}
                 />
-                <Card
-                    variant='outlined'
-                    padding='none'
-                    className={componentStyles.header}
-                >
-                    <div className={componentStyles.headerLayout}>
-                        <div className={componentStyles.headingGroup}>
-                            <h1 className={componentStyles.heading}>
-                                <MessageSquareTextIcon
-                                    aria-hidden
-                                    className={componentStyles.headingIcon}
-                                />
-                                {L('title')}
-                            </h1>
-                            <div className={componentStyles.metadata}>
-                                <span
-                                    className={componentStyles.dictionaryName}
-                                >
-                                    {props.dictionary.name}
-                                </span>
-                                <span className={componentStyles.languagePair}>
-                                    <span>
-                                        {lang(props.dictionary.sourceLanguage)}
-                                    </span>
-                                    <ArrowRightIcon
-                                        aria-hidden
-                                        className={componentStyles.languageIcon}
-                                    />
-                                    <span>
-                                        {lang(props.dictionary.targetLanguage)}
-                                    </span>
-                                </span>
-                            </div>
-                            <p className={componentStyles.description}>
-                                {L('intro')}
-                            </p>
-                            {props.preparationChip ? (
-                                <div className={componentStyles.ownership}>
-                                    {props.preparationChip}
-                                </div>
-                            ) : null}
-                        </div>
-                        <div className={componentStyles.actions}>
-                            <Button
-                                trailingIcon={
-                                    <ArrowRightIcon
-                                        aria-hidden
-                                        className={componentStyles.backIcon}
-                                    />
-                                }
-                                onClick={practice}
-                            >
-                                {L('startPractice')}
-                            </Button>
-                            <div className={componentStyles.generationControl}>
-                                <Button
-                                    variant='secondary'
-                                    leadingIcon={
-                                        <SparklesIcon
-                                            aria-hidden
-                                            className={componentStyles.icon}
-                                        />
-                                    }
-                                    onClick={prepare}
-                                >
-                                    {L('prepareAhead')}
-                                </Button>
-                                <span
-                                    className={componentStyles.generationHelp}
-                                >
-                                    {L('prepareAheadHint')}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
+                <SentenceLibraryHeader
+                    dictionary={props.dictionary}
+                    preparationChip={props.preparationChip}
+                    onPractice={practice}
+                    onPrepare={prepare}
+                />
                 {success ? (
                     <InlineAlert
                         tone='success'

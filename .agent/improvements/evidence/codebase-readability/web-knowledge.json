@@ -1,0 +1,892 @@
+{
+  "schemaVersion": 1,
+  "owner": "web-knowledge",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/api/block-copy-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "copyKnowledgeBlocks validates destination/input and response at the authenticated bounded POST boundary; context callbacks explicitly describe preflush/apply coordination.",
+      "beforeSha256": "23b45b8264a412ab7cfbf1ba1a284835987d4e03a830965dd947a76d4270e54f",
+      "afterSha256": "23b45b8264a412ab7cfbf1ba1a284835987d4e03a830965dd947a76d4270e54f"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/api/block-field-ai-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "blockFieldAiApi keeps validated submit/read/cancel endpoints and combined timeout/abort signals behind one transport helper with normalized errors.",
+      "beforeSha256": "5fd793a6025a1acc48c30d2894768b1a3de4f6d7f299c46c347a2ab236156da9",
+      "afterSha256": "5fd793a6025a1acc48c30d2894768b1a3de4f6d7f299c46c347a2ab236156da9"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/api/block-proposals-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "blockProposalsApi validates conversation/proposal IDs and apply body, supports optional cancellation for list and preserves error correlation fallback.",
+      "beforeSha256": "1450218b61d3832e405380ff605898508f1863367ee1d6805e95361745129d13",
+      "afterSha256": "1450218b61d3832e405380ff605898508f1863367ee1d6805e95361745129d13"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/api/library-copy-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "libraryCopyApi distinguishes saved-note/private translation from working-branch source in its context union and validates each preview/copy request/response; share access remains explicit transport context.",
+      "beforeSha256": "cdc1039150566e7655f6b52b7a2a550cb11ff5920a8b2e1ab247def4e2102fe2",
+      "afterSha256": "cdc1039150566e7655f6b52b7a2a550cb11ff5920a8b2e1ab247def4e2102fe2"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-bilingual-block-draft.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useBilingualBlockDraft captures incomplete translations per language without validating before explicit Apply; stable source segment IDs and review-needed comparison preserve author input on language switch.",
+      "beforeSha256": "855e3f593a9effc3d6b97e8d93b5384cfcf8eec9504216bbe582eeb8b55a36f1",
+      "afterSha256": "855e3f593a9effc3d6b97e8d93b5384cfcf8eec9504216bbe582eeb8b55a36f1"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-block-copy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useBlockCopy freezes preview request/operation and destination branch version, flushes source/destination before apply and brackets busy notifications; selection changes invalidate stale plans.",
+      "beforeSha256": "8f1c7e21f0d5f7ffb4460b7077619292d9c98bdbd0451228a11786ce7a10a67f",
+      "afterSha256": "8f1c7e21f0d5f7ffb4460b7077619292d9c98bdbd0451228a11786ce7a10a67f"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-block-field-ai.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useBlockFieldAi owns per-field active/retry identities, scope visibility, consent and late-admission cleanup; current long run method mixes abortable polling with lifecycle handling, a potential local extraction seam.",
+      "beforeSha256": "14dc4895ab15a0315cf11d4c37b6260337a55093448a632c489b965a4f863250",
+      "afterSha256": "14dc4895ab15a0315cf11d4c37b6260337a55093448a632c489b965a4f863250"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-block-form-draft.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useBlockFormDraft shares mounted form parsing/dirty/close/preview authority and delegates bilingual draft/field AI; audio acceptance preserves current form values and source identity. Longer return contract supports both single and grouped editors without moving hook lifetimes.",
+      "beforeSha256": "cedede7ae9621ca816345bf2c818e457b9a75717c6bdf6b35281312035af5bae",
+      "afterSha256": "cedede7ae9621ca816345bf2c818e457b9a75717c6bdf6b35281312035af5bae"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-knowledge-editor-handle.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useKnowledgeEditorHandle exposes editor commands with target validation/hash restoration and isolated undo transaction boundaries; shared editor/disabled authority intentionally stays in one imperative handle, while insertion/replacement/anchor parsing already have focused libraries.",
+      "beforeSha256": "bfe13d13a2dc43f310087bb214091947d6173737728ec2e18748ec018416f9a2",
+      "afterSha256": "bfe13d13a2dc43f310087bb214091947d6173737728ec2e18748ec018416f9a2"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-knowledge-editor-toolbar.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useKnowledgeEditorToolbar explicitly enumerates formatting controls and validates links through KnowledgeLinkSchema; heading selection and modal state stay within one toolbar interaction lifetime.",
+      "beforeSha256": "140d2fd0ce5c571a1be7fc7dc710568c28c5091c8d67c5a1028ffad1eb6febe1",
+      "afterSha256": "140d2fd0ce5c571a1be7fc7dc710568c28c5091c8d67c5a1028ffad1eb6febe1"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-library-publication.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useLibraryPublication branches vocabulary versus text publish and invalidates the concrete affected caches only after copy response identifies destination.",
+      "beforeSha256": "bddd4da64b51deeab6ea9bb385a31bbf90e16c3fab382ae02f0b4544ae557413",
+      "afterSha256": "bddd4da64b51deeab6ea9bb385a31bbf90e16c3fab382ae02f0b4544ae557413"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-proposal-audio.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useProposalAudio lazily prepares visible/review audio, disconnects intersection observer and keeps actor-scoped asset URL lookup delegated to entity.",
+      "beforeSha256": "ee537b57fc0217dd00977372ba502809ebd4c4a3489c28fac8b9784ef29e77e6",
+      "afterSha256": "ee537b57fc0217dd00977372ba502809ebd4c4a3489c28fac8b9784ef29e77e6"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-workspace-selection-position.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useWorkspaceSelectionPosition derives overlay geometry from selection and viewport without editor selection mutation, subscribing/unsubscribing exact editor/resize/scroll/observer sources.",
+      "beforeSha256": "90958a93eb8390a0acb1105581ff46806fc57bd3e5be5f874fae251c0144e1e9",
+      "afterSha256": "90958a93eb8390a0acb1105581ff46806fc57bd3e5be5f874fae251c0144e1e9"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge feature barrel explicitly exposes composition/editor handles, proposal helpers, copy/library types and reading block overrides through stable public exports.",
+      "beforeSha256": "c12a53c60674aa40c3a1dd928f444ff2119960b7ba15ec7071f0973ce8a83576",
+      "afterSha256": "c12a53c60674aa40c3a1dd928f444ff2119960b7ba15ec7071f0973ce8a83576"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/adjacent-exercise-group.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adjacentExerciseGroup expands only matching exercise group IDs across joinsPreviousBlock boundaries, preserving uninterrupted visual/edit set and singleton/missing fallbacks.",
+      "beforeSha256": "223069bede067ed8ce233b5f7b40c8550143678cbeaf10d9b08dab95b45d7b99",
+      "afterSha256": "223069bede067ed8ce233b5f7b40c8550143678cbeaf10d9b08dab95b45d7b99"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/append-learning-block.ts",
+      "status": "reviewed-acceptable",
+      "reason": "appendLearningBlock validates candidate/full prospective document before dispatch and brackets accepted insertion with closeHistory for one undoable edit.",
+      "beforeSha256": "21b3f480e5e0fb59a8544aead0eef733b1a4a2ec4a59ad86944a81d3f2e36b38",
+      "afterSha256": "21b3f480e5e0fb59a8544aead0eef733b1a4a2ec4a59ad86944a81d3f2e36b38"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/apply-learning-block-edit.ts",
+      "status": "reviewed-acceptable",
+      "reason": "applyLearningBlockEdit checks captured membership/content/adjacency before replacement and normalizes transaction document before dispatch; invalid edit leaves live editor unchanged.",
+      "beforeSha256": "464c8e1ea420143209e693bb78f8a57d0ae00a28dcdbc453b20363452a8c5f0a",
+      "afterSha256": "464c8e1ea420143209e693bb78f8a57d0ae00a28dcdbc453b20363452a8c5f0a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/authoring-block-group.ts",
+      "status": "reviewed-acceptable",
+      "reason": "authoringBlockGroup detects media parent from uninterrupted following questions and otherwise delegates exercise grouping; isMediaQuestion recognizes explicit group parent or source.",
+      "beforeSha256": "4981cd32876daf3e2172db533ccfb24a8e2bc64f69e7a8a1f91f894b9e33ed13",
+      "afterSha256": "4981cd32876daf3e2172db533ccfb24a8e2bc64f69e7a8a1f91f894b9e33ed13"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-field-target.ts",
+      "status": "reviewed-acceptable",
+      "reason": "blockFieldTarget allowlists vocabulary entry and bilingual segment translation form paths, derives matching source text and returns only validated typed targets.",
+      "beforeSha256": "fb2d856480040bee93a4bb9630a48ca4ab62d9957d59d7a872e7379e18f693e4",
+      "afterSha256": "fb2d856480040bee93a4bb9630a48ca4ab62d9957d59d7a872e7379e18f693e4"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-insertion-bookmark.ts",
+      "status": "reviewed-acceptable",
+      "reason": "captureBlockInsertion maps cursor through transactions, invalidates deleted bookmark and explicitly detaches listener on release; asynchronous flush cannot silently retarget.",
+      "beforeSha256": "7d05925af3e0626779c142e0a5b06670759198d24a4a985393937923d0801f25",
+      "afterSha256": "7d05925af3e0626779c142e0a5b06670759198d24a4a985393937923d0801f25"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/editor-block-range.ts",
+      "status": "reviewed-acceptable",
+      "reason": "editorBlockRange expands learning block movement to whole authoring groups; adjacentBlockDestination selects neighbor range boundary and rejects missing nodes.",
+      "beforeSha256": "0532a832f0f75de3f041a54d3e86aafa5854ae0b398f59b7b72699a964768b5a",
+      "afterSha256": "0532a832f0f75de3f041a54d3e86aafa5854ae0b398f59b7b72699a964768b5a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/editor-document.ts",
+      "status": "reviewed-acceptable",
+      "reason": "normalizeEditorDocument bounds recursion/count, validates atomic blocks and strips presentation attributes before contract validation; toEditorDocument separately bridges exact optional SDK fields.",
+      "beforeSha256": "6e4a575e55292af4f2ec9c0a3cbf255e91ccc2e21a1eb1a346c02ffbad7fc492",
+      "afterSha256": "6e4a575e55292af4f2ec9c0a3cbf255e91ccc2e21a1eb1a346c02ffbad7fc492"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/editor-proposal-position.ts",
+      "status": "reviewed-acceptable",
+      "reason": "editorProposalPosition rejects missing/changed targets and text mismatch before DOM range geometry, falling back to editor coordinates and root-font scaling.",
+      "beforeSha256": "22cb19e4569ffb7d622556c816a74dfa78fdd3a48ce758880c4635ae453571da",
+      "afterSha256": "22cb19e4569ffb7d622556c816a74dfa78fdd3a48ce758880c4635ae453571da"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/editor-target-anchor.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Editor target anchor helpers hash exact plain representation, binary-search position offsets, reject surrogate splits/ambiguous boundaries and require a unique text-consistent restoration.",
+      "beforeSha256": "89427dfef0daddb59eb6ff67ee70ce72e69fe72d6a3b124424a940bf97d298dd",
+      "afterSha256": "89427dfef0daddb59eb6ff67ee70ce72e69fe72d6a3b124424a940bf97d298dd"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/exercise-group-drag.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ExerciseGroupDrag accepts bounded identity-only payload, validates exact current group membership and normalizes immutable transaction before dispatch; stale/modified/drop-inside group leaves document unchanged.",
+      "beforeSha256": "4d41c4ed41afe92d3735d4fa064f94e74a9cfe8449f5ffe473b0d11c2287dc80",
+      "afterSha256": "4d41c4ed41afe92d3735d4fa064f94e74a9cfe8449f5ffe473b0d11c2287dc80"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/inline-proposal-position.ts",
+      "status": "reviewed-acceptable",
+      "reason": "inlineProposalPosition expresses font-scaled width cap/clamps and source-relative offset as one pure geometry calculation.",
+      "beforeSha256": "304e37d0c28644c722eb40e425a73503aff0bc4ffb50d65ed06084b67bbe8e95",
+      "afterSha256": "304e37d0c28644c722eb40e425a73503aff0bc4ffb50d65ed06084b67bbe8e95"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/insert-proposal-document.ts",
+      "status": "reviewed-acceptable",
+      "reason": "prepareProposalDocument rejects atomic-block overlap, checks parsed nodes and plugin-applied candidate away from live editor before returning transaction; inline paragraph insertion and cursor mapping stay explicit.",
+      "beforeSha256": "093dd9f59acb00bf8db1cc9058a0068851159c9badf461cbc84306c5215e083c",
+      "afterSha256": "093dd9f59acb00bf8db1cc9058a0068851159c9badf461cbc84306c5215e083c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/knowledge-block-references.ts",
+      "status": "reviewed-acceptable",
+      "reason": "knowledgeBlockReferences deduplicates descriptors with type-specific bounded excerpts; knowledgeBlockMentionIds computes uninterrupted whole authoring group IDs and retains missing-ID fallback.",
+      "beforeSha256": "c9718a50206d9314e8d5831b451d0208893ed2f34b6eb0b0e6c8ad2a6c0ad70e",
+      "afterSha256": "c9718a50206d9314e8d5831b451d0208893ed2f34b6eb0b0e6c8ad2a6c0ad70e"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/knowledge-document-groups.ts",
+      "status": "reviewed-acceptable",
+      "reason": "knowledgeDocumentGroups collects contiguous exercise sets/media-linked questions across empty prose only, tracks consumed indices and preserves ungrouped original blocks for reader composition.",
+      "beforeSha256": "4e3c1fb7ccb2178d269ba86cc0f0218d68839bddb857c908c667c5a971eed117",
+      "afterSha256": "4e3c1fb7ccb2178d269ba86cc0f0218d68839bddb857c908c667c5a971eed117"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-copy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "copyLearningBlocks validates content then remaps IDs consistently across group/segment/choice references, rejects unauthorized audio/source-exercise copies and detaches missing media parents.",
+      "beforeSha256": "a61b197442bc6d07969eb5c302eaa71323852b32fd89adf10a6cd249126c8dc1",
+      "afterSha256": "a61b197442bc6d07969eb5c302eaa71323852b32fd89adf10a6cd249126c8dc1"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-drop.ts",
+      "status": "reviewed-acceptable",
+      "reason": "rejectCopiedLearningBlockDrop permits identity-preserving moves but rejects copied slices containing atomic learning blocks; typed actions own safe copy.",
+      "beforeSha256": "51c0414452fd1a0ee21b5714ffa259c6ab0fef824e47ecf8f1c47b6532df48fa",
+      "afterSha256": "51c0414452fd1a0ee21b5714ffa259c6ab0fef824e47ecf8f1c47b6532df48fa"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts",
+      "status": "refactored",
+      "reason": "Public form facade preserves all caller exports while separating control-definition catalog from typed media/text/exercise FormData readers; exact original branch decisions and final schema validation remain.",
+      "beforeSha256": "5698db7f50a1cd9b6ba6c60630bd15a344e35c2f90557184ad328e4a93b3e279",
+      "afterSha256": "09dc0283f9a4e934e43fcf4338b005f90dd794d8ef0d937bd25f63eaf1d30a7c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-paste.ts",
+      "status": "reviewed-acceptable",
+      "reason": "pasteLearningBlock handles only typed/prefixed bounded payloads, remaps identity and validates prospective document before dispatch; ordinary clipboard data returns none.",
+      "beforeSha256": "4fa32e9c1cd89b757e1dba56c1dbd4295b314a55c53c71e440f6cb7a6de04f0b",
+      "afterSha256": "4fa32e9c1cd89b757e1dba56c1dbd4295b314a55c53c71e440f6cb7a6de04f0b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-text.ts",
+      "status": "reviewed-acceptable",
+      "reason": "learningBlockPlainText explicitly includes each supported kind's human-readable content without remote fetch; editorLeafText validates atomic payload and supplies block boundaries.",
+      "beforeSha256": "77f1577052898c170aae00f6109b0b604e2d699d27ecaf224056d370ad01c164",
+      "afterSha256": "77f1577052898c170aae00f6109b0b604e2d699d27ecaf224056d370ad01c164"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/library-block-content.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library content helpers convert dictionary/text snapshots into validated fresh block identities; originalPassages iterates Unicode code points under8000 UTF-16 limit and aligned text preserves segment mapping.",
+      "beforeSha256": "19e9fddd4745e519a7b413b208719fcadd16ef3762070824cb98dcec609b9933",
+      "afterSha256": "19e9fddd4745e519a7b413b208719fcadd16ef3762070824cb98dcec609b9933"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/library-copy-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "resolveLibraryCopySource flushes private working recovery only for preview and validates returned branch source; saved-note context returns exact noteVersion.",
+      "beforeSha256": "8f19eeb25f0f0d528847634cb2e0d73a583458be69f2a7abbaa961c536d9a682",
+      "afterSha256": "8f19eeb25f0f0d528847634cb2e0d73a583458be69f2a7abbaa961c536d9a682"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/move-editor-block.ts",
+      "status": "reviewed-acceptable",
+      "reason": "moveEditorBlock requires same live node, rejects target inside source and validates transaction before dispatch; history boundaries and selected-node focus remain explicit.",
+      "beforeSha256": "eadf2562babbbdb5f793b544154383cae816d38d87323cf0949e0821a412ccbc",
+      "afterSha256": "eadf2562babbbdb5f793b544154383cae816d38d87323cf0949e0821a412ccbc"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/move-learning-block.ts",
+      "status": "reviewed-acceptable",
+      "reason": "moveLearningBlock moves complete authoring groups against neighboring complete group boundaries with mapped destination and predispatch document validation.",
+      "beforeSha256": "aa0d62c7f21e28ec8dcf0c25e7d6e75d80f7f58f309ffc6c25b8d0a10dae06bb",
+      "afterSha256": "aa0d62c7f21e28ec8dcf0c25e7d6e75d80f7f58f309ffc6c25b8d0a10dae06bb"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/positioned-learning-blocks.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Positioned learning block helpers validate atomic blocks and record empty-prose adjacency; joinsPreviousBlock recognizes direct or recorded joins without rescanning document.",
+      "beforeSha256": "0e6de64c44039ebc0a8609f31e45aea22ebde474c3b415c92f1f012122efdf3d",
+      "afterSha256": "0e6de64c44039ebc0a8609f31e45aea22ebde474c3b415c92f1f012122efdf3d"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/proposal-markdown.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseProposalMarkdown bounds lexer/token/decoded document, validates links/tables/visible content and maps heading levels before persisted normalization; longer protocol has named input/preflight/visibility helpers and distinct literal fallback.",
+      "beforeSha256": "f54febc01637e307d10af46007be4c2b2e55e2064f034374dd309e2e5f0b1e79",
+      "afterSha256": "f54febc01637e307d10af46007be4c2b2e55e2064f034374dd309e2e5f0b1e79"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/proposal-target.ts",
+      "status": "reviewed-acceptable",
+      "reason": "mapProposalTarget detects text intersection/insertion changes while mapping endpoints with collapsed versus range bias, preserving original selection text.",
+      "beforeSha256": "7d66d284d30b871ff4bcbef3b2c996dce9d2aeaf50437af58fe2fe46d32893cf",
+      "afterSha256": "7d66d284d30b871ff4bcbef3b2c996dce9d2aeaf50437af58fe2fe46d32893cf"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/replace-learning-block.ts",
+      "status": "reviewed-acceptable",
+      "reason": "replaceLearningBlock requires exact captured ID/type/content and immutable audio asset, validates plugin-applied candidate then dispatches with undo isolation; returns precise missing/changed/invalid outcomes.",
+      "beforeSha256": "a0d7bad8526a5501eeaf3304f43092714be9622afa9d39485a83d100d68d7118",
+      "afterSha256": "a0d7bad8526a5501eeaf3304f43092714be9622afa9d39485a83d100d68d7118"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/selection-bubble-position.ts",
+      "status": "reviewed-acceptable",
+      "reason": "selectionBubblePosition is pure viewport-aware clamp with touch/below preference and selection visibility independent of placement.",
+      "beforeSha256": "2ecb56cbd3c61d402c63c6b9c68c659a2b3ab9c8cd18b7317ec92590782d11ba",
+      "afterSha256": "2ecb56cbd3c61d402c63c6b9c68c659a2b3ab9c8cd18b7317ec92590782d11ba"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/types.ts",
+      "status": "reviewed-acceptable",
+      "reason": "PreparedLibraryCopy discriminates vocabulary/text request plus preview so publication retries use exact frozen identity; destination type keeps note/branch explicit.",
+      "beforeSha256": "b32332d80c689169f12822dd8099c474af7f94cd7054260c7629fabca4cf515a",
+      "afterSha256": "b32332d80c689169f12822dd8099c474af7f94cd7054260c7629fabca4cf515a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/block-copy-labels.ts",
+      "status": "reviewed-acceptable",
+      "reason": "blockCopyLabels maps fixed en/ru/es/fr tuples to localized selection/preview/apply/error copy with explicit locale index.",
+      "beforeSha256": "d972080adc8a3dab0bf2c1cba8205c2a9c2036ca8b7cad475b861b440ec17cda",
+      "afterSha256": "d972080adc8a3dab0bf2c1cba8205c2a9c2036ca8b7cad475b861b440ec17cda"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/block-copy.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Block copy CSS scopes native selection controls, bounded checkbox list, preview and wrapping footer actions.",
+      "beforeSha256": "c0bff85b74e6a14942cda63a7293de2b5f78f437e4d24fc4eabb45ed69350dfb",
+      "afterSha256": "c0bff85b74e6a14942cda63a7293de2b5f78f437e4d24fc4eabb45ed69350dfb"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-blocks-to-note.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "CopyBlocksToNote mounts a fresh dialog only on open; BlockCopyDialog owns selection cap, preview/apply footer precedence and busy dismissal while hook owns frozen operation.",
+      "beforeSha256": "5db309f84f128cddd0dab283f2d950e65ec2d0c6f85432f1b8dd73cec1161cd8",
+      "afterSha256": "5db309f84f128cddd0dab283f2d950e65ec2d0c6f85432f1b8dd73cec1161cd8"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-destination-picker.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "CopyDestinationPicker aborts note/branch reads, chooses initial/preferred/first branch and clears selection before load; pagination and unloaded-current-note fallback preserve destination usability.",
+      "beforeSha256": "8753762a496b12f52222add0b49bb5696fbfc205911407c3838433ae0d3e65e7",
+      "afterSha256": "8753762a496b12f52222add0b49bb5696fbfc205911407c3838433ae0d3e65e7"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Proposal card CSS scopes compact preview and responsive review panel with safe-area footer, height expansion and wrap behavior; cascade stays component-owned.",
+      "beforeSha256": "a458e1a893c56f4b79d4fb1f0f6a192c4542af9950775e1a2c3212b4c0335f8e",
+      "afterSha256": "a458e1a893c56f4b79d4fb1f0f6a192c4542af9950775e1a2c3212b4c0335f8e"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockProposalCard shares accepted/stale/busy state between compact and expanded surfaces; accepts cursor bookmark before flush and releases in finally, preserving wrong-branch/version guards and draft publication authority. Review rendering is a possible independent presentation seam, while mutation authority must remain local.",
+      "beforeSha256": "79915fa0743a691cea1f003e5d68d6ae2ab40f6f265416e3636ebc55794660d7",
+      "afterSha256": "79915fa0743a691cea1f003e5d68d6ae2ab40f6f265416e3636ebc55794660d7"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-labels.ts",
+      "status": "reviewed-acceptable",
+      "reason": "blockProposalLabels maps fixed four-locale tuples for target/stale/independent copy/publication/review outcomes; all control copy remains centralized.",
+      "beforeSha256": "0f2902221369bdccad975579f8529cb7553fdbcd54f36d70f19db7e09b46197b",
+      "afterSha256": "0f2902221369bdccad975579f8529cb7553fdbcd54f36d70f19db7e09b46197b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/knowledge-block-proposals.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeBlockProposals scopes loading by conversation, prevents overlapping interval reads and aborts on cleanup; shared context coordinates applying state across turn-filtered/fallback cards with stable proposal keys.",
+      "beforeSha256": "38ff97e1f39c19bb251dcf654c141c7118644ca4daa65016f7f23610f623b74f",
+      "afterSha256": "38ff97e1f39c19bb251dcf654c141c7118644ca4daa65016f7f23610f623b74f"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge document menu CSS scopes transparent compact trigger and coarse-pointer target without changing shared menu implementation.",
+      "beforeSha256": "64f1743e9ed9fc9e6cbaa4670094e63fc855271b11e7afeb2df5d74c4a0aaed6",
+      "afterSha256": "64f1743e9ed9fc9e6cbaa4670094e63fc855271b11e7afeb2df5d74c4a0aaed6"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeDocumentView validates body/group plan once and delegates ReaderLearningBlock with original block IDs plus explicit wrapping/menu/content override seams.",
+      "beforeSha256": "8c161fd95aa46f7bdaf0d7b9b520faca2418d6362ebd91180601939f12cf2fd9",
+      "afterSha256": "8c161fd95aa46f7bdaf0d7b9b520faca2418d6362ebd91180601939f12cf2fd9"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/reader-learning-block.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ReaderLearningBlock owns per-block copy/library dialogs and translation expansion, preserving custom-menu null fallback and override library/content precedence; longer render retains linked/grouped exercise identity while reusable entity views own actual content.",
+      "beforeSha256": "a0fe145cb02b6860b9e36af3f8eaaa41d48f2ce075d060fa8dee74be4ba72a69",
+      "afterSha256": "a0fe145cb02b6860b9e36af3f8eaaa41d48f2ce075d060fa8dee74be4ba72a69"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/editor-table-controls.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "EditorTableControls exposes named focus-preserving row/column/table commands only when in table, with localized labels and disabled state.",
+      "beforeSha256": "10968c2918586d884fb07b1b1f43cba904d2dfd8651e406016333fc63da83ba1",
+      "afterSha256": "10968c2918586d884fb07b1b1f43cba904d2dfd8651e406016333fc63da83ba1"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/editor-toolbar.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "EditorToolbar separates toolbar-control rendering and table controls; longer UI composes full/tutor/workspace visibility plus link dialog while useKnowledgeEditorToolbar owns commands/state and mousedown preserves selection.",
+      "beforeSha256": "48c71152ef4789c863352e0da40285141ade1f5320e194c4b46ac2dcbef8103a",
+      "afterSha256": "48c71152ef4789c863352e0da40285141ade1f5320e194c4b46ac2dcbef8103a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge editor CSS scopes prose formatting away from data-block-family content, preserves table states and workspace container/mobile toolbar behavior; ordering protects author block styles.",
+      "beforeSha256": "15f6a75250fb0086133b36a9ed52ca87eb067bd26fa7793e5b62d4af70edcb5c",
+      "afterSha256": "15f6a75250fb0086133b36a9ed52ca87eb067bd26fa7793e5b62d4af70edcb5c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeEditor keeps one Tiptap instance, canonical accepted-value comparison, mapped targets and deferred recovered-content application; longer lifecycle already delegates imperative handle, chrome, authoring, toolbar and drag plugins, preserving SDK hook options/dependencies.",
+      "beforeSha256": "f4b581a3a2c0b885c8051ba0af292a62d1ed12ffe28612c083e6c5643d524cc3",
+      "afterSha256": "f4b581a3a2c0b885c8051ba0af292a62d1ed12ffe28612c083e6c5643d524cc3"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/prose-block-drag-view.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createProseBlockDragView owns one active node/handle/event subscription lifetime; hover corridor, selection follow, serialization and keyboard moves share exact node identity. createHandle is already separate and destroy removes host/document listeners and handle.",
+      "beforeSha256": "2bffcaa92959d07930dc193f6ceb0dae44442a3a3e0fc89dbae8115757282061",
+      "afterSha256": "2bffcaa92959d07930dc193f6ceb0dae44442a3a3e0fc89dbae8115757282061"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/prose-block-drag.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Prose drag CSS keeps hidden handle absent, accessible focus/grab states and44px touch target with source-relative translation.",
+      "beforeSha256": "9ed062ace5aa50eae4c0f07e5dc85aebf41dd0fdd7e89fbf471a28794cf4f6ee",
+      "afterSha256": "9ed062ace5aa50eae4c0f07e5dc85aebf41dd0fdd7e89fbf471a28794cf4f6ee"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/prose-block-drag.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ProseBlockDrag plugin delegates DOM handle lifetime and validated move operation, rejecting stale document drop and learning-block keyboard moves; group-aware destination prevents splitting author groups.",
+      "beforeSha256": "02e19045c8509297787a8293b245bdb21ac4bd405c1c300bb70f1eedd00f9076",
+      "afterSha256": "02e19045c8509297787a8293b245bdb21ac4bd405c1c300bb70f1eedd00f9076"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Workspace editor CSS excludes embedded family formatting, groups prose/bubble/empty actions and preserves container/mobile placement/focus states; cascade retains source geometry.",
+      "beforeSha256": "45d98c406cff1668491f6a6edb4204d6430ce9a0bb332516acef073f8ca4751d",
+      "afterSha256": "45d98c406cff1668491f6a6edb4204d6430ce9a0bb332516acef073f8ca4751d"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "WorkspaceEditorChrome portals toolbar to selected root, requires nonempty text selection outside table and composes selection actions/empty starters/inline proposal overlay without selection changes.",
+      "beforeSha256": "cbeef161e40ccf41801cf688938eddd021d8eefe6478ac8541cc47cdcc71c7e5",
+      "afterSha256": "cbeef161e40ccf41801cf688938eddd021d8eefe6478ac8541cc47cdcc71c7e5"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-empty-starters.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "WorkspaceEmptyStarters inserts templates only into empty editable document and offers undo toast; named lesson/language handlers preserve localized heading order.",
+      "beforeSha256": "c8237d20417b5ce9641bb74098dd76a097493c26fac280e13909231eebc13a53",
+      "afterSha256": "c8237d20417b5ce9641bb74098dd76a097493c26fac280e13909231eebc13a53"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-selection-actions.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "WorkspaceSelectionActions keeps more-action toggle, keyboard Escape focus and text-preserving mousedown beside formatting/tutor actions; TutorAction isolates localized action callback.",
+      "beforeSha256": "b3b603e4e23caa998102fa57a03f4291e06869bfb3803c7aa1a359e315215831",
+      "afterSha256": "b3b603e4e23caa998102fa57a03f4291e06869bfb3803c7aa1a359e315215831"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge note form CSS groups legacy metadata and workspace title/properties/article layouts with responsive/container sizing; category checkbox/focus states preserve approved presentation.",
+      "beforeSha256": "4eb3296aa913587bcf52ffa5dbec0876b6fa6fc2cec4a2f1c389f02266a27db8",
+      "afterSha256": "4eb3296aa913587bcf52ffa5dbec0876b6fa6fc2cec4a2f1c389f02266a27db8"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeNoteForm combines content validity with editor validity and functional field updates, delegating title/metadata/editor; workspace versus legacy wrapper choice preserves editor handle and click-to-focus behavior.",
+      "beforeSha256": "40345ae249b7872ab822d4613aaf26e5fd355345ffe907325e2878af7fbbfa9a",
+      "afterSha256": "40345ae249b7872ab822d4613aaf26e5fd355345ffe907325e2878af7fbbfa9a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/note-category.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "NoteCategory keeps compact role-checkbox toggle and standard native Checkbox paths equivalent while preserving category order and localized labels.",
+      "beforeSha256": "3eb25062f34c195f7876603fbfaa170abcb64a579c7c975befdf9df125863aa2",
+      "afterSha256": "3eb25062f34c195f7876603fbfaa170abcb64a579c7c975befdf9df125863aa2"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/note-metadata.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "NoteMetadata builds catalog plus unavailable-current language options, shares exact fields across workspace/legacy rendering and uses functional updates for concurrent content edits.",
+      "beforeSha256": "1eca3cfa0fe056d07a86b5de53caf0d1a657eb9a7f447e1d7c1da462d81d48c4",
+      "afterSha256": "1eca3cfa0fe056d07a86b5de53caf0d1a657eb9a7f447e1d7c1da462d81d48c4"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/workspace-properties.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "WorkspaceProperties reveals empty properties on demand and delegates same Property popover composition for languages/categories/summary with filled state.",
+      "beforeSha256": "bf811313c2dccd0baeffb071d09c583a741f16cb4b60c0a61a758cb51b4208c0",
+      "afterSha256": "bf811313c2dccd0baeffb071d09c583a741f16cb4b60c0a61a758cb51b4208c0"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/workspace-title.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "WorkspaceTitle auto-measures textarea, reports intersection visibility and ignores composing Enter before focusing document; effects clean observers and newline replacement preserves single title line.",
+      "beforeSha256": "2d6038d9c7d76b2d5b8d1ae3acddb5193c8892a301c5b8a7f830d2b66ad1070d",
+      "afterSha256": "2d6038d9c7d76b2d5b8d1ae3acddb5193c8892a301c5b8a7f830d2b66ad1070d"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Proposal content CSS distinguishes normal validated content from literal pre-wrap fallback and subdued status notices.",
+      "beforeSha256": "8adbc9470e4682746bca07d1c2ff056f3305d9c566267b918c5882b2888d2145",
+      "afterSha256": "8adbc9470e4682746bca07d1c2ff056f3305d9c566267b918c5882b2888d2145"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeProposalContent uses identical validated parser as acceptance, memoizes by content/format and exposes heading/format/unsafe-link/limit notices before literal fallback.",
+      "beforeSha256": "ed07df1d0b1c59f261376ef1adcacab2c71f20b85f2837115bd7b50581a7b01a",
+      "afterSha256": "ed07df1d0b1c59f261376ef1adcacab2c71f20b85f2837115bd7b50581a7b01a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-copy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "knowledgeProposalLabels preserves four-locale formatting adaptation, literal fallback and insertion-limit explanation without mechanism changes.",
+      "beforeSha256": "a37983f0f996126dc8d5462ed3ac43cb16fd164b7417c71109c6cf774d12b684",
+      "afterSha256": "a37983f0f996126dc8d5462ed3ac43cb16fd164b7417c71109c6cf774d12b684"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/audio-block-upload.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AudioBlockUpload validates WAV/MP3 size/nonempty client input, clears selection for retry and returns fresh audio draft only after upload; busy/error state stays local.",
+      "beforeSha256": "a96273dd76935d4eb89d54b3ee5d497232615ddd992cfe706a276865713bf32c",
+      "afterSha256": "a96273dd76935d4eb89d54b3ee5d497232615ddd992cfe706a276865713bf32c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/author-exercise-summary.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AuthorExerciseSummary counts externally attempted or identity-matched local practice results and delegates shared expansion toggle, preserving revision-sensitive learner state.",
+      "beforeSha256": "d71c9e375712cceece224c7210104d59cfaa306cacb40fc1afec6c7e2b02d634",
+      "afterSha256": "d71c9e375712cceece224c7210104d59cfaa306cacb40fc1afec6c7e2b02d634"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-actions.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockActions re-resolves live block/group before each edit/remove/duplicate/copy, routes protected media/source copies through server operations and validates local transactions before dispatch; longer action menu preserves ordering/gates and custom menu extension.",
+      "beforeSha256": "cbccb74e9250820f7c844ca32196a47bc34ee5b80ebc911c7d819fe09e79d6ec",
+      "afterSha256": "cbccb74e9250820f7c844ca32196a47bc34ee5b80ebc911c7d819fe09e79d6ec"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-context.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockAuthoringProvider holds editor-wide dialog/expansion/attempt identity state used by node views; no extra memoization or context splitting because shared authoring lifetime and public value are deliberate.",
+      "beforeSha256": "cc45d2d7b192da25e0265e1af5b4b222d31349d58ff3b38effb8b844949140cd",
+      "afterSha256": "cc45d2d7b192da25e0265e1af5b4b222d31349d58ff3b38effb8b844949140cd"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-menu-actions.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "blockAuthoringMenuActions appends save and vocabulary translation expansion to external menu entries with exact separators/availability.",
+      "beforeSha256": "e58523a076461d949ec92621cfbaf1ad4ba4bba247cc2eba3b0247bf73cbad18",
+      "afterSha256": "e58523a076461d949ec92621cfbaf1ad4ba4bba247cc2eba3b0247bf73cbad18"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-footer.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockEditorFooter presents discard confirmation versus unapplied/clean footer and retains autofocus keep-editing, submit/form versus onApply behavior and dirty disable.",
+      "beforeSha256": "e27aa1cb65ef29d2f298121b43ec0ba15ddc3312ff979bc8132b5ec4b0bf8e63",
+      "afterSha256": "e27aa1cb65ef29d2f298121b43ec0ba15ddc3312ff979bc8132b5ec4b0bf8e63"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-form.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockEditorForm delegates inputs/rows/language/source/upload/AI and parses typed eligible targets from current form; longer form keeps hidden identity/title and translation revision keys alongside shared draft contract.",
+      "beforeSha256": "5e9b22d0d7b1ba87438ecbf8586c0be52a0d2b1d4ae62c4d228c198fff0e8d8d",
+      "afterSha256": "5e9b22d0d7b1ba87438ecbf8586c0be52a0d2b1d4ae62c4d228c198fff0e8d8d"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Block editor panel CSS preserves fixed side/modal and mobile bottom-sheet/expanded geometry, safe area and scroll containment.",
+      "beforeSha256": "88ad5e1a80cab1d46c60aa69933b3bd36cd1f2129066d705f5784d1efab2490c",
+      "afterSha256": "88ad5e1a80cab1d46c60aa69933b3bd36cd1f2129066d705f5784d1efab2490c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockEditorPanel delegates native focus lifecycle to Dialog while owning small expanded state, kind icon/subtitle and dismissible close guard.",
+      "beforeSha256": "288c6ed81233cd4136402a3c667efd8b4383d515fcec7b2ed0223177fe7157c7",
+      "afterSha256": "288c6ed81233cd4136402a3c667efd8b4383d515fcec7b2ed0223177fe7157c7"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Field AI CSS separates check/accept/status/stale/suggestion states, preserves whitespace and touch targets and suppresses spinner under reduced motion.",
+      "beforeSha256": "60aa4241994492e849c288a8a46e8840aa55d097239fb4836864c9305dd22893",
+      "afterSha256": "60aa4241994492e849c288a8a46e8840aa55d097239fb4836864c9305dd22893"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockFieldAiAction rechecks exact latest target before accepting suggested value, prioritizes pending/failed/stale/correct states and never mutates field until explicit accept.",
+      "beforeSha256": "30e2474eebd86ec7ba2fa5e3fff6e0e601efc823d7970378d42bcd71408684d6",
+      "afterSha256": "30e2474eebd86ec7ba2fa5e3fff6e0e601efc823d7970378d42bcd71408684d6"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-input.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockFieldInput owns current controlled value, preserves optional enhancement acceptance and format/native/text area variants with original title autofocus.",
+      "beforeSha256": "bdb465e1e9604f1c3447c59435bb49149699be573f57498f868b303f44287614",
+      "afterSha256": "bdb465e1e9604f1c3447c59435bb49149699be573f57498f868b303f44287614"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockFormDialog delegates shared draft, form, footer and panel; audio+question apply reads all child forms before combined apply and preview remains explicit learner variant.",
+      "beforeSha256": "abc90b41a343bf30e7f9a23a799f370a8ef3c743cd1c51061e39b0b0bf08bb33",
+      "afterSha256": "abc90b41a343bf30e7f9a23a799f370a8ef3c743cd1c51061e39b0b0bf08bb33"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockRowGroup initializes stable row IDs, tracks add/remove count and declared group limits, and delegates keyed GroupRow rendering.",
+      "beforeSha256": "53ce7aebf5101155d0058bc845b7a18361f2938eb070a3981fdf18b382ddc80a",
+      "afterSha256": "53ce7aebf5101155d0058bc845b7a18361f2938eb070a3981fdf18b382ddc80a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-group-row.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "GroupRow preserves hidden row identity and controlled example visibility while grouping vocabulary primary/secondary/optional definition fields; keys and names retain form parsing contract.",
+      "beforeSha256": "871283d6f32cdd525f91ddff59590f591c4b052bfaf9b06d9c1a7d94302c0759",
+      "afterSha256": "871283d6f32cdd525f91ddff59590f591c4b052bfaf9b06d9c1a7d94302c0759"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-insert-menu.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockInsertMenu enumerates supported kind icons in existing order and passes each choice through typed onChoose, using shared Menu.",
+      "beforeSha256": "7cffe8a14ec630c528aac1df658ff906319e6c294874d035c465083ab62d8e37",
+      "afterSha256": "7cffe8a14ec630c528aac1df658ff906319e6c294874d035c465083ab62d8e37"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-labels.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Block labels define typed reusable entity view copy and authoring controls with default identity translator, avoiding route dependency.",
+      "beforeSha256": "30a0b28aaa020f7e227536e261a102fdbe700d85918cf9ac53732b4544313b2b",
+      "afterSha256": "30a0b28aaa020f7e227536e261a102fdbe700d85918cf9ac53732b4544313b2b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-language-settings.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockLanguageSettings derives current native input values, falls back on invalid Intl language and remounts fields only by explicit revision; disclosure open state remains local.",
+      "beforeSha256": "d204f24fdd2303a887d8cbcaa2440133653634d9b6a154fca683fb7d6cc30116",
+      "afterSha256": "d204f24fdd2303a887d8cbcaa2440133653634d9b6a154fca683fb7d6cc30116"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-locales.ts",
+      "status": "reviewed-acceptable",
+      "reason": "localizedBlockLabels maps feature-owned English keys to ru/es/fr tuples and independently builds action/view/kind/exercise-kind dictionaries, preserving fallback labels. Long file is predominantly exact translation data rather than intertwined control flow.",
+      "beforeSha256": "57535cb8a471a2be5a426f76d07d8d90e5ef926b5a7898fc71f70330975a9d76",
+      "afterSha256": "57535cb8a471a2be5a426f76d07d8d90e5ef926b5a7898fc71f70330975a9d76"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ExerciseSetDialog retains group ID/title and parent linkage while reading all question drafts before apply; shared footer owns dirty confirmation presentation.",
+      "beforeSha256": "19e03454f73bc85d9191663954c1747656c5368fa30c4113a9958cfb1e63bd97",
+      "afterSha256": "19e03454f73bc85d9191663954c1747656c5368fa30c4113a9958cfb1e63bd97"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ExerciseSetFields registers mounted per-question parsers by stable keys and returns null if any invalid; ExerciseItemEditor shares block draft/form and cleans reader registration, preserving allowEmpty and25-question cap.",
+      "beforeSha256": "2f7522f38870878a9e14f16ea6f00fa0258d1aad3d64a183b269b970c02af981",
+      "afterSha256": "2f7522f38870878a9e14f16ea6f00fa0258d1aad3d64a183b269b970c02af981"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-source-picker.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ExerciseSourcePicker exposes only bilingual/transcribed media sources, clears segment selection when source changes and preserves named checkbox IDs for parsing; Unicode excerpts avoid split characters.",
+      "beforeSha256": "430dd2ef8e3bc5d2c65d3d17857d86e341a9cbcbbac11ce244e6a3e15a4b02ce",
+      "afterSha256": "430dd2ef8e3bc5d2c65d3d17857d86e341a9cbcbbac11ce244e6a3e15a4b02ce"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Authoring CSS scopes reusable form/row/action/footer/language controls, hides optional example translation through DOM state and preserves touch sizes; component shared selectors intentionally remain one style contract.",
+      "beforeSha256": "3272cd9d93e850f9869a7ad6a2cb0eed69bf433ab6c1a8a2b6fa7dc6b62daab4",
+      "afterSha256": "3272cd9d93e850f9869a7ad6a2cb0eed69bf433ab6c1a8a2b6fa7dc6b62daab4"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LearningBlockAuthoring coordinates one editor-wide dialog scope with live transaction refresh and validated apply/insert helpers; longer composition preserves grouped audio/exercise atomic edits, server duplicate destination and existing child component keys.",
+      "beforeSha256": "593d3c25ab745808c603fa9bde6f76fcd3cce3c5205b0cd2a95c6b58c0c47f4b",
+      "afterSha256": "593d3c25ab745808c603fa9bde6f76fcd3cce3c5205b0cd2a95c6b58c0c47f4b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node-view.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LearningBlockNodeView refreshes document-derived group actions even for moved atom identity, preserves grouped heading/expansion/practice identity and delegates menu actions and entity view; longer node-view glue shares exact current group context and editor SDK lifecycle.",
+      "beforeSha256": "51f5d2d80e52486464a935702e304e5fdd31130637f39d64cd28960a9604d290",
+      "afterSha256": "51f5d2d80e52486464a935702e304e5fdd31130637f39d64cd28960a9604d290"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Learning block node CSS joins group frame edges, hides empty-prose spacers and retains keyboard/touch/hover drag affordances; selector specificity preserves atomic entity frames.",
+      "beforeSha256": "60c2ca4ec4e4299428476ba3bb48bfea91f7a9e46c67e37afb15b60b229aab15",
+      "afterSha256": "60c2ca4ec4e4299428476ba3bb48bfea91f7a9e46c67e37afb15b60b229aab15"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LearningBlockNode declares isolated draggable atom, rejects clipboard HTML authority and validates block before fallback render; React node view is explicitly delegated.",
+      "beforeSha256": "8c04ab3672a4c468c6a05d44683dbe5564c53ce11271f881469b88cda52e22e5",
+      "afterSha256": "8c04ab3672a4c468c6a05d44683dbe5564c53ce11271f881469b88cda52e22e5"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-text-gaps.ts",
+      "status": "reviewed-acceptable",
+      "reason": "LearningBlockTextGaps caches immutable-document decorations, hides only empty prose within author groups and inserts real paragraphs only on explicit gap click; no synthetic saved content. Named textGap isolates DOM widget creation.",
+      "beforeSha256": "e9d1cf8021b7937b051117add2fa113da87ffa7f79c19c3f47444c02cddb5fce",
+      "afterSha256": "e9d1cf8021b7937b051117add2fa113da87ffa7f79c19c3f47444c02cddb5fce"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/block-library-save.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "BlockLibrarySave mounts fresh LibrarySaveDialog on explicit localized vocabulary/text action and keeps open state scoped to block surface.",
+      "beforeSha256": "6c04ccff70ca5a3f62579dec2804fc214be0e0cba05e7a1fd2ef112bddd31cf6",
+      "afterSha256": "6c04ccff70ca5a3f62579dec2804fc214be0e0cba05e7a1fd2ef112bddd31cf6"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-block.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "InsertLibraryBlock exposes compact/default trigger and mounts dialog only while open, forwarding existing context/disabled/insert contract.",
+      "beforeSha256": "bad9ef0fb2fd01cd64728f51ba920b5342190bea2a2c306545458e0dc20aea88",
+      "afterSha256": "bad9ef0fb2fd01cd64728f51ba920b5342190bea2a2c306545458e0dc20aea88"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "InsertDialog validates coherent dictionary versions across pages, fences stale item requests with abort/generation and prepares independent validated blocks before explicit insert; longer selection/preview lifetime shares current source snapshot and delegates picker/content conversion.",
+      "beforeSha256": "28d4404f9464559b3fc2a2c9f2078f152cec13f7d8b3b6f14cf8b7ace872d44b",
+      "afterSha256": "28d4404f9464559b3fc2a2c9f2078f152cec13f7d8b3b6f14cf8b7ace872d44b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy-preview.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LibraryCopyPreview explicitly renders vocabulary fields or text/aligned segments with stable IDs and optional commit control; no new data authority.",
+      "beforeSha256": "b40025ed5eee8436b59cdc4cfeadeb3f593642498275e4722c33d0356f94e0ad",
+      "afterSha256": "b40025ed5eee8436b59cdc4cfeadeb3f593642498275e4722c33d0356f94e0ad"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Library copy CSS scopes bounded entry selection, preserved-whitespace preview, wrapping footer and selected destination radio presentation.",
+      "beforeSha256": "94c465adc4669ce6bd25e91cec1923be649ece8cb78da87ef4f97df96a256e2c",
+      "afterSha256": "94c465adc4669ce6bd25e91cec1923be649ece8cb78da87ef4f97df96a256e2c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-entry-selection.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LibraryEntrySelection is a controlled native checkbox group retaining entry IDs and current selected membership with accessible legend.",
+      "beforeSha256": "e8662f357148e8d773c3e4a3d030bd3fa70a96e0a87aa3c49c112cf219c61196",
+      "afterSha256": "e8662f357148e8d773c3e4a3d030bd3fa70a96e0a87aa3c49c112cf219c61196"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-item-picker.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LibraryItemPicker aborts first-page requests and fences pagination by generation; maps dictionary/text snapshots to one selection shape while keeping folder and item cursors separate. Longer picker shares source-selection lifetime and explicit loading/error state.",
+      "beforeSha256": "34bb908db615ae72307758dc91afe33439e60777d989e43d12ff04bc22290b7d",
+      "afterSha256": "34bb908db615ae72307758dc91afe33439e60777d989e43d12ff04bc22290b7d"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-labels.ts",
+      "status": "reviewed-acceptable",
+      "reason": "libraryLabels maps complete four-locale independent-copy/preview/selection/destination terminology through one typed key set.",
+      "beforeSha256": "766dbaaa4043aa1c8a1de3a6a20d73d786fb731d80875891eb20c114e5f68698",
+      "afterSha256": "766dbaaa4043aa1c8a1de3a6a20d73d786fb731d80875891eb20c114e5f68698"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-dialog.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LibrarySaveDialog freezes validated preview request and operation, separates source resolution from commit, clears conflicting previews and delegates fields/footer/preview/publication; longer orchestration keeps destination/selection and retry identity together.",
+      "beforeSha256": "67a0a844758b94206badfd5b2fbdbb16410e8ba6f539d824d097bd07f8f9d790",
+      "afterSha256": "67a0a844758b94206badfd5b2fbdbb16410e8ba6f539d824d097bd07f8f9d790"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-fields.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LibrarySaveFields preserves new/existing native radio and target-picker branches, vocabulary entry selection and private translation language lock through controlled props.",
+      "beforeSha256": "f9cb01b60b90d1237650946acd5545f107414e691e5ce6dd5cc7d4e04f4c6931",
+      "afterSha256": "f9cb01b60b90d1237650946acd5545f107414e691e5ce6dd5cc7d4e04f4c6931"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-footer.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "LibrarySaveFooter distinguishes saved completion, frozen preview commit and form-associated preview submit, retaining busy/disabled semantics.",
+      "beforeSha256": "07e18a5c1db3cf1aec4466013afaf42a2bbdc5106228ff67c18e0a347b50416c",
+      "afterSha256": "07e18a5c1db3cf1aec4466013afaf42a2bbdc5106228ff67c18e0a347b50416c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.module.css",
+      "status": "reviewed-acceptable",
+      "reason": "Proposal block content CSS separates compact/review section title/spacing without altering content ordering.",
+      "beforeSha256": "ad84c655dd7354cd72e295266e25b122c0a6b8e9f27e8454b9b89b21f1088a5e",
+      "afterSha256": "ad84c655dd7354cd72e295266e25b122c0a6b8e9f27e8454b9b89b21f1088a5e"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ProposalBlockContent groups only adjacent same-ID exercise sets, retains authored order and first-block keys, and delegates entity rendering with exact scope/playback/audio mapping.",
+      "beforeSha256": "b03bcf40a96db241920eb36b00b9094593282762da2a4a6bbee18c57c1f226e3",
+      "afterSha256": "b03bcf40a96db241920eb36b00b9094593282762da2a4a6bbee18c57c1f226e3"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts",
+      "status": "refactored",
+      "reason": "Unchanged blockForm catalog and types own six form-kind field/group definitions. Longer catalog is ordered declarative control/row/default data with one direct kind dispatch; splitting field catalogs would obscure their visible order and shared title/language initialization.",
+      "beforeSha256": null,
+      "afterSha256": "213ab52a82ba147adc242664407e8092a4a7d2fde19e38b0cfb051265149d673"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts",
+      "status": "refactored",
+      "reason": "Private typed context names shared FormData value/optional/blank-row rules and exact previous/prepared identity inputs; no runtime behavior.",
+      "beforeSha256": null,
+      "afterSha256": "968d307c457908c20fce39b6335c41b75c28f251f77e74442498739fc8bbbb6c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts",
+      "status": "refactored",
+      "reason": "Dispatcher retains original FormData primitives, common identity generation, six branch order and single final LearningBlockSchema validation.",
+      "beforeSha256": null,
+      "afterSha256": "183f42ee4165a2034c2a7378ce5548f8d0895b37c2d4435debcdaa04fef5f83a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts",
+      "status": "refactored",
+      "reason": "Video/audio readers preserve URL-to-YouTube classification, optional timing, previous transcript IDs and source language precedence.",
+      "beforeSha256": null,
+      "afterSha256": "96b357a238a4f6ec24f2505d13bf1c093cd49863eacd1fb7922881fc0909e9f6"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts",
+      "status": "refactored",
+      "reason": "Grammar/vocabulary/bilingual readers preserve optional rows, exact previous IDs and language-keyed prepared translation reconciliation.",
+      "beforeSha256": null,
+      "afterSha256": "29458aa58c6ecd64e60e06f37eca82b0343ebc54e6dd3ab8df48896c2cadc9e2"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts",
+      "status": "refactored",
+      "reason": "Exercise reader preserves source/group, choice ID/correct answer, gap ID and accepted-answer rules for three formats.",
+      "beforeSha256": null,
+      "afterSha256": "b8b5ec3b8bde443c76690616c930ef4ca045d10871ec04b8cf15cb231ad905b5"
+    }
+  ],
+  "batches": [
+    {
+      "id": "block-form-directions",
+      "status": "implemented; root-scheduled tests pending",
+      "problem": "learning-block-form.ts combines control catalog with six independent FormData parsing branches; changing media parsing requires navigating unrelated form definitions and exercise parsing.",
+      "seam": "Retain existing learning-block-form exports as facade. Move unchanged blockForm/type catalog into block-form-definition.ts and parsing into read-block-form.ts plus cohesive media/text/exercise readers using a typed private FormData context.",
+      "alternative": "A generic schema-driven field framework would change form semantics; rejected. Keep exact existing branches and validate through LearningBlockSchema once in dispatcher.",
+      "preservedInvariants": [
+        "Public exports and existing callers",
+        "Exact field/group order, defaults and source language rules",
+        "UUID invocation order and previous-ID precedence",
+        "Blank row filtering, translation reconciliation and media URL validation",
+        "Single final LearningBlockSchema validation; no React changes"
+      ],
+      "verification": [
+        {
+          "command": "pnpm --filter @languon/web exec vitest run tests/knowledge-learning-block-editor.test.tsx tests/learning-blocks.test.tsx tests/knowledge-block-field-authoring.test.tsx",
+          "setup": "Existing jsdom tests and installed dependencies; root schedules; no services",
+          "estimate": "~1minute"
+        },
+        {
+          "command": "pnpm --filter @languon/web exec eslint src/fsd/features/knowledge-notes/lib/",
+          "setup": "Installed dependencies; scoped static check",
+          "estimate": "<30seconds"
+        }
+      ],
+      "authorProof": "Scoped library ESLint and Prettier pass. Catalog AST-printed tokens identical to base; all six parsing branches identical after candidate binding normalization. Helpers use exact kind literal for preserved discriminant narrowing; read primitives/UUID generation order and final validation inspected."
+    }
+  ],
+  "auditCursor": 116,
+  "remaining": 0
+}

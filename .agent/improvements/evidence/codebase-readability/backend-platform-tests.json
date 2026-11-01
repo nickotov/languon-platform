@@ -1,0 +1,1093 @@
+{
+  "owner": "backend-conversations-texts/platform-tests",
+  "baseCommit": "252de64",
+  "scope": "Read-only body audit of explicitly transferred155 tests; no source/test edits or gates authorized.",
+  "batches": [],
+  "files": [
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/domain/access-token-claims.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AccessTokenClaims tests explicitly assert minimal JWT payload and exact expiry boundary with no email claim.",
+      "beforeSha256": "48564af6df956d12df4abe95625de399540a8df5ccef2f8a24175fc690e0575c",
+      "afterSha256": "48564af6df956d12df4abe95625de399540a8df5ccef2f8a24175fc690e0575c"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/domain/passkey.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createPasskey fixture supports distinct canonical-name, credential-preserving rename and idempotent revoke/use metadata cases.",
+      "beforeSha256": "34246b938e0da21046317259ee238ec407d933ef238d846d0a1e5901ca17afb7",
+      "afterSha256": "34246b938e0da21046317259ee238ec407d933ef238d846d0a1e5901ca17afb7"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/domain/password-credential.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "PasswordCredential tests assert hash-only metadata and replacement preserving original creation time; setup is short and explicit.",
+      "beforeSha256": "791e8c054157f2b3bd205445e97f6a7f0ffc687661836fbf187440513deed812",
+      "afterSha256": "791e8c054157f2b3bd205445e97f6a7f0ffc687661836fbf187440513deed812"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/domain/password-policy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "PasswordPolicy cases separate Unicode code points, exact whitespace, checked-in common-password table and upper bound.",
+      "beforeSha256": "4cce55b06629c99ada261ff40d4c71b35e8e6edc9f48838c942cd6988a8b90f5",
+      "afterSha256": "4cce55b06629c99ada261ff40d4c71b35e8e6edc9f48838c942cd6988a8b90f5"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/domain/refresh-session.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createSession fixture exposes absolute family expiry; rotation tests assert successor identity, consumed/revoked/expired errors and idempotent revoke.",
+      "beforeSha256": "6aa7623f79259d184d7bba271941661de1862ba0f1d0e3dd227037ad208bbb18",
+      "afterSha256": "6aa7623f79259d184d7bba271941661de1862ba0f1d0e3dd227037ad208bbb18"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/domain/verification-challenge.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createChallenge plus explicit attempt loops distinguish fifth-correct vs fifth-failed, exact expiry no increment and superseded purpose retention.",
+      "beforeSha256": "98e0104628ed59c878831a716e8f7ece35b1faf51686b670d529313350f332d9",
+      "afterSha256": "98e0104628ed59c878831a716e8f7ece35b1faf51686b670d529313350f332d9"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/domain/email-address.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "EmailAddress tests distinguish display trimming/canonical casing from provider-significant dots/tags with readable malformed-input table.",
+      "beforeSha256": "267d8f00baee7f96a72e7df2c7194daec9b4641d104e7479b8a2f7e81d98869a",
+      "afterSha256": "267d8f00baee7f96a72e7df2c7194daec9b4641d104e7479b8a2f7e81d98869a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/domain/user.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "User tests separate pending activation, immutable versioned handle, disable/restore availability and invalid transitions; exact expected versions make state progression visible.",
+      "beforeSha256": "26a3a830cdd99c85e7429b5372bbbe86eb178ec772c1656477f28b83f2ecf82a",
+      "afterSha256": "26a3a830cdd99c85e7429b5372bbbe86eb178ec772c1656477f28b83f2ecf82a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/accounting.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting tests exercise exact fixed-point USD/milli credits, floor attribution, consumed-value refunds, revocable purchase bounds and manual ordered bill evidence.",
+      "beforeSha256": "f15bcdb5e657d6ca49757b3e44952612270bacc212b4f90736e55f469423d45b",
+      "afterSha256": "f15bcdb5e657d6ca49757b3e44952612270bacc212b4f90736e55f469423d45b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/ai-credit.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AI credit cases separate expiry-ordered allocation, atomic insufficiency, exact arithmetic and reported/estimated/technical-failure/unlimited settlement; explicit bigint expectations expose monetary invariants.",
+      "beforeSha256": "8a08cecaa65d8bea09f818720ae3b640d353cab9d94b577a5db45159ef682f1e",
+      "afterSha256": "8a08cecaa65d8bea09f818720ae3b640d353cab9d94b577a5db45159ef682f1e"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/capability-policy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Capability policy tests distinguish operator-funded portrait version-zero default, customer-funded other capabilities and exact nullable budget/concurrency validation.",
+      "beforeSha256": "e7d91028ab2f31e8a6c1a1193399c1d4dfcc18a22ef4f46d39c92bc42d11663d",
+      "afterSha256": "e7d91028ab2f31e8a6c1a1193399c1d4dfcc18a22ef4f46d39c92bc42d11663d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/model-price.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Model tariff tests clearly separate free flow allowance, higher cached reservation tariff, ceiling/minimum speech and invalid/unsafe arithmetic.",
+      "beforeSha256": "bba9dc35944883ae03e8aa97dcc78f23d45ae18db15fc3e645fca936061b2097",
+      "afterSha256": "bba9dc35944883ae03e8aa97dcc78f23d45ae18db15fc3e645fca936061b2097"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/domain/provider-expense.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider expense tests use a pinned synthetic price to distinguish combined rounding, per-request minimum, unknown cache rates, valid meter/source evidence and exact speech/cache amounts.",
+      "beforeSha256": "f469401ae93769feb2abb63f4482b3010bcc2abf376184ca5475c05f8c5d3e1c",
+      "afterSha256": "f469401ae93769feb2abb63f4482b3010bcc2abf376184ca5475c05f8c5d3e1c"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/crypto/argon2id-password-hasher.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Argon2id tests cover approved floor, live/preaborted request signals, parameter-version rehash and malformed hashes with real local crypto; no fixture obscures cancellation.",
+      "beforeSha256": "527ae0fee98f781e20da418da28657439ea42e60722e64ad658b7fae851b81bf",
+      "afterSha256": "527ae0fee98f781e20da418da28657439ea42e60722e64ad658b7fae851b81bf"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/crypto/jose-access-token.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createSigner/signToken helpers support explicit HS256/typed minimal claims and table of key/algorithm/type/issuer/audience/time failures; errors are normalized.",
+      "beforeSha256": "33eb1bda2d2febc2cb749ba32d438e878b6aa2928dbff4c48a0de91085f74f48",
+      "afterSha256": "33eb1bda2d2febc2cb749ba32d438e878b6aa2928dbff4c48a0de91085f74f48"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/crypto/opaque-refresh-token.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Opaque refresh tests prove256bit base64url entropy, SHA256 digest lookup and fail-closed incorrect entropy length with deterministic source.",
+      "beforeSha256": "5fd6f4dd8179e54aad755582e2d7bad310c31e7e6b3e0d46281e73c2a63ec482",
+      "afterSha256": "5fd6f4dd8179e54aad755582e2d7bad310c31e7e6b3e0d46281e73c2a63ec482"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/crypto/verification-code-crypto.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "QueuedEntropySource makes rejection sampling visible; verification code tests assert purpose/user/flow-bound HMAC and minimum key length.",
+      "beforeSha256": "e44a39b76868a2a22068d7705dc97288f4a474bbf9e8d019e399f93a24249ea4",
+      "afterSha256": "e44a39b76868a2a22068d7705dc97288f4a474bbf9e8d019e399f93a24249ea4"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/email/email-senders.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Email sender tests distinguish fixed-code development vs unavailable capability and cancellation; error assertions reject message recipient/code leakage.",
+      "beforeSha256": "ff36574b6043a3cea19bcf726fdbd571b74702cbfe9cf3e11859c101e5d7e0ba",
+      "afterSha256": "ff36574b6043a3cea19bcf726fdbd571b74702cbfe9cf3e11859c101e5d7e0ba"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/rate-limit/bounded-redis-client.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Bounded Redis client tests isolate purpose-separated opaque keys, weak/unbounded policy rejection and finite connection options; afterEach disconnects every constructed client.",
+      "beforeSha256": "90abe2bb9c803ac50ed526ed61020fdeb168f19399ac1d0a434f6e9ac2d26da0",
+      "afterSha256": "90abe2bb9c803ac50ed526ed61020fdeb168f19399ac1d0a434f6e9ac2d26da0"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/admin-mcp-price-targets.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "configuredPriceTargets tests separate no-credential empty discovery from canonical text/speech catalogs and reject retired/fixture routes.",
+      "beforeSha256": "06221fa902b6a3d64ff3b795fae9992bdeab79584b93758c402930fc6b4df5ed",
+      "afterSha256": "06221fa902b6a3d64ff3b795fae9992bdeab79584b93758c402930fc6b4df5ed"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/administration/admin-command.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Operator command tests cover pnpm separator/stdin parsing, explicit mutation confirmation/actor requirements, normalization and unknown/list-option rejection.",
+      "beforeSha256": "511c4438e0d02659c2e6ad8c1b2a917d3df4ae1b9d69ddd6d3886123ad79f6de",
+      "afterSha256": "511c4438e0d02659c2e6ad8c1b2a917d3df4ae1b9d69ddd6d3886123ad79f6de"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/database/migration-environment.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Migration environment tests directly distinguish deployed one-shot credential/TLS requirement from development fallback.",
+      "beforeSha256": "dae92e0512ab5b524f5baffe5dea1dbe613da0ffcd0dca73494b0e03ae92859f",
+      "afterSha256": "dae92e0512ab5b524f5baffe5dea1dbe613da0ffcd0dca73494b0e03ae92859f"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/database/migrations-folder.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Migration folder table models source vs built layout with tracked temporary directories and afterEach cleanup; entrypoint anchoring assertion is direct.",
+      "beforeSha256": "fc3274aae40cfdadbe5a0b1e3bbd8186aab1969fc02c3de946ba6c10feb866ab",
+      "afterSha256": "fc3274aae40cfdadbe5a0b1e3bbd8186aab1969fc02c3de946ba6c10feb866ab"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/playground/playground-environment.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "environment fixture keeps safe playground defaults visible; tables cover pinned model syntax and loopback/admin/alias/target authority failures before deployed mode.",
+      "beforeSha256": "8826ca3fa2a5e3fc841caff2b2de6d5248af18fe5ddbb230db3b4797e455a36a",
+      "afterSha256": "8826ca3fa2a5e3fc841caff2b2de6d5248af18fe5ddbb230db3b4797e455a36a"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/probe-flow-registry.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fingerprint helper hashes full production flow prompt/schema/input; tests verify registry completeness, exact shared builders and translated pair identity rather than generic JSON.",
+      "beforeSha256": "9f320fb6d80fc7a7c15868eaab1635d3d32fb54a29e3f6667b57acb77a6c35de",
+      "afterSha256": "9f320fb6d80fc7a7c15868eaab1635d3d32fb54a29e3f6667b57acb77a6c35de"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/server/graceful-shutdown.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Graceful shutdown cases distinguish once-only resource close after drain from deadline force-close using captured callback/fake clock.",
+      "beforeSha256": "19ad93fb1e1da389bfe69fcb5490c49f8aed80a010ecc780bc2086c517404005",
+      "afterSha256": "19ad93fb1e1da389bfe69fcb5490c49f8aed80a010ecc780bc2086c517404005"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/text-ai/accounting-maintenance.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting maintenance fake-timer tests explicitly prove nonoverlap, shutdown waits for pending work, bounded retry and no poststop work.",
+      "beforeSha256": "b1bf82f77146467c4f809769125e0132948b4c36d4621bb9f031c04599605c57",
+      "afterSha256": "b1bf82f77146467c4f809769125e0132948b4c36d4621bb9f031c04599605c57"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/text-ai/text-ai-capacity-lock.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Capacity fence tests distinguish same transaction shared concurrent acquisition, new transaction reacquisition and retry after failed acquisition.",
+      "beforeSha256": "c50536f44b65f6e1615162c0e811ce79a10e45f297194b5f497aaca2e3e05022",
+      "afterSha256": "c50536f44b65f6e1615162c0e811ce79a10e45f297194b5f497aaca2e3e05022"
+    },
+    {
+      "path": "apps/backend/tests/unit/mastra/knowledge-action-registration.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Canonical Mastra registration tests compare authorized Texts composition agents with default unauthenticated Studio without provider execution.",
+      "beforeSha256": "165c5ac72912ed0a97ab5ebeec0a5df8a98d106c320dc3801caa6ed8db16edff",
+      "afterSha256": "165c5ac72912ed0a97ab5ebeec0a5df8a98d106c320dc3801caa6ed8db16edff"
+    },
+    {
+      "path": "apps/backend/tests/health.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Health endpoint tests separate liveness/release identity from dependency readiness/draining and reject retired health alias/OpenAPI route.",
+      "beforeSha256": "12c3d244f6d936747c5535108be89e7fda38c934d63e6995825d3d31913d30f9",
+      "afterSha256": "12c3d244f6d936747c5535108be89e7fda38c934d63e6995825d3d31913d30f9"
+    },
+    {
+      "path": "apps/backend/tests/integration/support/portrait-admission-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seedPortraitAdmissionFixture reuses canonical synthetic accounting fixture and pins available worker identity/revisions/formats with bounded observation expiry; conflict update is narrow.",
+      "beforeSha256": "89c431c76d7d5d5a00bb427254c3f4e871e1d28acf78aec1562bab78670a6510",
+      "afterSha256": "89c431c76d7d5d5a00bb427254c3f4e871e1d28acf78aec1562bab78670a6510"
+    },
+    {
+      "path": "apps/backend/tests/integration/support/test-database.ts",
+      "status": "reviewed-acceptable",
+      "reason": "getTestDatabaseUrl enforces explicit optin, exact confirmed dedicated loopback database/nondefault port before destructive reset; reset and migration-purpose helpers are separate.",
+      "beforeSha256": "f32f79aa3b5b64767042bacc6eac8eab534150727a7dc16df1a972bc05cc7524",
+      "afterSha256": "f32f79aa3b5b64767042bacc6eac8eab534150727a7dc16df1a972bc05cc7524"
+    },
+    {
+      "path": "apps/backend/tests/integration/support/test-redis.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Redis test helpers enforce exact confirmed loopback nondefault port/database1-15; unique namespace and cursor scan/unlink cleanup avoid global flush.",
+      "beforeSha256": "323e234fde796aa31cb62698d6efa8129990aa65eb4259fdb7d1cecd8ec9fdcd",
+      "afterSha256": "323e234fde796aa31cb62698d6efa8129990aa65eb4259fdb7d1cecd8ec9fdcd"
+    },
+    {
+      "path": "apps/backend/tests/performance/accounting-load-metrics.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Performance metrics tests assert nearest-rank p95 and explicit isolated database/Redis targets through rejection table before mutation.",
+      "beforeSha256": "891b2f6ebfbdbcbdb47d5f8b3ed93079292b9402bdf657a6dc64c4fab792ce5d",
+      "afterSha256": "891b2f6ebfbdbcbdb47d5f8b3ed93079292b9402bdf657a6dc64c4fab792ce5d"
+    },
+    {
+      "path": "apps/backend/tests/performance/accounting-load-metrics.ts",
+      "status": "reviewed-acceptable",
+      "reason": "percentile is a short nonmutating nearest-rank helper; validatePerformanceTargets explicitly validates optin/name/loopback/port/DB3 before returning URLs.",
+      "beforeSha256": "4f9c246ca4138a722c0686eb8f557c9775ddb8fde5eec56cb57d5f0872b108cf",
+      "afterSha256": "4f9c246ca4138a722c0686eb8f557c9775ddb8fde5eec56cb57d5f0872b108cf"
+    },
+    {
+      "path": "apps/backend/tests/support/admin-legacy-accounting-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin accounting fixture validates test optin and isolated target before client construction, applies synthetic calibration and always closes client in finally.",
+      "beforeSha256": "8356738d9c2301fea3b3cb4ca0205946b28e66b3a83694b7da4e17512d082f70",
+      "afterSha256": "8356738d9c2301fea3b3cb4ca0205946b28e66b3a83694b7da4e17512d082f70"
+    },
+    {
+      "path": "apps/backend/tests/support/admin-probe-recovery-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe recovery fixture validates isolated target/actor and fingerprint, reserves bounded synthetic probe to simulate disappearance, emits only probe identity and closes client.",
+      "beforeSha256": "42e0a4a835a877834d33b985bff83ad81ca0e76676c25ffc8274a8f5a2be8671",
+      "afterSha256": "42e0a4a835a877834d33b985bff83ad81ca0e76676c25ffc8274a8f5a2be8671"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-block-proposal-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "markdownGrammarProposal keeps deterministic rich literal payload separate from startup; mentionedBlockIds extracts real serialized prompt and validates exactly two frozen string IDs.",
+      "beforeSha256": "2d81e226aded62d617d84eee7d47adb4e105f62b3d8653ea3aa1a327d397e0d3",
+      "afterSha256": "2d81e226aded62d617d84eee7d47adb4e105f62b3d8653ea3aa1a327d397e0d3"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-fixture-block.ts",
+      "status": "reviewed-acceptable",
+      "reason": "contextualFixtureBlock limits traversal and reads only real read_source_context tool outputs; split audio/bilingual reconstruction requires exact segment counts/unique identities and final LearningBlockSchema parse, with explicit no-fabrication comment.",
+      "beforeSha256": "1a8bf094d10e730a5b1ec632f71726fdbbc64fd32d1362d92bc06ae6f45834ad",
+      "afterSha256": "1a8bf094d10e730a5b1ec632f71726fdbbc64fd32d1362d92bc06ae6f45834ad"
+    },
+    {
+      "path": "apps/backend/tests/support/legacy-action-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seedLegacyActionFixture separates synthetic accounting budget calibration from per-model rate seeding, preserves prior reviewed price checks and explicit nonproduction comment.",
+      "beforeSha256": "ae984262af9f37a8a2b5eb8227908325d089d5ea4117249a54168407f514ef5d",
+      "afterSha256": "ae984262af9f37a8a2b5eb8227908325d089d5ea4117249a54168407f514ef5d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/infrastructure/action-allowance-consent.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Allowance middleware tests deliberately compose body guards twice over chunked requests; assertions separate confirmation stripping before fingerprinting, malformed consent and learner-only redacted quote response.",
+      "beforeSha256": "8466f14347bc85e110c39531b9594d39727474d4ef4dbdae40382b1ad51db08b",
+      "afterSha256": "8466f14347bc85e110c39531b9594d39727474d4ef4dbdae40382b1ad51db08b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/infrastructure/native-text-expense.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native expense tests inspect compiled SQL parameters to distinguish DB checkpoint authority without aggregate SDK tokens from legacy full monetary identity assertion; synthetic pinned price is explicit.",
+      "beforeSha256": "b4b5307e928c614ba5088edb270377117eedcd46818df25dde94fc1722ad4d1c",
+      "afterSha256": "b4b5307e928c614ba5088edb270377117eedcd46818df25dde94fc1722ad4d1c"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/accounting-report-worker.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Report worker fake-time tests prove single in-flight refresh, stop waiting and abort/failure reporting with deterministic deferred completion.",
+      "beforeSha256": "d4261a7815228d037381f24f21cad0c10925492e511247ca2599e4f1efedaa7a",
+      "afterSha256": "d4261a7815228d037381f24f21cad0c10925492e511247ca2599e4f1efedaa7a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/accounting.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting route setup exposes authorization/store spies; cases assert origin-before-write, recent actor provenance, durable report503 retry and no report query on denied auth.",
+      "beforeSha256": "1fcd8e4b4b65d04ea148f24c847df28eb524e6e9e31527462b7aab7c59157466",
+      "afterSha256": "1fcd8e4b4b65d04ea148f24c847df28eb524e6e9e31527462b7aab7c59157466"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/learner-ai-credit-balance.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Balance route harness separates active session verification, exact bigint formatting and effective unlimited redaction; cases reject caller selectors/hostile origins before wallet reads and never fabricate zero on errors.",
+      "beforeSha256": "23f1fc8a10bc597b1ab8aec546112f8ea308a6bf2a141badc60f55e0b4dc8da1",
+      "afterSha256": "23f1fc8a10bc597b1ab8aec546112f8ea308a6bf2a141badc60f55e0b4dc8da1"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/model-prices.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Model price rollout gate test explicitly asserts recent authorization still occurs while disabled publication prevents transaction mutation.",
+      "beforeSha256": "e0f1a50fa91001c023de9c216dcb0f62b8574f91583c8021e0a0efb589018cc9",
+      "afterSha256": "e0f1a50fa91001c023de9c216dcb0f62b8574f91583c8021e0a0efb589018cc9"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/ai-credits/interface/provider-prices.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider price route fixtures make origin/actor provenance explicit; native-payload and oversized-body cases assert rejection before authorization/publication.",
+      "beforeSha256": "f9231f8a0653774c1ee6ad594d559b587b52db9aea0939b47e18ad3c8fcb1bef",
+      "afterSha256": "f9231f8a0653774c1ee6ad594d559b587b52db9aea0939b47e18ad3c8fcb1bef"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/application/account-deletion-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Account deletion harness invokes beforeCommit explicitly; call-order assertions distinguish blocking intent from post-SQL committed marker and fail closed before cancellation preparation.",
+      "beforeSha256": "cda47ea0694d94c076940962fc14974ddcb86663fa7f9705223ec9332c3c8bc1",
+      "afterSha256": "cda47ea0694d94c076940962fc14974ddcb86663fa7f9705223ec9332c3c8bc1"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/application/account-purge-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge fixture exposes claim/fence/renew/finish; cases keep active jobs and pending cleanup ahead of storage deletion and retry without finalizing storage failures.",
+      "beforeSha256": "32ca57d482a06df1baa6e6f9a0ca51aae16b852253ed0145ffae717c2f55523a",
+      "afterSha256": "32ca57d482a06df1baa6e6f9a0ca51aae16b852253ed0145ffae717c2f55523a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/infrastructure/recovery/account-deletion-recovery.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "FakeObjectStore models conditional puts/version lists/delete markers; recovery tests separate sentinel integrity, object-key encryption binding, committed cancellation/version precedence and indeterminate rollback fail-closed state.",
+      "beforeSha256": "24825bd37f69142434c98b7db99346a2ea5865468f16fe0b03ec2e14a10b0cf1",
+      "afterSha256": "24825bd37f69142434c98b7db99346a2ea5865468f16fe0b03ec2e14a10b0cf1"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/infrastructure/s3-account-purge-object-storage.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "S3 purge tests separately delete data/tombstone versions, verify second listing empty and reject late reappearing physical versions.",
+      "beforeSha256": "971acfb85c9215336c851259a247b9b79dbc23dee6cc5f56be95790b58eddd5b",
+      "afterSha256": "971acfb85c9215336c851259a247b9b79dbc23dee6cc5f56be95790b58eddd5b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/users/interface/http/user-profile.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Profile harness centralizes authenticated identity/policy while cases assert normalized handle/no-write auth failures and deletion receipt/cookie clearing only after success; error mapping table retains cookies.",
+      "beforeSha256": "e91d155e0204ccdd6bbb4327e7b6ec28b1ca7e6ac976d44ff24747f58a3661f6",
+      "afterSha256": "e91d155e0204ccdd6bbb4327e7b6ec28b1ca7e6ac976d44ff24747f58a3661f6"
+    },
+    {
+      "path": "apps/backend/tests/unit/support/contextual-assistant-accounting-fixture.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting fixture tests calculate actual proposal schema framing and finite aggregate tariff allowance, proving old cap insufficiency, free zero tariff and higher cached input reservation.",
+      "beforeSha256": "f70a36815c0064aa7e411f736c0d13cf28af6ecdb993db9319c98e8496d78261",
+      "afterSha256": "f70a36815c0064aa7e411f736c0d13cf28af6ecdb993db9319c98e8496d78261"
+    },
+    {
+      "path": "apps/backend/tests/unit/support/contextual-fixture-block.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Fixture block tests use real learningBlockSourceMaterial/tool envelope and prove prepared selection, exact split transcript reconstruction, refusal of missing passage and rejection of user-prose blocks.",
+      "beforeSha256": "8cac45aa8deb5d62a43b570f899f454b279c8c4a39a7b407bfa322d1de905542",
+      "afterSha256": "8cac45aa8deb5d62a43b570f899f454b279c8c4a39a7b407bfa322d1de905542"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/development-harness/application/development-verification-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development verification tests expose principal reader boundary: active verified synthetic identity only, rejection before lookup for arbitrary context, and original abort preservation.",
+      "beforeSha256": "f3cb4a8d2495c332d353a4a228863c2a42284a5c50fd7e784284c40d2442c17b",
+      "afterSha256": "f3cb4a8d2495c332d353a4a228863c2a42284a5c50fd7e784284c40d2442c17b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/development-harness/infrastructure/mastra/development-harness-primitives.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Mastra primitive tests use createOptions/requestContext helpers to separate explicit composition registration, deterministic tool/workflow/scorer, credential gate, exact model/fallback origin, private-log suppression and cancellation.",
+      "beforeSha256": "e79cce0e4233a7e19aaaf7c6337111d9240424e08814c821ce02b4539fefa112",
+      "afterSha256": "e79cce0e4233a7e19aaaf7c6337111d9240424e08814c821ce02b4539fefa112"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/interface/http/auth-http-error-mapping.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth error mapping table explicitly ties domain errors to stable status/code; safe retry metadata and secret-free unexpected errors are separate cases.",
+      "beforeSha256": "5d6f9fd82242a125d54586ec041adc798648b1e5eeda18b7b5baf9168996b694",
+      "afterSha256": "5d6f9fd82242a125d54586ec041adc798648b1e5eeda18b7b5baf9168996b694"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/interface/http/auth-http-policy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AuthHttpPolicy tests separate exact origin, host-only cookie security/namespace/absolute expiry, exact Bearer syntax and right-to-left trusted proxy chain.",
+      "beforeSha256": "68557f1b84829bb1eb0de6f7d56a5ee6799c0e5804d3d0e3a52e8e9d522e2420",
+      "afterSha256": "68557f1b84829bb1eb0de6f7d56a5ee6799c0e5804d3d0e3a52e8e9d522e2420"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/interface/http/passkey-auth.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey route operations/routes helpers expose dispatch spies; cases assert origin/body bounds before ceremony, safe throttle, large valid attestation and precise OpenAPI bearer scope.",
+      "beforeSha256": "5afad830c9cd75296d1f02526b4bc7d497d727af7ab714c6feee2be0ac41eede",
+      "afterSha256": "5afad830c9cd75296d1f02526b4bc7d497d727af7ab714c6feee2be0ac41eede"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/interface/http/password-auth.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Password route fixture separates credential envelope from public authenticated response; cases assert origin/body guards, refresh rotation/cookie privacy and terminal-vs-transient cookie clearing with operation spies.",
+      "beforeSha256": "9c7030eeb72b770515c6cf3a881a577c42f28af07f8c3bae30182bedc0b455a4",
+      "afterSha256": "9c7030eeb72b770515c6cf3a881a577c42f28af07f8c3bae30182bedc0b455a4"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/infrastructure/passkeys/simplewebauthn-adapter.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "WebAuthn adapter tests use protocol-specific credentials and hoisted server verification mocks; explicit RP/origin/type/user-verification parameters and counter/backup/user-handle failures remain visible.",
+      "beforeSha256": "49efdaf51499bf1240d3b2fd3d502a3005116044afd041e2541404d0aecea626",
+      "afterSha256": "49efdaf51499bf1240d3b2fd3d502a3005116044afd041e2541404d0aecea626"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/application/session-issuer.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SessionIssuer tests inject clock/IDs/token adapters and assert minimal JWT, absolute14day refresh family and successor access expiry capped to predecessor without renewal.",
+      "beforeSha256": "fa3f8d824300a735bf12ec47e84c0cc26bf90dc46bbc40802880830afebd4149",
+      "afterSha256": "fa3f8d824300a735bf12ec47e84c0cc26bf90dc46bbc40802880830afebd4149"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/dictionary-provider-outcome.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary generator factory table exercises real flow inputs with conclusive429 vs ambiguous403/503 and invalid-return completed execution outcome using deterministic agent mocks.",
+      "beforeSha256": "e5c941892c65d0fb3b2d2825d29550186964cc5eaa5fa07e57ecf9e85bfeacdf",
+      "afterSha256": "e5c941892c65d0fb3b2d2825d29550186964cc5eaa5fa07e57ecf9e85bfeacdf"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/knowledge-admission-gate.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge admission gate tests distinguish ordinary Texts compatibility from new format API+worker declarations and preserve master off switch.",
+      "beforeSha256": "0fa3248138f8d4df0b49f3eff40947bb63429a94b5f5e39bef0c71810ddd3ef2",
+      "afterSha256": "0fa3248138f8d4df0b49f3eff40947bb63429a94b5f5e39bef0c71810ddd3ef2"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/provider-execution-outcome.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider execution outcome tables explicitly distinguish conclusive status rejection from ambiguous/policy failures; internal cause identity and sanitized safe metadata are asserted.",
+      "beforeSha256": "c924520378c186ca3346fe69cc774847378c41c8941a7e38ff07d78db7c2e1ba",
+      "afterSha256": "c924520378c186ca3346fe69cc774847378c41c8941a7e38ff07d78db7c2e1ba"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/provider-token-usage.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider token usage tests separate absent vs zero cache categories and reject conflicting/impossible/out-of-budget meters with explicit normalization expectations.",
+      "beforeSha256": "57e3c6fa5da8d0dba96b8258fb399966419d9c4db84ed2eb7560a6ab87583b25",
+      "afterSha256": "57e3c6fa5da8d0dba96b8258fb399966419d9c4db84ed2eb7560a6ab87583b25"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-execution-profile.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "snapshot helper derives catalog execution limits; tests distinguish reviewed translation vs dictionary caps, exact fractional rates and unreviewed cap/model/format rejection.",
+      "beforeSha256": "a5d76c8cbae4ac8a7db55222d1e7b0bd07177ea36d7977073853393a7768efbd",
+      "afterSha256": "a5d76c8cbae4ac8a7db55222d1e7b0bd07177ea36d7977073853393a7768efbd"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-pricing-rollout.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pricing rollout tests cover both deployed declaration halves/local exceptions; mocked query chain makes admission rejection before tariff lookup visible.",
+      "beforeSha256": "b523d10a88622c275551acf02d9f1a23b65da2c1fea70592d90511025b26e472",
+      "afterSha256": "b523d10a88622c275551acf02d9f1a23b65da2c1fea70592d90511025b26e472"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/texts-admission-gate.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Texts admission tests group master switch and staging/production API+worker format compatibility, including legacy-only/empty declarations.",
+      "beforeSha256": "63e086d10d775ec17a96dc7b775f4341c44c635e6bc1fe4c0e55a1e657650d0b",
+      "afterSha256": "63e086d10d775ec17a96dc7b775f4341c44c635e6bc1fe4c0e55a1e657650d0b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/run-pinned-fallback.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pinned fallback snapshot pins candidates/rates; cases assert exactly one fallback only after conclusive rejection, no reroute after publish/abort/ambiguous/untyped errors and preservation of confirmed allowance.",
+      "beforeSha256": "eeddf6f959f2653ccbf3788b6bf90b322d81b415023cc120d9768e5427d78f1f",
+      "afterSha256": "eeddf6f959f2653ccbf3788b6bf90b322d81b415023cc120d9768e5427d78f1f"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/text-ai-preference-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preference harness models versioned store transaction and catalog spies; cases prove read redaction/no catalog access, stale no-write behavior and budget edits despite unavailable models.",
+      "beforeSha256": "3830f3d456468fc92c58a4c5af8b8b7670fe1b8d7b0ade20a555a23af6928351",
+      "afterSha256": "3830f3d456468fc92c58a4c5af8b8b7670fe1b8d7b0ade20a555a23af6928351"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/text-ai-route-health.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Route-health fixture supplies admitted AsyncLocal attempt witness; tests distinguish policy403 from credential401/schema evidence, validate identity before writes and isolate concurrent witnesses.",
+      "beforeSha256": "82b85f249714b55bed138bd55a53995ba0d93e5e50dee7f963dc940a71cdd442",
+      "afterSha256": "82b85f249714b55bed138bd55a53995ba0d93e5e50dee7f963dc940a71cdd442"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/text-ai-routing.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing domain tests preserve primary ordering/sparse overrides and format mapping, then reject duplicate/retired/unknown/incompatible candidates using a short explicit configuration.",
+      "beforeSha256": "738beb27f2fd61a856fb497e8df4adee36c9ea6756666389af7c30b5e7a146be",
+      "afterSha256": "738beb27f2fd61a856fb497e8df4adee36c9ea6756666389af7c30b5e7a146be"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/text-ai.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Text AI HTTP harness derives identity from verified claims and active session; cases reject foreign fields/hostile origins before update and cover no-store/preflight/actionable error mappings.",
+      "beforeSha256": "f67f16a637488c428703bf1ff3b54a636c764ebe0930db906cb7dd23cc5eeb0c",
+      "afterSha256": "f67f16a637488c428703bf1ff3b54a636c764ebe0930db906cb7dd23cc5eeb0c"
+    },
+    {
+      "path": "apps/backend/tests/unit/config/environment-diagnostics.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Environment diagnostics tests separate fallback-name warnings from configured/optional/empty values and assert required/invalid errors never echo supplied secrets.",
+      "beforeSha256": "49dca66d96488ad27f00406aec75ee7642caf5f2487fe1caabbc94371152f4a9",
+      "afterSha256": "49dca66d96488ad27f00406aec75ee7642caf5f2487fe1caabbc94371152f4a9"
+    },
+    {
+      "path": "apps/backend/tests/unit/config/text-ai-probe-environment.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe environment cases assert bounded defaults and fixture optin, isolated loopback target/nondefault port and synthetic credentials with explicit rejection table.",
+      "beforeSha256": "bc8bdd1dad6b78963efff0fb79af872bc53add38fecac665fcc80a0ebcafd970",
+      "afterSha256": "bc8bdd1dad6b78963efff0fb79af872bc53add38fecac665fcc80a0ebcafd970"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/worker/dictionary-worker-command.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker command tests verify repeated readiness publication revisions/capabilities, shared env path, deterministic sentence rejection and identity-preserving synthetic Texts output; live-vs-fixture conversation readiness stays explicit.",
+      "beforeSha256": "3878da5e96c9ab691b597890e43c81961d9fc06b5ac37b3acb4206f82f3d7f9d",
+      "afterSha256": "3878da5e96c9ab691b597890e43c81961d9fc06b5ac37b3acb4206f82f3d7f9d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/administration/infrastructure/admin-credit-amount.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin credit transport tests directly assert signed milli conversion and canonical output while rejecting floating precision/exponents/nonfinite adjustments.",
+      "beforeSha256": "9f022e7753006e2ada7bd8b7d020e4f479e369ee28cd3482251ab1a2597403c4",
+      "afterSha256": "9f022e7753006e2ada7bd8b7d020e4f479e369ee28cd3482251ab1a2597403c4"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/authentication/infrastructure/production-redis-tls-acl.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Production Redis TLS/ACL suite is explicitly opt-in and uses real rolling-window/lease commands plus forbidden flushall assertion; lifecycle setup/quit remain separate.",
+      "beforeSha256": "c45db175e01c9c916df4ab6d9be29cd8374bc983c4c3e607771650aa23bc4c76",
+      "afterSha256": "c45db175e01c9c916df4ab6d9be29cd8374bc983c4c3e607771650aa23bc4c76"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/users/infrastructure/recovery/account-deletion-recovery-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Disposable recovery store test replays identical future blocking intent twice into old snapshot and asserts one pending request/exact purge date after safe reset/migrations.",
+      "beforeSha256": "c62f29c3b0260983a16003bf711257b5aed00dbb5555687881394b84633c1eb2",
+      "afterSha256": "c62f29c3b0260983a16003bf711257b5aed00dbb5555687881394b84633c1eb2"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/operation-bounds.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Delegated bounds tests keep grant/revoke/spending caps distinct, assert exact thousandths and schema/report UTC/paging limits with explicit actor configuration.",
+      "beforeSha256": "25868fc0544bd3b619311d945abba6084f7863a98e1d6fcb27c927797665dc80",
+      "afterSha256": "25868fc0544bd3b619311d945abba6084f7863a98e1d6fcb27c927797665dc80"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/operation-conflicts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Conflict recovery table maps named optimistic conflicts to sanitized stale-preview guidance; separate check prerequisite prohibits automatic dispatch and unknown errors retain identity.",
+      "beforeSha256": "6d60fff655adf4b27a1e72cfc994afb5872bad852c735513047c0d2a92f1ce25",
+      "afterSha256": "6d60fff655adf4b27a1e72cfc994afb5872bad852c735513047c0d2a92f1ce25"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/administration-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "MCP application fixture exposes persistence/audit spies; tests validate read schema/reason separation, frozen allowed actions, apply-key validation and preserved recovery codes.",
+      "beforeSha256": "0aca3301a0157e8db2152f825ec2221f5097082211ce9c4ddaf281e228abec46",
+      "afterSha256": "0aca3301a0157e8db2152f825ec2221f5097082211ce9c4ddaf281e228abec46"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/admin-mcp-token.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "MCP browser token fixture separates verified principal/recent auth from credential operations; tests keep production404, no-store issue, revocation without stepup and missing-Origin no-write explicit.",
+      "beforeSha256": "2fb577509991defeea77b74e449f8687a724425c2c91a0188d9bfa3ca0056a7a",
+      "afterSha256": "2fb577509991defeea77b74e449f8687a724425c2c91a0188d9bfa3ca0056a7a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/admin-mcp-rejection-audit.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Rejection audit tests mock only durable audit, retaining real payloadHash; token-owned preview provenance, curated metadata, hashed operation key and exclusion of raw/private/credential-shaped content are exact assertions.",
+      "beforeSha256": "b82a97cef12e6a5c04b0135295044ba9590eb7398b77ecf647383dff7146a18d",
+      "afterSha256": "b82a97cef12e6a5c04b0135295044ba9590eb7398b77ecf647383dff7146a18d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/admin-mcp-server.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "MCP HTTP fixture uses real SDK tool listing/calls with delegated actor; cases enforce loopback Host/no browser Origin/no query token before auth, read-only connection and sanitized internal errors.",
+      "beforeSha256": "f97c110305f90af02e65e2e199e86768170ec64428e4d11d4ade59f8ac08c0fb",
+      "afterSha256": "f97c110305f90af02e65e2e199e86768170ec64428e4d11d4ade59f8ac08c0fb"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-admission-participant.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Managed admission helpers snapshot/managed/observation expose routing pin and rolling readiness revisions; rejection tables assert no budget initialization without compatible current evidence and no routing when disabled.",
+      "beforeSha256": "961390800023348f96d150c76ff1594a27dc12e7e82394e116cff7d7677f72b6",
+      "afterSha256": "961390800023348f96d150c76ff1594a27dc12e7e82394e116cff7d7677f72b6"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/native-provider-observations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "nativeAgent/completion helpers retain real SDK transport with synthetic fetch; tests assert privacy controls/max-price, durable receipt before dispatch, usage checkpoint before publication, streaming raw-frame filtering and unknown-cost semantics.",
+      "beforeSha256": "017803759cc85acecf068ea1b2db45285eb3554482e20bce2ba320581ad3346e",
+      "afterSha256": "017803759cc85acecf068ea1b2db45285eb3554482e20bce2ba320581ad3346e"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/provider-runtime-observer.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Runtime observer suite uses bounded consumeStream with reader finally release; cases preserve SDK result identity, captured witness beyond creation scope, learner abort isolation and awaited durable health before error publication.",
+      "beforeSha256": "186b3fd289ed9b2b011967400327dd42a6e5e63e2f836b975053fc49626be8d9",
+      "afterSha256": "186b3fd289ed9b2b011967400327dd42a6e5e63e2f836b975053fc49626be8d9"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/dictionary-router-gateway-runtime.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Router gateway fixture explicitly pins native/flat price, fingerprint and worker witness; tests exercise actual SDK body, credential/price cache invalidation, native policy hash and safe health-before-failure without policy403 reroute.",
+      "beforeSha256": "127dac8021745d7aa720c9e3df563cdd9ec676c742cca341f767afe9b18223f2",
+      "afterSha256": "127dac8021745d7aa720c9e3df563cdd9ec676c742cca341f767afe9b18223f2"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/text-ai-probe-executor.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe executor response helper and synthetic flows exercise actual SDK endpoint/no-tools/retry caps, schema/domain validation, flow/credential/policy fingerprint drift, bounded streaming first output and unknown usage instead of zero.",
+      "beforeSha256": "520224a8fb73b5f7714157aef60ada830ffa48288b63405601e420131f429386",
+      "afterSha256": "520224a8fb73b5f7714157aef60ada830ffa48288b63405601e420131f429386"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/text-ai-probe-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe service tests retain explicit reserve/authorize/execute/finish order, cancellation timing, exact approved maximum and no dispatch on rejected admission; settlement failure never retries provider and cost tests preserve cache/minimum/unknown semantics.",
+      "beforeSha256": "2b7af270775b6d7fea40cf27b6fae6d14bf52dcd133f6ec733e5c186107feab3",
+      "afterSha256": "2b7af270775b6d7fea40cf27b6fae6d14bf52dcd133f6ec733e5c186107feab3"
+    },
+    {
+      "path": "apps/backend/tests/unit/config/environment.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "values fixture separates deployed safe endpoints from local defaults; environment tests cover independent feature switches, duration/secret/TLS/proxy bounds, complete lifecycle/budget declarations and document storage activation/drain without conflating defaults with optins.",
+      "beforeSha256": "71bca21fddbe19b4d111d29cde28a444db79a06035ac46e4139df1d44a29f54e",
+      "afterSha256": "71bca21fddbe19b4d111d29cde28a444db79a06035ac46e4139df1d44a29f54e"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/worker/dictionary-worker-environment.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker environment suite separates timeout diagnostics from readiness/drain/format/provider configuration; exact credential/base-origin, aggregate budgets, worker storage and transcription-only cases retain distinct named invariants.",
+      "beforeSha256": "bcb27e35149b8c8d67259eb6267aeda77aed699b1b937b84036fdc6119ade34b",
+      "afterSha256": "bcb27e35149b8c8d67259eb6267aeda77aed699b1b937b84036fdc6119ade34b"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/worker/dictionary-worker-runtime.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker runtime tests use deferred/pendingUntilAbort/combinedRuntime helpers around explicit barriers; cases prove bounded fair shared slots, preparation-before-child, sanitized fixed metrics and bounded drain/lease release with fresh signals/timer cleanup.",
+      "beforeSha256": "25e06fae74f689ee172418cf8fe48f3f222dc5fe6c2db6b6aa85ce7ad9810e23",
+      "afterSha256": "25e06fae74f689ee172418cf8fe48f3f222dc5fe6c2db6b6aa85ce7ad9810e23"
+    },
+    {
+      "path": "apps/backend/tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence runtime fixture drives real SDK through abort-ignoring synthetic fetch; fake native timeout adapter makes exact180s/override deadlines, heartbeat cancellation/lease loss and late publication fencing observable without second calls.",
+      "beforeSha256": "3d17e4ad00f388de6cd531d8c69ab1d9f3e1a62c64f59b83c945572b9113b71a",
+      "afterSha256": "3d17e4ad00f388de6cd531d8c69ab1d9f3e1a62c64f59b83c945572b9113b71a"
+    },
+    {
+      "path": "apps/backend/tests/unit/mastra/development-server-policy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development policy suite separates process env enforcement, exact local authority and caller override rejection; createPolicyTestApp/jsonRequest helpers support bounded controls, serialized work and exhaustive denied route/method table.",
+      "beforeSha256": "0ba8995256daef06e4601b51af432b296409cae2b81034241a0157a280ea6aba",
+      "afterSha256": "0ba8995256daef06e4601b51af432b296409cae2b81034241a0157a280ea6aba"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/action-budget-default.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Action default suite uses copy transaction helper and real concurrent first admissions to assert copied-once budget/version and preservation of explicit model/budget after administrator changes.",
+      "beforeSha256": "9de5d511ec735373174afa2c7c495358bca262886e19765da626f8a97bac4f6a",
+      "afterSha256": "9de5d511ec735373174afa2c7c495358bca262886e19765da626f8a97bac4f6a"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/speech-quota-worker-authority.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech quota authority suite creates restricted production-grant role with finally cleanup; direct current-day mutations are denied while server-cutoff cleanup hard batch bounds preserve retained counters.",
+      "beforeSha256": "cc923acacc633f498f18b3b3aec1c89e2f1b14b2966e802c000e8b29cf0b0d51",
+      "afterSha256": "cc923acacc633f498f18b3b3aec1c89e2f1b14b2966e802c000e8b29cf0b0d51"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/model-price-participant.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Model tariff suite uses real competing publications and immutable history assertions, restores by revision publication and separately proves milli speech/zero minimum and optional cached-rate persistence.",
+      "beforeSha256": "87e2cde9527230abb04135b06fbc37f49ddd1323ca97c1c6c6d574b925d1a3d0",
+      "afterSha256": "87e2cde9527230abb04135b06fbc37f49ddd1323ca97c1c6c6d574b925d1a3d0"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/native-call-monetary-authority.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native monetary authority table tests admit real action/attempt/call then grant only observation function to temporary role; foreign USD/credit fields are denied without mutation while plain usage succeeds and role cleanup is finally-scoped.",
+      "beforeSha256": "392c1ca10ece5ad2aa60d229c5d88227ee89add6a206990af3cb6e3ba533f038",
+      "afterSha256": "392c1ca10ece5ad2aa60d229c5d88227ee89add6a206990af3cb6e3ba533f038"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Gateway adapter suite uses syntheticPrice/agent/completion helpers with real SDK and fetch stubs; route tables assert exact model/endpoint/schema/privacy/max-price controls, stream/cancel/no-retry semantics, unknown usage and local strict validation, plus safe sentence rejection metadata.",
+      "beforeSha256": "0981f340542133087c57feae9eb4e401a975af28a1e031beb6dd4d9bed666bc5",
+      "afterSha256": "0981f340542133087c57feae9eb4e401a975af28a1e031beb6dd4d9bed666bc5"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/text-ai-worker-observations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker observation fixture captures inserted rows/conflict updates; grouped cases distinguish capacity/selection/execution namespaces, exact formats and revision conjunctions, preparation optin and isolated chat/portrait identities while failed non-generating probes remain sanitized.",
+      "beforeSha256": "038e5a47c8b4d83c40d87729cb20f03b8a7c566ef9cef3d7e446d88a65f68f3b",
+      "afterSha256": "038e5a47c8b4d83c40d87729cb20f03b8a7c566ef9cef3d7e446d88a65f68f3b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/admin-mcp-checks.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "MCP check setup captures registered handlers and budget/audit doubles; cases separate nonspending status, exact cap confirmation, replay, live dispatch fence, measured settlement and rejected/zero-expense audit outcomes without provider calls.",
+      "beforeSha256": "844fd5db9a1d43b547538971fe7ea8acd0c54110b28daf4dbc21beb0e8c75beb",
+      "afterSha256": "844fd5db9a1d43b547538971fe7ea8acd0c54110b28daf4dbc21beb0e8c75beb"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/admin-mcp/native-price-verification.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native price fixture separates read verification from native-write delegation and execution readiness; cases preserve retired identity, retrieval-only validity comparison, reauthentication and exact real-SDK tool discovery for frozen action snapshots.",
+      "beforeSha256": "76b94e5882d714019b64df2bcee4ccd7e15a68c43b1aaf2686396947fc3f3fee",
+      "afterSha256": "76b94e5882d714019b64df2bcee4ccd7e15a68c43b1aaf2686396947fc3f3fee"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/administration/application/administration-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Administration setup injects clock/IDs/store/auth and optional sentence projection; cases explicitly test recent-auth actor/audit provenance, membership before reads, no duplicate credit audit, typed busy outcomes and self-disable rejection.",
+      "beforeSha256": "42af677a4bc3fa21fbef1fa79b5b67da89b0c03a236e3c5992028e8a58d6885a",
+      "afterSha256": "42af677a4bc3fa21fbef1fa79b5b67da89b0c03a236e3c5992028e8a58d6885a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/administration/interface/http/admin-text-ai-probe.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin probe setup exposes recent vs ordinary auth and run/list/recover spies; cases assert verified identity, no dispatch on missing Origin/auth, nonspending listing and explicit upstream-stop recovery attestation.",
+      "beforeSha256": "a53772c2fd9125d9bfa1b7bcf3ce57b68d3e98cc19360ffcd0bfab36ccfe0c2b",
+      "afterSha256": "a53772c2fd9125d9bfa1b7bcf3ce57b68d3e98cc19360ffcd0bfab36ccfe0c2b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/administration/interface/http/administration.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Administration route setup keeps admin cookie/membership separate from auth payload; named cases cover credit/settings optimistic conflicts, deletion journal failures, scoped sentence projections/reasons/busy errors and hostile-origin rejection.",
+      "beforeSha256": "b13e40655b9457ef934d5433ecf5f0ee5936594a5a9adc2159563214d75785e3",
+      "afterSha256": "b13e40655b9457ef934d5433ecf5f0ee5936594a5a9adc2159563214d75785e3"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/authentication/application/authentication-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "MemoryStore implements named AuthStore transitions using explicit account/challenge/session/passkey maps; createHarness injects deterministic clock/IDs/hash/issuer/events, while cases assert signup replacement, rehash race recovery, reset/replay revocation and private-event redaction. Broad fake stays locally discoverable and does not claim DB proof.",
+      "beforeSha256": "ca017706293a37fe2133f39faf05480fb5579082825aee12466daee3d77dc28e",
+      "afterSha256": "ca017706293a37fe2133f39faf05480fb5579082825aee12466daee3d77dc28e"
+    },
+    {
+      "path": "apps/backend/tests/integration/support/accounting-action-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting action helpers seed real capacity/policy/feature authority, pin reviewed provider budgets and reserve through production participant; settlement checks terminal feature state and numerical expense facts atomically instead of disabling guards.",
+      "beforeSha256": "721864aabb4631173bca4578be5ded2d827f6380b1f171fc6812d80f7d3b08a1",
+      "afterSha256": "721864aabb4631173bca4578be5ded2d827f6380b1f171fc6812d80f7d3b08a1"
+    },
+    {
+      "path": "apps/backend/tests/support/ai-accounting-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seedInterviewAccountingFixture separates synthetic operator budget/customer tariff/provider price calibration, increments immutable revisions only when values differ and then seeds explicit routing evidence.",
+      "beforeSha256": "1e263f1690473c4aa3a7776070ceb7a646455ed00ffef9d1bc3fd13ee24b407c",
+      "afterSha256": "1e263f1690473c4aa3a7776070ceb7a646455ed00ffef9d1bc3fd13ee24b407c"
+    },
+    {
+      "path": "apps/backend/tests/support/text-ai-routing-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seedTextAiRoutingFixture documents disposable caller authority and preserves existing deliberate policy unless replace/refresh requested; per-flow probe evidence pins real synthetic fingerprint/price without provider calls.",
+      "beforeSha256": "69c088606989ee959a46e7302011936e66c485e2f96c3b38dfc3f7dcfd97744c",
+      "afterSha256": "69c088606989ee959a46e7302011936e66c485e2f96c3b38dfc3f7dcfd97744c"
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait browser fixture has explicit named-target guard, deterministic model/interviewer boundaries and admitted execution validation; composition uses real SDK/tools/memory/accounting/routes and scoped Redis cleanup, with bounded synthetic account credit and worker evidence helpers.",
+      "beforeSha256": "623ad71fb49e061f4d4ad3e95720c7929c6396161fe40e0c54f0a12781668156",
+      "afterSha256": "623ad71fb49e061f4d4ad3e95720c7929c6396161fe40e0c54f0a12781668156"
+    },
+    {
+      "path": "apps/backend/tests/support/learner-portrait-web-server.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait web server delegates real app fetch, credits only contract-validated email verification identities and runs bounded worker loop with signal-driven server/fixture cleanup.",
+      "beforeSha256": "03f45373a94aefe2862f08076d8f43088d5029a841fe621c2a3ee435c640f7b0",
+      "afterSha256": "03f45373a94aefe2862f08076d8f43088d5029a841fe621c2a3ee435c640f7b0"
+    },
+    {
+      "path": "apps/backend/tests/support/admin-speech-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin speech fixture validates isolated test target/actor before constructing local tone/storage composition; seed accounting, saved-source creation, join and audited deletion assertions are separate named phases with client finally cleanup.",
+      "beforeSha256": "c70788fabf61dd66debda1cfb27ad847a60c0664b61831301c0ca6413d196cbd",
+      "afterSha256": "c70788fabf61dd66debda1cfb27ad847a60c0664b61831301c0ca6413d196cbd"
+    },
+    {
+      "path": "apps/backend/tests/support/sentence-web-worker.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence browser worker guards test target/run/local provider-storage, keeps deterministic generation/check and synthetic usage explicit, separates fixture preparation/readiness from production worker polling and closes audio/client in finally.",
+      "beforeSha256": "2f22adf44515c6e664d6faaedf886f9287c88256d5bfdaa3082c2084ae2e3c02",
+      "afterSha256": "2f22adf44515c6e664d6faaedf886f9287c88256d5bfdaa3082c2084ae2e3c02"
+    },
+    {
+      "path": "apps/backend/tests/e2e/mastra-development-harness.journey.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Playground journey preserves stable flow markers and explicit lifecycle sequence: concurrent provision, real deterministic workflow/scorer, persistence/isolation, refused unconfirmed reset then confirmed reset and concurrent lifecycle serialization.",
+      "beforeSha256": "09a23f1105c6db601d404b892522764b8150c371316e0936ac43990fa555fe2d",
+      "afterSha256": "09a23f1105c6db601d404b892522764b8150c371316e0936ac43990fa555fe2d"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/routing-prefence-authority.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pre-fence routing suite explicitly inspects zero advisory locks during preparation, then capacity-fenced route disable and newly effective/published rate re-resolution with real separate publication transactions.",
+      "beforeSha256": "c2d0f68b814e9e267e1fc22dd0dcf349c956180cab16754ef1fa6cea6742c8da",
+      "afterSha256": "c2d0f68b814e9e267e1fc22dd0dcf349c956180cab16754ef1fa6cea6742c8da"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-routing.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing publication suite asserts exact per-flow tariff/legacy FK bridge, immutable history and competing version outcomes; emergency disable avoids fresh checks and rejected tariffs/routes leave active version unchanged.",
+      "beforeSha256": "42f8fd1d80cc852b0f5acdc88df2c69f79d49b11ceffd0d1fb3b8e95eb7dd000",
+      "afterSha256": "42f8fd1d80cc852b0f5acdc88df2c69f79d49b11ceffd0d1fb3b8e95eb7dd000"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/redis-generation-admission.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Redis generation apps helper composes real limiter with store spies;100concurrent request cases prove ten admissions before resolver/store, account/capability isolation and503 fail-closed unavailable Redis with finally disconnect.",
+      "beforeSha256": "a754fd0ce5eb43b2b3cbf6534491af26d87f71e3c46f1c586feafa4254c43c3d",
+      "afterSha256": "a754fd0ce5eb43b2b3cbf6534491af26d87f71e3c46f1c586feafa4254c43c3d"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/ai-credits/capability-policy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Capability policy suite separates no-write defaults, owner membership, concurrent immutable revisions/pinned snapshots and exact default-budget settings publication with stale-version failures.",
+      "beforeSha256": "5b0d22b09a59d7e9b76f6685fc1b32ea17607e9c7e27c0abf486b28ea68cda50",
+      "afterSha256": "5b0d22b09a59d7e9b76f6685fc1b32ea17607e9c7e27c0abf486b28ea68cda50"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/ai-credits/gemini-speech-model-price.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Gemini speech tariff suite visibly checks lazy seeding, current revision reuse and immutable old rates after owner-authorized publication against disposable DB.",
+      "beforeSha256": "3eb6d422259f6d1559bffca28360bdd0e5ebf7ef195f64ecaa6a2403906cff2a",
+      "afterSha256": "3eb6d422259f6d1559bffca28360bdd0e5ebf7ef195f64ecaa6a2403906cff2a"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/accounting-cutover.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Cutover suite builds genuine migration prefix with shortened journal only, then proves whole-credit grant/free legacy job rejection leaves stored amount/state intact; temporary migration folder and client cleanup are explicit.",
+      "beforeSha256": "ffe303190d680063d66f6ebf664d5214c5e761bf00528df1dd9d76608409effb",
+      "afterSha256": "ffe303190d680063d66f6ebf664d5214c5e761bf00528df1dd9d76608409effb"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/native-financial-admission.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native financial seed/admit/rules helpers expose malformed historical pin simulation without weakening authoritative SQL; tests assert meter/gap denial before rows, full dispatch horizon pinning and extreme monetary evidence retained as unknown expense.",
+      "beforeSha256": "96b872895a2380a301353bd7a690049f0a5c2797dae417764eefd2816c994b6f",
+      "afterSha256": "96b872895a2380a301353bd7a690049f0a5c2797dae417764eefd2816c994b6f"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/provider-minimum-cost.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider minimum reserve/admit helpers separate operator floor from learner tariff, preserve immutable price pin after revision and unknown-cost semantics; cache test explicitly checks same-transaction publication invalidation.",
+      "beforeSha256": "abf407c1c60b349981e7a4cd5c1f15501195804e3830227990d223ef52c1dd6a",
+      "afterSha256": "abf407c1c60b349981e7a4cd5c1f15501195804e3830227990d223ef52c1dd6a"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/ai-credits/action-allowance.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Allowance request/offer helpers prove persisted nonspending quote survives rolled-back feature work; scope table, exact consent, concurrent nonce convergence, reduced funds/topup/pricing changes and bounded expired cleanup are distinct cases.",
+      "beforeSha256": "205d720b8bdf3dfbfceacae72ebd6faadc9aafede985ebd6ed2cce21b5d50c19",
+      "afterSha256": "205d720b8bdf3dfbfceacae72ebd6faadc9aafede985ebd6ed2cce21b5d50c19"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/ai-credits/learner-ai-credit-balance.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Balance module/credits helpers use real wallet while auth is deterministic; tests assert no-write missing/read projections, held/expired isolation, effective unlimited boundary and prompt committed read while a gated writer rolls back in finally.",
+      "beforeSha256": "8a22a4e97a98501229e8d048e00953d8a50e7b87c188990a07c3a1928cf07596",
+      "afterSha256": "8a22a4e97a98501229e8d048e00953d8a50e7b87c188990a07c3a1928cf07596"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/users/infrastructure/drizzle-user-repository.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "User repository suite separates transactional writer from read-only surface; explicit barriers prove canonical-email and handle uniqueness, with rollback/FK/check/primary-email constraints asserted directly.",
+      "beforeSha256": "f01dc6e5476516f50c622ffdf7c02cd9a96d7fdffa7853ec61d6f41023c37261",
+      "afterSha256": "f01dc6e5476516f50c622ffdf7c02cd9a96d7fdffa7853ec61d6f41023c37261"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/authentication/infrastructure/redis-authentication-controls.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Redis controls namespace/limiter helpers track cleanup; real rolling-window thresholds/concurrency/aliasing and single-use challenge TTL are separated from bounded fail-closed outage clients.",
+      "beforeSha256": "524bdb38c807baad907b798e1a24e8705dfbaefbc977937e40493a93d2e3cb1c",
+      "afterSha256": "524bdb38c807baad907b798e1a24e8705dfbaefbc977937e40493a93d2e3cb1c"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/authentication/infrastructure/redis-concurrent-requests.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Concurrent Redis suite uses two replica clients and latches around committed admission/reply; tests prove shared stream/submission caps, token-specific stale release, abort cleanup and canonical restricted ACL behavior with finally user/namespace cleanup.",
+      "beforeSha256": "eddd27f02313f6983fd2b9e0293440cf3abba207089bc54dc3faf65815f4c235",
+      "afterSha256": "eddd27f02313f6983fd2b9e0293440cf3abba207089bc54dc3faf65815f4c235"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/authentication/authentication-http-journey.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Composed authentication journey uses real DB/Redis/crypto and contract-parsed HTTP responses; post/get/cookie helpers preserve visible signup/verify/refresh/logout/reset/change sequence and credential redaction.",
+      "beforeSha256": "4563ff15cced1ada4d965365ec97c1b2cb6d7702264ff775c21c06e0738e0c00",
+      "afterSha256": "4563ff15cced1ada4d965365ec97c1b2cb6d7702264ff775c21c06e0738e0c00"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-selection-guard.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Selected execution guard scenario deliberately satisfies older routing guards so incapable claim rejection isolates selected-worker authority; direct snapshot/revision mutations and Auto injection are denied while capable claim preserves admitted pin.",
+      "beforeSha256": "90cf057acb749765f0bda1f59d82b589c6e4bda10e8e5209cad2379baa166147",
+      "afterSha256": "90cf057acb749765f0bda1f59d82b589c6e4bda10e8e5209cad2379baa166147"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/native-probe-pricing.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native probe reserve helper and actual SDK fake-fetch cases distinguish exact native tariff, full reported overrun and forged above-cap/foreign-money rejection; stored expense rows prove unknown vs measured authority.",
+      "beforeSha256": "3ed49d1424d59472abcffd2c37d043555d81c19b525522c3cb0dfaf686327530",
+      "afterSha256": "3ed49d1424d59472abcffd2c37d043555d81c19b525522c3cb0dfaf686327530"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/native-provider-pricing.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native pricing parity helper compares TS and real PostgreSQL evaluator status/micros/source/variants; named cases exercise exact currency rounding, component minima, dispatch/context boundaries, holes/ambiguity, missing cache meters and invalid payloads without substituting reservation cost.",
+      "beforeSha256": "304c825bfb2866a4a9532a0cafb9b26254952188e49bee6242e4ef0574e99fe6",
+      "afterSha256": "304c825bfb2866a4a9532a0cafb9b26254952188e49bee6242e4ef0574e99fe6"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/action-authority.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Action authority reserve/purge helpers retain real feature/policy/deletion lease proof; cases reject forged funding/version/capability, missing expenses and premature settlement atomically, protect immutable terminal proof and preserve numeric facts across erasure until owner purge.",
+      "beforeSha256": "41624af9036ee3ec7e68d156725d079e0352e16caa90d85988016ee578868fa8",
+      "afterSha256": "41624af9036ee3ec7e68d156725d079e0352e16caa90d85988016ee578868fa8"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/users/infrastructure/drizzle-account-deletion-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion seed creates active session/shared dictionary; cases assert atomic journal/session/share/request changes, rollback on journal failure, old-link revocation after cancellation, SQL-failure recovery indeterminacy and owner membership transfer prerequisite.",
+      "beforeSha256": "d97c30e774c6c207c1449fc963d2ae1df72de557b8486ab9f919042aa472d92d",
+      "afterSha256": "d97c30e774c6c207c1449fc963d2ae1df72de557b8486ab9f919042aa472d92d"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/users/infrastructure/drizzle-account-purge-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge scheduledIdentity uses DB real-clock leases; cases distinguish retained shared audio, stale-worker fencing and ID-only tombstone, while production-role test proves erase-only authority, independent content survival and finally role/client cleanup.",
+      "beforeSha256": "02e32bfd24618add09bd3e17e2d06f396c9ed64958d8db0b2e2885d340a865dc",
+      "afterSha256": "02e32bfd24618add09bd3e17e2d06f396c9ed64958d8db0b2e2885d340a865dc"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/native-text-pricing-execution.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "agent/admit/fakeResponse/sdkUsage exercise real SDK generation with DB receipt checkpoints before publication; tests preserve missing counters and raw monetary evidence, exact per-call remainder, receipt uniqueness and overrun handling, and DeepSeek/Evolink by funding-role/outcome production settlement with wallet, message and expense assertions.",
+      "beforeSha256": "0bedcec7f6214a84a1fc45cc6cf9389e81902328f484c5db20cfc3edff739d8a",
+      "afterSha256": "0bedcec7f6214a84a1fc45cc6cf9389e81902328f484c5db20cfc3edff739d8a"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-preferences.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Real TextAiPreferenceService/Drizzle store fixtures seed current revisions and worker readiness; cases explicitly preserve optimistic parallel-write conflict, exact budgets, redaction without history rewrite, retired/default selections, stale or legacy worker fail-closed handling, policy/credential gating, inactive-user rollback and DB constraints.",
+      "beforeSha256": "08339cb98a8345aa7a17c53f347a49c66b2b1ab24addc6d6fb589323a47acec8",
+      "afterSha256": "08339cb98a8345aa7a17c53f347a49c66b2b1ab24addc6d6fb589323a47acec8"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/user-ai-model-preferences.journeys.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "request/signup/dictionary/enqueue helpers drive real composed auth, Redis and PostgreSQL without provider execution; the journey asserts redacted models, exact versioned budgets, explicit-choice denial, replay identity across budget updates, server-pinned snapshots, old-worker claim rejection, capable claims and disabled-user authorization. Environment and Redis namespace cleanup are explicit.",
+      "beforeSha256": "974a5be9ddfdad45a3219b759b6c841746ed264e38645f1c06acd713ed0b4dfb",
+      "afterSha256": "974a5be9ddfdad45a3219b759b6c841746ed264e38645f1c06acd713ed0b4dfb"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-probes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture/seedRuntimeHealth isolate provider identities and immutable price evidence; real store cases assert concurrent/provider and daily shared caps, unknown nonzero reservation, idempotent append-only expense, activation versus dispatch freshness, hard exclusion and manual recovery ordering, late completion fencing, minimum-cost admission and EXPLAIN index access on25k history rows.",
+      "beforeSha256": "f525876b3261e9149ab9c151d89847a489fbb9cc1c95e4c2b51b93026cc74524",
+      "afterSha256": "f525876b3261e9149ab9c151d89847a489fbb9cc1c95e4c2b51b93026cc74524"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/dictionary-worker-accounting-role.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "restricted uses exact deployment grants with SET LOCAL ROLE and current_user assertion; reserve and accounting fixtures exercise real success/failure settlement, immutable provider expenses, terminal replay, denied direct monetary/policy writes, typed lease ownership/expiry fencing, pinned prices/cohort limits and savepoint rollback before hold release. Three-step tutor charging rounds once.",
+      "beforeSha256": "8e17167f748781e21d8a42a85b9840feb5d40d5211926f7a1df320ca26c404da",
+      "afterSha256": "8e17167f748781e21d8a42a85b9840feb5d40d5211926f7a1df320ca26c404da"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-provider-circuit.test.ts",
+      "status": "refactored",
+      "reason": "Model-scoped circuit tests preserve outage isolation, fingerprints, retry cooldown and route health behavior. Read-only audit found DeepSeek credential environment cleanup missing; root added the matching prior.deepseek restoration tuple, resolving cross-suite leakage without changing assertions or timeouts.",
+      "beforeSha256": "0626a63a4fbe94497b3201891a95af121a04e957d12fe10997232e43ef8d99ec",
+      "afterSha256": "ebe7d7f675211b2f122a53deca17831689d080be31c7f8b99d53fd0cf5a683a7"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/sentence-lifecycle-deletion.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "exercise/personal/job build explicit shared/private cross-owner lifecycle fixtures under capacity/revision locks; cases preserve busy-job deletion denial, archive/restore history, complete derived-content erasure with unchanged coverage and retained expenses, cancellation without settlement and restricted purge without sentence-text read permission. Role teardown remains in finally.",
+      "beforeSha256": "d9fd2b8b910957d09c8b6c48b4398841948931f483637a77a86f5ed6cc335732",
+      "afterSha256": "d9fd2b8b910957d09c8b6c48b4398841948931f483637a77a86f5ed6cc335732"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/admin-mcp-operations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "preview/apply helpers retain real delegated credentials, administration adapters and ledger participants; cases cover exact retry grants, atomic quota/receipt rollback, stale versions, spending ceilings without preference loss, tariff-only authority, revocation/erasure settlement, read-only inspection, explicit probe prerequisites and a barrier-controlled two-connection pool starvation regression.",
+      "beforeSha256": "7abe3b0c50aa2ced626d738ded7c1b25c666c755ddc40e8192172a140ce62962",
+      "afterSha256": "7abe3b0c50aa2ced626d738ded7c1b25c666c755ddc40e8192172a140ce62962"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/model-price-actualization.journeys.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture binds a real loopback MCP server and persisted credential/preview/price services, faking only bounded provider metadata; rpc/call parse JSON or SSE envelopes and distinguish SDK errors. Assertions cover immutable pinned rates, native-only authority, idempotent publication,51-model pagination, verification without writes, legacy/read-only permission confinement, revocation before fetch and expired/scheduled price protection.",
+      "beforeSha256": "e5507eabd0c07e464825e2dc5101adf6323bdf00129086a2628535dc7634f07a",
+      "afterSha256": "e5507eabd0c07e464825e2dc5101adf6323bdf00129086a2628535dc7634f07a"
+    },
+    {
+      "path": "apps/backend/tests/performance/accounting-load.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Opt-in accounting load harness validates isolated DB/Redis targets and empty fixture, exercises real admission/Redis/SSE with synthetic actors and zero provider dispatch, and retains before/after source hashes. closeAdmissionQueryTrace explicitly labels diagnostic inter-query timings; measure captures scheduling/lock/query evidence, million-row retained history, stream/writer failures and p95 targets, with finally abort/drain/disconnect cleanup. Large orchestration remains cohesive as one evidence workload; no scope-authorized changes required.",
+      "beforeSha256": "65681fc7f41c1b3e000021706426bac9f277bd0bac4c27fd1c7f7a9f2fa53821",
+      "afterSha256": "65681fc7f41c1b3e000021706426bac9f277bd0bac4c27fd1c7f7a9f2fa53821"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-capacity.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seedCard/enqueue/sentence/template/oldRow expose current versus legacy fixtures; real two-connection barriers and pg_locks prove transaction-local capacity guards and lock serialization. Cases assert rolling boundaries/rollback/expiry, zero record removal, portrait compatibility, typed queue deduplication, usage retention after erasure, learner caps and old-worker admission/claim/takeover denial while completion drains safely.",
+      "beforeSha256": "63635b63b938aabff5fdbafe1b1390e573cf063bb9d783d2417d96760a8c3abf",
+      "afterSha256": "63635b63b938aabff5fdbafe1b1390e573cf063bb9d783d2417d96760a8c3abf"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/administration-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seed/user/email/mutation/creditMutation/sentenceScope keep actor, audit and live authentication clocks explicit; store tests assert transactional sentence audit and rollback, revocation/recent-auth revalidation after lock waits, last-owner protection, concurrent settings/user versions, credential redaction, deletion cancellation journal rollback/purge-claim boundary and optimistic credit updates with rejection audit retained. Environment stubs restore in finally.",
+      "beforeSha256": "e5162588a2857d7c190845b9a71cfd3f95c9c6c55dc61b1bd2e279062b44a30c",
+      "afterSha256": "e5162588a2857d7c190845b9a71cfd3f95c9c6c55dc61b1bd2e279062b44a30c"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/migrations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "withPendingMigrationFixture isolates temporary journals/SQL with guaranteed removal; full bodies verify clean schema/constraints/indexes, additive vocabulary/speech upgrades retaining exact snapshots, retryable enum preparation versus atomic schema/history rollback, duplicate/order-drift rejection, simultaneous runner advisory locking and applied-history hash mismatch detection. Checked-in generated migrations remain immutable.",
+      "beforeSha256": "e1e6a248a58e64fd05cfab8cef74a67e0e848a95a5dc8f256076b1c3c5083bc0",
+      "afterSha256": "e1e6a248a58e64fd05cfab8cef74a67e0e848a95a5dc8f256076b1c3c5083bc0"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/authentication/infrastructure/drizzle-authentication-repository.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createIdentity/createChallenge/createSession/createPasskey and explicit AuthStore variants separate repository and application-port shapes. Real transaction cases cover Argon2id bounds/rollback, challenge purpose/email ownership, refresh rotation/replay-family isolation and stale logout races, passkey uniqueness/counters/50-key concurrent cap, bounded event metadata, pending signup consistency and rolling verification/reset send limits.",
+      "beforeSha256": "1bf36c752fbaddc29ffbe1312b9b8400fb63c1c2a933fb7ccecb3881b00520de",
+      "afterSha256": "1bf36c752fbaddc29ffbe1312b9b8400fb63c1c2a933fb7ccecb3881b00520de"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/ai-accounting.test.ts",
+      "status": "refactored",
+      "reason": "actualTextExpense/actualEstimatedSpeechExpense/payment/creditJob produce real financial facts rather than fabricated expenses. Cases preserve exact payment/refund idempotency and concurrent ceilings, unavailable reserved/consumed refunds, report snapshot dirty/refresh semantics, native null flat-rate and large exact-cost reports, immutable anonymous retained facts and cash-only post-erasure refunds. Restricted-role purge verifies denied private reads/raw settlement, checked worker/fence authority, speech uncertainty and global cost retention with finally role cleanup. Independent remediation review: failing report fixture now obtains a real database clock reference, aligns only its manual payment/deposit/balance/bill dates and shared invoice/report period to reference \u00b11day. Existing payment helper defaults to original at for all other callers. Exact amounts, measured/estimated/unknown counts, pending snapshot, refresh and cached-read assertions unchanged. No Date/fake timer, production accounting, SQL guards, deadline, or report semantics changes; two-day window respects366-day query limit. Timestamp parsing followup independently reviewed: raw postgres query result is typed string and explicitly converted with new Date(clock[0]!.now) before getTime/toISOString; two-day DB-clock window, assertions and all prior fixture semantics unchanged. Root real disposable DB file report9330ada1-d32f-4d4a-9a96-f7b13bc8d840 inspected:10 passed,0 failed/skipped/retries, cleanup passed. No final runtime approval implied.",
+      "beforeSha256": "e9405ecbf082b746315ed5d44c257fed71bbb242f38a2ad4fe69b8453fdf2233",
+      "afterSha256": "a3fdc0f433bf7432f22a9174be92ecefb0e3cd611231abce21fd6ab9c37d735e"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/ai-credit-participant.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "withCredits/grant/creditJob/sentenceCreditJob/purgeOwnerForDeletion expose real transactional typed job and due-claim setup. Matrices assert dictionary/generation/check settlement, missing/estimated usage, owner and kind identity guards, retained policy across retries, earliest-expiry allocation, projection replay/rollback, operator funding pins, restricted retry authority, report dirty deltas, technical-failure release, refund availability and concurrent removal versus reservation overspend prevention.",
+      "beforeSha256": "355787776e33b957ae26d3746a344d15fac8a3c84deea8341e617ebf902ed18f",
+      "afterSha256": "355787776e33b957ae26d3746a344d15fac8a3c84deea8341e617ebf902ed18f"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learner-portraits/portrait-persistence.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "draft/enqueue fixtures keep owner/version/generation explicit; persistence tests assert UTC daily allowance and concurrent admission, paid success/failure/stopped settlement and expense retention, private reads, replay, expiry/approval preservation, erased fingerprints with running settlement identity, expired lease recovery and late-output fencing. Reconnect contracts expose safe active/completed/last-attempt fields, preserve explicit locale and freshness, and restricted purge cannot read private payloads.",
+      "beforeSha256": "7ed18db1eca381f06b4d1504f4ea0c863bae96885bfa490d23b9a4fbfcd125c9",
+      "afterSha256": "7ed18db1eca381f06b4d1504f4ea0c863bae96885bfa490d23b9a4fbfcd125c9"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learner-portraits/learner-portrait.journeys.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "composed/request/signup/configure/grantCredits/startAndSubmit preserve real auth/Redis/DB composition and quote confirmation; deterministic dispatch helpers and structured runner tests assert owner privacy, approval/use separation, operator/customer funding, held budgets, exact measured versus unknown settlement, affordable schema-inclusive token limits and insufficient balance before enqueue. LegacyCallTemplate intentionally exercises pre-action guard matrices; restricted purge retains zero-charge unknown facts while erasing private content.",
+      "beforeSha256": "96922bfefc51afbf7cb81fec5ad8bdfebbdf1d13d8e05f7c1a09769ccb883436",
+      "afterSha256": "96922bfefc51afbf7cb81fec5ad8bdfebbdf1d13d8e05f7c1a09769ccb883436"
+    }
+  ]
+}

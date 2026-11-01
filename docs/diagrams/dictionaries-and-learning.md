@@ -25,8 +25,14 @@ source_paths:
     - apps/backend/src/modules/knowledge/application/knowledge-sentence-free-store.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
-source_fingerprint: sha256:9694b1466b30866af2e31487b58f2a065d3aebdf8a4937a91c65ea7f37cb43ce
-reviewed: 2026-10-22
+    - apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts
+    - apps/backend/src/modules/learning/application/sentence-practice-service.ts
+    - apps/web/src/fsd/features/sentence-training/model/sentence-session.ts
+    - apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts
+    - apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts
+    - apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts
+source_fingerprint: sha256:1220fc5e90bff672c4d9b959b5688c977c13113eebe0c6acd269d8ea1a736372
+reviewed: 2026-11-01
 ---
 
 # Dictionaries and learning
@@ -111,6 +117,16 @@ against validated usable results. Technical failures release customer funds whil
 expense remains recorded. These accounting changes do not change the dictionary proposal
 Accept or personal-practice ownership edges shown above. See [AI job lifecycle](ai-job-lifecycle.md).
 
+## Implementation reconciliation
+
+Dictionary worker provider dispatch remains format-specific and records dispatch
+before provider execution. Sentence worker retry eligibility still distinguishes
+pinned routing from legacy attempt policy. On the client, preparation recovery
+parses stored operation identities before reuse, and sentence round projection
+updates synchronously before notifying subscribers. These helpers preserve
+private client session queues, durable preparation authorization and the explicit
+Accept and reference-review boundaries shown above.
+
 ## Sources
 
 - [apps/backend/src/modules/dictionaries/application/dictionary-service.ts](../../apps/backend/src/modules/dictionaries/application/dictionary-service.ts)
@@ -141,3 +157,10 @@ Accept or personal-practice ownership edges shown above. See [AI job lifecycle](
 - [apps/backend/src/modules/knowledge/application/knowledge-sentence-free-store.ts](../../apps/backend/src/modules/knowledge/application/knowledge-sentence-free-store.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts)
 - [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+
+- [apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts](../../apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts)
+- [apps/backend/src/modules/learning/application/sentence-practice-service.ts](../../apps/backend/src/modules/learning/application/sentence-practice-service.ts)
+- [apps/web/src/fsd/features/sentence-training/model/sentence-session.ts](../../apps/web/src/fsd/features/sentence-training/model/sentence-session.ts)
+- [apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts](../../apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts)
+- [apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts](../../apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts)
+- [apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts](../../apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts)

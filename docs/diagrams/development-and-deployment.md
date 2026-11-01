@@ -27,8 +27,9 @@ source_paths:
     - apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts
     - apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts
     - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
-source_fingerprint: sha256:c12dd6224dda562da927c9611a75cb8587986f80cd5d064ee6a02f622a7d1432
-reviewed: 2026-10-22
+    - infra/deploy/lib/worker-database-privileges.mjs
+source_fingerprint: sha256:80f10695edf49cf4bbd0cab04ced3aeee534d9d0b06d9de9170c31d4c95e22e3
+reviewed: 2026-11-01
 ---
 
 # Development and deployment tooling
@@ -111,6 +112,12 @@ Conversation maintenance follows the accounting maintenance callback. This does 
 a worker image or service. The development-only accounting cutover requires drained work
 and a fresh empty ledger; it is not a deployable conversion of old credit units.
 
+Deployment privilege preflight is implemented in `worker-database-privileges.mjs`
+and invoked through the deployment controller. Its extraction preserves the same
+production-only worker credential check, allowed privileges and fail-closed
+validation before slot activation. Worker document-adapter selection and release
+argument parsing remain inside their existing process/CLI boundaries.
+
 ## Sources
 
 - [compose.yaml](../../compose.yaml)
@@ -141,3 +148,5 @@ and a fresh empty ledger; it is not a deployable conversion of old credit units.
 - [apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts](../../apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts)
+
+- [infra/deploy/lib/worker-database-privileges.mjs](../../infra/deploy/lib/worker-database-privileges.mjs)

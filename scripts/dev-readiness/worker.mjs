@@ -21,6 +21,22 @@ export function selectedModel(snapshot, capability) {
     );
 }
 
+function executionPredicateFor(capability) {
+    if (['texts', 'knowledge-actions'].includes(capability.id)) {
+        return readiness.isTextsExecutionCapableObservation;
+    }
+
+    if (capability.id === 'sentences') {
+        return readiness.isSentenceExecutionCapableObservation;
+    }
+
+    if (['conversation', 'interview'].includes(capability.id)) {
+        return readiness.isConversationExecutionCapableObservation;
+    }
+
+    return readiness.isTextAiCapacityCapableObservation;
+}
+
 export function workerSupports(worker, model, capability, format) {
     if (
         !model ||
@@ -38,13 +54,7 @@ export function workerSupports(worker, model, capability, format) {
             value,
         ]),
     );
-    const predicate = ['texts', 'knowledge-actions'].includes(capability.id)
-        ? readiness.isTextsExecutionCapableObservation
-        : capability.id === 'sentences'
-          ? readiness.isSentenceExecutionCapableObservation
-          : ['conversation', 'interview'].includes(capability.id)
-            ? readiness.isConversationExecutionCapableObservation
-            : readiness.isTextAiCapacityCapableObservation;
+    const predicate = executionPredicateFor(capability);
 
     return predicate(observation, format);
 }

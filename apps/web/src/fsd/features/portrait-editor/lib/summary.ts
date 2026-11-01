@@ -202,14 +202,14 @@ export function previewPortraitSummary(
 
     items.languages.slice(0, 3).forEach(addLanguage);
     if (items.mixedLanguageFrequency !== undefined) {
-        add(
-            text.mixed,
-            items.mixedLanguageFrequency === 'sometimes'
-                ? text.sometimes
-                : items.mixedLanguageFrequency === 'helpful'
-                  ? text.yes
-                  : text.no,
-        );
+        let frequency: string = text.no;
+        if (items.mixedLanguageFrequency === 'sometimes') {
+            frequency = text.sometimes;
+        } else if (items.mixedLanguageFrequency === 'helpful') {
+            frequency = text.yes;
+        }
+
+        add(text.mixed, frequency);
     } else if (items.mixedLanguage !== undefined) {
         add(text.mixed, items.mixedLanguage ? text.yes : text.no);
     }

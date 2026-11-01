@@ -1,13 +1,12 @@
 import {
     AlertCircleIcon,
-    CheckIcon,
     LightbulbIcon,
     Loader2Icon,
     Volume2Icon,
-    XIcon,
 } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import styles from './exercise-card.module.css';
+import { ExerciseAnswerOption } from './exercise-answer-option';
 
 export type ExerciseKind = 'vocabulary' | 'grammar' | 'listening' | 'reading';
 
@@ -146,87 +145,16 @@ export function ExerciseCard({
                 aria-labelledby={`${id}-question`}
                 className={styles.options}
             >
-                {options.map((option) => {
-                    function resolveState() {
-                        if (correct) {
-                            return 'correct' as const;
-                        }
-
-                        if (incorrect) {
-                            return 'incorrect' as const;
-                        }
-
-                        if (selected) {
-                            return 'selected' as const;
-                        }
-
-                        return 'default' as const;
-                    }
-
-                    const selected = option.id === selectedOptionId,
-                        correct = revealed && option.isCorrect,
-                        incorrect = revealed && selected && !option.isCorrect,
-                        state = resolveState();
-
-                    function resolveExerciseCardContent() {
-                        if (correct) {
-                            return (
-                                <CheckIcon
-                                    className={styles.optionIcon}
-                                    aria-label='Correct answer'
-                                />
-                            );
-                        }
-
-                        if (incorrect) {
-                            return (
-                                <XIcon
-                                    className={styles.optionIcon}
-                                    aria-label='Incorrect answer'
-                                />
-                            );
-                        }
-
-                        return null;
-                    }
-
-                    const resolvedExerciseCardContent =
-                        resolveExerciseCardContent();
-
-                    return (
-                        <button
-                            key={option.id}
-                            type='button'
-                            role='radio'
-                            aria-checked={selected}
-                            disabled={locked || option.disabled}
-                            onClick={() => onSelectOption?.(option.id)}
-                            className={[styles.option, styles[state]].join(' ')}
-                        >
-                            <span className={styles.optionCopy}>
-                                <span
-                                    className={[
-                                        styles.optionLine,
-                                        styles.optionLabel,
-                                    ].join(' ')}
-                                >
-                                    {option.label}
-                                </span>
-                                {option.hint ? (
-                                    <span
-                                        className={[
-                                            styles.optionLine,
-                                            styles.optionHint,
-                                        ].join(' ')}
-                                    >
-                                        {option.hint}
-                                    </span>
-                                ) : null}
-                            </span>
-                            {resolvedExerciseCardContent}
-                        </button>
-                    );
-                })}
+                {options.map((option) => (
+                    <ExerciseAnswerOption
+                        key={option.id}
+                        option={option}
+                        selected={option.id === selectedOptionId}
+                        revealed={revealed}
+                        locked={locked}
+                        onSelect={onSelectOption}
+                    />
+                ))}
             </div>
             {hint && !revealed ? (
                 <div className={styles.hint}>

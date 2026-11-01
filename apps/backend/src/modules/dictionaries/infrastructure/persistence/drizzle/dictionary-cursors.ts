@@ -59,20 +59,20 @@ export function isCardCursor(value: unknown): value is {
     settingsVersion: number;
     sortKey: string;
 } {
-    return Boolean(
-        value &&
-        typeof value === 'object' &&
-        typeof (value as Record<string, unknown>).id === 'string' &&
-        uuidPattern.test(String((value as Record<string, unknown>).id)) &&
-        Number.isSafeInteger(
-            (value as Record<string, unknown>).dictionaryVersion,
-        ) &&
-        Number((value as Record<string, unknown>).dictionaryVersion) > 0 &&
-        Number.isSafeInteger(
-            (value as Record<string, unknown>).settingsVersion,
-        ) &&
-        Number((value as Record<string, unknown>).settingsVersion) > 0 &&
-        /^\d+$/.test(String((value as Record<string, unknown>).sortKey)),
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const cursor = value as Record<string, unknown>;
+
+    return (
+        typeof cursor.id === 'string' &&
+        uuidPattern.test(String(cursor.id)) &&
+        Number.isSafeInteger(cursor.dictionaryVersion) &&
+        Number(cursor.dictionaryVersion) > 0 &&
+        Number.isSafeInteger(cursor.settingsVersion) &&
+        Number(cursor.settingsVersion) > 0 &&
+        /^\d+$/.test(String(cursor.sortKey))
     );
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import type { AccountDeletionScheduleResponse } from '@languon/contracts';
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { AuthApiError, authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -38,6 +38,18 @@ export function AccountDeletionAction({
     const [pending, setPending] = useState(false);
 
     const [error, setError] = useState<string | null>(null);
+
+    function openConfirmation() {
+        setOpen(true);
+    }
+
+    function changeConfirmation(event: ChangeEvent<HTMLInputElement>) {
+        setConfirmation(event.target.value);
+    }
+
+    function changeAcknowledgement(event: ChangeEvent<HTMLInputElement>) {
+        setAcknowledged(event.target.checked);
+    }
 
     function close() {
         if (!pending) {
@@ -93,7 +105,7 @@ export function AccountDeletionAction({
         <>
             <Button
                 className={className}
-                onClick={() => setOpen(true)}
+                onClick={openConfirmation}
                 size='compact'
                 variant='danger'
             >
@@ -167,9 +179,7 @@ export function AccountDeletionAction({
                         disabled={pending}
                         label={t('profile.deleteConfirmLabel')}
                         hint={t('profile.deleteConfirmHint')}
-                        onChange={(event) =>
-                            setConfirmation(event.target.value)
-                        }
+                        onChange={changeConfirmation}
                         spellCheck={false}
                         value={confirmation}
                     />
@@ -178,9 +188,7 @@ export function AccountDeletionAction({
                         checked={acknowledged}
                         disabled={pending}
                         label={t('profile.deleteAcknowledge')}
-                        onChange={(event) =>
-                            setAcknowledged(event.target.checked)
-                        }
+                        onChange={changeAcknowledgement}
                     />
                     {error ? (
                         <InlineAlert

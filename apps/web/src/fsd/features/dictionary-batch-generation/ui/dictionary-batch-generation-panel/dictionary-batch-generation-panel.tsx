@@ -3,16 +3,12 @@
 import type {
     DictionaryGenerationCandidate,
     DictionaryGenerationField,
-    DictionaryImportPairsGenerationJob,
-    DictionaryImportPairsGenerationProposal,
-    DictionaryPastedTermsGenerationJob,
-    DictionaryPastedTermsGenerationRowFailure,
     LanguageCatalogEntry,
     OwnedDictionary,
 } from '@languon/contracts';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { languageDirection, languageForRole } from '@/fsd/entities/dictionary';
+import { languageDirection } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
 import {
     Badge,
@@ -21,34 +17,18 @@ import {
     Checkbox,
     Field,
     InlineAlert,
-    Input,
     Progress,
     Textarea,
 } from '@/fsd/shared/ui';
 
 import styles from './dictionary-batch-generation-panel.module.css';
-
-type CandidateDraft = {
-    candidate: DictionaryGenerationCandidate;
-    input: string;
-    rowIndex: number;
-};
-
-type BatchReviewJob =
-    DictionaryImportPairsGenerationJob | DictionaryPastedTermsGenerationJob;
-
-type BatchReviewFailure =
-    | DictionaryImportPairsGenerationProposal['failures'][number]
-    | DictionaryPastedTermsGenerationRowFailure;
-
-const EDITABLE_FIELDS = [
-    'source',
-    'translation',
-    'transcription',
-    'definition',
-    'example',
-    'exampleTranslation',
-] as const satisfies readonly DictionaryGenerationField[];
+import { CandidateRow } from './candidate-row';
+import {
+    candidateForCommit,
+    type CandidateDraft,
+    type BatchReviewJob,
+    type BatchReviewFailure,
+} from '../../lib/candidate-review';
 
 export function DictionaryBatchGenerationPanel({
     available,
@@ -209,6 +189,16 @@ export function DictionaryBatchGenerationPanel({
         );
     }
 
+    function removeCandidate(rowIndex: number) {
+        setDrafts((current) =>
+            current.filter((row) => row.rowIndex !== rowIndex),
+        );
+    }
+
+    function selectCandidate(rowIndex: number, selected: boolean) {
+        setSelectedRows((current) => toggledSet(current, rowIndex, selected));
+    }
+
     return (
         <section className={styles.section}>
             {error ? <InlineAlert tone='danger'>{error}</InlineAlert> : null}
@@ -357,31 +347,9 @@ export function DictionaryBatchGenerationPanel({
                                     job={job}
                                     key={draft.rowIndex}
                                     languages={languages}
-                                    onChange={(field, value) =>
-                                        updateCandidate(
-                                            draft.rowIndex,
-                                            field,
-                                            value,
-                                        )
-                                    }
-                                    onRemove={() =>
-                                        setDrafts((current) =>
-                                            current.filter(
-                                                (row) =>
-                                                    row.rowIndex !==
-                                                    draft.rowIndex,
-                                            ),
-                                        )
-                                    }
-                                    onSelectedChange={(selected) =>
-                                        setSelectedRows((current) =>
-                                            toggledSet(
-                                                current,
-                                                draft.rowIndex,
-                                                selected,
-                                            ),
-                                        )
-                                    }
+                                    onChange={updateCandidate}
+                                    onRemove={removeCandidate}
+                                    onSelectedChange={selectCandidate}
                                     pending={pendingAction}
                                     selected={selectedRows.has(draft.rowIndex)}
                                 />
@@ -592,258 +560,6 @@ export function DictionaryBatchGenerationPanel({
             </div>
         </section>
     );
-}
-
-function CandidateRow({
-    dictionary,
-    draft,
-    job,
-    languages,
-    onChange,
-    onRemove,
-    onSelectedChange,
-    pending,
-    selected,
-}: {
-    dictionary: OwnedDictionary;
-    draft: CandidateDraft;
-    job: BatchReviewJob;
-    languages: readonly LanguageCatalogEntry[];
-    onChange(field: DictionaryGenerationField, value: string): void;
-    onRemove(): void;
-    onSelectedChange(selected: boolean): void;
-    pending: boolean;
-    selected: boolean;
-}) {
-    const { t } = useI18n();
-
-    const proposalRow = job.proposal?.candidates.find(
-        (row) => row.rowIndex === draft.rowIndex,
-    );
-
-    const warnings = job.proposal?.warnings.filter(
-        (warning) => warning.rowIndex === draft.rowIndex,
-    );
-
-    return (
-        <Card className={styles.row}>
-            <header className={styles.rowHeader}>
-                <Checkbox
-                    checked={selected}
-                    disabled={pending}
-                    onChange={(event) =>
-                        onSelectedChange(event.currentTarget.checked)
-                    }
-                >
-                    {t('dictionary.batch.includeRow', {
-                        position: draft.rowIndex + 1,
-                    })}
-                </Checkbox>
-                <Button
-                    disabled={pending}
-                    onClick={onRemove}
-                    size='small'
-                    type='button'
-                    variant='quiet'
-                >
-                    {t('dictionary.batch.removeRow')}
-                </Button>
-            </header>
-            <p className={styles.inputTerm}>
-                {t('dictionary.batch.inputTerm')}{' '}
-                <span
-                    className={styles.inputValue}
-                    dir={languageDirection(
-                        languages,
-                        dictionary.sourceLanguage,
-                    )}
-                    lang={dictionary.sourceLanguage}
-                >
-                    {draft.input}
-                </span>
-            </p>
-            {warnings?.map((warning) => (
-                <InlineAlert key={warning.code} tone='warning'>
-                    {warning.message}
-                </InlineAlert>
-            ))}
-            <div className={styles.fields}>
-                {EDITABLE_FIELDS.filter((field) =>
-                    fieldEnabled(field, dictionary, draft.candidate),
-                ).map((field) => {
-                    const language = fieldLanguage(
-                        field,
-                        dictionary,
-                        draft.candidate,
-                    );
-
-                    const value = draft.candidate.values[field] ?? '';
-
-                    return (
-                        <Field
-                            key={field}
-                            label={t(`dictionary.field.${field}`)}
-                            required={
-                                field === 'source' || field === 'translation'
-                            }
-                        >
-                            {field === 'definition' ||
-                            field === 'example' ||
-                            field === 'exampleTranslation' ? (
-                                <Textarea
-                                    dir={languageDirection(languages, language)}
-                                    disabled={pending || !selected}
-                                    lang={language}
-                                    onChange={(event) =>
-                                        onChange(
-                                            field,
-                                            event.currentTarget.value,
-                                        )
-                                    }
-                                    rows={2}
-                                    value={value}
-                                />
-                            ) : (
-                                <Input
-                                    dir={languageDirection(languages, language)}
-                                    disabled={pending || !selected}
-                                    lang={language}
-                                    onChange={(event) =>
-                                        onChange(
-                                            field,
-                                            event.currentTarget.value,
-                                        )
-                                    }
-                                    value={value}
-                                />
-                            )}
-                        </Field>
-                    );
-                })}
-            </div>
-            {proposalRow?.fieldFeedback.length ? (
-                <details className={styles.feedback}>
-                    <summary className={styles.feedbackSummary}>
-                        {t('dictionary.batch.feedback')}
-                    </summary>
-                    <ul className={styles.feedbackList}>
-                        {proposalRow.fieldFeedback.map((feedback) => (
-                            <li key={feedback.field}>
-                                <strong>
-                                    {t(`dictionary.field.${feedback.field}`)}:
-                                </strong>{' '}
-                                {feedback.reason}
-                            </li>
-                        ))}
-                    </ul>
-                </details>
-            ) : null}
-        </Card>
-    );
-}
-
-function fieldLanguage(
-    field: DictionaryGenerationField,
-    dictionary: OwnedDictionary,
-    candidate: DictionaryGenerationCandidate,
-) {
-    if (field === 'translation') {
-        return dictionary.targetLanguage;
-    }
-
-    if (field === 'definition') {
-        return languageForRole(
-            candidate.overrides.definitionLanguage ??
-                dictionary.settings.values.definitionLanguage,
-            dictionary.sourceLanguage,
-            dictionary.targetLanguage,
-        );
-    }
-
-    if (field === 'example') {
-        return languageForRole(
-            candidate.overrides.exampleLanguage ??
-                dictionary.settings.values.exampleLanguage,
-            dictionary.sourceLanguage,
-            dictionary.targetLanguage,
-        );
-    }
-
-    if (field === 'exampleTranslation') {
-        const exampleRole =
-            candidate.overrides.exampleLanguage ??
-            dictionary.settings.values.exampleLanguage;
-
-        return languageForRole(
-            exampleRole === 'source' ? 'target' : 'source',
-            dictionary.sourceLanguage,
-            dictionary.targetLanguage,
-        );
-    }
-
-    return dictionary.sourceLanguage;
-}
-
-function fieldEnabled(
-    field: DictionaryGenerationField,
-    dictionary: OwnedDictionary,
-    candidate: DictionaryGenerationCandidate,
-) {
-    const settings = dictionary.settings.values;
-
-    const overrides = candidate.overrides;
-
-    if (field === 'source' || field === 'translation') {
-        return true;
-    }
-
-    if (field === 'transcription') {
-        return overrides.transcriptionEnabled ?? settings.transcriptionEnabled;
-    }
-
-    if (field === 'definition') {
-        return overrides.definitionEnabled ?? settings.definitionEnabled;
-    }
-
-    const exampleEnabled = overrides.exampleEnabled ?? settings.exampleEnabled;
-
-    if (field === 'example') {
-        return exampleEnabled;
-    }
-
-    return (
-        exampleEnabled &&
-        (overrides.exampleTranslationEnabled ??
-            settings.exampleTranslationEnabled)
-    );
-}
-
-function candidateForCommit(
-    dictionary: OwnedDictionary,
-    candidate: DictionaryGenerationCandidate,
-): DictionaryGenerationCandidate {
-    return {
-        ...candidate,
-        values: {
-            ...candidate.values,
-            transcription: fieldEnabled('transcription', dictionary, candidate)
-                ? candidate.values.transcription
-                : null,
-            definition: fieldEnabled('definition', dictionary, candidate)
-                ? candidate.values.definition
-                : null,
-            example: fieldEnabled('example', dictionary, candidate)
-                ? candidate.values.example
-                : null,
-            exampleTranslation: fieldEnabled(
-                'exampleTranslation',
-                dictionary,
-                candidate,
-            )
-                ? candidate.values.exampleTranslation
-                : null,
-        },
-    };
 }
 
 function batchTerminalMessageKey(state: BatchReviewJob['state']) {

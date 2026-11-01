@@ -1,0 +1,2755 @@
+{
+  "schemaVersion": 1,
+  "owner": "backend-platform",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": "apps/backend/drizzle.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "defineConfig exposes PostgreSQL fallback, generated destination and canonical schema without hidden execution.",
+      "beforeSha256": "fcd56fb13b09205ecabd828d977ebe0d528932f79ed5e45a0eb1d4b90fcd0cdb",
+      "afterSha256": "fcd56fb13b09205ecabd828d977ebe0d528932f79ed5e45a0eb1d4b90fcd0cdb"
+    },
+    {
+      "path": "apps/backend/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "Process scripts distinguish source/built commands, migrations and worker healthchecks; dependencies remain declarative.",
+      "beforeSha256": "cc2138cd123cb62e384ec4f97e957fffee5bb4451bcbb4215f320bd62d0438a0",
+      "afterSha256": "cc2138cd123cb62e384ec4f97e957fffee5bb4451bcbb4215f320bd62d0438a0"
+    },
+    {
+      "path": "apps/backend/src/app.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createApp keeps route precedence visible, especially preference preflight before profile wildcard; route registration order must remain explicit.",
+      "beforeSha256": "d4d3a83b588136b146142966f6dc27f3952e3b9e18d43d559c40746f3b347aad",
+      "afterSha256": "d4d3a83b588136b146142966f6dc27f3952e3b9e18d43d559c40746f3b347aad"
+    },
+    {
+      "path": "apps/backend/src/config/admin-mcp-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadAdminMcpEnvironment enforces local-only app environments and loopback PostgreSQL before listener startup.",
+      "beforeSha256": "6a0b3ef1721b303e5823aae2ea53bd29c81bfc74593c290c40ec8f23e25e93c5",
+      "afterSha256": "6a0b3ef1721b303e5823aae2ea53bd29c81bfc74593c290c40ec8f23e25e93c5"
+    },
+    {
+      "path": "apps/backend/src/config/admin-probe-fixture-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminProbeFixtureEnabled short-circuits when disabled and keeps disposable DB, host and synthetic-key constraints together.",
+      "beforeSha256": "4150315f8511a0936e7403dec14af10f31f651d74e56b3aa513d3e263597d190",
+      "afterSha256": "4150315f8511a0936e7403dec14af10f31f651d74e56b3aa513d3e263597d190"
+    },
+    {
+      "path": "apps/backend/src/config/ai-generation-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "aiGenerationEnvironmentShape shares one bounded timeout schema without runtime environment reads.",
+      "beforeSha256": "0d6b32422c484b2502a5c48cfe6fc59567a6f8ab3988a71bf5d62da94972913b",
+      "afterSha256": "0d6b32422c484b2502a5c48cfe6fc59567a6f8ab3988a71bf5d62da94972913b"
+    },
+    {
+      "path": "apps/backend/src/config/api-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadEnvironment keeps validation ordered: raw schema, token lifetime bounds, origins/RP/proxies, deployed transport, dictionary capabilities, and sanitized output. Local parsing helpers preserve error specificity.",
+      "beforeSha256": "da840eb084a43dd3c5fb45a154f5a8ccbf489cb8696370437efa4099ba9c1ee1",
+      "afterSha256": "da840eb084a43dd3c5fb45a154f5a8ccbf489cb8696370437efa4099ba9c1ee1"
+    },
+    {
+      "path": "apps/backend/src/config/environment-diagnostics.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseEnvironmentSchema distinguishes intentional empty values from default use; diagnostics expose setting names only.",
+      "beforeSha256": "5f59340972232961dd55fc564f8ffcf53419a31a50cfd7e6601955ecf186f4c2",
+      "afterSha256": "5f59340972232961dd55fc564f8ffcf53419a31a50cfd7e6601955ecf186f4c2"
+    },
+    {
+      "path": "apps/backend/src/config/environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Public environment exports are lazy and retain process-specific startup loading boundaries.",
+      "beforeSha256": "fa73f37bee99410d042451e5b5f9aea0e52f400b60da5d27fbd6eaa63a5aba5b",
+      "afterSha256": "fa73f37bee99410d042451e5b5f9aea0e52f400b60da5d27fbd6eaa63a5aba5b"
+    },
+    {
+      "path": "apps/backend/src/config/knowledge-transcription-environment.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription credential tests cover quiet absence and sanitized malformed-value diagnostics explicitly.",
+      "beforeSha256": "cdcb2a3656118739c7791be9cd436dd76600e87aed682f168173100f3a6db821",
+      "afterSha256": "cdcb2a3656118739c7791be9cd436dd76600e87aed682f168173100f3a6db821"
+    },
+    {
+      "path": "apps/backend/src/config/knowledge-transcription-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "knowledgeTranscriptionEnvironmentShape treats empty credentials as absent and validates whitespace without capability activation.",
+      "beforeSha256": "0af2526fa0287238be5c27bc960d17bd3975e354e2811c37a99fe0966a95d1e6",
+      "afterSha256": "0af2526fa0287238be5c27bc960d17bd3975e354e2811c37a99fe0966a95d1e6"
+    },
+    {
+      "path": "apps/backend/src/config/text-ai-probe-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadTextAiProbeEnvironment separates validated limits from timeout, converting costs to bigint at composition.",
+      "beforeSha256": "fd5ed16481b7d4b28b55816949d7ebb3ebc14920cdb3b8f9874be9989601f9e2",
+      "afterSha256": "fd5ed16481b7d4b28b55816949d7ebb3ebc14920cdb3b8f9874be9989601f9e2"
+    },
+    {
+      "path": "apps/backend/src/config/text-ai-provider-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadTextAiProviderCredentials filters undefined optional keys after centralized parsing; credential availability remains separate from route activation.",
+      "beforeSha256": "e8db429381a607a00934f7e1bcc9f05141e884a0827da7465db55aa85f1ce9d5",
+      "afterSha256": "e8db429381a607a00934f7e1bcc9f05141e884a0827da7465db55aa85f1ce9d5"
+    },
+    {
+      "path": "apps/backend/src/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "API composition remains explicit about module dependencies, active-session checks, deletion ordering, separate accounting connections and ordered resource cleanup; no relocation solely for file size.",
+      "beforeSha256": "cffdcaee1fa5aae6ec969d4d1ea22a81ccd1c7ad98d42175d190e2ed8329327b",
+      "afterSha256": "cffdcaee1fa5aae6ec969d4d1ea22a81ccd1c7ad98d42175d190e2ed8329327b"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/admin-mcp/admin-mcp-command.ts",
+      "status": "refactored",
+      "reason": "createPriceActualizationService consolidates duplicated actualize/verify configuration while constructing a fresh credential-bound service for every request.",
+      "beforeSha256": "10919b74cdced28868989e70aea9f38b4ccb75429948e5160ce8045545c654a0",
+      "afterSha256": "c3f861ea5c308e006067c5adae385e7aba5f2898a891a872e7cc852cff7e605b"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/admin-mcp/price-actualization.ts",
+      "status": "reviewed-acceptable",
+      "reason": "modelPriceCatalog distinguishes configured/retired text entries, speech task-bound blockers and transcription proof blockers; configuredPriceTargets intentionally filters only configured active entries.",
+      "beforeSha256": "2e49801f86d794bea4cf814069635d026f63ab0693be8b074bae4491ac28ca62",
+      "afterSha256": "2e49801f86d794bea4cf814069635d026f63ab0693be8b074bae4491ac28ca62"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/administration/admin-command.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseAdministrationCommand and parseAdministrationRequest share strict mutation schemas; stdin bounds, explicit confirmation and finally-close are visible.",
+      "beforeSha256": "5e2bfc84c62d81f8f096d4f05221841a07adf30ffc8d7c63853e16466e48e047",
+      "afterSha256": "5e2bfc84c62d81f8f096d4f05221841a07adf30ffc8d7c63853e16466e48e047"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/ai/mastra.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Infrastructure Mastra re-export documents the SDK boundary and has no initialization decisions.",
+      "beforeSha256": "9f96777dac3dca911b53f1366d4f81efee780cecadfcdb25047a42d9422ad5e8",
+      "afterSha256": "9f96777dac3dca911b53f1366d4f81efee780cecadfcdb25047a42d9422ad5e8"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/database/migrate-command.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Migration command loads startup environment, uses one connection and always closes the client in finally.",
+      "beforeSha256": "ebae9dc2fe391d41498a8131668368a061f5c6edc930d26d507b25d3d32e2062",
+      "afterSha256": "ebae9dc2fe391d41498a8131668368a061f5c6edc930d26d507b25d3d32e2062"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/database/migration-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadMigrationDatabaseUrl makes deployed dedicated credential and production verify-full requirements explicit before selection.",
+      "beforeSha256": "cf9caf3870254ac4b12c74d7ce568873ee1162842888884c550582e57ba9fcca",
+      "afterSha256": "cf9caf3870254ac4b12c74d7ce568873ee1162842888884c550582e57ba9fcca"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/database/migrations-folder.ts",
+      "status": "reviewed-acceptable",
+      "reason": "resolveMigrationsFolder visibly prioritizes built output then checked-in source and fails when neither exists.",
+      "beforeSha256": "d2391b8e09d656693a6281f0b1d66934e736f67eeb8d13c69ba7bf0939c56518",
+      "afterSha256": "d2391b8e09d656693a6281f0b1d66934e736f67eeb8d13c69ba7bf0939c56518"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/database/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "databaseSchema declaratively composes canonical module schema exports; spread and alias ordering remains visible for Drizzle/migration consumers.",
+      "beforeSha256": "96b559553ad77301156bc1750314895d3b83ec5ace29586d0ca1e716a8a47dea",
+      "afterSha256": "96b559553ad77301156bc1750314895d3b83ec5ace29586d0ca1e716a8a47dea"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/playground/playground-command.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Playground command validates provision/reset mode before loading target and executing lifecycle; output describes reset/create/reuse.",
+      "beforeSha256": "277104ec7a996269d42987bc185ee30797cd56df87c46e0052b7fa7760aae7f9",
+      "afterSha256": "277104ec7a996269d42987bc185ee30797cd56df87c46e0052b7fa7760aae7f9"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/playground/playground-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadPlaygroundEnvironment validates local database authority, distinct destructive target and exact playground naming; helper comments explain decoded-name comparison.",
+      "beforeSha256": "16f2b3409de9afe5d25cf772d40481ccfe931751a39683004a1747b9a76b917d",
+      "afterSha256": "16f2b3409de9afe5d25cf772d40481ccfe931751a39683004a1747b9a76b917d"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/playground/playground-lifecycle.ts",
+      "status": "reviewed-acceptable",
+      "reason": "runPlaygroundLifecycle holds one reserved advisory-lock connection through migrate/seed, releasing lock, connection and admin client in nested finally blocks.",
+      "beforeSha256": "59a9f981a41bdfc86f00a6e4e3f89b68adf0a52c8d23f75ec7aae0a66c3bb12a",
+      "afterSha256": "59a9f981a41bdfc86f00a6e4e3f89b68adf0a52c8d23f75ec7aae0a66c3bb12a"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/server/graceful-shutdown.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createGracefulShutdown makes resource-close promise idempotent across deadline and server callback while retaining error callback semantics.",
+      "beforeSha256": "8f9a685082bfab152c4b5cebaadb8a82da97e5a1cfddbdee0babf86d07ddf9c8",
+      "afterSha256": "8f9a685082bfab152c4b5cebaadb8a82da97e5a1cfddbdee0babf86d07ddf9c8"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/accounting-maintenance.ts",
+      "status": "reviewed-acceptable",
+      "reason": "maintainTextAiAccounting retains bounded cleanup under capacity lock; startAccountingMaintenance serializes recursive scheduling and stop waits for pending work.",
+      "beforeSha256": "4091a51959a2ae48e13ea3c28f25c68b6f3928593da2c5a65a8489116ce97efa",
+      "afterSha256": "4091a51959a2ae48e13ea3c28f25c68b6f3928593da2c5a65a8489116ce97efa"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/admin-probe-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createSyntheticAdminProbeExecutor checks abort and fingerprint before deterministic synthetic results, delegating identity to the real executor.",
+      "beforeSha256": "83dcac569c22b51942ecc2f810815a9da4e276d6ac498552e05ae2049b944948",
+      "afterSha256": "83dcac569c22b51942ecc2f810815a9da4e276d6ac498552e05ae2049b944948"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/admin-routing-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createAdminTextAiRoutingComposition keeps production store/readiness construction and optional synthetic executor wrapping visible.",
+      "beforeSha256": "e0f387d3ec5fac590b1b06df361a068d31204e4edf1be1d409d221a9ec993507",
+      "afterSha256": "e0f387d3ec5fac590b1b06df361a068d31204e4edf1be1d409d221a9ec993507"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/capacity-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Capacity projection tables declare queue, usage and active-total invariants with explicit nonnegative checks and operational indexes.",
+      "beforeSha256": "5897866e4a019dd1fa79fff95f67e9b6ac94e7f32f91fe48e07e26c50b82f41d",
+      "afterSha256": "5897866e4a019dd1fa79fff95f67e9b6ac94e7f32f91fe48e07e26c50b82f41d"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/probe-flow-registry.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextAiSyntheticFlows binds each production-shaped probe to its schema, identity validator and explicit semantic revision; document enrichment deliberately reuses pasted-term contract.",
+      "beforeSha256": "179d812dad3cc3007036d59c76d548bc874bf9f99cd1459a1cc431cd0780c514",
+      "afterSha256": "179d812dad3cc3007036d59c76d548bc874bf9f99cd1459a1cc431cd0780c514"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/provider-runtime.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextAiProviderRuntime binds credentials/health at process composition and validates native authorization receipts before ISO conversion.",
+      "beforeSha256": "bae49558f90785a2404552990ce02ef3fe77df250681473d0059b8623e33c149",
+      "afterSha256": "bae49558f90785a2404552990ce02ef3fe77df250681473d0059b8623e33c149"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/route-fingerprint.ts",
+      "status": "reviewed-acceptable",
+      "reason": "revisionsForRelease caches semantic contract revisions once; fingerprint creation fails closed for unknown flow or missing provider identity.",
+      "beforeSha256": "4005381ebe2261be0d0b7031c6d9456277d01e32ec8e12685e155c04fc4bc03a",
+      "afterSha256": "4005381ebe2261be0d0b7031c6d9456277d01e32ec8e12685e155c04fc4bc03a"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/text-ai-capacity.ts",
+      "status": "reviewed-acceptable",
+      "reason": "lockTextAiCapacity caches only transaction-fence promises and evicts failures; readTextAiCapacity documents exact rolling boundary and preserves aggregate query order; budget conjunction explicitly checks cost/input/output for all scopes.",
+      "beforeSha256": "55246d215c177db613b1540ef51094609ca5bebbb20aad8b447c450d95369c3e",
+      "afterSha256": "55246d215c177db613b1540ef51094609ca5bebbb20aad8b447c450d95369c3e"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/text-ai-circuit.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Circuit failure uses insert then row lock before increment; success explicitly clears openUntil and failures. Existing ordering explains concurrency behavior.",
+      "beforeSha256": "8158b547bd4dadd2127fd56e0510866d12f50c0e13518ab9711b4cbc66ce9645",
+      "afterSha256": "8158b547bd4dadd2127fd56e0510866d12f50c0e13518ab9711b4cbc66ce9645"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/account-purge-command.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge command separates startup/readiness from work loop, abortable polling and final lease release; logging excludes exception contents and database closes in finally.",
+      "beforeSha256": "4e4762cc77b9564ae269e322c83df225c6d2ac299c018bce52ef20fdf9ae3bc4",
+      "afterSha256": "4e4762cc77b9564ae269e322c83df225c6d2ac299c018bce52ef20fdf9ae3bc4"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/account-purge-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadAccountPurgeEnvironment explicitly requires dedicated deployed DB and storage credentials, checks TLS/origin before building the adapter configuration.",
+      "beforeSha256": "86fad61183d800bf6984d36d69c5499aa1042ec4c3fd4f6d6017e599879a6537",
+      "afterSha256": "86fad61183d800bf6984d36d69c5499aa1042ec4c3fd4f6d6017e599879a6537"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-document-parser-command.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Parser command bounds stdin, accumulated raster output and IPC JSON separately; page files use exclusive creation, sync and finally-close.",
+      "beforeSha256": "e87c74ba53ccc7958229464546f5d68b49ce37321ab7ad7ff2a188401f993b90",
+      "afterSha256": "e87c74ba53ccc7958229464546f5d68b49ce37321ab7ad7ff2a188401f993b90"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+      "status": "refactored",
+      "reason": "createWorkerDocumentAdapters replaces nested adapter ternary with explicit deterministic/production/unavailable branches and keeps sandbox/scanner/HMAC/OCR settings and constructor order unchanged.",
+      "beforeSha256": "7fc0f3c49b81edd5df85f43e3e32a45f978b8fdd435339b1878bde16ca5fc5be",
+      "afterSha256": "1e58bb709fd822b7a933769e08fde9bb4b534582ac745c4ea30f71ac6cb1c113"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "loadDictionaryWorkerEnvironment validates DB/format compatibility, curated model credentials and provider budget before document runtime; unavailable and fixture modes fail closed with scoped errors.",
+      "beforeSha256": "67e1aeaa39a457ae1be92a2d7f5628c8e0cde47fc786522a9e6cf144a91555fe",
+      "afterSha256": "67e1aeaa39a457ae1be92a2d7f5628c8e0cde47fc786522a9e6cf144a91555fe"
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-runtime.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DictionaryWorkerRuntime keeps readiness, fair rotated polling, abort-aware fallback, bounded draining/lease release and sanitized observation allowlist separate; helper promises retain precise cancellation timing.",
+      "beforeSha256": "487e1ed6b7d67c75d90a086babdcbb35d4ddca87c8709f59f1c5f50e9228a80a",
+      "afterSha256": "487e1ed6b7d67c75d90a086babdcbb35d4ddca87c8709f59f1c5f50e9228a80a"
+    },
+    {
+      "path": "apps/backend/src/mastra/composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createCanonicalMastra keeps default empty Studio, operation-authorized tools and development-only primitives in explicit composition branches; registered tools validate required execution/schema descriptors.",
+      "beforeSha256": "92e88258ada09b4b9dde7ce5ffe27a7712c874fbf9aa9aae358c4893e10dd717",
+      "afterSha256": "92e88258ada09b4b9dde7ce5ffe27a7712c874fbf9aa9aae358c4893e10dd717"
+    },
+    {
+      "path": "apps/backend/src/mastra/development-server-policy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development server middleware orders authority, proxy/mutation, body validation, normalization and concurrency lease; response-stream completion/cancel/error release is idempotent.",
+      "beforeSha256": "d374eaa3b6dc9594a6922fbff782b350603f115fc9e75fbd87eed5e638d5468e",
+      "afterSha256": "d374eaa3b6dc9594a6922fbff782b350603f115fc9e75fbd87eed5e638d5468e"
+    },
+    {
+      "path": "apps/backend/src/mastra/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Mastra entrypoint validates opt-in flag before process policy/environment loading, then creates synthetic-principal development composition only when enabled.",
+      "beforeSha256": "8f6e14e1265e1fb8ba041db9e899b64551c342e07b301cfb323aa88d7b118996",
+      "afterSha256": "8f6e14e1265e1fb8ba041db9e899b64551c342e07b301cfb323aa88d7b118996"
+    },
+    {
+      "path": "apps/backend/src/mastra/request-context-presets.json",
+      "status": "reviewed-acceptable",
+      "reason": "Request context presets contain only named synthetic principal and concise/diagnostic variants; no authenticated user authority.",
+      "beforeSha256": "9fc26d7cc2a8ea172bff7ff8e839473d0cee587dcc32af677cc6df4cd3b9ea30",
+      "afterSha256": "9fc26d7cc2a8ea172bff7ff8e839473d0cee587dcc32af677cc6df4cd3b9ea30"
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-administration-service.ts",
+      "beforeSha256": "5bb8926ae38d5b79320cb3b2934eca388e4544a2b24c2b12b8bd621ba4ab3813",
+      "afterSha256": "5bb8926ae38d5b79320cb3b2934eca388e4544a2b24c2b12b8bd621ba4ab3813",
+      "status": "reviewed-acceptable",
+      "reason": "AdminMcpAdministrationService validates schemas and frozen actions/permissions before read/preview; audited callback retains rejection recording after failures."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-check-service.ts",
+      "beforeSha256": "c5d3ac870e0d0fc5a1baaec0562cb59152e2018ba082912230990e63b2366f5b",
+      "afterSha256": "c5d3ac870e0d0fc5a1baaec0562cb59152e2018ba082912230990e63b2366f5b",
+      "status": "reviewed-acceptable",
+      "reason": "AdminMcpCheckService orders exact cap approval, replay reservation, credential polling, dispatch authorization, settlement and sanitized outcome; unknown dispatched costs remain reserved."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-credential-service.test.ts",
+      "beforeSha256": "92fc14f709ad21c773604af96d43747a45e3aa0e8231bc2c963350d8784be31f",
+      "afterSha256": "92fc14f709ad21c773604af96d43747a45e3aa0e8231bc2c963350d8784be31f",
+      "status": "reviewed-acceptable",
+      "reason": "Credential tests explicitly cover one-time secrets, frozen issuance actions, finite limits, audit redaction and exact decimal UTC behavior."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-credential-service.ts",
+      "beforeSha256": "90c1ae3194b8f3fc00684e19603a5847756325f23c39bcd0d04cbac3eb4b1874",
+      "afterSha256": "90c1ae3194b8f3fc00684e19603a5847756325f23c39bcd0d04cbac3eb4b1874",
+      "status": "reviewed-acceptable",
+      "reason": "Credential service validates before persistence, hashes secrets once, returns metadata without secretHash and checks optional permission after authentication."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-price-actualization-service.test.ts",
+      "beforeSha256": "5bbf6a4ed155bb21ddf931423c4404969ca6eddf14e715855f6102d32e6c34e2",
+      "afterSha256": "5bbf6a4ed155bb21ddf931423c4404969ca6eddf14e715855f6102d32e6c34e2",
+      "status": "reviewed-acceptable",
+      "reason": "Price coordination tests cover catalog discovery, exact decimals, scheduled revisions, revoked authority, invalid sources, bounded pagination and cancellation without previews."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-price-actualization-service.ts",
+      "beforeSha256": "f1784fcd0d87b8c67f7524b1cc04211539fdcb8fecda02324803f2fece1e7f9d",
+      "afterSha256": "f1784fcd0d87b8c67f7524b1cc04211539fdcb8fecda02324803f2fece1e7f9d",
+      "status": "reviewed-acceptable",
+      "reason": "Price service keeps source verification separate from publication, reauthenticates after network work and keeps exact canonical pricing comparison separate from retrieval time."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/operation-schemas.ts",
+      "beforeSha256": "f77c1ede608361b4e10bae645be33b6161e4624ab2b0f59f6c94cce87b735901",
+      "afterSha256": "f77c1ede608361b4e10bae645be33b6161e4624ab2b0f59f6c94cce87b735901",
+      "status": "reviewed-acceptable",
+      "reason": "Operation schemas distinguish legacy/native price writers, reject revocation expiry and bound report dates/pagination."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/ports/admin-mcp-administration-port.ts",
+      "beforeSha256": "147624505862d484b64452d5a6fd79f15d355e10ec44408006577d8d9383fc44",
+      "afterSha256": "147624505862d484b64452d5a6fd79f15d355e10ec44408006577d8d9383fc44",
+      "status": "reviewed-acceptable",
+      "reason": "Administration port keeps persistence, preview/apply and post-failure audit behind typed application methods."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/domain/admin-mcp.ts",
+      "beforeSha256": "b5883a5f63c3c7b233fc96b5292ae950950f6116312736cf8b13b91b34553ac6",
+      "afterSha256": "b5883a5f63c3c7b233fc96b5292ae950950f6116312736cf8b13b91b34553ac6",
+      "status": "reviewed-acceptable",
+      "reason": "MCP domain explicitly separates permission snapshots from runtime action guards, exact decimal millionths and credential redaction."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/admin-mcp-administration-adapter.ts",
+      "beforeSha256": "4f79864d9271aba7c558639109ad702f6694a1d1301a2fbb5393fd94b91bf819",
+      "afterSha256": "4f79864d9271aba7c558639109ad702f6694a1d1301a2fbb5393fd94b91bf819",
+      "status": "reviewed-acceptable",
+      "reason": "Administration adapter preserves preview-disclosure transaction and exact apply/replay transaction callback boundaries."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/admin-mcp-check-budget.ts",
+      "beforeSha256": "91950efd9aa8f6c9977c36fd945cf0b06b2c918bb42bc6f49b85e13c5cab2f6e",
+      "afterSha256": "91950efd9aa8f6c9977c36fd945cf0b06b2c918bb42bc6f49b85e13c5cab2f6e",
+      "status": "reviewed-acceptable",
+      "reason": "Check budget keeps delegated and shared operator reservations atomic, revalidates dispatch against revocation and permits admitted expense settlement after revocation/purge."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/admin-mcp-checks.ts",
+      "beforeSha256": "e8ce45605748270a615434bb252414b0c6938718d744d60b0352b1731164b355",
+      "afterSha256": "e8ce45605748270a615434bb252414b0c6938718d744d60b0352b1731164b355",
+      "status": "reviewed-acceptable",
+      "reason": "createAdminMcpChecks declares all adapters and authoritative expense lookup at one infrastructure composition seam."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/admin-mcp-probe-expense.ts",
+      "beforeSha256": "4cd2ab0d355a4415c432c6fa6fa1208633a5a2ee479476d65d9b864a264162c8",
+      "afterSha256": "4cd2ab0d355a4415c432c6fa6fa1208633a5a2ee479476d65d9b864a264162c8",
+      "status": "reviewed-acceptable",
+      "reason": "probeExpenseId filters both authoritative attempt reference and source kind without copying request payloads."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/admin-mcp-rejection-audit.ts",
+      "beforeSha256": "ccaef4938910769d7411d30af7d908bcd38151d7085e4ffe15292844fb03e45e",
+      "afterSha256": "ccaef4938910769d7411d30af7d908bcd38151d7085e4ffe15292844fb03e45e",
+      "status": "reviewed-acceptable",
+      "reason": "Rejection audit builds allowlisted UUID/scalar metadata, safely resolves token-bound preview state and rejects credential-shaped caller reasons."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/operations/admin-mcp-operations.ts",
+      "beforeSha256": "3531279e5e490ae1de7d5e872137ec90862dd9f7a77c897d0b3694f812adbcfc",
+      "afterSha256": "3531279e5e490ae1de7d5e872137ec90862dd9f7a77c897d0b3694f812adbcfc",
+      "status": "reviewed-acceptable",
+      "reason": "AdminMcpOperations keeps read/preview/apply cases explicit; target versions, delegated bounds, quotas, financial mutation and audit stay in caller transaction."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/operations/operation-bounds.ts",
+      "beforeSha256": "65082511174a7963e19ac9090afd4fdc7b66481f0b8933ee103f8008043ad934",
+      "afterSha256": "65082511174a7963e19ac9090afd4fdc7b66481f0b8933ee103f8008043ad934",
+      "status": "reviewed-acceptable",
+      "reason": "Operation bounds compare exact millionths for operation and application ceilings, preserving finite/null-denial rules."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/operations/operation-conflicts.ts",
+      "beforeSha256": "5454739128eaa951766c4cca87c42b82d116ef274f6858cb7716f42a3500b763",
+      "afterSha256": "5454739128eaa951766c4cca87c42b82d116ef274f6858cb7716f42a3500b763",
+      "status": "reviewed-acceptable",
+      "reason": "Conflict mapping preserves explicit check-required instructions before translating known store conflicts to stale-preview."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/operations/user-financial-report.ts",
+      "beforeSha256": "c039814b8aa95f0eb177ae7e77675dd2be57858343c084667b488cd4f11c0865",
+      "afterSha256": "c039814b8aa95f0eb177ae7e77675dd2be57858343c084667b488cd4f11c0865",
+      "status": "reviewed-acceptable",
+      "reason": "User financial report uses bounded repeatable-read snapshot, owner/payer attribution and cumulative purchase allocations with explicit unknown-expense counts."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-deletion-participant.ts",
+      "beforeSha256": "c227c9f35a82954a00746da9a67655b682eb1bf4da6733720799ee7f55ae82b3",
+      "afterSha256": "c227c9f35a82954a00746da9a67655b682eb1bf4da6733720799ee7f55ae82b3",
+      "status": "reviewed-acceptable",
+      "reason": "Owner MCP purge preserves existing fenced transaction, deletes receipts before previews, erases client metadata and retains only UUID-shaped expense references."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-owner-purge.sql",
+      "beforeSha256": "134c821bbb45efcde384be78c7766ec5d62e5c13ca0d078f66936372941da6e7",
+      "afterSha256": "0b034f365d780a2e6fff0ca87534bb5d4ee23f5fc12beebba874fb65f5815731",
+      "status": "refactored",
+      "reason": "Expanded checked purge, receipt-before-preview erasure, token redaction and UUID-reference allowlist into visible stages; exact462 non-comment SQL tokens unchanged."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-persistence.ts",
+      "beforeSha256": "b2b70badb8fa803ea9208ce3b36d4b1f613f93941ec8b85158bd0906fde63c20",
+      "afterSha256": "b2b70badb8fa803ea9208ce3b36d4b1f613f93941ec8b85158bd0906fde63c20",
+      "status": "reviewed-acceptable",
+      "reason": "Persistence support serializes stable payload hashes, checks active owner before locking token, verifies exact authority snapshot, and redacts audit credential material."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-preview-store.ts",
+      "beforeSha256": "15e1743dfd9807a9eb3b790f3b74907a6ef732aa90e76eb0d67026927fe9eed0",
+      "afterSha256": "15e1743dfd9807a9eb3b790f3b74907a6ef732aa90e76eb0d67026927fe9eed0",
+      "status": "reviewed-acceptable",
+      "reason": "Preview store makes receipt replay precede expiry rejection, then rechecks actor/lifetime before mutation and again before receipt commit."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-quota-store.ts",
+      "beforeSha256": "8a77eeda80921d1969f398bb56b3deaf8e94017a0f14a6049e0270aeb29f0328",
+      "afterSha256": "8a77eeda80921d1969f398bb56b3deaf8e94017a0f14a6049e0270aeb29f0328",
+      "status": "reviewed-acceptable",
+      "reason": "Quota store preserves permission/action guard, token lock, payload replay identity, exact daily/concurrency ceilings and unknown-expense reservation semantics."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-store.integration.test.ts",
+      "beforeSha256": "518c60b93c126e89ce307fad583f19a8d8e327968d3b1a40a0e0c67d935d0895",
+      "afterSha256": "518c60b93c126e89ce307fad583f19a8d8e327968d3b1a40a0e0c67d935d0895",
+      "status": "reviewed-acceptable",
+      "reason": "MCP persisted tests use isolated DB fixture and explicit promises for concurrent reservation, preview/token expiry, rollback, audit ownership and purge-redaction assertions."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/drizzle-admin-mcp-store.ts",
+      "beforeSha256": "a5f822a7e54ab3390e242b4c5430d15f1833f4ad7ecdabf6753979978e5b0e04",
+      "afterSha256": "a5f822a7e54ab3390e242b4c5430d15f1833f4ad7ecdabf6753979978e5b0e04",
+      "status": "reviewed-acceptable",
+      "reason": "Credential store strips hashes from metadata, requires current owner eligibility and authenticates/revokes only within token-owner scope."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/schema.ts",
+      "beforeSha256": "8b913bb52f2f23f9d47b5b1fc7b3dbe9a915079fdb0acfb6f429f7c971b39a56",
+      "afterSha256": "8b913bb52f2f23f9d47b5b1fc7b3dbe9a915079fdb0acfb6f429f7c971b39a56",
+      "status": "reviewed-acceptable",
+      "reason": "MCP schema declares bounded token/preview lifetime, unique replay keys, reference FKs and limited audit metadata explicitly."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/interface/http/admin-mcp-check-tools.ts",
+      "beforeSha256": "a0cc5bc3950135c4a93d74ee136e758f2f4a89d0a088e5d69fe9162e7e66256e",
+      "afterSha256": "a0cc5bc3950135c4a93d74ee136e758f2f4a89d0a088e5d69fe9162e7e66256e",
+      "status": "reviewed-acceptable",
+      "reason": "Check tool registration requires both permission and action, labels paid execution and preserves safe error/status retry guidance."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/interface/http/admin-mcp-server.ts",
+      "beforeSha256": "77420a32e40762474ddca88a94f75ffff1dca414af61122847dadcb5c9c0f622",
+      "afterSha256": "77420a32e40762474ddca88a94f75ffff1dca414af61122847dadcb5c9c0f622",
+      "status": "reviewed-acceptable",
+      "reason": "MCP server keeps fixed tool registry, frozen authority filtering, origin/host/query restrictions, bounded body/concurrency/burst limits and sanitized failures explicit."
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/interface/http/admin-mcp-token.routes.ts",
+      "beforeSha256": "d03a58cea92ac7589fad13c50ae9dc19a41faec5f5c5f9598a6b8e1f1ab93392",
+      "afterSha256": "d03a58cea92ac7589fad13c50ae9dc19a41faec5f5c5f9598a6b8e1f1ab93392",
+      "status": "reviewed-acceptable",
+      "reason": "Token routes remain local/test-only, use body/security/origin guards, require recent auth for issuance and document deliberate revoke containment exception."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/application/administration-errors.ts",
+      "beforeSha256": "ecf620b9aeacb85d58121c2ed6ed5e77bc028eda368ff32a9f67884d397a3b1d",
+      "afterSha256": "ecf620b9aeacb85d58121c2ed6ed5e77bc028eda368ff32a9f67884d397a3b1d",
+      "status": "reviewed-acceptable",
+      "reason": "Administration errors use distinct classes with stable names/messages; no shared catch-all obscures transport classification."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/application/administration-service.ts",
+      "beforeSha256": "dec51b0e518caa2534076a153ba66310d5b6ff45607b3e8e60cd2ea4a458c210",
+      "afterSha256": "dec51b0e518caa2534076a153ba66310d5b6ff45607b3e8e60cd2ea4a458c210",
+      "status": "reviewed-acceptable",
+      "reason": "Administration service separates authorization, recent-auth checks, mutation input/audit construction and rejection mapping; sentence-library calls preserve existing scope/time/ID ordering."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/application/ports/admin-sentence-library.ts",
+      "beforeSha256": "435ee5c26dc5f22d8a86e9289c8ef6af8aff171f62c6ee589463235951160914",
+      "afterSha256": "435ee5c26dc5f22d8a86e9289c8ef6af8aff171f62c6ee589463235951160914",
+      "status": "reviewed-acceptable",
+      "reason": "AdminSentenceLibrary port documents learning-owned semantics and administration-owned actor/audit seam."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/application/ports/administration-store.ts",
+      "beforeSha256": "ef5c12b9ebe1c78155e54ed953873ad06d30022f03129a617b5dd25ec87dc4f6",
+      "afterSha256": "ef5c12b9ebe1c78155e54ed953873ad06d30022f03129a617b5dd25ec87dc4f6",
+      "status": "reviewed-acceptable",
+      "reason": "AdministrationStore declarations explicitly separate persisted audit metadata, expected-version mutations and typed rejection outcomes."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/administration-composition.ts",
+      "beforeSha256": "d2105967a338209d0306d35d42fb53a669330444e695f1875324e41dbc89e57f",
+      "afterSha256": "d2105967a338209d0306d35d42fb53a669330444e695f1875324e41dbc89e57f",
+      "status": "reviewed-acceptable",
+      "reason": "Administration composition injects shared auth dependencies and an admin-only cookie/origin policy; optional sentence library remains explicit."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/admin-credit-amount.ts",
+      "beforeSha256": "c661fd3b465aa12a6347dde05e8d9497492fb4f11b9c243a62182fc683012513",
+      "afterSha256": "c661fd3b465aa12a6347dde05e8d9497492fb4f11b9c243a62182fc683012513",
+      "status": "reviewed-acceptable",
+      "reason": "Credit transport conversion documents decimal credits versus integer milli-credits and preserves signed adjustment handling."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-ai-settings.ts",
+      "beforeSha256": "07ef08172127acf679c258cac568f2aeecea159d515395d5c590d1b6f1eba936",
+      "afterSha256": "6662d92f1f73e6922340893b00d22f001eb1b4abab7f14bc2768c2b6b882f359",
+      "status": "refactored",
+      "reason": "modelUnavailableReason makes retirement, approval, routing, health and credential precedence explicit while consuming the same previously derived locals and preserving exact strings/null."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-credit-operations.ts",
+      "beforeSha256": "de3585ed5a1ace198273043d69e838bc252aaae8b2da5763513d43f123fe0aea",
+      "afterSha256": "de3585ed5a1ace198273043d69e838bc252aaae8b2da5763513d43f123fe0aea",
+      "status": "reviewed-acceptable",
+      "reason": "Credit mutations retain owner lock, DB operation time, live actor/target checks, exact participant writes and audited rejection result inside one transaction."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-persistence-support.ts",
+      "beforeSha256": "87757ac0897f05bbeedd925a6e3b5743060b7539e223a72508b4e53e7cc821ea",
+      "afterSha256": "87757ac0897f05bbeedd925a6e3b5743060b7539e223a72508b4e53e7cc821ea",
+      "status": "reviewed-acceptable",
+      "reason": "Persistence support keeps canonical summary/audit mapping and known-error classification visible, with exact allowed target kinds and credit-manageable states."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-read-operations.ts",
+      "beforeSha256": "b3ff711371886dfa93aee2a597055284c0138dda7cc262f322008b2db96e9efa",
+      "afterSha256": "b3ff711371886dfa93aee2a597055284c0138dda7cc262f322008b2db96e9efa",
+      "status": "reviewed-acceptable",
+      "reason": "Read operations keep deterministic pagination, shared filtering, primary-email joins, audit mapping and dashboard aggregation explicit."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-user-mutations.ts",
+      "beforeSha256": "94c5b1b50f80394f3fe6623a5d37eed65a56dd4d1b6eebf337d7476736059487",
+      "afterSha256": "94c5b1b50f80394f3fe6623a5d37eed65a56dd4d1b6eebf337d7476736059487",
+      "status": "reviewed-acceptable",
+      "reason": "User mutation locks owner then target, reads DB time, validates live session and target version; deletion cancellation journals before writes under matching worker locks."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/drizzle-administration-operator.ts",
+      "beforeSha256": "b1369583349de482a77e462676fc413d08b7d741bb5bd0d237f40e69cd357a09",
+      "afterSha256": "b1369583349de482a77e462676fc413d08b7d741bb5bd0d237f40e69cd357a09",
+      "status": "reviewed-acceptable",
+      "reason": "Membership operator serializes owner changes, distinguishes first-owner bootstrap, audits rejected results after rollback and prevents last-owner revoke."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/drizzle-administration-store.ts",
+      "beforeSha256": "8270b53f8c0e5845bcbe345a504808a309c215865c5d801d6f4b64d5f1e0bcab",
+      "afterSha256": "8270b53f8c0e5845bcbe345a504808a309c215865c5d801d6f4b64d5f1e0bcab",
+      "status": "reviewed-acceptable",
+      "reason": "Administration store forwards public methods into cohesive persistence modules with explicit database/cancellation journal context; async signatures remain intentional."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/owner-lock.ts",
+      "beforeSha256": "cb4fc0acd42cb9eb6018b6688e3adf3edda6bc5280b8673dc78e996ee43f0ebf",
+      "afterSha256": "cb4fc0acd42cb9eb6018b6688e3adf3edda6bc5280b8673dc78e996ee43f0ebf",
+      "status": "reviewed-acceptable",
+      "reason": "Owner lock exports one canonical advisory lock identifier shared by admin mutation callers."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/schema.ts",
+      "beforeSha256": "c5e469e82a0b66115f83c186d172c9cd7daa7dbf1bbe0253b38c2e72dcd72818",
+      "afterSha256": "c5e469e82a0b66115f83c186d172c9cd7daa7dbf1bbe0253b38c2e72dcd72818",
+      "status": "reviewed-acceptable",
+      "reason": "Administration schema declares active-membership uniqueness, revocation pairs, reason lengths, audit retention and metadata bounds explicitly."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/sentence-library-administration-hooks.ts",
+      "beforeSha256": "5b542006726bacf1dc4528e133ac02457ec81fdd08da56ddb3c041bf963e26b7",
+      "afterSha256": "5b542006726bacf1dc4528e133ac02457ec81fdd08da56ddb3c041bf963e26b7",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence admin hooks sort actor/target/dictionary-owner locks before live session check, derive freshness from DB time and commit successful audit with mutation."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/admin-text-ai-probe.routes.ts",
+      "beforeSha256": "b3ecefbe6cc775931378ab324ec5fc43c1510bc73fcafa2afe7d09b72c642a45",
+      "afterSha256": "b3ecefbe6cc775931378ab324ec5fc43c1510bc73fcafa2afe7d09b72c642a45",
+      "status": "reviewed-acceptable",
+      "reason": "Probe routes distinguish list versus recent-auth write/recovery, require trusted write origin and fail unavailable composition explicitly."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/administration-http-error-mapping.ts",
+      "beforeSha256": "718cb0fe7a3073550f4c0767d0ade22751d731c184176943bcf10f961c3c274e",
+      "afterSha256": "718cb0fe7a3073550f4c0767d0ade22751d731c184176943bcf10f961c3c274e",
+      "status": "reviewed-acceptable",
+      "reason": "HTTP error mapping preserves probe/sentence/admin classifications before delegating to auth mapping, with explicit status/message translation."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/administration-http-error.ts",
+      "beforeSha256": "4b2ddb1eb5e3b1822806460c5ce1a6d47009775b224c77c414ad74bafbf3d276",
+      "afterSha256": "4b2ddb1eb5e3b1822806460c5ce1a6d47009775b224c77c414ad74bafbf3d276",
+      "status": "reviewed-acceptable",
+      "reason": "AdministrationHttpError keeps stable code/status/retry fields and builds correlation-bearing response shape without SDK leakage."
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/administration.routes.ts",
+      "beforeSha256": "75c213e5bb2eb9178bdc0acc77e67ae8a7b2e13c78c6133e04c6c69659b35702",
+      "afterSha256": "75c213e5bb2eb9178bdc0acc77e67ae8a7b2e13c78c6133e04c6c69659b35702",
+      "status": "reviewed-acceptable",
+      "reason": "Administration routes keep admin cookie namespace/membership checks, logout on failed admin admission, explicit resource schemas/statuses and ordered registration visible."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/accounting-store.ts",
+      "beforeSha256": "87981c0c5a0d6dcc4573b2b253e515310c45a97571ce76774322a904db607bf6",
+      "afterSha256": "87981c0c5a0d6dcc4573b2b253e515310c45a97571ce76774322a904db607bf6",
+      "status": "reviewed-acceptable",
+      "reason": "AccountingStore separates cash recording/refund/report port from exact purchase revocation and provider expense facts."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/ai-credit-participant.ts",
+      "beforeSha256": "8c47de79c69ef8e08a49cc0708dc3aee53f13d129e730060f1cb793c39f3e932",
+      "afterSha256": "8c47de79c69ef8e08a49cc0708dc3aee53f13d129e730060f1cb793c39f3e932",
+      "status": "reviewed-acceptable",
+      "reason": "Credit participant contract documents pinned policy, exact reservation/settlement, admitted interview bypass and dedicated speech success settlement."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/learner-ai-credit-balance.ts",
+      "beforeSha256": "c872669e359e8e381dff3bc5f395209453355f3f61d40aacb137dc554d10bd88",
+      "afterSha256": "c872669e359e8e381dff3bc5f395209453355f3f61d40aacb137dc554d10bd88",
+      "status": "reviewed-acceptable",
+      "reason": "Learner balance service resolves summary once and returns null balance only for effective unlimited mode."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/provider-price-source.ts",
+      "beforeSha256": "6860fdd22bd601d4b45ecf929c9aa625a3560978b6bf0a0a2980356fbf097bb7",
+      "afterSha256": "6860fdd22bd601d4b45ecf929c9aa625a3560978b6bf0a0a2980356fbf097bb7",
+      "status": "reviewed-acceptable",
+      "reason": "Provider source port returns distinct available/unsupported/unavailable/missing/source-changed results while keeping read-only discovery separate from publication."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/application/provider-price-store.ts",
+      "beforeSha256": "d4d3e5d12ec3047c7d014d4d020d6f07aaf665aece135515e63a554bd4134b7f",
+      "afterSha256": "d4d3e5d12ec3047c7d014d4d020d6f07aaf665aece135515e63a554bd4134b7f",
+      "status": "reviewed-acceptable",
+      "reason": "Provider store port has a small explicit list/publish interface with actor/time context."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/accounting.ts",
+      "beforeSha256": "f6f42662a7a731d130520310280352bc4229a9600a3edd85581fad27c6166bd9",
+      "afterSha256": "f6f42662a7a731d130520310280352bc4229a9600a3edd85581fad27c6166bd9",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting math validates decimal syntax and uses bigint fraction arithmetic for purchase value and consumed-refund loss without overstating attribution."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/action-pricing.test.ts",
+      "beforeSha256": "db33c6aa40104eb0235f4b45d93c588512ace7d1883180629df897e20228b3eb",
+      "afterSha256": "db33c6aa40104eb0235f4b45d93c588512ace7d1883180629df897e20228b3eb",
+      "status": "reviewed-acceptable",
+      "reason": "Action pricing tests cover decimal roundtrip, aggregate single rounding, conservative cached-input rate and retained fractional remainder/affordable output bounds."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/action-pricing.ts",
+      "beforeSha256": "be6c4b4a22a15693926a384b5ec61a953a3d5d4d62cf33fecf9af7ba03f67dae",
+      "afterSha256": "be6c4b4a22a15693926a384b5ec61a953a3d5d4d62cf33fecf9af7ba03f67dae",
+      "status": "reviewed-acceptable",
+      "reason": "Action pricing helpers distinguish actual charge, pessimistic admission and one-time settlement rounding, with source-duration audio tariff independent from provider USD."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/ai-credit.ts",
+      "beforeSha256": "af56078792509b5909f0fa21e39967c118e18bba75d2729ce427e5cebebe5275",
+      "afterSha256": "af56078792509b5909f0fa21e39967c118e18bba75d2729ce427e5cebebe5275",
+      "status": "reviewed-acceptable",
+      "reason": "Credit domain validates amounts, pinned measurement policy and reservation bounds; lot ordering explicitly favors expiry then creation then stable ID."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/audio-duration-pricing.test.ts",
+      "beforeSha256": "c4610f47f1eb0124401c0d1db7691a77f034ed5e369f5c602d9e42cc31e43c93",
+      "afterSha256": "c4610f47f1eb0124401c0d1db7691a77f034ed5e369f5c602d9e42cc31e43c93",
+      "status": "reviewed-acceptable",
+      "reason": "Duration tests cover milli-credit rounding, exact provider milliseconds, absent-meter uncertainty, sum-before-micro rounding and reviewed minimums."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/capability-policy.ts",
+      "beforeSha256": "36beebc71284e4d997b8e3e0891ad1936bb574686d1df625dd36f6967ca792e9",
+      "afterSha256": "36beebc71284e4d997b8e3e0891ad1936bb574686d1df625dd36f6967ca792e9",
+      "status": "reviewed-acceptable",
+      "reason": "Initial capability policy documents version zero as pure deterministic state and limits operator default to portrait interview."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/exact-credit-amount.ts",
+      "beforeSha256": "e97fa719218a570561e2de6d99a59334fdaa45a3ce0520106aab50cbff1f42c4",
+      "afterSha256": "e97fa719218a570561e2de6d99a59334fdaa45a3ce0520106aab50cbff1f42c4",
+      "status": "reviewed-acceptable",
+      "reason": "Exact credit parser/formatter enforce canonical nonnegative decimal thousandths and supported integer bound."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/model-price.ts",
+      "beforeSha256": "bd340be9e6af86e9c9ffaf13650489014df465058451b5f01c132e0eb95c62af",
+      "afterSha256": "bd340be9e6af86e9c9ffaf13650489014df465058451b5f01c132e0eb95c62af",
+      "status": "reviewed-acceptable",
+      "reason": "Model-price math preserves exact speech ceil/minimum, conservative text/cached tariff bound and legitimate operator-funded zero customer tariff."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/native-provider-pricing.test.ts",
+      "beforeSha256": "7bea91f019a8bad6fee4b97df27c6a29ce9cbe1637e26b9b82a7eefaefa74ef0",
+      "afterSha256": "7bea91f019a8bad6fee4b97df27c6a29ce9cbe1637e26b9b82a7eefaefa74ef0",
+      "status": "reviewed-acceptable",
+      "reason": "Native pricing tests explicitly exercise component/request minima, rounding/currency order, cache evidence, endpoint/tier/window ambiguity, native meter binding, range overflow and multi-call sum-before-micro rounding."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/native-provider-pricing.ts",
+      "beforeSha256": "471cbfa23613d045cf9e91aec9783d6e95be8f51c2a7e5c6b21834c824efc0b6",
+      "afterSha256": "471cbfa23613d045cf9e91aec9783d6e95be8f51c2a7e5c6b21834c824efc0b6",
+      "status": "reviewed-acceptable",
+      "reason": "Native pricing evaluator decomposes fractions, native rounding, selector/horizon coverage, component quantity/cost, reported evidence and aggregate calls; unknown evidence never becomes free usage."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-cost-admission.test.ts",
+      "beforeSha256": "6833d86bd6e992c70d22b38dc9a1dea7e61a04c0514b3f0c2d2f4a7b2c2ef1f4",
+      "afterSha256": "6833d86bd6e992c70d22b38dc9a1dea7e61a04c0514b3f0c2d2f4a7b2c2ef1f4",
+      "status": "reviewed-acceptable",
+      "reason": "Provider admission tests cover exact affordable output boundary, conservative mixed context/minima envelope, incompatible components and uncovered dispatch horizon."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-cost-admission.ts",
+      "beforeSha256": "d67a3ca4e38e281b8b035b0c5c9e70bbb4885a0f6a0f5bc505538ee21496f719",
+      "afterSha256": "d67a3ca4e38e281b8b035b0c5c9e70bbb4885a0f6a0f5bc505538ee21496f719",
+      "status": "reviewed-acceptable",
+      "reason": "Provider cost admission separates native envelope from legacy rates, validates curated meter compatibility and uses bounded binary search for exact affordable output."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-expense.ts",
+      "beforeSha256": "477148dd8c13ac10488e24d5a43da0729b00d60712dd63a461e0ec04fbe1de26",
+      "afterSha256": "477148dd8c13ac10488e24d5a43da0729b00d60712dd63a461e0ec04fbe1de26",
+      "status": "reviewed-acceptable",
+      "reason": "Provider expense evaluates native calls/facts before legacy arithmetic, never falling back when native evidence is unresolved; cache/token quantities stay exact."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts",
+      "beforeSha256": "ef8c5abd1ef4c24f45ea4dda16d92100cb0319c0ae5a3b8a04aaf88a3368a0ba",
+      "afterSha256": "ef8c5abd1ef4c24f45ea4dda16d92100cb0319c0ae5a3b8a04aaf88a3368a0ba",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting report worker serializes recursive scheduling, abort-aware stop and in-flight completion with independent bounded interval."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts",
+      "beforeSha256": "5d44d6f06ba28b08b844f8702cdb5d8edef931f3bd88be7fb554c06a4b06f9cd",
+      "afterSha256": "5d44d6f06ba28b08b844f8702cdb5d8edef931f3bd88be7fb554c06a4b06f9cd",
+      "status": "reviewed-acceptable",
+      "reason": "Action allowance middleware removes confirmation transport metadata without changing domain fingerprint, preserving clone/body cache semantics; quote persistence follows rollback and owner-bound offers revalidate authorization/balance/output."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/learner-ai-credit-balance-composition.ts",
+      "beforeSha256": "e51330eefd08859165606b7b3ee77b5c96d1432be80a880d1b00a301b6acf6be",
+      "afterSha256": "e51330eefd08859165606b7b3ee77b5c96d1432be80a880d1b00a301b6acf6be",
+      "status": "reviewed-acceptable",
+      "reason": "Learner credit balance composition uses one read-only repeatable snapshot with explicit statement/lock bounds and no wallet writer lock."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-authorized-purge.sql",
+      "beforeSha256": "2287f232121c1fa2b00a1f68c923cd61385b3907ba8e30d5a7c2f5136ac378cd",
+      "afterSha256": "2287f232121c1fa2b00a1f68c923cd61385b3907ba8e30d5a7c2f5136ac378cd",
+      "status": "reviewed-acceptable",
+      "reason": "Authoritative SQL responsibilities are already separated into checked claim, purge authorization, immutable-row guards, quiescent erasure, deletion-claim transitions and completion. Kept these established function seams and exact guard/lock ordering; no new SQL API solely to split the remaining predicates."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-owner-purge.sql",
+      "beforeSha256": "b34403d4155e82155e01091a90128522d0146feaea8f3886b7b179cb4c472176",
+      "afterSha256": "097491a8899fa19fb1bf194278678abce71961e22594128b25613b49242a0c56",
+      "status": "refactored",
+      "reason": "Expanded live-claim checks and retained purchase attribution into readable CTE/statement stages with cumulative-rounding invariant comment; exact736 non-comment SQL tokens unchanged."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-persistence-support.ts",
+      "beforeSha256": "85c0857424c5a43b5c1a5c53554ca4214654da0ddfd689294c334ae5650785ed",
+      "afterSha256": "85c0857424c5a43b5c1a5c53554ca4214654da0ddfd689294c334ae5650785ed",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting support preserves provider-expense assertion/native checkpoint authority, typed transaction context and shared legacy/action purchase-allocation union."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql",
+      "beforeSha256": "34b61159e4d6a7ae8c347a293b7db7377ca3c32762c69eaa709ebcd58caa5111",
+      "afterSha256": "34b61159e4d6a7ae8c347a293b7db7377ca3c32762c69eaa709ebcd58caa5111",
+      "status": "reviewed-acceptable",
+      "reason": "Provider expense SQL separates authoritative identity, immutable fact recording, settlement and append-only guard functions. Existing comments identify native checkpoint and replay authority; kept exact closed validation/error ordering rather than add another SQL helper API."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-purge-recovery.sql",
+      "beforeSha256": "0e9b09463cefcb3d9c36620ca32ac2e1016a57d0752484f6340816dd71ee2a0c",
+      "afterSha256": "0e9b09463cefcb3d9c36620ca32ac2e1016a57d0752484f6340816dd71ee2a0c",
+      "status": "reviewed-acceptable",
+      "reason": "Purge recovery is one bounded typed operation with visible capacity/claim/wallet/operator fences, owned terminal-interview checks, ordinal attempt settlement and final action settlement. No additional abstraction hides those ordered constraints."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-record-operations.ts",
+      "beforeSha256": "e9e80e9012ed1f494152a90d5d6c3f76ba64daa2174c79eb2b20291fbbb919db",
+      "afterSha256": "e9e80e9012ed1f494152a90d5d6c3f76ba64daa2174c79eb2b20291fbbb919db",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting record operations keep global idempotency before wallet effects, payment-scoped refund serialization, invoice overlap guard and transactional report invalidation; refund context maintains exact reserved/consumed/revoked values."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-report-dirty.sql",
+      "beforeSha256": "77e48396ed4e9af1f3c75bf16a57e9bfd462de4b2ec0b0c7c76a9107d6274a25",
+      "afterSha256": "77e48396ed4e9af1f3c75bf16a57e9bfd462de4b2ec0b0c7c76a9107d6274a25",
+      "status": "reviewed-acceptable",
+      "reason": "Report dirty SQL locks snapshot keys in stable order before incrementing version and explicitly excludes admission/hold-release invalidations."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-report-operations.ts",
+      "beforeSha256": "e2ab26f6d0326e0429b4142f519fd4993796b8642683d0a6c29afde8da2c93bf",
+      "afterSha256": "e2ab26f6d0326e0429b4142f519fd4993796b8642683d0a6c29afde8da2c93bf",
+      "status": "reviewed-acceptable",
+      "reason": "Report module already separates registration, fenced/versioned refresh and materialization. Budget checks remain adjacent to expensive aggregate queries; existing CTE names distinguish live versus archived economics. Rejected query wrappers that would merely hide local SQL without reducing caller invariants."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema.ts",
+      "beforeSha256": "cad53effd33f2f98c80723dde8a6efc5eb0349217960a923c5be0592bedcbdcd",
+      "afterSha256": "cad53effd33f2f98c80723dde8a6efc5eb0349217960a923c5be0592bedcbdcd",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting schema separates cash facts, unknown expense provenance, bounded report registrations and retained purchase lot movements with explicit checks/indexes."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-maintenance.ts",
+      "beforeSha256": "f3290d172c3760ccd029fd0918444bf2abac69f603a6e9f39976e8288a8de111",
+      "afterSha256": "f3290d172c3760ccd029fd0918444bf2abac69f603a6e9f39976e8288a8de111",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting maintenance validates bounded selection sizes and uses ordered skip-locked expiry deletion; no provider or unbounded history work enters admission."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-accounting-schema.ts",
+      "beforeSha256": "080cbb4ca6142208f517fefd42dee78550cba614ba8f22298783983f417c4d98",
+      "afterSha256": "080cbb4ca6142208f517fefd42dee78550cba614ba8f22298783983f417c4d98",
+      "status": "reviewed-acceptable",
+      "reason": "Action accounting schema explicitly distinguishes customer milli-credits, provider micro-costs, text/duration limits, immutable native dispatch receipts and non-spending offers."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-authority-schema.ts",
+      "beforeSha256": "fc5251d4e045d9db578b87bd48e04e57bb7b8ec85f2fd5fd47bec997dc00746c",
+      "afterSha256": "fc5251d4e045d9db578b87bd48e04e57bb7b8ec85f2fd5fd47bec997dc00746c",
+      "status": "reviewed-acceptable",
+      "reason": "Action authority schema holds trigger-owned terminal proof independently of erased feature content and validates closed outcomes."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/action-billing.ts",
+      "beforeSha256": "455dce3ca8fccdbd3793d19715c5a3ff373a82f320cc5ca61d98fc48facd5e09",
+      "afterSha256": "455dce3ca8fccdbd3793d19715c5a3ff373a82f320cc5ca61d98fc48facd5e09",
+      "status": "reviewed-acceptable",
+      "reason": "Action billing resolves free/held/released/charged from funding/action state and exact formatted values; absent owner-bound action produces undefined."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/admission-policy-read-cache.ts",
+      "beforeSha256": "e4fec491b8482b3f42a89809e3587fc53264c25a2e5ffbcb5bb8dcde50d296a6",
+      "afterSha256": "e4fec491b8482b3f42a89809e3587fc53264c25a2e5ffbcb5bb8dcde50d296a6",
+      "status": "reviewed-acceptable",
+      "reason": "Admission read cache is explicitly opt-in and transaction-keyed; discard prevents preparatory reads from pinning financial policy before admission fence."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/ai-credit-grant-operations.ts",
+      "beforeSha256": "f3314f2a18769809efdb57e61ab41c28425da2e2a60906f42c26065b507fd1a5",
+      "afterSha256": "f3314f2a18769809efdb57e61ab41c28425da2e2a60906f42c26065b507fd1a5",
+      "status": "reviewed-acceptable",
+      "reason": "Credit grant operations validate before owner lock, preserve replay identity and grant-only refund allocation, use exact removal lot ordering and require fenced purge authorization."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/ai-credit-persistence-support.ts",
+      "beforeSha256": "c094e32c03fe2b47fac3ff10a04268fe4fb996a7b74c277a8be2938536c3908b",
+      "afterSha256": "c094e32c03fe2b47fac3ff10a04268fe4fb996a7b74c277a8be2938536c3908b",
+      "status": "reviewed-acceptable",
+      "reason": "Credit persistence support documents wallet lock namespace ordering and separates source/expiry/reason validation, replay date equivalence and terminal settlement result validation."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/ai-credit-reservation-operations.ts",
+      "beforeSha256": "dfa6f59106a52f04ad25287c8a1781363ca885598f47f8c4e6bc5dd2d5cb4891",
+      "afterSha256": "dfa6f59106a52f04ad25287c8a1781363ca885598f47f8c4e6bc5dd2d5cb4891",
+      "status": "reviewed-acceptable",
+      "reason": "Reservation operations preserve charging-policy pin, first/retry policy distinction, owner locking, dispatch state, exact grant allocation and dedicated speech-authority settlement."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/ai-credit-wallet-access.ts",
+      "beforeSha256": "0db4b45c2b82d6504a4e42b69b17eac88e4c3978d119a5d85ad22931e957facb",
+      "afterSha256": "0db4b45c2b82d6504a4e42b69b17eac88e4c3978d119a5d85ad22931e957facb",
+      "status": "reviewed-acceptable",
+      "reason": "Wallet access uses compact projections and owner lock for writes, explicit lock-free readSummary seam, management version checks and expiry/creation/ID ordering for settlement allocations."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-immutability.sql",
+      "beforeSha256": "642dbd906a234cd23e4ce8fe14c34825898a6b9a7c48d3bd95c90b782443e024",
+      "afterSha256": "642dbd906a234cd23e4ce8fe14c34825898a6b9a7c48d3bd95c90b782443e024",
+      "status": "reviewed-acceptable",
+      "reason": "Capability SQL has three focused guards for immutable policy provenance, deferred typed feature ownership and immutable publication revisions, with rationale at each seam. Kept closed CASE mappings and guard ordering instead of broadening SQL APIs."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/capability-policy-schema.ts",
+      "beforeSha256": "f621e6bc014ebe8637672945ebe1abdd79ce77bef6a843e38605966353f01700",
+      "afterSha256": "f621e6bc014ebe8637672945ebe1abdd79ce77bef6a843e38605966353f01700",
+      "status": "reviewed-acceptable",
+      "reason": "Capability schema clearly separates immutable publication revisions, per-action snapshots and finite operator-limit hierarchy."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-accounting-store.ts",
+      "beforeSha256": "b1e7c3ba1775f1dcbc7670f053ef9d91369546f0d5f3d3f0e3e2385102d6dab1",
+      "afterSha256": "b1e7c3ba1775f1dcbc7670f053ef9d91369546f0d5f3d3f0e3e2385102d6dab1",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting store retains public forwarding API while delegating record/refund/report responsibilities at existing transaction-owning modules."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts",
+      "beforeSha256": "1cb1d632ee89840b0d6217d61896f7cf40443d7044efee2ca20829e3cbbf50a6",
+      "afterSha256": "69cf7ff676214c580a770d3b244c0568f578348d0446712f115feda7647e5edf",
+      "status": "refactored",
+      "reason": "buildProviderObservations isolates provider JSON shaping from locked settlement orchestration, preserving absence guard, truthy selector checks, spread order and exact awaited SQL placement."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant.ts",
+      "beforeSha256": "03ecab198c1b6799c6d6fa88bc5f09ced8d65a811cebc67d3bc06396bf8a8e5b",
+      "afterSha256": "03ecab198c1b6799c6d6fa88bc5f09ced8d65a811cebc67d3bc06396bf8a8e5b",
+      "status": "reviewed-acceptable",
+      "reason": "Credit participant retains stable interface and async forwarding into grant/reservation/wallet modules without altering transaction authority."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant.ts",
+      "beforeSha256": "55be91dd96a002e579f222c219c28bfced7e3d9f54d269f0a21e9e0691b01740",
+      "afterSha256": "55be91dd96a002e579f222c219c28bfced7e3d9f54d269f0a21e9e0691b01740",
+      "status": "reviewed-acceptable",
+      "reason": "Capability participant distinguishes admission-only promise cache from immutable reads, validates pin ownership, rechecks published version under lock and invalidates cache before readback/audit."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant.ts",
+      "beforeSha256": "48277b2ede314130a653237bb519963c33f6616d7828eff2792787b34fc4bcef",
+      "afterSha256": "70fdeb185ff1e414425e12a47e4a64e36009b03384233c7abb0fdfc953ba6569",
+      "status": "refactored",
+      "reason": "invalidRatesForMeter names the compound speech/text rate compatibility decision while preserving lazy branch evaluation, exact predicate terms and thrown error."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant.ts",
+      "beforeSha256": "fc3aa15cbabe49032587a6f3a042bb0d9bad602d918aa6b2dc2e9ce3ae757c12",
+      "afterSha256": "fc3aa15cbabe49032587a6f3a042bb0d9bad602d918aa6b2dc2e9ce3ae757c12",
+      "status": "reviewed-acceptable",
+      "reason": "Operator participant orders wallet then global locks, reserves shared UTC counters and conservatively settles absent/invalid measured costs, preserving replay and active-action guards."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices.ts",
+      "beforeSha256": "1aace9aa3e1f552d80d4be7381ff365b7bebcb9982acce7cf8f5fc958e2ae641",
+      "afterSha256": "1aace9aa3e1f552d80d4be7381ff365b7bebcb9982acce7cf8f5fc958e2ae641",
+      "status": "reviewed-acceptable",
+      "reason": "Provider price store separates latest publication from effective admission pin, locks only publishing, preserves expected versions and strips administrator/free-text identity from execution snapshots."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts",
+      "beforeSha256": "2af6bb7cffc963845cfe7e2a3df0f5d406e09c2a9e5d7334d0b8360513fe4dd8",
+      "afterSha256": "2af6bb7cffc963845cfe7e2a3df0f5d406e09c2a9e5d7334d0b8360513fe4dd8",
+      "status": "reviewed-acceptable",
+      "reason": "Legacy action accounting preserves versioned old/new paths, typed capability funding, exact tariff/allowance confirmation, deterministic attempt IDs, dispatch receipts and provider settlement authority."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/model-price-schema.ts",
+      "beforeSha256": "084b3ec425965729130f81eb26478e274023536a0816fac5f3f1397e9501c9d9",
+      "afterSha256": "084b3ec425965729130f81eb26478e274023536a0816fac5f3f1397e9501c9d9",
+      "status": "reviewed-acceptable",
+      "reason": "Model price schema declares immutable rate JSON with positive per-identity versions, closed meter and bounded reason while retaining actor-null deletion semantics."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/native-pricing-evaluator.sql",
+      "beforeSha256": "b0eff7cf70c4a00b9b1bb8ccdb120419e83a28df407b5c0fe3d48a58051e40f9",
+      "afterSha256": "b0eff7cf70c4a00b9b1bb8ccdb120419e83a28df407b5c0fe3d48a58051e40f9",
+      "status": "reviewed-acceptable",
+      "reason": "Native evaluator already uses focused exact-decimal, rounding, object/count/byte validation and meter helpers; main evaluator visibly stages full closed validation, reported evidence, horizon coverage and per-component arithmetic. Preserve that cohesive validated boundary instead of new helper SQL APIs solely for size."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/native-provider-call-authority.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Native call authority binds DB-clock dispatch receipts to current live worker/lease, immutable price and cumulative parent envelope; observations are closed validated once and frozen parent costs never change on late observation.",
+      "beforeSha256": "d65b8969e0051381ffaee56a03f7de2d38e03dcea0f07e88cddf4eaa07703c11",
+      "afterSha256": "d65b8969e0051381ffaee56a03f7de2d38e03dcea0f07e88cddf4eaa07703c11"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/operator-budget-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Operator schema separates shared UTC daily counters, action authorization and attempt cost facts, with explicit active/terminal amount constraints.",
+      "beforeSha256": "3381cd5adf5d3d5be6e96936358457e47c7735d9069cfaf84c5f741afab927c1",
+      "afterSha256": "3381cd5adf5d3d5be6e96936358457e47c7735d9069cfaf84c5f741afab927c1"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/operator-native-overrun-guards.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Native overrun guards allow incurred overrun only through matching immutable expense provenance; current reviewed limits still gate new action reservations and daily accounting.",
+      "beforeSha256": "0f4843a4630c149d7c019cc27f6443bdcec160934ba8395ad1517b8accc5156a",
+      "afterSha256": "0f4843a4630c149d7c019cc27f6443bdcec160934ba8395ad1517b8accc5156a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider price schema pins per-provider/model/meter versions and independent effectiveAt while preserving nullable administrator reference.",
+      "beforeSha256": "acf5410abc643c1a4e95b927016d5dfe4d086ec330e1da3a23e10ab0ad920ac9",
+      "afterSha256": "acf5410abc643c1a4e95b927016d5dfe4d086ec330e1da3a23e10ab0ad920ac9"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Credit schema explicitly distinguishes immutable grant/reservation/history facts from trigger-owned compact projections, with closed states and exact monetary constraints.",
+      "beforeSha256": "c3cb9affe5f9ec7ddafe0d3d2705c0259240b336f9b6e3026ee31dd57d289255",
+      "afterSha256": "c3cb9affe5f9ec7ddafe0d3d2705c0259240b336f9b6e3026ee31dd57d289255"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Worker authority SQL exposes typed fenced dispatch, immutable tariff/native-price checks, bounded retries/fallback and exact customer/operator settlement; security-definer APIs and guard triggers preserve live ownership/lease/deadline authority.",
+      "beforeSha256": "8c138406e0580ee5124d688ed7d722a66052976838ef77e8c38208cacbfd7ebf",
+      "afterSha256": "8c138406e0580ee5124d688ed7d722a66052976838ef77e8c38208cacbfd7ebf"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Persistence barrel preserves public participant/schema exports without environment reads or runtime initialization.",
+      "beforeSha256": "93400d1dd1910f9955cbbbdaafa4176e7177ab062115196f3b08798f8bc61d7b",
+      "afterSha256": "93400d1dd1910f9955cbbbdaafa4176e7177ab062115196f3b08798f8bc61d7b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/price-aware-transaction.ts",
+      "status": "reviewed-acceptable",
+      "reason": "modelPricingTransaction wraps quote persistence around existing transaction, setting pricing compatibility fence before invoking operation.",
+      "beforeSha256": "7323502e82bb7102b5b8ac5f2c468f5eb77bcf350c48f431fbfaa42c98db8508",
+      "afterSha256": "7323502e82bb7102b5b8ac5f2c468f5eb77bcf350c48f431fbfaa42c98db8508"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/deepseek-price-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DeepSeek adapter separates bounded table-span parsing, reviewed UTC/holiday schedule generation, exact per-period native components and bounded official retrieval/error classification.",
+      "beforeSha256": "9998552db1290d8c5e882c7e24ef8a6abb4397b3b4a503cf845fdc5d82667310",
+      "afterSha256": "9998552db1290d8c5e882c7e24ef8a6abb4397b3b4a503cf845fdc5d82667310"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/evolink-price-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "EvoLink source validates schema/native currency ratios and closed quantity expressions, separates context thresholds into ordered variants and checks metadata freshness without assigning TTL as tariff validity.",
+      "beforeSha256": "fb89625ca3779d73a2d61097e0e3bb002e97c6f50549d821c1c684c9759904aa",
+      "afterSha256": "fb89625ca3779d73a2d61097e0e3bb002e97c6f50549d821c1c684c9759904aa"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/exact-price.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Legacy price scaling shifts exact decimal digits and rejects precision the accounting meter cannot retain; no floating-point price conversion.",
+      "beforeSha256": "75b089f3a57371e2ce635b9688ccd3b56623affa50cc4d80df038f5f6d137308",
+      "afterSha256": "75b089f3a57371e2ce635b9688ccd3b56623affa50cc4d80df038f5f6d137308"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/kie-price-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Kie source bounds complete pagination, verifies exact product identity before selecting model rows, preserves billing meter mapping and nominal credit conversion, and expires ambiguous-timezone promotions conservatively.",
+      "beforeSha256": "b5afa53496476f0c7ad03b20878eba9b65a8cff7c7c79c68f4f6541e7f41d341",
+      "afterSha256": "b5afa53496476f0c7ad03b20878eba9b65a8cff7c7c79c68f4f6541e7f41d341"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/native-price-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native price normalization validates complete rules and publish contract while preserving null flat fields; decimal text normalization never passes money through Number.",
+      "beforeSha256": "166014ec8eaaf0f49d8bb8348d0a7e8fb89d508f0b2d13936218108cf743dee1",
+      "afterSha256": "166014ec8eaaf0f49d8bb8348d0a7e8fb89d508f0b2d13936218108cf743dee1"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/openai-transcription-price-source.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription source tests cover exact registered identity, nominal rate insufficiency, fixed official URL/no credentials, changed endpoint and unsupported model without network.",
+      "beforeSha256": "5991ecaaf346303a10fe0ec770876c166ed362d072e13bbcca49e743fb4b643d",
+      "afterSha256": "5991ecaaf346303a10fe0ec770876c166ed362d072e13bbcca49e743fb4b643d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/openai-transcription-price-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "OpenAI transcription source fetches only supported registered identity, propagates cancellation, validates exact metadata section and deliberately returns unverified billing-policy result without inferred native price.",
+      "beforeSha256": "8404cd4ba48f50808ea87bad2bbbb3f3842b54ad3780cf59c21122db3dfdf2ed",
+      "afterSha256": "8404cd4ba48f50808ea87bad2bbbb3f3842b54ad3780cf59c21122db3dfdf2ed"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/openrouter-price-source.ts",
+      "status": "reviewed-acceptable",
+      "reason": "OpenRouter source separates closed overrides, UTC applicability, meter components, bounded context/time cross-product and exact endpoint discovery; unresolved endpoint identity and price semantics fail closed.",
+      "beforeSha256": "4c80ab8b4c28bf56827a4d046977b2c6ba12c7dec00e6cc26fda5a42323100bb",
+      "afterSha256": "4c80ab8b4c28bf56827a4d046977b2c6ba12c7dec00e6cc26fda5a42323100bb"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/pricing-http.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pricing HTTP boundary permits fixed official origins, exact Kie POST destination, no redirects/credentials and bounded advertised/streamed bytes; finally cancels/releases the reader.",
+      "beforeSha256": "32e4e46ecb6f868ed176953d0013aa102a7a9bf1cf34ca970f16cfd9ca80f59c",
+      "afterSha256": "32e4e46ecb6f868ed176953d0013aa102a7a9bf1cf34ca970f16cfd9ca80f59c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/provider-price-sources.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider source tests cover complete registered catalog, exact scheduled/native currency rates, unknown expressions/identity substitution, bounded overrides and HTTP restrictions with deterministic recorded metadata.",
+      "beforeSha256": "9401412a613f64636c2818e8b9a79c8512ea7dc6fd43087c1e68078bf740cd0c",
+      "afterSha256": "9401412a613f64636c2818e8b9a79c8512ea7dc6fd43087c1e68078bf740cd0c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/provider-price-sources.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider source registration is a fixed code-owned adapter list with injected fetch/clock and no independent numerical catalog.",
+      "beforeSha256": "8640f8e7a782f7df53db0567a4500f58452e9f69f2027864070999a5dca875e6",
+      "afterSha256": "8640f8e7a782f7df53db0567a4500f58452e9f69f2027864070999a5dca875e6"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/accounting.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting routes explicitly separate recent-auth/origin-protected writes from authorized reads and map pending reports, idempotency and invalid monetary state to stable transport outcomes.",
+      "beforeSha256": "dc67d4db91a01c3bc3d0f459d0d4c30b57839a6cdf67a5e25f29f67ec73d095b",
+      "afterSha256": "dc67d4db91a01c3bc3d0f459d0d4c30b57839a6cdf67a5e25f29f67ec73d095b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/capability-policies.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Capability routes keep ordinary read authorization separate from trusted-origin/recent-auth publication and pass correlation/actor/time into existing transaction participants.",
+      "beforeSha256": "670b440b62588043cad8c1616250da069642c0ec07a1316a356301b4631dba75",
+      "afterSha256": "670b440b62588043cad8c1616250da069642c0ec07a1316a356301b4631dba75"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/learner-ai-credit-balance.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learner balance route validates active session before owner-bound read, preserving private no-store headers and exact-origin preflight/security policy.",
+      "beforeSha256": "b79e1dfffdfe25a7e95dfe49402267e6ffd2f21d7b8cd7dca2d719be1e859744",
+      "afterSha256": "b79e1dfffdfe25a7e95dfe49402267e6ffd2f21d7b8cd7dca2d719be1e859744"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/model-prices.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Model-price routes keep legacy listing and release-compatible publication distinct, validate correlation ID and recent authentication before expected-version participant writes.",
+      "beforeSha256": "068e78dbff8adef0900d0cb8625467edc81c6102162a06c76535c9dae6ea514a",
+      "afterSha256": "068e78dbff8adef0900d0cb8625467edc81c6102162a06c76535c9dae6ea514a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/provider-prices.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider-price routes bound request body and reject native-rule writes at legacy HTTP schema, retaining scoped MCP native authority and stable expected-version conflicts.",
+      "beforeSha256": "7de16141e42f42fe40cf7b30fcec8d8434b7dfb475b25c396669a805b517980d",
+      "afterSha256": "7de16141e42f42fe40cf7b30fcec8d8434b7dfb475b25c396669a805b517980d"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/authentication-errors.ts",
+      "beforeSha256": "c4b790ef0998d5fbf536bd4420cbbd9e50878eb386bf63e0b3225618f2b53b52",
+      "afterSha256": "c4b790ef0998d5fbf536bd4420cbbd9e50878eb386bf63e0b3225618f2b53b52",
+      "status": "reviewed-acceptable",
+      "reason": "Authentication errors have distinct stable names and explicit rate-limit retry payload; no catch-all hides failure semantics."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/authentication-service.ts",
+      "beforeSha256": "75d1aa21f0a0aa2297f4c063ed08a7516c2066fc5b914a62ca96cb397d8d0932",
+      "afterSha256": "75d1aa21f0a0aa2297f4c063ed08a7516c2066fc5b914a62ca96cb397d8d0932",
+      "status": "reviewed-acceptable",
+      "reason": "AuthenticationService methods retain cohesive signup/verification/password/refresh/passkey journeys, sequential rate-limit and audit helpers, anti-enumeration hash/synthetic flow invariants, rehash-race re-verification, atomic session issuance/replay and explicit challenge consumption. Size alone does not justify moving lifecycle ordering behind a controller abstraction."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/access-token.ts",
+      "beforeSha256": "7c4a123e0f239d022e84dabcdc18caf16148c901cf9659993194698041a4af09",
+      "afterSha256": "7c4a123e0f239d022e84dabcdc18caf16148c901cf9659993194698041a4af09",
+      "status": "reviewed-acceptable",
+      "reason": "Access token port separates sign/verify and stable invalid-token error from JOSE implementation."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/auth-store.ts",
+      "beforeSha256": "ccce37c3d3b9d08a55f175381e6ce9bcb2028c6814a63b1b994b96cbf9a35d67",
+      "afterSha256": "ccce37c3d3b9d08a55f175381e6ce9bcb2028c6814a63b1b994b96cbf9a35d67",
+      "status": "reviewed-acceptable",
+      "reason": "AuthStore declares every mutation as an atomic expected-state operation and distinguishes unavailable/retry/replay/verification outcomes."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/clock.ts",
+      "beforeSha256": "336b4b51cc81af2336cdf29afb0d29b21659e1197b828a1024f0b9a64201d2bd",
+      "afterSha256": "336b4b51cc81af2336cdf29afb0d29b21659e1197b828a1024f0b9a64201d2bd",
+      "status": "reviewed-acceptable",
+      "reason": "Clock port exposes injected Date creation only."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/code-digester.ts",
+      "beforeSha256": "b723606def43c0635fe2535ccfa2a337b5df950fd927bfceca4c95459a032644",
+      "afterSha256": "b723606def43c0635fe2535ccfa2a337b5df950fd927bfceca4c95459a032644",
+      "status": "reviewed-acceptable",
+      "reason": "Verification-code port binds code to purpose/user/flow and adds digest only for match candidates."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/email-sender.ts",
+      "beforeSha256": "cdce27e99cf20045b328faf160f9de2d32401460d7b07beef0455cb1a1bf2b39",
+      "afterSha256": "cdce27e99cf20045b328faf160f9de2d32401460d7b07beef0455cb1a1bf2b39",
+      "status": "reviewed-acceptable",
+      "reason": "Email port separates capability availability, cancellable send options and stable unavailable failure without leaking transport SDK."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/entropy.ts",
+      "beforeSha256": "338b583df9e0e525f467e781431af9e2adcd0b6376cfd7e74b4a51d7747b7f6f",
+      "afterSha256": "338b583df9e0e525f467e781431af9e2adcd0b6376cfd7e74b4a51d7747b7f6f",
+      "status": "reviewed-acceptable",
+      "reason": "Entropy/code generator ports explicitly distinguish requested byte count from verification-code generation."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/id-generator.ts",
+      "beforeSha256": "7dafbccdccdf5f2bc34d9dcf40b7ac9dbc72aa6e8e26c01542f3172e443c67f3",
+      "afterSha256": "7dafbccdccdf5f2bc34d9dcf40b7ac9dbc72aa6e8e26c01542f3172e443c67f3",
+      "status": "reviewed-acceptable",
+      "reason": "ID port exposes one injected string generator without environment/SDK coupling."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/passkey-verifier.ts",
+      "beforeSha256": "125168ea4cf8aac8a0f62e39aad518b126078ace1d065bd60b4f95d4b67e8758",
+      "afterSha256": "125168ea4cf8aac8a0f62e39aad518b126078ace1d065bd60b4f95d4b67e8758",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey verifier contract keeps protocol credentials/options/result records transport independent and requires stored key/counter/handle context for authentication."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/password-hasher.ts",
+      "beforeSha256": "494d2725c43ea0cf42e85ccfad25d41c7e9cdfd91a8e620f94385901523c8e54",
+      "afterSha256": "494d2725c43ea0cf42e85ccfad25d41c7e9cdfd91a8e620f94385901523c8e54",
+      "status": "reviewed-acceptable",
+      "reason": "Password hashing port keeps encoded/versioned hash, match/rehash decisions and optional cancellation distinct."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/rate-limiter.ts",
+      "beforeSha256": "ef475a86ff499bdc7ba0f6c045d11a3d0c21f4b6ddc1ffd37b37799002f35a08",
+      "afterSha256": "ef475a86ff499bdc7ba0f6c045d11a3d0c21f4b6ddc1ffd37b37799002f35a08",
+      "status": "reviewed-acceptable",
+      "reason": "Rate limiter port distinguishes bounded consumption, alias links and concurrent leases with explicit expiry/cancellation and unavailable error."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/refresh-credential.ts",
+      "beforeSha256": "accd126e431c68678036b51ad4729941f8c483c3acf67635534f7cde16a5e7f5",
+      "afterSha256": "accd126e431c68678036b51ad4729941f8c483c3acf67635534f7cde16a5e7f5",
+      "status": "reviewed-acceptable",
+      "reason": "Refresh credential port returns plaintext only with its digest at issuance and exposes separate deterministic digest lookup."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/security-event.ts",
+      "beforeSha256": "f9f196039df8e81ab301d9cfaa67ebd17b693f47e6bff6a58bc806b6986f6dd2",
+      "afterSha256": "f9f196039df8e81ab301d9cfaa67ebd17b693f47e6bff6a58bc806b6986f6dd2",
+      "status": "reviewed-acceptable",
+      "reason": "Security event contract limits metadata to primitive values and keeps actor/session optional for anonymous failures."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/ports/webauthn-challenge-store.ts",
+      "beforeSha256": "f57df9a50b84596364a1adcda7547184a71ebee6ae806d4f28b1338a69496c6d",
+      "afterSha256": "f57df9a50b84596364a1adcda7547184a71ebee6ae806d4f28b1338a69496c6d",
+      "status": "reviewed-acceptable",
+      "reason": "WebAuthn challenge port models registration/authentication purpose and one-time consume separately from issue, with explicit conflict/unavailability errors."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/session-issuer.ts",
+      "beforeSha256": "24d7edaca61c94abed2d5e525b66a898d5b802b44ebf635fa7119949e5e72f9a",
+      "afterSha256": "24d7edaca61c94abed2d5e525b66a898d5b802b44ebf635fa7119949e5e72f9a",
+      "status": "reviewed-acceptable",
+      "reason": "SessionIssuer separates initial/replacement/successor preparation, preserves absolute refresh expiry/authenticatedAt across rotation, caps access expiry and maps only active verified accounts."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/access-token-claims.ts",
+      "beforeSha256": "d62d94083e0a489b4fa4d8192eba873a52f7225d705c9c8ff157fd37cf57ac5e",
+      "afterSha256": "d62d94083e0a489b4fa4d8192eba873a52f7225d705c9c8ff157fd37cf57ac5e",
+      "status": "reviewed-acceptable",
+      "reason": "AccessTokenClaims validates expiry before issue, freezes claims and converts Date units to integer JWT seconds at one mapping seam."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/common-passwords.ts",
+      "beforeSha256": "bc5adeba6b1855bace74aabfbb2a24c807bf1472ba300cff3c470ac3a500e5bc",
+      "afterSha256": "bc5adeba6b1855bace74aabfbb2a24c807bf1472ba300cff3c470ac3a500e5bc",
+      "status": "reviewed-acceptable",
+      "reason": "Common-password seed is explicitly versioned offline deterministic policy without external runtime lookup."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/passkey.ts",
+      "beforeSha256": "c5fa5891f03d5530199d8557e71aab44e89269c024d6f24b75cf670e642eaf42",
+      "afterSha256": "c5fa5891f03d5530199d8557e71aab44e89269c024d6f24b75cf670e642eaf42",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey value object centralizes canonical display-name validation, immutable copies, cloned public key/transports and nonnegative use counter."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/password-credential.ts",
+      "beforeSha256": "e4f3fe8fd4fdef7a5d0f9fea66c5fb075096a6fab69c261b3df7d8fdadbf53b6",
+      "afterSha256": "e4f3fe8fd4fdef7a5d0f9fea66c5fb075096a6fab69c261b3df7d8fdadbf53b6",
+      "status": "reviewed-acceptable",
+      "reason": "PasswordCredential keeps immutable versioned Argon2 identity and preserves original creation time across replacement."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/password-policy.ts",
+      "beforeSha256": "97e5061cc2b5eb31d1a717b1d3100010c6a0a5cf4de70b7c104030bbbd216293",
+      "afterSha256": "97e5061cc2b5eb31d1a717b1d3100010c6a0a5cf4de70b7c104030bbbd216293",
+      "status": "reviewed-acceptable",
+      "reason": "PasswordPolicy counts Unicode codepoints, checks explicit min/max/common conditions and preserves exact unnormalized equality."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/refresh-session.ts",
+      "beforeSha256": "7ef1cc988edfce1420bdf2984fad218b6bdc1c6379686cb0aa2d2d2086001c1a",
+      "afterSha256": "7ef1cc988edfce1420bdf2984fad218b6bdc1c6379686cb0aa2d2d2086001c1a",
+      "status": "reviewed-acceptable",
+      "reason": "RefreshSession explicitly rejects revoked/consumed/expired rotations, consumes predecessor and retains original family/absolute expiry on successor."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/domain/verification-challenge.ts",
+      "beforeSha256": "de48653da2dd1fc17a4a148dab604d3e9bfad61165bef2ce1c496f8198b3f3d5",
+      "afterSha256": "de48653da2dd1fc17a4a148dab604d3e9bfad61165bef2ce1c496f8198b3f3d5",
+      "status": "reviewed-acceptable",
+      "reason": "VerificationChallenge distinguishes unavailable, verified consumption and incorrect-attempt increment with immutable state and finite attempt bound."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/authentication-composition.ts",
+      "beforeSha256": "db9de2416bbf8a292f132935cd25097cf3359513cb31b2bbe5dede5fd82be88d",
+      "afterSha256": "db9de2416bbf8a292f132935cd25097cf3359513cb31b2bbe5dede5fd82be88d",
+      "status": "reviewed-acceptable",
+      "reason": "Authentication composition injects validated settings/ports, prepares dummy hash before serving, selects fixed email/code modes explicitly and closes Redis/PostgreSQL after startup failure."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/argon2id-password-hasher.ts",
+      "beforeSha256": "9ac142fd10c1a4b57e6756590acc3689f17c98f495f65fb2e6623e09e58c8ef7",
+      "afterSha256": "9ac142fd10c1a4b57e6756590acc3689f17c98f495f65fb2e6623e09e58c8ef7",
+      "status": "reviewed-acceptable",
+      "reason": "Argon2 adapter validates parameters, relays a fresh native abort signal per operation, checks abort after work and distinguishes malformed hash from cancellation."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/hmac-verification-code-digester.ts",
+      "beforeSha256": "e5d52fe3f9161b655cf010c7c61abb17bd66e9e4bfa0ed9871f56d9ee067131d",
+      "afterSha256": "e5d52fe3f9161b655cf010c7c61abb17bd66e9e4bfa0ed9871f56d9ee067131d",
+      "status": "reviewed-acceptable",
+      "reason": "HMAC code digest uses versioned length-prefixed purpose/user/flow/code binding and timing-safe equality only after equal-length guard."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/jose-access-token.ts",
+      "beforeSha256": "1362f86c8cce477a66cee592fe98721b7c36a8629e997a500a907055f2c1df94",
+      "afterSha256": "1362f86c8cce477a66cee592fe98721b7c36a8629e997a500a907055f2c1df94",
+      "status": "reviewed-acceptable",
+      "reason": "JOSE adapter pins HS256/JWT issuer/audience/required claims, validates exact claim types and issue/expiry timing, sanitizing all verification failures."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/node-entropy-source.ts",
+      "beforeSha256": "71828a6c2922679c6c080072dc61ad8f1454f5a7759e028733abdff8674bfc57",
+      "afterSha256": "71828a6c2922679c6c080072dc61ad8f1454f5a7759e028733abdff8674bfc57",
+      "status": "reviewed-acceptable",
+      "reason": "Node entropy adapter validates requested positive safe byte length before cryptographic randomBytes."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/node-id-generator.ts",
+      "beforeSha256": "6a9eb8cf430bb6dd3115190f26a709f609cbeb5bc24f87a3286259d92249cd10",
+      "afterSha256": "6a9eb8cf430bb6dd3115190f26a709f609cbeb5bc24f87a3286259d92249cd10",
+      "status": "reviewed-acceptable",
+      "reason": "Node ID generator is a direct focused randomUUID infrastructure adapter."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/opaque-refresh-token.ts",
+      "beforeSha256": "a11cc4e94bf0ee9d93f06127a177b453b9e9e7d857508d44d1cef00a0af9eade",
+      "afterSha256": "a11cc4e94bf0ee9d93f06127a177b453b9e9e7d857508d44d1cef00a0af9eade",
+      "status": "reviewed-acceptable",
+      "reason": "Opaque refresh token service verifies entropy byte count, issues base64url plaintext once and exposes only SHA256 digest for storage."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/system-clock.ts",
+      "beforeSha256": "7a96593c9e17a244face1ba0de1993731ad8e150df775a10c5f157e1f358f5ca",
+      "afterSha256": "7a96593c9e17a244face1ba0de1993731ad8e150df775a10c5f157e1f358f5ca",
+      "status": "reviewed-acceptable",
+      "reason": "SystemClock is a direct injected wall-clock adapter without hidden lifecycle."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/crypto/verification-code-generators.ts",
+      "beforeSha256": "e6f7d99575cc42819cdcef9e92dfa5588569ca1e89fa6560a2861155a78f3f5f",
+      "afterSha256": "e6f7d99575cc42819cdcef9e92dfa5588569ca1e89fa6560a2861155a78f3f5f",
+      "status": "reviewed-acceptable",
+      "reason": "Verification code generator uses rejection sampling at a named16-bit boundary to avoid modulo bias and keeps fixed development mode distinct."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/email/development-email-sender.ts",
+      "beforeSha256": "06757305e351a11424df969e62bfab063ba5472f04914f9a5bd016ed8a360a26",
+      "afterSha256": "06757305e351a11424df969e62bfab063ba5472f04914f9a5bd016ed8a360a26",
+      "status": "reviewed-acceptable",
+      "reason": "Development email sender accepts only fixed development code, checks cancellation and performs no delivery/logging."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/email/disabled-email-sender.ts",
+      "beforeSha256": "7f51b43262a6cec72f1f73b35636eec04d2bd9ec2e4cbf5f49cf667c73e359a6",
+      "afterSha256": "7f51b43262a6cec72f1f73b35636eec04d2bd9ec2e4cbf5f49cf667c73e359a6",
+      "status": "reviewed-acceptable",
+      "reason": "Disabled email sender reports unavailable capability, preserves abort failure and always rejects delivery."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/passkeys/redis-webauthn-challenge-store.ts",
+      "beforeSha256": "7267633368597eae6e1eaad5339b3d1d39fd355debe03f5064b529d4682d57ed",
+      "afterSha256": "7267633368597eae6e1eaad5339b3d1d39fd355debe03f5064b529d4682d57ed",
+      "status": "reviewed-acceptable",
+      "reason": "Redis WebAuthn store derives opaque keys, validates bounded records, uses NX+TTL issuance and atomic GET/DEL consume, preserving cancellation versus service failures."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/passkeys/simplewebauthn-adapter.ts",
+      "beforeSha256": "60d0c59945ba6c0be9350722fbe5781f9c0b2cdde98a69352f0d009e5bff3ea4",
+      "afterSha256": "60d0c59945ba6c0be9350722fbe5781f9c0b2cdde98a69352f0d009e5bff3ea4",
+      "status": "reviewed-acceptable",
+      "reason": "WebAuthn adapter validates exact RP/origins, mandatory user verification, canonical credential IDs/handles, counter progression and device backup consistency before returning SDK-free records."
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/auth-account-access.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth account access methods retain explicit primary-email/account mapping, purpose-bound challenge lookup, active session state/expiry and owner-bound passkey listing.",
+      "beforeSha256": "ab5df85805be5301da1e310e25a51d27f0fbfa9ad1d054f6e5d83797272c7d95",
+      "afterSha256": "ab5df85805be5301da1e310e25a51d27f0fbfa9ad1d054f6e5d83797272c7d95"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/auth-passkey-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey operations preserve recent-session/user lock checks, active-key cap, counter compare-and-update and atomic authenticated session insertion; conflicts map after failed writes.",
+      "beforeSha256": "b209b26da755ed98e93f6586c604baa6ef5ab56ba0cdfa04f0ff0632094edfb6",
+      "afterSha256": "b209b26da755ed98e93f6586c604baa6ef5ab56ba0cdfa04f0ff0632094edfb6"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/auth-persistence-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth persistence support names challenge cooldown/window/session constants and separates row locks, availability, revocation and rolling challenge issuance under existing transactions.",
+      "beforeSha256": "ec7f2ed4c349a17c3bdd4c7d96ceaa8e95ea245842dcb45fe6309cac410f9212",
+      "afterSha256": "ec7f2ed4c349a17c3bdd4c7d96ceaa8e95ea245842dcb45fe6309cac410f9212"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/auth-record-mapping.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth mapping separates hash-parameter parsing, insert/update validation and row conversion; session/challenge invariant guards and key byte/base64 mappings remain explicit.",
+      "beforeSha256": "9ac4708e4300e391a0db3eaaf79b42f1dc2876c3924819b4d854fea93f1d302c",
+      "afterSha256": "9ac4708e4300e391a0db3eaaf79b42f1dc2876c3924819b4d854fea93f1d302c"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/auth-session-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Session operations preserve user/password lock order, expected-hash recheck, revoke-before-replacement, locked refresh replay-family invalidation and successor family/absolute-expiry validation.",
+      "beforeSha256": "095863c91af2dc034f37281ab82998256ab4b98b5da4bdd6833dc9dbeb4cc40e",
+      "afterSha256": "095863c91af2dc034f37281ab82998256ab4b98b5da4bdd6833dc9dbeb4cc40e"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/auth-verification-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Verification operations retain canonical-email advisory fence, pending-only signup replacement, rolling send limits, locked one-time challenge consumption and password-reset session revocation.",
+      "beforeSha256": "d97a13c22e9b067c978f4ac2009e0831ef0703dab8ad0fb9b891b3491604c838",
+      "afterSha256": "d97a13c22e9b067c978f4ac2009e0831ef0703dab8ad0fb9b891b3491604c838"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/drizzle-auth-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleAuthStore preserves stable public methods and async forwarding to existing account/passkey/session/verification modules, keeping each mutation transaction in its cohesive owner.",
+      "beforeSha256": "cdd83e280eee51be0f460967f9f763ab7034909e8b9f38136bba5c1765555a92",
+      "afterSha256": "cdd83e280eee51be0f460967f9f763ab7034909e8b9f38136bba5c1765555a92"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/drizzle-authentication-repository.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Authentication repository separates root read-only construction from transaction-only write interface, maps known unique constraints through bounded cycle-safe cause traversal and preserves stored record mappings.",
+      "beforeSha256": "e7a05cb937622ab90543df09401ddb4c02842491f60bf8fa33fbdb45965fb9ea",
+      "afterSha256": "e7a05cb937622ab90543df09401ddb4c02842491f60bf8fa33fbdb45965fb9ea"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/drizzle-authentication-unit-of-work.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Authentication unit of work keeps write-capable repository class private, constructs it only from transaction callback and preserves compare-and-update rotation/key counters plus rollback errors.",
+      "beforeSha256": "31433ac1aad75761257ca29c7d5d78ce7ff3ae85ffe910e5141ffd967958017f",
+      "afterSha256": "31433ac1aad75761257ca29c7d5d78ce7ff3ae85ffe910e5141ffd967958017f"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/drizzle-security-event-recorder.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Security event recorder maps primitive metadata into retained events without logging credentials or provider errors.",
+      "beforeSha256": "005470e9d5c7d050537f35770eb2659d2729313dd318365160de3ea0d49a53bd",
+      "afterSha256": "005470e9d5c7d050537f35770eb2659d2729313dd318365160de3ea0d49a53bd"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth schema declares bounded digest/password/challenge/session/passkey invariants, one-active challenge and unique rotation paths, explicit FK identity and security-event retention.",
+      "beforeSha256": "8f9ca9a5887a6c01cd464490e67d71b6cee30d251229fc2b08e63a6b8e6dc188",
+      "afterSha256": "8f9ca9a5887a6c01cd464490e67d71b6cee30d251229fc2b08e63a6b8e6dc188"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/persistence/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Persistence barrel exposes existing read-only repository/UoW contracts and schema; private transactional write constructor stays unexported.",
+      "beforeSha256": "089eca4b9bb34d3a1d0bc1335b4cdf0db0b3c79e33b37ef90a72122871b0033e",
+      "afterSha256": "089eca4b9bb34d3a1d0bc1335b4cdf0db0b3c79e33b37ef90a72122871b0033e"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/rate-limit/bounded-redis-client.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Bounded Redis client validates timeout/retry settings, deduplicates connection promises and prevents queued operation dispatch after abort/deadline; opaque keys validate namespace/category and HMAC binding.",
+      "beforeSha256": "701520137a0c023e4b796d210c257b81c0bf48a1e4dfe5dbd970ea2837c47113",
+      "afterSha256": "701520137a0c023e4b796d210c257b81c0bf48a1e4dfe5dbd970ea2837c47113"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts",
+      "status": "refactored",
+      "reason": "Explicit optional-alias branch exposes bounded awaited Redis lookup and direct-key null fallback while preserving key derivation, one await on alias path, options and catch mapping.",
+      "beforeSha256": "50bc4595b606322e7c99c263d160eeed3c7b0f73f5a3b8df79974aa45bca4e5b",
+      "afterSha256": "e0bffcd085a93a65e194bc182277b6abaf19f94ad122cf07e936d9e1509f5fa0"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/auth-http-body-limit.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth body limit documents WebAuthn aggregate sizing and bounds correlation IDs independently of body parsing.",
+      "beforeSha256": "51e80bdb21f46f52d56a4d93d63bd0289bfa8e2d630d259e13ad19eeb102cede",
+      "afterSha256": "51e80bdb21f46f52d56a4d93d63bd0289bfa8e2d630d259e13ad19eeb102cede"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/auth-http-error-mapping.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth error mapping preserves origin/token/credential/policy/rate/recent-auth/passkey distinctions before stable persistence-error identity, never exposing raw infrastructure text.",
+      "beforeSha256": "2577aa24976e572e20f430b5fa36821defffac5cfb4dbc7cd6b400a2dc051b2a",
+      "afterSha256": "2577aa24976e572e20f430b5fa36821defffac5cfb4dbc7cd6b400a2dc051b2a"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/auth-http-error.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AuthHttpError builds stable correlation-bearing transport response and includes retry delay only when configured.",
+      "beforeSha256": "7ca931d2fa3c454b466cb3b47f0bdf1bcd9fab398bda97d6259820426823c8b7",
+      "afterSha256": "7ca931d2fa3c454b466cb3b47f0bdf1bcd9fab398bda97d6259820426823c8b7"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/auth-http-policy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "HTTP policy keeps exact origins, strict JWT Bearer parsing, admin/public cookie namespace and host-only secure production cookies explicit; proxy chain walks trusted suffix from immediate upstream.",
+      "beforeSha256": "fae3f3c1e23e587d75d22a0fe8b4bc189b99000c98f37ad3717bcca1e8561649",
+      "afterSha256": "fae3f3c1e23e587d75d22a0fe8b4bc189b99000c98f37ad3717bcca1e8561649"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/auth-http-request.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Request metadata derives direct socket address with test fallback, resolves trusted proxy policy and bounds caller correlation while preserving request cancellation signal.",
+      "beforeSha256": "76e6eb28f6a9ee6efb64577790aa6830bf06861cf8e8197bdbb5bebd2ea9358a",
+      "afterSha256": "76e6eb28f6a9ee6efb64577790aa6830bf06861cf8e8197bdbb5bebd2ea9358a"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/authentication-http-controller.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth controller maps Date/domain results into shared transport shape, keeps plaintext refresh outside JSON response and verifies active session before owner-sensitive operations.",
+      "beforeSha256": "2e1b864daa1d72c39b7d9fb9430efde3445e21865ef2278156d5ce79148f6e09",
+      "afterSha256": "2e1b864daa1d72c39b7d9fb9430efde3445e21865ef2278156d5ce79148f6e09"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/authentication-http-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth HTTP operation contract separates refresh credential from response payload and consistently carries bounded request metadata/cancellation.",
+      "beforeSha256": "21cb393abac266b1dbcd8acfea64cadceece0f9451e9b0845305f41e9295e7a4",
+      "afterSha256": "21cb393abac266b1dbcd8acfea64cadceece0f9451e9b0845305f41e9295e7a4"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/passkey-auth.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey routes distinguish registration, authentication and management operations, retain exact-origin/body guards and set cookie only after successful authenticated result.",
+      "beforeSha256": "1fc22f08c45aec4dfa29480c467e92fb68488db3529966d47dec8028c9f57b56",
+      "afterSha256": "1fc22f08c45aec4dfa29480c467e92fb68488db3529966d47dec8028c9f57b56"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/passkey-http-controller.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey controller explicitly maps optional protocol fields/extensions, preserves trusted access-token principal, and limits returned passkey metadata.",
+      "beforeSha256": "13a680691bbd38ba4d9931a55c36db23de15f29cc93eab1cfeb18f864a75635a",
+      "afterSha256": "13a680691bbd38ba4d9931a55c36db23de15f29cc93eab1cfeb18f864a75635a"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/passkey-http-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey HTTP operation interface separates anonymous authentication from token-authenticated registration/management and typed credential/result shapes.",
+      "beforeSha256": "44d1c12beb46a020e9db6367d29c7f8fea7f58226dc5e22754011b19228ca2ea",
+      "afterSha256": "44d1c12beb46a020e9db6367d29c7f8fea7f58226dc5e22754011b19228ca2ea"
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/password-auth.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Password routes keep signup/verification/login separate from session/password-management registration, preserve trusted-origin guards, absolute-expiry refresh cookies and 401 cookie clearing scope.",
+      "beforeSha256": "1464a018ecaf857f4db3dc5566433940aa79f5b4bd5ebfa9549cea7b959af680",
+      "afterSha256": "1464a018ecaf857f4db3dc5566433940aa79f5b4bd5ebfa9549cea7b959af680"
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/application/development-verification-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development verification service accepts only configured synthetic principal, checks cancellation before/after persistence and requires active verified state.",
+      "beforeSha256": "57ebc573ff7c9f4c0dc3cc591566e036bd9f298dbb669f14f370f8636e334239",
+      "afterSha256": "57ebc573ff7c9f4c0dc3cc591566e036bd9f298dbb669f14f370f8636e334239"
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/application/ports/development-principal-reader.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development principal port exposes only ID/email/status/verifiedAt needed for deterministic harness authorization.",
+      "beforeSha256": "134971617ee80428bb5ca9e6959150bdadd1ecf224a5e3393b9b5bde0966408a",
+      "afterSha256": "134971617ee80428bb5ca9e6959150bdadd1ecf224a5e3393b9b5bde0966408a"
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/infrastructure/development-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development fixture uses fixed synthetic identities and user UoW; existing mismatched principal fails instead of silently overwriting state.",
+      "beforeSha256": "0e50eed293ea5afd8e5065ead32c736104527d5d7ff0bb08a6af2c9fead45a0b",
+      "afterSha256": "0e50eed293ea5afd8e5065ead32c736104527d5d7ff0bb08a6af2c9fead45a0b"
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/infrastructure/mastra/development-harness-limits.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development harness step bound is one canonical numeric constant shared by server policy and agents.",
+      "beforeSha256": "465c69382306e85625da0745d1151a3aff00137a4792c3c403bcd0a3bd5fcea3",
+      "afterSha256": "465c69382306e85625da0745d1151a3aff00137a4792c3c403bcd0a3bd5fcea3"
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/infrastructure/mastra/development-harness-primitives.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Harness primitives separately register tool/workflow/agent/scorer, validate request context, preserve cancellation and credential guard, and pin fallback URL/retry/step settings.",
+      "beforeSha256": "d644052b19e4bfc35c8ba57924c054450b3d453105add8c10d261101c0b1c63c",
+      "afterSha256": "d644052b19e4bfc35c8ba57924c054450b3d453105add8c10d261101c0b1c63c"
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/infrastructure/persistence/drizzle-development-principal-reader.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Development principal adapter uses read-only user repository and explicitly maps only synthetic harness fields.",
+      "beforeSha256": "7240da9fc58ac1ed33c45d25d0d04b153c66ab3710ac707c2974ee2836a9ce5d",
+      "afterSha256": "7240da9fc58ac1ed33c45d25d0d04b153c66ab3710ac707c2974ee2836a9ce5d"
+    },
+    {
+      "path": "apps/backend/src/modules/health/interface/http/health.route.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Readiness short-circuits shutdown, probes dependencies safely and requires both; liveness stays separate.",
+      "beforeSha256": "57330e8289c3a160e7bef9711db59cf724c9fb22673f4f433a97520155cca476",
+      "afterSha256": "57330e8289c3a160e7bef9711db59cf724c9fb22673f4f433a97520155cca476"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/interview-questions.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Initial localized question uses approved portrait context deterministically with zero credit cost.",
+      "beforeSha256": "dd76efc27ca1bdfd16f53d05bd3d46ef38e31fb6ef3941f9261f8cf7b54a451c",
+      "afterSha256": "dd76efc27ca1bdfd16f53d05bd3d46ef38e31fb6ef3941f9261f8cf7b54a451c"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/interview-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "InterviewService validates input, retains initial-question fallback, strips private fields and reads after stop.",
+      "beforeSha256": "ed77cd23671b198f2760e35a516d5eece9b811a1abd3dbce74369860d2b7ad1b",
+      "afterSha256": "ed77cd23671b198f2760e35a516d5eece9b811a1abd3dbce74369860d2b7ad1b"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/interview-worker-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker tests assert claim/heartbeat before runner, stale lease prevention and safe invalid-output failures.",
+      "beforeSha256": "0b50c67ef15454de5f11f35ab75f13a8d2e3e671aef3a93ad382c6098ef514b0",
+      "afterSha256": "0b50c67ef15454de5f11f35ab75f13a8d2e3e671aef3a93ad382c6098ef514b0"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/interview-worker-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker processNext keeps durable claim, combined signals, serialized heartbeats and final cleanup explicit.",
+      "beforeSha256": "c1cba0d10e6bb689c2c5293807fa4cb947e51306018b39f065e5278da797fe85",
+      "afterSha256": "c1cba0d10e6bb689c2c5293807fa4cb947e51306018b39f065e5278da797fe85"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/portrait-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait tests distinguish approval from use and cover stale drafts, edit-only expiry refresh and generation fences.",
+      "beforeSha256": "3ea62461fb3146a4092d0fe4991a780be160fab6af00a5aa47e0c060a4e876d0",
+      "afterSha256": "3ea62461fb3146a4092d0fe4991a780be160fab6af00a5aa47e0c060a4e876d0"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/portrait-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "PortraitService separates expiry, version fences, meaningful draft approval and explicit use activation.",
+      "beforeSha256": "8bc70481dedf96e1eb34ca8b9caa6b0c230dd1821456722853df8f35e7d5c5c0",
+      "afterSha256": "8bc70481dedf96e1eb34ca8b9caa6b0c230dd1821456722853df8f35e7d5c5c0"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/ports/interview-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "InterviewStore distinguishes read-only status from durable admission, with generation/version fences and no implicit approval.",
+      "beforeSha256": "0a0d90e20b009b07b3f2fb3f3ef9bb2f2e87be32be54f134df81d1a2f35d37f0",
+      "afterSha256": "0a0d90e20b009b07b3f2fb3f3ef9bb2f2e87be32be54f134df81d1a2f35d37f0"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/application/ports/portrait-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "PortraitStore documents active-account serialization and edit-only touch alongside focused transaction methods.",
+      "beforeSha256": "689c4fa1c32ba9ea00109cd1a337f2caec087879193480839eb102f3a4290268",
+      "afterSha256": "689c4fa1c32ba9ea00109cd1a337f2caec087879193480839eb102f3a4290268"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/domain/errors.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Each domain error class carries one specific failure meaning.",
+      "beforeSha256": "86f6c02e170a65c19d118528628fb2eb69b521e6179b86f5fb5b9867dc542b8c",
+      "afterSha256": "86f6c02e170a65c19d118528628fb2eb69b521e6179b86f5fb5b9867dc542b8c"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/domain/portrait-policy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Policy tests cover reusable free fields, four locales, Unicode obfuscation and practical functional needs.",
+      "beforeSha256": "3a9e229cc500b39c83aab812d86a7b4a120ea0a0123b65e6637daf61f50f80e5",
+      "afterSha256": "3a9e229cc500b39c83aab812d86a7b4a120ea0a0123b65e6637daf61f50f80e5"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/domain/portrait-policy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "validateReusablePortraitItems separates schema validation and normalized label screening with explicit boundaries and limitation.",
+      "beforeSha256": "24a986531b4d008670b53e65250fe42a2fd64401d432d597f768188e7f7b2483",
+      "afterSha256": "24a986531b4d008670b53e65250fe42a2fd64401d432d597f768188e7f7b2483"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/domain/portrait-summary.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Summary rendering separates localized assertions and bounded complete-assertion selection; confirmed items stay immutable.",
+      "beforeSha256": "ed622c18fad7c371c6c408b4d993cf97fe7c11189c973e36be86c7a9c04b1c26",
+      "afterSha256": "ed622c18fad7c371c6c408b4d993cf97fe7c11189c973e36be86c7a9c04b1c26"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Budget tests prove exact ceiling affordability, zero tariffs, legacy pins and malformed cap rejection.",
+      "beforeSha256": "df121c70c5dd82ee62131eba08bccedc529b573f76e8a98dac03e222b5aaa3a2",
+      "afterSha256": "df121c70c5dd82ee62131eba08bccedc529b573f76e8a98dac03e222b5aaa3a2"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/interview-request.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Request builders pin schema framing; binary search finds affordable output and legacy readers preserve historical limits.",
+      "beforeSha256": "879923439d75eb01250e558635c97f4d60d4ebe5cbc794f2dead3a01ee98eead",
+      "afterSha256": "879923439d75eb01250e558635c97f4d60d4ebe5cbc794f2dead3a01ee98eead"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Interviewer SDK tests cover malformed output, bounded fallback, refusal, full envelopes, pins and admission before dispatch.",
+      "beforeSha256": "a1a84bab5780a522a3291bc9ba98d0911721406ae51e02ea17d11799fd32b8ac",
+      "afterSha256": "a1a84bab5780a522a3291bc9ba98d0911721406ae51e02ea17d11799fd32b8ac"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Runner stages model resolution, gated dispatch, strict wire/schema/policy validation and accounting approval with ordered abort checks.",
+      "beforeSha256": "fdfcb33b77768630f349d2f0be5b96f6657a3afca9fb7b3aab4b032dbcad377c",
+      "afterSha256": "fdfcb33b77768630f349d2f0be5b96f6657a3afca9fb7b3aab4b032dbcad377c"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Validation accounting tests retain measured stop usage and reject unknown provider completion as positive evidence.",
+      "beforeSha256": "9322ca1816fe55f3467412ad15400ca0406deb529a85f90232ea2c84b91c8ee7",
+      "afterSha256": "9322ca1816fe55f3467412ad15400ca0406deb529a85f90232ea2c84b91c8ee7"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Validated accounting drains copied pending calls once, settles sequentially and distinguishes provider failure from abort.",
+      "beforeSha256": "b9c8b7c824dcdefae0dd36a186e98ecefbd8ca00a863e219cd13e20744653b18",
+      "afterSha256": "b9c8b7c824dcdefae0dd36a186e98ecefbd8ca00a863e219cd13e20744653b18"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admission stages policy, selection, reviewed budgets, consent, hold, affordable caps and capacity; legacy settlement preserves owner-before-call locks.",
+      "beforeSha256": "133248f3355829677e53e0805314983d9df373d75e2302cc7876e09388fc2584",
+      "afterSha256": "133248f3355829677e53e0805314983d9df373d75e2302cc7876e09388fc2584"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-action-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Action accounting separates fenced dispatch, measured recording and terminal settlement with explicit stop and unknown-liability handling.",
+      "beforeSha256": "f41a21e4a1d09adce78b66c95fbf9b668d76f0f6a551836afd472897338558ba",
+      "afterSha256": "f41a21e4a1d09adce78b66c95fbf9b668d76f0f6a551836afd472897338558ba"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/learner-portrait-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Composition separates API admission and worker execution, retaining immutable snapshots, pinned fallback prices and durable recovery.",
+      "beforeSha256": "db52e123442c682f37c99421940fcbca6f7c3406939989f154de30dfde173308",
+      "afterSha256": "db52e123442c682f37c99421940fcbca6f7c3406939989f154de30dfde173308"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-interview-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleInterviewStore delegates to cohesive session/enqueue/worker modules; repeated option objects expose dependencies without extra state.",
+      "beforeSha256": "7cff47be742821a90e90a6bcade520a06ca2f742f4ddb139538d673554d9085a",
+      "afterSha256": "7cff47be742821a90e90a6bcade520a06ca2f742f4ddb139538d673554d9085a"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/drizzle-portrait-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Owner locking, parsed state persistence and explicit use-enabled reads are focused helpers; transaction session exposes edit-only touch.",
+      "beforeSha256": "82ce1beb8255321c671feeb3f0493637726628e0cbc75e7572303000ee850a6f",
+      "afterSha256": "82ce1beb8255321c671feeb3f0493637726628e0cbc75e7572303000ee850a6f"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-enqueue-operation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Enqueue orders capacity/owner locks, idempotent replay, version fences, admission, durable quota and expiry in one transaction.",
+      "beforeSha256": "1641d57e41cf66463e791ded73de7d315ded026740953aabc6995cbc87bdd4d8",
+      "afterSha256": "1641d57e41cf66463e791ded73de7d315ded026740953aabc6995cbc87bdd4d8"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-persistence-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Persistence support separates invalidity, expiry recovery, live-operation assertions and bounded context; resumeQuestion excludes old proposals.",
+      "beforeSha256": "b203c0dbffb6f46896521047ca65df5147d51dec8a59f73f7fd7a4039172df3e",
+      "afterSha256": "b203c0dbffb6f46896521047ca65df5147d51dec8a59f73f7fd7a4039172df3e"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-session-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Session operations isolate read-only status, resume projections, locale edits, billing reads and explicit-stop settlement.",
+      "beforeSha256": "b3b722d6a2837f99ee8e64be0a409a2524745a950599e77a55fd06ea10cf6152",
+      "afterSha256": "b3b722d6a2837f99ee8e64be0a409a2524745a950599e77a55fd06ea10cf6152"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-worker-operations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker operations expose capacity-owner-operation lock order, lease fences, no replay recovery, cancellation settlement and bounded context publication.",
+      "beforeSha256": "6a364d3f16cbaec529575cd637bc5538cdf2f597ff1c7c7cd7c7ae4166a63df4",
+      "afterSha256": "6a364d3f16cbaec529575cd637bc5538cdf2f597ff1c7c7cd7c7ae4166a63df4"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/portrait-deletion-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion helpers distinguish immediate private-input stripping, numerical-liability retention, terminal archival and authorized expired-lease recovery.",
+      "beforeSha256": "f3a30078dd46ff031ac84598badaa2ddd1c40ee4f3324fe09684022589bd6a52",
+      "afterSha256": "f3a30078dd46ff031ac84598badaa2ddd1c40ee4f3324fe09684022589bd6a52"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/provider-call-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider-call schema explicitly keeps numerical identities without content FK and names uniqueness, state and monetary invariants.",
+      "beforeSha256": "fafa93bc0a1d04d4e8a85398da54b356ddb8310180189e32d4c0a5e9b75dcfa8",
+      "afterSha256": "fafa93bc0a1d04d4e8a85398da54b356ddb8310180189e32d4c0a5e9b75dcfa8"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait/session/operation/quota schemas group each aggregate and its version, size, active-owner and durable quota constraints.",
+      "beforeSha256": "bd53a475d1fd5339d4dd1c67fa794136dbe6129a1a8f29aa10ab7ae9bee5cd4f",
+      "afterSha256": "bd53a475d1fd5339d4dd1c67fa794136dbe6129a1a8f29aa10ab7ae9bee5cd4f"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/interface/http/learner-portrait.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "HTTP tests cover private metadata discovery, bearer/origin gates, authenticated ownership, no execution leakage, quota and strict input rejection.",
+      "beforeSha256": "b20f2c9ffe556d4dda2de9ba85336f840397c4af0c9c58163dd0b461743f3253",
+      "afterSha256": "b20f2c9ffe556d4dda2de9ba85336f840397c4af0c9c58163dd0b461743f3253"
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/interface/http/learner-portrait.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Route registration keeps private headers, body bounds, origin/auth rate gates, safe error mapping and schema handlers explicit.",
+      "beforeSha256": "ad1688deb41a089bfe14ff8e573f4e5195d44b48c582f2227448526b1a853ccb",
+      "afterSha256": "ad1688deb41a089bfe14ff8e573f4e5195d44b48c582f2227448526b1a853ccb"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/application/navigation-ports.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Navigation ports distinguish authoritative source readers from independent metadata mutations and typed safe failures.",
+      "beforeSha256": "4ead994d43dda809c38cb7f49e61cbd1b69282681b1570ef126beddd15c5f6e0",
+      "afterSha256": "4ead994d43dda809c38cb7f49e61cbd1b69282681b1570ef126beddd15c5f6e0"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/application/navigation-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "NavigationService stages address/auth/owner limits, parallel reads, stable sorting, current-item retention and live-read mutation fences.",
+      "beforeSha256": "7827557ea8b3fc01e179e7a84e2c02c2983a8527f34ef82bb69686dc60b1516f",
+      "afterSha256": "7827557ea8b3fc01e179e7a84e2c02c2983a8527f34ef82bb69686dc60b1516f"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/navigation-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Composition lists all three domain-owned readers and shared metadata store directly.",
+      "beforeSha256": "1ae413154e4f7822a611b2af29cf9dddfd68753c0768dbe3bec491538a86a60a",
+      "afterSha256": "1ae413154e4f7822a611b2af29cf9dddfd68753c0768dbe3bec491538a86a60a"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/navigation-reader.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reader keeps query-priority conditions and sorting adjacent to parameterized owned-source SQL; output strips bodies/share capabilities.",
+      "beforeSha256": "9f3e3a5d4b2e70f5d247fa6f7243b0a99c0513588dc0b38f15183bde92716bee",
+      "afterSha256": "9f3e3a5d4b2e70f5d247fa6f7243b0a99c0513588dc0b38f15183bde92716bee"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/drizzle-navigation-metadata-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Metadata writes lock active owner lifecycle and independently update monotonic recency versus pin state.",
+      "beforeSha256": "f3e32ca5467e266ea7be4d8227f30277d5ad223ae66ab468f53241387986283b",
+      "afterSha256": "f3e32ca5467e266ea7be4d8227f30277d5ad223ae66ab468f53241387986283b"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/navigation-deletion-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Owner metadata deletion is one transaction-scoped operation with documented preheld lifecycle fence.",
+      "beforeSha256": "d262cc970bef9e077a2dad6560f94c330f3de9245c81977c8f4005bd912f817b",
+      "afterSha256": "d262cc970bef9e077a2dad6560f94c330f3de9245c81977c8f4005bd912f817b"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/navigation-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Database tests independently verify literal title search, owner/lifecycle filtering, metadata concurrency, current source titles and purge isolation.",
+      "beforeSha256": "bd45dab83230f7c45ddb97d1d9e4cde475556d7d4f9259051f8cd7b929d59181",
+      "afterSha256": "bd45dab83230f7c45ddb97d1d9e4cde475556d7d4f9259051f8cd7b929d59181"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Metadata schema names owner-kind-resource identity, allowed kinds and separate recent/pin indexes.",
+      "beforeSha256": "1b50680c252f3eacc19dc7af9da207cb2f6cf99208d4b7b65431d889b51b9b24",
+      "afterSha256": "1b50680c252f3eacc19dc7af9da207cb2f6cf99208d4b7b65431d889b51b9b24"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/interface/http/navigation.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "HTTP tests verify strict payloads, authentication, current-resource retention, no recency writes on reads, stale references, origin and abort gates.",
+      "beforeSha256": "2aa5f482bbbd928255a66553930a34ec44d1a539fb66972683e2f3421693b392",
+      "afterSha256": "2aa5f482bbbd928255a66553930a34ec44d1a539fb66972683e2f3421693b392"
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/interface/http/navigation.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Navigation routes separate shared private headers/body/origin handling, safe error mapping, auth extraction and schema-bound handlers.",
+      "beforeSha256": "c5e7e93d471d7c7591ddddcef7bae1c274f56634a4224764179d47bcc2c738a9",
+      "afterSha256": "c5e7e93d471d7c7591ddddcef7bae1c274f56634a4224764179d47bcc2c738a9"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/generation-burst-limiter.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Burst-limit port names admission-only authority and worker-only unavailable implementation fails closed.",
+      "beforeSha256": "68c9a1424acee4480c6961ab67222edd70277fa1a148760584b1951010dc1536",
+      "afterSha256": "68c9a1424acee4480c6961ab67222edd70277fa1a148760584b1951010dc1536"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/ports/text-ai-probe-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe ports separate immutable identity/reservation, measured result, durable store and executor with bounded unavailable reasons.",
+      "beforeSha256": "cfb32cacd655cb269e0fa0c80c0de1ef4a425393958f01fccc9dc3e51021938a",
+      "afterSha256": "cfb32cacd655cb269e0fa0c80c0de1ef4a425393958f01fccc9dc3e51021938a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/ports/text-ai-provider-lease-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Lease context is a minimal immutable worker fencing identity.",
+      "beforeSha256": "67a8cc93622e9f9ce94ee0d72b2e58640f04a6248c50b6b2d5ca23d1416679ac",
+      "afterSha256": "67a8cc93622e9f9ce94ee0d72b2e58640f04a6248c50b6b2d5ca23d1416679ac"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/ports/text-ai-provider-usage.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Usage summation preserves per-call observations, limits admitted batch and retains absent cache categories.",
+      "beforeSha256": "6224e1b9408bf1196eaed761ab8da7287f32e9e100267d25b6f9c182a33a0d59",
+      "afterSha256": "6224e1b9408bf1196eaed761ab8da7287f32e9e100267d25b6f9c182a33a0d59"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-admission-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admission port pins budget/revision/snapshot and exposes one safe selection-unavailable error.",
+      "beforeSha256": "ff386ce3d8769a82a5d278e6ca84511abec5cf6b61d43cefc2f836531939819e",
+      "afterSha256": "ff386ce3d8769a82a5d278e6ca84511abec5cf6b61d43cefc2f836531939819e"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-preference-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preference service serializes versioned updates and explicitly forbids learner-controlled routing while preserving action budgets.",
+      "beforeSha256": "ad1f48c8f7213a849740cbe6f8f82fd6879e4bb443a3479fae34bf814b285dfe",
+      "afterSha256": "ad1f48c8f7213a849740cbe6f8f82fd6879e4bb443a3479fae34bf814b285dfe"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-probe-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe service checks approved cost before reserve, rechecks revocation before dispatch and distinguishes measured non-dispatch from unknown execution.",
+      "beforeSha256": "e04aa23a4ab107f43bcccf764dd9481f0aca6f1888a69aadd9e0f4bdd2c97375",
+      "afterSha256": "e04aa23a4ab107f43bcccf764dd9481f0aca6f1888a69aadd9e0f4bdd2c97375"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Application catalog separates supported formats, immutable model/budget/pricing definitions, reviewed gateway mappings and narrow format-specific limits.",
+      "beforeSha256": "8f3d07f6fb77aec3b6e20e4597b7e315a01e335b378cf640d00b57ba55710a49",
+      "afterSha256": "8f3d07f6fb77aec3b6e20e4597b7e315a01e335b378cf640d00b57ba55710a49"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-routing-authority.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing authority explicitly pins alternatives, price and a single automatic retry allowance.",
+      "beforeSha256": "9d3a828f216b66d85e4d2c3afc29104ddb2796a7784fca3d60dad6f93d4c8654",
+      "afterSha256": "9d3a828f216b66d85e4d2c3afc29104ddb2796a7784fca3d60dad6f93d4c8654"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-routing-execution.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Effective execution preserves action ceilings and only projects pinned second candidate; failure classifier fails safely on hostile properties.",
+      "beforeSha256": "cf754bb7ff45582407ecb9980dbe136b9ef1bfe7dffb985044d34b33f7442b6b",
+      "afterSha256": "cf754bb7ff45582407ecb9980dbe136b9ef1bfe7dffb985044d34b33f7442b6b"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/application/text-ai-routing-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing store distinguishes current/catalog reads from audited publish/disable mutations.",
+      "beforeSha256": "8b777a74b5a4d85fbf1c8d505b37b03b096cf3d50cbe2e23c480543b499a5a6e",
+      "afterSha256": "8b777a74b5a4d85fbf1c8d505b37b03b096cf3d50cbe2e23c480543b499a5a6e"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/domain/text-ai-preference-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preference store documents active-user serialization and capability-aware catalog with typed conflicts.",
+      "beforeSha256": "2757e82d0bdbf726b4082c2805d8849190f0f070c033d6c942df10371554b59a",
+      "afterSha256": "2757e82d0bdbf726b4082c2805d8849190f0f070c033d6c942df10371554b59a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/domain/text-ai-routing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing domain helpers independently map format/flow/capability and validate enabled unique compatible routes.",
+      "beforeSha256": "3c40c597bc58841a67d8afcfa5e01d9935ab1b768086759be73c0c7324412f1c",
+      "afterSha256": "3c40c597bc58841a67d8afcfa5e01d9935ab1b768086759be73c0c7324412f1c"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/native-text-policy-identity.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Policy fingerprint hashes base identity and reviewed native request revision in one focused function.",
+      "beforeSha256": "43d2021f8e4779affbe205e4e150c00444151059b3622ae0f69058cbf5171255",
+      "afterSha256": "43d2021f8e4779affbe205e4e150c00444151059b3622ae0f69058cbf5171255"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/provider-execution-outcome.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Outcome classifier limits conclusive rejection codes; local WeakSet marks distinguish trusted invalid-result completion from provider fields.",
+      "beforeSha256": "99b5ff7a749bbd11189ee7892af25fd660653082d93f449f0851dbcee829527c",
+      "afterSha256": "99b5ff7a749bbd11189ee7892af25fd660653082d93f449f0851dbcee829527c"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/provider-native-observations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native observations validate allowlisted billing/identity fields, expand decimal exponents without settlement rounding and never capture model content.",
+      "beforeSha256": "50aaaa32991fea6a458db55c6e5ceb7ef43e1e930d7f2e2d1332f4e0cd63ca23",
+      "afterSha256": "50aaaa32991fea6a458db55c6e5ceb7ef43e1e930d7f2e2d1332f4e0cd63ca23"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/provider-token-usage.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Token normalization rejects conflicting cache meters and over-bound usage while preserving native call identity and absent categories.",
+      "beforeSha256": "494533bc4ce8b8435d0ca6a57ff191cea2531c4e964c42c99aabb86fef573cd0",
+      "afterSha256": "494533bc4ce8b8435d0ca6a57ff191cea2531c4e964c42c99aabb86fef573cd0"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/run-pinned-fallback.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pinned fallback admits only one alternative after conclusive rejection or locally settled invalid completion and never after publication/abort.",
+      "beforeSha256": "90b8b2d83dc7ad4bea25cb0d35774fab725bac9c15727f26ce13f971c0f161da",
+      "afterSha256": "90b8b2d83dc7ad4bea25cb0d35774fab725bac9c15727f26ce13f971c0f161da"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-probe-identity.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe identity hashes reviewed adapter/credential/processing/flow revision and never persists reversible credential material.",
+      "beforeSha256": "7d4efa6e074fa5b1ac7e20f880a7de8d9215b0296840f2905286510774d1f97a",
+      "afterSha256": "7d4efa6e074fa5b1ac7e20f880a7de8d9215b0296840f2905286510774d1f97a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-attempt-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AsyncLocalStorage witness validates and freezes admitted attempt identity before scoped execution.",
+      "beforeSha256": "d795faf333802f2a4db5ed461d88fd1f1e7042bbd72246053acf2ae329ee9f54",
+      "afterSha256": "d795faf333802f2a4db5ed461d88fd1f1e7042bbd72246053acf2ae329ee9f54"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-resolver.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Resolver separates snapshot compatibility, pricing/rate checks, trusted adapter construction and current route fingerprint validation.",
+      "beforeSha256": "e62fcaa65e2dc9376288b9c1819beb2a4972921a53f947e2c7aa3cb370baaf48",
+      "afterSha256": "e62fcaa65e2dc9376288b9c1819beb2a4972921a53f947e2c7aa3cb370baaf48"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-runtime-observer.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Observer interfaces explicitly await health writes and keep native financial authorization tied to admitted witnesses.",
+      "beforeSha256": "5042b8f794b1448c5a26a75ecdc14a084d9bfb6cd7b10f0ba8b569b06e98f494",
+      "afterSha256": "5042b8f794b1448c5a26a75ecdc14a084d9bfb6cd7b10f0ba8b569b06e98f494"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-route-health.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Health recorder validates bounded evidence, excludes policy refusal, safely classifies reason and requires current admitted witness before SQL.",
+      "beforeSha256": "43776fb05119402bf0ed3afc57076edccbd6ab8c05e47f0ed18612d65f0b71e1",
+      "afterSha256": "43776fb05119402bf0ed3afc57076edccbd6ab8c05e47f0ed18612d65f0b71e1"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Queued witness helper uses stable legacy attempt identity only for routed leased work.",
+      "beforeSha256": "0d04e67e6f9eb68ccb79f5901ee1eb21af04950f5ec58485cadd2750057db0d5",
+      "afterSha256": "0d04e67e6f9eb68ccb79f5901ee1eb21af04950f5ec58485cadd2750057db0d5"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/generation-burst-limiter.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Burst limiter wraps shared Redis authority and maps unavailable failure without local fallback.",
+      "beforeSha256": "d0e2c03c546033f7c2547856fab7eb19b649c3f9f8b94517da816713c358114d",
+      "afterSha256": "d0e2c03c546033f7c2547856fab7eb19b649c3f9f8b94517da816713c358114d"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/action-budget-default.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Budget default copies once under null-only conflict update and rereads learner-winning concurrent saves.",
+      "beforeSha256": "2ee9367ac950954b07df566d83952f2d1a68ab5bafea7f2a90fe7e7b79f3d8b8",
+      "afterSha256": "2ee9367ac950954b07df566d83952f2d1a68ab5bafea7f2a90fe7e7b79f3d8b8"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-probe-executor.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe executor stages reviewed route/price checks, bounded input/output budgeting, isolated tool-free SDK dispatch, usage normalization and safe failure results; flow contract hash is separate.",
+      "beforeSha256": "0d755d8cd1987605624065a7510fb0965c40980c1aa11b356e609e8526466c71",
+      "afterSha256": "0d755d8cd1987605624065a7510fb0965c40980c1aa11b356e609e8526466c71"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-catalog.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider catalog separates reviewed identities, gateway construction, text-only validation and SDK adapter methods; RestrictedGatewayModel keeps authorization, awaited health, native observation and routing restrictions at the transport boundary.",
+      "beforeSha256": "55a5c526ca4a343daab50f15e7debcd6255c599ad8b687e5f039d94ead2b3a3a",
+      "afterSha256": "55a5c526ca4a343daab50f15e7debcd6255c599ad8b687e5f039d94ead2b3a3a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-worker-observations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker publication keeps readiness probe separate from capability-specific projections; repeated insert/update fields make identical revision evidence visible and sequential publishes preserve overwrite ordering.",
+      "beforeSha256": "cc4673fa3293b73f2af67fc1805a5c293df1c9c8f9d2cad556825cdfd986e440",
+      "afterSha256": "cc4673fa3293b73f2af67fc1805a5c293df1c9c8f9d2cad556825cdfd986e440"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Configuration schemas group immutable revision, singleton pointer and bounded expiring worker observation invariants.",
+      "beforeSha256": "4c64da54d87146df7417953d5bdf31ab2225aef3d04c66997ce16a80f4551911",
+      "afterSha256": "4c64da54d87146df7417953d5bdf31ab2225aef3d04c66997ce16a80f4551911"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-preference-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preference store locks active owner, copies budget default and exposes read/catalog/save inside one lifecycle-fenced transaction.",
+      "beforeSha256": "dc229ca9a116be262f5f74ea9b06be1975b6a22fa6ee90b78eae5133e7a84cff",
+      "afterSha256": "dc229ca9a116be262f5f74ea9b06be1975b6a22fa6ee90b78eae5133e7a84cff"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe store isolates reserve/finish/recover/list, exact cost helper and evidence gates; unknown usage stays null, overrun remains failed evidence and immutable expense is recorded atomically.",
+      "beforeSha256": "dea88c750f7cb6ec026d52e5b2fef9d7e75d1f58759aabb05e226d06ba1d7cdc",
+      "afterSha256": "dea88c750f7cb6ec026d52e5b2fef9d7e75d1f58759aabb05e226d06ba1d7cdc"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing store separates publication/disable, owner authorization, immutable revision and legacy FK bridge; readiness awaits occur only for changed routes inside publication lock.",
+      "beforeSha256": "685780fe16ab176f27506230ad85df5e66d60a95cc6a83d383310ddf9fee3473",
+      "afterSha256": "685780fe16ab176f27506230ad85df5e66d60a95cc6a83d383310ddf9fee3473"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/probe-expense-authority.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Probe SQL has distinct authoritative cost identity, append-only expense recording, fact/recovery immutability and failed native-overrun guards; each function retains a single security responsibility.",
+      "beforeSha256": "7eb53761c5f44ec5b4ea5c8877cd18b2089aaf54f5152228d179b498570d4ec9",
+      "afterSha256": "7eb53761c5f44ec5b4ea5c8877cd18b2089aaf54f5152228d179b498570d4ec9"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/probe-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Probe schema names operator authorization, usage/cost/completion invariants and indexed pass/failure evidence; recovery attestations are separate immutable rows.",
+      "beforeSha256": "55680cfc3dc7b28ccca5f54b797c777ca47615b8b2f52f129a3c9fd7f315e40e",
+      "afterSha256": "55680cfc3dc7b28ccca5f54b797c777ca47615b8b2f52f129a3c9fd7f315e40e"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/route-dispatch-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dispatch schema is a compact immutable per-attempt snapshot/price receipt tied to numerical attempt identity.",
+      "beforeSha256": "5cd8c4722911d3313ba1eaa10e7d892205a355465ce3a41d84a8499a0d73283a",
+      "afterSha256": "5cd8c4722911d3313ba1eaa10e7d892205a355465ce3a41d84a8499a0d73283a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/route-health-authority.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Health SQL separates disabled broad overload, fenced admitted-witness recording, append-only guard and shared dispatch gate; comments explain hard-failure exclusion versus transient cooldown.",
+      "beforeSha256": "5c173d808631fed787d9f6c94f4bf56405ecc2dd27f311b1174a4b190914ab1a",
+      "afterSha256": "5c173d808631fed787d9f6c94f4bf56405ecc2dd27f311b1174a4b190914ab1a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/route-health-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Health schema lists bounded classifications and indexes matching route/provider/schema/transient lookups.",
+      "beforeSha256": "64675b612099daf621f2ba2ad2b429add2e7df0f3a296e9b022eaf772d606222",
+      "afterSha256": "64675b612099daf621f2ba2ad2b429add2e7df0f3a296e9b022eaf772d606222"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing admission stages compatible configured candidates and batched authority reads; prepared read is consumed once then revision/price/health rechecked after capacity fence.",
+      "beforeSha256": "ee49e9cff1927bcba98bee4679a9687853f2b40c483de1de387bb11aec78b09e",
+      "afterSha256": "ee49e9cff1927bcba98bee4679a9687853f2b40c483de1de387bb11aec78b09e"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-candidate-authority.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Candidate authority batches bounded candidates and preserves one SQL health decision with parsed immutable price pins.",
+      "beforeSha256": "ab8e47f9f6cff1c594f80351cde29d1f1cbac6a2290be01954e9ec9fd6135612",
+      "afterSha256": "ab8e47f9f6cff1c594f80351cde29d1f1cbac6a2290be01954e9ec9fd6135612"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-dispatch-guards.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Dispatch guards separate immutable receipt insertion/provenance checks from published-routing revision immutability.",
+      "beforeSha256": "4882b6f0860a69887aaf73d37089f9005d56decd68a700293bc9b273cf598b5a",
+      "afterSha256": "4882b6f0860a69887aaf73d37089f9005d56decd68a700293bc9b273cf598b5a"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing schemas distinguish immutable versioned revisions and singleton active pointer with bounded JSON/reason constraints.",
+      "beforeSha256": "7e5ab5f87ddf65854bceca46b62bfdf44454b4473d476dff198a6fa301bc7e46",
+      "afterSha256": "7e5ab5f87ddf65854bceca46b62bfdf44454b4473d476dff198a6fa301bc7e46"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preference schema explicitly pairs mode/model and bounds decimal budget/version with owner cascade.",
+      "beforeSha256": "e8ba48431b846dc5201bc489c9d70febd8694ac4f8866877dd72fafb7ea2b35e",
+      "afterSha256": "e8ba48431b846dc5201bc489c9d70febd8694ac4f8866877dd72fafb7ea2b35e"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admission stages policy/routing, worker overlap evidence, capability selection, circuit checks and final snapshot; short-circuit awaits preserve shared-capacity semantics.",
+      "beforeSha256": "09ddff2284007651c24d9eb490902aca200505160e8dc98ef5a68135f3a49356",
+      "afterSha256": "09ddff2284007651c24d9eb490902aca200505160e8dc98ef5a68135f3a49356"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-budget-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Budget update parses exact amount, locks per-owner budget, checks version and preserves unrelated preference fields.",
+      "beforeSha256": "2dba1c7b7765cd4de3bc5caec88ed0dc77a46d20166e7931cdd595b88e950b8e",
+      "afterSha256": "2dba1c7b7765cd4de3bc5caec88ed0dc77a46d20166e7931cdd595b88e950b8e"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Catalog query separates environment policy, immutable configuration, observations, prices and availability projection; legacy read shape remains explicit.",
+      "beforeSha256": "5a040fed8029d55df7bc53d0a7b5dc6edf29bd9cca199d2018728bd3bb2b1064",
+      "afterSha256": "5a040fed8029d55df7bc53d0a7b5dc6edf29bd9cca199d2018728bd3bb2b1064"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dispatch guard reads actual admitted receipt, allows legacy drain and rechecks enabled route plus pinned health without reserving again.",
+      "beforeSha256": "2c702bc846f968c6d8264d25957e24242ed23912d6f9bc820c2ed82b1ccae045",
+      "afterSha256": "2c702bc846f968c6d8264d25957e24242ed23912d6f9bc820c2ed82b1ccae045"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Readiness helpers define distinct hashed namespaces and capability-specific revision/format predicates; comments explain preparation aliases and anti-collision evidence.",
+      "beforeSha256": "1965a764e55ff86b2dbb30928e75942ef83c83bcb76be012aa6b6af69fb9e342",
+      "afterSha256": "1965a764e55ff86b2dbb30928e75942ef83c83bcb76be012aa6b6af69fb9e342"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/text-ai-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Composition builds preference boundary; separate rollout predicates keep new knowledge formats from disabling existing text admission.",
+      "beforeSha256": "edce31c957a3421ad50bc83b534a66f89da032f524763dc621a4c115177c3bca",
+      "afterSha256": "edce31c957a3421ad50bc83b534a66f89da032f524763dc621a4c115177c3bca"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/interface/http/text-ai-routing.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Routing HTTP handlers explicitly require sensitive authorization and trusted origin before publish/disable with safe shared error mapping.",
+      "beforeSha256": "8d9a5663f47f7c93a6754eca06fab062dda9d2556eb5aa87273ab6a61c419e23",
+      "afterSha256": "8d9a5663f47f7c93a6754eca06fab062dda9d2556eb5aa87273ab6a61c419e23"
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/interface/http/text-ai.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learner HTTP boundary separates headers/origin/body policy, active-session authentication, safe errors and versioned preference handlers.",
+      "beforeSha256": "92ba84dd76ec4af5cbc3ce57a3def9b56dff87a4aa502d34a1444d19c7d312c1",
+      "afterSha256": "92ba84dd76ec4af5cbc3ce57a3def9b56dff87a4aa502d34a1444d19c7d312c1"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/account-deletion-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion service orders recent authentication, precommit blocking journal, committed marker and best-effort cancellation; comments explain fail-stop restore semantics.",
+      "beforeSha256": "8a35d9696d9869afca17f0c3ff094282166dd74ddff790bd374961529ae14b93",
+      "afterSha256": "8a35d9696d9869afca17f0c3ff094282166dd74ddff790bd374961529ae14b93"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/account-purge-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge service exposes claim/inspect/quiescence, per-object renewed lease and finalization; abort and retry ordering are explicit.",
+      "beforeSha256": "5365edffe323edbc006a1011327f83267facd06f0b8a8b9b7cc50fcdb8002573",
+      "afterSha256": "5365edffe323edbc006a1011327f83267facd06f0b8a8b9b7cc50fcdb8002573"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/ports/account-deletion-recovery-journal.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Journal port separates blocking/commit/cancellation and documents independent restore authority.",
+      "beforeSha256": "961807665aeee034e29776fb467d99c1502f7b0a1cf4a8868f92fb0946b58822",
+      "afterSha256": "961807665aeee034e29776fb467d99c1502f7b0a1cf4a8868f92fb0946b58822"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/ports/account-deletion-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion store port explicitly requires precommit callback under transaction locks.",
+      "beforeSha256": "56db5636216763f5c42d256fc3468103da61549376f0a8e18fb73adbfe9b7ff9",
+      "afterSha256": "56db5636216763f5c42d256fc3468103da61549376f0a8e18fb73adbfe9b7ff9"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/ports/account-purge-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge ports name fencing identity, durable inspection, renewal/finalization and all-versions object removal.",
+      "beforeSha256": "129ffb8f28920fb9de72b04ece2bd2cea6ccddfa031143fb0ea5b91e4daf6ea5",
+      "afterSha256": "129ffb8f28920fb9de72b04ece2bd2cea6ccddfa031143fb0ea5b91e4daf6ea5"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/ports/owner-deletion-preparation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion preparation port states cancellation is best effort and terminal-state verification remains authoritative.",
+      "beforeSha256": "099bcb7ea138e68e682cac477954351c69b7bc5c19909b28aa5885a1f5f100ff",
+      "afterSha256": "099bcb7ea138e68e682cac477954351c69b7bc5c19909b28aa5885a1f5f100ff"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/user-profile-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Profile service separates active-owner lookup, idempotent handle equality and versioned save conflict.",
+      "beforeSha256": "3e859f2947fc12714eae830fedf5655fbc31443a0998d0cd4efff693d91fb1f4",
+      "afterSha256": "3e859f2947fc12714eae830fedf5655fbc31443a0998d0cd4efff693d91fb1f4"
+    },
+    {
+      "path": "apps/backend/src/modules/users/application/users-unit-of-work.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Users unit-of-work exposes only transaction-scoped repository execution.",
+      "beforeSha256": "56a6b8adf56d91c2d2476f9e84963ff6db81cfaa08e619b693e2edc5523501ce",
+      "afterSha256": "56a6b8adf56d91c2d2476f9e84963ff6db81cfaa08e619b693e2edc5523501ce"
+    },
+    {
+      "path": "apps/backend/src/modules/users/domain/email-address.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Email value object validates bounded ASCII shape and freezes preserved/canonical values for equality.",
+      "beforeSha256": "0a7f65d1586d92cbfe9ccc45599e98735f774d23058dda93627f7887797ab8a4",
+      "afterSha256": "0a7f65d1586d92cbfe9ccc45599e98735f774d23058dda93627f7887797ab8a4"
+    },
+    {
+      "path": "apps/backend/src/modules/users/domain/user.repository.ts",
+      "status": "reviewed-acceptable",
+      "reason": "User repository distinguishes read results, atomic email creation and versioned handle updates with specific conflicts.",
+      "beforeSha256": "a5ed69a293df8af2f5d23226cf6eff4d263acc27a5c9b622c9e1d8681854c302",
+      "afterSha256": "a5ed69a293df8af2f5d23226cf6eff4d263acc27a5c9b622c9e1d8681854c302"
+    },
+    {
+      "path": "apps/backend/src/modules/users/domain/user.ts",
+      "status": "reviewed-acceptable",
+      "reason": "User aggregate keeps each allowed status transition and version/timestamp update explicit; repeated construction makes transition-specific fields auditable.",
+      "beforeSha256": "cca8c000708b34e74dd1538ab758b6e64f463ab203dc410fd9ead3033a94318f",
+      "afterSha256": "cca8c000708b34e74dd1538ab758b6e64f463ab203dc410fd9ead3033a94318f"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion schema names due ordering, positive fencing/count, lease shape and terminal completion invariants.",
+      "beforeSha256": "1ae3d60f46ac852350e0b64b666da2da36e350c5e517e7c1fe27a8302a90b64f",
+      "afterSha256": "1ae3d60f46ac852350e0b64b666da2da36e350c5e517e7c1fe27a8302a90b64f"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/account-purge-completion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge completion groups lease/user authorization, domain quiescence, FK-ordered erasure, financial attribution and tombstone completion with invariant comments.",
+      "beforeSha256": "f5add23c4de3bbf1992649c65afd686881214212e0cff2e9f294f8b0db9ba8e6",
+      "afterSha256": "f5add23c4de3bbf1992649c65afd686881214212e0cff2e9f294f8b0db9ba8e6"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/account-purge-leases.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Lease module separates skip-locked claim, domain busy inspection, fencing renewal, retry and worker release.",
+      "beforeSha256": "b2efd00145442c1a87a16f97f9c3de6247c43978867d4dc33203946265cee1fd",
+      "afterSha256": "b2efd00145442c1a87a16f97f9c3de6247c43978867d4dc33203946265cee1fd"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/account-purge-persistence-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge support contains focused database type and explicit lease/retry durations.",
+      "beforeSha256": "568b229d76621cc76e59f86d6fa97a9ab569e4832fa634af9d1367b66f47452d",
+      "afterSha256": "568b229d76621cc76e59f86d6fa97a9ab569e4832fa634af9d1367b66f47452d"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-deletion-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion store retains owner/request/session/user lock order, database-clock recent-auth check, journal-before-commit, session revocation and immediate unlisted-share removal.",
+      "beforeSha256": "9a0959642f39ad11f95cd5048bb145191980477d59a922e55e31477d458a8987",
+      "afterSha256": "9a0959642f39ad11f95cd5048bb145191980477d59a922e55e31477d458a8987"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Purge store delegates focused lease and completion operations through transaction database context.",
+      "beforeSha256": "f67e52a741eefa0ff6fafeacb3222f7aa14a016c868071de6b8187f7199becac",
+      "afterSha256": "f67e52a741eefa0ff6fafeacb3222f7aa14a016c868071de6b8187f7199becac"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-owner-deletion-preparation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion preparation retains capacity lock and live lease preservation while requesting each owning domain cancellation.",
+      "beforeSha256": "ab97eddd38573d0a9b766a3616371e82063938eccdc96e24bc00b3ebc9f27255",
+      "afterSha256": "ab97eddd38573d0a9b766a3616371e82063938eccdc96e24bc00b3ebc9f27255"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-user-repository.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Read-only user repository centralizes primary-email join and verifies persisted canonicalization during domain restoration.",
+      "beforeSha256": "fde743c6ba459a7ee3a56a181b8356fbf8ad1e6bd5bee751237394be0411608e",
+      "afterSha256": "fde743c6ba459a7ee3a56a181b8356fbf8ad1e6bd5bee751237394be0411608e"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-users-unit-of-work.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transactional repository is private to unit-of-work; specific constraint classifiers preserve typed email/handle conflicts and versioned active-owner update.",
+      "beforeSha256": "96b1fa5ff2eec11936a9252de4195faada67f41caaf127c1caaf0222de45c9c2",
+      "afterSha256": "96b1fa5ff2eec11936a9252de4195faada67f41caaf127c1caaf0222de45c9c2"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/s3-account-purge-object-storage.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Object storage purge distinguishes version versus tombstone removal and verifies no physical versions remain with cancellation checks.",
+      "beforeSha256": "07db263218ba89f23187a04e0d797b517374dcd7d36d4b5017e86cc355ba74a5",
+      "afterSha256": "07db263218ba89f23187a04e0d797b517374dcd7d36d4b5017e86cc355ba74a5"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "User/email schema names lifecycle, handle, canonical email and one-primary-per-user invariants.",
+      "beforeSha256": "a98a237c257852484ffa8fdaa43a3613f2c53d55142d42533d3a3145749876b6",
+      "afterSha256": "a98a237c257852484ffa8fdaa43a3613f2c53d55142d42533d3a3145749876b6"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/account-deletion-journal-codec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Journal codec separates exact key validation and authenticated encryption/decryption; bounded envelope, nonce/tag and object-key AAD remain explicit.",
+      "beforeSha256": "9de3953b11bd2067eb18c1e90ee399f28056e37f90b2eacea95b56e401564a3f",
+      "afterSha256": "9de3953b11bd2067eb18c1e90ee399f28056e37f90b2eacea95b56e401564a3f"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/account-deletion-journal-environment.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Journal environment validates bounded destination/credentials and credential-free origin with deployed HTTPS before parsing exact encryption key.",
+      "beforeSha256": "3bdf52329ad826fc323f76971950d2e112d92e89e55602418d6544ba089390f3",
+      "afterSha256": "3bdf52329ad826fc323f76971950d2e112d92e89e55602418d6544ba089390f3"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/account-deletion-recovery-gate.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Recovery gate groups immutable events, rejects indeterminate intent and only honors cancellation present in restored snapshot before blocking.",
+      "beforeSha256": "493ac1573742d1482872912ca614fe9b52c0efcf08eb85a5b02c429aa32c5101",
+      "afterSha256": "493ac1573742d1482872912ca614fe9b52c0efcf08eb85a5b02c429aa32c5101"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/account-recovery-gate-command.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Recovery command separates initialize/run, bounded S3 configuration and nested PostgreSQL/client cleanup.",
+      "beforeSha256": "1f10fdd2d8b09c8e480eeee25f16d1c626fb752cce2acb9b40cccaf705215ddd",
+      "afterSha256": "1f10fdd2d8b09c8e480eeee25f16d1c626fb752cce2acb9b40cccaf705215ddd"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/drizzle-account-deletion-recovery-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Recovery store uses request-before-user lock order, preserves newer cancellations and atomically restores deletion deadline, revoked sessions and private shares.",
+      "beforeSha256": "a2d918f9829a4f4a83e50cf4bf1fb70bf92afc22a5c7313e733174ac9528f658",
+      "afterSha256": "a2d918f9829a4f4a83e50cf4bf1fb70bf92afc22a5c7313e733174ac9528f658"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/in-memory-account-deletion-recovery-journal.ts",
+      "status": "reviewed-acceptable",
+      "reason": "In-memory journal explicitly declares development-only use and copies event records on reads.",
+      "beforeSha256": "eb01797dfb345a7a56d642168fdf4b20085ed1bb33e2df669ed12e7692b1dd06",
+      "afterSha256": "eb01797dfb345a7a56d642168fdf4b20085ed1bb33e2df669ed12e7692b1dd06"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/s3-account-deletion-recovery-journal.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Write-only S3 journal centralizes immutable conditional PutObject and authenticated payload, with only sentinel precondition replay accepted.",
+      "beforeSha256": "c8732e78c27644762047bb2e0d8f7536f33bba415b783109a44786d4ce923406",
+      "afterSha256": "c8732e78c27644762047bb2e0d8f7536f33bba415b783109a44786d4ce923406"
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/s3-account-deletion-recovery-reader.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Offline S3 reader validates sentinel, object keys, unique versions, complete nonrepeating pagination and decrypts each immutable event.",
+      "beforeSha256": "6eb8c6845c256e14e712a9c28335fb3258ea973d71646f3851fd92ca283111d6",
+      "afterSha256": "6eb8c6845c256e14e712a9c28335fb3258ea973d71646f3851fd92ca283111d6"
+    },
+    {
+      "path": "apps/backend/src/modules/users/interface/http/user-profile.routes.ts",
+      "status": "refactored",
+      "reason": "Replaced seven-way nested HTTP error ternary with private ordered mapUserProfileHttpError; exact instanceof priority, error arguments, authentication fallback and correlation response preserved. Private helper accepts Error, preserving the original Hono onError callback type and authentication fallback contract; scoped ESLint and Prettier check pass after correction.",
+      "beforeSha256": "87e83b350fa242a7698ab258d354c8241196a0d2e5455de86ed75f085cf71563",
+      "afterSha256": "63c63f4bf93203d8c0c58b252b0c8033e14b51c92254e56f6174940d56bcaa96"
+    },
+    {
+      "path": "apps/backend/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "Backend TypeScript configuration inherits strict shared settings and includes source/tests/Vitest without redundant compiler overrides.",
+      "beforeSha256": "7c553cd6e4cad1cbe7862e1d45c412c03cdaf021764e43d247b527cf2b5e85dc",
+      "afterSha256": "7c553cd6e4cad1cbe7862e1d45c412c03cdaf021764e43d247b527cf2b5e85dc"
+    },
+    {
+      "path": "apps/backend/vitest.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Vitest configuration states serialized disposable database ownership while allowing intentional concurrency inside tests; coverage and Node environment are explicit.",
+      "beforeSha256": "64c58e617eb35dd281d405dd3c33bbce59b7b56ac54393dbc270b6e8f2222ec0",
+      "afterSha256": "64c58e617eb35dd281d405dd3c33bbce59b7b56ac54393dbc270b6e8f2222ec0"
+    }
+  ],
+  "batches": [
+    {
+      "id": "admin-mcp-price-factory",
+      "status": "implemented",
+      "problem": "Admin MCP command duplicates fresh price-service configuration between actualize and verify; cohesive private per-request factory planned to keep credential closure and dependency set aligned.",
+      "seam": "Private request-scoped factory; singleton rejected because it could bind a prior request credential.",
+      "invariants": [
+        "Fresh service per actualize/verify request",
+        "Same credential-bound reauthentication closure",
+        "Same catalog/target/price callback creation and dependency reads",
+        "No await, transport, policy or operation-order changes"
+      ],
+      "checksRequested": [
+        "pnpm --filter @languon/backend exec vitest run tests/unit/infrastructure/admin-mcp-price-targets.test.ts src/modules/admin-mcp/application/admin-mcp-price-actualization-service.test.ts tests/unit/modules/admin-mcp/native-price-verification.test.ts"
+      ],
+      "setup": "Deterministic existing tests; root schedules Vitest. Estimated seconds. No services or paid calls.",
+      "checksExecuted": [
+        {
+          "command": "pnpm exec prettier --check apps/backend/src/infrastructure/admin-mcp/admin-mcp-command.ts",
+          "result": "passed"
+        },
+        {
+          "command": "pnpm --filter @languon/backend exec eslint src/infrastructure/admin-mcp/admin-mcp-command.ts",
+          "result": "passed (initial missing grouping blank line corrected)"
+        }
+      ]
+    },
+    {
+      "id": "worker-document-composition",
+      "status": "implemented",
+      "problem": "Worker main hides deterministic/production document adapters in a large nested ternary; private composition helper planned while preserving storage creation, adapters and async lifecycle.",
+      "seam": "Private local adapter composition with explicit mode branches. No new shared abstraction.",
+      "invariants": [
+        "S3 creation stays in main at same position",
+        "Identical constructor and object-field order",
+        "Same HMAC entropy/secret, scanner/sandbox settings and production OCR-disabled state",
+        "No changed awaits, provider calls, concurrency, cleanup or readiness"
+      ],
+      "checksRequested": [
+        "pnpm --filter @languon/backend exec vitest run tests/unit/infrastructure/worker/dictionary-worker-command.test.ts tests/unit/infrastructure/worker/dictionary-worker-environment.test.ts tests/unit/infrastructure/worker/dictionary-worker-runtime.test.ts"
+      ],
+      "setup": "Deterministic tests root scheduled; no services/paid calls. Estimated seconds. Root retains final production-composition critical proof.",
+      "checksExecuted": [
+        {
+          "command": "pnpm exec prettier --check apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+          "result": "passed"
+        },
+        {
+          "command": "pnpm --filter @languon/backend exec eslint src/infrastructure/worker/dictionary-worker-command.ts",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "admin-model-unavailability-decision",
+      "status": "implemented",
+      "problem": "Six-way nested ternary in model response mapping hides unavailability precedence.",
+      "seam": "Private ordered decision helper; do not introduce new shared policy or alter availability flags.",
+      "invariants": [
+        "Retired then processing approval then routing-disabled then unavailable health then configured/missing credential precedence",
+        "Exact returned strings and null result",
+        "No changed provider calls, date reads, model order or credential resolution"
+      ],
+      "checksRequested": [
+        "pnpm --filter @languon/backend exec vitest run tests/integration/database/administration-store.test.ts tests/unit/modules/administration/interface/http/administration.routes.test.ts"
+      ],
+      "setup": "Existing disposable DB harness for integration; root schedules execution. Seconds after setup, cold setup unknown.",
+      "checksExecuted": [
+        {
+          "command": "pnpm exec prettier --check apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-ai-settings.ts",
+          "result": "passed"
+        },
+        {
+          "command": "pnpm --filter @languon/backend exec eslint src/modules/administration/infrastructure/persistence/drizzle/administration-ai-settings.ts",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "purge-sql-flow-grouping",
+      "status": "implemented",
+      "problem": "Compressed control flow and CTEs obscure checked purge authority, FK erasure order and exact cumulative monetary attribution.",
+      "seam": "Group existing SQL clauses and control flow within current functions; add invariant comments only. No new SQL functions or migration.",
+      "invariants": [
+        "Identical PostgreSQL non-comment lexical token sequence and exact quoted literals against252de64",
+        "Unchanged SECURITY DEFINER/search_path/REVOKE",
+        "Unchanged live claim/fencing and advisory/row lock order",
+        "Unchanged receipt-before-preview deletion and metadata allowlist",
+        "Unchanged cumulative allocation arithmetic and anonymization scope"
+      ],
+      "checksRequested": [
+        "Existing root disposable DB selection: src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-store.integration.test.ts tests/integration/modules/users/infrastructure/drizzle-account-purge-store.test.ts tests/integration/database/ai-accounting.test.ts",
+        "Exact SQL lexical token identity comparison against252de64"
+      ],
+      "setup": "Root schedules disposable DB infrastructure. Source SQL identity compared separately because migrations retain original installed definitions. Cold setup minutes/unknown.",
+      "checksExecuted": [
+        {
+          "command": "Python PostgreSQL lexical token comparison against git show252de64 for both changed SQL files",
+          "result": "passed; quoted literals exact, comments excluded",
+          "identities": {
+            "admin-mcp-owner-purge.sql": "462 tokens SHA25606cf6ba7b15663d6970f03374a246eba14587b58fa69ca15cf465ec136f950bd",
+            "accounting-owner-purge.sql": "736 tokens SHA256925c5b979c5d8e84d1cf128c5852be8fe3189e09d3cdb749bef4094ef6a10075"
+          }
+        }
+      ]
+    },
+    {
+      "id": "financial-observation-and-rate-decisions",
+      "status": "implemented",
+      "problem": "Native observation shaping hides recordAttempt orchestration; rate validation ternary lacks an explicit domain decision name.",
+      "seam": "Private local shaping helper and named predicate. No new contracts, SDK fields or numerical calculations.",
+      "invariants": [
+        "Same usage presence guard and nativeUsage/executionFacts/calls property order",
+        "Same optional endpoint/serviceTier guards",
+        "Same meter-specific lazy ternary evaluation",
+        "Same locks, awaited SQL settlement call and errors"
+      ],
+      "checksRequested": [
+        "Root disposable DB: tests/integration/database/native-call-monetary-authority.test.ts tests/integration/database/native-provider-pricing.test.ts tests/integration/database/model-price-participant.test.ts"
+      ],
+      "setup": "Root-owned existing disposable DB harness; no paid providers. Warm seconds/minutes, cold setup unknown.",
+      "checksExecuted": [
+        {
+          "command": "pnpm exec prettier --write apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant.ts",
+          "result": "passed"
+        },
+        {
+          "command": "pnpm --filter @languon/backend exec eslint src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant.ts",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "redis-rate-alias-resolution",
+      "status": "implemented",
+      "problem": "Redis limiter optional alias resolution is hidden in a large awaited ternary; explicit branch planned with identical direct-key fallback, await count and bounded operation/error options.",
+      "seam": "Explicit synchronous conditional in consume; no new async helper or policy abstraction.",
+      "invariants": [
+        "Direct key remains before try",
+        "Alias derivation and request options stay inside try",
+        "Exactly one awaited alias lookup only on resolveSubjectAlias path",
+        "Same nullish fallback and consume-script operation order",
+        "Same signal/timeout options and error mapping"
+      ],
+      "checksRequested": [
+        "Root disposable Redis: tests/integration/modules/authentication/infrastructure/redis-authentication-controls.test.ts tests/integration/modules/authentication/infrastructure/redis-concurrent-requests.test.ts",
+        "tests/unit/modules/authentication/infrastructure/rate-limit/bounded-redis-client.test.ts"
+      ],
+      "setup": "Root scheduled disposable Redis harness; no live credentials or paid calls. Warm seconds, cold setup unknown.",
+      "checksExecuted": [
+        {
+          "command": "pnpm exec prettier --write apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts",
+          "result": "passed"
+        },
+        {
+          "command": "pnpm --filter @languon/backend exec eslint src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "user-profile-error-decisions",
+      "status": "implemented",
+      "problem": "Seven-way nested instanceof error ternary obscures priority and status/message pairing.",
+      "seam": "Private ordered mapUserProfileHttpError helper; retain route onError response/correlation formatting.",
+      "preservedInvariants": [
+        "Exact instanceof branch precedence, messages, statuses and final authentication mapper",
+        "No change to authentication, origin checks, routes, body bounds or cancellation"
+      ],
+      "focusedChecksRequested": [
+        "pnpm --filter @languon/backend exec vitest run tests/unit/modules/users/interface/http/user-profile.routes.test.ts"
+      ],
+      "setup": "Root schedules deterministic Vitest; no services required for focused route unit test.",
+      "estimatedDuration": "under 1 minute focused unit execution; scoped lint/Prettier locally",
+      "checksExecuted": [
+        {
+          "command": "pnpm exec prettier --write apps/backend/src/modules/users/interface/http/user-profile.routes.ts",
+          "result": "passed"
+        },
+        {
+          "command": "pnpm --filter @languon/backend exec eslint src/modules/users/interface/http/user-profile.routes.ts",
+          "result": "passed"
+        }
+      ]
+    }
+  ],
+  "pendingPaths": [],
+  "coverageNotes": "Actual full-body review through index235:236 files,8 refactored,228 reviewed-acceptable,282 unread. Root-scheduled tests/types and independent/security review remain pending. Root transferred155 tests/** paths to separate backend-platform-tests ledger. This ledger retains363 source/config/colocated-test originals; full-body coverage259. Completed full-body audit of all363 retained originals (354 reviewed-acceptable,9 refactored);155 transferred tests excluded. No deferred paths or new source files.",
+  "candidateDecisions": "After reading complete financial SQL and corresponding arithmetic/tests, selected erasure allowlist and cumulative attribution SQL for grouping; other SQL already has cohesive named authority boundaries. No feature-boundary deferrals or behavior fixes. Reassessed candidates have concrete per-file acceptable reasons.",
+  "finalScopedChecks": [
+    {
+      "check": "All363 retained originals have unique disposition, exact original ownership and current SHA256 matches",
+      "result": "passed"
+    },
+    {
+      "check": "git diff --check on all9 refactored paths",
+      "result": "passed"
+    },
+    {
+      "check": "pnpm exec prettier --check on all7 refactored TypeScript files",
+      "result": "passed"
+    },
+    {
+      "check": "pnpm --filter @languon/backend exec eslint on all7 refactored TypeScript files",
+      "result": "passed"
+    }
+  ]
+}

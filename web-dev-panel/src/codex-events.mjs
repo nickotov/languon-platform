@@ -101,7 +101,7 @@ export function projectCodexEvent(line, previous = initialAgentMetadata()) {
 
         metadata.itemType = itemType;
         metadata.activity = activityForItem(itemType, status);
-        metadata.status = type === 'item.completed' ? 'running' : 'running';
+        metadata.status = 'running';
     } else if (type === 'turn.completed') {
         const usage =
             event.usage && typeof event.usage === 'object' ? event.usage : {};

@@ -8,6 +8,8 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
+import { speechCreditFixture } from './support/speech-credit-fixture';
+
 import {
     installSpeechAudioProbe,
     playSpeechControl,
@@ -216,11 +218,27 @@ test.describe('flashcard training journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         const name = `Owner cards ${runId}`;
         await installSpeechAudioProbe(page.context());
+        const verification = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/auth/email-verification/verify') &&
+                response.status() === 200,
+        );
+
         await signUpAndVerify(
             page,
             syntheticEmail(testInfo, 'owner'),
             '/dictionaries',
         );
+
+        const { AuthenticationSuccessResponseSchema } =
+            await import('@languon/contracts');
+        const verified = AuthenticationSuccessResponseSchema.parse(
+            await (await verification).json(),
+        );
+
+        // Playback admission requires the same synthetic prices as other
+        // pronunciation journeys, even when the learner is not charged.
+        await speechCreditFixture(verified.user.id, 'setup-provider');
 
         await createDictionaryWithCard(page, name);
 

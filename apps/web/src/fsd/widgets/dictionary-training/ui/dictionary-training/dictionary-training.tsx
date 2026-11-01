@@ -1,6 +1,6 @@
 'use client';
-import type { SpeechSource, FlashcardItem } from '@languon/contracts';
-import { SpeechControl } from '@/fsd/features/speech-playback';
+import { trainingCopy } from './copy';
+import { createTrainingAudio } from './training-audio';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
 import componentStyles from './dictionary-training.module.css';
@@ -36,73 +36,6 @@ import { Button, ButtonLink, Dialog, type MenuItem } from '@/fsd/shared/ui';
 import { PracticeHistory } from '../practice-history/practice-history';
 import { SharedPracticeActions } from '../shared-practice-actions/shared-practice-actions';
 
-const labels = {
-    en: {
-        sentence: 'Sentence practice',
-        history: 'My practice history',
-        preferences: 'AI preferences',
-        unavailable: 'Unavailable',
-        signin: 'Sign in to practise sentences',
-        signinHelp:
-            'Your answers, reviews and progress are personal. Sign in to continue.',
-        signIn: 'Sign in',
-        back: 'Back to dictionary',
-        dirty: 'Discard your unsaved AI preferences?',
-        keep: 'Keep editing',
-        discard: 'Discard changes',
-        close: 'Close',
-        library: 'Saved sentences',
-    },
-    ru: {
-        sentence: 'Практика предложений',
-        history: 'Моя история практики',
-        preferences: 'Настройки ИИ',
-        unavailable: 'Недоступно',
-        signin: 'Войдите для практики предложений',
-        signinHelp:
-            'Ваши ответы, отзывы и прогресс личные. Войдите, чтобы продолжить.',
-        signIn: 'Войти',
-        back: 'Вернуться к словарю',
-        dirty: 'Отменить несохранённые настройки ИИ?',
-        keep: 'Продолжить редактирование',
-        discard: 'Отменить изменения',
-        close: 'Закрыть',
-        library: 'Сохранённые предложения',
-    },
-    fr: {
-        sentence: 'Pratique des phrases',
-        history: 'Mon historique',
-        preferences: 'Préférences IA',
-        unavailable: 'Indisponible',
-        signin: 'Connectez-vous pour pratiquer',
-        signinHelp:
-            'Vos réponses, révisions et progrès sont personnels. Connectez-vous pour continuer.',
-        signIn: 'Se connecter',
-        back: 'Retour au dictionnaire',
-        dirty: 'Abandonner vos préférences IA non enregistrées ?',
-        keep: 'Continuer à modifier',
-        discard: 'Abandonner',
-        close: 'Fermer',
-        library: 'Phrases enregistrées',
-    },
-    es: {
-        sentence: 'Práctica de frases',
-        history: 'Mi historial',
-        preferences: 'Preferencias de IA',
-        unavailable: 'No disponible',
-        signin: 'Inicia sesión para practicar',
-        signinHelp:
-            'Tus respuestas, revisiones y progreso son personales. Inicia sesión para continuar.',
-        signIn: 'Iniciar sesión',
-        back: 'Volver al diccionario',
-        dirty: '¿Descartar la selección de modelo sin guardar?',
-        keep: 'Seguir editando',
-        discard: 'Descartar',
-        close: 'Cerrar',
-        library: 'Frases guardadas',
-    },
-};
-
 /** Pages/widgets compose sibling feature capabilities without private imports. */
 export function DictionaryTraining(props: TrainingLauncherProps) {
     const targetKey =
@@ -119,78 +52,11 @@ export function DictionaryTraining(props: TrainingLauncherProps) {
 }
 
 function TrainingComposition(props: TrainingLauncherProps) {
-    function renderFlashcardAudio(
-        item: FlashcardItem,
-        presentation: FlashcardItem['front'][number],
-    ) {
-        if (
-            !props.signedIn ||
-            presentation.field === 'definition' ||
-            presentation.field === 'transcription'
-        ) {
-            return null;
-        }
-
-        const source: SpeechSource = {
-            kind: 'flashcard-field',
-            access: props.target,
-            cardId: item.entryId,
-            field: presentation.field,
-            expectedLearningVersion: item.learningVersion,
-        };
-
-        return (
-            <SpeechControl
-                source={source}
-                requestWithSession={props.requestWithSession}
-            />
-        );
-    }
-
-    function renderAnswerAudio(attemptId: string) {
-        return renderSentenceAudio({ kind: 'checked-answer', id: attemptId });
-    }
-
-    function renderSentenceAudio(content: {
-        kind: 'prompt' | 'reference' | 'checked-answer';
-        id: string;
-        sessionId?: string;
-    }) {
-        if (!props.signedIn) {
-            return null;
-        }
-
-        let source: SpeechSource;
-        if (content.kind === 'checked-answer') {
-            source = {
-                kind: 'checked-answer',
-                access: props.target,
-                attemptId: content.id,
-            };
-        } else {
-            if (!content.sessionId) {
-                return null;
-            }
-
-            source = {
-                kind: 'sentence-practice',
-                access: props.target,
-                exerciseId: content.id,
-                sessionId: content.sessionId,
-                field: content.kind,
-            };
-        }
-
-        return (
-            <SpeechControl
-                source={source}
-                requestWithSession={props.requestWithSession}
-            />
-        );
-    }
+    const { renderFlashcardAudio, renderSentenceAudio, renderAnswerAudio } =
+        createTrainingAudio(props);
 
     const { locale, href, t } = useI18n();
-    const copy = labels[locale];
+    const copy = trainingCopy[locale];
     const pathname = usePathname();
     const router = useRouter();
     const search = useSearchParams();

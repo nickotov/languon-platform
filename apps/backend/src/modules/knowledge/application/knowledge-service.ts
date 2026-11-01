@@ -36,25 +36,23 @@ export class KnowledgeService {
         context: KnowledgeRequestContext,
     ): Promise<string> {
         context.signal.throwIfAborted();
-        {
-            const result = await this.dependencies.rateLimiter.consume({
-                scope: 'knowledge-http',
-                subject: context.clientAddress,
-                limit: 180,
-                windowMs: 60_000,
-                signal: context.signal,
-            });
+        const addressDecision = await this.dependencies.rateLimiter.consume({
+            scope: 'knowledge-http',
+            subject: context.clientAddress,
+            limit: 180,
+            windowMs: 60_000,
+            signal: context.signal,
+        });
 
-            if (!result.allowed) {
-                throw new KnowledgeDomainError(
-                    'rate_limited',
-                    'Too many requests. Please try again shortly.',
-                );
-            }
+        if (!addressDecision.allowed) {
+            throw new KnowledgeDomainError(
+                'rate_limited',
+                'Too many requests. Please try again shortly.',
+            );
         }
 
         const principal = await this.dependencies.authenticate(token);
-        const result = await this.dependencies.rateLimiter.consume({
+        const ownerDecision = await this.dependencies.rateLimiter.consume({
             scope: 'knowledge-owner',
             subject: principal.userId,
             limit: 180,
@@ -62,7 +60,7 @@ export class KnowledgeService {
             signal: context.signal,
         });
 
-        if (!result.allowed) {
+        if (!ownerDecision.allowed) {
             throw new KnowledgeDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',

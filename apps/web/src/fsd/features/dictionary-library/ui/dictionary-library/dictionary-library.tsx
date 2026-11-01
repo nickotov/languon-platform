@@ -1,25 +1,19 @@
 'use client';
 
-import { Plus, Search, Trash2 } from 'lucide-react';
-import { dictionaryDeletionSelectedTargetLimit } from '@languon/contracts';
+import { Plus, Search } from 'lucide-react';
 import {
     DictionaryApiError,
     dictionaryErrorMessage,
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import {
-    Button,
-    Checkbox,
-    ErrorState,
-    InlineAlert,
-    Input,
-} from '@/fsd/shared/ui';
+import { Button, ErrorState, Input } from '@/fsd/shared/ui';
 import { useDictionaryLibrary } from '../../hooks/use-dictionary-library';
 import type { DictionaryLibraryProps } from '../../types';
 import { LibraryCreateDialog } from '../library-create-dialog/library-create-dialog';
 import { LibraryDeletionDialog } from '../library-deletion-dialog/library-deletion-dialog';
 import { LibraryResults } from '../library-results/library-results';
 import styles from '../dictionary-library-common.module.css';
+import { ArchivedDictionarySelection } from './archived-dictionary-selection';
 
 export function DictionaryLibrary({
     onOpenSettings,
@@ -62,18 +56,6 @@ export function DictionaryLibrary({
             ? 'dictionary.library.retryLoadMore'
             : 'dictionary.library.loadMore',
     );
-
-    const allLoadedSelected =
-        state.list.length > 0 &&
-        state.list.every((entry) => state.selected.has(entry.id));
-
-    const someLoadedSelected = state.list.some((entry) =>
-        state.selected.has(entry.id),
-    );
-
-    function openSelectedDeletion() {
-        state.openSelectedDeletion();
-    }
 
     const resultsView = {
         catalog: state.catalog,
@@ -178,66 +160,7 @@ export function DictionaryLibrary({
                 </ErrorState>
             ) : null}
             {archivedSelected && state.list.length > 0 ? (
-                <div>
-                    <div className={styles.selectionToolbar}>
-                        <Checkbox
-                            checked={allLoadedSelected}
-                            disabled={
-                                !state.list.length ||
-                                state.deleteDictionaries.isPending
-                            }
-                            indeterminate={
-                                someLoadedSelected && !allLoadedSelected
-                            }
-                            label={t('dictionary.deletion.selectLoaded')}
-                            onChange={state.toggleAllLoaded}
-                        />
-                        <span className={styles.selectionCount}>
-                            {t('dictionary.deletion.selectedCount', {
-                                count: state.selected.size,
-                            })}
-                        </span>
-                        <div className={styles.selectionActions}>
-                            <Button
-                                disabled={!state.selected.size}
-                                leadingIcon={<Trash2 aria-hidden size={16} />}
-                                onClick={openSelectedDeletion}
-                                size='compact'
-                                type='button'
-                                variant='danger'
-                            >
-                                {t('dictionary.deletion.deleteSelected')}
-                            </Button>
-                            <Button
-                                loading={state.deletionPreview.isPending}
-                                onClick={state.openAllDeletion}
-                                size='compact'
-                                type='button'
-                                variant='secondary'
-                            >
-                                {t('dictionary.deletion.deleteAllArchived')}
-                            </Button>
-                        </div>
-                    </div>
-                    {state.deletionPreview.error ? (
-                        <InlineAlert
-                            tone='danger'
-                            title={t('dictionary.deletion.failed')}
-                        >
-                            {dictionaryErrorMessage(
-                                state.deletionPreview.error,
-                                t,
-                            )}
-                        </InlineAlert>
-                    ) : null}
-                    {state.selectionLimitReached ? (
-                        <InlineAlert tone='warning'>
-                            {t('dictionary.deletion.selectionLimit', {
-                                count: dictionaryDeletionSelectedTargetLimit,
-                            })}
-                        </InlineAlert>
-                    ) : null}
-                </div>
+                <ArchivedDictionarySelection state={state} />
             ) : null}
             <LibraryResults state={resultsView} />
             {state.dictionaries.isFetchNextPageError ? (

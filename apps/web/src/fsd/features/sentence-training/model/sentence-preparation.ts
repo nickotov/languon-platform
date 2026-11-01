@@ -1,10 +1,8 @@
 import {
-    DictionaryLanguageTagSchema,
-    SentencePreparationStartRequestSchema,
-    SentencePreparationCommandRequestSchema,
-    type SentencePreparationStartRequest,
-    type SentencePreparationCommandRequest,
-} from '@languon/contracts';
+    parseStoredPreparation,
+    type StoredPreparation,
+} from './sentence-preparation-recovery';
+import { SentencePreparationStartRequestSchema } from '@languon/contracts';
 import type {
     Configuration,
     SentenceApi,
@@ -23,41 +21,6 @@ type State = Pick<
     | 'eligibleCount'
     | 'explanationLanguage'
 >;
-type Stored = {
-    explanationLanguage?: NonNullable<Configuration['explanationLanguage']>;
-    id?: string;
-    start?: SentencePreparationStartRequest;
-    command?: SentencePreparationCommandRequest;
-};
-function parseStored(value: unknown): Stored {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return {};
-    }
-
-    const input = value as Record<string, unknown>;
-    const id =
-        typeof input.id === 'string' &&
-        /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(input.id)
-            ? input.id
-            : undefined;
-    const start = SentencePreparationStartRequestSchema.safeParse(input.start);
-    const explanation = DictionaryLanguageTagSchema.safeParse(
-        input.explanationLanguage,
-    );
-    const command = SentencePreparationCommandRequestSchema.safeParse(
-        input.command,
-    );
-
-    return {
-        ...(explanation.success
-            ? { explanationLanguage: explanation.data }
-            : {}),
-        ...(id ? { id } : {}),
-        ...(start.success ? { start: start.data } : {}),
-        ...(id && command.success ? { command: command.data } : {}),
-    };
-}
-
 const empty: State = {
     preparation: null,
     batches: [],
@@ -76,7 +39,7 @@ export class SentencePreparationStore {
     private enabled = false;
     private epoch = 0;
     private timer: ReturnType<typeof setTimeout> | null = null;
-    private stored: Stored = {};
+    private stored: StoredPreparation = {};
     private requestInFlight = false;
     private countLoading = false;
     private readonly storageKey: string;
@@ -104,7 +67,7 @@ export class SentencePreparationStore {
         }
     }
 
-    private save(record: Stored) {
+    private save(record: StoredPreparation) {
         this.stored = record;
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(record));
@@ -116,7 +79,7 @@ export class SentencePreparationStore {
     enable = () => {
         this.enabled = true;
         try {
-            this.stored = parseStored(
+            this.stored = parseStoredPreparation(
                 JSON.parse(localStorage.getItem(this.storageKey) ?? '{}'),
             );
         } catch {

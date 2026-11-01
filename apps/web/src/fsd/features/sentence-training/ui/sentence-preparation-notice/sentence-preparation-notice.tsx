@@ -194,19 +194,15 @@ export function SentencePreparationNotice({
             ? keys.budget
             : (keys[run.pauseReason as keyof typeof keys] ?? keys.provider);
 
+        let tone: 'info' | 'error' | 'warning' = 'warning';
+        if (run.pauseReason === 'user' || run.pauseReason === 'capacity') {
+            tone = 'info';
+        } else if (run.pauseReason === 'provider' || run.state === 'failed') {
+            tone = 'error';
+        }
+
         return (
-            <InlineAlert
-                tone={
-                    run.pauseReason === 'user' || run.pauseReason === 'capacity'
-                        ? 'info'
-                        : run.pauseReason === 'provider' ||
-                            run.state === 'failed'
-                          ? 'error'
-                          : 'warning'
-                }
-                title={P(title)}
-                actions={resumeButton}
-            >
+            <InlineAlert tone={tone} title={P(title)} actions={resumeButton}>
                 {P(body)}
             </InlineAlert>
         );
@@ -214,12 +210,12 @@ export function SentencePreparationNotice({
 
     if (run.state === 'completed') {
         const uncovered = run.eligibleCount - run.preparedCount;
-        const body =
-            uncovered > 0
-                ? `${P('completedPartial', { n: uncovered })} ${P('notPractice')}`
-                : run.generatedExerciseCount === 0
-                  ? `${P('completedReuseOnly')} ${P('notPractice')}`
-                  : P('notPractice');
+        let body = P('notPractice');
+        if (uncovered > 0) {
+            body = `${P('completedPartial', { n: uncovered })} ${P('notPractice')}`;
+        } else if (run.generatedExerciseCount === 0) {
+            body = `${P('completedReuseOnly')} ${P('notPractice')}`;
+        }
 
         return (
             <InlineAlert

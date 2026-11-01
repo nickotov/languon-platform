@@ -175,7 +175,12 @@ export async function configureModel(
     const enabled = config.getByLabel('Enabled routes', { exact: true });
     const deepSeekTag = config
         .locator('.ant-select')
-        .filter({ has: enabled })
+        .filter({
+            has: page.getByRole('combobox', {
+                name: 'Enabled routes',
+                exact: true,
+            }),
+        })
         .locator('.ant-select-selection-item')
         .filter({ hasText: /deepseek.*DeepSeek Flash/ });
 
